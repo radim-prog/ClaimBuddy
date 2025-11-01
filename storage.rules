@@ -65,8 +65,8 @@ service firebase.storage {
 
     // Admin uploads (only accessible by admins)
     match /admin/{allPaths=**} {
-      // Read/Write: authenticated users only (admin check done in Firestore)
-      allow read, write: if isAuthenticated();
+      // Read/Write: only admins can access admin storage
+      allow read, write: if isAdmin();
     }
 
     // Deny all other access

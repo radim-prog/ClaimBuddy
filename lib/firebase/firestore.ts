@@ -84,6 +84,7 @@ export async function getCases(
     limitCount?: number;
     lastDoc?: QueryDocumentSnapshot;
     status?: string;
+    assignedTo?: string;
   }
 ) {
   try {
@@ -92,6 +93,15 @@ export async function getCases(
       where('userId', '==', userId),
       orderBy('createdAt', 'desc')
     );
+
+    // If assignedTo is provided, filter by assignedTo instead of userId
+    if (options?.assignedTo) {
+      q = query(
+        collection(db, 'cases'),
+        where('assignedTo', '==', options.assignedTo),
+        orderBy('createdAt', 'desc')
+      );
+    }
 
     if (options?.status) {
       q = query(q, where('status', '==', options.status));

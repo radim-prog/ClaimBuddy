@@ -16,15 +16,17 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || undefined;
     const limit = parseInt(searchParams.get('limit') || '10');
 
-    // Admini vidí všechny případy, klienti jen své
+    // Admini vidí všechny případy, agenti jen přiřazené, klienti jen své
     const userData = await getUserData(user.uid);
     if (!userData) {
       return errorResponse('User not found', 404);
     }
 
     let result;
-    if (userData.role === USER_ROLES.ADMIN || userData.role === USER_ROLES.AGENT) {
+    if (userData.role === USER_ROLES.ADMIN) {
       result = await getAllCases({ status, limitCount: limit });
+    } else if (userData.role === USER_ROLES.AGENT) {
+      result = await getCases(user.uid, { assignedTo: user.uid, status, limitCount: limit });
     } else {
       result = await getCases(user.uid, { status, limitCount: limit });
     }
