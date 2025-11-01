@@ -4,6 +4,22 @@ import { adminDb } from '@/lib/firebase/admin';
 import { exportDataSchema } from '@/lib/validations/admin';
 import { Case, User, Payment } from '@/types';
 
+// Helper function to escape CSV values and prevent injection
+function escapeCsvValue(value: any): string {
+  let str = String(value || '');
+
+  // CSV Injection Prevention: Escape formula characters
+  // If value starts with =, +, -, @ it could be interpreted as formula in Excel/Sheets
+  if (str.startsWith('=') || str.startsWith('+') || str.startsWith('-') || str.startsWith('@')) {
+    str = "'" + str; // Prefix with single quote to treat as text
+  }
+
+  // Escape quotes (standard CSV escaping)
+  str = str.replace(/"/g, '""');
+
+  return `"${str}"`;
+}
+
 // Helper function to convert data to CSV
 function convertToCSV(data: any[], headers: string[]): string {
   const csvRows = [];
@@ -15,9 +31,7 @@ function convertToCSV(data: any[], headers: string[]): string {
   for (const row of data) {
     const values = headers.map(header => {
       const value = row[header];
-      // Escape commas and quotes
-      const escaped = String(value || '').replace(/"/g, '""');
-      return `"${escaped}"`;
+      return escapeCsvValue(value);
     });
     csvRows.push(values.join(','));
   }

@@ -4,6 +4,8 @@ import { adminDb, adminAuth } from '@/lib/firebase/admin';
 import { USER_ROLES, UserRole } from '@/lib/constants';
 import { getUserStats } from '@/lib/firebase/admin-operations';
 import { z } from 'zod';
+import { randomBytes } from 'crypto';
+import { checkRateLimit, rateLimiters, rateLimitExceeded } from '@/lib/rate-limit';
 
 const createUserSchema = z.object({
   name: z.string().min(2, 'Jméno musí mít alespoň 2 znaky'),
@@ -47,13 +49,28 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Get cases count for each user
-    const casesSnapshot = await adminDb.collection('cases').get();
+    // PERFORMANCE FIX: Batch fetch cases count using aggregation instead of loading all cases
+    // Get unique user IDs
+    const userIds = users.map(u => u.id);
+
+    // Batch count cases per user (Firestore 'in' operator supports max 10 items per query)
     const casesByUser: Record<string, number> = {};
-    casesSnapshot.docs.forEach(doc => {
-      const userId = doc.data().userId;
-      casesByUser[userId] = (casesByUser[userId] || 0) + 1;
-    });
+    for (let i = 0; i < userIds.length; i += 10) {
+      const batch = userIds.slice(i, i + 10);
+      try {
+        // Count cases for each user in this batch
+        const casesSnapshot = await adminDb.collection('cases')
+          .where('userId', 'in', batch)
+          .get();
+
+        casesSnapshot.docs.forEach(doc => {
+          const userId = doc.data().userId;
+          casesByUser[userId] = (casesByUser[userId] || 0) + 1;
+        });
+      } catch (error) {
+        console.error('Error batch counting cases:', error);
+      }
+    }
 
     // Add casesCount and stats to users
     const usersWithStats = await Promise.all(
@@ -105,6 +122,12 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAdmin(request);
 
+    // Rate limiting: Prevent brute force user creation
+    const rateLimitResult = await checkRateLimit(rateLimiters.api, user.uid);
+    if (!rateLimitResult.success) {
+      return rateLimitExceeded(rateLimitResult.reset);
+    }
+
     const body = await request.json();
     const validation = createUserSchema.safeParse(body);
 
@@ -127,8 +150,9 @@ export async function POST(request: NextRequest) {
       disabled: false,
     });
 
-    // Generate random password and send email
-    const tempPassword = Math.random().toString(36).slice(-8) + 'Aa1!';
+    // Generate cryptographically secure random password
+    // Uses crypto.randomBytes instead of Math.random() for security
+    const tempPassword = randomBytes(12).toString('base64').slice(0, 12) + 'Aa1!';
     await adminAuth.updateUser(authUser.uid, {
       password: tempPassword,
     });
@@ -149,7 +173,7 @@ export async function POST(request: NextRequest) {
 
     // TODO: Send invitation email with tempPassword
     // This would be done via email service (e.g., SendGrid, Resend)
-    console.log(`Created user ${email} with temp password: ${tempPassword}`);
+    console.log(`Created user ${email}`);
 
     return successResponse({
       id: authUser.uid,

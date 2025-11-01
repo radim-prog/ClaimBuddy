@@ -3,6 +3,18 @@ import { requireAdminOrAgent, errorResponse, successResponse } from '@/lib/api-h
 import { addInternalNoteSchema } from '@/lib/validations/admin';
 import { getCaseInternalNotes, addCaseInternalNote } from '@/lib/firebase/admin-operations';
 
+// Basic HTML escape to prevent XSS
+// NOTE: For production, consider using a proper sanitization library like DOMPurify
+// However, DOMPurify requires DOM environment, so for server-side we use basic escaping
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -38,10 +50,14 @@ export async function POST(
     const body = await request.json();
     const validatedData = addInternalNoteSchema.parse(body);
 
+    // XSS Prevention: Escape HTML in note content
+    // This prevents script injection while preserving text formatting
+    const sanitizedContent = escapeHtml(validatedData.content);
+
     // Add internal note
     const result = await addCaseInternalNote(
       caseId,
-      validatedData.content,
+      sanitizedContent,
       user.id,
       user.name
     );
