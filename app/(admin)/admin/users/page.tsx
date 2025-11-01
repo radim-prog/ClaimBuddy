@@ -27,8 +27,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Avatar } from '@/components/ui/avatar';
 import { EditUserModal } from '@/components/admin/edit-user-modal';
 import { CreateUserModal } from '@/components/admin/create-user-modal';
-import { useAuth } from '@/contexts/auth-context';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/components/providers/auth-provider';
+import { useToast } from '@/components/ui/use-toast';
 import {
   Search,
   Users as UsersIcon,

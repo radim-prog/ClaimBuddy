@@ -20,8 +20,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/auth-context';
+import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/components/providers/auth-provider';
 import { UserRole, USER_ROLES } from '@/lib/constants';
 import { AlertCircle, CheckCircle, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';

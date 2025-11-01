@@ -51,7 +51,7 @@ import {
   MessageSquare,
   FileDown
 } from 'lucide-react';
-import { CASE_STATUS_LABELS, INSURANCE_TYPE_LABELS, CASE_STATUSES } from '@/lib/constants';
+import { CASE_STATUS_LABELS, INSURANCE_TYPE_LABELS, CASE_STATUSES, CaseStatus } from '@/lib/constants';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 
@@ -366,7 +366,7 @@ export default function AdminCaseDetailPage({ params }: { params: { id: string }
         caseId: params.id,
         type: 'status_change',
         title: 'Status změněn',
-        description: `${CASE_STATUS_LABELS[caseData.status]} → ${CASE_STATUS_LABELS[newStatus]}`,
+        description: `${CASE_STATUS_LABELS[caseData.status as CaseStatus]} → ${CASE_STATUS_LABELS[newStatus]}`,
         userId: user.uid,
         userName: user.displayName || user.email || 'Admin',
         createdAt: Timestamp.now(),
@@ -546,12 +546,12 @@ export default function AdminCaseDetailPage({ params }: { params: { id: string }
             Export PDF
           </Button>
           {caseOwner && (
-            <Button variant="outline" size="sm" asChild>
-              <a href={`mailto:${caseOwner.email}`}>
+            <a href={`mailto:${caseOwner.email}`}>
+              <Button variant="outline" size="sm">
                 <Mail className="mr-2 h-4 w-4" />
                 Email klientovi
-              </a>
-            </Button>
+              </Button>
+            </a>
           )}
           {caseData.status !== CASE_STATUSES.CLOSED && (
             <Button variant="outline" size="sm" onClick={handleCloseCase}>
@@ -909,7 +909,7 @@ export default function AdminCaseDetailPage({ params }: { params: { id: string }
                       <div key={change.id} className="text-xs">
                         <div className="flex items-center justify-between">
                           <span className="font-medium">
-                            {CASE_STATUS_LABELS[change.oldStatus]} → {CASE_STATUS_LABELS[change.newStatus]}
+                            {CASE_STATUS_LABELS[change.oldStatus as CaseStatus]} → {CASE_STATUS_LABELS[change.newStatus as CaseStatus]}
                           </span>
                           <time className="text-gray-500">
                             {format(new Date(change.createdAt), 'dd. MM.', { locale: cs })}

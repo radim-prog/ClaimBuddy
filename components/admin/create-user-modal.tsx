@@ -19,8 +19,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/auth-context';
+import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/components/providers/auth-provider';
 import { UserRole, USER_ROLES } from '@/lib/constants';
 import { Mail, Phone, User as UserIcon, Shield } from 'lucide-react';
 

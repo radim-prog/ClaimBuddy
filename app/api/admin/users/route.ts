@@ -35,10 +35,15 @@ export async function GET(request: NextRequest) {
       const data = doc.data();
       return {
         id: doc.id,
-        ...data,
+        name: data.name || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        role: data.role as UserRole,
+        status: data.status || 'active',
         createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
         lastLoginAt: data.lastLoginAt?.toDate?.()?.toISOString(),
+        emailVerified: data.emailVerified || false,
       };
     });
 

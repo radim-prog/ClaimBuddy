@@ -54,7 +54,7 @@ export async function getUserStats(userId: string) {
     const avgResolutionTime = resolvedWithTime.length > 0
       ? resolvedWithTime.reduce((acc, c) => {
           const created = c.createdAt instanceof Date ? c.createdAt : new Date(c.createdAt);
-          const closed = c.closedAt instanceof Date ? c.closedAt : new Date(c.closedAt);
+          const closed = c.closedAt instanceof Date ? c.closedAt : new Date(c.closedAt!);
           return acc + (closed.getTime() - created.getTime());
         }, 0) / resolvedWithTime.length / (1000 * 60 * 60 * 24) // Convert to days
       : 0;
@@ -285,8 +285,9 @@ export async function updateCaseStatus(
     // Add timeline event
     const timelineRef = adminDb.collection('caseTimeline').doc();
     batch.set(timelineRef, {
+      id: timelineRef.id,
       caseId,
-      type: 'status_change',
+      type: 'status_change' as const,
       title: 'Změna stavu',
       description: reason || `Status změněn na ${status}`,
       userId,

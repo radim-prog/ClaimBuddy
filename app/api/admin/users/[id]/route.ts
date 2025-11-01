@@ -152,7 +152,7 @@ export async function GET(
     }));
 
     // Get assigned cases (if agent)
-    let assignedCases = [];
+    let assignedCases: any[] = [];
     if (userData?.role === 'agent' || userData?.role === 'admin') {
       const assignedSnapshot = await adminDb
         .collection('cases')
