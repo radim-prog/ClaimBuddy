@@ -10,12 +10,14 @@ interface AuthContextType {
   user: FirebaseUser | null;
   userData: User | null;
   loading: boolean;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   userData: null,
   loading: true,
+  signOut: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -48,8 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  const handleSignOut = async () => {
+    const { signOut: firebaseSignOut } = await import('@/lib/firebase/auth');
+    await firebaseSignOut();
+    router.push('/login');
+  };
+
   return (
-    <AuthContext.Provider value={{ user, userData, loading }}>
+    <AuthContext.Provider value={{ user, userData, loading, signOut: handleSignOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -94,6 +94,19 @@ export const MESSAGE_TYPES = {
 
 export type MessageType = (typeof MESSAGE_TYPES)[keyof typeof MESSAGE_TYPES];
 
+export const INSURANCE_COMPANIES = [
+  'Allianz pojišťovna',
+  'Kooperativa pojišťovna',
+  'Česká pojišťovna',
+  'ČSOB Pojišťovna',
+  'Generali Česká pojišťovna',
+  'UNIQA pojišťovna',
+  'Direct pojišťovna',
+  'Slavia pojišťovna',
+  'Colonnade pojišťovna',
+  'Jiná',
+];
+
 export const PRICING = {
   FIXED_FEE: 2500, // 2,500 Kč
   SUCCESS_FEE_PERCENTAGE: 15, // 15%
