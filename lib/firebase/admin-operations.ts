@@ -158,7 +158,7 @@ export async function reassignUserCases(fromUserId: string, toUserId: string) {
       });
 
       // Add timeline event
-      const timelineRef = adminDb.collection('caseTimeline').doc();
+      const timelineRef = adminDb.collection('timeline').doc();
       batch.set(timelineRef, {
         caseId: doc.id,
         type: 'assignment',
@@ -235,7 +235,7 @@ export async function addCaseInternalNote(
     });
 
     // Add timeline event
-    await adminDb.collection('caseTimeline').add({
+    await adminDb.collection('timeline').add({
       caseId,
       type: 'note',
       title: 'Interní poznámka přidána',
@@ -264,6 +264,10 @@ export async function updateCaseStatus(
   internalNote?: string
 ) {
   try {
+    // Get current case to get the old status
+    const caseDoc = await adminDb.collection('cases').doc(caseId).get();
+    const currentStatus = caseDoc.exists ? caseDoc.data()?.status : undefined;
+
     const batch = adminDb.batch();
 
     // Update case
@@ -283,7 +287,7 @@ export async function updateCaseStatus(
     batch.update(caseRef, updateData);
 
     // Add timeline event
-    const timelineRef = adminDb.collection('caseTimeline').doc();
+    const timelineRef = adminDb.collection('timeline').doc();
     batch.set(timelineRef, {
       id: timelineRef.id,
       caseId,
@@ -294,7 +298,7 @@ export async function updateCaseStatus(
       userName,
       createdAt: new Date(),
       metadata: {
-        oldStatus: status, // We'd need to fetch this if we want the old status
+        oldStatus: currentStatus,
         newStatus: status,
         reason,
       },

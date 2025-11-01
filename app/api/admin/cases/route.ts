@@ -68,32 +68,37 @@ export async function GET(request: NextRequest) {
     const endIndex = startIndex + validatedParams.limit;
     const paginatedCases = cases.slice(startIndex, endIndex);
 
-    // Fetch user data for each case
-    const casesWithUserData = await Promise.all(
-      paginatedCases.map(async (caseItem) => {
-        let userData = null;
-        if (caseItem.userId) {
-          try {
-            const userDoc = await adminDb.collection('users').doc(caseItem.userId).get();
-            if (userDoc.exists) {
-              userData = {
-                id: userDoc.id,
-                name: userDoc.data()?.name,
-                email: userDoc.data()?.email,
-                phone: userDoc.data()?.phone,
-              };
-            }
-          } catch (error) {
-            console.error('Error fetching user data:', error);
-          }
-        }
+    // PERFORMANCE FIX: Batch fetch user data instead of N+1 queries
+    // Get unique user IDs from paginated cases
+    const userIds = [...new Set(paginatedCases.map(c => c.userId).filter(Boolean))];
 
-        return {
-          ...caseItem,
-          user: userData,
-        };
-      })
-    );
+    // Batch fetch users (Firestore 'in' operator supports max 10 items per query)
+    const usersMap = new Map();
+    for (let i = 0; i < userIds.length; i += 10) {
+      const batch = userIds.slice(i, i + 10);
+      try {
+        const usersSnapshot = await adminDb.collection('users')
+          .where(adminDb.FieldPath.documentId(), 'in', batch)
+          .get();
+
+        usersSnapshot.docs.forEach(doc => {
+          usersMap.set(doc.id, {
+            id: doc.id,
+            name: doc.data()?.name,
+            email: doc.data()?.email,
+            phone: doc.data()?.phone,
+          });
+        });
+      } catch (error) {
+        console.error('Error batch fetching user data:', error);
+      }
+    }
+
+    // Map user data to cases
+    const casesWithUserData = paginatedCases.map(caseItem => ({
+      ...caseItem,
+      user: caseItem.userId ? usersMap.get(caseItem.userId) || null : null,
+    }));
 
     return successResponse({
       cases: casesWithUserData,

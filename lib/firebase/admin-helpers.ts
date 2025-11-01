@@ -122,6 +122,7 @@ export async function unassignCase(
 
 /**
  * Získá statistiky agenta
+ * PERFORMANCE FIX: Kombinuje 2 queries do 1 pro rychlejší načítání
  */
 export async function getAgentStats(agentId: string): Promise<{
   activeCasesCount: number;
@@ -129,44 +130,43 @@ export async function getAgentStats(agentId: string): Promise<{
   avgResolutionTime?: number;
 }> {
   try {
-    // Count active cases
-    const activeCasesSnapshot = await adminDb
+    // PERFORMANCE FIX: Fetch all cases for agent in single query instead of 2 separate queries
+    const allCasesSnapshot = await adminDb
       .collection('cases')
       .where('assignedTo', '==', agentId)
-      .where('status', 'in', ['new', 'in_progress', 'waiting_for_client', 'waiting_for_insurance'])
       .get();
 
-    // Count resolved cases
-    const resolvedCasesSnapshot = await adminDb
-      .collection('cases')
-      .where('assignedTo', '==', agentId)
-      .where('status', 'in', ['resolved', 'closed'])
-      .get();
+    let activeCasesCount = 0;
+    let resolvedCasesCount = 0;
+    let totalTime = 0;
+    let validCases = 0;
 
-    // Calculate average resolution time
-    let avgResolutionTime: number | undefined;
-    if (resolvedCasesSnapshot.size > 0) {
-      let totalTime = 0;
-      let validCases = 0;
+    // Process all cases in single iteration
+    allCasesSnapshot.forEach((doc) => {
+      const data = doc.data();
+      const status = data.status;
 
-      resolvedCasesSnapshot.forEach((doc) => {
-        const data = doc.data();
+      // Count active vs resolved
+      if (['new', 'in_progress', 'waiting_for_client', 'waiting_for_insurance'].includes(status)) {
+        activeCasesCount++;
+      } else if (['resolved', 'closed'].includes(status)) {
+        resolvedCasesCount++;
+
+        // Calculate resolution time for resolved cases
         if (data.createdAt && data.closedAt) {
           const created = data.createdAt.toDate();
           const closed = data.closedAt.toDate();
           totalTime += (closed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24); // days
           validCases++;
         }
-      });
-
-      if (validCases > 0) {
-        avgResolutionTime = totalTime / validCases;
       }
-    }
+    });
+
+    const avgResolutionTime = validCases > 0 ? totalTime / validCases : undefined;
 
     return {
-      activeCasesCount: activeCasesSnapshot.size,
-      resolvedCasesCount: resolvedCasesSnapshot.size,
+      activeCasesCount,
+      resolvedCasesCount,
       avgResolutionTime,
     };
   } catch (error) {
@@ -180,6 +180,7 @@ export async function getAgentStats(agentId: string): Promise<{
 
 /**
  * Získá seznam dostupných agentů seřazených podle workloadu
+ * PERFORMANCE FIX: Batch fetch all cases once instead of N queries per agent
  */
 export async function getAvailableAgents(): Promise<AgentStats[]> {
   try {
@@ -189,22 +190,73 @@ export async function getAvailableAgents(): Promise<AgentStats[]> {
       .where('role', 'in', [USER_ROLES.AGENT, USER_ROLES.ADMIN])
       .get();
 
-    const agents: AgentStats[] = [];
+    // PERFORMANCE FIX: Fetch all assigned cases in single query
+    const allCasesSnapshot = await adminDb
+      .collection('cases')
+      .where('assignedTo', '!=', null)
+      .get();
 
-    for (const userDoc of usersSnapshot.docs) {
+    // Build stats map for all agents
+    const agentStatsMap = new Map<string, {
+      activeCasesCount: number;
+      resolvedCasesCount: number;
+      totalTime: number;
+      validCases: number;
+    }>();
+
+    // Process all cases once
+    allCasesSnapshot.forEach((doc) => {
+      const data = doc.data();
+      const agentId = data.assignedTo;
+      if (!agentId) return;
+
+      const stats = agentStatsMap.get(agentId) || {
+        activeCasesCount: 0,
+        resolvedCasesCount: 0,
+        totalTime: 0,
+        validCases: 0,
+      };
+
+      const status = data.status;
+
+      // Count active vs resolved
+      if (['new', 'in_progress', 'waiting_for_client', 'waiting_for_insurance'].includes(status)) {
+        stats.activeCasesCount++;
+      } else if (['resolved', 'closed'].includes(status)) {
+        stats.resolvedCasesCount++;
+
+        // Calculate resolution time for resolved cases
+        if (data.createdAt && data.closedAt) {
+          const created = data.createdAt.toDate();
+          const closed = data.closedAt.toDate();
+          stats.totalTime += (closed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24); // days
+          stats.validCases++;
+        }
+      }
+
+      agentStatsMap.set(agentId, stats);
+    });
+
+    // Build agents array with stats
+    const agents: AgentStats[] = usersSnapshot.docs.map(userDoc => {
       const userData = userDoc.data() as User;
-      const stats = await getAgentStats(userDoc.id);
+      const stats = agentStatsMap.get(userDoc.id) || {
+        activeCasesCount: 0,
+        resolvedCasesCount: 0,
+        totalTime: 0,
+        validCases: 0,
+      };
 
-      agents.push({
+      return {
         id: userDoc.id,
         name: userData.name,
         email: userData.email,
         role: userData.role,
         activeCasesCount: stats.activeCasesCount,
         resolvedCasesCount: stats.resolvedCasesCount,
-        avgResolutionTime: stats.avgResolutionTime,
-      });
-    }
+        avgResolutionTime: stats.validCases > 0 ? stats.totalTime / stats.validCases : undefined,
+      };
+    });
 
     // Sort by workload (fewest active cases first)
     agents.sort((a, b) => a.activeCasesCount - b.activeCasesCount);
