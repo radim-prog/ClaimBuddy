@@ -70,9 +70,15 @@ export function CaseMessages({ caseId }: CaseMessagesProps) {
     try {
       setSending(true);
 
+      // Get Firebase ID token
+      const token = await user.getIdToken();
+
       const response = await fetch(`/api/cases/${caseId}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           content: newMessage,
           type: 'user',

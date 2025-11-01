@@ -4,6 +4,7 @@ import { aiChatSchema } from '@/lib/validations';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AI_CONFIG } from '@/lib/constants';
 import { getCase } from '@/lib/firebase/firestore';
+import { rateLimiters, checkRateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
 
@@ -12,6 +13,12 @@ export async function POST(request: NextRequest) {
     const { user, error: authError } = await getAuthUser(request);
     if (authError || !user) {
       return errorResponse('Unauthorized', 401);
+    }
+
+    // RATE LIMITING: 50 chat requests per hour per user
+    const rateLimit = await checkRateLimit(rateLimiters.chat, user.uid);
+    if (!rateLimit.success) {
+      return rateLimitExceeded(rateLimit.reset);
     }
 
     const body = await request.json();
@@ -84,7 +91,19 @@ ${caseContext}`;
     const result = await chat.sendMessage(message);
     const response = result.response.text();
 
-    return successResponse({ response });
+    return Response.json(
+      {
+        success: true,
+        data: { response }
+      },
+      {
+        headers: {
+          'X-RateLimit-Limit': String(rateLimit.limit),
+          'X-RateLimit-Remaining': String(rateLimit.remaining),
+          'X-RateLimit-Reset': String(rateLimit.reset),
+        },
+      }
+    );
   } catch (error: any) {
     console.error('POST /api/ai/chat error:', error);
     return errorResponse(error.message || 'AI service error', 500);

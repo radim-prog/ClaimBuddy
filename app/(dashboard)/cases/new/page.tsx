@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ interface FormData {
   claimAmount: string;
   policyNumber: string;
   insuranceCompany: string;
+  policeReportNumber: string;
   files: File[];
 }
 
@@ -46,6 +47,7 @@ export default function NewCasePage() {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     insuranceType: '',
     incidentDate: '',
@@ -54,12 +56,41 @@ export default function NewCasePage() {
     claimAmount: '',
     policyNumber: '',
     insuranceCompany: '',
+    policeReportNumber: '',
     files: [],
   });
 
   const updateFormData = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem('case-draft');
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        setFormData(draft);
+        toast({
+          title: 'Rozepsaný případ obnoven',
+          description: 'Pokračujte tam, kde jste skončili',
+        });
+      } catch (err) {
+        console.error('Failed to load draft:', err);
+      }
+    }
+  }, []);
+
+  // Autosave při každé změně formData (debounced)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (formData.incidentDescription || formData.insuranceCompany) {
+        localStorage.setItem('case-draft', JSON.stringify(formData));
+      }
+    }, 1000); // Save 1s po poslední změně
+
+    return () => clearTimeout(timeoutId);
+  }, [formData]);
 
   const validateStep1 = () => {
     if (!formData.insuranceType) {
@@ -174,8 +205,20 @@ export default function NewCasePage() {
   };
 
   const handleSubmit = async () => {
+    if (!user) {
+      toast({
+        title: 'Chyba',
+        description: 'Musíte být přihlášeni',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       setSubmitting(true);
+
+      // Get Firebase ID token
+      const token = await user.getIdToken();
 
       // Upload files first
       const fileUrls: string[] = [];
@@ -186,6 +229,9 @@ export default function NewCasePage() {
 
           const response = await fetch('/api/upload', {
             method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
             body: formDataObj,
           });
 
@@ -212,7 +258,10 @@ export default function NewCasePage() {
 
       const response = await fetch('/api/cases', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(caseData),
       });
 

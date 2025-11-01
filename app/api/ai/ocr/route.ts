@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getAuthUser, errorResponse, successResponse } from '@/lib/api-helpers';
 import { ocrSchema } from '@/lib/validations';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { rateLimiters, checkRateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
 
@@ -10,6 +11,12 @@ export async function POST(request: NextRequest) {
     const { user, error: authError } = await getAuthUser(request);
     if (authError || !user) {
       return errorResponse('Unauthorized', 401);
+    }
+
+    // RATE LIMITING: 10 OCR requests per hour per user
+    const rateLimit = await checkRateLimit(rateLimiters.ocr, user.uid);
+    if (!rateLimit.success) {
+      return rateLimitExceeded(rateLimit.reset);
     }
 
     const body = await request.json();
@@ -70,10 +77,22 @@ Pokud některá informace chybí, použij null. Odpověď musí být validní JS
       };
     }
 
-    return successResponse({
-      extractedData,
-      confidence: 0.85, // Placeholder - Gemini API neposkytuje confidence score
-    });
+    return Response.json(
+      {
+        success: true,
+        data: {
+          extractedData,
+          confidence: 0.85, // Placeholder - Gemini API neposkytuje confidence score
+        },
+      },
+      {
+        headers: {
+          'X-RateLimit-Limit': String(rateLimit.limit),
+          'X-RateLimit-Remaining': String(rateLimit.remaining),
+          'X-RateLimit-Reset': String(rateLimit.reset),
+        },
+      }
+    );
   } catch (error: any) {
     console.error('POST /api/ai/ocr error:', error);
     return errorResponse(error.message || 'OCR service error', 500);

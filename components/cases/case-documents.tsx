@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/components/providers/auth-provider';
 import { Document } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,12 +18,13 @@ interface CaseDocumentsProps {
 }
 
 export function CaseDocuments({ caseId, documents, onDocumentAdded }: CaseDocumentsProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+    if (files.length === 0 || !user) return;
 
     // Validate
     const maxSize = 25 * 1024 * 1024; // 25 MB
@@ -40,6 +42,9 @@ export function CaseDocuments({ caseId, documents, onDocumentAdded }: CaseDocume
     try {
       setUploading(true);
 
+      // Get Firebase ID token
+      const token = await user.getIdToken();
+
       // Upload files
       for (const file of files) {
         const formData = new FormData();
@@ -48,6 +53,9 @@ export function CaseDocuments({ caseId, documents, onDocumentAdded }: CaseDocume
 
         const response = await fetch('/api/upload', {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
           body: formData,
         });
 

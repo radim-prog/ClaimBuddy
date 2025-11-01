@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/components/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -18,6 +19,7 @@ interface CaseAIAssistantProps {
 }
 
 export function CaseAIAssistant({ caseId }: CaseAIAssistantProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [collapsed, setCollapsed] = useState(true);
   const [messages, setMessages] = useState<AIMessage[]>([]);
@@ -25,20 +27,27 @@ export function CaseAIAssistant({ caseId }: CaseAIAssistantProps) {
   const [loading, setLoading] = useState(false);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !user) return;
 
     const userMessage: AIMessage = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
+    const userInput = input;
     setInput('');
     setLoading(true);
 
     try {
+      // Get Firebase ID token
+      const token = await user.getIdToken();
+
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           caseId,
-          message: input,
+          message: userInput,
           conversationHistory: messages,
         }),
       });
