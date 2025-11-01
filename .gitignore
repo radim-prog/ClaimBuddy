@@ -46,3 +46,7 @@ firebase-debug.log
 
 # Claude context (internal use only)
 .claude-context/
+
+# User-specific files (security)
+*.command
+claude-start.command
