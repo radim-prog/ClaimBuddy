@@ -37,6 +37,8 @@ export interface Case {
   policeReportNumber?: string;
   assignedTo?: string;
   assignedToName?: string;
+  assignedAt?: Date;
+  assignedBy?: string;
   internalNotes?: string;
   resolution?: string;
   createdAt: Date;
