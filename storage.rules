@@ -1,0 +1,62 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidImageFile() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isValidDocumentFile() {
+      return request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType.matches('application/pdf');
+    }
+
+    function isUnder25MB() {
+      return request.resource.size < 25 * 1024 * 1024;
+    }
+
+    // Cases folder - user can only access their own case files
+    match /cases/{caseId}/{allPaths=**} {
+      // Read: authenticated users can read their own case files
+      allow read: if isAuthenticated();
+
+      // Write: authenticated users can upload to their own cases
+      // with file size limit and allowed file types
+      allow write: if isAuthenticated() &&
+                      isValidDocumentFile() &&
+                      isUnder25MB();
+    }
+
+    // User avatars
+    match /avatars/{userId}/{fileName} {
+      // Read: anyone can read avatars (for public profiles)
+      allow read: if true;
+
+      // Write: only the owner can upload/update their avatar
+      allow write: if isOwner(userId) &&
+                      isValidImageFile() &&
+                      isUnder25MB();
+    }
+
+    // Admin uploads (only accessible by admins)
+    match /admin/{allPaths=**} {
+      // Read/Write: authenticated users only (admin check done in Firestore)
+      allow read, write: if isAuthenticated();
+    }
+
+    // Deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

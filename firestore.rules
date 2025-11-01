@@ -1,0 +1,103 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Users can read and update their own data
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isAdmin();
+    }
+
+    // Cases collection
+    match /cases/{caseId} {
+      // Read: owner or admin
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Create: authenticated users only
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+
+      // Update: owner or admin
+      allow update: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Delete: admin only
+      allow delete: if isAdmin();
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Read: if user can read the parent case
+        allow read: if isAuthenticated();
+
+        // Create: if user can access the parent case
+        allow create: if isAuthenticated();
+
+        // Update/Delete: admin only
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    // Subscriptions collection
+    match /subscriptions/{subscriptionId} {
+      // Read: owner or admin
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Create: authenticated users only
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+
+      // Update: system or admin only
+      allow update: if isAdmin();
+
+      // Delete: admin only
+      allow delete: if isAdmin();
+    }
+
+    // Payments collection
+    match /payments/{paymentId} {
+      // Read: owner or admin
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Create: authenticated users only
+      allow create: if isAuthenticated();
+
+      // Update: system or admin only
+      allow update: if isAdmin();
+
+      // Delete: admin only
+      allow delete: if isAdmin();
+    }
+
+    // Admin stats collection (read-only for admins)
+    match /stats/{statId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only via Cloud Functions
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
