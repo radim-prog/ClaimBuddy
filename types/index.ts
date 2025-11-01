@@ -155,5 +155,6 @@ export interface UserSettings {
   smsNotifications: boolean;
   pushNotifications: boolean;
   marketingEmails: boolean;
+  hasSeenWelcomeWizard?: boolean;
   updatedAt: Date;
 }

@@ -144,7 +144,7 @@ export function CookieConsentBanner() {
 
             {/* Analytics Cookies */}
             <div className="flex items-start space-x-3">
-              <Checkbox checked={analyticsEnabled} onCheckedChange={setAnalyticsEnabled} />
+              <Checkbox checked={analyticsEnabled} onCheckedChange={(checked) => setAnalyticsEnabled(checked === true)} />
               <div className="flex-1">
                 <h4 className="font-semibold text-sm mb-1">Analytické cookies</h4>
                 <p className="text-xs text-muted-foreground">
@@ -156,7 +156,7 @@ export function CookieConsentBanner() {
 
             {/* Marketing Cookies */}
             <div className="flex items-start space-x-3">
-              <Checkbox checked={marketingEnabled} onCheckedChange={setMarketingEnabled} />
+              <Checkbox checked={marketingEnabled} onCheckedChange={(checked) => setMarketingEnabled(checked === true)} />
               <div className="flex-1">
                 <h4 className="font-semibold text-sm mb-1">Marketingové cookies</h4>
                 <p className="text-xs text-muted-foreground">

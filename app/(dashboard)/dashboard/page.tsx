@@ -11,17 +11,57 @@ import { Case } from '@/types';
 import { CASE_STATUS_LABELS, CASE_STATUSES } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/utils';
+import { WelcomeWizard } from '@/components/welcome-wizard';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function DashboardPage() {
   const { user, userData } = useAuth();
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showWelcomeWizard, setShowWelcomeWizard] = useState(false);
 
   useEffect(() => {
     if (user) {
       loadCases();
+      checkWelcomeWizard();
     }
   }, [user]);
+
+  const checkWelcomeWizard = async () => {
+    if (!user) return;
+
+    try {
+      const settingsRef = doc(db, 'userSettings', user.uid);
+      const settingsSnap = await getDoc(settingsRef);
+
+      if (!settingsSnap.exists() || !settingsSnap.data()?.hasSeenWelcomeWizard) {
+        setShowWelcomeWizard(true);
+      }
+    } catch (error) {
+      console.error('Error checking welcome wizard:', error);
+    }
+  };
+
+  const handleWelcomeComplete = async () => {
+    if (!user) return;
+
+    try {
+      const settingsRef = doc(db, 'userSettings', user.uid);
+      await setDoc(
+        settingsRef,
+        {
+          userId: user.uid,
+          hasSeenWelcomeWizard: true,
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
+      setShowWelcomeWizard(false);
+    } catch (error) {
+      console.error('Error saving welcome wizard state:', error);
+    }
+  };
 
   const loadCases = async () => {
     if (!user) return;
@@ -36,6 +76,14 @@ export default function DashboardPage() {
   const resolvedCases = cases.filter((c) => c.status === CASE_STATUSES.RESOLVED);
 
   return (
+    <>
+      {showWelcomeWizard && (
+        <WelcomeWizard
+          onComplete={handleWelcomeComplete}
+          onSkip={handleWelcomeComplete}
+        />
+      )}
+
     <div className="space-y-8">
       {/* Header */}
       <div>
@@ -159,5 +207,6 @@ export default function DashboardPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
