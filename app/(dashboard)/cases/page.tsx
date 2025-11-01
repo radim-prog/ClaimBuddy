@@ -10,7 +10,7 @@ import {
   orderBy,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Case } from '@/types';
 import { Button } from '@/components/ui/button';

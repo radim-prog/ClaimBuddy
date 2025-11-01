@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 import { Case } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

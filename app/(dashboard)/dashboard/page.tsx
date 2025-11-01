@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/utils';
 import { WelcomeWizard } from '@/components/welcome-wizard';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 
 export default function DashboardPage() {
   const { user, userData } = useAuth();

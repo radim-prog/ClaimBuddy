@@ -21,14 +21,14 @@ import { useToast } from '@/components/ui/use-toast';
 import { Spinner } from '@/components/ui/spinner';
 import { User, Bell, Shield, Trash2 } from 'lucide-react';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 import {
   updatePassword,
   EmailAuthProvider,
   reauthenticateWithCredential,
   deleteUser as deleteAuthUser,
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth } from '@/lib/firebase/client';
 
 interface UserSettings {
   emailNotifications: boolean;

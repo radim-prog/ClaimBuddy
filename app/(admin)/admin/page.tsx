@@ -12,7 +12,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 import { DashboardStats } from '@/types';
 
 export default function AdminDashboardPage() {

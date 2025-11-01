@@ -14,7 +14,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db } from '@/lib/firebase/client';
 
 const navigation = [
   { name: 'Přehled', href: '/admin', icon: LayoutDashboard },
