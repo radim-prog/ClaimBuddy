@@ -38,6 +38,12 @@ import { Search, FileQuestion, Download, ArrowUpDown, ArrowUp, ArrowDown } from 
 import { CASE_STATUS_LABELS, CASE_STATUSES } from '@/lib/constants';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const STATUS_COLORS: Record<string, string> = {
   new: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
@@ -248,7 +254,7 @@ export default function AdminCasesPage() {
     }));
 
     const headers = Object.keys(csvData[0]);
-    const csv = [
+    const csv = '\uFEFF' + [
       headers.join(','),
       ...csvData.map((row) =>
         headers.map((h) => `"${row[h as keyof typeof row]}"`).join(',')
@@ -301,22 +307,30 @@ export default function AdminCasesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Správa případů</h1>
           <p className="mt-1 text-sm text-gray-500">
             Přehled všech případů v systému ({filteredAndSortedCases.length} z {cases.length})
           </p>
         </div>
-        <Button
-          onClick={handleExportCSV}
-          variant="outline"
-          disabled={filteredAndSortedCases.length === 0}
-        >
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={handleExportCSV}
+              variant="outline"
+              disabled={filteredAndSortedCases.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Exportovat filtrované případy (číslo, klient, pojišťovna, status, částka, datum)
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Filters */}
@@ -419,6 +433,9 @@ export default function AdminCasesPage() {
                     <TableHead
                       className="cursor-pointer select-none hover:bg-gray-50"
                       onClick={() => handleSort('claimAmount')}
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Třídit podle částky"
                     >
                       <div className="flex items-center">
                         Částka
@@ -428,6 +445,9 @@ export default function AdminCasesPage() {
                     <TableHead
                       className="cursor-pointer select-none hover:bg-gray-50"
                       onClick={() => handleSort('createdAt')}
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Třídit podle data"
                     >
                       <div className="flex items-center">
                         Datum
@@ -551,6 +571,7 @@ export default function AdminCasesPage() {
           )}
         </>
       )}
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

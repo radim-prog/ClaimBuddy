@@ -30,6 +30,13 @@ import { CreateUserModal } from '@/components/admin/create-user-modal';
 import { useAuth } from '@/components/providers/auth-provider';
 import { useToast } from '@/components/ui/use-toast';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import {
   Search,
   Users as UsersIcon,
   UserPlus,
@@ -61,6 +68,11 @@ export default function AdminUsersPage() {
 
   const [editingUser, setEditingUser] = useState<UserWithStats | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Confirmation dialogs state
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+  const [roleChangeDialogOpen, setRoleChangeDialogOpen] = useState(false);
+  const [pendingRoleChange, setPendingRoleChange] = useState<UserRole | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -146,14 +158,6 @@ export default function AdminUsersPage() {
   const handleBulkDeactivate = async () => {
     if (selectedUsers.size === 0) return;
 
-    if (
-      !confirm(
-        `Opravdu chcete deaktivovat ${selectedUsers.size} uživatelů?`
-      )
-    ) {
-      return;
-    }
-
     try {
       const token = await currentUser?.getIdToken();
       if (!token) throw new Error('Unauthorized');
@@ -198,14 +202,6 @@ export default function AdminUsersPage() {
 
   const handleBulkRoleChange = async (newRole: UserRole) => {
     if (selectedUsers.size === 0) return;
-
-    if (
-      !confirm(
-        `Opravdu chcete změnit roli ${selectedUsers.size} uživatelům na "${newRole}"?`
-      )
-    ) {
-      return;
-    }
 
     try {
       const token = await currentUser?.getIdToken();
@@ -263,7 +259,7 @@ export default function AdminUsersPage() {
     }));
 
     const headers = Object.keys(csvData[0] || {});
-    const csv = [
+    const csv = '\uFEFF' + [
       headers.join(','),
       ...csvData.map((row) =>
         headers.map((header) => `"${row[header as keyof typeof row]}"`).join(',')
@@ -313,9 +309,10 @@ export default function AdminUsersPage() {
     filteredUsers.some((u) => selectedUsers.has(u.id));
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Správa uživatelů</h1>
           <p className="mt-1 text-sm text-gray-500">
@@ -379,7 +376,10 @@ export default function AdminUsersPage() {
               Vybráno: {selectedUsers.size} uživatelů
             </span>
             <div className="flex gap-2">
-              <Select onValueChange={handleBulkRoleChange}>
+              <Select onValueChange={(role) => {
+                setPendingRoleChange(role as UserRole);
+                setRoleChangeDialogOpen(true);
+              }}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Změnit roli..." />
                 </SelectTrigger>
@@ -398,14 +398,21 @@ export default function AdminUsersPage() {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={handleBulkDeactivate}
+                onClick={() => setDeactivateDialogOpen(true)}
               >
                 Deaktivovat vybrané
               </Button>
-              <Button variant="outline" size="sm" onClick={handleExportCSV}>
-                <Download className="mr-2 h-4 w-4" />
-                Export CSV
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export CSV
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Exportovat vybrané uživatele (jméno, email, role, telefon, stav, případy)
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </Card>
@@ -512,13 +519,19 @@ export default function AdminUsersPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingUser(user)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingUser(user)}
+                              aria-label="Upravit uživatele"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Upravit uživatele</TooltipContent>
+                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   );
@@ -563,6 +576,32 @@ export default function AdminUsersPage() {
           fetchUsers();
         }}
       />
-    </div>
+
+      {/* Confirmation Dialogs */}
+      <ConfirmationDialog
+        open={deactivateDialogOpen}
+        onOpenChange={setDeactivateDialogOpen}
+        onConfirm={handleBulkDeactivate}
+        title="Deaktivovat uživatele"
+        description={`Opravdu chcete deaktivovat ${selectedUsers.size} uživatelů? Tato akce je nevratná.`}
+        confirmText="Deaktivovat"
+        variant="destructive"
+      />
+
+      <ConfirmationDialog
+        open={roleChangeDialogOpen}
+        onOpenChange={setRoleChangeDialogOpen}
+        onConfirm={() => {
+          if (pendingRoleChange) {
+            handleBulkRoleChange(pendingRoleChange);
+            setPendingRoleChange(null);
+          }
+        }}
+        title="Změnit roli uživatelů"
+        description={`Opravdu chcete změnit roli ${selectedUsers.size} uživatelům na "${pendingRoleChange}"?`}
+        confirmText="Změnit roli"
+      />
+      </div>
+    </TooltipProvider>
   );
 }

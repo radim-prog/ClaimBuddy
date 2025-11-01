@@ -34,6 +34,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { CaseTimeline as TimelineComponent } from '@/components/cases/case-timeline';
 import { CaseDocuments } from '@/components/cases/case-documents';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
   ArrowLeft,
   Calendar,
@@ -104,6 +105,7 @@ export default function AdminCaseDetailPage({ params }: { params: { id: string }
   const [savingNote, setSavingNote] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [statusChangeReason, setStatusChangeReason] = useState('');
+  const [closeCaseDialogOpen, setCloseCaseDialogOpen] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState('');
   const [assigning, setAssigning] = useState(false);
@@ -366,7 +368,7 @@ export default function AdminCaseDetailPage({ params }: { params: { id: string }
         caseId: params.id,
         type: 'status_change',
         title: 'Status změněn',
-        description: `${CASE_STATUS_LABELS[caseData.status as CaseStatus]} → ${CASE_STATUS_LABELS[newStatus]}`,
+        description: `${CASE_STATUS_LABELS[caseData.status as CaseStatus]} → ${CASE_STATUS_LABELS[newStatus as CaseStatus]}`,
         userId: user.uid,
         userName: user.displayName || user.email || 'Admin',
         createdAt: Timestamp.now(),
@@ -464,8 +466,6 @@ export default function AdminCaseDetailPage({ params }: { params: { id: string }
   };
 
   const handleCloseCase = async () => {
-    if (!confirm('Opravdu chcete uzavřít tento případ?')) return;
-
     try {
       const caseRef = doc(db, 'cases', params.id);
       await updateDoc(caseRef, {
@@ -554,7 +554,7 @@ export default function AdminCaseDetailPage({ params }: { params: { id: string }
             </a>
           )}
           {caseData.status !== CASE_STATUSES.CLOSED && (
-            <Button variant="outline" size="sm" onClick={handleCloseCase}>
+            <Button variant="outline" size="sm" onClick={() => setCloseCaseDialogOpen(true)}>
               <X className="mr-2 h-4 w-4" />
               Uzavřít případ
             </Button>
@@ -967,6 +967,17 @@ export default function AdminCaseDetailPage({ params }: { params: { id: string }
           </Card>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={closeCaseDialogOpen}
+        onOpenChange={setCloseCaseDialogOpen}
+        onConfirm={handleCloseCase}
+        title="Uzavřít případ"
+        description="Opravdu chcete uzavřít tento případ? Tato akce je nevratná a případ již nebude možné znovu otevřít."
+        confirmText="Uzavřít případ"
+        variant="destructive"
+      />
     </div>
   );
 }
