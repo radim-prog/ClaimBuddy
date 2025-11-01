@@ -18,6 +18,9 @@ export const registerSchema = z.object({
   gdprConsent: z.boolean().refine((val) => val === true, {
     message: 'Musíte souhlasit se zpracováním osobních údajů',
   }),
+  healthDataConsent: z.boolean().refine((val) => val === true, {
+    message: 'Musíte souhlasit se zpracováním zdravotních údajů (vyžadováno dle čl. 9 GDPR)',
+  }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Hesla se neshodují',
   path: ['confirmPassword'],

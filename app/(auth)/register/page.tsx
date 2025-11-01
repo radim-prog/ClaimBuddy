@@ -38,6 +38,7 @@ export default function RegisterPage() {
       name: '',
       phone: '',
       gdprConsent: false,
+      healthDataConsent: false,
     },
   });
 
@@ -202,6 +203,40 @@ export default function RegisterPage() {
                         obchodními podmínkami
                       </Link>
                     </FormLabel>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="healthDataConsent"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border border-amber-200 bg-amber-50 p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={loading}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="font-semibold">
+                      Souhlasím se zpracováním citlivých osobních údajů (čl. 9 GDPR)
+                    </FormLabel>
+                    <FormDescription className="text-xs">
+                      Pro zpracování pojistných událostí potřebujeme Váš výslovný souhlas se zpracováním
+                      zdravotních údajů a fotografií zranění. Bez tohoto souhlasu nemůžeme získávat lékařské
+                      zprávy ani komunikovat s pojišťovnou o zdravotních aspektech případu.{' '}
+                      <Link
+                        href="/legal/gdpr-consent"
+                        className="text-primary hover:underline font-medium"
+                        target="_blank"
+                      >
+                        Přečíst plný souhlas
+                      </Link>
+                    </FormDescription>
                     <FormMessage />
                   </div>
                 </FormItem>

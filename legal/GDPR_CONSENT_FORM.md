@@ -20,10 +20,10 @@ Bez tohoto souhlasu nemůžeme:
 ## 1. Správce údajů
 
 **ClaimBuddy s.r.o.**
-IČO: [doplnit]
-Sídlo: [doplnit]
+IČO: [IČO bude doplněno před launch]
+Sídlo: [Adresa sídla bude doplněna před launch]
 Email: gdpr@claimbuddy.cz
-Telefon: [doplnit]
+Telefon: [Kontaktní telefon bude doplněn před launch]
 
 ---
 
@@ -335,4 +335,4 @@ Kontaktujte nás: gdpr@claimbuddy.cz
 ---
 
 *Tento formulář souhlasu je v souladu s nařízením GDPR (EU) 2016/679 a zákonem č. 110/2019 Sb.*
-*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [doplnit]*
+*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [IČO bude doplněno před launch]*

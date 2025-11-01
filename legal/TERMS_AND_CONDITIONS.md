@@ -9,11 +9,11 @@
 
 ### 1.1 Poskytovatel služby
 **ClaimBuddy s.r.o.**
-IČO: [doplnit]
-Sídlo: [doplnit]
-Zapsaná u Krajského soudu v [doplnit], spisová značka [doplnit]
+IČO: [IČO bude doplněno před launch]
+Sídlo: [Adresa sídla bude doplněna před launch]
+Zapsaná u Krajského soudu v [Město bude doplněno před launch], spisová značka [Spisová značka bude doplněna před launch]
 Email: info@claimbuddy.cz
-Telefon: [doplnit]
+Telefon: [Kontaktní telefon bude doplněn před launch]
 
 ### 1.2 Co je ClaimBuddy?
 ClaimBuddy poskytuje **asistenční služby** při řešení pojistných událostí. Pomáháme klientům:
@@ -262,8 +262,8 @@ Více v **Zásadách ochrany osobních údajů**.
 
 ### 9.1 Jak reklamovat
 Email: reklamace@claimbuddy.cz
-Telefon: [doplnit]
-Poštou: [adresa sídla]
+Telefon: [Kontaktní telefon bude doplněn před launch]
+Poštou: [Adresa sídla bude doplněna před launch]
 
 ### 9.2 Lhůta vyřízení
 Reklamaci vyřídíme do **30 dnů** od doručení.
@@ -330,4 +330,4 @@ Kontaktujte nás: info@claimbuddy.cz
 ---
 
 *Tyto Obchodní podmínky jsou účinné od 1. ledna 2026.*
-*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [doplnit]*
+*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [IČO bude doplněno před launch]*

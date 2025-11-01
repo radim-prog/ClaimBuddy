@@ -433,7 +433,7 @@ Tyto zásady můžeme změnit pokud:
 
 ### 8.1 Dotazy k cookies
 **Email:** gdpr@claimbuddy.cz
-**Telefon:** [doplnit]
+**Telefon:** [Kontaktní telefon bude doplněn před launch]
 
 ### 8.2 GDPR žádosti
 **Email:** gdpr@claimbuddy.cz
@@ -562,4 +562,4 @@ Napište nám: gdpr@claimbuddy.cz
 ---
 
 *Tyto Zásady používání cookies jsou v souladu s nařízením GDPR (EU) 2016/679 a zákonem č. 127/2005 Sb. (o elektronických komunikacích).*
-*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [doplnit]*
+*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [IČO bude doplněno před launch]*

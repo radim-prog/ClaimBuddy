@@ -9,10 +9,10 @@
 
 ### 1.1 Správce osobních údajů
 **ClaimBuddy s.r.o.**
-IČO: [doplnit]
-Sídlo: [doplnit]
+IČO: [IČO bude doplněno před launch]
+Sídlo: [Adresa sídla bude doplněna před launch]
 Email: gdpr@claimbuddy.cz
-Telefon: [doplnit]
+Telefon: [Kontaktní telefon bude doplněn před launch]
 
 ### 1.2 Co děláme
 Poskytujeme asistenční služby při řešení pojistných událostí. Pomáháme s dokumentací, komunikací s pojišťovnami a reklamacemi.
@@ -408,7 +408,7 @@ Pokud zjistíme, že jsme získali data dítěte bez souhlasu rodiče:
 
 ### 12.1 Obecné dotazy k GDPR
 **Email:** gdpr@claimbuddy.cz
-**Telefon:** [doplnit]
+**Telefon:** [Kontaktní telefon bude doplněn před launch]
 **Odpovídáme:** Do 5 pracovních dnů
 
 ### 12.2 Uplatnění práv
@@ -447,4 +447,4 @@ Napište nám: gdpr@claimbuddy.cz
 ---
 
 *Tyto Zásady ochrany osobních údajů jsou účinné od 1. ledna 2026.*
-*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [doplnit]*
+*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [IČO bude doplněno před launch]*
