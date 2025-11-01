@@ -1,0 +1,157 @@
+=== STORAGE RULES ===
+Vlož do: https://console.firebase.google.com/project/claimbuddy-1c327/storage/rules
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidImageFile() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isValidDocumentFile() {
+      return request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType.matches('application/pdf');
+    }
+
+    function isUnder25MB() {
+      return request.resource.size < 25 * 1024 * 1024;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function caseOwnedByUser(caseId) {
+      let caseData = firestore.get(/databases/(default)/documents/cases/$(caseId)).data;
+      return caseData.userId == request.auth.uid;
+    }
+
+    match /cases/{caseId}/{allPaths=**} {
+      allow read: if isAuthenticated() &&
+                     (caseOwnedByUser(caseId) || isAdmin());
+
+      allow write: if isAuthenticated() &&
+                      caseOwnedByUser(caseId) &&
+                      isValidDocumentFile() &&
+                      isUnder25MB();
+
+      allow delete: if isAuthenticated() &&
+                       (caseOwnedByUser(caseId) || isAdmin());
+    }
+
+    match /avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isOwner(userId) &&
+                      isValidImageFile() &&
+                      isUnder25MB();
+    }
+
+    match /admin/{allPaths=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+=== FIRESTORE RULES ===
+Vlož do: https://console.firebase.google.com/project/claimbuddy-1c327/firestore/rules
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function caseOwnedByUser(caseId) {
+      let caseData = get(/databases/$(database)/documents/cases/$(caseId)).data;
+      return caseData.userId == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isAdmin();
+    }
+
+    match /cases/{caseId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+
+      allow update: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow delete: if isAdmin();
+
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() &&
+                       (caseOwnedByUser(caseId) || isAdmin());
+
+        allow create: if isAuthenticated() &&
+                         caseOwnedByUser(caseId) &&
+                         request.resource.data.userId == request.auth.uid &&
+                         request.resource.data.keys().hasAll(['content', 'userId', 'type', 'createdAt']);
+
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    match /subscriptions/{subscriptionId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isAuthenticated();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /stats/{statId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
