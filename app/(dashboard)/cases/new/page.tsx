@@ -204,7 +204,9 @@ export default function NewCasePage() {
     updateFormData('files', files);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
     if (!user) {
       toast({
         title: 'Chyba',
@@ -214,49 +216,29 @@ export default function NewCasePage() {
       return;
     }
 
+    setSubmitting(true);
+    setError(null);
+
     try {
-      setSubmitting(true);
-
-      // Get Firebase ID token
-      const token = await user.getIdToken();
-
-      // Upload files first
-      const fileUrls: string[] = [];
-      if (formData.files.length > 0) {
-        const uploadPromises = formData.files.map(async (file) => {
-          const formDataObj = new FormData();
-          formDataObj.append('file', file);
-
-          const response = await fetch('/api/upload', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-            body: formDataObj,
-          });
-
-          if (!response.ok) throw new Error('Upload failed');
-          const data = await response.json();
-          return data.url;
-        });
-
-        const urls = await Promise.all(uploadPromises);
-        fileUrls.push(...urls);
+      // Validate all steps
+      if (!validateStep1() || !validateStep2()) {
+        throw new Error('Vyplňte prosím všechna povinná pole');
       }
 
-      // Create case
+      // KROK 1: Nejdřív vytvoř case BEZ souborů
       const caseData = {
         insuranceType: formData.insuranceType,
+        insuranceCompany: formData.insuranceCompany,
+        policyNumber: formData.policyNumber || undefined,
         incidentDate: formData.incidentDate,
         incidentLocation: formData.incidentLocation,
         incidentDescription: formData.incidentDescription,
         claimAmount: parseFloat(formData.claimAmount),
-        policyNumber: formData.policyNumber,
-        insuranceCompany: formData.insuranceCompany,
-        documents: fileUrls,
+        policeReportNumber: formData.policeReportNumber || undefined,
       };
 
-      const response = await fetch('/api/cases', {
+      const token = await user.getIdToken();
+      const createResponse = await fetch('/api/cases', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -265,22 +247,68 @@ export default function NewCasePage() {
         body: JSON.stringify(caseData),
       });
 
-      if (!response.ok) throw new Error('Failed to create case');
+      if (!createResponse.ok) {
+        const errorData = await createResponse.json();
+        throw new Error(errorData.error || 'Nepodařilo se vytvořit případ');
+      }
 
-      const { caseId } = await response.json();
+      const { id: caseId } = await createResponse.json(); // API vrací 'id', ne 'caseId'
 
+      // KROK 2: Pokud jsou soubory, uploaduj je S caseId
+      if (formData.files.length > 0) {
+        const uploadResults = await Promise.allSettled(
+          formData.files.map(async (file) => {
+            const formDataObj = new FormData();
+            formDataObj.append('file', file);
+            formDataObj.append('caseId', caseId); // ✅ Teď máme caseId!
+
+            const uploadResponse = await fetch('/api/upload', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+              body: formDataObj,
+            });
+
+            if (!uploadResponse.ok) {
+              const errorData = await uploadResponse.json();
+              throw new Error(`Soubor ${file.name}: ${errorData.error}`);
+            }
+
+            return uploadResponse.json();
+          })
+        );
+
+        // Check for failed uploads
+        const failedUploads = uploadResults.filter(r => r.status === 'rejected');
+        if (failedUploads.length > 0) {
+          console.error('Some uploads failed:', failedUploads);
+          // Don't fail the whole flow, case is already created
+          toast({
+            title: 'Upozornění',
+            description: `${failedUploads.length} souborů se nepodařilo nahrát. Můžete je přidat později.`,
+            variant: 'destructive',
+          });
+        }
+      }
+
+      // KROK 3: Clear draft from localStorage
+      localStorage.removeItem('case-draft');
+
+      // Success!
       toast({
-        title: 'Případ vytvořen',
-        description: 'Váš případ byl úspěšně vytvořen',
-        variant: 'success',
+        title: 'Úspěch!',
+        description: 'Případ byl úspěšně vytvořen',
       });
 
-      router.push(`/dashboard/cases/${caseId}`);
-    } catch (error) {
-      console.error('Error creating case:', error);
+      router.push(`/cases/${caseId}`);
+
+    } catch (err: any) {
+      console.error('Case creation error:', err);
+      setError(err.message || 'Něco se pokazilo');
       toast({
         title: 'Chyba',
-        description: 'Nepodařilo se vytvořit případ. Zkuste to prosím znovu.',
+        description: err.message,
         variant: 'destructive',
       });
     } finally {
