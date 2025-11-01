@@ -32,7 +32,7 @@ export default function AboutPage() {
                 <li>Chtěli po mě stohy papírů, které jsem nevěděl, kde sehnat</li>
                 <li>Call centrum mě přepojovalo mezi odděleními, nikdo neměl čas</li>
                 <li>Email odpovědi přicházely po týdnech</li>
-                <li>Když jsem se snažil vyjednávat, narazil jsem na "to je naše standardní nabídka"</li>
+                <li>Když jsem se snažil vyjednávat, narazil jsem na &quot;to je naše standardní nabídka&quot;</li>
               </ul>
 
               <p className="mt-6 font-semibold text-primary">

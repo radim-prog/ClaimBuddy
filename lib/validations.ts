@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { INSURANCE_TYPES, MAX_FILE_SIZE } from './constants';
+import { INSURANCE_TYPES, MAX_FILE_SIZE, CASE_STATUSES } from './constants';
 
 // Auth schemas
 export const registerSchema = z.object({
@@ -73,7 +73,14 @@ export const caseIncidentSchema = z.object({
 export const createCaseSchema = caseBasicInfoSchema.merge(caseIncidentSchema);
 
 export const updateCaseSchema = z.object({
-  status: z.string().optional(),
+  status: z.enum([
+    CASE_STATUSES.NEW,
+    CASE_STATUSES.IN_PROGRESS,
+    CASE_STATUSES.WAITING_FOR_CLIENT,
+    CASE_STATUSES.WAITING_FOR_INSURANCE,
+    CASE_STATUSES.RESOLVED,
+    CASE_STATUSES.CLOSED,
+  ]).optional(),
   assignedTo: z.string().optional(),
   internalNotes: z.string().optional(),
   resolution: z.string().optional(),
