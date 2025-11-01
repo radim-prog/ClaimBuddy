@@ -17,6 +17,11 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    function caseOwnedByUser(caseId) {
+      let caseData = get(/databases/$(database)/documents/cases/$(caseId)).data;
+      return caseData.userId == request.auth.uid;
+    }
+
     // Users collection
     match /users/{userId} {
       // Users can read and update their own data
@@ -45,13 +50,17 @@ service cloud.firestore {
 
       // Messages subcollection
       match /messages/{messageId} {
-        // Read: if user can read the parent case
-        allow read: if isAuthenticated();
+        // Read: only if message belongs to user's case
+        allow read: if isAuthenticated() &&
+                       (caseOwnedByUser(caseId) || isAdmin());
 
-        // Create: if user can access the parent case
-        allow create: if isAuthenticated();
+        // Create: only into user's own case with validation
+        allow create: if isAuthenticated() &&
+                         caseOwnedByUser(caseId) &&
+                         request.resource.data.userId == request.auth.uid &&
+                         request.resource.data.keys().hasAll(['content', 'userId', 'type', 'createdAt']);
 
-        // Update/Delete: admin only
+        // Update/Delete: admin only (messages should be immutable)
         allow update, delete: if isAdmin();
       }
     }

@@ -25,16 +25,31 @@ service firebase.storage {
       return request.resource.size < 25 * 1024 * 1024;
     }
 
+    function isAdmin() {
+      return isAuthenticated() &&
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function caseOwnedByUser(caseId) {
+      let caseData = firestore.get(/databases/(default)/documents/cases/$(caseId)).data;
+      return caseData.userId == request.auth.uid;
+    }
+
     // Cases folder - user can only access their own case files
     match /cases/{caseId}/{allPaths=**} {
-      // Read: authenticated users can read their own case files
-      allow read: if isAuthenticated();
+      // Read: only case owner or admin
+      allow read: if isAuthenticated() &&
+                     (caseOwnedByUser(caseId) || isAdmin());
 
-      // Write: authenticated users can upload to their own cases
-      // with file size limit and allowed file types
+      // Write: only case owner with validation
       allow write: if isAuthenticated() &&
+                      caseOwnedByUser(caseId) &&
                       isValidDocumentFile() &&
                       isUnder25MB();
+
+      // Delete: only case owner or admin
+      allow delete: if isAuthenticated() &&
+                       (caseOwnedByUser(caseId) || isAdmin());
     }
 
     // User avatars
