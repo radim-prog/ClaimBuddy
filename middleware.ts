@@ -1,37 +1,66 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { adminAuth, adminDb } from '@/lib/firebase/admin';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Protected routes
-  const protectedPaths = ['/dashboard', '/cases', '/settings', '/admin'];
-  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
-
-  if (!isProtectedPath) {
+  // Public routes - no auth needed
+  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/legal'];
+  if (publicRoutes.some(route => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
-  // Check for Firebase Auth token in Authorization header or cookie
+  // Protected routes - verify token
   const authHeader = request.headers.get('authorization');
-  const sessionCookie = request.cookies.get('session')?.value;
+  const sessionCookie = request.cookies.get('session')?.value ||
+                        request.cookies.get('__session')?.value;
 
-  // For now, allow access if coming from /login or /register (temporary)
-  // In production, implement proper Firebase Admin SDK verification
-  const referer = request.headers.get('referer') || '';
-  if (referer.includes('/login') || referer.includes('/register')) {
-    return NextResponse.next();
-  }
+  try {
+    // Get token from header or cookie
+    const token = authHeader?.substring(7) || sessionCookie;
 
-  // If no auth token, redirect to login
-  if (!authHeader && !sessionCookie) {
+    if (!token) {
+      throw new Error('No authentication token');
+    }
+
+    // Verify Firebase ID token
+    const decodedToken = await adminAuth.verifyIdToken(token);
+
+    // RBAC - Check admin routes
+    if (pathname.startsWith('/admin')) {
+      // Get user role from Firestore
+      const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
+      const userData = userDoc.data();
+
+      if (userData?.role !== 'admin') {
+        console.log(`Access denied: User ${decodedToken.uid} is not admin`);
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+    }
+
+    // Add user ID to headers for API routes
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-user-id', decodedToken.uid);
+
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+
+    // Redirect to login with return URL
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
-
-  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/cases/:path*', '/settings/:path*', '/admin/:path*'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };
