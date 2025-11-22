@@ -6,6 +6,8 @@ const nextConfig = {
   experimental: {
     serverActions: true,
   },
+  // Pro Railway deployment
+  output: 'standalone',
 }
 
 module.exports = nextConfig

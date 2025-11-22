@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper funkce
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAccountant() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['accountant', 'admin'];
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Každý vidí sám sebe, accountant vidí všechny
+      allow read: if isOwner(userId) || isAccountant();
+      // Jen accountant může vytvářet/editovat uživatele
+      allow write: if isAccountant();
+    }
+
+    // Companies collection
+    match /companies/{companyId} {
+      // Klient vidí jen své firmy, accountant vidí všechny
+      allow read: if isAuthenticated() && (
+        resource.data.owner_id == request.auth.uid ||
+        isAccountant()
+      );
+      // Jen accountant může vytvářet/editovat firmy
+      allow create, update, delete: if isAccountant();
+
+      // Subcollections
+
+      // Monthly Closures (subcollection)
+      match /monthly_closures/{period} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/companies/$(companyId)).data.owner_id == request.auth.uid ||
+          isAccountant()
+        );
+        allow write: if isAccountant();
+      }
+
+      // Documents (subcollection)
+      match /documents/{documentId} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/companies/$(companyId)).data.owner_id == request.auth.uid ||
+          isAccountant()
+        );
+        // Klient může nahrávat své doklady
+        allow create: if isAuthenticated() &&
+          get(/databases/$(database)/documents/companies/$(companyId)).data.owner_id == request.auth.uid;
+        // Jen accountant může upravovat/mazat
+        allow update, delete: if isAccountant();
+      }
+
+      // Invoices (subcollection)
+      match /invoices/{invoiceId} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/companies/$(companyId)).data.owner_id == request.auth.uid ||
+          isAccountant()
+        );
+        // Klient může vytvářet své faktury
+        allow create: if isAuthenticated() &&
+          get(/databases/$(database)/documents/companies/$(companyId)).data.owner_id == request.auth.uid;
+        // Jen accountant může upravovat/mazat
+        allow update, delete: if isAccountant();
+      }
+
+      // Payment Matches (subcollection)
+      match /payment_matches/{matchId} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/companies/$(companyId)).data.owner_id == request.auth.uid ||
+          isAccountant()
+        );
+        allow write: if isAccountant();
+      }
+    }
+
+    // Tasks collection (top-level)
+    match /tasks/{taskId} {
+      // Vidí assigned_to, created_by nebo accountant
+      allow read: if isAuthenticated() && (
+        resource.data.assigned_to == request.auth.uid ||
+        resource.data.created_by == request.auth.uid ||
+        isAccountant()
+      );
+      // Jen accountant může vytvářet/editovat úkoly
+      allow write: if isAccountant();
+    }
+
+    // Chats collection
+    match /chats/{chatId} {
+      // Vidí jen participants
+      allow read: if isAuthenticated() && (
+        request.auth.uid in resource.data.participants
+      );
+      allow write: if isAuthenticated() && (
+        request.auth.uid in resource.data.participants ||
+        isAccountant()
+      );
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && (
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+        );
+        allow create: if isAuthenticated() && (
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+        );
+        allow update, delete: if isAccountant();
+      }
+    }
+
+    // WhatsApp Messages (jen accountant)
+    match /whatsapp_messages/{messageId} {
+      allow read, write: if isAccountant();
+    }
+
+    // Reminders (jen accountant)
+    match /reminders/{reminderId} {
+      allow read, write: if isAccountant();
+    }
+  }
+}
