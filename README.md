@@ -1,160 +1,225 @@
-# 📊 Účetní Web Aplikace
+# 📊 Účetní OS - Komplexní webová aplikace pro účetní firmu
 
-Kompletní webová aplikace pro účetní firmu - samoobslužný portál pro klienty a master dashboard pro účetní.
+Samoobslužný portál pro klienty a master dashboard pro účetní. Nahrazuje Notion, Slack, Raynet a iDoklad v jedné aplikaci.
+
+---
 
 ## 🎯 Hlavní funkce
 
 ### **Pro klienty:**
-- ✅ Kontrola podkladů (měsíční checklist)
-- ✅ Nahrávání dokladů (PDF, obrázky) + OCR
-- ✅ Vystavování faktur (integrace s Pohoda)
-- ✅ Finanční přehledy (DPH, daň z příjmů)
-- ✅ AI chat asistent
-- ✅ Responsivní design (mobile-first)
+- ✅ **Kontrola podkladů** - Měsíční checklist (výpisy, faktury, účtenky)
+- ✅ **Nahrávání dokladů** - PDF, obrázky, OCR zpracování
+- ✅ **Vystavování faktur** - Integrace s Pohoda API
+- ✅ **Finanční přehledy** - Měsíční DPH a daň z příjmů (s "červenými čísly")
+- ✅ **AI chat asistent** - Přístup k historickým datům
+- ✅ **Responsivní design** - Mobile-first (fotit účtenky na mobil)
 
-### **Pro účetní:**
-- ✅ Master dashboard (přehled všech klientů)
-- ✅ Urgovací systém (SMS/Email)
-- ✅ Párování plateb
-- ✅ Úkolový systém (náhrada Notion/Slack)
-- ✅ WhatsApp integrace
-- ✅ Google Drive propojení
+### **Pro účetní ("holky"):**
+- ✅ **Master dashboard** - Matice klient × měsíc (přehled všech podkladů)
+- ✅ **Urgovací systém** - Automatické SMS/Email když chybí podklady
+- ✅ **Párování plateb** - Výpisy × faktury (OCR + AI)
+- ✅ **Úkolový systém** - Náhrada Notion/Slack (chat ke každému úkolu)
+- ✅ **WhatsApp integrace** - Požadavky klientů → automatické úkoly
+- ✅ **Google Drive propojení** - Struktura: Klient_ID/Rok/Měsíc
+
+### **Automatizace:**
+- ✅ **OCR účtenek** - Gemini 2.5 Flash → XML → Pohoda
+- ✅ **Párování dokladů** - Výpisy vs. faktury (AI matching)
+- ✅ **Daňová kalkulačka** - Real-time odhad daní po měsících
+- ✅ **Červená čísla** - "Když nedoložíš tento doklad, ztratíš 5 000 Kč na daních"
+- ✅ **Automatické faktury** - Zálohy klientům (kontrola plateb)
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend:** Next.js 14+ (App Router), TypeScript, Tailwind CSS, shadcn/ui
-- **Backend:** Next.js API Routes, Firebase (Firestore, Storage, Auth)
-- **AI:** Gemini 2.5 Flash (OCR), OpenAI GPT-4o (Chat)
-- **Integrace:** Pohoda mServer, Google Drive, WhatsApp, Twilio, SendGrid
+- **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui
+- **Backend:** Next.js API Routes
+- **Database:** Supabase (PostgreSQL)
+- **Storage:** Google Drive API (Service Account)
+- **AI:**
+  - Gemini 2.5 Flash (OCR, kontextové zpracování)
+  - OpenAI GPT-4o (Chat asistent)
+- **Integrace:**
+  - Pohoda mServer (XML API)
+  - Google Drive (Service Account)
+  - WhatsApp Business API
+  - Twilio (SMS)
+  - SendGrid (Email)
 
 ---
 
-## 📦 Instalace
+## 📦 Rychlý start
 
-### **1. Naklonovat repozitář**
+### **1. Naklonovat a nainstalovat**
 ```bash
-git clone git@github.com:radim-prog/UcetniWebApp.git
-cd ucetni-web-app
-```
-
-### **2. Nainstalovat závislosti**
-```bash
+git clone https://github.com/radim-prog/UcetniWebApp.git
+cd UcetniWebApp
 npm install
 ```
 
-### **3. Nastavit environment variables**
+### **2. Nastavit environment variables**
 ```bash
 cp .env.local.example .env.local
+# Vyplnit Supabase credentials, API klíče
 ```
 
-Vyplnit Firebase credentials a API klíče v `.env.local`
-
-### **4. Spustit vývojový server**
+### **3. Spustit vývojový server**
 ```bash
 npm run dev
-```
-
-Aplikace bude dostupná na [http://localhost:3000](http://localhost:3000)
-
----
-
-## 🔥 Firebase Setup
-
-### **1. Vytvořit Firebase projekt**
-1. Jít na [Firebase Console](https://console.firebase.google.com/)
-2. Vytvořit nový projekt
-3. Povolit Authentication (Google + Email/Password)
-4. Vytvořit Firestore Database
-5. Vytvořit Storage bucket
-
-### **2. Získat konfiguraci**
-1. Project Settings → General → Your apps
-2. Zkopírovat Firebase config do `.env.local`
-
-### **3. Nastavit Security Rules**
-
-**Firestore Rules:**
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isAccountant() {
-      return isAuthenticated() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'accountant';
-    }
-
-    match /companies/{companyId} {
-      allow read: if isAuthenticated();
-      allow write: if isAccountant();
-    }
-
-    match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if request.auth.uid == userId || isAccountant();
-    }
-  }
-}
-```
-
-**Storage Rules:**
-```javascript
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /companies/{companyId}/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
-    }
-  }
-}
-```
-
-### **4. Deploy rules**
-```bash
-firebase deploy --only firestore:rules
-firebase deploy --only storage:rules
+# http://localhost:3000
 ```
 
 ---
 
-## 📂 Struktura projektu
+## 🗂️ Struktura projektu
 
 ```
-ucetni-web-app/
+ucetni-os/
 ├── app/
-│   ├── (auth)/              # Autentizace
+│   ├── (auth)/                 # Autentizace
 │   │   ├── login/
 │   │   └── register/
-│   ├── (client-dashboard)/  # Klientská část
-│   │   ├── page.tsx
-│   │   ├── faktury/
+│   ├── (client)/               # Klientská část
+│   │   ├── dashboard/
 │   │   ├── doklady/
-│   │   └── chat/
-│   ├── (accountant-dashboard)/  # Účetní část
-│   │   ├── page.tsx
+│   │   ├── faktury/
+│   │   └── prehled/
+│   ├── (accountant)/           # Účetní část
+│   │   ├── dashboard/          # Master matice (všichni klienti)
 │   │   ├── klienti/
-│   │   └── ukoly/
+│   │   ├── ukoly/
+│   │   └── nastaveni/
 │   └── api/
-│       ├── ocr/            # Gemini OCR
-│       ├── ai-chat/        # AI asistent
-│       ├── pohoda/         # Pohoda integrace
+│       ├── ocr/                # Gemini OCR endpoint
+│       ├── ai-chat/            # AI asistent
+│       ├── pohoda/             # Pohoda XML export/import
+│       ├── google-drive/       # Google Drive operations
+│       ├── reminders/          # SMS/Email urgence
 │       └── webhooks/
+│           └── whatsapp/       # WhatsApp webhook
 ├── components/
-│   ├── ui/                 # shadcn/ui komponenty
-│   ├── client/             # Klientské komponenty
-│   ├── accountant/         # Účetní komponenty
-│   └── shared/             # Sdílené komponenty
+│   ├── ui/                     # shadcn/ui komponenty
+│   ├── client/                 # Klientské komponenty
+│   ├── accountant/             # Účetní komponenty
+│   └── shared/                 # Sdílené komponenty
 ├── lib/
-│   ├── firebase.ts         # Firebase config
+│   ├── supabase.ts             # Supabase client
+│   ├── ocr.ts                  # OCR logika
+│   ├── pohoda.ts               # Pohoda XML generator
+│   ├── google-drive.ts         # Google Drive API
+│   ├── tax-calculator.ts       # Daňová kalkulačka
 │   └── utils.ts
-└── types/
-    └── database.ts         # TypeScript typy
+├── types/
+│   └── database.ts             # TypeScript typy
+└── supabase/
+    ├── migrations/             # SQL migrace
+    └── seed.sql                # Dummy data pro development
+```
+
+---
+
+## 🗄️ Databázové schema (Supabase)
+
+### **users**
+```sql
+id: uuid (PK)
+email: text
+name: text
+role: enum ('client', 'accountant', 'admin')
+phone_number: text
+created_at: timestamp
+```
+
+### **companies**
+```sql
+id: uuid (PK)
+owner_id: uuid (FK → users.id)
+assigned_accountant_id: uuid (FK → users.id)
+name: text
+ico: text
+dic: text
+vat_payer: boolean
+vat_period: enum ('monthly', 'quarterly', null)
+google_drive_folder_id: text
+pohoda_id: text
+created_at: timestamp
+```
+
+### **monthly_closures**
+```sql
+id: uuid (PK)
+company_id: uuid (FK → companies.id)
+period: text ('2025-01')
+status: enum ('open', 'pending_review', 'closed')
+bank_statement_status: enum ('missing', 'uploaded', 'approved')
+invoices_status: enum ('missing', 'uploaded', 'approved')
+receipts_status: enum ('missing', 'uploaded', 'approved')
+vat_payable: decimal
+income_tax_accrued: decimal
+closed_at: timestamp
+reminder_count: integer
+last_reminder_sent_at: timestamp
+```
+
+### **documents**
+```sql
+id: uuid (PK)
+company_id: uuid (FK → companies.id)
+period: text ('2025-01')
+type: enum ('bank_statement', 'receipt', 'expense_invoice', 'other')
+file_name: text
+file_url: text
+google_drive_file_id: text
+ocr_processed: boolean
+ocr_data: jsonb
+status: enum ('missing', 'uploaded', 'approved', 'rejected')
+uploaded_by: uuid (FK → users.id)
+uploaded_at: timestamp
+```
+
+### **invoices**
+```sql
+id: uuid (PK)
+company_id: uuid (FK → companies.id)
+type: enum ('income', 'expense')
+invoice_number: text
+issue_date: date
+due_date: date
+total_without_vat: decimal
+total_vat: decimal
+total_with_vat: decimal
+payment_status: enum ('unpaid', 'paid', 'overdue')
+pohoda_id: text
+generated_by_ai: boolean
+```
+
+### **tasks**
+```sql
+id: uuid (PK)
+title: text
+description: text
+company_id: uuid (FK → companies.id)
+assigned_to: uuid (FK → users.id)
+created_by: uuid (FK → users.id)
+status: enum ('open', 'in_progress', 'completed', 'cancelled')
+priority: enum ('low', 'medium', 'high', 'urgent')
+source: enum ('manual', 'whatsapp', 'chat', 'ai_generated')
+whatsapp_message_id: text
+due_date: timestamp
+created_at: timestamp
+```
+
+### **chat_messages**
+```sql
+id: uuid (PK)
+task_id: uuid (FK → tasks.id) -- nullable, může být i company chat
+company_id: uuid (FK → companies.id)
+sender_id: uuid (FK → users.id)
+sender_type: enum ('client', 'accountant', 'ai')
+text: text
+ai_generated: boolean
+created_at: timestamp
 ```
 
 ---
@@ -167,69 +232,77 @@ npm install -g vercel
 vercel
 ```
 
-### **Firebase Hosting**
-```bash
-npm run build
-firebase deploy --only hosting
-```
+### **Environment variables v Vercel:**
+Přidat všechny z `.env.local.example` do Vercel Project Settings
 
 ---
 
-## 🔐 Environment Variables
+## 📋 Roadmap
 
-| Proměnná | Popis |
-|----------|-------|
-| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase API klíč |
-| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase Project ID |
-| `GEMINI_API_KEY` | Google Gemini API klíč |
-| `OPENAI_API_KEY` | OpenAI API klíč |
-| `POHODA_MSERVER_URL` | URL Pohoda mServer |
-| `TWILIO_ACCOUNT_SID` | Twilio SID (pro SMS) |
-| `SENDGRID_API_KEY` | SendGrid klíč (pro email) |
+### **Milestone 1: Infrastructure & Auth** ✅
+- [x] Next.js setup
+- [x] Supabase schema
+- [x] Autentizace (login/register)
+- [x] Role-based routing
 
----
+### **Milestone 2: Client Dashboard** 🚧
+- [ ] Měsíční checklist podkladů
+- [ ] Upload komponenta (Google Drive)
+- [ ] OCR integrace (Gemini)
+- [ ] Jednoduchá daňová kalkulačka
+- [ ] Finanční přehled (grafy)
 
-## 📝 Roadmap
+### **Milestone 3: Accountant Dashboard** 📅
+- [ ] Master matice (všichni klienti × měsíce)
+- [ ] Urgovací systém (SMS/Email)
+- [ ] Detail klienta
+- [ ] Párování plateb
 
-### **Fáze 1: MVP (3 měsíce)** ✅
-- [x] Základní setup
-- [ ] Klientský dashboard
-- [ ] Nahrávání dokladů + OCR
-- [ ] Fakturace
-- [ ] Master dashboard
-- [ ] Urgence (SMS/Email)
-- [ ] Pohoda integrace
-
-### **Fáze 2: AI & Komunikace (2 měsíce)**
+### **Milestone 4: Integrace** 📅
+- [ ] Pohoda XML export/import
+- [ ] WhatsApp webhook
 - [ ] AI chat asistent
-- [ ] WhatsApp integrace
 - [ ] Úkolový systém
-- [ ] Pokročilé párování plateb
 
-### **Fáze 3: Škálování**
-- [ ] Mobilní aplikace
-- [ ] Advanced reporting
-- [ ] Multi-firma support
-
----
-
-## 💰 Odhadované náklady (provoz)
-
-Pro 100 klientů:
-- Firebase: ~$50/měsíc
-- AI APIs: ~$115/měsíc
-- SMS/Email: ~$35/měsíc
-- Hosting: ~$20/měsíc
-- **Celkem: ~$220/měsíc**
+### **Milestone 5: Fakturace** 📅
+- [ ] Vystavování faktur (přes Pohoda API)
+- [ ] Automatické zálohové faktury
+- [ ] Kontrola plateb od klientů
 
 ---
 
-## 📚 Dokumentace
+## 💰 Odhadované náklady (100 klientů)
 
-- [Next.js Docs](https://nextjs.org/docs)
-- [Firebase Docs](https://firebase.google.com/docs)
-- [Pohoda XML API](https://api.stormware.cz/pohoda/)
-- [Gemini API](https://ai.google.dev/gemini-api/docs)
+| Služba | Měsíční náklady |
+|--------|-----------------|
+| Supabase (Pro) | $25 |
+| Gemini API (OCR) | ~$30 (1000 dokladů) |
+| OpenAI API (Chat) | ~$50 |
+| Twilio (SMS) | ~$20 (200 SMS) |
+| SendGrid (Email) | ~$15 (10k emailů) |
+| Google Drive API | Zdarma (15 GB) |
+| Vercel (Pro) | $20 |
+| **Celkem** | **~$160/měsíc** |
+
+---
+
+## 🔐 Bezpečnost
+
+- ✅ Row Level Security (RLS) v Supabase
+- ✅ JWT tokens (Supabase Auth)
+- ✅ API routes chráněné middleware
+- ✅ Google Drive Service Account (ne OAuth)
+- ✅ Environment variables (nikdy v kódu)
+- ✅ HTTPS only (Vercel)
+
+---
+
+## 📚 Další dokumentace
+
+- [Supabase Setup](./docs/SUPABASE_SETUP.md)
+- [Pohoda Integration](./docs/POHODA_INTEGRATION.md)
+- [Google Drive Setup](./docs/GOOGLE_DRIVE_SETUP.md)
+- [WhatsApp Webhook](./docs/WHATSAPP_WEBHOOK.md)
 
 ---
 
@@ -239,8 +312,6 @@ Pro 100 klientů:
 
 ---
 
-## 🙏 Acknowledgments
+## 📄 License
 
-- [shadcn/ui](https://ui.shadcn.com/) pro UI komponenty
-- [Stormware](https://www.stormware.cz/) za Pohoda API
-- [Firebase](https://firebase.google.com/) za backend infrastrukturu
+Private - Proprietary Software
