@@ -252,14 +252,73 @@ Motivace pro klienty dodat podklady:
 
 Funkce už existuje: `lib/tax-calculator.ts:131` → `calculateMissingDocumentPenalty()`
 
+**⚠️ UPOZORNĚNÍ z Expert Review:**
+- Daňová kalkulačka je ZJEDNODUŠENÁ (neřeší slevy, paušály)
+- Musí obsahovat disclaimer: "Orientační odhad, není závazný"
+- "Červená čísla" fungují jen pokud klient má ZISK!
+
 ### Google Drive + Gemini synergye:
-- Gemini umí přímo pracovat s Google Drive soubory!
-- Chat asistent může referencovat soubory: "@vypis_uctu.pdf řádek 15"
-- Zero stahování/uploadu mezi systémy
+- Gemini umí číst z Google Drive (přes download + base64)
+- Chat asistent může referencovat soubory
+- ⚠️ NENÍ to přímý přístup - musíme stáhnout z Drive a poslat do Gemini
 
 ### Design principles:
 - **Pro klienty:** Mobile-first (fotit účtenky), jednoduchost (babička to musí ovládat)
 - **Pro účetní:** Efektivita (minimize clicks), batch operace, přehlednost
+
+---
+
+## 🚨 KRITICKÉ NÁLEZY Z EXPERT REVIEW
+
+### 🔴 MUSÍ BÝT FIXNUTY PŘED ZAČÁTKEM KÓDOVÁNÍ:
+
+1. **DB Indexy chybí** → Master matice bude pomalá (2-3 sec)
+   ```sql
+   CREATE INDEX idx_monthly_closures_company_period
+   ON monthly_closures(company_id, period);
+   ```
+
+2. **N+1 Query problém** → 100 klientů = 101 queries
+   ```typescript
+   // Použít JOIN místo loop
+   .select('*, monthly_closures(*)')
+   ```
+
+3. **Security: Server-side validace chybí**
+   ```typescript
+   // Klient může změnit companyId v requestu!
+   // MUSÍ být server-side check že user OWNS company
+   ```
+
+4. **File upload bez validace**
+   ```typescript
+   // Může nahrát .exe malware!
+   // MUSÍ: mime type check, size limit, virus scan
+   ```
+
+5. **Error handling VŠUDE chybí**
+   ```typescript
+   // Co když Gemini spadne? Co když Drive timeout?
+   // MUSÍ: try/catch + retry logic + fallback
+   ```
+
+### 🟡 DŮLEŽITÉ PRO MVP:
+
+6. **Soft delete** místo hard delete (deleted_at column)
+7. **Transactions** pro atomické operace
+8. **CI/CD pipeline** (tests, lint, type-check)
+9. **Logging** (Winston/Pino)
+10. **E2E tests** (Playwright) pro kritické flow
+
+### ⏰ REALISTICKÝ TIMELINE:
+
+**Původní plán:** 8 týdnů
+**Reálně:** **16-22 týdnů (4-5 měsíců)**
+
+Důvody:
+- Pohoda integrace = 3-4 týdny debugging
+- Master matice = komplexní (10 dnů)
+- Security + testing = extra čas
 
 ---
 
