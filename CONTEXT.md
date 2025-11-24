@@ -33,28 +33,29 @@ Nahradit **Notion, Slack, Raynet a iDoklad** v jedné aplikaci.
   - Integrovaný s Vercel
   - Built-in Auth, Real-time, Row Level Security
 
-#### **Storage (2-stupňový proces):**
+#### **Storage (přímý upload):**
 
-**1. DOČASNÉ storage: Supabase Storage**
-- Klient nahraje soubor → Supabase Storage bucket
-- Pro rychlý upload a OCR zpracování
-- Drží se tam dokud není zpracováno
-
-**2. FINÁLNÍ storage: Google Drive**
-- Po OCR → přesun na Google Drive
+**Google Drive (jediné storage)**
+- Klient nahraje soubor → **přímo na Google Drive**
 - V databázi uložit **google_drive_file_id**
 - Struktura: `/Účetní OS/Klient_{ICO}/{Rok}/{Měsíc}/`
 - Důvod:
-  - Už máme Google Workspace
-  - Zero extra náklady
-  - Účetní vidí vše i přímo v Drive
-  - Gemini má přímý přístup k Drive souborům pro AI chat!
+  - ✅ Už máme Google Workspace (zero extra náklady)
+  - ✅ Účetní vidí vše i přímo v Drive
+  - ✅ Gemini API umí číst přímo z Drive
+  - ✅ Jednodušší (méně kroků, méně error states)
+  - ✅ Single source of truth
 
 **Flow:**
 ```
-Klient upload → Supabase Storage (temp) → OCR (Gemini)
-  → Google Drive (final) → Smazat z Supabase Storage
+Klient upload → Google Drive → OCR (Gemini z Drive) → Update DB
 ```
+
+**Proč NE Supabase Storage:**
+- Zbytečný mezikrok (složitější)
+- Extra náklady
+- Víc error states (upload, move, delete)
+- Single point of failure
 
 #### **Auth:**
 - **Supabase Auth** (built-in)
@@ -116,14 +117,13 @@ monthly_closures (MASTER TABLE pro matrici!)
   - vat_payable, income_tax_accrued
   - reminder_count, last_reminder_sent_at
 
-documents (2-stupňové storage)
+documents (odkazy na Google Drive)
   - id, company_id (FK companies), period
   - file_name
-  - supabase_storage_path (DOČASNÉ - pro OCR)
-  - google_drive_file_id (FINÁLNÍ - po zpracování)
-  - storage_status (uploading, processing, moved_to_drive, error)
+  - google_drive_file_id (link na Google Drive)
   - type (bank_statement, receipt, expense_invoice, contract)
   - ocr_data (JSONB výstup z Gemini)
+  - ocr_status (pending, processing, completed, failed)
   - status (missing, uploaded, approved, rejected)
 
 invoices
@@ -219,8 +219,8 @@ INSERT INTO documents (
 - [ ] Vytvořit Supabase projekt
 - [ ] Vytvořit PostgreSQL schema (migrations)
 - [ ] Nastavit Row Level Security (RLS) policies
-- [ ] Vytvořit Storage bucket pro temporary files
 - [ ] Připojit k Next.js (@supabase/supabase-js)
+- [ ] Supabase Auth setup (Email/Password + Google OAuth)
 
 ### 3. Google Drive API:
 - [ ] Vytvořit Service Account v Google Cloud
@@ -228,26 +228,19 @@ INSERT INTO documents (
 - [ ] Upload/download funkce
 - [ ] Vytvořit root folder "Účetní OS"
 
-### 4. Implementovat 2-stupňový upload:
+### 4. Implementovat přímý upload:
 ```typescript
-// Flow:
-1. Upload → Supabase Storage
-2. OCR (Gemini)
-3. Move → Google Drive
-4. Delete from Supabase Storage
-5. Update DB: google_drive_file_id + storage_status = 'moved_to_drive'
+// Zjednodušený flow (3 kroky):
+1. Upload přímo → Google Drive
+2. OCR (Gemini čte z Drive)
+3. Update DB: google_drive_file_id + ocr_data
 ```
 
-### 5. Autentizace:
-- [ ] Supabase Auth setup
-- [ ] Email/Password + Google OAuth
-- [ ] Middleware pro role-based routing
-
-### 6. První funkční feature:
+### 5. První funkční feature:
 **Rozhodnout co jako první:**
-- Klient nahraje účtenku → Supabase Storage → OCR → Google Drive?
-- Master matice (prázdná, ale fungující)?
-- Login/registrace?
+- **A)** Login/registrace (Supabase Auth)
+- **B)** Klient nahraje účtenku → Google Drive → OCR
+- **C)** Master matice (prázdná, ale fungující)
 
 ---
 
@@ -356,10 +349,19 @@ WHATSAPP_VERIFY_TOKEN=...
 
 ### 2025-01-24 - Session 2:
 - **Radim:** "Konzultoval jsem to s kamarádem, uděláme databázi na Supabase a deploy na Vercel"
-- **Rozhodnutí 3 (FINÁLNÍ):**
-  - Database: Supabase (PostgreSQL) - místo Railway
-  - Hosting: Vercel - místo Railway
-  - Storage: 2-stupňový proces:
-    1. Supabase Storage (temp - pro rychlý upload + OCR)
-    2. Google Drive (final - dlouhodobé uložení)
-- **Důvod změny:** Lepší integrace Supabase + Vercel, built-in Auth a RLS
+- **Rozhodnutí 3:** Database: Supabase, Hosting: Vercel, Storage: 2-stupňový
+- **Důvod:** Lepší integrace Supabase + Vercel
+
+### 2025-01-24 - Session 3 (Kritický review):
+- **Claude:** Identifikoval 10 potenciálních problémů v architektuře
+- **Hlavní problémy:** 2-stupňový storage overcomplicated, Pohoda/WhatsApp složité, chybí error handling
+- **Radim odpovědi:**
+  - Cost: 100 SMS/měsíc, 5000 OCR requestů (OK)
+  - Backup: Zatím neřešit
+  - GDPR: Není třeba (privátní app)
+  - Database: Zůstat u Supabase
+- **Rozhodnutí 4 (FINÁLNÍ):**
+  - ✅ **Zjednodušit upload:** Přímo na Google Drive (NE 2-stupňový přes Supabase Storage)
+  - ✅ **Zůstat u Supabase** (PostgreSQL + Auth + RLS)
+  - ✅ **Flow:** Upload → Google Drive → OCR z Drive → Update DB
+- **Důvod:** Jednodušší (3 kroky místo 5), levnější, méně error states
