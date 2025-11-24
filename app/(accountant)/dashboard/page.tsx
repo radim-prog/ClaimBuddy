@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 type StatusType = 'missing' | 'uploaded' | 'approved'
 
@@ -115,16 +116,17 @@ function StatusCell({
 
   return (
     <td className="px-2 py-2 text-center">
-      <div
-        className={`
-          w-12 h-12 mx-auto rounded-lg border-2 transition-all cursor-pointer
-          ${colors.bg} ${colors.border}
-          hover:scale-110 hover:shadow-lg
-          flex items-center justify-center
-          relative group
-        `}
-        title={tooltipContent}
-      >
+      <Link href={`/accountant/clients/${companyId}`}>
+        <div
+          className={`
+            w-12 h-12 mx-auto rounded-lg border-2 transition-all cursor-pointer
+            ${colors.bg} ${colors.border}
+            hover:scale-110 hover:shadow-lg
+            flex items-center justify-center
+            relative group
+          `}
+          title={tooltipContent}
+        >
         <span className={`text-xs font-semibold ${colors.text}`}>
           {status === 'approved' ? '✓' : status === 'uploaded' ? '⏳' : '!'}
         </span>
@@ -165,7 +167,8 @@ function StatusCell({
           </div>
           <div className="w-3 h-3 bg-gray-900 transform rotate-45 absolute top-full left-1/2 -translate-x-1/2 -mt-1.5"></div>
         </div>
-      </div>
+        </div>
+      </Link>
     </td>
   )
 }
