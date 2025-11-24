@@ -1,4 +1,4 @@
-# 📊 Účetní OS - Komplexní webová aplikace pro účetní firmu
+# 📊 Účetní OS - Kompletní webová aplikace pro účetní firmu
 
 Samoobslužný portál pro klienty a master dashboard pro účetní. Nahrazuje Notion, Slack, Raynet a iDoklad v jedné aplikaci.
 
@@ -14,8 +14,8 @@ Samoobslužný portál pro klienty a master dashboard pro účetní. Nahrazuje N
 - ✅ **AI chat asistent** - Přístup k historickým datům
 - ✅ **Responsivní design** - Mobile-first (fotit účtenky na mobil)
 
-### **Pro účetní ("holky"):**
-- ✅ **Master dashboard** - Matice klient × měsíc (přehled všech podkladů)
+### **Pro účetní:**
+- ✅ **Master Matice** 🔥 - Přehled všech klientů × 12 měsíců (killer feature!)
 - ✅ **Urgovací systém** - Automatické SMS/Email když chybí podklady
 - ✅ **Párování plateb** - Výpisy × faktury (OCR + AI)
 - ✅ **Úkolový systém** - Náhrada Notion/Slack (chat ke každému úkolu)
@@ -35,10 +35,10 @@ Samoobslužný portál pro klienty a master dashboard pro účetní. Nahrazuje N
 
 - **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui
 - **Backend:** Next.js API Routes
-- **Database:** Firebase Firestore
-- **Auth:** Firebase Authentication
-- **Storage:** Firebase Storage
-- **Hosting:** Railway (Docker)
+- **Database:** Supabase (PostgreSQL)
+- **Auth:** Supabase Authentication
+- **Storage:** Google Drive (direct upload via Service Account)
+- **Hosting:** Vercel
 - **AI:**
   - Google Gemini 2.5 Flash (OCR, kontextové zpracování)
 - **Integrace:**
@@ -58,23 +58,24 @@ cd UcetniWebApp
 npm install
 ```
 
-### **2. Firebase setup**
-Firebase projekt už existuje: **digitenka**
-
-V Firebase Console (https://console.firebase.google.com/project/digitenka):
-1. **Firestore Database:** Vytvořit databázi (Start in production mode)
-2. **Authentication:** Povolit Email/Password provider
-3. **Storage:** Vytvořit bucket
-4. **Deploy rules:**
-   ```bash
-   npm install -g firebase-tools
-   firebase login
-   firebase use digitenka
-   firebase deploy --only firestore:rules,storage:rules,firestore:indexes
-   ```
+### **2. Supabase setup**
+```bash
+# 1. Vytvoř Supabase projekt na https://supabase.com
+# 2. V SQL Editor spusť: supabase/schema.sql
+# 3. Zkopíruj API credentials
+```
 
 ### **3. Environment variables**
-Credentials už máš v `.env.local` (zkopírováno z digi-uctenka)
+```bash
+cp .env.local.example .env.local
+# Vyplň:
+# - NEXT_PUBLIC_SUPABASE_URL
+# - NEXT_PUBLIC_SUPABASE_ANON_KEY
+# - SUPABASE_SERVICE_ROLE_KEY
+# - GEMINI_API_KEY
+# - GOOGLE_DRIVE_CLIENT_EMAIL
+# - GOOGLE_DRIVE_PRIVATE_KEY
+```
 
 ### **4. Spustit vývojový server**
 ```bash
@@ -87,7 +88,7 @@ npm run dev
 ## 🗂️ Struktura projektu
 
 ```
-ucetni-os/
+UcetniWebApp/
 ├── app/
 │   ├── (auth)/                 # Autentizace
 │   │   ├── login/
@@ -98,7 +99,7 @@ ucetni-os/
 │   │   ├── faktury/
 │   │   └── prehled/
 │   ├── (accountant)/           # Účetní část
-│   │   ├── dashboard/          # Master matice (všichni klienti)
+│   │   ├── dashboard/          # Master Matice (všichni klienti)
 │   │   ├── klienti/
 │   │   ├── ukoly/
 │   │   └── nastaveni/
@@ -125,55 +126,30 @@ ucetni-os/
 ├── types/
 │   └── database.ts             # TypeScript typy
 └── supabase/
-    ├── migrations/             # SQL migrace
-    └── seed.sql                # Dummy data pro development
+    └── schema.sql              # PostgreSQL schema s indexy a RLS
 ```
 
 ---
 
-## 🗄️ Databázové schema (Firebase Firestore)
+## 🗄️ Databázové schema
 
-### **Firestore struktura:**
+Kompletní PostgreSQL schema s Row Level Security (RLS) je v `supabase/schema.sql`.
 
-```
-/users/{userId}
-  - email, name, role, phone_number, ...
+**Klíčové tabulky:**
+- `users` - Uživatelé (klienti + účetní)
+- `companies` - Firmy klientů
+- `monthly_closures` - Měsíční uzávěrky (MASTER TABLE pro Matici)
+- `documents` - Všechny doklady (účtenky, faktury, výpisy)
+- `invoices` - Vydané i přijaté faktury
+- `tasks` - Úkolový systém
+- `chats` + `chat_messages` - Chat ke každému úkolu
+- `reminders` - Historie urgování
+- `audit_log` - Audit trail všech akcí
 
-/companies/{companyId}
-  - name, ico, dic, vat_payer, owner_id, ...
-
-  /monthly_closures/{period}
-    - status, bank_statement_status, receipts_status, ...
-
-  /documents/{documentId}
-    - file_name, file_url, ocr_data, type, period, ...
-
-  /invoices/{invoiceId}
-    - invoice_number, total_with_vat, payment_status, ...
-
-  /payment_matches/{matchId}
-    - bank_statement_id, invoice_id, matched, ...
-
-/tasks/{taskId}
-  - title, company_id, assigned_to, status, priority, ...
-
-/chats/{chatId}
-  - type, company_id, task_id, participants, ...
-
-  /messages/{messageId}
-    - sender_id, text, created_at, ...
-
-/whatsapp_messages/{messageId}
-  - from_phone, text, company_id, task_id, ...
-
-/reminders/{reminderId}
-  - company_id, period, type, message, sent_at, ...
-```
-
-**Důležité:**
-- `monthly_closures`, `documents`, `invoices` = **subcollections** pod `companies`
-- `messages` = **subcollection** pod `chats`
-- Security Rules zajišťují že klient vidí jen svoje data
+**Důležité indexy:**
+- `idx_monthly_closures_company_period` - Performance pro Master Matici
+- `idx_documents_company_period` - Rychlé filtrování dokladů
+- RLS policies zajišťují že klient vidí jen svoje data
 
 ---
 
@@ -186,41 +162,7 @@ vercel
 ```
 
 ### **Environment variables v Vercel:**
-Přidat všechny z `.env.local.example` do Vercel Project Settings
-
----
-
-## 📋 Roadmap
-
-### **Milestone 1: Infrastructure & Auth** ✅
-- [x] Next.js setup
-- [x] Supabase schema
-- [x] Autentizace (login/register)
-- [x] Role-based routing
-
-### **Milestone 2: Client Dashboard** 🚧
-- [ ] Měsíční checklist podkladů
-- [ ] Upload komponenta (Google Drive)
-- [ ] OCR integrace (Gemini)
-- [ ] Jednoduchá daňová kalkulačka
-- [ ] Finanční přehled (grafy)
-
-### **Milestone 3: Accountant Dashboard** 📅
-- [ ] Master matice (všichni klienti × měsíce)
-- [ ] Urgovací systém (SMS/Email)
-- [ ] Detail klienta
-- [ ] Párování plateb
-
-### **Milestone 4: Integrace** 📅
-- [ ] Pohoda XML export/import
-- [ ] WhatsApp webhook
-- [ ] AI chat asistent
-- [ ] Úkolový systém
-
-### **Milestone 5: Fakturace** 📅
-- [ ] Vystavování faktur (přes Pohoda API)
-- [ ] Automatické zálohové faktury
-- [ ] Kontrola plateb od klientů
+Přidat všechny z `.env.local` do Vercel Project Settings → Environment Variables
 
 ---
 
@@ -230,32 +172,72 @@ Přidat všechny z `.env.local.example` do Vercel Project Settings
 |--------|-----------------|
 | Supabase (Pro) | $25 |
 | Gemini API (OCR) | ~$30 (1000 dokladů) |
-| OpenAI API (Chat) | ~$50 |
 | Twilio (SMS) | ~$20 (200 SMS) |
 | SendGrid (Email) | ~$15 (10k emailů) |
 | Google Drive API | Zdarma (15 GB) |
 | Vercel (Pro) | $20 |
-| **Celkem** | **~$160/měsíc** |
+| **Celkem** | **~$110/měsíc** |
+
+---
+
+## 📚 Dokumentace
+
+- **[CONTEXT.md](./CONTEXT.md)** - Tech stack rozhodnutí a conversation history
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Kompletní systémová architektura s diagramy
+- **[EXPERT_REVIEW.md](./EXPERT_REVIEW.md)** - Expert panel review (8 expertů)
+- **[IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)** - Frontend-first build plán (aktuální strategie)
+- **[supabase/schema.sql](./supabase/schema.sql)** - PostgreSQL schema s indexy a RLS
+
+---
+
+## 📋 Aktuální stav projektu
+
+### ✅ **Hotovo:**
+- Next.js setup
+- Landing page (app/page.tsx)
+- Supabase schema (production-ready s indexy)
+- TypeScript typy
+- Expert review a architektura
+- Frontend-first implementační plán
+
+### 🚧 **Nyní stavíme:**
+- Frontend s mock daty (dle IMPLEMENTATION_PLAN.md)
+- Fáze 1: Cleanup Firebase zbytkůsupabase + shadcn/ui komponenty
+- Fáze 2: Auth pages (login/register)
+- Fáze 3: Master Matice 🔥 (killer feature!)
+
+### 📅 **Plán:**
+Stavíme **frontend first s mock daty** → vidíme okamžitě výsledky → pak napojíme backend.
 
 ---
 
 ## 🔐 Bezpečnost
 
 - ✅ Row Level Security (RLS) v Supabase
-- ✅ JWT tokens (Supabase Auth)
+- ✅ Server-side validace (dle expert review)
 - ✅ API routes chráněné middleware
 - ✅ Google Drive Service Account (ne OAuth)
+- ✅ File upload validace (MIME type, velikost)
+- ✅ Audit log všech akcí
 - ✅ Environment variables (nikdy v kódu)
 - ✅ HTTPS only (Vercel)
 
 ---
 
-## 📚 Další dokumentace
+## 🎨 Design systém
 
-- [Supabase Setup](./docs/SUPABASE_SETUP.md)
-- [Pohoda Integration](./docs/POHODA_INTEGRATION.md)
-- [Google Drive Setup](./docs/GOOGLE_DRIVE_SETUP.md)
-- [WhatsApp Webhook](./docs/WHATSAPP_WEBHOOK.md)
+Zachováváme existující design z landing page:
+
+**Barvy:**
+- Primary blue: `#2563eb` (blue-600)
+- Primary purple: `#9333ea` (purple-600)
+- Background: `gradient(blue-50, white, purple-50)`
+- Text gradient: `gradient(blue-600, purple-600)`
+
+**Status colors:**
+- 🔴 Missing: `bg-red-100 border-red-300 text-red-700`
+- 🟡 Uploaded: `bg-yellow-100 border-yellow-300 text-yellow-700`
+- 🟢 Approved: `bg-green-100 border-green-300 text-green-700`
 
 ---
 
