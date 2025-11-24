@@ -13,10 +13,10 @@ Kompletní rozdělení projektu na micro-úkoly s kontrolami. Odhadovaný čas: 
 ## 📊 PROGRESS OVERVIEW
 
 ```
-[=====>                              ] 8% (MODUL A - In Progress)
+[===========>                        ] 20% (MODUL A DONE ✅)
 
-Dokončeno: A1 done / 12 modulů
-Čas strávený: 0.25h / ~17h
+Dokončeno: 1/12 modulů (MODUL A complete)
+Čas strávený: 0.85h / ~17h
 ```
 
 ---
@@ -42,13 +42,13 @@ Dokončeno: A1 done / 12 modulů
 
 **🔄 COMMIT + PUSH:** `git commit -m "MODUL A2 complete"`
 
-### ⬜ A3: Mock data (15 min)
-- [ ] A3.1 Vytvořit `lib/mock-data.ts`
-- [ ] A3.2 Mock `users` (2 uživatelé: 1 klient, 1 účetní)
-- [ ] A3.3 Mock `companies` (5 klientů)
-- [ ] A3.4 Mock `monthly_closures` (5 klientů × 12 měsíců = 60 záznamů)
-- [ ] A3.5 Mock `documents` (10 dokumentů jako ukázka)
-- [ ] ✅ **KONTROLA:** Mock data se načítají v konzoli
+### ✅ A3: Mock data (15 min) - DONE
+- [x] A3.1 Vytvořit `lib/mock-data.ts`
+- [x] A3.2 Mock `users` (2 uživatelé: 1 klient, 1 účetní)
+- [x] A3.3 Mock `companies` (5 klientů)
+- [x] A3.4 Mock `monthly_closures` (5 klientů × 12 měsíců = 60 záznamů)
+- [x] A3.5 Mock `documents` (10 dokumentů jako ukázka)
+- [x] ✅ **KONTROLA:** Mock data připravena pro UI testování v konzoli
 
 **🔄 COMMIT + PUSH:** `git commit -m "Setup infrastructure and mock data"`
 
