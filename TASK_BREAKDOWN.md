@@ -13,10 +13,10 @@ Kompletní rozdělení projektu na micro-úkoly s kontrolami. Odhadovaný čas: 
 ## 📊 PROGRESS OVERVIEW
 
 ```
-[===========>                        ] 20% (MODUL A DONE ✅)
+[======================>             ] 50% (MODUL A,B,C,D1 DONE ✅)
 
-Dokončeno: 1/12 modulů (MODUL A complete)
-Čas strávený: 0.85h / ~17h
+Dokončeno: A ✅ | B ✅ | C1-C2 ✅ | D1 ✅
+Čas strávený: ~3h / ~17h
 ```
 
 ---
@@ -56,7 +56,7 @@ Dokončeno: 1/12 modulů (MODUL A complete)
 
 ## 🔐 MODUL B: AUTENTIZACE
 
-**Čas: ~70 min** | **Status: 🔄 In Progress**
+**Čas: ~70 min** | **Status: ✅ DONE**
 
 ### ✅ B1: Auth pages UI (20 min) - DONE
 - [x] B1.1 Vytvořit `app/(auth)/layout.tsx` (gradient background)
@@ -66,48 +66,50 @@ Dokončeno: 1/12 modulů (MODUL A complete)
 - [x] B1.5 Design: gradient background (blue-50 → purple-50)
 - [x] ✅ **KONTROLA:** Stránky `/login` a `/register` se zobrazují, dev server ready in 2.9s
 
-### ⬜ B2: Auth logika (30 min)
-- [ ] B2.1 Vytvořit `app/(auth)/login/actions.ts` (Supabase Auth login)
-- [ ] B2.2 Vytvořit `app/(auth)/register/actions.ts` (Supabase Auth signup)
-- [ ] B2.3 Přidat error handling (toast notifications)
-- [ ] B2.4 Test: Registrace nového usera (check Supabase Dashboard)
-- [ ] B2.5 Test: Login s vytvořeným userem (check session cookie)
-- [ ] ✅ **KONTROLA:** Registrace + Login funguje, session se ukládá do cookies
+### ✅ B2: Auth logika (30 min) - DONE
+- [x] B2.1 Vytvořit `app/(auth)/login/actions.ts` (Supabase Auth login)
+- [x] B2.2 Vytvořit `app/(auth)/register/actions.ts` (Supabase Auth signup)
+- [x] B2.3 Přidat error handling (toast notifications - sonner)
+- [x] B2.4 Test: Registrace nového usera (check Supabase Dashboard)
+- [x] B2.5 Test: Login s vytvořeným userem (check session cookie)
+- [x] ✅ **KONTROLA:** Registrace + Login funguje, session se ukládá do cookies
 
-### ⬜ B3: Middleware (20 min)
-- [ ] B3.1 Vytvořit `middleware.ts` v root (role-based routing)
-- [ ] B3.2 Public routes: `/`, `/login`, `/register`
-- [ ] B3.3 Protected routes: `/client/*` (role: client), `/accountant/*` (role: accountant)
-- [ ] B3.4 Test redirect: Client → `/client/dashboard`
-- [ ] B3.5 Test redirect: Accountant → `/accountant/dashboard`
-- [ ] ✅ **KONTROLA:** Routy jsou chráněné, redirecty podle role fungují
+### ✅ B3: Middleware (20 min) - DONE
+- [x] B3.1 Vytvořit `middleware.ts` v root (role-based routing)
+- [x] B3.2 Public routes: `/`, `/login`, `/register`
+- [x] B3.3 Protected routes: `/client/*` (role: client), `/accountant/*` (role: accountant)
+- [x] B3.4 Test redirect: Client → `/client/dashboard`
+- [x] B3.5 Test redirect: Accountant → `/accountant/dashboard`
+- [x] ✅ **KONTROLA:** Routy jsou chráněné, redirecty podle role fungují
 
-**🔄 COMMIT + PUSH:** `git commit -m "Add authentication (Supabase Auth + middleware)"`
+**✅ COMMIT + PUSH:** Moduly B1, B2, B3 complete
 
 ---
 
 ## 🔥 MODUL C: MASTER MATICE (Killer Feature!)
 
-**Čas: ~110 min** | **Status: ⬜ Not Started**
+**Čas: ~110 min** | **Status: ✅ C1-C2 DONE, C3-C4 skipped (přesunuto na později)**
 
-### ⬜ C1: Layout pro účetní (15 min)
-- [ ] C1.1 Vytvořit `app/(accountant)/layout.tsx`
-- [ ] C1.2 Sidebar s navigací (Dashboard, Klienti, Úkoly, Nastavení)
-- [ ] C1.3 User avatar + dropdown menu (Profil, Odhlásit se)
-- [ ] C1.4 Responsive: Hamburger menu na mobilu
-- [ ] ✅ **KONTROLA:** Layout se zobrazuje, navigace funguje
+### ✅ C1: Layout pro účetní (15 min) - DONE
+- [x] C1.1 Vytvořit `app/(accountant)/layout.tsx`
+- [x] C1.2 Sidebar s navigací (Dashboard, Klienti, Úkoly, Nastavení)
+- [x] C1.3 User avatar + dropdown menu (Profil, Odhlásit se)
+- [x] C1.4 Responsive: Hamburger menu na mobilu
+- [x] ✅ **KONTROLA:** Layout se zobrazuje, navigace funguje
 
-### ⬜ C2: Master Matice - UI s mock daty (45 min)
-- [ ] C2.1 Vytvořit `app/(accountant)/dashboard/page.tsx`
-- [ ] C2.2 Vytvořit `components/accountant/MasterMatrix.tsx`
-- [ ] C2.3 Tabulka: řádky = klienti, sloupce = měsíce (leden-prosinec)
-- [ ] C2.4 Barevné buňky podle statusu:
-  - [ ] 🔴 `missing` → `bg-red-100 border-red-300`
-  - [ ] 🟡 `uploaded` → `bg-yellow-100 border-yellow-300`
-  - [ ] 🟢 `approved` → `bg-green-100 border-green-300`
-- [ ] C2.5 Použít mock data (`lib/mock-data.ts`)
-- [ ] C2.6 Legenda: Zobraz význam barev
-- [ ] ✅ **KONTROLA:** Matice se zobrazuje (5 klientů × 12 měsíců), barvy fungují
+### ✅ C2: Master Matice - UI s mock daty (45 min) - DONE
+- [x] C2.1 Vytvořit `app/(accountant)/dashboard/page.tsx`
+- [x] C2.2 Master Matrix komponenta inline (všechny klienty × 12 měsíců)
+- [x] C2.3 Tabulka: řádky = klienti, sloupce = měsíce (leden-prosinec)
+- [x] C2.4 Barevné buňky podle statusu:
+  - [x] 🔴 `missing` → `bg-red-100 border-red-300`
+  - [x] 🟡 `uploaded` → `bg-yellow-100 border-yellow-300`
+  - [x] 🟢 `approved` → `bg-green-100 border-green-300`
+- [x] C2.5 Použít mock data (`lib/mock-data.ts`)
+- [x] C2.6 Legenda: Zobraz význam barev
+- [x] C2.7 Hover tooltips s detailem pro každou buňku
+- [x] C2.8 Stats cards (chybějící / čeká / schváleno)
+- [x] ✅ **KONTROLA:** Matice se zobrazuje (5 klientů × 12 měsíců), barvy fungují, tooltips fungují
 
 ### ⬜ C3: Master Matice - napojení na Supabase (30 min)
 - [ ] C3.1 Vytvořit API route `/api/accountant/matrix/route.ts`
@@ -129,14 +131,17 @@ Dokončeno: 1/12 modulů (MODUL A complete)
 
 ## 👤 MODUL D: CLIENT DASHBOARD
 
-**Čas: ~65 min** | **Status: ⬜ Not Started**
+**Čas: ~65 min** | **Status: ✅ D1 DONE, D2-D3 skipped (přesunuto na později)**
 
-### ⬜ D1: Layout pro klienta (15 min)
-- [ ] D1.1 Vytvořit `app/(client)/layout.tsx`
-- [ ] D1.2 Sidebar s navigací (Dashboard, Doklady, Faktury, Přehled)
-- [ ] D1.3 User avatar + dropdown (Profil, Odhlásit se)
-- [ ] D1.4 Responsive: Hamburger menu
-- [ ] ✅ **KONTROLA:** Layout se zobrazuje
+### ✅ D1: Layout + Dashboard pro klienta (15 min) - DONE
+- [x] D1.1 Vytvořit `app/(client)/layout.tsx`
+- [x] D1.2 Sidebar s navigací (Dashboard, Moje firmy, Dokumenty, Nahrát, Nastavení)
+- [x] D1.3 User avatar + dropdown (Profil, Odhlásit se)
+- [x] D1.4 Responsive: Hamburger menu
+- [x] D1.5 Vytvořit `app/(client)/dashboard/page.tsx` s přehledem firem
+- [x] D1.6 Stats cards (Moje firmy, Chybějící dokumenty, Aktuální měsíc)
+- [x] D1.7 Placeholder pages (companies, documents, upload)
+- [x] ✅ **KONTROLA:** Layout se zobrazuje, dashboard funguje
 
 ### ⬜ D2: Měsíční checklist (30 min)
 - [ ] D2.1 Vytvořit `app/(client)/dashboard/page.tsx`
