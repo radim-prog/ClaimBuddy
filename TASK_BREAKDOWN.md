@@ -13,10 +13,10 @@ Kompletní rozdělení projektu na micro-úkoly s kontrolami. Odhadovaný čas: 
 ## 📊 PROGRESS OVERVIEW
 
 ```
-[=====>                              ] 5% (MODUL A - In Progress)
+[=====>                              ] 8% (MODUL A - In Progress)
 
-Dokončeno: 0/12 modulů
-Čas strávený: 0h / ~17h
+Dokončeno: A1 done / 12 modulů
+Čas strávený: 0.25h / ~17h
 ```
 
 ---
@@ -25,12 +25,12 @@ Dokončeno: 0/12 modulů
 
 **Čas: ~50 min** | **Status: 🔄 In Progress**
 
-### ⬜ A1: Cleanup a příprava (15 min)
-- [ ] A1.1 Smazat `lib/firebase.ts`
-- [ ] A1.2 Smazat Firebase config soubory (`firestore.rules`, `storage.rules`, `firebase.json`)
-- [ ] A1.3 Odebrat `firebase` z `package.json`
-- [ ] A1.4 Přidat shadcn/ui komponenty první várka (`dropdown-menu`, `avatar`, `dialog`, `input`, `label`)
-- [ ] ✅ **KONTROLA:** `npm install` prošlo, dev server běží na `localhost:3000`
+### ✅ A1: Cleanup a příprava (15 min) - DONE
+- [x] A1.1 Smazat `lib/firebase.ts`
+- [x] A1.2 Smazat Firebase config soubory (`firestore.rules`, `storage.rules`, `firebase.json`)
+- [x] A1.3 Odebrat `firebase` z `package.json`
+- [x] A1.4 Přidat shadcn/ui komponenty první várka (`dropdown-menu`, `avatar`, `dialog`, `input`, `label`)
+- [x] ✅ **KONTROLA:** `npm install` prošlo, dev server běží na `localhost:3000`
 
 ### ⬜ A2: Supabase setup (20 min)
 - [ ] A2.1 Vytvořit `lib/supabase.ts` (client pro browser)
