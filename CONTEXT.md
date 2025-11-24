@@ -22,27 +22,44 @@ Nahradit **Notion, Slack, Raynet a iDoklad** v jedné aplikaci.
 
 ## 🛠️ TECH STACK ROZHODNUTÍ
 
-### ✅ CO POUŽÍVÁME:
+### ✅ CO POUŽÍVÁME (FINÁLNÍ):
 
 #### **Database:**
-- **PostgreSQL na Railway**
+- **Supabase (PostgreSQL)**
 - Relační databáze (lepší než NoSQL pro složité dotazy)
-- Důvod: Jednodušší dotazy, levnější, žádné omezení subcollections
+- Důvod:
+  - Jednodušší dotazy než Firestore
+  - Žádné omezení subcollections
+  - Integrovaný s Vercel
+  - Built-in Auth, Real-time, Row Level Security
 
-#### **Storage:**
-- **Google Drive** (hlavní storage)
-- Soubory jsou POUZE na Google Drive
-- V databázi jen **metadata + odkaz (google_drive_file_id)**
+#### **Storage (2-stupňový proces):**
+
+**1. DOČASNÉ storage: Supabase Storage**
+- Klient nahraje soubor → Supabase Storage bucket
+- Pro rychlý upload a OCR zpracování
+- Drží se tam dokud není zpracováno
+
+**2. FINÁLNÍ storage: Google Drive**
+- Po OCR → přesun na Google Drive
+- V databázi uložit **google_drive_file_id**
 - Struktura: `/Účetní OS/Klient_{ICO}/{Rok}/{Měsíc}/`
 - Důvod:
   - Už máme Google Workspace
-  - Zero náklady
+  - Zero extra náklady
   - Účetní vidí vše i přímo v Drive
   - Gemini má přímý přístup k Drive souborům pro AI chat!
 
+**Flow:**
+```
+Klient upload → Supabase Storage (temp) → OCR (Gemini)
+  → Google Drive (final) → Smazat z Supabase Storage
+```
+
 #### **Auth:**
-- **NextAuth.js** s Google OAuth
-- Nebo Firebase Auth (rozhodnout)
+- **Supabase Auth** (built-in)
+- Email/Password + Google OAuth
+- Row Level Security policies
 
 #### **AI:**
 - **Google Gemini 2.5 Flash**
@@ -51,7 +68,7 @@ Nahradit **Notion, Slack, Raynet a iDoklad** v jedné aplikaci.
   - Extrakce intentu z WhatsApp
 
 #### **Hosting:**
-- **Railway** (Docker)
+- **Vercel** (Edge Functions, automatic deploys)
 
 #### **Integrace:**
 - **Pohoda mServer** (XML API pro faktury)
@@ -70,18 +87,22 @@ Nahradit **Notion, Slack, Raynet a iDoklad** v jedné aplikaci.
 - ❌ Subcollections jsou omezující
 - **Status:** Smazat lib/firebase.ts, přepsat types/database.ts
 
-#### **Firebase Storage** - VYHODIT!
-- Nahrazeno Google Drive
+#### **Firebase Storage** - NEPOUŽÍVAT!
+- Nahrazeno Supabase Storage (temp) + Google Drive (final)
 - **Status:** Smazat vše related k Firebase Storage
+
+#### **Railway** - NEPOUŽÍVAT!
+- Změněno na Vercel (hosting) + Supabase (database)
+- **Důvod změny:** Lepší integrace Supabase + Vercel
 
 ---
 
-## 📊 DATABÁZOVÉ SCHEMA (PostgreSQL)
+## 📊 DATABÁZOVÉ SCHEMA (Supabase PostgreSQL)
 
 ### Hlavní tabulky:
 
 ```sql
-users
+users (Supabase Auth + vlastní pole)
   - id, email, name, role (client/accountant/admin), phone_number
 
 companies
@@ -95,9 +116,12 @@ monthly_closures (MASTER TABLE pro matrici!)
   - vat_payable, income_tax_accrued
   - reminder_count, last_reminder_sent_at
 
-documents (odkazy na Google Drive)
+documents (2-stupňové storage)
   - id, company_id (FK companies), period
-  - file_name, google_drive_file_id (!!!)
+  - file_name
+  - supabase_storage_path (DOČASNÉ - pro OCR)
+  - google_drive_file_id (FINÁLNÍ - po zpracování)
+  - storage_status (uploading, processing, moved_to_drive, error)
   - type (bank_statement, receipt, expense_invoice, contract)
   - ocr_data (JSONB výstup z Gemini)
   - status (missing, uploaded, approved, rejected)
@@ -191,22 +215,37 @@ INSERT INTO documents (
 - [ ] Smazat `firestore.rules`, `firestore.indexes.json`, `storage.rules`, `firebase.json`
 - [ ] Vyhodit Firebase z package.json
 
-### 2. Nastavit PostgreSQL + Railway:
+### 2. Nastavit Supabase:
+- [ ] Vytvořit Supabase projekt
 - [ ] Vytvořit PostgreSQL schema (migrations)
-- [ ] Připojit k Next.js (Drizzle ORM? Prisma? Raw SQL?)
+- [ ] Nastavit Row Level Security (RLS) policies
+- [ ] Vytvořit Storage bucket pro temporary files
+- [ ] Připojit k Next.js (@supabase/supabase-js)
 
 ### 3. Google Drive API:
 - [ ] Vytvořit Service Account v Google Cloud
 - [ ] Implementovat `lib/google-drive.ts`
 - [ ] Upload/download funkce
+- [ ] Vytvořit root folder "Účetní OS"
 
-### 4. Autentizace:
-- [ ] NextAuth.js s Google OAuth
+### 4. Implementovat 2-stupňový upload:
+```typescript
+// Flow:
+1. Upload → Supabase Storage
+2. OCR (Gemini)
+3. Move → Google Drive
+4. Delete from Supabase Storage
+5. Update DB: google_drive_file_id + storage_status = 'moved_to_drive'
+```
+
+### 5. Autentizace:
+- [ ] Supabase Auth setup
+- [ ] Email/Password + Google OAuth
 - [ ] Middleware pro role-based routing
 
-### 5. První funkční feature:
+### 6. První funkční feature:
 **Rozhodnout co jako první:**
-- Klient nahraje účtenku → Google Drive + OCR?
+- Klient nahraje účtenku → Supabase Storage → OCR → Google Drive?
 - Master matice (prázdná, ale fungující)?
 - Login/registrace?
 
@@ -255,14 +294,10 @@ Funkce už existuje: `lib/tax-calculator.ts:131` → `calculateMissingDocumentPe
 ## 🔑 ENV VARIABLES (které budeme potřebovat)
 
 ```bash
-# PostgreSQL (Railway)
-DATABASE_URL=postgresql://...
-
-# NextAuth
-NEXTAUTH_SECRET=...
-NEXTAUTH_URL=http://localhost:3000
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=... # Pro server-side operace
 
 # Google Drive API (Service Account)
 GOOGLE_SERVICE_ACCOUNT_EMAIL=...
@@ -312,9 +347,19 @@ WHATSAPP_VERIFY_TOKEN=...
 
 ## 🗣️ KONVERZAČNÍ HISTORIE (klíčové body)
 
-### 2025-01-24:
+### 2025-01-24 - Session 1:
 - **Radim:** "Firebase nahradíme databází na railway… firebase je sračka co nefunguje"
-- **Rozhodnutí:** PostgreSQL na Railway místo Firestore
+- **Rozhodnutí 1:** PostgreSQL na Railway místo Firestore
 - **Radim:** "Myslel jsem že bude všechno uloženo na Google Disku"
-- **Rozhodnutí:** Google Drive jako hlavní storage, v DB jen metadata
+- **Rozhodnutí 2:** Google Drive jako hlavní storage, v DB jen metadata
 - **Clarification:** Projekt je stále v teoretické rovině, téměř žádný funkční kód
+
+### 2025-01-24 - Session 2:
+- **Radim:** "Konzultoval jsem to s kamarádem, uděláme databázi na Supabase a deploy na Vercel"
+- **Rozhodnutí 3 (FINÁLNÍ):**
+  - Database: Supabase (PostgreSQL) - místo Railway
+  - Hosting: Vercel - místo Railway
+  - Storage: 2-stupňový proces:
+    1. Supabase Storage (temp - pro rychlý upload + OCR)
+    2. Google Drive (final - dlouhodobé uložení)
+- **Důvod změny:** Lepší integrace Supabase + Vercel, built-in Auth a RLS
