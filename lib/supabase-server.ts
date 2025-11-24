@@ -13,6 +13,20 @@ export const createServerClient = () => {
         get(name: string) {
           return cookieStore.get(name)?.value
         },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set(name, value, options)
+          } catch (error) {
+            // Handle case where set is called from Server Component
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.delete(name)
+          } catch (error) {
+            // Handle case where remove is called from Server Component
+          }
+        },
       },
     }
   )

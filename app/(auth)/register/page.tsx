@@ -2,35 +2,44 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { register } from './actions'
 
 export default function RegisterPage() {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-
-    if (password !== confirmPassword) {
-      alert('Hesla se neshodují')
-      return
-    }
-
     setLoading(true)
 
-    // TODO: B2 - Připojit Supabase Auth
-    console.log('Register:', { name, email, password })
+    const formData = new FormData(e.currentTarget)
 
-    setTimeout(() => {
-      alert('Auth logika bude implementována v MODUL B2')
+    try {
+      const result = await register(formData)
+
+      if (result?.error) {
+        toast.error('Chyba registrace', {
+          description: result.error,
+        })
+        setLoading(false)
+      } else {
+        toast.success('Registrace úspěšná!', {
+          description: 'Přesměrování na dashboard...',
+        })
+        // Redirect is handled by the action
+      }
+    } catch (error) {
+      toast.error('Chyba registrace', {
+        description: 'Něco se pokazilo. Zkuste to prosím znovu.',
+      })
       setLoading(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -49,10 +58,9 @@ export default function RegisterPage() {
             <Label htmlFor="name">Jméno</Label>
             <Input
               id="name"
+              name="name"
               type="text"
               placeholder="Jan Novák"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
@@ -60,10 +68,9 @@ export default function RegisterPage() {
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              name="email"
               type="email"
               placeholder="vas@email.cz"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
@@ -71,10 +78,9 @@ export default function RegisterPage() {
             <Label htmlFor="password">Heslo</Label>
             <Input
               id="password"
+              name="password"
               type="password"
               placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
             />
@@ -83,10 +89,9 @@ export default function RegisterPage() {
             <Label htmlFor="confirmPassword">Potvrdit heslo</Label>
             <Input
               id="confirmPassword"
+              name="confirmPassword"
               type="password"
               placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
               required
               minLength={6}
             />
