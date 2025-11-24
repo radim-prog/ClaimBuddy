@@ -1,8 +1,8 @@
 # 📊 PROGRESS REPORT - Účetní OS
 
-**Datum:** 2025-01-24
+**Datum:** 2025-11-24 (aktualizováno)
 **Větev:** `claude/load-project-0139XquGDoefhFdrvoDP3cEN`
-**Celkový progres:** ~50% ✅
+**Celkový progres:** ~75% ✅ ← MAJOR UPDATE!
 
 ---
 
@@ -95,24 +95,61 @@
 
 ---
 
+### ⚡ MODUL E: API ROUTES ✅ (NOVĚ HOTOVO!)
+- **E1:** API endpoint pro Master Matrix
+- **E2:** API endpoint pro Client Companies
+- **E3:** API endpoint pro Documents listing
+
+**Soubory:**
+- `app/api/accountant/matrix/route.ts` - Master Matrix data z Supabase
+- `app/api/client/companies/route.ts` - Firmy klienta + current month status
+- `app/api/documents/route.ts` - Documents s filtrací
+
+**Features:**
+- Role-based access control (ověření uživatele)
+- Optimalizované queries s indexy
+- Stats automaticky kalkulované z DB
+- Type-safe responses
+- Error handling
+
+**Aktualizované dashboardy:**
+- `app/(accountant)/dashboard/page.tsx` - fetch z API místo mock dat
+- `app/(client)/dashboard/page.tsx` - fetch z API místo mock dat
+- Loading states + error handling
+
+---
+
+### 📤 MODUL F: UPLOAD FUNKCIONALITA ✅ (NOVĚ HOTOVO!)
+- **F1:** Drag & drop upload komponenta
+- **F2:** Upload API s Supabase Storage
+- **F3:** Upload page s selektory
+
+**Soubory:**
+- `components/client/DocumentUpload.tsx` - React dropzone komponenta
+- `app/api/documents/upload/route.ts` - Upload endpoint
+- `app/(client)/upload/page.tsx` - Kompletní upload UI
+
+**Features:**
+- Drag & drop interface (react-dropzone)
+- Multi-file upload support
+- File validation (PDF, JPG, PNG, max 10MB)
+- Preview pro obrázky
+- Progress tracking
+- Success/error states
+- Toast notifications
+- Auto-update monthly_closures po uploadu
+- Supabase Storage integrace
+
+---
+
 ## 🚧 ZBÝVÁ IMPLEMENTOVAT
 
 ### Priorita 1 (Core Features)
-- **API Routes:** Napojení na Supabase místo mock dat
-  - `/api/accountant/matrix/route.ts` - Master Matrix data
-  - `/api/client/companies/route.ts` - Seznam firem klienta
-  - `/api/documents/route.ts` - Dokumenty a upload
-
-- **Upload funkcionalita:**
-  - Google Drive integrace
-  - Drag & drop interface
-  - File preview
-  - OCR processing (Google Vision API)
-
-- **Detail klienta:**
+- **Detail klienta + schvalování:**
   - `/accountant/clients/[companyId]/page.tsx`
   - Detail měsíční uzávěrky
-  - Schvalování dokumentů
+  - Schvalování/zamítání dokumentů
+  - Přehled všech dokumentů
 
 ### Priorita 2 (Advanced Features)
 - **MODUL G: Komunikace**
@@ -187,27 +224,28 @@ middleware.ts            # Route protection + role-based access
 
 ## 🎯 NEXT STEPS
 
-1. **Test celého auth flow:**
-   - Zaregistrovat nového usera v Supabase
-   - Otestovat login
-   - Otestovat role-based redirect
-   - Otestovat logout
+1. **Setup Supabase Storage bucket:** ✅ KRITICKÉ!
+   - V Supabase dashboard → Storage → Create bucket "documents"
+   - Nastavit RLS policies pro bucket
+   - Test uploadu
 
-2. **Deploy na Vercel:**
+2. **Přidat mock data do Supabase:**
+   - Vytvořit testovací uživatele (accountant + client)
+   - Přidat 5 testovacích firem
+   - Vygenerovat monthly_closures (12 měsíců)
+   - Test API endpoints
+
+3. **Detail klienta + schvalování:**
+   - `/accountant/clients/[companyId]/page.tsx`
+   - Zobrazit dokumenty pro danou firmu
+   - Approve/Reject buttons
+   - Update document status v DB
+
+4. **Deploy na Vercel:**
    - Push na GitHub (DONE ✅)
    - Připojit Vercel k repozitáři
    - Nastavit environment variables
    - Test v production
-
-3. **API Routes:**
-   - Začít s nejdůležitějšími (Master Matrix data)
-   - Nahradit mock data reálnými z Supabase
-   - Testovat performance
-
-4. **Upload funkcionalita:**
-   - Google Drive setup
-   - Upload interface v `/client/upload`
-   - File processing
 
 ---
 
