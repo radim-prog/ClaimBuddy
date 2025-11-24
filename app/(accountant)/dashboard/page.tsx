@@ -1,8 +1,36 @@
 'use client'
 
-import { mockCompanies, mockMonthlyClosures } from '@/lib/mock-data'
+import { useEffect, useState } from 'react'
 
 type StatusType = 'missing' | 'uploaded' | 'approved'
+
+type Company = {
+  id: string
+  name: string
+  ico: string
+}
+
+type MonthlyClosure = {
+  id: string
+  company_id: string
+  period: string
+  status: string
+  bank_statement_status: StatusType
+  expense_invoices_status: StatusType
+  receipts_status: StatusType
+  income_invoices_status: StatusType
+}
+
+type MatrixData = {
+  companies: Company[]
+  closures: MonthlyClosure[]
+  stats: {
+    total: number
+    missing: number
+    uploaded: number
+    approved: number
+  }
+}
 
 const months = [
   'Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čer',
@@ -28,9 +56,9 @@ const statusColors: Record<StatusType, { bg: string; text: string; border: strin
   }
 }
 
-function getMonthStatus(companyId: string, monthIndex: number): StatusType {
+function getMonthStatus(closures: MonthlyClosure[], companyId: string, monthIndex: number): StatusType {
   const period = `2025-${String(monthIndex + 1).padStart(2, '0')}`
-  const closure = mockMonthlyClosures.find(
+  const closure = closures.find(
     c => c.company_id === companyId && c.period === period
   )
 
@@ -60,17 +88,19 @@ function getMonthStatus(companyId: string, monthIndex: number): StatusType {
 function StatusCell({
   companyId,
   companyName,
-  monthIndex
+  monthIndex,
+  closures
 }: {
   companyId: string
   companyName: string
   monthIndex: number
+  closures: MonthlyClosure[]
 }) {
-  const status = getMonthStatus(companyId, monthIndex)
+  const status = getMonthStatus(closures, companyId, monthIndex)
   const colors = statusColors[status]
   const period = `2025-${String(monthIndex + 1).padStart(2, '0')}`
 
-  const closure = mockMonthlyClosures.find(
+  const closure = closures.find(
     c => c.company_id === companyId && c.period === period
   )
 
@@ -141,6 +171,61 @@ function StatusCell({
 }
 
 export default function AccountantDashboard() {
+  const [data, setData] = useState<MatrixData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const response = await fetch('/api/accountant/matrix')
+        if (!response.ok) {
+          throw new Error('Failed to fetch data')
+        }
+        const json = await response.json()
+        setData(json)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Načítám Master Matici...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !data) {
+    return (
+      <div className="bg-red-50 border-l-4 border-red-400 p-4">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-red-700">
+              Nepodařilo se načíst data: {error || 'Neznámá chyba'}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const { companies, closures, stats } = data
+
   return (
     <div>
       <div className="mb-6">
@@ -188,7 +273,7 @@ export default function AccountantDashboard() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {mockCompanies.map((company, companyIndex) => (
+            {companies.map((company, companyIndex) => (
               <tr key={company.id} className={companyIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-inherit z-10">
                   <div>
@@ -202,6 +287,7 @@ export default function AccountantDashboard() {
                     companyId={company.id}
                     companyName={company.name}
                     monthIndex={monthIndex}
+                    closures={closures}
                   />
                 ))}
               </tr>
@@ -221,9 +307,7 @@ export default function AccountantDashboard() {
             </div>
             <div className="ml-4">
               <p className="text-sm text-gray-500">Chybějící dokumenty</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {mockMonthlyClosures.filter(c => getMonthStatus(c.company_id, parseInt(c.period.split('-')[1]) - 1) === 'missing').length}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{stats.missing}</p>
             </div>
           </div>
         </div>
@@ -236,9 +320,7 @@ export default function AccountantDashboard() {
             </div>
             <div className="ml-4">
               <p className="text-sm text-gray-500">Čeká na schválení</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {mockMonthlyClosures.filter(c => getMonthStatus(c.company_id, parseInt(c.period.split('-')[1]) - 1) === 'uploaded').length}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{stats.uploaded}</p>
             </div>
           </div>
         </div>
@@ -251,9 +333,7 @@ export default function AccountantDashboard() {
             </div>
             <div className="ml-4">
               <p className="text-sm text-gray-500">Schváleno</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {mockMonthlyClosures.filter(c => getMonthStatus(c.company_id, parseInt(c.period.split('-')[1]) - 1) === 'approved').length}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{stats.approved}</p>
             </div>
           </div>
         </div>

@@ -1,39 +1,97 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { mockCompanies, mockMonthlyClosures } from '@/lib/mock-data'
 import { Building2, FileText, Upload, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-
-// Pro demo používáme mock data - v reálné aplikaci by se získávaly podle přihlášeného uživatele
-const userId = 'user-1-client'
-const userCompanies = mockCompanies.filter(c => c.owner_id === userId)
 
 const months = [
   'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
   'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'
 ]
 
-function getCompanyMissingDocuments(companyId: string) {
-  const closures = mockMonthlyClosures.filter(c => c.company_id === companyId)
-  return closures.filter(c => {
-    return (
-      c.bank_statement_status === 'missing' ||
-      c.expense_invoices_status === 'missing' ||
-      c.receipts_status === 'missing' ||
-      c.income_invoices_status === 'missing'
-    )
-  })
+type Company = {
+  id: string
+  name: string
+  ico: string
+  legal_form: string
+  vat_payer: boolean
+  currentMonthStatus: {
+    period: string
+    missing_count: number
+    missing_types: string[]
+    all_uploaded: boolean
+  }
+}
+
+type ApiResponse = {
+  companies: Company[]
+  stats: {
+    total_companies: number
+    companies_with_missing_docs: number
+    total_missing_docs: number
+  }
+  current_period: string
 }
 
 export default function ClientDashboard() {
-  const totalCompanies = userCompanies.length
+  const [data, setData] = useState<ApiResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Spočítat celkový počet chybějících dokumentů
-  const missingDocumentsCount = userCompanies.reduce((total, company) => {
-    return total + getCompanyMissingDocuments(company.id).length
-  }, 0)
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const response = await fetch('/api/client/companies')
+        if (!response.ok) {
+          throw new Error('Failed to fetch companies')
+        }
+        const json = await response.json()
+        setData(json)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Načítám vaše firmy...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !data) {
+    return (
+      <div className="bg-red-50 border-l-4 border-red-400 p-4">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-red-700">
+              Nepodařilo se načíst data: {error || 'Neznámá chyba'}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const { companies, stats } = data
+  const totalCompanies = stats.total_companies
+  const missingDocumentsCount = stats.total_missing_docs
 
   return (
     <div>
@@ -114,9 +172,8 @@ export default function ClientDashboard() {
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Moje firmy</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {userCompanies.map((company) => {
-            const missingDocs = getCompanyMissingDocuments(company.id)
-            const hasMissing = missingDocs.length > 0
+          {companies.map((company) => {
+            const hasMissing = company.currentMonthStatus.missing_count > 0
 
             return (
               <Card key={company.id} className={hasMissing ? 'border-red-200' : ''}>
@@ -125,7 +182,7 @@ export default function ClientDashboard() {
                     <span>{company.name}</span>
                     {hasMissing && (
                       <span className="flex items-center justify-center w-6 h-6 bg-red-100 rounded-full">
-                        <span className="text-red-600 text-xs font-bold">{missingDocs.length}</span>
+                        <span className="text-red-600 text-xs font-bold">{company.currentMonthStatus.missing_count}</span>
                       </span>
                     )}
                   </CardTitle>
@@ -142,7 +199,14 @@ export default function ClientDashboard() {
                     {hasMissing && (
                       <div className="text-sm text-red-600 flex items-start">
                         <AlertCircle className="mr-1 h-4 w-4 flex-shrink-0 mt-0.5" />
-                        <span>Chybí {missingDocs.length} měsíčních uzávěrek</span>
+                        <div>
+                          <div>Chybí {company.currentMonthStatus.missing_count} dokumentů:</div>
+                          <ul className="mt-1 list-disc list-inside text-xs">
+                            {company.currentMonthStatus.missing_types.map((type, i) => (
+                              <li key={i}>{type}</li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     )}
                     <Button
