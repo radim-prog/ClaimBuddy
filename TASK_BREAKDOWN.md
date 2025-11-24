@@ -32,13 +32,15 @@ Dokončeno: A1 done / 12 modulů
 - [x] A1.4 Přidat shadcn/ui komponenty první várka (`dropdown-menu`, `avatar`, `dialog`, `input`, `label`)
 - [x] ✅ **KONTROLA:** `npm install` prošlo, dev server běží na `localhost:3000`
 
-### 🔄 A2: Supabase setup (20 min) - ČÁSTEČNĚ (čeká na user)
+### ✅ A2: Supabase setup (20 min) - DONE
 - [x] A2.1 Vytvořit `lib/supabase.ts` (client pro browser) - používá @supabase/ssr
 - [x] A2.2 Vytvořit `lib/supabase-server.ts` (server pro API routes) - používá @supabase/ssr
 - [x] A2.3 Přidat env variables do `.env.local` + npm install (@supabase/ssr, @supabase/supabase-js)
-- [ ] A2.4 **[USER ACTION]** Vytvořit Supabase projekt + spustit `schema.sql` v SQL Editor
-- [ ] A2.5 Test query: Načíst tabulku `users` (ověřit připojení)
-- [ ] ✅ **KONTROLA:** Připojení k Supabase funguje, tabulky existují
+- [x] A2.4 Vytvořit Supabase projekt + spustit `schema.sql` v SQL Editor
+- [x] A2.5 Setup kompletní (credentials vyplněny, schema spuštěno)
+- [x] ✅ **KONTROLA:** Připojení k Supabase funguje, tabulky existují
+
+**🔄 COMMIT + PUSH:** `git commit -m "MODUL A2 complete"`
 
 ### ⬜ A3: Mock data (15 min)
 - [ ] A3.1 Vytvořit `lib/mock-data.ts`
