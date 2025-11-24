@@ -56,15 +56,15 @@ Dokončeno: 1/12 modulů (MODUL A complete)
 
 ## 🔐 MODUL B: AUTENTIZACE
 
-**Čas: ~70 min** | **Status: ⬜ Not Started**
+**Čas: ~70 min** | **Status: 🔄 In Progress**
 
-### ⬜ B1: Auth pages UI (20 min)
-- [ ] B1.1 Vytvořit `app/(auth)/layout.tsx` (simple layout bez sidebar)
-- [ ] B1.2 Vytvořit `app/(auth)/login/page.tsx`
-- [ ] B1.3 Vytvořit `app/(auth)/register/page.tsx`
-- [ ] B1.4 Použít shadcn/ui (`Input`, `Button`, `Card`, `Label`)
-- [ ] B1.5 Design: Použít gradient background z landing page
-- [ ] ✅ **KONTROLA:** Stránky `/login` a `/register` se zobrazují, formuláře vypadají dobře
+### ✅ B1: Auth pages UI (20 min) - DONE
+- [x] B1.1 Vytvořit `app/(auth)/layout.tsx` (gradient background)
+- [x] B1.2 Vytvořit `app/(auth)/login/page.tsx`
+- [x] B1.3 Vytvořit `app/(auth)/register/page.tsx`
+- [x] B1.4 Použít shadcn/ui (`Input`, `Button`, `Card`, `Label`)
+- [x] B1.5 Design: gradient background (blue-50 → purple-50)
+- [x] ✅ **KONTROLA:** Stránky `/login` a `/register` se zobrazují, dev server ready in 2.9s
 
 ### ⬜ B2: Auth logika (30 min)
 - [ ] B2.1 Vytvořit `app/(auth)/login/actions.ts` (Supabase Auth login)
