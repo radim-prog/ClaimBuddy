@@ -372,10 +372,10 @@ export const mockDocuments = [
 
 ## 🎯 CHECKLIST (Co postavit)
 
-### **FÁZE 1: Základy**
-- [ ] Smazat Firebase soubory
-- [ ] Nainstalovat shadcn/ui komponenty
-- [ ] Vytvořit mock-data.ts
+### **FÁZE 1: Základy** ✅ HOTOVO
+- [x] Next.js + TypeScript + Tailwind setup
+- [x] Nainstalovat shadcn/ui komponenty
+- [x] Vytvořit mock-data.ts
 
 ### **FÁZE 2: Auth**
 - [ ] app/(auth)/login/page.tsx

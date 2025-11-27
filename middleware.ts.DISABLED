@@ -60,7 +60,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Public routes (accessible without auth)
-  const publicRoutes = ['/', '/login', '/register', '/forgot-password']
+  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/demo-timeline']
   const isPublicRoute = publicRoutes.includes(pathname)
 
   // If accessing public routes, allow

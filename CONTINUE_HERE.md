@@ -48,7 +48,7 @@ Server poběží na: **http://localhost:3000**
 ## ✅ CO JE UŽ HOTOVO
 
 ### MODUL A: Infrastruktura ✅
-- [x] Firebase odstraněn
+- [x] Next.js 14 + TypeScript + Tailwind setup
 - [x] Supabase setup (@supabase/ssr)
 - [x] Mock data (5 klientů × 12 měsíců × 4 kategorie dokumentů)
 - [x] shadcn/ui komponenty (input, label, dialog, avatar, dropdown-menu, button, card)
@@ -476,11 +476,11 @@ Spuštěno: `supabase/schema.sql`
 ## 🐛 ZNÁMÉ PROBLÉMY
 
 ### ✅ Vyřešené:
-- ~~Firebase cleanup~~ ✅
 - ~~Deprecated @supabase/auth-helpers-nextjs~~ → přepnuto na @supabase/ssr ✅
 - ~~shadcn CLI auth errors~~ → komponenty přidány ručně ✅
 - ~~Server Actions s cookies~~ → lib/supabase-server.ts má get/set/remove ✅
 - ~~next.config.js warning~~ → odstraněn experimental.serverActions ✅
+- ~~Zavádějící Firebase/Railway zmínky~~ → všechny odstraněny ✅
 
 ### 🚧 K vyřešení:
 - **Mock data vs. reálná data:** Všechno používá mock data → potřeba přepnout na Supabase
