@@ -5,9 +5,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
-  Building2,
-  FileText,
-  Upload,
+  Users,
+  CheckSquare,
   Settings,
   LogOut,
   Menu,
@@ -24,17 +23,16 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { logout } from '@/app/(auth)/login/actions'
+import { logout } from '@/app/auth/login/actions'
 
 const navigation = [
-  { name: 'Dashboard', href: '/client/dashboard', icon: LayoutDashboard },
-  { name: 'Moje firmy', href: '/client/companies', icon: Building2 },
-  { name: 'Dokumenty', href: '/client/documents', icon: FileText },
-  { name: 'Nahrát dokumenty', href: '/client/upload', icon: Upload },
-  { name: 'Nastavení', href: '/client/settings', icon: Settings },
+  { name: 'Dashboard', href: '/accountant/dashboard', icon: LayoutDashboard },
+  { name: 'Klienti', href: '/accountant/clients', icon: Users },
+  { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare },
+  { name: 'Nastavení', href: '/accountant/settings', icon: Settings },
 ]
 
-export default function ClientLayout({
+export default function AccountantLayout({
   children,
 }: {
   children: React.ReactNode
@@ -87,12 +85,12 @@ export default function ClientLayout({
                 <button className="flex items-center w-full group hover:bg-white/10 rounded-lg p-2 transition-colors">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-white text-purple-600 font-bold">
-                      KN
+                      JŠ
                     </AvatarFallback>
                   </Avatar>
                   <div className="ml-3 text-left">
-                    <p className="text-sm font-medium text-white">Karel Novák</p>
-                    <p className="text-xs text-white/70">Klient</p>
+                    <p className="text-sm font-medium text-white">Jana Svobodová</p>
+                    <p className="text-xs text-white/70">Účetní</p>
                   </div>
                 </button>
               </DropdownMenuTrigger>
@@ -100,13 +98,13 @@ export default function ClientLayout({
                 <DropdownMenuLabel>Můj účet</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/client/profile" className="cursor-pointer">
+                  <Link href="/accountant/profile" className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
                     Profil
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/client/settings" className="cursor-pointer">
+                  <Link href="/accountant/settings" className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
                     Nastavení
                   </Link>
@@ -171,17 +169,17 @@ export default function ClientLayout({
               <div className="flex items-center mb-3">
                 <Avatar className="h-10 w-10">
                   <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold">
-                    KN
+                    JŠ
                   </AvatarFallback>
                 </Avatar>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">Karel Novák</p>
-                  <p className="text-xs text-gray-500">Klient</p>
+                  <p className="text-sm font-medium text-gray-900">Jana Svobodová</p>
+                  <p className="text-xs text-gray-500">Účetní</p>
                 </div>
               </div>
               <div className="space-y-1">
                 <Link
-                  href="/client/profile"
+                  href="/accountant/profile"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
                 >
