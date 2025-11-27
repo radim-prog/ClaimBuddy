@@ -25,10 +25,10 @@ Dokončeno: A ✅ | B ✅ | C1-C2 ✅ | D1 ✅
 
 **Čas: ~50 min** | **Status: 🔄 In Progress**
 
-### ✅ A1: Cleanup a příprava (15 min) - DONE
-- [x] A1.1 Smazat `lib/firebase.ts`
-- [x] A1.2 Smazat Firebase config soubory (`firestore.rules`, `storage.rules`, `firebase.json`)
-- [x] A1.3 Odebrat `firebase` z `package.json`
+### ✅ A1: Infrastruktura setup (15 min) - DONE
+- [x] A1.1 Next.js 14 projekt vytvořen
+- [x] A1.2 TypeScript + Tailwind CSS nakonfigurováno
+- [x] A1.3 Shadcn/ui komponenty nainstalovány
 - [x] A1.4 Přidat shadcn/ui komponenty první várka (`dropdown-menu`, `avatar`, `dialog`, `input`, `label`)
 - [x] ✅ **KONTROLA:** `npm install` prošlo, dev server běží na `localhost:3000`
 

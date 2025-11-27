@@ -58,12 +58,12 @@ small: text-sm text-gray-500
 
 ### **FÁZE 1: Základy (1-2 dny)**
 
-#### ✅ 1.1 Vyčistit projekt
+#### ✅ 1.1 Infrastruktura (HOTOVO)
 ```bash
-# Smazat Firebase sračky
-rm lib/firebase.ts
-rm firestore.rules firestore.indexes.json storage.rules firebase.json
-npm uninstall firebase
+# ✅ Supabase připojen
+# ✅ Auth funguje
+# ✅ Mock data připravena
+# ✅ Shadcn/ui komponenty nainstalovány
 ```
 
 #### ✅ 1.2 Přidat chybějící shadcn/ui komponenty

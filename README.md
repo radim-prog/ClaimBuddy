@@ -201,10 +201,10 @@ Přidat všechny z `.env.local` do Vercel Project Settings → Environment Varia
 - Frontend-first implementační plán
 
 ### 🚧 **Nyní stavíme:**
-- Frontend s mock daty (dle IMPLEMENTATION_PLAN.md)
-- Fáze 1: Cleanup Firebase zbytkůsupabase + shadcn/ui komponenty
-- Fáze 2: Auth pages (login/register)
-- Fáze 3: Master Matice 🔥 (killer feature!)
+- API Routes pro backend funkcionalitu
+- Timeline systém pro správu klientských tasků
+- Upload dokumentů s OCR zpracováním
+- Master Matice workflow (schvalování dokumentů)
 
 ### 📅 **Plán:**
 Stavíme **frontend first s mock daty** → vidíme okamžitě výsledky → pak napojíme backend.

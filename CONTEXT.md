@@ -81,20 +81,10 @@ Klient upload → Google Drive → OCR (Gemini z Drive) → Update DB
 
 ### ❌ CO NEPOUŽÍVÁME:
 
-#### **Firebase Firestore** - VYHODIT!
-- ❌ "Je to sračka co nefunguje" (citace Radim)
-- ❌ Složité dotazy
-- ❌ Drahé
-- ❌ Subcollections jsou omezující
-- **Status:** Smazat lib/firebase.ts, přepsat types/database.ts
-
-#### **Firebase Storage** - NEPOUŽÍVAT!
-- Nahrazeno Supabase Storage (temp) + Google Drive (final)
-- **Status:** Smazat vše related k Firebase Storage
-
-#### **Railway** - NEPOUŽÍVAT!
-- Změněno na Vercel (hosting) + Supabase (database)
-- **Důvod změny:** Lepší integrace Supabase + Vercel
+**Alternativy které jsme zvažovali ale NEpoužíváme:**
+- Firebase Firestore - příliš složité dotazy pro naše potřeby
+- Railway - nahrazeno Vercel (lepší integrace s Supabase)
+- Supabase Storage jako hlavní úložiště - nahrazeno přímým uploadem na Google Drive
 
 ---
 
@@ -209,18 +199,17 @@ INSERT INTO documents (
 
 ## 🔨 CO TEĎKA DĚLAT
 
-### 1. Vyhodit Firebase:
-- [ ] Smazat `lib/firebase.ts`
-- [ ] Přepsat `types/database.ts` (z Firestore Timestamp na Date)
-- [ ] Smazat `firestore.rules`, `firestore.indexes.json`, `storage.rules`, `firebase.json`
-- [ ] Vyhodit Firebase z package.json
+### 1. ✅ Infrastruktura (HOTOVO):
+- [x] Supabase projekt vytvořen
+- [x] PostgreSQL schema nasazeno
+- [x] Row Level Security (RLS) policies nastaveny
+- [x] Next.js připojen (@supabase/ssr)
+- [x] Supabase Auth funguje (Email/Password)
 
-### 2. Nastavit Supabase:
-- [ ] Vytvořit Supabase projekt
-- [ ] Vytvořit PostgreSQL schema (migrations)
-- [ ] Nastavit Row Level Security (RLS) policies
-- [ ] Připojit k Next.js (@supabase/supabase-js)
-- [ ] Supabase Auth setup (Email/Password + Google OAuth)
+### 2. 🚧 Aktuálně pracujeme:
+- [ ] Timeline systém pro klientské tasky
+- [ ] Upload dokumentů přímo na Google Drive
+- [ ] OCR integrace s Gemini 2.5 Flash
 
 ### 3. Google Drive API:
 - [ ] Vytvořit Service Account v Google Cloud
@@ -384,11 +373,10 @@ WHATSAPP_VERIFY_TOKEN=...
 
 ## 📚 DOKUMENTACE ODKAZY
 
-- [README.md](./README.md) - Stará dokumentace (odkazuje na Firebase - OUTDATED!)
-- [PROJECT_PLAN.md](./PROJECT_PLAN.md) - Detailní plán (odkazuje na Supabase - OUTDATED!)
-- [ISSUES.md](./ISSUES.md) - Kompletní rozpis Issues (odkazuje na Supabase - OUTDATED!)
-
-**TODO:** Aktualizovat tyto soubory s novým tech stackem (PostgreSQL, Google Drive)
+- [README.md](./README.md) - Hlavní dokumentace projektu
+- [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) - Setup guide pro Supabase
+- [QUICK_SETUP.md](./QUICK_SETUP.md) - Rychlý 5-minutový setup
+- [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) - Frontend-first build plán
 
 ---
 
@@ -397,30 +385,20 @@ WHATSAPP_VERIFY_TOKEN=...
 
 ---
 
-## 🗣️ KONVERZAČNÍ HISTORIE (klíčové body)
+## 🗣️ KLÍČOVÁ ROZHODNUTÍ
 
-### 2025-01-24 - Session 1:
-- **Radim:** "Firebase nahradíme databází na railway… firebase je sračka co nefunguje"
-- **Rozhodnutí 1:** PostgreSQL na Railway místo Firestore
-- **Radim:** "Myslel jsem že bude všechno uloženo na Google Disku"
-- **Rozhodnutí 2:** Google Drive jako hlavní storage, v DB jen metadata
-- **Clarification:** Projekt je stále v teoretické rovině, téměř žádný funkční kód
+### Tech Stack (Finální):
+- **Database:** Supabase PostgreSQL
+  - Důvod: Jednodušší dotazy než NoSQL, integrovaný Auth + RLS
+- **Storage:** Google Drive (přímý upload)
+  - Důvod: Zero extra náklady, Gemini API může číst přímo z Drive
+- **Hosting:** Vercel
+  - Důvod: Perfektní integrace s Next.js + Supabase
+- **Upload Flow:** Klient → Google Drive → OCR (Gemini) → Update DB
+  - Důvod: Jednodušší (3 kroky), levnější, méně error states
 
-### 2025-01-24 - Session 2:
-- **Radim:** "Konzultoval jsem to s kamarádem, uděláme databázi na Supabase a deploy na Vercel"
-- **Rozhodnutí 3:** Database: Supabase, Hosting: Vercel, Storage: 2-stupňový
-- **Důvod:** Lepší integrace Supabase + Vercel
-
-### 2025-01-24 - Session 3 (Kritický review):
-- **Claude:** Identifikoval 10 potenciálních problémů v architektuře
-- **Hlavní problémy:** 2-stupňový storage overcomplicated, Pohoda/WhatsApp složité, chybí error handling
-- **Radim odpovědi:**
-  - Cost: 100 SMS/měsíc, 5000 OCR requestů (OK)
-  - Backup: Zatím neřešit
-  - GDPR: Není třeba (privátní app)
-  - Database: Zůstat u Supabase
-- **Rozhodnutí 4 (FINÁLNÍ):**
-  - ✅ **Zjednodušit upload:** Přímo na Google Drive (NE 2-stupňový přes Supabase Storage)
-  - ✅ **Zůstat u Supabase** (PostgreSQL + Auth + RLS)
-  - ✅ **Flow:** Upload → Google Drive → OCR z Drive → Update DB
-- **Důvod:** Jednodušší (3 kroky místo 5), levnější, méně error states
+### Architektura:
+- Frontend-first approach s mock daty
+- API Routes pro backend logiku
+- Row Level Security (RLS) v databázi
+- Server-side validace všech operací

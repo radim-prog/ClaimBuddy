@@ -9,7 +9,7 @@
 ## ✅ HOTOVO (DONE)
 
 ### ⚙️ MODUL A: ZÁKLADY + INFRASTRUKTURA ✅
-- **A1:** Cleanup (Firebase odstraněn)
+- **A1:** Next.js 14 + TypeScript + Tailwind setup
 - **A2:** Supabase setup (@supabase/ssr)
 - **A3:** Mock data (5 klientů × 12 měsíců)
 

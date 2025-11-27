@@ -1,6 +1,5 @@
-import { Timestamp } from 'firebase/firestore';
 
-// Database types for Firebase Firestore
+// Database types for Supabase PostgreSQL
 
 export type UserRole = 'client' | 'accountant' | 'admin';
 
@@ -26,8 +25,8 @@ export interface User {
   role: UserRole;
   phone_number?: string;
   avatar_url?: string;
-  created_at: Timestamp;
-  last_login_at?: Timestamp;
+  created_at: string;
+  last_login_at?: string;
   notification_preferences: {
     email: boolean;
     sms: boolean;
@@ -60,12 +59,11 @@ export interface Company {
     invoice_due_day: number; // 1-31
     invoice_maturity: number; // dny splatnosti
   };
-  created_at: Timestamp;
-  updated_at: Timestamp;
+  created_at: string;
+  updated_at: string;
 }
 
 // Monthly Closure - KLÍČOVÁ KOLEKCE pro matrici
-// Firestore path: /companies/{companyId}/monthly_closures/{period}
 export interface MonthlyClosure {
   id: string; // period ('2025-01')
   company_id: string; // parent collection
@@ -74,7 +72,7 @@ export interface MonthlyClosure {
 
   // Statusy podkladů
   bank_statement_status: DocumentStatus;
-  bank_statement_uploaded_at?: Timestamp;
+  bank_statement_uploaded_at?: string;
   bank_statement_file_url?: string;
 
   expense_invoices_status: DocumentStatus;
@@ -88,32 +86,31 @@ export interface MonthlyClosure {
 
   // Finanční data (vypočítané)
   vat_payable?: number; // DPH k odvedení
-  vat_due_date?: Timestamp;
+  vat_due_date?: string;
   income_tax_accrued: number; // Akruální daň z příjmů
   social_insurance_estimate?: number;
   health_insurance_estimate?: number;
 
   // Uzavření
-  closed_at?: Timestamp;
+  closed_at?: string;
   closed_by?: string; // FK → users/{id}
 
   // Urgence
-  last_reminder_sent_at?: Timestamp;
+  last_reminder_sent_at?: string;
   reminder_count: number;
 
-  created_at: Timestamp;
-  updated_at: Timestamp;
+  created_at: string;
+  updated_at: string;
 }
 
 // Document
-// Firestore path: /companies/{companyId}/documents/{documentId}
 export interface Document {
   id: string;
   company_id: string; // parent collection
   period: string; // 'YYYY-MM'
   type: 'bank_statement' | 'receipt' | 'expense_invoice' | 'contract' | 'other';
   file_name: string;
-  file_url: string; // Firebase Storage URL
+  file_url: string; // Supabase Storage or Google Drive URL
   google_drive_file_id?: string;
   mime_type: string;
   file_size_bytes: number;
@@ -128,24 +125,23 @@ export interface Document {
 
   status: DocumentStatus;
   reviewed_by?: string; // FK → users/{id}
-  reviewed_at?: Timestamp;
+  reviewed_at?: string;
   rejection_reason?: string;
 
   uploaded_by: string; // FK → users/{id}
-  uploaded_at: Timestamp;
+  uploaded_at: string;
   upload_source: 'web' | 'mobile' | 'whatsapp' | 'api';
 }
 
 // Invoice
-// Firestore path: /companies/{companyId}/invoices/{invoiceId}
 export interface Invoice {
   id: string;
   company_id: string; // parent collection
   type: 'income' | 'expense';
   invoice_number: string;
   variable_symbol?: string;
-  issue_date: Timestamp;
-  due_date: Timestamp;
+  issue_date: string;
+  due_date: string;
 
   // Partner (dodavatel/odběratel)
   partner: {
@@ -165,7 +161,7 @@ export interface Invoice {
 
   // Platba
   payment_status: PaymentStatus;
-  paid_at?: Timestamp;
+  paid_at?: string;
   paid_amount?: number;
 
   // Integrace
@@ -176,9 +172,9 @@ export interface Invoice {
   generated_by_ai?: boolean;
   ai_prompt?: string;
 
-  created_at: Timestamp;
+  created_at: string;
   created_by: string; // FK → users/{id}
-  updated_at: Timestamp;
+  updated_at: string;
 }
 
 export interface InvoiceItem {
@@ -191,7 +187,6 @@ export interface InvoiceItem {
 }
 
 // Task - úkolový systém
-// Firestore path: /tasks/{taskId}
 export interface Task {
   id: string;
   title: string;
@@ -201,8 +196,8 @@ export interface Task {
   created_by: string; // FK → users/{id}
   status: TaskStatus;
   priority: TaskPriority;
-  due_date?: Timestamp;
-  completed_at?: Timestamp;
+  due_date?: string;
+  completed_at?: string;
 
   // Zdroj úkolu
   source: 'manual' | 'whatsapp' | 'chat' | 'ai_generated';
@@ -211,31 +206,29 @@ export interface Task {
   // Přílohy
   attachments: Attachment[];
 
-  created_at: Timestamp;
-  updated_at: Timestamp;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Attachment {
   name: string;
   url: string;
-  type: 'google_drive' | 'firebase_storage';
+  type: 'google_drive' | 'supabase_storage';
 }
 
 // Chat
-// Firestore path: /chats/{chatId}
 export interface Chat {
   id: string;
   type: 'company_chat' | 'task_chat';
   company_id?: string; // FK → companies/{id}
   task_id?: string; // FK → tasks/{id}
   participants: string[]; // FK → users/{id}[]
-  last_message_at: Timestamp;
+  last_message_at: string;
   last_message_preview: string;
-  created_at: Timestamp;
+  created_at: string;
 }
 
 // Chat Message
-// Firestore path: /chats/{chatId}/messages/{messageId}
 export interface ChatMessage {
   id: string;
   chat_id: string; // parent collection
@@ -252,12 +245,11 @@ export interface ChatMessage {
   attachments?: Attachment[];
 
   read: boolean;
-  read_at?: Timestamp;
-  created_at: Timestamp;
+  read_at?: string;
+  created_at: string;
 }
 
 // WhatsApp Message
-// Firestore path: /whatsapp_messages/{messageId}
 export interface WhatsAppMessage {
   id: string;
   whatsapp_message_id: string; // ID z WhatsApp API
@@ -276,11 +268,10 @@ export interface WhatsAppMessage {
   task_created?: boolean;
   task_id?: string; // FK → tasks/{id}
 
-  created_at: Timestamp;
+  created_at: string;
 }
 
 // Payment Match
-// Firestore path: /companies/{companyId}/payment_matches/{matchId}
 export interface PaymentMatch {
   id: string;
   company_id: string; // parent collection
@@ -288,7 +279,7 @@ export interface PaymentMatch {
   invoice_id?: string; // FK → invoices/{id}
 
   // Data z výpisu
-  transaction_date: Timestamp;
+  transaction_date: string;
   amount: number;
   variable_symbol?: string;
   account_name?: string;
@@ -301,13 +292,12 @@ export interface PaymentMatch {
   // Review
   reviewed: boolean;
   reviewed_by?: string; // FK → users/{id}
-  reviewed_at?: Timestamp;
+  reviewed_at?: string;
 
-  created_at: Timestamp;
+  created_at: string;
 }
 
 // Reminder
-// Firestore path: /reminders/{reminderId}
 export interface Reminder {
   id: string;
   company_id: string; // FK → companies/{id}
@@ -316,7 +306,7 @@ export interface Reminder {
   recipient: string; // email nebo tel.
   subject: string;
   message: string;
-  sent_at: Timestamp;
+  sent_at: string;
   delivered: boolean;
   delivery_status?: string;
   created_by: string; // FK → users/{id}
