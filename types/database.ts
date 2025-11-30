@@ -308,3 +308,69 @@ export interface Reminder {
   delivery_status?: string;
   created_by: string; // FK → users/{id}
 }
+
+// Database type for Supabase typed client
+export interface Database {
+  public: {
+    Tables: {
+      users: {
+        Row: User
+        Insert: Omit<User, 'created_at' | 'last_login_at'>
+        Update: Partial<Omit<User, 'id' | 'created_at'>>
+      }
+      companies: {
+        Row: Company
+        Insert: Omit<Company, 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Company, 'id' | 'created_at'>>
+      }
+      monthly_closures: {
+        Row: MonthlyClosure
+        Insert: Omit<MonthlyClosure, 'created_at' | 'updated_at'>
+        Update: Partial<Omit<MonthlyClosure, 'id' | 'created_at'>>
+      }
+      documents: {
+        Row: Document
+        Insert: Omit<Document, 'uploaded_at'>
+        Update: Partial<Omit<Document, 'id' | 'uploaded_at'>>
+      }
+      invoices: {
+        Row: Invoice
+        Insert: Omit<Invoice, 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Invoice, 'id' | 'created_at'>>
+      }
+      tasks: {
+        Row: Task
+        Insert: Omit<Task, 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Task, 'id' | 'created_at'>>
+      }
+      chats: {
+        Row: Chat
+        Insert: Omit<Chat, 'created_at'>
+        Update: Partial<Omit<Chat, 'id' | 'created_at'>>
+      }
+      chat_messages: {
+        Row: ChatMessage
+        Insert: Omit<ChatMessage, 'created_at'>
+        Update: Partial<Omit<ChatMessage, 'id' | 'created_at'>>
+      }
+      whatsapp_messages: {
+        Row: WhatsAppMessage
+        Insert: Omit<WhatsAppMessage, 'created_at'>
+        Update: Partial<Omit<WhatsAppMessage, 'id' | 'created_at'>>
+      }
+      payment_matches: {
+        Row: PaymentMatch
+        Insert: Omit<PaymentMatch, 'created_at'>
+        Update: Partial<Omit<PaymentMatch, 'id' | 'created_at'>>
+      }
+      reminders: {
+        Row: Reminder
+        Insert: Omit<Reminder, 'sent_at'>
+        Update: Partial<Omit<Reminder, 'id'>>
+      }
+    }
+    Views: {}
+    Functions: {}
+    Enums: {}
+  }
+}
