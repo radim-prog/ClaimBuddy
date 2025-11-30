@@ -37,6 +37,7 @@ type MonthlyClosure = {
 }
 
 const statusColors = {
+  pending: { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300' },
   uploaded: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300' },
   approved: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
   rejected: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
@@ -217,7 +218,7 @@ export default function ClientDetailPage() {
           ) : (
             <div className="space-y-3">
               {documents.map((doc) => {
-                const colors = statusColors[doc.status]
+                const colors = statusColors[doc.status] || statusColors.pending
                 return (
                   <div
                     key={doc.id}

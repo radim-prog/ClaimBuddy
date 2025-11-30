@@ -21,8 +21,7 @@ export async function GET(request: Request) {
 
       const missingDocs = closure ? [
         closure.bank_statement_status === 'missing' ? 'Výpis z účtu' : null,
-        closure.expense_invoices_status === 'missing' ? 'Výdajové faktury' : null,
-        closure.receipts_status === 'missing' ? 'Účtenky' : null,
+        closure.expense_documents_status === 'missing' ? 'Nákladové doklady' : null,
         closure.income_invoices_status === 'missing' ? 'Příjmové faktury' : null,
       ].filter(Boolean) : []
 
@@ -40,8 +39,7 @@ export async function GET(request: Request) {
           missing_types: missingDocs,
           all_uploaded: missingDocs.length === 0,
           bank_statement_status: closure?.bank_statement_status || 'missing',
-          expense_invoices_status: closure?.expense_invoices_status || 'missing',
-          receipts_status: closure?.receipts_status || 'missing',
+          expense_documents_status: closure?.expense_documents_status || 'missing',
           income_invoices_status: closure?.income_invoices_status || 'missing',
           vat_payable: closure?.vat_payable || null,
           income_tax_accrued: closure?.income_tax_accrued || null,

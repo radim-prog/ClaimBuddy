@@ -9,6 +9,9 @@ export async function GET(request: Request) {
       id: c.id,
       name: c.name,
       ico: c.ico,
+      dic: c.dic,
+      legal_form: c.legal_form,
+      vat_payer: c.vat_payer,
       owner_id: c.owner_id
     }))
 
@@ -19,20 +22,17 @@ export async function GET(request: Request) {
       total: closures.length,
       missing: closures.filter(c =>
         c.bank_statement_status === 'missing' ||
-        c.expense_invoices_status === 'missing' ||
-        c.receipts_status === 'missing' ||
+        c.expense_documents_status === 'missing' ||
         c.income_invoices_status === 'missing'
       ).length,
       uploaded: closures.filter(c =>
         c.bank_statement_status === 'uploaded' ||
-        c.expense_invoices_status === 'uploaded' ||
-        c.receipts_status === 'uploaded' ||
+        c.expense_documents_status === 'uploaded' ||
         c.income_invoices_status === 'uploaded'
       ).length,
       approved: closures.filter(c =>
         c.bank_statement_status === 'approved' &&
-        c.expense_invoices_status === 'approved' &&
-        c.receipts_status === 'approved' &&
+        c.expense_documents_status === 'approved' &&
         c.income_invoices_status === 'approved'
       ).length,
     }

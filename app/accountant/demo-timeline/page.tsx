@@ -508,16 +508,16 @@ export default function ClientTimelinePage() {
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-6">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{caseData.title}</h1>
-            <p className="text-gray-600 mt-2">
-              Poslední aktivita: {new Date(caseData.lastActivity).toLocaleDateString('cs-CZ')} •
-              Status: <Badge className={caseData.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}>{caseData.status === 'active' ? 'Aktivní' : 'Ukončeno'}</Badge>
-            </p>
-          </div>
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">{caseData.title}</h1>
+              <p className="text-gray-600 mt-2">
+                Poslední aktivita: {new Date(caseData.lastActivity).toLocaleDateString('cs-CZ')} •
+                Status: <Badge className={caseData.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}>{caseData.status === 'active' ? 'Aktivní' : 'Ukončeno'}</Badge>
+              </p>
+            </div>
           {/* Celková statistika */}
           <div className="flex gap-3">
             <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">

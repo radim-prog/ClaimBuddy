@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
+import { DeadlineAlertBar } from '@/components/deadline-alert-bar'
+import { DeadlineDashboardWidget } from '@/components/deadline-dashboard-widget'
 
 type StatusType = 'missing' | 'uploaded' | 'approved'
 
@@ -17,8 +19,7 @@ type MonthlyClosure = {
   period: string
   status: string
   bank_statement_status: StatusType
-  expense_invoices_status: StatusType
-  receipts_status: StatusType
+  expense_documents_status: StatusType
   income_invoices_status: StatusType
 }
 
@@ -65,11 +66,10 @@ function getMonthStatus(closures: MonthlyClosure[], companyId: string, monthInde
 
   if (!closure) return 'missing'
 
-  // Všechny 4 kategorie musí být approved pro celkový status approved
+  // Všechny 3 kategorie musí být approved pro celkový status approved
   const allApproved =
     closure.bank_statement_status === 'approved' &&
-    closure.expense_invoices_status === 'approved' &&
-    closure.receipts_status === 'approved' &&
+    closure.expense_documents_status === 'approved' &&
     closure.income_invoices_status === 'approved'
 
   if (allApproved) return 'approved'
@@ -77,13 +77,160 @@ function getMonthStatus(closures: MonthlyClosure[], companyId: string, monthInde
   // Pokud alespoň jedna kategorie je uploaded
   const anyUploaded =
     closure.bank_statement_status === 'uploaded' ||
-    closure.expense_invoices_status === 'uploaded' ||
-    closure.receipts_status === 'uploaded' ||
+    closure.expense_documents_status === 'uploaded' ||
     closure.income_invoices_status === 'uploaded'
 
   if (anyUploaded) return 'uploaded'
 
   return 'missing'
+}
+
+// Generate deadline alerts from closures
+function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
+  const deadlines: Array<{
+    id: string
+    title: string
+    dueDate: string
+    type: 'critical' | 'urgent' | 'warning'
+    caseId?: string
+    companyName?: string
+  }> = []
+
+  const now = new Date()
+
+  closures.forEach(closure => {
+    const company = companies.find(c => c.id === closure.company_id)
+    if (!company) return
+
+    // Parse period (e.g., "2025-01")
+    const [year, month] = closure.period.split('-').map(Number)
+
+    // Deadline is typically 15th of the following month
+    const deadline = new Date(year, month, 15) // month is already 1-indexed in Date constructor
+    const daysUntil = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+    // Check if any documents are missing
+    const hasMissing =
+      closure.bank_statement_status === 'missing' ||
+      closure.expense_documents_status === 'missing' ||
+      closure.income_invoices_status === 'missing'
+
+    const hasUploaded =
+      closure.bank_statement_status === 'uploaded' ||
+      closure.expense_documents_status === 'uploaded' ||
+      closure.income_invoices_status === 'uploaded'
+
+    if (hasMissing && daysUntil <= 7) {
+      // Critical: missing documents with approaching deadline
+      const missingDocs: string[] = []
+      if (closure.bank_statement_status === 'missing') missingDocs.push('výpis')
+      if (closure.expense_documents_status === 'missing') missingDocs.push('náklady')
+      if (closure.income_invoices_status === 'missing') missingDocs.push('příjmy')
+
+      deadlines.push({
+        id: `${closure.id}-missing`,
+        title: `Uzávěrka ${months[month - 1]} - chybí ${missingDocs.join(', ')}`,
+        dueDate: deadline.toISOString(),
+        type: daysUntil < 0 ? 'critical' : daysUntil <= 2 ? 'critical' : 'urgent',
+        caseId: closure.id,
+        companyName: company.name
+      })
+    }
+
+    if (hasUploaded && !hasMissing && daysUntil <= 14) {
+      // Urgent: uploaded documents waiting for approval
+      deadlines.push({
+        id: `${closure.id}-approval`,
+        title: `Uzávěrka ${months[month - 1]} - čeká na schválení`,
+        dueDate: deadline.toISOString(),
+        type: daysUntil <= 3 ? 'urgent' : 'warning',
+        caseId: closure.id,
+        companyName: company.name
+      })
+    }
+  })
+
+  // Sort by urgency: critical first, then by date
+  return deadlines.sort((a, b) => {
+    if (a.type === 'critical' && b.type !== 'critical') return -1
+    if (a.type !== 'critical' && b.type === 'critical') return 1
+    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+  })
+}
+
+// Generate deadline tasks for dashboard widget
+function generateDeadlineTasks(closures: MonthlyClosure[], companies: Company[]) {
+  const tasks: Array<{
+    id: string
+    title: string
+    dueDate: string
+    priority: 'critical' | 'high' | 'medium' | 'low'
+    status: 'overdue' | 'today' | 'this-week' | 'later'
+    companyName?: string
+    assignedTo?: string
+  }> = []
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  closures.forEach(closure => {
+    const company = companies.find(c => c.id === closure.company_id)
+    if (!company) return
+
+    const [year, month] = closure.period.split('-').map(Number)
+    const deadline = new Date(year, month, 15)
+    const daysUntil = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+    const hasMissing =
+      closure.bank_statement_status === 'missing' ||
+      closure.expense_documents_status === 'missing' ||
+      closure.income_invoices_status === 'missing'
+
+    const hasUploaded =
+      closure.bank_statement_status === 'uploaded' ||
+      closure.expense_documents_status === 'uploaded' ||
+      closure.income_invoices_status === 'uploaded'
+
+    if (hasMissing || hasUploaded) {
+      let status: 'overdue' | 'today' | 'this-week' | 'later'
+      let priority: 'critical' | 'high' | 'medium' | 'low'
+
+      if (daysUntil < 0) {
+        status = 'overdue'
+        priority = 'critical'
+      } else if (daysUntil === 0) {
+        status = 'today'
+        priority = 'critical'
+      } else if (daysUntil <= 7) {
+        status = 'this-week'
+        priority = hasMissing ? 'high' : 'medium'
+      } else {
+        status = 'later'
+        priority = hasMissing ? 'medium' : 'low'
+      }
+
+      const missingDocs: string[] = []
+      if (closure.bank_statement_status === 'missing') missingDocs.push('výpis')
+      if (closure.expense_documents_status === 'missing') missingDocs.push('náklady')
+      if (closure.income_invoices_status === 'missing') missingDocs.push('příjmy')
+
+      const title = hasMissing
+        ? `${months[month - 1]} - chybí ${missingDocs.join(', ')}`
+        : `${months[month - 1]} - schválit dokumenty`
+
+      tasks.push({
+        id: closure.id,
+        title,
+        dueDate: deadline.toISOString(),
+        priority,
+        status,
+        companyName: company.name,
+        assignedTo: 'Jana Svobodová'
+      })
+    }
+  })
+
+  return tasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
 }
 
 function StatusCell({
@@ -109,9 +256,8 @@ function StatusCell({
     ${companyName} - ${months[monthIndex]} 2025
 
     Výpis z banky: ${closure.bank_statement_status === 'approved' ? '✓' : closure.bank_statement_status === 'uploaded' ? '⏳' : '✗'}
-    Výdaje: ${closure.expense_invoices_status === 'approved' ? '✓' : closure.expense_invoices_status === 'uploaded' ? '⏳' : '✗'}
-    Příjmy: ${closure.income_invoices_status === 'approved' ? '✓' : closure.income_invoices_status === 'uploaded' ? '⏳' : '✗'}
-    Účtenky: ${closure.receipts_status === 'approved' ? '✓' : closure.receipts_status === 'uploaded' ? '⏳' : '✗'}
+    Nákladové doklady: ${closure.expense_documents_status === 'approved' ? '✓' : closure.expense_documents_status === 'uploaded' ? '⏳' : '✗'}
+    Příjmové faktury: ${closure.income_invoices_status === 'approved' ? '✓' : closure.income_invoices_status === 'uploaded' ? '⏳' : '✗'}
   ` : `${companyName} - ${months[monthIndex]} 2025\n\nŽádné dokumenty`
 
   return (
@@ -145,22 +291,16 @@ function StatusCell({
                   <span className="ml-2">Výpis z banky</span>
                 </div>
                 <div className="flex items-center">
-                  <span className={closure.expense_invoices_status === 'approved' ? 'text-green-400' : closure.expense_invoices_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
-                    {closure.expense_invoices_status === 'approved' ? '✓' : closure.expense_invoices_status === 'uploaded' ? '⏳' : '✗'}
+                  <span className={closure.expense_documents_status === 'approved' ? 'text-green-400' : closure.expense_documents_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
+                    {closure.expense_documents_status === 'approved' ? '✓' : closure.expense_documents_status === 'uploaded' ? '⏳' : '✗'}
                   </span>
-                  <span className="ml-2">Výdajové faktury</span>
+                  <span className="ml-2">Nákladové doklady</span>
                 </div>
                 <div className="flex items-center">
                   <span className={closure.income_invoices_status === 'approved' ? 'text-green-400' : closure.income_invoices_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
                     {closure.income_invoices_status === 'approved' ? '✓' : closure.income_invoices_status === 'uploaded' ? '⏳' : '✗'}
                   </span>
                   <span className="ml-2">Příjmové faktury</span>
-                </div>
-                <div className="flex items-center">
-                  <span className={closure.receipts_status === 'approved' ? 'text-green-400' : closure.receipts_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
-                    {closure.receipts_status === 'approved' ? '✓' : closure.receipts_status === 'uploaded' ? '⏳' : '✗'}
-                  </span>
-                  <span className="ml-2">Účtenky</span>
                 </div>
               </div>
             )}
@@ -197,6 +337,17 @@ export default function AccountantDashboard() {
     fetchData()
   }, [])
 
+  // Generate deadline alerts and tasks - MUST be before conditional returns (Rules of Hooks)
+  const urgentDeadlines = useMemo(() => {
+    if (!data) return []
+    return generateDeadlines(data.closures, data.companies)
+  }, [data])
+
+  const deadlineTasks = useMemo(() => {
+    if (!data) return []
+    return generateDeadlineTasks(data.closures, data.companies)
+  }, [data])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -231,6 +382,13 @@ export default function AccountantDashboard() {
 
   return (
     <div>
+      {/* Deadline Alert Bar - First thing user sees */}
+      {urgentDeadlines.length > 0 && (
+        <div className="-mx-4 sm:-mx-6 lg:-mx-8 mb-6">
+          <DeadlineAlertBar deadlines={urgentDeadlines} />
+        </div>
+      )}
+
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Master Matice 2025</h1>
         <p className="mt-2 text-gray-600">
@@ -299,44 +457,60 @@ export default function AccountantDashboard() {
         </table>
       </div>
 
-      {/* Stats */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
-                <span className="text-2xl text-red-600">!</span>
+      {/* Deadline Widget and Stats */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Deadline Widget - takes 1 column */}
+        <div className="lg:col-span-1">
+          <DeadlineDashboardWidget
+            tasks={deadlineTasks}
+            onTaskClick={(taskId) => {
+              const closure = closures.find(c => c.id === taskId)
+              if (closure) {
+                window.location.href = `/accountant/clients/${closure.company_id}`
+              }
+            }}
+          />
+        </div>
+
+        {/* Stats - take 2 columns */}
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
+                  <span className="text-2xl text-red-600">!</span>
+                </div>
               </div>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Chybějící dokumenty</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.missing}</p>
+              <div className="ml-4">
+                <p className="text-sm text-gray-500">Chybějící dokumenty</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.missing}</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
-                <span className="text-2xl text-yellow-600">⏳</span>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
+                  <span className="text-2xl text-yellow-600">⏳</span>
+                </div>
               </div>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Čeká na schválení</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.uploaded}</p>
+              <div className="ml-4">
+                <p className="text-sm text-gray-500">Čeká na schválení</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.uploaded}</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                <span className="text-2xl text-green-600">✓</span>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                  <span className="text-2xl text-green-600">✓</span>
+                </div>
               </div>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Schváleno</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.approved}</p>
+              <div className="ml-4">
+                <p className="text-sm text-gray-500">Schváleno</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.approved}</p>
+              </div>
             </div>
           </div>
         </div>

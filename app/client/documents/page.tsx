@@ -12,8 +12,10 @@ type Document = {
   period: string
   type: string
   file_name: string
+  thumbnail_url?: string
+  description?: string
   uploaded_at: string
-  status: 'uploaded' | 'approved' | 'rejected'
+  status: 'pending' | 'uploaded' | 'approved' | 'rejected'
   file_size_bytes: number
   rejection_reason?: string
 }
@@ -32,6 +34,7 @@ const documentTypeLabels: Record<string, string> = {
 }
 
 const statusColors = {
+  pending: { bg: 'bg-gray-100', text: 'text-gray-700', icon: Clock },
   uploaded: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
   approved: { bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
   rejected: { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle },
@@ -78,6 +81,7 @@ export default function DocumentsPage() {
   }
 
   const statusLabels = {
+    pending: 'Čeká na zpracování',
     uploaded: 'Čeká na schválení',
     approved: 'Schváleno',
     rejected: 'Zamítnuto'
@@ -141,16 +145,31 @@ export default function DocumentsPage() {
         <div className="space-y-4">
           {filteredDocuments.map((doc) => {
             const company = companies.find(c => c.id === doc.company_id)
-            const colors = statusColors[doc.status]
+            const colors = statusColors[doc.status] || statusColors.pending
             const StatusIcon = colors.icon
 
             return (
               <Card key={doc.id}>
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
-                    <div className={`p-3 rounded-lg ${colors.bg}`}>
-                      <FileText className={`h-6 w-6 ${colors.text}`} />
-                    </div>
+                    {/* Náhled obrázku místo ikony */}
+                    {doc.thumbnail_url ? (
+                      <div className="flex-shrink-0">
+                        <img
+                          src={doc.thumbnail_url}
+                          alt={doc.file_name}
+                          className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200"
+                          onError={(e) => {
+                            // Fallback pokud obrázek selže
+                            (e.target as HTMLImageElement).style.display = 'none'
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className={`p-3 rounded-lg ${colors.bg} flex-shrink-0`}>
+                        <FileText className={`h-6 w-6 ${colors.text}`} />
+                      </div>
+                    )}
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -162,6 +181,11 @@ export default function DocumentsPage() {
                           {statusLabels[doc.status]}
                         </span>
                       </div>
+
+                      {/* Popis dokumentu */}
+                      {doc.description && (
+                        <p className="text-sm text-gray-700 mb-2 italic">{doc.description}</p>
+                      )}
 
                       <div className="text-sm text-gray-600 space-y-1">
                         <div>

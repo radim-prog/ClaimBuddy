@@ -75,11 +75,8 @@ export interface MonthlyClosure {
   bank_statement_uploaded_at?: string;
   bank_statement_file_url?: string;
 
-  expense_invoices_status: DocumentStatus;
-  expense_invoices_count: number;
-
-  receipts_status: DocumentStatus;
-  receipts_count: number;
+  expense_documents_status: DocumentStatus; // Sloučené: výdajové faktury + účtenky
+  expense_documents_count: number;
 
   income_invoices_status: DocumentStatus;
   income_invoices_count: number;

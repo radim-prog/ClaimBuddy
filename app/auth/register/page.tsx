@@ -107,7 +107,7 @@ export default function RegisterPage() {
           </Button>
           <p className="text-sm text-center text-muted-foreground">
             Již máte účet?{' '}
-            <Link href="/login" className="text-blue-600 hover:underline">
+            <Link href="/auth/login" className="text-blue-600 hover:underline">
               Přihlaste se
             </Link>
           </p>

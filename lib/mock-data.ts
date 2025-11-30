@@ -270,8 +270,7 @@ export const mockMonthlyClosures = mockCompanies.flatMap((company, companyIndex)
       period: `2025-${month}`,
       status: 'open' as const,
       bank_statement_status: status,
-      expense_invoices_status: status,
-      receipts_status: status,
+      expense_documents_status: status, // Sloučené: faktury + účtenky
       income_invoices_status: status,
       vat_payable: status === 'approved' ? Math.floor(Math.random() * 50000) : null,
       income_tax_accrued: status === 'approved' ? Math.floor(Math.random() * 15000) : null,
@@ -286,47 +285,190 @@ export const mockMonthlyClosures = mockCompanies.flatMap((company, companyIndex)
   })
 )
 
-// Mock documents (10 ukázkových dokumentů)
-export const mockDocuments = [
-  {
-    id: 'doc-1',
-    company_id: 'company-1',
-    period: '2025-01',
-    type: 'receipt' as const,
-    file_name: 'uctenka-potraviny.jpg',
-    file_url: 'https://example.com/doc1.jpg',
-    file_size: 245000,
-    google_drive_file_id: 'drive-id-1',
+// Mock documents (30 ukázkových dokumentů)
+const documentTypes = ['receipt', 'bank_statement', 'expense_invoice', 'income_invoice'] as const
+const fileExamples = {
+  receipt: ['uctenka-potraviny.jpg', 'uctenka-benzin.jpg', 'uctenka-kancelare.pdf'],
+  bank_statement: ['vypis-leden.pdf', 'vypis-unor.pdf', 'vypis-brezen.pdf'],
+  expense_invoice: ['faktura-dodavatel.pdf', 'faktura-sluzby.pdf', 'faktura-material.pdf'],
+  income_invoice: ['faktura-odberatel.pdf', 'faktura-zakaznik.pdf', 'faktura-prodej.pdf'],
+}
+
+export const mockDocuments = Array.from({ length: 30 }, (_, index) => {
+  const companyIndex = index % 5 // Rozdělit mezi prvních 5 firem
+  const companyId = `company-${companyIndex + 1}`
+  const monthIndex = Math.floor(index / 5) % 6 // Dokumenty pro leden-červen
+  const period = `2025-0${monthIndex + 1}`
+  const typeIndex = index % 4
+  const type = documentTypes[typeIndex]
+  const fileIndex = index % 3
+  const fileName = fileExamples[type][fileIndex]
+
+  const descriptions = [
+    'Faktura za nákup kancelářských potřeb',
+    'Bankovní výpis za běžný účet',
+    'Účtenka z obchodní večeře s klientem',
+    'Faktura za webhosting a doménu',
+    'Účtenka za PHM - služební cesta',
+    'Faktura za dodávku zboží',
+    'Výpis z firemní kreditní karty',
+    'Účtenka za ubytování - konference',
+    'Faktura za grafické práce',
+    'Bankovní výpis - spořící účet',
+  ]
+
+  const isPdf = fileName.endsWith('.pdf')
+  const imageCategories = ['receipt', 'business', 'food', 'tech']
+  const imageCategory = imageCategories[index % 4]
+
+  return {
+    id: `doc-${index + 1}`,
+    company_id: companyId,
+    period,
+    type,
+    file_name: fileName,
+    file_url: `https://example.com/doc${index + 1}.${isPdf ? 'pdf' : 'jpg'}`,
+    thumbnail_url: isPdf
+      ? `https://placehold.co/400x300/e0e0e0/666?text=PDF+Document&font=roboto`
+      : `https://images.unsplash.com/photo-${1600000000000 + index * 100000}?w=400&h=300&fit=crop&q=80&auto=format&auto=compress&sig=${imageCategory}${index}`,
+    description: descriptions[index % descriptions.length],
+    file_size_bytes: Math.floor(Math.random() * 2000000) + 100000,
+    google_drive_file_id: `drive-id-${index + 1}`,
+    mime_type: isPdf ? 'application/pdf' : 'image/jpeg',
     upload_source: 'web' as const,
     uploaded_by: 'user-1-client',
-    ocr_processed: true,
-    ocr_data: {
-      extracted_text: 'TESCO\nDatum: 15.01.2025\nCelkem: 450 Kč',
+    uploaded_at: `2025-0${monthIndex + 1}-${String(index % 28 + 1).padStart(2, '0')}T${String(index % 24).padStart(2, '0')}:00:00Z`,
+    ocr_processed: index % 3 === 0,
+    ocr_status: index % 3 === 0 ? 'completed' : 'pending',
+    ocr_data: index % 3 === 0 ? {
+      extracted_text: `Mock OCR data for ${fileName}`,
       parsed_fields: {
-        date: '2025-01-15',
-        total_amount: 450,
-        supplier_name: 'TESCO',
-        confidence: 0.95,
+        date: `2025-0${monthIndex + 1}-15`,
+        total_amount: Math.floor(Math.random() * 10000) + 100,
+        supplier_name: 'Mock Supplier',
+        confidence: 0.85 + Math.random() * 0.15,
       },
-    },
-    created_at: '2025-01-15T14:30:00Z',
+    } : null,
+    status: index % 4 === 0 ? 'approved' : index % 4 === 1 ? 'uploaded' : 'pending',
+    reviewed_by: index % 4 === 0 ? 'user-2-accountant' : null,
+    reviewed_at: index % 4 === 0 ? `2025-0${monthIndex + 1}-20T10:00:00Z` : null,
+    rejection_reason: null,
+    deleted_at: null,
+  }
+})
+
+// Mock tasks pro účetní
+export const mockTasks = [
+  {
+    id: 'task-1',
+    company_id: 'company-1',
+    company_name: 'ABC s.r.o.',
+    title: 'Chybí výpis z účtu za listopad',
+    description: 'Klient dosud nenahrál bankovní výpis za období 2025-11',
+    priority: 'high' as const,
+    status: 'pending' as const,
+    due_date: '2025-11-30',
+    created_at: '2025-11-20T10:00:00Z',
   },
   {
-    id: 'doc-2',
-    company_id: 'company-1',
-    period: '2025-01',
-    type: 'bank_statement' as const,
-    file_name: 'vypis-leden-2025.pdf',
-    file_url: 'https://example.com/doc2.pdf',
-    file_size: 1024000,
-    google_drive_file_id: 'drive-id-2',
-    upload_source: 'web' as const,
-    uploaded_by: 'user-1-client',
-    ocr_processed: false,
-    ocr_data: null,
-    created_at: '2025-02-01T09:00:00Z',
+    id: 'task-2',
+    company_id: 'company-2',
+    company_name: 'XYZ OSVČ',
+    title: 'Urgovat účtenky za listopad',
+    description: 'Klient nenahrál žádné účtenky, deadline za 3 dny',
+    priority: 'high' as const,
+    status: 'pending' as const,
+    due_date: '2025-11-28',
+    created_at: '2025-11-18T14:30:00Z',
   },
-  // Další dokumenty...
+  {
+    id: 'task-3',
+    company_id: 'company-3',
+    company_name: 'DEF s.r.o.',
+    title: 'Schválit výdajové faktury',
+    description: '5 faktur čeká na schválení',
+    priority: 'medium' as const,
+    status: 'pending' as const,
+    due_date: '2025-11-29',
+    created_at: '2025-11-22T09:15:00Z',
+  },
+  {
+    id: 'task-4',
+    company_id: 'company-4',
+    company_name: 'GHI Trading',
+    title: 'DPH přiznání - říjen 2025',
+    description: 'Připravit a podat DPH přiznání do 25.11.',
+    priority: 'high' as const,
+    status: 'in_progress' as const,
+    due_date: '2025-11-25',
+    created_at: '2025-11-15T11:00:00Z',
+  },
+  {
+    id: 'task-5',
+    company_id: 'company-5',
+    company_name: 'JKL Consulting',
+    title: 'Zkontrolovat příjmové faktury',
+    description: 'Ověřit správnost 3 nových faktur',
+    priority: 'low' as const,
+    status: 'pending' as const,
+    due_date: '2025-12-05',
+    created_at: '2025-11-23T16:20:00Z',
+  },
+  {
+    id: 'task-6',
+    company_id: 'company-1',
+    company_name: 'ABC s.r.o.',
+    title: 'Zaúčtovat mzdy - říjen',
+    description: 'Zpracovat mzdové podklady a zaúčtovat',
+    priority: 'medium' as const,
+    status: 'completed' as const,
+    due_date: '2025-11-15',
+    created_at: '2025-11-10T08:00:00Z',
+  },
+  {
+    id: 'task-7',
+    company_id: 'company-6',
+    company_name: 'MNO Services s.r.o.',
+    title: 'Urgovat příjmové faktury',
+    description: 'Klient nenahrál faktury za říjen',
+    priority: 'high' as const,
+    status: 'pending' as const,
+    due_date: '2025-11-27',
+    created_at: '2025-11-21T13:45:00Z',
+  },
+  {
+    id: 'task-8',
+    company_id: 'company-7',
+    company_name: 'PQR Development',
+    title: 'Měsíční uzávěrka - říjen',
+    description: 'Dokončit měsíční uzávěrku za říjen 2025',
+    priority: 'medium' as const,
+    status: 'completed' as const,
+    due_date: '2025-11-10',
+    created_at: '2025-11-01T09:00:00Z',
+  },
+  {
+    id: 'task-9',
+    company_id: 'company-8',
+    company_name: 'STU Marketing OSVČ',
+    title: 'Chybí bankovní výpis',
+    description: 'Nenahrán výpis za říjen 2025',
+    priority: 'high' as const,
+    status: 'pending' as const,
+    due_date: '2025-11-26',
+    created_at: '2025-11-19T10:30:00Z',
+  },
+  {
+    id: 'task-10',
+    company_id: 'company-9',
+    company_name: 'VWX Logistics s.r.o.',
+    title: 'Kontrola účetní závěrky',
+    description: 'Příprava podkladů pro roční závěrku',
+    priority: 'low' as const,
+    status: 'pending' as const,
+    due_date: '2025-12-15',
+    created_at: '2025-11-20T15:00:00Z',
+  },
 ]
 
 // Helper funkce pro získání dat

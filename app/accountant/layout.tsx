@@ -11,7 +11,10 @@ import {
   LogOut,
   Menu,
   X,
-  User
+  User,
+  Bell,
+  DollarSign,
+  Sparkles
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -30,6 +33,10 @@ const navigation = [
   { name: 'Klienti', href: '/accountant/clients', icon: Users },
   { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare },
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings },
+]
+
+const demoFeatures = [
+  { name: '⏰ Timeline Demo', href: '/accountant/demo-timeline', icon: Sparkles, badge: 'DEMO' },
 ]
 
 export default function AccountantLayout({
@@ -76,6 +83,38 @@ export default function AccountantLayout({
                 </Link>
               )
             })}
+
+            {/* DEMO FEATURES SECTION */}
+            <div className="pt-4 mt-4 border-t border-white/20">
+              <p className="px-2 text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
+                ✨ Nové Funkce (Demo)
+              </p>
+              {demoFeatures.map((item) => {
+                const isActive = pathname === item.href
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`
+                      group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors
+                      ${isActive
+                        ? 'bg-gradient-to-r from-yellow-400/30 to-orange-400/30 text-white border border-yellow-400/50'
+                        : 'text-white/80 hover:bg-gradient-to-r hover:from-yellow-400/20 hover:to-orange-400/20 hover:text-white border border-transparent'
+                      }
+                    `}
+                  >
+                    <span className="flex items-center">
+                      <Icon className={`mr-3 h-5 w-5 flex-shrink-0`} />
+                      {item.name}
+                    </span>
+                    <span className="px-2 py-0.5 text-xs font-bold bg-yellow-400 text-gray-900 rounded">
+                      {item.badge}
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
           </nav>
 
           {/* User section */}

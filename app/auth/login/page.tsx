@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import { User, Briefcase } from 'lucide-react'
 import { login } from './actions'
 
 export default function LoginPage() {
@@ -40,6 +42,15 @@ export default function LoginPage() {
     }
   }
 
+  const handleDemoLogin = (role: 'client' | 'accountant') => {
+    toast.success(`Demo přihlášení (${role === 'client' ? 'Klient' : 'Účetní'})`)
+    if (role === 'accountant') {
+      router.push('/accountant/dashboard')
+    } else {
+      router.push('/client/dashboard')
+    }
+  }
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
@@ -47,11 +58,48 @@ export default function LoginPage() {
           Přihlášení
         </CardTitle>
         <CardDescription>
-          Zadejte své přihlašovací údaje
+          Zadejte své přihlašovací údaje nebo použijte demo přístup
         </CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
+
+      {/* Demo Mode - Quick Access */}
+      <CardContent className="space-y-4">
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-center">🎯 Demo režim - Rychlý přístup:</p>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              onClick={() => handleDemoLogin('client')}
+              variant="outline"
+              className="h-auto flex-col gap-2 py-4 border-2 border-blue-200 hover:border-blue-500 hover:bg-blue-50 transition-all"
+            >
+              <User className="h-6 w-6 text-blue-600" />
+              <span className="font-semibold text-blue-700">Klient</span>
+              <span className="text-xs text-muted-foreground">Karel Novák</span>
+            </Button>
+            <Button
+              onClick={() => handleDemoLogin('accountant')}
+              variant="outline"
+              className="h-auto flex-col gap-2 py-4 border-2 border-purple-200 hover:border-purple-500 hover:bg-purple-50 transition-all"
+            >
+              <Briefcase className="h-6 w-6 text-purple-600" />
+              <span className="font-semibold text-purple-700">Účetní</span>
+              <span className="text-xs text-muted-foreground">Jana Svobodová</span>
+            </Button>
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <Separator />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-muted-foreground">
+              Nebo se přihlaste přes Supabase
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -80,23 +128,24 @@ export default function LoginPage() {
               Zapomenuté heslo?
             </Link>
           </div>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
           <Button
             type="submit"
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold"
             disabled={loading}
           >
             {loading ? 'Přihlašování...' : 'Přihlásit se'}
           </Button>
-          <p className="text-sm text-center text-muted-foreground">
-            Nemáte účet?{' '}
-            <Link href="/register" className="text-blue-600 hover:underline">
-              Zaregistrujte se
-            </Link>
-          </p>
-        </CardFooter>
-      </form>
+        </form>
+      </CardContent>
+
+      <CardFooter>
+        <p className="text-sm text-center text-muted-foreground w-full">
+          Nemáte účet?{' '}
+          <Link href="/auth/register" className="text-blue-600 hover:underline font-medium">
+            Zaregistrujte se
+          </Link>
+        </p>
+      </CardFooter>
     </Card>
   )
 }
