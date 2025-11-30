@@ -75,11 +75,8 @@ CREATE TABLE public.monthly_closures (
   bank_statement_uploaded_at TIMESTAMPTZ,
   bank_statement_file_url TEXT,
 
-  expense_invoices_status TEXT DEFAULT 'missing' CHECK (expense_invoices_status IN ('missing', 'uploaded', 'approved', 'rejected')),
-  expense_invoices_count INT DEFAULT 0,
-
-  receipts_status TEXT DEFAULT 'missing' CHECK (receipts_status IN ('missing', 'uploaded', 'approved', 'rejected')),
-  receipts_count INT DEFAULT 0,
+  expense_documents_status TEXT DEFAULT 'missing' CHECK (expense_documents_status IN ('missing', 'uploaded', 'approved', 'rejected')),
+  expense_documents_count INT DEFAULT 0,
 
   income_invoices_status TEXT DEFAULT 'missing' CHECK (income_invoices_status IN ('missing', 'uploaded', 'approved', 'rejected')),
   income_invoices_count INT DEFAULT 0,
@@ -528,8 +525,8 @@ BEGIN
   -- Determine which status column to update
   v_status_column := CASE p_document_type
     WHEN 'bank_statement' THEN 'bank_statement_status'
-    WHEN 'receipt' THEN 'receipts_status'
-    WHEN 'expense_invoice' THEN 'expense_invoices_status'
+    WHEN 'receipt' THEN 'expense_documents_status'
+    WHEN 'expense_invoice' THEN 'expense_documents_status'
     WHEN 'income_invoice' THEN 'income_invoices_status'
     ELSE NULL
   END;

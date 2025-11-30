@@ -135,8 +135,7 @@ INSERT INTO public.monthly_closures (
   period,
   status,
   bank_statement_status,
-  expense_invoices_status,
-  receipts_status,
+  expense_documents_status,
   income_invoices_status
 )
 SELECT
@@ -153,12 +152,7 @@ SELECT
     WHEN m.month_num <= 3 THEN 'approved'::text
     WHEN m.month_num <= 6 THEN 'uploaded'::text
     ELSE 'missing'::text
-  END AS expense_invoices_status,
-  CASE
-    WHEN m.month_num <= 3 THEN 'approved'::text
-    WHEN m.month_num <= 6 THEN 'uploaded'::text
-    ELSE 'missing'::text
-  END AS receipts_status,
+  END AS expense_documents_status,
   CASE
     WHEN m.month_num <= 3 THEN 'approved'::text
     WHEN m.month_num <= 6 THEN 'uploaded'::text
