@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { DeadlineAlertBar } from '@/components/deadline-alert-bar'
 import { DeadlineDashboardWidget } from '@/components/deadline-dashboard-widget'
@@ -93,6 +93,7 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
     dueDate: string
     type: 'critical' | 'urgent' | 'warning'
     caseId?: string
+    companyId?: string
     companyName?: string
   }> = []
 
@@ -133,6 +134,7 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         dueDate: deadline.toISOString(),
         type: daysUntil < 0 ? 'critical' : daysUntil <= 2 ? 'critical' : 'urgent',
         caseId: closure.id,
+        companyId: company.id,
         companyName: company.name
       })
     }
@@ -145,6 +147,7 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         dueDate: deadline.toISOString(),
         type: daysUntil <= 3 ? 'urgent' : 'warning',
         caseId: closure.id,
+        companyId: company.id,
         companyName: company.name
       })
     }
@@ -224,6 +227,7 @@ function generateDeadlineTasks(closures: MonthlyClosure[], companies: Company[])
         dueDate: deadline.toISOString(),
         priority,
         status,
+        companyId: company.id,
         companyName: company.name,
         assignedTo: 'Jana Svobodová'
       })
@@ -244,6 +248,34 @@ function StatusCell({
   monthIndex: number
   closures: MonthlyClosure[]
 }) {
+  const cellRef = useRef<HTMLTableCellElement>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
+  const arrowRef = useRef<HTMLDivElement>(null)
+
+  const handleMouseEnter = () => {
+    if (!cellRef.current || !tooltipRef.current || !arrowRef.current) return
+
+    const rect = cellRef.current.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+
+    // If cell is in bottom half of viewport, show tooltip above
+    if (rect.top > viewportHeight / 2) {
+      // Show above
+      tooltipRef.current.className = 'absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 block z-50 pointer-events-none'
+      arrowRef.current.className = 'w-3 h-3 bg-gray-900 transform rotate-45 absolute top-full -mt-1.5 left-1/2 -translate-x-1/2'
+    } else {
+      // Show below
+      tooltipRef.current.className = 'absolute top-full mt-2 left-1/2 transform -translate-x-1/2 block z-50 pointer-events-none'
+      arrowRef.current.className = 'w-3 h-3 bg-gray-900 transform rotate-45 absolute bottom-full -mb-1.5 left-1/2 -translate-x-1/2'
+    }
+  }
+
+  const handleMouseLeave = () => {
+    if (tooltipRef.current) {
+      tooltipRef.current.className = tooltipRef.current.className.replace('block', 'hidden')
+    }
+  }
+
   const status = getMonthStatus(closures, companyId, monthIndex)
   const colors = statusColors[status]
   const period = `2025-${String(monthIndex + 1).padStart(2, '0')}`
@@ -252,16 +284,13 @@ function StatusCell({
     c => c.company_id === companyId && c.period === period
   )
 
-  const tooltipContent = closure ? `
-    ${companyName} - ${months[monthIndex]} 2025
-
-    Výpis z banky: ${closure.bank_statement_status === 'approved' ? '✓' : closure.bank_statement_status === 'uploaded' ? '⏳' : '✗'}
-    Nákladové doklady: ${closure.expense_documents_status === 'approved' ? '✓' : closure.expense_documents_status === 'uploaded' ? '⏳' : '✗'}
-    Příjmové faktury: ${closure.income_invoices_status === 'approved' ? '✓' : closure.income_invoices_status === 'uploaded' ? '⏳' : '✗'}
-  ` : `${companyName} - ${months[monthIndex]} 2025\n\nŽádné dokumenty`
-
   return (
-    <td className="px-2 py-2 text-center">
+    <td
+      ref={cellRef}
+      className="px-2 py-2 text-center relative"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <Link href={`/accountant/clients/${companyId}`}>
         <div
           className={`
@@ -269,46 +298,45 @@ function StatusCell({
             ${colors.bg} ${colors.border}
             hover:scale-110 hover:shadow-lg
             flex items-center justify-center
-            relative group
           `}
-          title={tooltipContent}
         >
         <span className={`text-xs font-semibold ${colors.text}`}>
           {status === 'approved' ? '✓' : status === 'uploaded' ? '⏳' : '!'}
         </span>
-
-        {/* Tooltip */}
-        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 hidden group-hover:block z-50">
-          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-pre-line shadow-xl max-w-xs">
-            <div className="font-bold mb-1">{companyName}</div>
-            <div className="text-gray-300 mb-2">{months[monthIndex]} 2025</div>
-            {closure && (
-              <div className="space-y-1 text-left">
-                <div className="flex items-center">
-                  <span className={closure.bank_statement_status === 'approved' ? 'text-green-400' : closure.bank_statement_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
-                    {closure.bank_statement_status === 'approved' ? '✓' : closure.bank_statement_status === 'uploaded' ? '⏳' : '✗'}
-                  </span>
-                  <span className="ml-2">Výpis z banky</span>
-                </div>
-                <div className="flex items-center">
-                  <span className={closure.expense_documents_status === 'approved' ? 'text-green-400' : closure.expense_documents_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
-                    {closure.expense_documents_status === 'approved' ? '✓' : closure.expense_documents_status === 'uploaded' ? '⏳' : '✗'}
-                  </span>
-                  <span className="ml-2">Nákladové doklady</span>
-                </div>
-                <div className="flex items-center">
-                  <span className={closure.income_invoices_status === 'approved' ? 'text-green-400' : closure.income_invoices_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
-                    {closure.income_invoices_status === 'approved' ? '✓' : closure.income_invoices_status === 'uploaded' ? '⏳' : '✗'}
-                  </span>
-                  <span className="ml-2">Příjmové faktury</span>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="w-3 h-3 bg-gray-900 transform rotate-45 absolute top-full left-1/2 -translate-x-1/2 -mt-1.5"></div>
-        </div>
         </div>
       </Link>
+
+      {/* Tooltip - smart positioning with direct DOM manipulation */}
+      <div ref={tooltipRef} className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 hidden z-50 pointer-events-none">
+        <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-xl">
+          <div className="font-bold mb-1">{companyName}</div>
+          <div className="text-gray-300 mb-2">{months[monthIndex]} 2025</div>
+          {closure && (
+            <div className="space-y-1 text-left">
+              <div className="flex items-center gap-2">
+                <span className={closure.bank_statement_status === 'approved' ? 'text-green-400' : closure.bank_statement_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
+                  {closure.bank_statement_status === 'approved' ? '✓' : closure.bank_statement_status === 'uploaded' ? '⏳' : '✗'}
+                </span>
+                <span>Výpis z banky</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={closure.expense_documents_status === 'approved' ? 'text-green-400' : closure.expense_documents_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
+                  {closure.expense_documents_status === 'approved' ? '✓' : closure.expense_documents_status === 'uploaded' ? '⏳' : '✗'}
+                </span>
+                <span>Nákladové doklady</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={closure.income_invoices_status === 'approved' ? 'text-green-400' : closure.income_invoices_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
+                  {closure.income_invoices_status === 'approved' ? '✓' : closure.income_invoices_status === 'uploaded' ? '⏳' : '✗'}
+                </span>
+                <span>Příjmové faktury</span>
+              </div>
+            </div>
+          )}
+        </div>
+        {/* Arrow */}
+        <div ref={arrowRef} className="w-3 h-3 bg-gray-900 transform rotate-45 absolute bottom-full -mb-1.5 left-1/2 -translate-x-1/2"></div>
+      </div>
     </td>
   )
 }
@@ -437,10 +465,12 @@ export default function AccountantDashboard() {
             {companies.map((company, companyIndex) => (
               <tr key={company.id} className={companyIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-inherit z-10">
-                  <div>
-                    <div className="font-semibold">{company.name}</div>
-                    <div className="text-xs text-gray-500">IČO: {company.ico}</div>
-                  </div>
+                  <Link href={`/accountant/clients/${company.id}`} className="hover:text-blue-600 transition-colors">
+                    <div>
+                      <div className="font-semibold">{company.name}</div>
+                      <div className="text-xs text-gray-500">IČO: {company.ico}</div>
+                    </div>
+                  </Link>
                 </td>
                 {months.map((_, monthIndex) => (
                   <StatusCell
@@ -460,16 +490,8 @@ export default function AccountantDashboard() {
       {/* Deadline Widget and Stats */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Deadline Widget - takes 1 column */}
-        <div className="lg:col-span-1">
-          <DeadlineDashboardWidget
-            tasks={deadlineTasks}
-            onTaskClick={(taskId) => {
-              const closure = closures.find(c => c.id === taskId)
-              if (closure) {
-                window.location.href = `/accountant/clients/${closure.company_id}`
-              }
-            }}
-          />
+        <div className="lg:col-span-1" id="deadline-widget">
+          <DeadlineDashboardWidget tasks={deadlineTasks} />
         </div>
 
         {/* Stats - take 2 columns */}

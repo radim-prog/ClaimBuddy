@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { Calendar, AlertCircle, Clock, CheckCircle2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 interface DeadlineTask {
   id: string
@@ -11,16 +13,28 @@ interface DeadlineTask {
   dueDate: string
   priority: 'critical' | 'high' | 'medium' | 'low'
   status: 'overdue' | 'today' | 'this-week' | 'later'
+  companyId?: string
   companyName?: string
   assignedTo?: string
 }
 
 interface DeadlineDashboardWidgetProps {
   tasks: DeadlineTask[]
-  onTaskClick?: (taskId: string) => void
 }
 
-export function DeadlineDashboardWidget({ tasks, onTaskClick }: DeadlineDashboardWidgetProps) {
+export function DeadlineDashboardWidget({ tasks }: DeadlineDashboardWidgetProps) {
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set())
+
+  const toggleSection = (index: number) => {
+    const newExpanded = new Set(expandedSections)
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index)
+    } else {
+      newExpanded.add(index)
+    }
+    setExpandedSections(newExpanded)
+  }
+
   const getDaysUntil = (dueDate: string) => {
     const now = new Date()
     const due = new Date(dueDate)
@@ -58,10 +72,11 @@ export function DeadlineDashboardWidget({ tasks, onTaskClick }: DeadlineDashboar
     const days = getDaysUntil(dueDate)
     const date = new Date(dueDate)
 
-    if (days < 0) return `PROŠLO (${Math.abs(days)}d)`
+    if (days < 0) return `PROŠLO před ${Math.abs(days)} dny`
     if (days === 0) return 'DNES'
-    if (days === 1) return 'ZÍTRA'
-    if (days <= 7) return `${days} dní`
+    if (days === 1) return 'ZÍTRA (zbývá 1 den)'
+    if (days <= 7) return `Zbývá ${days} dní`
+    if (days <= 14) return `Zbývá ${days} dní`
 
     return date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' })
   }
@@ -111,39 +126,51 @@ export function DeadlineDashboardWidget({ tasks, onTaskClick }: DeadlineDashboar
                     {section.title} ({section.tasks.length})
                   </h4>
                   <div className="space-y-2">
-                    {section.tasks.slice(0, 3).map((task) => (
-                      <div
-                        key={task.id}
-                        className={`p-3 rounded-lg border ${getStatusColor(task.status)} cursor-pointer hover:shadow-md transition-shadow`}
-                        onClick={() => onTaskClick?.(task.id)}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              {getPriorityIcon(task.priority)}
-                              <span className="text-sm font-medium truncate">{task.title}</span>
+                    {section.tasks.slice(0, expandedSections.has(idx) ? undefined : 3).map((task) => {
+                      const linkUrl = task.companyId ? `/accountant/clients/${task.companyId}` : '#'
+
+                      return (
+                        <Link key={task.id} href={linkUrl}>
+                          <div
+                            className={`p-3 rounded-lg border ${getStatusColor(task.status)} cursor-pointer hover:shadow-md transition-shadow`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  {getPriorityIcon(task.priority)}
+                                  <span className="text-sm font-medium truncate">{task.title}</span>
+                                </div>
+                                {task.companyName && (
+                                  <p className="text-xs opacity-75 truncate">{task.companyName}</p>
+                                )}
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <div className="text-xs font-bold">
+                                  {formatDeadline(task.dueDate)}
+                                </div>
+                                <div className="text-xs opacity-75">
+                                  {new Date(task.dueDate).toLocaleTimeString('cs-CZ', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
+                              </div>
                             </div>
-                            {task.companyName && (
-                              <p className="text-xs opacity-75 truncate">{task.companyName}</p>
-                            )}
                           </div>
-                          <div className="text-right flex-shrink-0">
-                            <div className="text-xs font-bold">
-                              {formatDeadline(task.dueDate)}
-                            </div>
-                            <div className="text-xs opacity-75">
-                              {new Date(task.dueDate).toLocaleTimeString('cs-CZ', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                        </Link>
+                      )
+                    })}
                     {section.tasks.length > 3 && (
-                      <Button variant="ghost" size="sm" className="w-full text-xs">
-                        Zobrazit všech {section.tasks.length} →
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs"
+                        onClick={() => toggleSection(idx)}
+                      >
+                        {expandedSections.has(idx)
+                          ? '↑ Zobrazit méně'
+                          : `Zobrazit všech ${section.tasks.length} →`
+                        }
                       </Button>
                     )}
                   </div>

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function login(formData: FormData) {
   const username = formData.get('username') as string
@@ -12,10 +13,14 @@ export async function login(formData: FormData) {
     return { error: 'Jméno a heslo jsou povinné' }
   }
 
-  const supabase = createServerClient()
+  // Use service role for user lookup (bypasses RLS)
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
 
   // Find user by name to get their internal email
-  const { data: userData, error: userError } = await supabase
+  const { data: userData, error: userError } = await adminSupabase
     .from('users')
     .select('email')
     .eq('name', username)
@@ -24,6 +29,9 @@ export async function login(formData: FormData) {
   if (userError || !userData) {
     return { error: 'Neplatné jméno nebo heslo' }
   }
+
+  // Use regular client for auth
+  const supabase = createServerClient()
 
   // Login with internal email
   const { data, error } = await supabase.auth.signInWithPassword({
