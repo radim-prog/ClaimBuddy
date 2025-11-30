@@ -13,20 +13,24 @@ export async function POST() {
       }
     })
 
-    // Check if any admin exists
-    const { data: existingAdmin } = await supabase
-      .from('users')
-      .select('id')
-      .eq('role', 'admin')
-      .limit(1)
-      .single()
+    // Check if any admin exists in Auth (not just in users table)
+    const { data: authUsers } = await supabase.auth.admin.listUsers()
+    const adminInAuth = authUsers?.users?.some(u =>
+      u.email === 'radim@internal.local' || u.user_metadata?.name === 'Radim'
+    )
 
-    if (existingAdmin) {
+    if (adminInAuth) {
       return NextResponse.json(
-        { error: 'Admin už existuje' },
+        { error: 'Admin už existuje v Auth' },
         { status: 400 }
       )
     }
+
+    // Clean up orphaned user record if exists
+    await supabase
+      .from('users')
+      .delete()
+      .eq('email', 'radim@internal.local')
 
     // Create auth user
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
