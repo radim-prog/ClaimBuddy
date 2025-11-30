@@ -31,8 +31,7 @@ type MonthlyClosure = {
   period: string
   status: string
   bank_statement_status: string
-  expense_invoices_status: string
-  receipts_status: string
+  expense_documents_status: string
   income_invoices_status: string
 }
 
@@ -171,14 +170,12 @@ export default function ClientDetailPage() {
             {closures.slice(0, 12).map((closure) => {
               const allApproved =
                 closure.bank_statement_status === 'approved' &&
-                closure.expense_invoices_status === 'approved' &&
-                closure.receipts_status === 'approved' &&
+                closure.expense_documents_status === 'approved' &&
                 closure.income_invoices_status === 'approved'
 
               const anyMissing =
                 closure.bank_statement_status === 'missing' ||
-                closure.expense_invoices_status === 'missing' ||
-                closure.receipts_status === 'missing' ||
+                closure.expense_documents_status === 'missing' ||
                 closure.income_invoices_status === 'missing'
 
               return (

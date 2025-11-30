@@ -181,15 +181,9 @@ export default function CompanyDetailPage() {
                           </Badge>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm">Výdajové faktury:</span>
-                          <Badge className={statusColors[closure.expense_invoices_status as keyof typeof statusColors]}>
-                            {closure.expense_invoices_status}
-                          </Badge>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">Účtenky:</span>
-                          <Badge className={statusColors[closure.receipts_status as keyof typeof statusColors]}>
-                            {closure.receipts_status}
+                          <span className="text-sm">Nákladové doklady:</span>
+                          <Badge className={statusColors[closure.expense_documents_status as keyof typeof statusColors]}>
+                            {closure.expense_documents_status}
                           </Badge>
                         </div>
                         <div className="flex justify-between">
