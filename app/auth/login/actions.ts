@@ -5,59 +5,50 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase-server'
 
 export async function login(formData: FormData) {
-  const email = formData.get('email') as string
+  const username = formData.get('username') as string
   const password = formData.get('password') as string
 
-  if (!email || !password) {
-    return { error: 'Email a heslo jsou povinné' }
+  if (!username || !password) {
+    return { error: 'Jméno a heslo jsou povinné' }
   }
 
   const supabase = createServerClient()
 
+  // Find user by name to get their internal email
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('email')
+    .eq('name', username)
+    .single()
+
+  if (userError || !userData) {
+    return { error: 'Neplatné jméno nebo heslo' }
+  }
+
+  // Login with internal email
   const { data, error } = await supabase.auth.signInWithPassword({
-    email,
+    email: userData.email,
     password,
   })
 
   if (error) {
     console.error('Login error:', error)
-    return { error: error.message }
+    return { error: 'Neplatné jméno nebo heslo' }
   }
 
   if (!data.user) {
     return { error: 'Přihlášení selhalo' }
   }
 
-  // Získat user role z databáze
-  const { data: userData, error: userError } = await supabase
+  // Get user role (we already have it from the first query, just fetch again to be sure)
+  const { data: roleData, error: roleError } = await supabase
     .from('users')
     .select('role')
     .eq('id', data.user.id)
     .single()
 
-  if (userError) {
-    console.error('User fetch error:', userError)
-    // Pokud user nemá záznam v users tabulce, vytvoříme ho s default rolí
-    const { error: insertError } = await supabase
-      .from('users')
-      .insert({
-        id: data.user.id,
-        email: data.user.email!,
-        name: data.user.user_metadata.name || data.user.email!.split('@')[0],
-        role: 'client', // Default role
-      })
-
-    if (insertError) {
-      console.error('User insert error:', insertError)
-    }
-
-    // Redirect na client dashboard jako fallback
-    revalidatePath('/', 'layout')
-    redirect('/client/dashboard')
-  }
-
   // Redirect podle role
-  const role = userData?.role || 'client'
+  const role = roleData?.role || 'client'
 
   revalidatePath('/', 'layout')
 

@@ -94,20 +94,21 @@ export default function LoginPage() {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-white px-2 text-muted-foreground">
-              Nebo se přihlaste přes Supabase
+              Nebo se přihlaste účtem
             </span>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="username">Jméno</Label>
             <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="vas@email.cz"
+              id="username"
+              name="username"
+              type="text"
+              placeholder="Radim"
               required
+              autoComplete="username"
             />
           </div>
           <div className="space-y-2">
@@ -118,15 +119,8 @@ export default function LoginPage() {
               type="password"
               placeholder="••••••••"
               required
+              autoComplete="current-password"
             />
-          </div>
-          <div className="flex items-center justify-between">
-            <Link
-              href="/forgot-password"
-              className="text-sm text-blue-600 hover:underline"
-            >
-              Zapomenuté heslo?
-            </Link>
           </div>
           <Button
             type="submit"
@@ -140,10 +134,7 @@ export default function LoginPage() {
 
       <CardFooter>
         <p className="text-sm text-center text-muted-foreground w-full">
-          Nemáte účet?{' '}
-          <Link href="/auth/register" className="text-blue-600 hover:underline font-medium">
-            Zaregistrujte se
-          </Link>
+          Uživatelské účty vytváří pouze administrátor
         </p>
       </CardFooter>
     </Card>
