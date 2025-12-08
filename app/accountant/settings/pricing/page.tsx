@@ -6,10 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { DollarSign, Car, FileText, Clock, AlertTriangle, Save, Settings as SettingsIcon } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { DollarSign, Car, FileText, Clock, AlertTriangle, Save } from 'lucide-react'
 import { getPricingSettings, savePricingSettings, type PricingSettings } from '@/lib/pricing-settings'
-import Link from 'next/link'
 
 export default function PricingSettingsPage() {
   const [settings, setSettings] = useState<PricingSettings | null>(null)
@@ -31,11 +29,9 @@ export default function PricingSettingsPage() {
   // Show loading state while settings are loading
   if (!settings) {
     return (
-      <div className="max-w-4xl mx-auto py-8 px-6">
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Načítám nastavení...</p>
-        </div>
+      <div className="text-center py-12">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <p className="mt-4 text-gray-600">Načítám nastavení...</p>
       </div>
     )
   }
@@ -81,29 +77,7 @@ export default function PricingSettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-6 space-y-6">
-      {/* Tabs Navigation */}
-      <div>
-        <h1 className="text-3xl font-bold mb-4">Nastavení</h1>
-        <div className="flex gap-2 border-b border-gray-200 mb-6">
-          <Link
-            href="/accountant/settings"
-            className="px-4 py-2 font-medium border-b-2 border-transparent text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <SettingsIcon className="h-4 w-4" />
-              Obecné nastavení
-            </div>
-          </Link>
-          <div className="px-4 py-2 font-medium border-b-2 border-blue-600 text-blue-600">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Ceník a Sazby
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Ceník a Sazby</h2>

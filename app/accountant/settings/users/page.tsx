@@ -1,0 +1,428 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Users as UsersIcon, UserPlus, Pencil, Trash2, Shield, User } from 'lucide-react'
+import { createBrowserClient } from '@supabase/ssr'
+
+interface User {
+  id: string
+  email: string
+  full_name: string
+  role: 'admin' | 'accountant' | 'assistant'
+  created_at: string
+}
+
+export default function UserManagementPage() {
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [newUser, setNewUser] = useState({
+    email: '',
+    full_name: '',
+    role: 'accountant' as 'admin' | 'accountant' | 'assistant',
+    password: ''
+  })
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setUsers(data || [])
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateUser = async () => {
+    try {
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: newUser.email,
+        password: newUser.password,
+      })
+
+      if (authError) throw authError
+
+      // Create user record
+      const { error: dbError } = await supabase
+        .from('users')
+        .insert({
+          id: authData.user?.id,
+          email: newUser.email,
+          full_name: newUser.full_name,
+          role: newUser.role,
+        })
+
+      if (dbError) throw dbError
+
+      setCreateDialogOpen(false)
+      setNewUser({ email: '', full_name: '', role: 'accountant', password: '' })
+      fetchUsers()
+    } catch (error) {
+      console.error('Error creating user:', error)
+      alert('Chyba při vytváření uživatele')
+    }
+  }
+
+  const handleUpdateUser = async () => {
+    if (!selectedUser) return
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          full_name: selectedUser.full_name,
+          role: selectedUser.role,
+        })
+        .eq('id', selectedUser.id)
+
+      if (error) throw error
+
+      setEditDialogOpen(false)
+      setSelectedUser(null)
+      fetchUsers()
+    } catch (error) {
+      console.error('Error updating user:', error)
+      alert('Chyba při aktualizaci uživatele')
+    }
+  }
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', selectedUser.id)
+
+      if (error) throw error
+
+      setDeleteDialogOpen(false)
+      setSelectedUser(null)
+      fetchUsers()
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      alert('Chyba při mazání uživatele')
+    }
+  }
+
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return <Badge className="bg-purple-600"><Shield className="h-3 w-3 mr-1" />Admin</Badge>
+      case 'accountant':
+        return <Badge className="bg-blue-600"><User className="h-3 w-3 mr-1" />Účetní</Badge>
+      case 'assistant':
+        return <Badge className="bg-gray-600"><User className="h-3 w-3 mr-1" />Asistent</Badge>
+      default:
+        return <Badge>{role}</Badge>
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <p className="mt-4 text-gray-600">Načítám uživatele...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Správa uživatelů</h2>
+          <p className="text-gray-600 mt-2">Spravujte přístup uživatelů k systému</p>
+        </div>
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Přidat uživatele
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Vytvořit nového uživatele</DialogTitle>
+              <DialogDescription>
+                Přidejte nového člena týmu do systému
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-email">Email *</Label>
+                <Input
+                  id="new-email"
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  placeholder="jmeno@firma.cz"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-name">Celé jméno *</Label>
+                <Input
+                  id="new-name"
+                  value={newUser.full_name}
+                  onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
+                  placeholder="Jan Novák"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Heslo *</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  placeholder="Minimálně 6 znaků"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-role">Role *</Label>
+                <Select
+                  value={newUser.role}
+                  onValueChange={(value: 'admin' | 'accountant' | 'assistant') =>
+                    setNewUser({ ...newUser, role: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin - Plný přístup</SelectItem>
+                    <SelectItem value="accountant">Účetní - Standardní přístup</SelectItem>
+                    <SelectItem value="assistant">Asistent - Omezený přístup</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                Zrušit
+              </Button>
+              <Button onClick={handleCreateUser} className="bg-blue-600 hover:bg-blue-700">
+                Vytvořit uživatele
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UsersIcon className="h-5 w-5" />
+            Seznam uživatelů
+          </CardTitle>
+          <CardDescription>
+            {users.length} {users.length === 1 ? 'uživatel' : users.length < 5 ? 'uživatelé' : 'uživatelů'} v systému
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {users.map((user) => (
+              <div
+                key={user.id}
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <p className="font-semibold">{user.full_name}</p>
+                      <p className="text-sm text-gray-600">{user.email}</p>
+                    </div>
+                    {getRoleBadge(user.role)}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Vytvořeno: {new Date(user.created_at).toLocaleDateString('cs-CZ')}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Dialog open={editDialogOpen && selectedUser?.id === user.id} onOpenChange={setEditDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedUser(user)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Upravit uživatele</DialogTitle>
+                        <DialogDescription>
+                          Změňte role nebo informace o uživateli
+                        </DialogDescription>
+                      </DialogHeader>
+                      {selectedUser && (
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Email</Label>
+                            <Input value={selectedUser.email} disabled />
+                            <p className="text-xs text-gray-500">Email nelze měnit</p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-name">Celé jméno</Label>
+                            <Input
+                              id="edit-name"
+                              value={selectedUser.full_name}
+                              onChange={(e) =>
+                                setSelectedUser({ ...selectedUser, full_name: e.target.value })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-role">Role</Label>
+                            <Select
+                              value={selectedUser.role}
+                              onValueChange={(value: 'admin' | 'accountant' | 'assistant') =>
+                                setSelectedUser({ ...selectedUser, role: value })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin - Plný přístup</SelectItem>
+                                <SelectItem value="accountant">Účetní - Standardní přístup</SelectItem>
+                                <SelectItem value="assistant">Asistent - Omezený přístup</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      )}
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                          Zrušit
+                        </Button>
+                        <Button onClick={handleUpdateUser} className="bg-blue-600 hover:bg-blue-700">
+                          Uložit změny
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog open={deleteDialogOpen && selectedUser?.id === user.id} onOpenChange={setDeleteDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:bg-red-50"
+                        onClick={() => setSelectedUser(user)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Smazat uživatele</DialogTitle>
+                        <DialogDescription>
+                          Opravdu chcete smazat uživatele {selectedUser?.full_name}?
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <p className="text-sm text-red-800">
+                          ⚠️ Tato akce je nevratná. Uživatel ztratí přístup k systému a všechna jeho data budou odstraněna.
+                        </p>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                          Zrušit
+                        </Button>
+                        <Button onClick={handleDeleteUser} className="bg-red-600 hover:bg-red-700">
+                          Smazat uživatele
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+            ))}
+
+            {users.length === 0 && (
+              <div className="text-center py-12">
+                <UsersIcon className="h-12 w-12 mx-auto text-gray-400" />
+                <p className="mt-4 text-gray-600">Zatím nemáte žádné uživatele</p>
+                <p className="text-sm text-gray-500">Začněte přidáním prvního člena týmu</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Role Information */}
+      <Card className="bg-blue-50 border-blue-200">
+        <CardHeader>
+          <CardTitle className="text-sm">Informace o rolích</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex items-start gap-2">
+            <Shield className="h-4 w-4 mt-0.5 text-purple-600" />
+            <div>
+              <p className="font-semibold">Admin</p>
+              <p className="text-gray-700">Plný přístup včetně správy uživatelů a nastavení</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <User className="h-4 w-4 mt-0.5 text-blue-600" />
+            <div>
+              <p className="font-semibold">Účetní</p>
+              <p className="text-gray-700">Standardní přístup k účetnictví a klientům</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <User className="h-4 w-4 mt-0.5 text-gray-600" />
+            <div>
+              <p className="font-semibold">Asistent</p>
+              <p className="text-gray-700">Omezený přístup pouze k prohlížení a základním operacím</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
