@@ -4,6 +4,7 @@ import { AlertCircle, Bell, Calendar, X } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 interface DeadlineItem {
   id: string
@@ -11,6 +12,7 @@ interface DeadlineItem {
   dueDate: string // ISO format
   type: 'critical' | 'urgent' | 'warning'
   caseId?: string
+  companyId?: string
   companyName?: string
 }
 
@@ -35,11 +37,15 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
   const formatTimeLeft = (dueDate: string) => {
     const hours = getHoursUntil(dueDate)
 
-    if (hours < 0) return 'PO TERMÍNU!'
+    if (hours < 0) {
+      const days = Math.abs(Math.floor(hours / 24))
+      return `Prošlo před ${days} dny`
+    }
     if (hours === 0) return 'DNES!'
-    if (hours < 24) return `${hours}h`
+    if (hours < 24) return `Zbývá ${hours} hodin`
     const days = Math.floor(hours / 24)
-    return `${days}d`
+    if (days === 1) return 'Zbývá 1 den'
+    return `Zbývá ${days} dní`
   }
 
   const getBarStyle = (type: string) => {
@@ -58,10 +64,12 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
   const mostUrgent = visibleDeadlines[0]
   const overdue = getHoursUntil(mostUrgent.dueDate) < 0
 
+  const linkUrl = mostUrgent.companyId ? `/accountant/clients/${mostUrgent.companyId}` : '#'
+
   return (
     <div className={`${getBarStyle(mostUrgent.type)} border-b-2 px-6 py-3 shadow-lg animate-pulse`}>
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <Link href={linkUrl} className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-90 transition-opacity">
           {overdue ? (
             <AlertCircle className="h-6 w-6 flex-shrink-0 animate-bounce" />
           ) : (
@@ -93,11 +101,22 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
               </Badge>
             </div>
           </div>
-        </div>
+        </Link>
 
         <div className="flex items-center gap-2">
           {visibleDeadlines.length > 1 && (
-            <Badge variant="secondary" className="bg-white/20 text-xs">
+            <Badge
+              variant="secondary"
+              className="bg-white/20 text-xs cursor-pointer hover:bg-white/30 transition-colors"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                const widget = document.getElementById('deadline-widget')
+                if (widget) {
+                  widget.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+              }}
+            >
               +{visibleDeadlines.length - 1} dalších
             </Badge>
           )}
@@ -106,7 +125,11 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
             size="sm"
             variant="ghost"
             className="h-8 w-8 p-0 hover:bg-white/20"
-            onClick={() => setDismissed([...dismissed, mostUrgent.id])}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setDismissed([...dismissed, mostUrgent.id])
+            }}
           >
             <X className="h-4 w-4" />
           </Button>

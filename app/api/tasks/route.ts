@@ -1,0 +1,225 @@
+import { NextResponse } from 'next/server'
+import { createServerClient } from '@/lib/supabase-server'
+import { CreateTaskInput, TaskFilter } from '@/lib/types/tasks'
+
+/**
+ * GET /api/tasks - List tasks with filters
+ *
+ * Query params:
+ * - status: TaskStatus (can be comma-separated for multiple)
+ * - priority: TaskPriority (can be comma-separated for multiple)
+ * - assigned_to: UUID
+ * - created_by: UUID
+ * - company_id: UUID
+ * - is_project: boolean
+ * - is_billable: boolean
+ * - gtd_context: string (can be comma-separated for multiple)
+ * - gtd_energy_level: 'high' | 'medium' | 'low'
+ * - gtd_is_quick_action: boolean
+ * - due_date_from: DATE
+ * - due_date_to: DATE
+ * - parent_project_id: UUID
+ * - search: string (searches title and description)
+ * - sort_by: field to sort by (default: created_at)
+ * - sort_order: 'asc' | 'desc' (default: desc)
+ * - page: number (default: 1)
+ * - page_size: number (default: 50, max: 100)
+ */
+export async function GET(request: Request) {
+  try {
+    const supabase = createServerClient()
+
+    // Check authentication
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
+      return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
+    }
+
+    // Parse query parameters
+    const { searchParams } = new URL(request.url)
+
+    const filters: TaskFilter = {
+      status: searchParams.get('status')?.split(',') as any,
+      priority: searchParams.get('priority')?.split(',') as any,
+      assigned_to: searchParams.get('assigned_to') || undefined,
+      created_by: searchParams.get('created_by') || undefined,
+      company_id: searchParams.get('company_id') || undefined,
+      is_project: searchParams.get('is_project') === 'true' ? true :
+                   searchParams.get('is_project') === 'false' ? false : undefined,
+      is_billable: searchParams.get('is_billable') === 'true' ? true :
+                    searchParams.get('is_billable') === 'false' ? false : undefined,
+      gtd_context: searchParams.get('gtd_context')?.split(','),
+      gtd_energy_level: searchParams.get('gtd_energy_level') as any,
+      gtd_is_quick_action: searchParams.get('gtd_is_quick_action') === 'true' ? true :
+                            searchParams.get('gtd_is_quick_action') === 'false' ? false : undefined,
+      due_date_from: searchParams.get('due_date_from') || undefined,
+      due_date_to: searchParams.get('due_date_to') || undefined,
+      parent_project_id: searchParams.get('parent_project_id') || undefined,
+      search: searchParams.get('search') || undefined,
+    }
+
+    const sortBy = searchParams.get('sort_by') || 'created_at'
+    const sortOrder = searchParams.get('sort_order') || 'desc'
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const pageSize = Math.min(parseInt(searchParams.get('page_size') || '50', 10), 100)
+
+    // Build query
+    let query = supabase
+      .from('tasks')
+      .select('*', { count: 'exact' })
+
+    // Apply filters
+    if (filters.status) {
+      if (Array.isArray(filters.status)) {
+        query = query.in('status', filters.status)
+      } else {
+        query = query.eq('status', filters.status)
+      }
+    }
+
+    if (filters.priority) {
+      if (Array.isArray(filters.priority)) {
+        query = query.in('priority', filters.priority)
+      } else {
+        query = query.eq('priority', filters.priority)
+      }
+    }
+
+    if (filters.assigned_to) {
+      query = query.eq('assigned_to', filters.assigned_to)
+    }
+
+    if (filters.created_by) {
+      query = query.eq('created_by', filters.created_by)
+    }
+
+    if (filters.company_id) {
+      query = query.eq('company_id', filters.company_id)
+    }
+
+    if (filters.is_project !== undefined) {
+      query = query.eq('is_project', filters.is_project)
+    }
+
+    if (filters.is_billable !== undefined) {
+      query = query.eq('is_billable', filters.is_billable)
+    }
+
+    if (filters.gtd_context && filters.gtd_context.length > 0) {
+      query = query.overlaps('gtd_context', filters.gtd_context)
+    }
+
+    if (filters.gtd_energy_level) {
+      query = query.eq('gtd_energy_level', filters.gtd_energy_level)
+    }
+
+    if (filters.gtd_is_quick_action !== undefined) {
+      query = query.eq('gtd_is_quick_action', filters.gtd_is_quick_action)
+    }
+
+    if (filters.due_date_from) {
+      query = query.gte('due_date', filters.due_date_from)
+    }
+
+    if (filters.due_date_to) {
+      query = query.lte('due_date', filters.due_date_to)
+    }
+
+    if (filters.parent_project_id) {
+      query = query.eq('parent_project_id', filters.parent_project_id)
+    }
+
+    if (filters.search) {
+      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
+    }
+
+    // Apply sorting
+    const ascending = sortOrder === 'asc'
+    query = query.order(sortBy, { ascending })
+
+    // Apply pagination
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
+    query = query.range(from, to)
+
+    const { data: tasks, error, count } = await query
+
+    if (error) {
+      console.error('Tasks fetch error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      tasks: tasks || [],
+      total: count || 0,
+      page,
+      page_size: pageSize,
+      total_pages: Math.ceil((count || 0) / pageSize),
+    })
+  } catch (error: any) {
+    console.error('GET tasks error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
+
+/**
+ * POST /api/tasks - Create new task
+ *
+ * Body: CreateTaskInput
+ * Returns: Created task with ID
+ */
+export async function POST(request: Request) {
+  try {
+    const supabase = createServerClient()
+
+    // Check authentication
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
+      return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
+    }
+
+    const body: CreateTaskInput = await request.json()
+
+    // Validate required fields
+    if (!body.title || !body.company_id || !body.company_name) {
+      return NextResponse.json(
+        { error: 'Název úkolu, company_id a company_name jsou povinné' },
+        { status: 400 }
+      )
+    }
+
+    // Ensure created_by is set to current user
+    const taskData = {
+      ...body,
+      created_by: authUser.id,
+      created_by_name: body.created_by_name || authUser.user_metadata?.name || authUser.email,
+      // Set defaults if not provided
+      status: body.status || 'pending',
+      priority: body.priority || 'medium',
+      is_project: body.is_project || false,
+      is_billable: body.is_billable || false,
+      gtd_is_quick_action: body.gtd_is_quick_action || false,
+      progress_percentage: 0,
+      actual_minutes: 0,
+      billable_hours: 0,
+      invoiced_amount: 0,
+    }
+
+    // Create task
+    const { data: task, error: taskError } = await supabase
+      .from('tasks')
+      .insert(taskData)
+      .select()
+      .single()
+
+    if (taskError) {
+      console.error('Task creation error:', taskError)
+      return NextResponse.json({ error: taskError.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ task }, { status: 201 })
+  } catch (error: any) {
+    console.error('POST task error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}

@@ -14,7 +14,8 @@ import {
   User,
   Bell,
   DollarSign,
-  Sparkles
+  Sparkles,
+  UserPlus
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -31,7 +32,9 @@ import { logout } from '@/app/auth/login/actions'
 const navigation = [
   { name: 'Dashboard', href: '/accountant/dashboard', icon: LayoutDashboard },
   { name: 'Klienti', href: '/accountant/clients', icon: Users },
+  { name: 'Náběr klientů', href: '/accountant/onboarding', icon: UserPlus },
   { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare },
+  { name: 'Fakturace', href: '/accountant/invoicing', icon: DollarSign },
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings },
 ]
 

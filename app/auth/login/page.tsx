@@ -42,12 +42,29 @@ export default function LoginPage() {
     }
   }
 
-  const handleDemoLogin = (role: 'client' | 'accountant') => {
-    toast.success(`Demo přihlášení (${role === 'client' ? 'Klient' : 'Účetní'})`)
-    if (role === 'accountant') {
-      router.push('/accountant/dashboard')
-    } else {
-      router.push('/client/dashboard')
+  const handleDemoLogin = async (role: 'client' | 'accountant') => {
+    setLoading(true)
+
+    // Přihlásit se jako Radim (admin)
+    const formData = new FormData()
+    formData.append('username', 'Radim')
+    formData.append('password', 'admin')
+
+    try {
+      const result = await login(formData)
+
+      if (result?.error) {
+        toast.error('Chyba demo přihlášení', {
+          description: result.error,
+        })
+        setLoading(false)
+      } else {
+        toast.success(`Demo přihlášení (${role === 'client' ? 'Klient' : 'Účetní'})`)
+        // Redirect je handled by action
+      }
+    } catch (error) {
+      toast.error('Chyba demo přihlášení')
+      setLoading(false)
     }
   }
 

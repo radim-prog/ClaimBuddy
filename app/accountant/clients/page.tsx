@@ -211,7 +211,7 @@ export default function ClientsPage() {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <Link href={`/accountant/companies/${company.id}`}>
+                      <Link href={`/accountant/clients/${company.id}`}>
                         <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                           Detail
                         </Button>
