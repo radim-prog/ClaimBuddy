@@ -749,7 +749,7 @@ export default function TaskDetailPage() {
                 </Button>
               )}
 
-              {(task.status === 'in_progress' || task.status === 'accepted') && task.status !== 'completed' && (
+              {(task.status === 'in_progress' || task.status === 'accepted') && (
                 <Button
                   className="w-full bg-green-600 hover:bg-green-700"
                   onClick={handleMarkComplete}

@@ -7,10 +7,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { FileText, PieChart, Bell, ArrowRight, Eye, EyeOff } from 'lucide-react'
-import { login } from './auth/login/actions'
+import { Users, LayoutDashboard, Clock, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { login } from '../auth/login/actions'
 
-export default function ClientLandingPage() {
+export default function AccountantLandingPage() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -33,55 +33,55 @@ export default function ClientLandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-100">
       <div className="container mx-auto px-4 py-8 lg:py-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
 
           {/* Levá strana - Marketing */}
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl lg:text-5xl font-bold text-blue-900 mb-4">
+              <h1 className="text-4xl lg:text-5xl font-bold text-purple-900 mb-4">
                 Účetní OS
               </h1>
-              <p className="text-xl text-blue-700">
-                Klientský portál
+              <p className="text-xl text-purple-700">
+                Portál pro účetní
               </p>
             </div>
 
             <p className="text-lg text-gray-600">
-              Mějte přehled o svém účetnictví kdykoliv a odkudkoliv.
-              Nahrávejte doklady, sledujte stav uzávěrek a komunikujte
-              se svým účetním - vše na jednom místě.
+              Spravujte desítky klientů bez stresu. Master dashboard,
+              automatické urgování, time tracking a fakturace - vše
+              co potřebujete pro efektivní práci.
             </p>
 
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FileText className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <LayoutDashboard className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Nahrávání dokladů</h3>
-                  <p className="text-sm text-gray-600">Jednoduše nahrajte faktury a účtenky</p>
+                  <h3 className="font-semibold text-gray-900">Master Dashboard</h3>
+                  <p className="text-sm text-gray-600">Přehled všech klientů na jednom místě</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <PieChart className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Users className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Přehled financí</h3>
-                  <p className="text-sm text-gray-600">DPH, daně a uzávěrky na jednom místě</p>
+                  <h3 className="font-semibold text-gray-900">Správa klientů</h3>
+                  <p className="text-sm text-gray-600">Dokumenty, schvalování, komunikace</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Bell className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Clock className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Upozornění</h3>
-                  <p className="text-sm text-gray-600">Včas vás upozorníme na důležité termíny</p>
+                  <h3 className="font-semibold text-gray-900">Time Tracking</h3>
+                  <p className="text-sm text-gray-600">Sledování času a automatická fakturace</p>
                 </div>
               </div>
             </div>
@@ -89,10 +89,10 @@ export default function ClientLandingPage() {
 
           {/* Pravá strana - Login */}
           <div>
-            <Card className="border-2 border-blue-200 shadow-xl">
+            <Card className="border-2 border-purple-200 shadow-xl">
               <CardContent className="p-8">
                 <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-blue-900">Přihlášení</h2>
+                  <h2 className="text-2xl font-bold text-purple-900">Přihlášení</h2>
                   <p className="text-gray-600 mt-1">Vstupte do svého účtu</p>
                 </div>
 
@@ -105,7 +105,7 @@ export default function ClientLandingPage() {
                       type="text"
                       placeholder="Vaše jméno"
                       required
-                      className="border-blue-200 focus:border-blue-500"
+                      className="border-purple-200 focus:border-purple-500"
                     />
                   </div>
                   <div className="space-y-2">
@@ -117,7 +117,7 @@ export default function ClientLandingPage() {
                         type={showPassword ? 'text' : 'password'}
                         placeholder="••••••••"
                         required
-                        className="border-blue-200 focus:border-blue-500 pr-10"
+                        className="border-purple-200 focus:border-purple-500 pr-10"
                       />
                       <button
                         type="button"
@@ -130,7 +130,7 @@ export default function ClientLandingPage() {
                   </div>
                   <Button
                     type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-11"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold h-11"
                     disabled={loading}
                   >
                     {loading ? 'Přihlašování...' : 'Přihlásit se'}
@@ -139,10 +139,10 @@ export default function ClientLandingPage() {
 
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <p className="text-sm text-gray-500 text-center mb-3">
-                    Nemáte účet? Kontaktujte svého účetního.
+                    Účty vytváří administrátor systému.
                   </p>
-                  <Link href="/client/dashboard">
-                    <Button variant="outline" className="w-full border-blue-300 text-blue-600 hover:bg-blue-50">
+                  <Link href="/accountant/dashboard">
+                    <Button variant="outline" className="w-full border-purple-300 text-purple-600 hover:bg-purple-50">
                       Demo přístup (bez přihlášení)
                     </Button>
                   </Link>
@@ -150,13 +150,13 @@ export default function ClientLandingPage() {
               </CardContent>
             </Card>
 
-            {/* Přepínač na účetní verzi */}
+            {/* Přepínač na klientskou verzi */}
             <div className="mt-6 text-center">
               <Link
-                href="/ucetni"
-                className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium transition-colors"
+                href="/"
+                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
               >
-                Jste účetní? Přejít na portál pro účetní
+                Jste klient? Přejít na klientský portál
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>

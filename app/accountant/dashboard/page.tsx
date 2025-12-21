@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react'
 import Link from 'next/link'
-import { DeadlineAlertBar } from '@/components/deadline-alert-bar'
 import { DeadlineDashboardWidget } from '@/components/deadline-dashboard-widget'
 
 type StatusType = 'missing' | 'uploaded' | 'approved'
@@ -38,6 +37,9 @@ const months = [
   'Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čer',
   'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro'
 ]
+
+const currentMonth = new Date().getMonth() // 0-indexed
+const currentYear = new Date().getFullYear()
 
 // Status color mapping
 const statusColors: Record<StatusType, { bg: string; text: string; border: string }> = {
@@ -95,6 +97,11 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
     caseId?: string
     companyId?: string
     companyName?: string
+    // Extended details for expandable view
+    description?: string
+    checklist?: Array<{ id: string; label: string; completed: boolean }>
+    assignedTo?: string
+    attachments?: Array<{ name: string; url: string }>
   }> = []
 
   const now = new Date()
@@ -124,9 +131,28 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
     if (hasMissing && daysUntil <= 7) {
       // Critical: missing documents with approaching deadline
       const missingDocs: string[] = []
-      if (closure.bank_statement_status === 'missing') missingDocs.push('výpis')
-      if (closure.expense_documents_status === 'missing') missingDocs.push('náklady')
-      if (closure.income_invoices_status === 'missing') missingDocs.push('příjmy')
+      const checklist: Array<{ id: string; label: string; completed: boolean }> = []
+
+      if (closure.bank_statement_status === 'missing') {
+        missingDocs.push('výpis')
+        checklist.push({ id: `${closure.id}-bank`, label: 'Výpis z banky', completed: false })
+      } else {
+        checklist.push({ id: `${closure.id}-bank`, label: 'Výpis z banky', completed: true })
+      }
+
+      if (closure.expense_documents_status === 'missing') {
+        missingDocs.push('náklady')
+        checklist.push({ id: `${closure.id}-expense`, label: 'Nákladové doklady', completed: false })
+      } else {
+        checklist.push({ id: `${closure.id}-expense`, label: 'Nákladové doklady', completed: true })
+      }
+
+      if (closure.income_invoices_status === 'missing') {
+        missingDocs.push('příjmy')
+        checklist.push({ id: `${closure.id}-income`, label: 'Příjmové faktury', completed: false })
+      } else {
+        checklist.push({ id: `${closure.id}-income`, label: 'Příjmové faktury', completed: true })
+      }
 
       deadlines.push({
         id: `${closure.id}-missing`,
@@ -135,12 +161,50 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         type: daysUntil < 0 ? 'critical' : daysUntil <= 2 ? 'critical' : 'urgent',
         caseId: closure.id,
         companyId: company.id,
-        companyName: company.name
+        companyName: company.name,
+        description: `Měsíční uzávěrka za ${months[month - 1]} ${year} pro firmu ${company.name}. Klient musí dodat chybějící dokumenty do ${deadline.toLocaleDateString('cs-CZ')}.`,
+        checklist,
+        assignedTo: 'Jana Svobodová'
       })
     }
 
     if (hasUploaded && !hasMissing && daysUntil <= 14) {
       // Urgent: uploaded documents waiting for approval
+      const checklist: Array<{ id: string; label: string; completed: boolean }> = []
+
+      checklist.push({
+        id: `${closure.id}-review-bank`,
+        label: 'Zkontrolovat výpis z banky',
+        completed: closure.bank_statement_status === 'approved'
+      })
+      checklist.push({
+        id: `${closure.id}-review-expense`,
+        label: 'Zkontrolovat nákladové doklady',
+        completed: closure.expense_documents_status === 'approved'
+      })
+      checklist.push({
+        id: `${closure.id}-review-income`,
+        label: 'Zkontrolovat příjmové faktury',
+        completed: closure.income_invoices_status === 'approved'
+      })
+      checklist.push({
+        id: `${closure.id}-approve`,
+        label: 'Schválit celou uzávěrku',
+        completed: false
+      })
+
+      // Mock attachments for uploaded documents
+      const attachments: Array<{ name: string; url: string }> = []
+      if (closure.bank_statement_status === 'uploaded') {
+        attachments.push({ name: `vypis_${months[month - 1]}_2025.pdf`, url: '#' })
+      }
+      if (closure.expense_documents_status === 'uploaded') {
+        attachments.push({ name: `naklady_${months[month - 1]}_2025.zip`, url: '#' })
+      }
+      if (closure.income_invoices_status === 'uploaded') {
+        attachments.push({ name: `prijmy_${months[month - 1]}_2025.pdf`, url: '#' })
+      }
+
       deadlines.push({
         id: `${closure.id}-approval`,
         title: `Uzávěrka ${months[month - 1]} - čeká na schválení`,
@@ -148,7 +212,11 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         type: daysUntil <= 3 ? 'urgent' : 'warning',
         caseId: closure.id,
         companyId: company.id,
-        companyName: company.name
+        companyName: company.name,
+        description: `Klient ${company.name} nahrál všechny dokumenty pro uzávěrku za ${months[month - 1]} ${year}. Je třeba zkontrolovat a schválit.`,
+        checklist,
+        assignedTo: 'Jana Svobodová',
+        attachments
       })
     }
   })
@@ -169,6 +237,7 @@ function generateDeadlineTasks(closures: MonthlyClosure[], companies: Company[])
     dueDate: string
     priority: 'critical' | 'high' | 'medium' | 'low'
     status: 'overdue' | 'today' | 'this-week' | 'later'
+    companyId?: string
     companyName?: string
     assignedTo?: string
   }> = []
@@ -345,6 +414,8 @@ export default function AccountantDashboard() {
   const [data, setData] = useState<MatrixData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedYear, setSelectedYear] = useState(currentYear)
+  const [filter, setFilter] = useState<'all' | 'missing' | 'uploaded'>('all')
 
   useEffect(() => {
     async function fetchData() {
@@ -365,12 +436,7 @@ export default function AccountantDashboard() {
     fetchData()
   }, [])
 
-  // Generate deadline alerts and tasks - MUST be before conditional returns (Rules of Hooks)
-  const urgentDeadlines = useMemo(() => {
-    if (!data) return []
-    return generateDeadlines(data.closures, data.companies)
-  }, [data])
-
+  // Generate deadline tasks - MUST be before conditional returns (Rules of Hooks)
   const deadlineTasks = useMemo(() => {
     if (!data) return []
     return generateDeadlineTasks(data.closures, data.companies)
@@ -380,7 +446,7 @@ export default function AccountantDashboard() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
           <p className="mt-4 text-gray-600">Načítám Master Matici...</p>
         </div>
       </div>
@@ -408,134 +474,168 @@ export default function AccountantDashboard() {
 
   const { companies, closures, stats } = data
 
+  // Filter companies based on selected filter
+  const filteredCompanies = companies.filter(company => {
+    if (filter === 'all') return true
+
+    // Check all months for this company
+    for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+      const status = getMonthStatus(closures, company.id, monthIndex)
+      if (filter === 'missing' && status === 'missing') return true
+      if (filter === 'uploaded' && status === 'uploaded') return true
+    }
+    return false
+  })
+
   return (
     <div>
-      {/* Deadline Alert Bar - First thing user sees */}
-      {urgentDeadlines.length > 0 && (
-        <div className="-mx-4 sm:-mx-6 lg:-mx-8 mb-6">
-          <DeadlineAlertBar deadlines={urgentDeadlines} />
+      {/* Header with year selector */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Master Matice {selectedYear}</h1>
+          <p className="mt-1 text-gray-600">
+            Přehled všech klientů a stavu jejich měsíčních uzávěrek
+          </p>
         </div>
-      )}
-
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Master Matice 2025</h1>
-        <p className="mt-2 text-gray-600">
-          Přehled všech klientů a stavu jejich měsíčních uzávěrek
-        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSelectedYear(y => y - 1)}
+            className="p-2 rounded-lg bg-white border hover:bg-gray-50 transition-colors"
+          >
+            ←
+          </button>
+          <span className="px-4 py-2 bg-purple-100 text-purple-700 font-bold rounded-lg min-w-[80px] text-center">
+            {selectedYear}
+          </span>
+          <button
+            onClick={() => setSelectedYear(y => y + 1)}
+            className="p-2 rounded-lg bg-white border hover:bg-gray-50 transition-colors"
+            disabled={selectedYear >= currentYear}
+          >
+            →
+          </button>
+        </div>
       </div>
 
-      {/* Legend */}
-      <div className="mb-6 flex items-center gap-6 bg-white p-4 rounded-lg shadow">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-red-100 border-2 border-red-300 flex items-center justify-center">
-            <span className="text-xs text-red-700">!</span>
+      {/* Stats + Legend + Filter */}
+      <div className="mb-6 bg-white p-4 rounded-lg shadow">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          {/* Stats as clickable filters */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setFilter(filter === 'missing' ? 'all' : 'missing')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${filter === 'missing' ? 'bg-red-100 ring-2 ring-red-400' : 'hover:bg-red-50'}`}
+            >
+              <div className="w-8 h-8 rounded bg-red-100 border-2 border-red-300 flex items-center justify-center">
+                <span className="text-sm text-red-700">!</span>
+              </div>
+              <div className="text-left">
+                <div className="text-xs text-gray-500">Chybí</div>
+                <div className="text-lg font-bold text-red-700">{stats.missing}</div>
+              </div>
+            </button>
+            <button
+              onClick={() => setFilter(filter === 'uploaded' ? 'all' : 'uploaded')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${filter === 'uploaded' ? 'bg-yellow-100 ring-2 ring-yellow-400' : 'hover:bg-yellow-50'}`}
+            >
+              <div className="w-8 h-8 rounded bg-yellow-100 border-2 border-yellow-300 flex items-center justify-center">
+                <span className="text-sm text-yellow-700">⏳</span>
+              </div>
+              <div className="text-left">
+                <div className="text-xs text-gray-500">Čeká</div>
+                <div className="text-lg font-bold text-yellow-700">{stats.uploaded}</div>
+              </div>
+            </button>
+            <div className="flex items-center gap-2 px-3 py-2">
+              <div className="w-8 h-8 rounded bg-green-100 border-2 border-green-300 flex items-center justify-center">
+                <span className="text-sm text-green-700">✓</span>
+              </div>
+              <div className="text-left">
+                <div className="text-xs text-gray-500">Hotovo</div>
+                <div className="text-lg font-bold text-green-700">{stats.approved}</div>
+              </div>
+            </div>
           </div>
-          <span className="text-sm text-gray-700">Chybí dokumenty</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-yellow-100 border-2 border-yellow-300 flex items-center justify-center">
-            <span className="text-xs text-yellow-700">⏳</span>
-          </div>
-          <span className="text-sm text-gray-700">Nahrané, čeká na schválení</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-green-100 border-2 border-green-300 flex items-center justify-center">
-            <span className="text-xs text-green-700">✓</span>
-          </div>
-          <span className="text-sm text-gray-700">Schváleno</span>
+
+          {/* Filter indicator */}
+          {filter !== 'all' && (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600">
+                Zobrazeno: {filteredCompanies.length} z {companies.length} klientů
+              </span>
+              <button
+                onClick={() => setFilter('all')}
+                className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1"
+              >
+                ✕ Zrušit filtr
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Master Matrix Table */}
       <div className="bg-white rounded-lg shadow overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gradient-to-r from-blue-600 to-purple-600">
+          <thead className="bg-gradient-to-r from-purple-600 to-blue-600">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider sticky left-0 bg-gradient-to-r from-blue-600 to-purple-600 z-10">
+              <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider sticky left-0 bg-purple-600 z-10">
                 Klient
               </th>
               {months.map((month, index) => (
-                <th key={index} className="px-2 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                <th
+                  key={index}
+                  className={`px-2 py-3 text-center text-xs font-medium uppercase tracking-wider ${
+                    index === currentMonth && selectedYear === currentYear
+                      ? 'bg-white/20 text-white ring-2 ring-white/50 rounded'
+                      : 'text-white'
+                  }`}
+                >
                   {month}
+                  {index === currentMonth && selectedYear === currentYear && (
+                    <div className="text-[10px] font-normal">●</div>
+                  )}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {companies.map((company, companyIndex) => (
-              <tr key={company.id} className={companyIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-inherit z-10">
-                  <Link href={`/accountant/clients/${company.id}`} className="hover:text-blue-600 transition-colors">
-                    <div>
-                      <div className="font-semibold">{company.name}</div>
-                      <div className="text-xs text-gray-500">IČO: {company.ico}</div>
-                    </div>
-                  </Link>
+            {filteredCompanies.length === 0 ? (
+              <tr>
+                <td colSpan={13} className="px-6 py-12 text-center text-gray-500">
+                  Žádní klienti neodpovídají filtru
                 </td>
-                {months.map((_, monthIndex) => (
-                  <StatusCell
-                    key={monthIndex}
-                    companyId={company.id}
-                    companyName={company.name}
-                    monthIndex={monthIndex}
-                    closures={closures}
-                  />
-                ))}
               </tr>
-            ))}
+            ) : (
+              filteredCompanies.map((company, companyIndex) => (
+                <tr key={company.id} className={companyIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-inherit z-10">
+                    <Link href={`/accountant/clients/${company.id}`} className="hover:text-purple-600 transition-colors">
+                      <div>
+                        <div className="font-semibold">{company.name}</div>
+                        <div className="text-xs text-gray-500">IČO: {company.ico}</div>
+                      </div>
+                    </Link>
+                  </td>
+                  {months.map((_, monthIndex) => (
+                    <StatusCell
+                      key={monthIndex}
+                      companyId={company.id}
+                      companyName={company.name}
+                      monthIndex={monthIndex}
+                      closures={closures}
+                    />
+                  ))}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
-      {/* Deadline Widget and Stats */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Deadline Widget - takes 1 column */}
-        <div className="lg:col-span-1" id="deadline-widget">
-          <DeadlineDashboardWidget tasks={deadlineTasks} />
-        </div>
-
-        {/* Stats - take 2 columns */}
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
-                  <span className="text-2xl text-red-600">!</span>
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm text-gray-500">Chybějící dokumenty</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.missing}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
-                  <span className="text-2xl text-yellow-600">⏳</span>
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm text-gray-500">Čeká na schválení</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.uploaded}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                  <span className="text-2xl text-green-600">✓</span>
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm text-gray-500">Schváleno</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.approved}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Deadline Widget - full width */}
+      <div className="mt-6" id="deadline-widget">
+        <DeadlineDashboardWidget tasks={deadlineTasks} />
       </div>
     </div>
   )

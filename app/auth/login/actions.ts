@@ -77,5 +77,5 @@ export async function logout() {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/auth/login')
+  redirect('/')
 }

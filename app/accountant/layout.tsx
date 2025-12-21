@@ -18,6 +18,7 @@ import {
   UserPlus
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +34,7 @@ const navigation = [
   { name: 'Dashboard', href: '/accountant/dashboard', icon: LayoutDashboard },
   { name: 'Klienti', href: '/accountant/clients', icon: Users },
   { name: 'Náběr klientů', href: '/accountant/onboarding', icon: UserPlus },
-  { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare },
+  { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare, badge: 5 },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: DollarSign },
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings },
 ]
@@ -58,7 +59,7 @@ export default function AccountantLayout({
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
-        <div className="flex flex-col flex-grow bg-gradient-to-b from-blue-600 to-purple-600 overflow-y-auto">
+        <div className="flex flex-col flex-grow bg-purple-700 overflow-y-auto">
           {/* Logo */}
           <div className="flex items-center h-16 flex-shrink-0 px-4 bg-white/10">
             <h1 className="text-2xl font-bold text-white">Účetní OS</h1>
@@ -74,15 +75,22 @@ export default function AccountantLayout({
                   key={item.name}
                   href={item.href}
                   className={`
-                    group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors
+                    group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors
                     ${isActive
-                      ? 'bg-white/20 text-white'
-                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                      ? 'bg-purple-500 text-white'
+                      : 'text-white/80 hover:bg-purple-600 hover:text-white'
                     }
                   `}
                 >
-                  <Icon className={`mr-3 h-5 w-5 flex-shrink-0`} />
-                  {item.name}
+                  <span className="flex items-center">
+                    <Icon className={`mr-3 h-5 w-5 flex-shrink-0`} />
+                    {item.name}
+                  </span>
+                  {item.badge && (
+                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
               )
             })}
@@ -167,7 +175,7 @@ export default function AccountantLayout({
 
       {/* Mobile header */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3">
+        <div className="flex items-center justify-between bg-purple-700 px-4 py-3">
           <h1 className="text-xl font-bold text-white">Účetní OS</h1>
           <Button
             variant="ghost"
@@ -194,7 +202,7 @@ export default function AccountantLayout({
                     className={`
                       group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                       ${isActive
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                        ? 'bg-purple-600 text-white'
                         : 'text-gray-700 hover:bg-gray-100'
                       }
                     `}
@@ -210,7 +218,7 @@ export default function AccountantLayout({
             <div className="border-t px-4 py-3">
               <div className="flex items-center mb-3">
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold">
+                  <AvatarFallback className="bg-purple-600 text-white font-bold">
                     JŠ
                   </AvatarFallback>
                 </Avatar>
@@ -242,8 +250,11 @@ export default function AccountantLayout({
       </div>
 
       {/* Main content */}
-      <div className="md:pl-64">
-        <main className="py-6 px-4 sm:px-6 lg:px-8">
+      <div className="md:pl-64 flex flex-col min-h-screen">
+        {/* Global deadline alert - visible on all pages */}
+        <GlobalDeadlineAlert />
+
+        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
           {children}
         </main>
       </div>
