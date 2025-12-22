@@ -36,9 +36,14 @@ import {
 import { toast } from 'sonner'
 import { EditClientModal } from '@/components/edit-client-modal'
 import { EmployeesSection } from '@/components/employees-section'
+import { AssetsSection } from '@/components/assets-section'
+import { InsuranceSection } from '@/components/insurance-section'
+import { AnniversaryCalendar } from '@/components/anniversary-calendar'
 import { UrgencyEmailModal } from '@/components/urgency-email-modal'
 import { Employee } from '@/lib/types/employee'
-import { getEmployeesByCompany } from '@/lib/mock-data'
+import { Asset } from '@/lib/types/asset'
+import { Insurance } from '@/lib/types/insurance'
+import { getEmployeesByCompany, getAssetsByCompany, getInsurancesByCompany } from '@/lib/mock-data'
 
 type Company = {
   id: string
@@ -91,6 +96,8 @@ export default function ClientDetailPage() {
   const [company, setCompany] = useState<Company | null>(null)
   const [closures, setClosures] = useState<MonthlyClosure[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
+  const [assets, setAssets] = useState<Asset[]>([])
+  const [insurances, setInsurances] = useState<Insurance[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth())
@@ -118,6 +125,14 @@ export default function ClientDetailPage() {
       // Načíst zaměstnance (v produkci by to bylo z API)
       const companyEmployees = getEmployeesByCompany(companyId)
       setEmployees(companyEmployees)
+
+      // Načíst majetek (v produkci by to bylo z API)
+      const companyAssets = getAssetsByCompany(companyId)
+      setAssets(companyAssets)
+
+      // Načíst pojištění (v produkci by to bylo z API)
+      const companyInsurances = getInsurancesByCompany(companyId)
+      setInsurances(companyInsurances)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
@@ -683,30 +698,37 @@ export default function ClientDetailPage() {
       {/* ============================================ */}
       {/* MAJETEK FIRMY */}
       {/* ============================================ */}
-      <Card className="mb-6">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Car className="h-5 w-5 text-purple-600" />
-              Majetek firmy
-            </CardTitle>
-            <Button size="sm" variant="outline">
-              <Plus className="h-4 w-4 mr-1" />
-              Přidat majetek
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* TODO: Napojit na skutečný systém evidence majetku */}
-          <div className="text-center py-8 text-gray-500">
-            <Car className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-            <p className="mb-2">Zatím žádný evidovaný majetek</p>
-            <p className="text-sm text-gray-400">
-              Automobily, nemovitosti, stroje, vybavení a další dlouhodobý majetek
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="mb-6">
+        <AssetsSection
+          companyId={companyId}
+          assets={assets}
+          onAssetsChange={setAssets}
+        />
+      </div>
+
+      {/* ============================================ */}
+      {/* POJIŠTĚNÍ A SMLOUVY */}
+      {/* ============================================ */}
+      <div className="mb-6">
+        <InsuranceSection
+          companyId={companyId}
+          insurances={insurances}
+          assets={assets}
+          employees={employees}
+          onInsurancesChange={setInsurances}
+        />
+      </div>
+
+      {/* ============================================ */}
+      {/* KALENDÁŘ VÝROČÍ A TERMÍNŮ */}
+      {/* ============================================ */}
+      <div className="mb-6">
+        <AnniversaryCalendar
+          insurances={insurances}
+          assets={assets}
+          employees={employees}
+        />
+      </div>
 
       {/* Modal pro editaci klienta */}
       <EditClientModal
