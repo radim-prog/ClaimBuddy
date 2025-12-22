@@ -38,7 +38,13 @@ export async function GET(
         health_insurance_company: (company as any).health_insurance_company || null,
         has_employees: (company as any).has_employees || false,
         employee_count: (company as any).employee_count || 0,
-        data_box: (company as any).data_box || null,
+        data_box: (company as any).data_box ? {
+          id: (company as any).data_box.id,
+          login: (company as any).data_box.login || null,
+          password: (company as any).data_box.password || null,
+        } : null,
+        phone: (company as any).phone || null,
+        email: (company as any).email || null,
       },
       closures,
     })
