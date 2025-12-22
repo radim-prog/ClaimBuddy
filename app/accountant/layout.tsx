@@ -251,7 +251,7 @@ export default function AccountantLayout({
 
       {/* Main content */}
       <div className="md:pl-64 flex flex-col min-h-screen">
-        {/* Global deadline alert - visible on all pages */}
+        {/* Global deadline alert bar with full functionality */}
         <GlobalDeadlineAlert />
 
         <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8">

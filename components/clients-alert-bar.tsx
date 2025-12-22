@@ -1,18 +1,20 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import {
+  Users,
   AlertCircle,
+  Clock,
+  CheckCircle,
   X,
   ChevronDown,
   ChevronUp,
   ChevronRight,
   Check,
-  Clock,
   Mail,
   MessageSquare,
   ExternalLink,
-  Bell,
   Send,
   FileText,
   CheckCircle2,
@@ -21,16 +23,33 @@ import {
   User,
   Filter,
   History,
-  Users,
   Repeat,
-  Keyboard,
-  ClipboardList
+  Keyboard
 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import Link from 'next/link'
+
+type StatusType = 'missing' | 'uploaded' | 'approved'
+
+type Company = {
+  id: string
+  name: string
+  group_name?: string | null
+  ico: string
+}
+
+type MonthlyClosure = {
+  id: string
+  company_id: string
+  period: string
+  status: string
+  bank_statement_status: StatusType
+  expense_documents_status: StatusType
+  income_invoices_status: StatusType
+}
 
 interface TaskChecklistItem {
   id: string
@@ -46,32 +65,27 @@ interface DeadlineItem {
   caseId?: string
   companyId?: string
   companyName?: string
-  // Extended details for expandable view
   description?: string
   checklist?: TaskChecklistItem[]
   assignedTo?: string
   attachments?: { name: string; url: string }[]
 }
 
-interface DeadlineAlertBarProps {
-  deadlines: DeadlineItem[]
+interface ClientsAlertBarProps {
+  companies: Company[]
+  closures: MonthlyClosure[]
+  deadlines?: DeadlineItem[]
 }
 
-type SnoozeOption = '1h' | '2h' | '4h' | 'tomorrow' | 'custom'
+export function ClientsAlertBar({ companies, closures, deadlines = [] }: ClientsAlertBarProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
+  const currentFilter = searchParams.get('status')
 
-interface CompletedTask {
-  id: string
-  title: string
-  companyName?: string
-  completedAt: Date
-  note?: string
-}
-
-export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
+  // Expanded state for dropdown
   const [expanded, setExpanded] = useState(false)
   const [completedIds, setCompletedIds] = useState<string[]>([])
-  const [completedHistory, setCompletedHistory] = useState<CompletedTask[]>([])
-  const [showHistory, setShowHistory] = useState(false)
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [noteInput, setNoteInput] = useState('')
@@ -80,15 +94,8 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
   const [completionNote, setCompletionNote] = useState('')
   const [showCompleteConfirm, setShowCompleteConfirm] = useState<string | null>(null)
-  const [clientFilter, setClientFilter] = useState<string | null>(null)
-  const [showClientFilter, setShowClientFilter] = useState(false)
-  const [recurringReminders, setRecurringReminders] = useState<Record<string, number>>({}) // taskId -> hours
-  const [selectedTaskIndex, setSelectedTaskIndex] = useState<number>(-1)
-  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
+  const [recurringReminders, setRecurringReminders] = useState<Record<string, number>>({})
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const filteredTasksRef = useRef<typeof deadlines>([])
-  const expandedRef = useRef(expanded)
-  expandedRef.current = expanded
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -96,23 +103,11 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setExpanded(false)
         setShowSnoozeMenuForTask(null)
-        setShowClientFilter(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  // Check if any snoozed tasks have expired
-  useEffect(() => {
-    const now = new Date()
-    const expiredSnoozes = Object.entries(snoozedTasks).filter(([_, until]) => now >= until)
-    if (expiredSnoozes.length > 0) {
-      const newSnoozed = { ...snoozedTasks }
-      expiredSnoozes.forEach(([id]) => delete newSnoozed[id])
-      setSnoozedTasks(newSnoozed)
-    }
-  }, [snoozedTasks])
 
   // Helper to check if a task is snoozed
   const isTaskSnoozed = (taskId: string) => {
@@ -120,89 +115,99 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
     return until && new Date() < until
   }
 
-  if (deadlines.length === 0) return null
+  // Filter only current and past closures
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth() + 1
 
-  // Get unique clients for filter
-  const uniqueClients = Array.from(new Set(deadlines.map(d => d.companyName).filter(Boolean))) as string[]
+  const relevantClosures = useMemo(() => {
+    return closures.filter(c => {
+      const [year, month] = c.period.split('-').map(Number)
+      if (year < currentYear) return true
+      if (year === currentYear && month <= currentMonth) return true
+      return false
+    })
+  }, [closures, currentYear, currentMonth])
 
-  // Filter out completed AND snoozed tasks, and apply client filter
+  // Calculate stats per company (not per document!)
+  const stats = useMemo(() => {
+    const missing = new Set<string>()
+    const uploaded = new Set<string>()
+    const complete = new Set<string>()
+
+    companies.forEach(company => {
+      const companyClosures = relevantClosures.filter(c => c.company_id === company.id)
+
+      let hasMissing = false
+      let hasUploaded = false
+      let allComplete = true
+
+      companyClosures.forEach(closure => {
+        if (
+          closure.bank_statement_status === 'missing' ||
+          closure.expense_documents_status === 'missing' ||
+          closure.income_invoices_status === 'missing'
+        ) {
+          hasMissing = true
+          allComplete = false
+        }
+
+        if (
+          closure.bank_statement_status === 'uploaded' ||
+          closure.expense_documents_status === 'uploaded' ||
+          closure.income_invoices_status === 'uploaded'
+        ) {
+          hasUploaded = true
+        }
+
+        if (
+          closure.bank_statement_status !== 'approved' ||
+          closure.expense_documents_status !== 'approved' ||
+          closure.income_invoices_status !== 'approved'
+        ) {
+          allComplete = false
+        }
+      })
+
+      if (hasMissing) {
+        missing.add(company.id)
+      } else if (hasUploaded) {
+        uploaded.add(company.id)
+      } else if (allComplete && companyClosures.length > 0) {
+        complete.add(company.id)
+      }
+    })
+
+    return {
+      missing: missing.size,
+      uploaded: uploaded.size,
+      complete: complete.size,
+      total: companies.length
+    }
+  }, [companies, relevantClosures])
+
+  // Function to set filter via URL
+  const setFilter = useCallback((status: string | null) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (status) {
+      params.set('status', status)
+    } else {
+      params.delete('status')
+    }
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
+    router.push(newUrl)
+  }, [pathname, router, searchParams])
+
+  // Filter out completed and snoozed tasks
   const visibleDeadlines = deadlines.filter(d =>
     !completedIds.includes(d.id) && !isTaskSnoozed(d.id)
   )
 
-  const visibleDeadlinesFiltered = clientFilter
-    ? visibleDeadlines.filter(d => d.companyName === clientFilter)
-    : visibleDeadlines
-
-  // Update ref for keyboard navigation
-  filteredTasksRef.current = visibleDeadlinesFiltered
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      // Ignore if typing in input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return
-      }
-
-      // Only handle if dropdown is expanded
-      if (!expandedRef.current) {
-        // 'D' to toggle dropdown
-        if (e.key === 'd' || e.key === 'D') {
-          e.preventDefault()
-          setExpanded(true)
-        }
-        return
-      }
-
-      const tasks = filteredTasksRef.current
-      switch (e.key) {
-        case 'Escape':
-          setExpanded(false)
-          setExpandedTaskId(null)
-          setSelectedTaskIndex(-1)
-          break
-        case 'd':
-        case 'D':
-          e.preventDefault()
-          setExpanded(false)
-          break
-        case 'ArrowDown':
-          e.preventDefault()
-          setSelectedTaskIndex(prev => Math.min(prev + 1, tasks.length - 1))
-          break
-        case 'ArrowUp':
-          e.preventDefault()
-          setSelectedTaskIndex(prev => Math.max(prev - 1, 0))
-          break
-        case 'Enter':
-          e.preventDefault()
-          setSelectedTaskIndex(current => {
-            if (current >= 0 && current < tasks.length) {
-              const task = tasks[current]
-              setExpandedTaskId(prev => prev === task.id ? null : task.id)
-            }
-            return current
-          })
-          break
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [])
-
-  if (visibleDeadlines.length === 0) return null
-
+  // Time helpers
   const getHoursUntil = (dueDate: string) => {
     const now = new Date()
     const due = new Date(dueDate)
     return Math.floor((due.getTime() - now.getTime()) / (1000 * 60 * 60))
-  }
-
-  const getDaysUntil = (dueDate: string) => {
-    const hours = getHoursUntil(dueDate)
-    return Math.floor(hours / 24)
   }
 
   const formatTimeLeft = (dueDate: string) => {
@@ -217,28 +222,19 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
     return `${Math.floor(hours / 24)}d`
   }
 
-  // Group deadlines (use filtered list)
-  const overdue = visibleDeadlinesFiltered.filter(d => getHoursUntil(d.dueDate) < 0)
-  const today = visibleDeadlinesFiltered.filter(d => {
+  // Group deadlines
+  const overdue = visibleDeadlines.filter(d => getHoursUntil(d.dueDate) < 0)
+  const today = visibleDeadlines.filter(d => {
     const hours = getHoursUntil(d.dueDate)
     return hours >= 0 && hours < 24
   })
-  const thisWeek = visibleDeadlinesFiltered.filter(d => {
+  const thisWeek = visibleDeadlines.filter(d => {
     const hours = getHoursUntil(d.dueDate)
     return hours >= 24 && hours < 168
   })
 
+  // Action handlers
   const handleComplete = (id: string) => {
-    const task = deadlines.find(d => d.id === id)
-    if (task) {
-      setCompletedHistory(prev => [...prev, {
-        id: task.id,
-        title: task.title,
-        companyName: task.companyName,
-        completedAt: new Date(),
-        note: notes[id]
-      }])
-    }
     setCompletedIds([...completedIds, id])
   }
 
@@ -262,12 +258,10 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
   const handleSetRecurringReminder = (taskId: string, hours: number) => {
     setRecurringReminders(prev => ({ ...prev, [taskId]: hours }))
     setShowSnoozeMenuForTask(null)
-    // Also do initial snooze
     handleSnoozeTask(taskId, hours)
   }
 
   const handleDelegateToClient = (item: DeadlineItem) => {
-    // TODO: Implement actual delegation - send email to client with task details
     alert(`Úkol "${item.title}" byl delegován klientovi ${item.companyName}. Email s instrukcemi byl odeslán.`)
   }
 
@@ -280,17 +274,14 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
   }
 
   const handleSendReminder = (item: DeadlineItem) => {
-    // TODO: Implement actual email/SMS sending
     alert(`Urgence odeslána klientovi: ${item.companyName}`)
   }
 
   const handleSendAllReminders = () => {
     const clientsToRemind = overdue.filter(d => d.companyName)
-    // TODO: Implement actual bulk sending
     alert(`Urgence odeslána ${clientsToRemind.length} klientům`)
   }
 
-  // Checklist položky jsou pouze read-only - odvozené ze skutečného stavu dokumentů
   const getCompletedChecklistCount = (item: DeadlineItem) => {
     if (!item.checklist) return { completed: 0, total: 0 }
     const completed = item.checklist.filter(c => c.completed).length
@@ -307,46 +298,6 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
     setExpandedTaskId(null)
   }
 
-  const mostUrgent = visibleDeadlines[0]
-  const hasOverdue = overdue.length > 0
-
-  // Generate summary text for collapsed bar showing WHO and WHAT is missing
-  const generateCollapsedSummary = () => {
-    if (hasOverdue) {
-      // Show overdue items with company and what's missing
-      const summaryItems = overdue.slice(0, 3).map(item => {
-        const missingItems: string[] = []
-        if (item.checklist) {
-          item.checklist.forEach(c => {
-            if (!c.completed) {
-              // Zkrátit názvy dokumentů
-              if (c.label.toLowerCase().includes('výpis')) missingItems.push('výpis')
-              else if (c.label.toLowerCase().includes('náklad') || c.label.toLowerCase().includes('expense')) missingItems.push('náklady')
-              else if (c.label.toLowerCase().includes('faktur') || c.label.toLowerCase().includes('příjm')) missingItems.push('faktury')
-              else missingItems.push(c.label)
-            }
-          })
-        }
-        const missing = missingItems.length > 0 ? ` (${missingItems.slice(0, 2).join(', ')})` : ''
-        return `${item.companyName || item.title}${missing}`
-      })
-
-      const remaining = overdue.length - 3
-      if (remaining > 0) {
-        return summaryItems.join(', ') + ` a další ${remaining}`
-      }
-      return summaryItems.join(', ')
-    } else {
-      // Show upcoming deadlines
-      const summaryItems = today.slice(0, 2).map(item => item.companyName || item.title)
-      const remaining = visibleDeadlines.length - 2
-      if (remaining > 0) {
-        return summaryItems.join(', ') + ` a další ${remaining}`
-      }
-      return summaryItems.join(', ')
-    }
-  }
-
   const renderDeadlineGroup = (items: DeadlineItem[], title: string, bgColor: string, textColor: string) => {
     if (items.length === 0) return null
 
@@ -357,12 +308,10 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
           {title} ({items.length})
         </div>
         <div className="space-y-2">
-          {items.map((item, index) => {
+          {items.map((item) => {
             const isTaskExpanded = expandedTaskId === item.id
             const checklistProgress = getCompletedChecklistCount(item)
             const hasChecklist = item.checklist && item.checklist.length > 0
-            const globalIndex = visibleDeadlinesFiltered.findIndex(d => d.id === item.id)
-            const isSelected = selectedTaskIndex === globalIndex
             const hasRecurring = recurringReminders[item.id]
 
             return (
@@ -370,7 +319,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                 key={item.id}
                 className={`bg-white rounded-lg border transition-all ${
                   isTaskExpanded ? 'shadow-lg border-purple-300' : 'hover:shadow-md'
-                } ${isSelected ? 'ring-2 ring-purple-400 ring-offset-1' : ''}`}
+                }`}
               >
                 {/* Main task row - clickable to expand */}
                 <div
@@ -379,7 +328,6 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      {/* Expand indicator */}
                       <div className={`transition-transform ${isTaskExpanded ? 'rotate-90' : ''}`}>
                         <ChevronRight className="h-4 w-4 text-gray-400" />
                       </div>
@@ -487,7 +435,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                       )}
                     </div>
 
-                    {/* Checklist - pouze read-only stav odvozený ze systému */}
+                    {/* Checklist */}
                     {hasChecklist && (
                       <div>
                         <div className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-2">
@@ -520,9 +468,6 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                             </div>
                           ))}
                         </div>
-                        <p className="text-xs text-gray-400 mt-2 italic">
-                          Stav se aktualizuje automaticky po nahrání dokumentů klientem.
-                        </p>
                       </div>
                     )}
 
@@ -636,24 +581,6 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                             >
                               Denně
                             </button>
-                            {recurringReminders[item.id] && (
-                              <>
-                                <div className="border-t my-1"></div>
-                                <button
-                                  className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded"
-                                  onClick={() => {
-                                    setRecurringReminders(prev => {
-                                      const next = { ...prev }
-                                      delete next[item.id]
-                                      return next
-                                    })
-                                    setShowSnoozeMenuForTask(null)
-                                  }}
-                                >
-                                  Zrušit opakování
-                                </button>
-                              </>
-                            )}
                           </div>
                         )}
                       </div>
@@ -687,7 +614,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                         </Button>
                       </Link>
 
-                      {/* Complete button - shows confirm */}
+                      {/* Complete button */}
                       {showCompleteConfirm === item.id ? (
                         <div className="flex-1 flex flex-col gap-2 bg-green-50 p-2 rounded border border-green-200">
                           <div className="text-xs text-green-700 font-medium">
@@ -732,7 +659,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                       )}
                     </div>
 
-                    {/* Note input (when editing) */}
+                    {/* Note input */}
                     {editingNoteId === item.id && (
                       <div className="flex gap-2 pt-2">
                         <Input
@@ -769,168 +696,98 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
     )
   }
 
-  // Count unique clients (not individual deadlines!)
-  const pendingClients = new Set(
-    visibleDeadlinesFiltered
-      .filter(d => d.title.includes('čeká na schválení'))
-      .map(d => d.companyId)
-      .filter(Boolean)
-  )
-  const missingClients = new Set(
-    visibleDeadlinesFiltered
-      .filter(d => d.title.includes('chybí'))
-      .map(d => d.companyId)
-      .filter(Boolean)
-  )
+  const hasProblems = stats.missing > 0 || stats.uploaded > 0
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Main bar - modern dark style */}
       <div className="bg-gray-800 text-white px-4 py-2">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-blue-400" />
-            <span className="font-medium">Přehled úkolů</span>
-          </div>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-purple-400" />
+              <span className="font-medium">{stats.total} klientů</span>
+              <span className="text-gray-400 mx-2">|</span>
+              <span className="text-sm text-gray-300">Rychlý filtr:</span>
+            </div>
 
-          {/* Stats as clickable badges */}
-          <div className="flex items-center gap-2">
-            {/* Overdue - po termínu */}
-            {overdue.length > 0 && (
-              <button
-                onClick={() => setExpanded(!expanded)}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all"
-              >
-                <AlertCircle className="h-3.5 w-3.5" />
-                <span>Po termínu: {overdue.length}</span>
-              </button>
-            )}
+            {/* Interactive stat buttons */}
+            <div className="flex items-center gap-2">
+              {/* Missing docs */}
+              {stats.missing > 0 && (
+                <button
+                  onClick={() => setFilter(currentFilter === 'missing' ? null : 'missing')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                    currentFilter === 'missing'
+                      ? 'bg-red-500 text-white ring-2 ring-red-300'
+                      : 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
+                  }`}
+                >
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  <span>Chybí: {stats.missing} klientů</span>
+                </button>
+              )}
 
-            {/* Pending - ke schválení (count unique clients) */}
-            {pendingClients.size > 0 && (
-              <button
-                onClick={() => setExpanded(!expanded)}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-yellow-500 text-gray-900 hover:bg-yellow-400 transition-all"
-              >
-                <Clock className="h-3.5 w-3.5" />
-                <span>Ke schválení: {pendingClients.size} {pendingClients.size === 1 ? 'klient' : pendingClients.size < 5 ? 'klienti' : 'klientů'}</span>
-              </button>
-            )}
+              {/* Uploaded docs */}
+              {stats.uploaded > 0 && (
+                <button
+                  onClick={() => setFilter(currentFilter === 'uploaded' ? null : 'uploaded')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                    currentFilter === 'uploaded'
+                      ? 'bg-yellow-500 text-gray-900 ring-2 ring-yellow-300'
+                      : 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
+                  }`}
+                >
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>Ke schválení: {stats.uploaded} klientů</span>
+                </button>
+              )}
 
-            {/* Missing docs - chybí (count unique clients) */}
-            {missingClients.size > 0 && (
-              <button
-                onClick={() => setExpanded(!expanded)}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-orange-500 text-white hover:bg-orange-600 transition-all"
-              >
-                <AlertCircle className="h-3.5 w-3.5" />
-                <span>Chybí dokumenty: {missingClients.size} {missingClients.size === 1 ? 'klient' : missingClients.size < 5 ? 'klienti' : 'klientů'}</span>
-              </button>
-            )}
+              {/* All good message */}
+              {!hasProblems && (
+                <div className="flex items-center gap-1.5 px-3 py-1 text-sm font-medium text-green-300">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  <span>Všichni klienti v pořádku</span>
+                </div>
+              )}
 
-            {/* All good */}
-            {visibleDeadlines.length === 0 && (
-              <div className="flex items-center gap-1.5 px-3 py-1 text-sm font-medium text-green-300">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>Vše v pořádku</span>
-              </div>
-            )}
+              {/* Clear filter */}
+              {currentFilter && (
+                <button
+                  onClick={() => setFilter(null)}
+                  className="flex items-center gap-1 px-2 py-1 rounded text-sm text-gray-400 hover:text-white hover:bg-white/10"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Zrušit filtr
+                </button>
+              )}
 
-            {/* Expand/collapse button */}
-            {visibleDeadlines.length > 0 && (
-              <Button
-                size="sm"
-                variant="secondary"
-                className="h-7 text-xs bg-white/10 hover:bg-white/20 text-white border-0 ml-2"
-                onClick={() => setExpanded(!expanded)}
-              >
-                {expanded ? 'Skrýt' : 'Detail'}
-                {expanded ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
-              </Button>
-            )}
+              {/* Expand/collapse button for task details - count unique clients, not tasks */}
+              {visibleDeadlines.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 text-xs bg-white/10 hover:bg-white/20 text-white border-0 ml-2"
+                  onClick={() => setExpanded(!expanded)}
+                >
+                  {expanded ? 'Skrýt detail' : 'Zobrazit detail'}
+                  {expanded ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Expanded dropdown */}
-      {expanded && (
+      {/* Expanded dropdown with tasks */}
+      {expanded && visibleDeadlines.length > 0 && (
         <div className="absolute left-0 right-0 top-full bg-gray-50 border-b shadow-xl z-40 max-h-[70vh] overflow-y-auto">
           <div className="max-w-7xl mx-auto p-4">
-            {/* Toolbar with filters and history */}
-            <div className="mb-4 pb-4 border-b flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3 flex-wrap">
-                {/* Client filter */}
-                <div className="relative">
-                  <Button
-                    size="sm"
-                    variant={clientFilter ? 'default' : 'outline'}
-                    className={clientFilter ? 'bg-purple-600 hover:bg-purple-700' : ''}
-                    onClick={() => setShowClientFilter(!showClientFilter)}
-                  >
-                    <Filter className="h-3.5 w-3.5 mr-1" />
-                    {clientFilter || 'Všichni klienti'}
-                    <ChevronDown className="h-3 w-3 ml-1" />
-                  </Button>
-                  {showClientFilter && (
-                    <div className="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-xl border p-1 z-50 min-w-[180px] max-h-[200px] overflow-y-auto">
-                      <button
-                        className={`w-full text-left px-3 py-1.5 text-sm rounded ${
-                          !clientFilter ? 'bg-purple-100 text-purple-700' : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                        onClick={() => {
-                          setClientFilter(null)
-                          setShowClientFilter(false)
-                        }}
-                      >
-                        Všichni klienti
-                      </button>
-                      {uniqueClients.map(client => (
-                        <button
-                          key={client}
-                          className={`w-full text-left px-3 py-1.5 text-sm rounded ${
-                            clientFilter === client ? 'bg-purple-100 text-purple-700' : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                          onClick={() => {
-                            setClientFilter(client)
-                            setShowClientFilter(false)
-                          }}
-                        >
-                          {client}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* History button */}
-                <Button
-                  size="sm"
-                  variant={showHistory ? 'default' : 'outline'}
-                  className={showHistory ? 'bg-green-600 hover:bg-green-700' : ''}
-                  onClick={() => setShowHistory(!showHistory)}
-                >
-                  <History className="h-3.5 w-3.5 mr-1" />
-                  Dokončeno dnes ({completedHistory.filter(h => {
-                    const today = new Date()
-                    const completed = new Date(h.completedAt)
-                    return completed.toDateString() === today.toDateString()
-                  }).length})
-                </Button>
-
-                {/* Keyboard help */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-gray-500"
-                  onClick={() => setShowKeyboardHelp(!showKeyboardHelp)}
-                  title="Klávesové zkratky"
-                >
-                  <Keyboard className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-
-              {/* Bulk actions for overdue */}
-              {overdue.length > 0 && (
+            {/* Bulk actions for overdue */}
+            {overdue.length > 0 && (
+              <div className="mb-4 pb-4 border-b flex items-center justify-between">
+                <span className="text-sm text-gray-600">
+                  {overdue.length} {overdue.length === 1 ? 'úkol' : overdue.length < 5 ? 'úkoly' : 'úkolů'} po termínu
+                </span>
                 <Button
                   size="sm"
                   variant="outline"
@@ -939,72 +796,6 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                 >
                   <Send className="h-3.5 w-3.5 mr-1" />
                   Urgovat všechny klienty
-                </Button>
-              )}
-            </div>
-
-            {/* Keyboard shortcuts help */}
-            {showKeyboardHelp && (
-              <div className="mb-4 p-3 bg-gray-100 rounded-lg text-sm">
-                <div className="font-medium text-gray-700 mb-2">Klávesové zkratky:</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-gray-600">
-                  <div><kbd className="px-1.5 py-0.5 bg-white rounded border text-xs">D</kbd> Otevřít/zavřít</div>
-                  <div><kbd className="px-1.5 py-0.5 bg-white rounded border text-xs">↑↓</kbd> Navigace</div>
-                  <div><kbd className="px-1.5 py-0.5 bg-white rounded border text-xs">Enter</kbd> Rozbalit úkol</div>
-                  <div><kbd className="px-1.5 py-0.5 bg-white rounded border text-xs">Esc</kbd> Zavřít</div>
-                </div>
-              </div>
-            )}
-
-            {/* History panel */}
-            {showHistory && completedHistory.length > 0 && (
-              <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                <div className="font-medium text-green-800 mb-3 flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Dokončené úkoly dnes
-                </div>
-                <div className="space-y-2">
-                  {completedHistory
-                    .filter(h => {
-                      const today = new Date()
-                      const completed = new Date(h.completedAt)
-                      return completed.toDateString() === today.toDateString()
-                    })
-                    .map(item => (
-                      <div key={item.id} className="flex items-center justify-between bg-white p-2 rounded border border-green-100">
-                        <div>
-                          <span className="text-sm font-medium text-gray-800">{item.title}</span>
-                          {item.companyName && (
-                            <span className="text-sm text-purple-600 ml-2">({item.companyName})</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {new Date(item.completedAt).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {showHistory && completedHistory.length === 0 && (
-              <div className="mb-4 p-4 bg-gray-100 rounded-lg text-center text-gray-500 text-sm">
-                Zatím žádné dokončené úkoly
-              </div>
-            )}
-
-            {/* Empty state when filter shows no results */}
-            {clientFilter && visibleDeadlinesFiltered.length === 0 && (
-              <div className="mb-4 p-6 bg-white rounded-lg border text-center">
-                <Filter className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <div className="text-gray-600">Žádné úkoly pro klienta <strong>{clientFilter}</strong></div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="mt-3"
-                  onClick={() => setClientFilter(null)}
-                >
-                  Zobrazit všechny klienty
                 </Button>
               </div>
             )}

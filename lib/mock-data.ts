@@ -43,14 +43,23 @@ export const mockCompanies = [
     owner_id: 'user-1-client',
     assigned_accountant_id: 'user-2-accountant',
     name: 'ABC s.r.o.',
+    group_name: 'Novák',
     ico: '12345678',
     dic: 'CZ12345678',
     legal_form: 's.r.o.' as const,
     vat_payer: true,
+    vat_period: 'monthly' as const,
     street: 'Hlavní 123',
     city: 'Praha',
     zip: '110 00',
     bank_account: '123456789/0100',
+    has_employees: true,
+    employee_count: 5,
+    data_box: {
+      id: 'abc1234',
+      login: 'abc_sro',
+      // heslo se nezobrazuje v mock datech
+    },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -58,14 +67,21 @@ export const mockCompanies = [
     owner_id: 'user-1-client',
     assigned_accountant_id: 'user-2-accountant',
     name: 'XYZ OSVČ',
+    group_name: 'Novák',
     ico: '87654321',
     dic: 'CZ87654321',
     legal_form: 'OSVČ' as const,
     vat_payer: false,
+    vat_period: null,
     street: 'Vedlejší 456',
     city: 'Brno',
     zip: '602 00',
     bank_account: '987654321/0100',
+    health_insurance_company: 'vzp' as const,
+    has_employees: false,
+    data_box: {
+      id: 'xyz5678',
+    },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -73,14 +89,22 @@ export const mockCompanies = [
     owner_id: 'user-1-client',
     assigned_accountant_id: 'user-2-accountant',
     name: 'DEF s.r.o.',
+    group_name: 'Novák',
     ico: '11223344',
     dic: 'CZ11223344',
     legal_form: 's.r.o.' as const,
     vat_payer: true,
+    vat_period: 'quarterly' as const,
     street: 'Nová 789',
     city: 'Ostrava',
     zip: '700 00',
     bank_account: '111222333/0100',
+    has_employees: true,
+    employee_count: 12,
+    data_box: {
+      id: 'def9012',
+      login: 'def_sro',
+    },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -88,14 +112,20 @@ export const mockCompanies = [
     owner_id: 'user-1-client',
     assigned_accountant_id: 'user-2-accountant',
     name: 'GHI Trading',
+    group_name: 'Svoboda',
     ico: '55667788',
     dic: 'CZ55667788',
     legal_form: 's.r.o.' as const,
     vat_payer: true,
+    vat_period: 'monthly' as const,
     street: 'Obchodní 1',
     city: 'Plzeň',
     zip: '301 00',
     bank_account: '444555666/0100',
+    has_employees: false,
+    data_box: {
+      id: 'ghi3456',
+    },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -103,14 +133,17 @@ export const mockCompanies = [
     owner_id: 'user-1-client',
     assigned_accountant_id: 'user-2-accountant',
     name: 'JKL Consulting',
+    group_name: 'Svoboda',
     ico: '99887766',
     dic: 'CZ99887766',
     legal_form: 's.r.o.' as const,
     vat_payer: false,
+    vat_period: null,
     street: 'Poradenská 10',
     city: 'Liberec',
     zip: '460 00',
     bank_account: '777888999/0100',
+    has_employees: false,
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -122,10 +155,14 @@ export const mockCompanies = [
     dic: 'CZ22334455',
     legal_form: 's.r.o.' as const,
     vat_payer: true,
+    vat_period: 'monthly' as const,
     street: 'Služební 20',
     city: 'České Budějovice',
     zip: '370 00',
     bank_account: '123123123/0100',
+    has_employees: true,
+    employee_count: 8,
+    data_box: { id: 'mno7890' },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -133,14 +170,19 @@ export const mockCompanies = [
     owner_id: 'user-1-client',
     assigned_accountant_id: 'user-2-accountant',
     name: 'PQR Development',
+    group_name: 'Horák',
     ico: '66778899',
     dic: 'CZ66778899',
     legal_form: 's.r.o.' as const,
     vat_payer: true,
+    vat_period: 'quarterly' as const,
     street: 'Developerská 5',
     city: 'Hradec Králové',
     zip: '500 00',
     bank_account: '456456456/0100',
+    has_employees: true,
+    employee_count: 25,
+    data_box: { id: 'pqr2345', login: 'pqr_dev' },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -148,14 +190,18 @@ export const mockCompanies = [
     owner_id: 'user-1-client',
     assigned_accountant_id: 'user-2-accountant',
     name: 'STU Marketing OSVČ',
+    group_name: 'Horák',
     ico: '33445566',
     dic: 'CZ33445566',
     legal_form: 'OSVČ' as const,
     vat_payer: false,
+    vat_period: null,
     street: 'Marketingová 15',
     city: 'Olomouc',
     zip: '779 00',
     bank_account: '789789789/0100',
+    health_insurance_company: 'cpzp' as const,
+    has_employees: false,
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -167,10 +213,14 @@ export const mockCompanies = [
     dic: 'CZ77889900',
     legal_form: 's.r.o.' as const,
     vat_payer: true,
+    vat_period: 'monthly' as const,
     street: 'Logistická 50',
     city: 'Pardubice',
     zip: '530 00',
     bank_account: '321321321/0100',
+    has_employees: true,
+    employee_count: 45,
+    data_box: { id: 'vwx6789', login: 'vwx_log' },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -182,10 +232,14 @@ export const mockCompanies = [
     dic: 'CZ44556677',
     legal_form: 's.r.o.' as const,
     vat_payer: true,
+    vat_period: 'monthly' as const,
     street: 'Technická 100',
     city: 'Zlín',
     zip: '760 00',
     bank_account: '654654654/0100',
+    has_employees: true,
+    employee_count: 15,
+    data_box: { id: 'yz01234' },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -197,10 +251,13 @@ export const mockCompanies = [
     dic: 'CZ88990011',
     legal_form: 's.r.o.' as const,
     vat_payer: true,
+    vat_period: 'quarterly' as const,
     street: 'Finanční 25',
     city: 'Karlovy Vary',
     zip: '360 00',
     bank_account: '147147147/0100',
+    has_employees: false,
+    data_box: { id: 'bcd5678' },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -212,10 +269,13 @@ export const mockCompanies = [
     dic: 'CZ55443322',
     legal_form: 'OSVČ' as const,
     vat_payer: false,
+    vat_period: null,
     street: 'Elektrická 8',
     city: 'Jihlava',
     zip: '586 00',
     bank_account: '258258258/0100',
+    health_insurance_company: 'ozp' as const,
+    has_employees: false,
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -227,10 +287,14 @@ export const mockCompanies = [
     dic: 'CZ11009988',
     legal_form: 's.r.o.' as const,
     vat_payer: true,
+    vat_period: 'monthly' as const,
     street: 'Stavební 30',
     city: 'Ústí nad Labem',
     zip: '400 00',
     bank_account: '369369369/0100',
+    has_employees: true,
+    employee_count: 32,
+    data_box: { id: 'hij9012', login: 'hij_con' },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -242,10 +306,14 @@ export const mockCompanies = [
     dic: 'CZ22118877',
     legal_form: 's.r.o.' as const,
     vat_payer: true,
+    vat_period: 'quarterly' as const,
     street: 'Restaurační 12',
     city: 'Třebíč',
     zip: '674 00',
     bank_account: '741741741/0100',
+    has_employees: true,
+    employee_count: 6,
+    data_box: { id: 'klm3456' },
     created_at: '2025-01-01T00:00:00Z',
   },
   {
@@ -257,50 +325,152 @@ export const mockCompanies = [
     dic: 'CZ66554433',
     legal_form: 'OSVČ' as const,
     vat_payer: false,
+    vat_period: null,
     street: 'Mediální 7',
     city: 'Havířov',
     zip: '736 00',
     bank_account: '852852852/0100',
+    health_insurance_company: 'zpmv' as const,
+    has_employees: false,
+    data_box: { id: 'nop7890' },
     created_at: '2025-01-01T00:00:00Z',
   },
 ]
 
-// Generovat monthly_closures pro každou firmu × 12 měsíců
+// Generovat monthly_closures pro každou firmu × 12 měsíců × roky (2025, 2026)
 const months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
+const years = [2025, 2026]
 const statusOptions = ['missing', 'uploaded', 'approved'] as const
 
-export const mockMonthlyClosures = mockCompanies.flatMap((company, companyIndex) =>
-  months.map((month, monthIndex) => {
-    // Strategicky nastavit statusy aby Master Matice vypadala zajímavě
-    let status: typeof statusOptions[number]
-    if (monthIndex < 3) {
-      status = 'approved' // Leden-Březen = schváleno
-    } else if (monthIndex < 6) {
-      status = 'uploaded' // Duben-Červen = nahráno
-    } else {
-      // Červenec-Prosinec = mix (závisí na firmě)
-      status = companyIndex % 3 === 0 ? 'missing' : companyIndex % 3 === 1 ? 'uploaded' : 'approved'
-    }
+// Aktuální datum pro výpočet stavů
+const currentDate = new Date()
+const currentYear = currentDate.getFullYear()
+const currentMonth = currentDate.getMonth() // 0-indexed
 
-    return {
-      id: `closure-${company.id}-2025-${month}`,
-      company_id: company.id,
-      period: `2025-${month}`,
-      status: 'open' as const,
-      bank_statement_status: status,
-      expense_documents_status: status, // Sloučené: faktury + účtenky
-      income_invoices_status: status,
-      vat_payable: status === 'approved' ? Math.floor(Math.random() * 50000) : null,
-      income_tax_accrued: status === 'approved' ? Math.floor(Math.random() * 15000) : null,
-      social_insurance: status === 'approved' && company.legal_form === 'OSVČ' ? 2500 : null,
-      health_insurance: status === 'approved' && company.legal_form === 'OSVČ' ? 2000 : null,
-      reminder_count: status === 'missing' ? Math.floor(Math.random() * 3) : 0,
-      last_reminder_sent_at: status === 'missing' ? '2025-01-20T10:00:00Z' : null,
-      notes: null,
-      created_at: `2025-${month}-01T00:00:00Z`,
-      updated_at: `2025-${month}-15T00:00:00Z`,
-    }
-  })
+export const mockMonthlyClosures = mockCompanies.flatMap((company, companyIndex) =>
+  years.flatMap(year =>
+    months.map((month, monthIndex) => {
+      let bankStatus: typeof statusOptions[number]
+      let expenseStatus: typeof statusOptions[number]
+      let incomeStatus: typeof statusOptions[number]
+
+      // Logika podle roku a měsíce
+      if (year < currentYear) {
+        // Minulé roky = vše schváleno
+        bankStatus = 'approved'
+        expenseStatus = 'approved'
+        incomeStatus = 'approved'
+      } else if (year === currentYear) {
+        // Aktuální rok 2025
+        if (monthIndex < currentMonth - 1) {
+          // Měsíce dávno za námi = schváleno
+          bankStatus = 'approved'
+          expenseStatus = 'approved'
+          incomeStatus = 'approved'
+        } else if (monthIndex === currentMonth - 1) {
+          // Minulý měsíc (listopad) = deadline 10.12. prošel - některé firmy mají problém
+          if (companyIndex === 2) {
+            // DEF s.r.o. - chybí výpis i náklady
+            bankStatus = 'missing'
+            expenseStatus = 'missing'
+            incomeStatus = 'uploaded'
+          } else if (companyIndex === 7) {
+            // STU Marketing - chybí příjmy
+            bankStatus = 'approved'
+            expenseStatus = 'approved'
+            incomeStatus = 'missing'
+          } else if (companyIndex === 10) {
+            // BCD Finance - vše nahráno, čeká na schválení
+            bankStatus = 'uploaded'
+            expenseStatus = 'uploaded'
+            incomeStatus = 'uploaded'
+          } else {
+            bankStatus = 'approved'
+            expenseStatus = 'approved'
+            incomeStatus = 'approved'
+          }
+        } else if (monthIndex === currentMonth) {
+          // Aktuální měsíc (prosinec) = aktuální práce, deadline 10.1.
+          if (companyIndex === 0) {
+            bankStatus = 'missing'
+            expenseStatus = 'uploaded'
+            incomeStatus = 'approved'
+          } else if (companyIndex === 1) {
+            bankStatus = 'approved'
+            expenseStatus = 'missing'
+            incomeStatus = 'missing'
+          } else if (companyIndex === 3) {
+            bankStatus = 'approved'
+            expenseStatus = 'missing'
+            incomeStatus = 'uploaded'
+          } else if (companyIndex === 5) {
+            bankStatus = 'missing'
+            expenseStatus = 'approved'
+            incomeStatus = 'approved'
+          } else if (companyIndex === 6) {
+            bankStatus = 'uploaded'
+            expenseStatus = 'uploaded'
+            incomeStatus = 'uploaded'
+          } else if (companyIndex === 8) {
+            bankStatus = 'approved'
+            expenseStatus = 'uploaded'
+            incomeStatus = 'uploaded'
+          } else if (companyIndex === 11) {
+            bankStatus = 'uploaded'
+            expenseStatus = 'approved'
+            incomeStatus = 'missing'
+          } else if (companyIndex === 13) {
+            bankStatus = 'uploaded'
+            expenseStatus = 'uploaded'
+            incomeStatus = 'uploaded'
+          } else if (companyIndex < 10) {
+            bankStatus = 'uploaded'
+            expenseStatus = 'uploaded'
+            incomeStatus = 'uploaded'
+          } else {
+            bankStatus = 'approved'
+            expenseStatus = 'approved'
+            incomeStatus = 'approved'
+          }
+        } else {
+          // Budoucí měsíce v aktuálním roce = missing (ještě nezačalo)
+          bankStatus = 'missing'
+          expenseStatus = 'missing'
+          incomeStatus = 'missing'
+        }
+      } else {
+        // Budoucí rok 2026 = vše missing
+        bankStatus = 'missing'
+        expenseStatus = 'missing'
+        incomeStatus = 'missing'
+      }
+
+      const status = bankStatus === 'missing' || expenseStatus === 'missing' || incomeStatus === 'missing'
+        ? 'missing'
+        : bankStatus === 'uploaded' || expenseStatus === 'uploaded' || incomeStatus === 'uploaded'
+          ? 'uploaded'
+          : 'approved'
+
+      return {
+        id: `closure-${company.id}-${year}-${month}`,
+        company_id: company.id,
+        period: `${year}-${month}`,
+        status: 'open' as const,
+        bank_statement_status: bankStatus,
+        expense_documents_status: expenseStatus,
+        income_invoices_status: incomeStatus,
+        vat_payable: status === 'approved' ? Math.floor(Math.random() * 50000) : null,
+        income_tax_accrued: status === 'approved' ? Math.floor(Math.random() * 15000) : null,
+        social_insurance: status === 'approved' && company.legal_form === 'OSVČ' ? 2500 : null,
+        health_insurance: status === 'approved' && company.legal_form === 'OSVČ' ? 2000 : null,
+        reminder_count: status === 'missing' ? Math.floor(Math.random() * 3) : 0,
+        last_reminder_sent_at: status === 'missing' ? `${year}-12-20T10:00:00Z` : null,
+        notes: null,
+        created_at: `${year}-${month}-01T00:00:00Z`,
+        updated_at: `${year}-${month}-15T00:00:00Z`,
+      }
+    })
+  )
 )
 
 // Mock documents (30 ukázkových dokumentů)

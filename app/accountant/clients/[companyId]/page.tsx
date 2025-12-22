@@ -1,31 +1,47 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, FileText, CheckCircle, XCircle, Clock, ChevronDown, ChevronRight, AlertCircle, Calendar, Upload } from 'lucide-react'
+import {
+  ArrowLeft,
+  Building2,
+  MapPin,
+  Phone,
+  Mail,
+  FileText,
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertCircle,
+  Edit,
+  Plus,
+  Calendar,
+  User,
+  Inbox,
+  ExternalLink,
+  ChevronRight
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { toast } from 'sonner'
 
 type Company = {
   id: string
   name: string
+  group_name: string | null
   ico: string
   dic: string
   vat_payer: boolean
+  vat_period: 'monthly' | 'quarterly' | null
   legal_form: string
-}
-
-type Document = {
-  id: string
-  type: string
-  file_name: string
-  uploaded_at: string
-  status: 'uploaded' | 'approved' | 'rejected'
-  uploaded_by: string
-  file_size_bytes: number
+  street: string
+  city: string
+  zip: string
+  health_insurance_company: string | null
+  has_employees: boolean
+  employee_count: number
+  data_box: { id: string; login?: string } | null
 }
 
 type MonthlyClosure = {
@@ -37,32 +53,33 @@ type MonthlyClosure = {
   income_invoices_status: string
 }
 
-const statusColors = {
-  pending: { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-300' },
-  uploaded: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300' },
-  approved: { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' },
-  rejected: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' },
-  missing: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-300' },
+// Mapování zdravotních pojišťoven
+const healthInsuranceLabels: Record<string, string> = {
+  vzp: 'VZP (111)',
+  vozp: 'VOZP (201)',
+  cpzp: 'ČPZP (205)',
+  ozp: 'OZP (207)',
+  zpmv: 'ZP MV (211)',
+  rbp: 'RBP (213)',
+  zpma: 'ZP M-A (217)',
 }
 
-const documentTypeLabels: Record<string, string> = {
-  bank_statement: 'Výpis z banky',
-  expense_invoice: 'Výdajová faktura',
-  income_invoice: 'Příjmová faktura',
-  receipt: 'Účtenka',
-  other: 'Ostatní'
-}
+const monthNames = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čer', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro']
+const monthNamesFull = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec']
 
 export default function ClientDetailPage() {
   const params = useParams()
   const companyId = params.companyId as string
 
   const [company, setCompany] = useState<Company | null>(null)
-  const [documents, setDocuments] = useState<Document[]>([])
   const [closures, setClosures] = useState<MonthlyClosure[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set())
+
+  // Aktuální období
+  const currentYear = new Date().getFullYear()
+  const currentMonth = new Date().getMonth() // 0-indexed
+  const currentPeriod = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
 
   useEffect(() => {
     fetchData()
@@ -75,11 +92,6 @@ export default function ClientDetailPage() {
       const companyData = await companyRes.json()
       setCompany(companyData.company)
       setClosures(companyData.closures || [])
-
-      const docsRes = await fetch(`/api/documents?companyId=${companyId}`)
-      if (!docsRes.ok) throw new Error('Failed to fetch documents')
-      const docsData = await docsRes.json()
-      setDocuments(docsData.documents)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
@@ -87,43 +99,43 @@ export default function ClientDetailPage() {
     }
   }
 
-  async function handleApprove(documentId: string) {
-    try {
-      const res = await fetch(`/api/documents/${documentId}/approve`, {
-        method: 'POST',
-      })
-      if (!res.ok) throw new Error('Failed to approve')
-      toast.success('Dokument schválen')
-      fetchData()
-    } catch (err) {
-      toast.error('Nepodařilo se schválit dokument')
-    }
-  }
+  // Získat uzávěrku pro aktuální měsíc
+  const currentClosure = useMemo(() => {
+    return closures.find(c => c.period === currentPeriod)
+  }, [closures, currentPeriod])
 
-  async function handleReject(documentId: string) {
-    try {
-      const reason = prompt('Důvod zamítnutí:')
-      if (!reason) return
+  // Získat uzávěrky pro aktuální rok, seřazené
+  const yearClosures = useMemo(() => {
+    return closures
+      .filter(c => c.period.startsWith(String(currentYear)))
+      .sort((a, b) => a.period.localeCompare(b.period))
+  }, [closures, currentYear])
 
-      const res = await fetch(`/api/documents/${documentId}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason })
-      })
-      if (!res.ok) throw new Error('Failed to reject')
-      toast.success('Dokument zamítnut')
-      fetchData()
-    } catch (err) {
-      toast.error('Nepodařilo se zamítnout dokument')
-    }
+  // Zjistit stav měsíce
+  const getMonthStatus = (closure: MonthlyClosure | undefined, monthIndex: number) => {
+    // Budoucí měsíc
+    if (monthIndex > currentMonth) return 'future'
+
+    if (!closure) return 'missing'
+
+    const statuses = [
+      closure.bank_statement_status,
+      closure.expense_documents_status,
+      closure.income_invoices_status
+    ]
+
+    if (statuses.every(s => s === 'approved')) return 'complete'
+    if (statuses.some(s => s === 'missing')) return 'missing'
+    if (statuses.some(s => s === 'uploaded')) return 'uploaded'
+    return 'unknown'
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Načítám detail klienta...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          <p className="mt-4 text-gray-600">Načítám profil klienta...</p>
         </div>
       </div>
     )
@@ -132,394 +144,347 @@ export default function ClientDetailPage() {
   if (error || !company) {
     return (
       <div className="bg-red-50 border-l-4 border-red-400 p-4">
-        <p className="text-sm text-red-700">Nepodařilo se načíst detail klienta: {error}</p>
+        <p className="text-sm text-red-700">Nepodařilo se načíst profil klienta: {error}</p>
       </div>
     )
   }
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B'
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-  }
-
-  const toggleMonth = (period: string) => {
-    const newExpanded = new Set(expandedMonths)
-    if (newExpanded.has(period)) {
-      newExpanded.delete(period)
-    } else {
-      newExpanded.add(period)
-    }
-    setExpandedMonths(newExpanded)
-  }
-
-  const getMonthName = (period: string) => {
-    const [year, month] = period.split('-')
-    const date = new Date(parseInt(year), parseInt(month) - 1)
-    return date.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' })
-  }
-
-  const getDeadline = (period: string) => {
-    const [year, month] = period.split('-').map(Number)
-    const deadline = new Date(year, month, 15)
-    return deadline
-  }
-
-  const getDaysUntilDeadline = (period: string) => {
-    const deadline = getDeadline(period)
-    const now = new Date()
-    const diff = deadline.getTime() - now.getTime()
-    return Math.ceil(diff / (1000 * 60 * 60 * 24))
-  }
-
-  const getCategoryStatus = (closure: MonthlyClosure, category: 'bank' | 'expense' | 'income') => {
-    if (category === 'bank') return closure.bank_statement_status
-    if (category === 'expense') return closure.expense_documents_status
-    return closure.income_invoices_status
-  }
-
-  const getCategoryLabel = (category: 'bank' | 'expense' | 'income') => {
-    if (category === 'bank') return 'Výpis z účtu'
-    if (category === 'expense') return 'Náklady'
-    return 'Příjmy'
-  }
-
-  const getCategoryIcon = (status: string) => {
-    if (status === 'approved') return <CheckCircle className="h-5 w-5 text-green-600" />
-    if (status === 'uploaded') return <Clock className="h-5 w-5 text-yellow-600" />
-    if (status === 'missing') return <XCircle className="h-5 w-5 text-red-600" />
-    return <AlertCircle className="h-5 w-5 text-gray-400" />
-  }
-
-  // Quick stats
-  const totalMonths = closures.length
-  const completedMonths = closures.filter(c =>
-    c.bank_statement_status === 'approved' &&
-    c.expense_documents_status === 'approved' &&
-    c.income_invoices_status === 'approved'
-  ).length
-  const pendingMonths = closures.filter(c => {
-    const hasUploaded = [c.bank_statement_status, c.expense_documents_status, c.income_invoices_status].includes('uploaded')
-    const allApproved = [c.bank_statement_status, c.expense_documents_status, c.income_invoices_status].every(s => s === 'approved')
-    return hasUploaded && !allApproved
-  }).length
-
-  const upcomingDeadlines = closures
-    .filter(c => {
-      const days = getDaysUntilDeadline(c.period)
-      const hasMissing = [c.bank_statement_status, c.expense_documents_status, c.income_invoices_status].includes('missing')
-      return days <= 7 && hasMissing
-    })
-    .sort((a, b) => getDaysUntilDeadline(a.period) - getDaysUntilDeadline(b.period))
+  // Mock kontaktní údaje (později z DB)
+  const contactEmail = `kontakt@${company.name.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '')}.cz`
+  const contactPhone = '+420 777 123 456'
 
   return (
-    <div className="max-w-6xl">
-      {/* Header */}
-      <div className="mb-6">
-        <Link href="/accountant/dashboard">
-          <Button variant="ghost" size="sm" className="mb-4">
+    <div className="max-w-5xl">
+      {/* Navigation */}
+      <div className="mb-4">
+        <Link href="/accountant/clients">
+          <Button variant="ghost" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zpět na Master Matici
+            Zpět na seznam klientů
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold text-gray-900">{company.name}</h1>
-        <p className="mt-2 text-gray-600">
-          IČO: {company.ico} • DIČ: {company.dic || 'N/A'} •
-          {company.vat_payer ? ' Plátce DPH' : ' Neplátce DPH'} •
-          {company.legal_form}
-        </p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Uzavřeno</p>
-                <p className="text-2xl font-bold text-green-600">{completedMonths}/{totalMonths}</p>
-              </div>
-              <CheckCircle className="h-10 w-10 text-green-600 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Čeká na schválení</p>
-                <p className="text-2xl font-bold text-yellow-600">{pendingMonths}</p>
-              </div>
-              <Clock className="h-10 w-10 text-yellow-600 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Urgentní</p>
-                <p className="text-2xl font-bold text-red-600">{upcomingDeadlines.length}</p>
-              </div>
-              <AlertCircle className="h-10 w-10 text-red-600 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Dokumenty</p>
-                <p className="text-2xl font-bold text-blue-600">{documents.length}</p>
-              </div>
-              <FileText className="h-10 w-10 text-blue-600 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Monthly Closures Accordion */}
+      {/* ============================================ */}
+      {/* HLAVIČKA - Info o firmě */}
+      {/* ============================================ */}
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Měsíční uzávěrky 2025</CardTitle>
-          <CardDescription>Klikněte na měsíc pro zobrazení detailu</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {closures.map((closure) => {
-            const isExpanded = expandedMonths.has(closure.period)
-            const allApproved =
-              closure.bank_statement_status === 'approved' &&
-              closure.expense_documents_status === 'approved' &&
-              closure.income_invoices_status === 'approved'
-
-            const anyMissing =
-              closure.bank_statement_status === 'missing' ||
-              closure.expense_documents_status === 'missing' ||
-              closure.income_invoices_status === 'missing'
-
-            const daysUntil = getDaysUntilDeadline(closure.period)
-            const deadline = getDeadline(closure.period)
-
-            const borderColor = allApproved ? 'border-green-300' :
-              anyMissing && daysUntil < 0 ? 'border-red-500' :
-              anyMissing && daysUntil <= 7 ? 'border-orange-400' :
-              anyMissing ? 'border-yellow-300' :
-              'border-blue-300'
-
-            const bgColor = allApproved ? 'bg-green-50' :
-              anyMissing && daysUntil < 0 ? 'bg-red-50' :
-              anyMissing && daysUntil <= 7 ? 'bg-orange-50' :
-              anyMissing ? 'bg-yellow-50' :
-              'bg-blue-50'
-
-            return (
-              <div key={closure.period} className={`border-2 ${borderColor} ${bgColor} rounded-lg overflow-hidden`}>
-                {/* Month Header - Clickable */}
-                <div
-                  className="p-4 cursor-pointer hover:bg-opacity-75 transition-colors"
-                  onClick={() => toggleMonth(closure.period)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1">
-                      {isExpanded ? (
-                        <ChevronDown className="h-5 w-5 text-gray-600" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5 text-gray-600" />
-                      )}
-                      <Calendar className="h-5 w-5 text-gray-600" />
-                      <h3 className="font-semibold text-lg">{getMonthName(closure.period)}</h3>
-
-                      {allApproved && (
-                        <Badge className="bg-green-600 text-white">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Uzavřeno
-                        </Badge>
-                      )}
-                      {anyMissing && daysUntil < 0 && (
-                        <Badge className="bg-red-600 text-white animate-pulse">
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          PO TERMÍNU!
-                        </Badge>
-                      )}
-                      {anyMissing && daysUntil >= 0 && daysUntil <= 7 && (
-                        <Badge className="bg-orange-500 text-white">
-                          <Clock className="h-3 w-3 mr-1" />
-                          Zbývá {daysUntil} dní
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      {/* Category Status Pills */}
-                      {(['bank', 'expense', 'income'] as const).map((cat) => {
-                        const status = getCategoryStatus(closure, cat)
-                        const icon = getCategoryIcon(status)
-                        return (
-                          <div key={cat} className="flex items-center gap-1">
-                            {icon}
-                          </div>
-                        )
-                      })}
-
-                      <div className="text-sm text-gray-600 ml-2">
-                        Termín: {deadline.toLocaleDateString('cs-CZ')}
-                      </div>
-                    </div>
-                  </div>
+        <CardContent className="pt-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              {/* Název a právní forma */}
+              <div className="flex items-center gap-3 mb-2">
+                <Building2 className="h-8 w-8 text-purple-600" />
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    {company.group_name && (
+                      <span className="text-purple-600">{company.group_name}</span>
+                    )}
+                    {company.group_name && ' – '}
+                    {company.name}
+                  </h1>
+                  <p className="text-gray-600">
+                    IČO: {company.ico}
+                    {company.dic && <span className="ml-3">DIČ: {company.dic}</span>}
+                  </p>
                 </div>
+              </div>
 
-                {/* Expanded Content */}
-                {isExpanded && (
-                  <div className="px-4 pb-4 border-t-2 border-gray-200 bg-white">
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* Bank Statement */}
-                      {(['bank', 'expense', 'income'] as const).map((cat) => {
-                        const status = getCategoryStatus(closure, cat)
-                        const label = getCategoryLabel(cat)
-                        const icon = getCategoryIcon(status)
-                        const colors = statusColors[status as keyof typeof statusColors] || statusColors.pending
+              {/* Adresa a kontakt */}
+              <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-600">
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  <span>{company.street}, {company.zip} {company.city}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Mail className="h-4 w-4" />
+                  <span>{contactEmail}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Phone className="h-4 w-4" />
+                  <span>{contactPhone}</span>
+                </div>
+              </div>
 
-                        return (
-                          <div key={cat} className={`p-4 rounded-lg border-2 ${colors.border} ${colors.bg}`}>
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                {icon}
-                                <span className="font-semibold text-sm">{label}</span>
-                              </div>
-                              <Badge className={`${colors.bg} ${colors.text} text-xs`}>
-                                {status === 'approved' ? 'Schváleno' :
-                                  status === 'uploaded' ? 'Čeká' :
-                                  status === 'missing' ? 'Chybí' : 'Neznámý'}
-                              </Badge>
-                            </div>
+              {/* Tagy/Badges */}
+              <div className="flex flex-wrap gap-2 mt-4">
+                <Badge variant="outline">{company.legal_form}</Badge>
 
-                            {status === 'missing' && (
-                              <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                                <Upload className="h-4 w-4 mr-1" />
-                                Nahrát
-                              </Button>
-                            )}
+                {company.vat_payer ? (
+                  <Badge className="bg-blue-100 text-blue-700">
+                    Plátce DPH • {company.vat_period === 'monthly' ? 'Měsíční' : 'Kvartální'}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-gray-500">Neplátce DPH</Badge>
+                )}
 
-                            {status === 'uploaded' && (
-                              <div className="space-y-2">
-                                <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white">
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  Schválit
-                                </Button>
-                                <Button size="sm" variant="outline" className="w-full">
-                                  <XCircle className="h-4 w-4 mr-1" />
-                                  Zamítnout
-                                </Button>
-                              </div>
-                            )}
+                {company.data_box && (
+                  <Badge variant="outline" className="text-gray-600">
+                    <Inbox className="h-3 w-3 mr-1" />
+                    Datovka: {company.data_box.id}
+                  </Badge>
+                )}
 
-                            {status === 'approved' && (
-                              <div className="text-center text-sm text-green-700">
-                                ✓ Dokument schválen
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
+                {company.has_employees && (
+                  <Badge variant="outline" className="text-gray-600">
+                    {company.employee_count} zaměstnanců
+                  </Badge>
+                )}
 
-                    {/* Documents for this month */}
-                    <div className="mt-4">
-                      <h4 className="font-semibold text-sm mb-2 text-gray-700">Dokumenty pro tento měsíc:</h4>
-                      <div className="text-sm text-gray-500">
-                        <em>Zatím nejsou k dispozici - implementace přiřazení dokumentů k měsícům probíhá...</em>
-                      </div>
-                    </div>
-                  </div>
+                {company.legal_form === 'OSVČ' && company.health_insurance_company && (
+                  <Badge variant="outline" className="text-gray-500">
+                    {healthInsuranceLabels[company.health_insurance_company] || company.health_insurance_company}
+                  </Badge>
                 )}
               </div>
-            )
-          })}
+            </div>
+
+            {/* Tlačítko upravit */}
+            <Button variant="outline" size="sm">
+              <Edit className="h-4 w-4 mr-1" />
+              Upravit
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Global Documents */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Globální dokumenty</CardTitle>
-          <CardDescription>Dokumenty nepřiřazené ke konkrétnímu měsíci (smlouvy, různé)</CardDescription>
+      {/* ============================================ */}
+      {/* AKTUÁLNÍ STAV - Co je potřeba */}
+      {/* ============================================ */}
+      <Card className="mb-6 border-2 border-purple-200">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-purple-600" />
+            Aktuální stav – {monthNamesFull[currentMonth]} {currentYear}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {documents.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="mx-auto h-12 w-12 mb-2 text-gray-400" />
-              <p>Zatím žádné nahrané dokumenty</p>
+          {currentClosure ? (
+            <div className="grid grid-cols-3 gap-4">
+              {/* Výpis z banky */}
+              <div className={`p-4 rounded-lg border-2 ${
+                currentClosure.bank_statement_status === 'approved' ? 'bg-green-50 border-green-200' :
+                currentClosure.bank_statement_status === 'uploaded' ? 'bg-yellow-50 border-yellow-200' :
+                'bg-red-50 border-red-200'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium text-sm">Výpis z banky</span>
+                  {currentClosure.bank_statement_status === 'approved' ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : currentClosure.bank_statement_status === 'uploaded' ? (
+                    <Clock className="h-5 w-5 text-yellow-600" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-600" />
+                  )}
+                </div>
+                <div className={`text-sm ${
+                  currentClosure.bank_statement_status === 'approved' ? 'text-green-700' :
+                  currentClosure.bank_statement_status === 'uploaded' ? 'text-yellow-700' :
+                  'text-red-700'
+                }`}>
+                  {currentClosure.bank_statement_status === 'approved' ? 'Schváleno ✓' :
+                   currentClosure.bank_statement_status === 'uploaded' ? 'Čeká na schválení' :
+                   'Chybí - klient nedodal'}
+                </div>
+              </div>
+
+              {/* Nákladové doklady */}
+              <div className={`p-4 rounded-lg border-2 ${
+                currentClosure.expense_documents_status === 'approved' ? 'bg-green-50 border-green-200' :
+                currentClosure.expense_documents_status === 'uploaded' ? 'bg-yellow-50 border-yellow-200' :
+                'bg-red-50 border-red-200'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium text-sm">Nákladové doklady</span>
+                  {currentClosure.expense_documents_status === 'approved' ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : currentClosure.expense_documents_status === 'uploaded' ? (
+                    <Clock className="h-5 w-5 text-yellow-600" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-600" />
+                  )}
+                </div>
+                <div className={`text-sm ${
+                  currentClosure.expense_documents_status === 'approved' ? 'text-green-700' :
+                  currentClosure.expense_documents_status === 'uploaded' ? 'text-yellow-700' :
+                  'text-red-700'
+                }`}>
+                  {currentClosure.expense_documents_status === 'approved' ? 'Schváleno ✓' :
+                   currentClosure.expense_documents_status === 'uploaded' ? 'Čeká na schválení' :
+                   'Chybí - klient nedodal'}
+                </div>
+              </div>
+
+              {/* Příjmové faktury */}
+              <div className={`p-4 rounded-lg border-2 ${
+                currentClosure.income_invoices_status === 'approved' ? 'bg-green-50 border-green-200' :
+                currentClosure.income_invoices_status === 'uploaded' ? 'bg-yellow-50 border-yellow-200' :
+                'bg-red-50 border-red-200'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium text-sm">Příjmové faktury</span>
+                  {currentClosure.income_invoices_status === 'approved' ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : currentClosure.income_invoices_status === 'uploaded' ? (
+                    <Clock className="h-5 w-5 text-yellow-600" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-600" />
+                  )}
+                </div>
+                <div className={`text-sm ${
+                  currentClosure.income_invoices_status === 'approved' ? 'text-green-700' :
+                  currentClosure.income_invoices_status === 'uploaded' ? 'text-yellow-700' :
+                  'text-red-700'
+                }`}>
+                  {currentClosure.income_invoices_status === 'approved' ? 'Schváleno ✓' :
+                   currentClosure.income_invoices_status === 'uploaded' ? 'Čeká na schválení' :
+                   'Chybí - klient nedodal'}
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="space-y-3">
-              {documents.map((doc) => {
-                const colors = statusColors[doc.status] || statusColors.pending
-                return (
-                  <div
-                    key={doc.id}
-                    className={`p-4 rounded-lg border-2 ${colors.border} ${colors.bg}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-5 w-5 text-gray-600" />
-                          <span className="font-medium">{doc.file_name}</span>
-                          <span className={`text-xs px-2 py-1 rounded ${colors.bg} ${colors.text}`}>
-                            {doc.status === 'uploaded' ? 'Čeká' :
-                              doc.status === 'approved' ? 'Schváleno' : 'Zamítnuto'}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          {documentTypeLabels[doc.type] || doc.type} •
-                          {formatFileSize(doc.file_size_bytes)} •
-                          {new Date(doc.uploaded_at).toLocaleDateString('cs-CZ')}
-                        </div>
-                      </div>
-
-                      {doc.status === 'uploaded' && (
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="default"
-                            className="bg-green-600 hover:bg-green-700"
-                            onClick={() => handleApprove(doc.id)}
-                          >
-                            <CheckCircle className="mr-1 h-4 w-4" />
-                            Schválit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleReject(doc.id)}
-                          >
-                            <XCircle className="mr-1 h-4 w-4" />
-                            Zamítnout
-                          </Button>
-                        </div>
-                      )}
-
-                      {doc.status === 'approved' && (
-                        <div className="flex items-center gap-2 text-green-600">
-                          <CheckCircle className="h-5 w-5" />
-                          <span className="text-sm font-medium">Schváleno</span>
-                        </div>
-                      )}
-
-                      {doc.status === 'rejected' && (
-                        <div className="flex items-center gap-2 text-red-600">
-                          <XCircle className="h-5 w-5" />
-                          <span className="text-sm font-medium">Zamítnuto</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+            <div className="text-center py-8 text-gray-500">
+              <AlertCircle className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+              <p>Žádná data pro aktuální měsíc</p>
             </div>
           )}
+
+          {/* Akce pro aktuální měsíc */}
+          {currentClosure && (
+            <div className="mt-4 pt-4 border-t flex gap-2">
+              {(currentClosure.bank_statement_status === 'missing' ||
+                currentClosure.expense_documents_status === 'missing' ||
+                currentClosure.income_invoices_status === 'missing') && (
+                <Button variant="outline" className="text-orange-600 border-orange-300 hover:bg-orange-50">
+                  <Mail className="h-4 w-4 mr-1" />
+                  Urgovat klienta
+                </Button>
+              )}
+              {(currentClosure.bank_statement_status === 'uploaded' ||
+                currentClosure.expense_documents_status === 'uploaded' ||
+                currentClosure.income_invoices_status === 'uploaded') && (
+                <Button className="bg-green-600 hover:bg-green-700">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Schválit dokumenty
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ============================================ */}
+      {/* ÚKOLY */}
+      {/* ============================================ */}
+      <Card className="mb-6">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <FileText className="h-5 w-5 text-purple-600" />
+              Úkoly u tohoto klienta
+            </CardTitle>
+            <Button size="sm" variant="outline">
+              <Plus className="h-4 w-4 mr-1" />
+              Nový úkol
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* TODO: Napojit na skutečný systém úkolů */}
+          <div className="text-center py-8 text-gray-500">
+            <FileText className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+            <p className="mb-2">Zatím žádné úkoly</p>
+            <p className="text-sm text-gray-400">
+              Úkoly budou zobrazeny zde - kdo na čem pracuje, termíny, historie
+            </p>
+          </div>
+
+          {/* Příklad jak by to mohlo vypadat (zakomentováno)
+          <div className="space-y-3">
+            <div className="p-3 border rounded-lg hover:bg-gray-50">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="font-medium">Daňová kontrola</div>
+                  <div className="text-sm text-gray-500">Probíhá od 15.10.2025</div>
+                </div>
+                <Badge className="bg-orange-100 text-orange-700">Probíhá</Badge>
+              </div>
+              <div className="mt-2 text-sm text-gray-600 flex items-center gap-4">
+                <span className="flex items-center gap-1">
+                  <User className="h-3 w-3" /> Jana Svobodová
+                </span>
+                <span>Poslední aktivita: dnes</span>
+              </div>
+            </div>
+          </div>
+          */}
+        </CardContent>
+      </Card>
+
+      {/* ============================================ */}
+      {/* PŘEHLED MĚSÍCŮ */}
+      {/* ============================================ */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-purple-600" />
+            Přehled měsíců {currentYear}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-12 gap-2">
+            {monthNames.map((month, index) => {
+              const period = `${currentYear}-${String(index + 1).padStart(2, '0')}`
+              const closure = yearClosures.find(c => c.period === period)
+              const status = getMonthStatus(closure, index)
+
+              const statusConfig = {
+                complete: { bg: 'bg-green-500', text: 'text-white', icon: '✓' },
+                uploaded: { bg: 'bg-yellow-400', text: 'text-yellow-900', icon: '⏳' },
+                missing: { bg: 'bg-red-500', text: 'text-white', icon: '!' },
+                future: { bg: 'bg-gray-100', text: 'text-gray-400', icon: '—' },
+                unknown: { bg: 'bg-gray-200', text: 'text-gray-500', icon: '?' },
+              }[status]
+
+              const isCurrentMonth = index === currentMonth
+
+              return (
+                <div key={month} className="text-center">
+                  <div
+                    className={`
+                      w-full aspect-square rounded-lg flex items-center justify-center
+                      ${statusConfig.bg} ${statusConfig.text}
+                      ${isCurrentMonth ? 'ring-2 ring-purple-500 ring-offset-2' : ''}
+                      ${status !== 'future' ? 'cursor-pointer hover:opacity-80' : ''}
+                      transition-all
+                    `}
+                    title={`${monthNamesFull[index]} ${currentYear}`}
+                  >
+                    <span className="text-lg font-bold">{statusConfig.icon}</span>
+                  </div>
+                  <div className={`text-xs mt-1 ${isCurrentMonth ? 'font-bold text-purple-600' : 'text-gray-500'}`}>
+                    {month}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Legenda */}
+          <div className="mt-4 pt-4 border-t flex items-center gap-4 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded bg-green-500"></span> Hotovo
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded bg-yellow-400"></span> Čeká na schválení
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded bg-red-500"></span> Chybí podklady
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded bg-gray-100"></span> Budoucí
+            </span>
+          </div>
         </CardContent>
       </Card>
     </div>

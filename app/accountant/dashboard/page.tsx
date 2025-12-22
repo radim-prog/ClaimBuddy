@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react'
 import Link from 'next/link'
-import { DeadlineDashboardWidget } from '@/components/deadline-dashboard-widget'
+// DeadlineDashboardWidget odstraněn - používáme globální alert bar v layoutu
 
-type StatusType = 'missing' | 'uploaded' | 'approved'
+type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
 
 type Company = {
   id: string
@@ -41,32 +41,50 @@ const months = [
 const currentMonth = new Date().getMonth() // 0-indexed
 const currentYear = new Date().getFullYear()
 
-// Status color mapping
+// Status color mapping - výraznější barvy pro lepší viditelnost
 const statusColors: Record<StatusType, { bg: string; text: string; border: string }> = {
   missing: {
-    bg: 'bg-red-100',
-    text: 'text-red-700',
-    border: 'border-red-300'
+    bg: 'bg-red-500',
+    text: 'text-white',
+    border: 'border-red-600'
   },
   uploaded: {
-    bg: 'bg-yellow-100',
-    text: 'text-yellow-700',
-    border: 'border-yellow-300'
+    bg: 'bg-yellow-400',
+    text: 'text-yellow-900',
+    border: 'border-yellow-500'
   },
   approved: {
-    bg: 'bg-green-100',
-    text: 'text-green-700',
-    border: 'border-green-300'
+    bg: 'bg-green-500',
+    text: 'text-white',
+    border: 'border-green-600'
+  },
+  future: {
+    bg: 'bg-gray-100',
+    text: 'text-gray-400',
+    border: 'border-gray-200'
   }
 }
 
-function getMonthStatus(closures: MonthlyClosure[], companyId: string, monthIndex: number): StatusType {
-  const period = `2025-${String(monthIndex + 1).padStart(2, '0')}`
+function getMonthStatus(closures: MonthlyClosure[], companyId: string, monthIndex: number, year: number): StatusType {
+  // Zkontrolovat, jestli je měsíc v budoucnosti
+  if (year > currentYear || (year === currentYear && monthIndex > currentMonth)) {
+    return 'future'
+  }
+
+  const period = `${year}-${String(monthIndex + 1).padStart(2, '0')}`
   const closure = closures.find(
     c => c.company_id === companyId && c.period === period
   )
 
   if (!closure) return 'missing'
+
+  // PRIORITA: Pokud COKOLIV chybí → červená (missing)
+  const anyMissing =
+    closure.bank_statement_status === 'missing' ||
+    closure.expense_documents_status === 'missing' ||
+    closure.income_invoices_status === 'missing'
+
+  if (anyMissing) return 'missing'
 
   // Všechny 3 kategorie musí být approved pro celkový status approved
   const allApproved =
@@ -76,15 +94,8 @@ function getMonthStatus(closures: MonthlyClosure[], companyId: string, monthInde
 
   if (allApproved) return 'approved'
 
-  // Pokud alespoň jedna kategorie je uploaded
-  const anyUploaded =
-    closure.bank_statement_status === 'uploaded' ||
-    closure.expense_documents_status === 'uploaded' ||
-    closure.income_invoices_status === 'uploaded'
-
-  if (anyUploaded) return 'uploaded'
-
-  return 'missing'
+  // Jinak = něco uploaded, nic nechybí → žlutá
+  return 'uploaded'
 }
 
 // Generate deadline alerts from closures
@@ -310,12 +321,14 @@ function StatusCell({
   companyId,
   companyName,
   monthIndex,
-  closures
+  closures,
+  year
 }: {
   companyId: string
   companyName: string
   monthIndex: number
   closures: MonthlyClosure[]
+  year: number
 }) {
   const cellRef = useRef<HTMLTableCellElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
@@ -345,67 +358,100 @@ function StatusCell({
     }
   }
 
-  const status = getMonthStatus(closures, companyId, monthIndex)
+  const status = getMonthStatus(closures, companyId, monthIndex, year)
   const colors = statusColors[status]
-  const period = `2025-${String(monthIndex + 1).padStart(2, '0')}`
+  const period = `${year}-${String(monthIndex + 1).padStart(2, '0')}`
 
   const closure = closures.find(
     c => c.company_id === companyId && c.period === period
   )
 
+  // Get individual statuses for the 3 indicators
+  const bankStatus = closure?.bank_statement_status || 'missing'
+  const expenseStatus = closure?.expense_documents_status || 'missing'
+  const incomeStatus = closure?.income_invoices_status || 'missing'
+
+  const getIndicatorColor = (s: StatusType) => {
+    if (s === 'approved') return 'bg-green-400'
+    if (s === 'uploaded') return 'bg-yellow-300'
+    return 'bg-red-300'
+  }
+
   return (
     <td
       ref={cellRef}
-      className="px-2 py-2 text-center relative"
+      className="px-1 py-2 text-center relative"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <Link href={`/accountant/clients/${companyId}`}>
+      {status === 'future' ? (
+        // Budoucí měsíc - bez linku, šedý
         <div
           className={`
-            w-12 h-12 mx-auto rounded-lg border-2 transition-all cursor-pointer
+            w-14 h-14 mx-auto rounded-lg border-2
             ${colors.bg} ${colors.border}
-            hover:scale-110 hover:shadow-lg
             flex items-center justify-center
           `}
         >
-        <span className={`text-xs font-semibold ${colors.text}`}>
-          {status === 'approved' ? '✓' : status === 'uploaded' ? '⏳' : '!'}
-        </span>
+          <span className={`text-xl ${colors.text}`}>—</span>
         </div>
-      </Link>
+      ) : (
+        <Link href={`/accountant/clients/${companyId}`}>
+          <div
+            className={`
+              w-14 h-14 mx-auto rounded-lg border-2 transition-all cursor-pointer
+              ${colors.bg} ${colors.border}
+              hover:scale-110 hover:shadow-lg
+              flex flex-col items-center justify-center gap-1
+            `}
+          >
+            {/* Hlavní ikona */}
+            <span className={`text-lg font-bold ${colors.text}`}>
+              {status === 'approved' ? '✓' : status === 'uploaded' ? '⏳' : '!'}
+            </span>
+            {/* 3 malé tečky pro jednotlivé dokumenty */}
+            <div className="flex gap-0.5">
+              <div className={`w-2 h-2 rounded-full ${getIndicatorColor(bankStatus)} border border-white/50`} title="Výpis"></div>
+              <div className={`w-2 h-2 rounded-full ${getIndicatorColor(expenseStatus)} border border-white/50`} title="Náklady"></div>
+              <div className={`w-2 h-2 rounded-full ${getIndicatorColor(incomeStatus)} border border-white/50`} title="Příjmy"></div>
+            </div>
+          </div>
+        </Link>
+      )}
 
       {/* Tooltip - smart positioning with direct DOM manipulation */}
-      <div ref={tooltipRef} className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 hidden z-50 pointer-events-none">
-        <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-xl">
-          <div className="font-bold mb-1">{companyName}</div>
-          <div className="text-gray-300 mb-2">{months[monthIndex]} 2025</div>
-          {closure && (
-            <div className="space-y-1 text-left">
-              <div className="flex items-center gap-2">
-                <span className={closure.bank_statement_status === 'approved' ? 'text-green-400' : closure.bank_statement_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
-                  {closure.bank_statement_status === 'approved' ? '✓' : closure.bank_statement_status === 'uploaded' ? '⏳' : '✗'}
-                </span>
-                <span>Výpis z banky</span>
+      {status !== 'future' && (
+        <div ref={tooltipRef} className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 hidden z-50 pointer-events-none">
+          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-xl">
+            <div className="font-bold mb-1">{companyName}</div>
+            <div className="text-gray-300 mb-2">{months[monthIndex]} {year}</div>
+            {closure && (
+              <div className="space-y-1 text-left">
+                <div className="flex items-center gap-2">
+                  <span className={closure.bank_statement_status === 'approved' ? 'text-green-400' : closure.bank_statement_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
+                    {closure.bank_statement_status === 'approved' ? '✓' : closure.bank_statement_status === 'uploaded' ? '⏳' : '✗'}
+                  </span>
+                  <span>Výpis z banky</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={closure.expense_documents_status === 'approved' ? 'text-green-400' : closure.expense_documents_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
+                    {closure.expense_documents_status === 'approved' ? '✓' : closure.expense_documents_status === 'uploaded' ? '⏳' : '✗'}
+                  </span>
+                  <span>Nákladové doklady</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={closure.income_invoices_status === 'approved' ? 'text-green-400' : closure.income_invoices_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
+                    {closure.income_invoices_status === 'approved' ? '✓' : closure.income_invoices_status === 'uploaded' ? '⏳' : '✗'}
+                  </span>
+                  <span>Příjmové faktury</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={closure.expense_documents_status === 'approved' ? 'text-green-400' : closure.expense_documents_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
-                  {closure.expense_documents_status === 'approved' ? '✓' : closure.expense_documents_status === 'uploaded' ? '⏳' : '✗'}
-                </span>
-                <span>Nákladové doklady</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={closure.income_invoices_status === 'approved' ? 'text-green-400' : closure.income_invoices_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
-                  {closure.income_invoices_status === 'approved' ? '✓' : closure.income_invoices_status === 'uploaded' ? '⏳' : '✗'}
-                </span>
-                <span>Příjmové faktury</span>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
+          {/* Arrow */}
+          <div ref={arrowRef} className="w-3 h-3 bg-gray-900 transform rotate-45 absolute bottom-full -mb-1.5 left-1/2 -translate-x-1/2"></div>
         </div>
-        {/* Arrow */}
-        <div ref={arrowRef} className="w-3 h-3 bg-gray-900 transform rotate-45 absolute bottom-full -mb-1.5 left-1/2 -translate-x-1/2"></div>
-      </div>
+      )}
     </td>
   )
 }
@@ -478,9 +524,9 @@ export default function AccountantDashboard() {
   const filteredCompanies = companies.filter(company => {
     if (filter === 'all') return true
 
-    // Check all months for this company
+    // Check all months for this company in selected year
     for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
-      const status = getMonthStatus(closures, company.id, monthIndex)
+      const status = getMonthStatus(closures, company.id, monthIndex, selectedYear)
       if (filter === 'missing' && status === 'missing') return true
       if (filter === 'uploaded' && status === 'uploaded') return true
     }
@@ -500,7 +546,8 @@ export default function AccountantDashboard() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSelectedYear(y => y - 1)}
-            className="p-2 rounded-lg bg-white border hover:bg-gray-50 transition-colors"
+            className="p-2 rounded-lg bg-white border hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={selectedYear <= 2025}
           >
             ←
           </button>
@@ -509,8 +556,8 @@ export default function AccountantDashboard() {
           </span>
           <button
             onClick={() => setSelectedYear(y => y + 1)}
-            className="p-2 rounded-lg bg-white border hover:bg-gray-50 transition-colors"
-            disabled={selectedYear >= currentYear}
+            className="p-2 rounded-lg bg-white border hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={selectedYear >= currentYear + 1}
           >
             →
           </button>
@@ -520,17 +567,17 @@ export default function AccountantDashboard() {
       {/* Stats + Legend + Filter */}
       <div className="mb-6 bg-white p-4 rounded-lg shadow">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          {/* Stats as clickable filters */}
+          {/* Stats as clickable filters - pouze problémové položky */}
           <div className="flex items-center gap-4">
             <button
               onClick={() => setFilter(filter === 'missing' ? 'all' : 'missing')}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${filter === 'missing' ? 'bg-red-100 ring-2 ring-red-400' : 'hover:bg-red-50'}`}
             >
-              <div className="w-8 h-8 rounded bg-red-100 border-2 border-red-300 flex items-center justify-center">
-                <span className="text-sm text-red-700">!</span>
+              <div className="w-8 h-8 rounded bg-red-500 border-2 border-red-600 flex items-center justify-center">
+                <span className="text-sm text-white font-bold">!</span>
               </div>
               <div className="text-left">
-                <div className="text-xs text-gray-500">Chybí</div>
+                <div className="text-xs text-gray-500">Chybí podklady</div>
                 <div className="text-lg font-bold text-red-700">{stats.missing}</div>
               </div>
             </button>
@@ -538,22 +585,23 @@ export default function AccountantDashboard() {
               onClick={() => setFilter(filter === 'uploaded' ? 'all' : 'uploaded')}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${filter === 'uploaded' ? 'bg-yellow-100 ring-2 ring-yellow-400' : 'hover:bg-yellow-50'}`}
             >
-              <div className="w-8 h-8 rounded bg-yellow-100 border-2 border-yellow-300 flex items-center justify-center">
-                <span className="text-sm text-yellow-700">⏳</span>
+              <div className="w-8 h-8 rounded bg-yellow-400 border-2 border-yellow-500 flex items-center justify-center">
+                <span className="text-sm text-yellow-900 font-bold">⏳</span>
               </div>
               <div className="text-left">
-                <div className="text-xs text-gray-500">Čeká</div>
+                <div className="text-xs text-gray-500">Čeká na schválení</div>
                 <div className="text-lg font-bold text-yellow-700">{stats.uploaded}</div>
               </div>
             </button>
-            <div className="flex items-center gap-2 px-3 py-2">
-              <div className="w-8 h-8 rounded bg-green-100 border-2 border-green-300 flex items-center justify-center">
-                <span className="text-sm text-green-700">✓</span>
-              </div>
-              <div className="text-left">
-                <div className="text-xs text-gray-500">Hotovo</div>
-                <div className="text-lg font-bold text-green-700">{stats.approved}</div>
-              </div>
+
+            {/* Legenda - pouze vizuální vysvětlení barev */}
+            <div className="border-l pl-4 ml-2 flex items-center gap-3 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded bg-green-500"></span> OK
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded bg-gray-200"></span> Budoucí
+              </span>
             </div>
           </div>
 
@@ -624,6 +672,7 @@ export default function AccountantDashboard() {
                       companyName={company.name}
                       monthIndex={monthIndex}
                       closures={closures}
+                      year={selectedYear}
                     />
                   ))}
                 </tr>
@@ -633,10 +682,6 @@ export default function AccountantDashboard() {
         </table>
       </div>
 
-      {/* Deadline Widget - full width */}
-      <div className="mt-6" id="deadline-widget">
-        <DeadlineDashboardWidget tasks={deadlineTasks} />
-      </div>
     </div>
   )
 }

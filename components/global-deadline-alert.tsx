@@ -1,13 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { DeadlineAlertBar } from './deadline-alert-bar'
+import { ClientsAlertBar } from './clients-alert-bar'
+import { ClientDetailAlertBar } from './client-detail-alert-bar'
 
 type StatusType = 'missing' | 'uploaded' | 'approved'
 
 type Company = {
   id: string
   name: string
+  group_name?: string | null
   ico: string
 }
 
@@ -20,6 +24,8 @@ type MonthlyClosure = {
   expense_documents_status: StatusType
   income_invoices_status: StatusType
 }
+
+export type AlertContext = 'dashboard' | 'clients' | 'client-detail' | 'tasks' | 'other'
 
 const months = [
   'Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čer',
@@ -47,8 +53,14 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
     const company = companies.find(c => c.id === closure.company_id)
     if (!company) return
 
+    // Sestavit display name se skupinou
+    const displayName = company.group_name
+      ? `${company.group_name} – ${company.name}`
+      : company.name
+
     const [year, month] = closure.period.split('-').map(Number)
-    const deadline = new Date(year, month, 15)
+    // Deadline je 10. den následujícího měsíce po uzávěrkovém období
+    const deadline = new Date(year, month, 10)
     const daysUntil = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
     const hasMissing =
@@ -61,7 +73,8 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
       closure.expense_documents_status === 'uploaded' ||
       closure.income_invoices_status === 'uploaded'
 
-    if (hasMissing && daysUntil <= 7) {
+    // Chybějící dokumenty - zobrazit VŽDY (bez časového limitu)
+    if (hasMissing) {
       const missingDocs: string[] = []
       const checklist: Array<{ id: string; label: string; completed: boolean }> = []
 
@@ -86,42 +99,48 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         checklist.push({ id: `${closure.id}-income`, label: 'Příjmové faktury', completed: true })
       }
 
+      // Určení typu podle urgentnosti
+      // critical = po termínu nebo do 3 dnů
+      // urgent = do 7 dnů
+      // warning = více než 7 dnů
+      const alertType: 'critical' | 'urgent' | 'warning' =
+        daysUntil < 0 ? 'critical' :
+        daysUntil <= 3 ? 'critical' :
+        daysUntil <= 7 ? 'urgent' : 'warning'
+
       deadlines.push({
         id: `${closure.id}-missing`,
         title: `Uzávěrka ${months[month - 1]} - chybí ${missingDocs.join(', ')}`,
         dueDate: deadline.toISOString(),
-        type: daysUntil < 0 ? 'critical' : daysUntil <= 2 ? 'critical' : 'urgent',
+        type: alertType,
         caseId: closure.id,
         companyId: company.id,
-        companyName: company.name,
-        description: `Měsíční uzávěrka za ${months[month - 1]} ${year} pro firmu ${company.name}. Klient musí dodat chybějící dokumenty do ${deadline.toLocaleDateString('cs-CZ')}.`,
+        companyName: displayName,
+        description: `Měsíční uzávěrka za ${months[month - 1]} ${year} pro firmu ${displayName}. Klient musí dodat chybějící dokumenty do ${deadline.toLocaleDateString('cs-CZ')}.`,
         checklist,
         assignedTo: 'Jana Svobodová'
       })
     }
 
-    if (hasUploaded && !hasMissing && daysUntil <= 14) {
+    // Nahráno, čeká na schválení - zobrazit VŽDY (bez časového limitu)
+    if (hasUploaded && !hasMissing) {
+      // Checklist pouze zobrazuje skutečný stav dokumentů (read-only)
       const checklist: Array<{ id: string; label: string; completed: boolean }> = []
 
       checklist.push({
-        id: `${closure.id}-review-bank`,
-        label: 'Zkontrolovat výpis z banky',
+        id: `${closure.id}-bank`,
+        label: 'Výpis z banky',
         completed: closure.bank_statement_status === 'approved'
       })
       checklist.push({
-        id: `${closure.id}-review-expense`,
-        label: 'Zkontrolovat nákladové doklady',
+        id: `${closure.id}-expense`,
+        label: 'Nákladové doklady',
         completed: closure.expense_documents_status === 'approved'
       })
       checklist.push({
-        id: `${closure.id}-review-income`,
-        label: 'Zkontrolovat příjmové faktury',
+        id: `${closure.id}-income`,
+        label: 'Příjmové faktury',
         completed: closure.income_invoices_status === 'approved'
-      })
-      checklist.push({
-        id: `${closure.id}-approve`,
-        label: 'Schválit celou uzávěrku',
-        completed: false
       })
 
       const attachments: Array<{ name: string; url: string }> = []
@@ -135,15 +154,20 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         attachments.push({ name: `prijmy_${months[month - 1]}_2025.pdf`, url: '#' })
       }
 
+      // Určení typu pro schválení
+      const approvalType: 'critical' | 'urgent' | 'warning' =
+        daysUntil < 0 ? 'urgent' :
+        daysUntil <= 3 ? 'urgent' : 'warning'
+
       deadlines.push({
         id: `${closure.id}-approval`,
         title: `Uzávěrka ${months[month - 1]} - čeká na schválení`,
         dueDate: deadline.toISOString(),
-        type: daysUntil <= 3 ? 'urgent' : 'warning',
+        type: approvalType,
         caseId: closure.id,
         companyId: company.id,
-        companyName: company.name,
-        description: `Klient ${company.name} nahrál všechny dokumenty pro uzávěrku za ${months[month - 1]} ${year}. Je třeba zkontrolovat a schválit.`,
+        companyName: displayName,
+        description: `Klient ${displayName} nahrál všechny dokumenty pro uzávěrku za ${months[month - 1]} ${year}. Je třeba zkontrolovat a schválit.`,
         checklist,
         assignedTo: 'Jana Svobodová',
         attachments
@@ -159,17 +183,35 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
 }
 
 export function GlobalDeadlineAlert() {
+  const pathname = usePathname()
+  const [data, setData] = useState<{ companies: Company[], closures: MonthlyClosure[] } | null>(null)
   const [deadlines, setDeadlines] = useState<ReturnType<typeof generateDeadlines>>([])
   const [loading, setLoading] = useState(true)
   const originalTitle = 'Účetní OS'
+
+  // Determine context based on URL
+  const context: AlertContext = useMemo(() => {
+    if (pathname.match(/\/accountant\/clients\/[^/]+/)) return 'client-detail'
+    if (pathname.includes('/accountant/clients')) return 'clients'
+    if (pathname.includes('/accountant/tasks')) return 'tasks'
+    if (pathname.includes('/accountant/dashboard')) return 'dashboard'
+    return 'dashboard' // default to dashboard for other pages
+  }, [pathname])
+
+  // Extract companyId from URL if on client detail page
+  const companyIdFromUrl = useMemo(() => {
+    const match = pathname.match(/\/accountant\/clients\/([^/]+)/)
+    return match ? match[1] : null
+  }, [pathname])
 
   useEffect(() => {
     async function fetchData() {
       try {
         const response = await fetch('/api/accountant/matrix')
         if (!response.ok) return
-        const data = await response.json()
-        const generated = generateDeadlines(data.closures, data.companies)
+        const fetchedData = await response.json()
+        setData(fetchedData)
+        const generated = generateDeadlines(fetchedData.closures, fetchedData.companies)
         setDeadlines(generated)
       } catch (err) {
         // Silently fail - alert bar just won't show
@@ -198,7 +240,30 @@ export function GlobalDeadlineAlert() {
     }
   }, [deadlines])
 
-  if (loading || deadlines.length === 0) return null
+  if (loading || !data) return null
 
-  return <DeadlineAlertBar deadlines={deadlines} />
+  // Render different alert bar based on context
+  switch (context) {
+    case 'clients':
+      return <ClientsAlertBar companies={data.companies} closures={data.closures} deadlines={deadlines} />
+
+    case 'client-detail':
+      if (companyIdFromUrl) {
+        // Filter deadlines for this specific client
+        const clientDeadlines = deadlines.filter(d => d.companyId === companyIdFromUrl)
+        return <ClientDetailAlertBar
+          companyId={companyIdFromUrl}
+          companies={data.companies}
+          closures={data.closures}
+          deadlines={clientDeadlines}
+        />
+      }
+      return <DeadlineAlertBar deadlines={deadlines} />
+
+    case 'dashboard':
+    case 'tasks':
+    default:
+      if (deadlines.length === 0) return null
+      return <DeadlineAlertBar deadlines={deadlines} />
+  }
 }

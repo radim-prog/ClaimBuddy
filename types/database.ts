@@ -15,6 +15,16 @@ export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export type VatPeriod = 'monthly' | 'quarterly' | null;
 
+export type HealthInsuranceCompany =
+  | 'vzp'      // 111 - VZP
+  | 'vozp'     // 201 - VOZP
+  | 'cpzp'     // 205 - ČPZP
+  | 'ozp'      // 207 - OZP
+  | 'zpmv'     // 211 - ZP MV
+  | 'rbp'      // 213 - RBP
+  | 'zpma'     // 217 - ZP M-A
+  | null;
+
 export type LegalForm = 'sro' | 'fyzicka_osoba' | 'as' | 'vos';
 
 // User
@@ -40,6 +50,7 @@ export interface Company {
   owner_id: string; // FK → users/{id}
   assigned_accountant_id: string; // FK → users/{id}
   name: string;
+  group_name?: string; // Skupina/vlastník pro sdružení firem (např. "Novák" pro všechny Novákovy firmy)
   ico: string;
   dic?: string;
   vat_payer: boolean;
@@ -52,6 +63,21 @@ export interface Company {
   };
   email: string;
   phone: string;
+
+  // Zdravotní pojištění (pro OSVČ)
+  health_insurance_company?: HealthInsuranceCompany;
+
+  // Datová schránka - přístupové údaje (pouze pro účetní, zabezpečené)
+  data_box?: {
+    id: string;           // ID datové schránky
+    login?: string;       // Přihlašovací jméno (šifrované)
+    password?: string;    // Heslo (šifrované)
+  };
+
+  // Zaměstnanci
+  has_employees: boolean;
+  employee_count?: number;
+
   pohoda_id?: string;
   google_drive_folder_id?: string;
   billing_settings: {

@@ -1,21 +1,40 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Building2, Search, AlertCircle, CheckCircle, Mail, Phone } from 'lucide-react'
+import {
+  Building2,
+  Search,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Filter,
+  Users,
+  X
+} from 'lucide-react'
 import Link from 'next/link'
 
 type Company = {
   id: string
   name: string
+  group_name: string | null
   ico: string
   dic: string
   legal_form: string
   vat_payer: boolean
+  vat_period: 'monthly' | 'quarterly' | null
   owner_id: string
+  street: string
+  city: string
+  zip: string
+  health_insurance_company: string | null
+  has_employees: boolean
+  employee_count: number
+  data_box: { id: string } | null
 }
 
 type MonthlyClosure = {
@@ -28,10 +47,49 @@ type MonthlyClosure = {
 }
 
 export default function ClientsPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const [companies, setCompanies] = useState<Company[]>([])
   const [closures, setClosures] = useState<MonthlyClosure[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Filtry
+  const [showFilters, setShowFilters] = useState(false)
+  const [filterGroup, setFilterGroup] = useState<string | null>(null)
+  const [filterLegalForm, setFilterLegalForm] = useState<string | null>(null)
+  const [filterVatPayer, setFilterVatPayer] = useState<boolean | null>(null)
+  const [filterVatPeriod, setFilterVatPeriod] = useState<string | null>(null)
+  const [filterHasEmployees, setFilterHasEmployees] = useState<boolean | null>(null)
+
+  // Read status filter from URL params (set by SmartAlertBar)
+  const filterStatus = searchParams.get('status')
+
+  // Function to update status filter via URL
+  const setStatusFilter = useCallback((status: string | null) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (status) {
+      params.set('status', status)
+    } else {
+      params.delete('status')
+    }
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
+    router.push(newUrl)
+  }, [pathname, router, searchParams])
+
+  // Dynamické aktuální období
+  const currentPeriod = useMemo(() => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    return `${year}-${month}`
+  }, [])
+
+  const currentMonthName = useMemo(() => {
+    const now = new Date()
+    return now.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' })
+  }, [])
 
   useEffect(() => {
     fetch('/api/accountant/matrix')
@@ -47,52 +105,148 @@ export default function ClientsPage() {
       })
   }, [])
 
-  const getCurrentMonthStatus = (companyId: string) => {
-    const currentPeriod = '2025-11'
-    const closure = closures.find(c => c.company_id === companyId && c.period === currentPeriod)
+  // Získat stav VŠECH měsíců pro firmu (ne jen aktuální)
+  const getCompanyFullStatus = (companyId: string) => {
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth() + 1
 
-    if (!closure) return { status: 'unknown', missingCount: 0 }
+    // Filtrovat jen aktuální a minulé měsíce (ne budoucí)
+    const companyClosures = closures.filter(c => {
+      if (c.company_id !== companyId) return false
+      const [year, month] = c.period.split('-').map(Number)
+      if (year < currentYear) return true
+      if (year === currentYear && month <= currentMonth) return true
+      return false
+    })
 
-    const missing = [
-      closure.bank_statement_status === 'missing',
-      closure.expense_documents_status === 'missing',
-      closure.income_invoices_status === 'missing',
-    ].filter(Boolean).length
+    let missingMonths = 0
+    let uploadedMonths = 0
+    let missingDocs = 0
+    let uploadedDocs = 0
 
-    const allApproved = [
-      closure.bank_statement_status,
-      closure.expense_documents_status,
-      closure.income_invoices_status,
-    ].every(s => s === 'approved')
+    companyClosures.forEach(closure => {
+      const hasMissing =
+        closure.bank_statement_status === 'missing' ||
+        closure.expense_documents_status === 'missing' ||
+        closure.income_invoices_status === 'missing'
+
+      const hasUploaded =
+        closure.bank_statement_status === 'uploaded' ||
+        closure.expense_documents_status === 'uploaded' ||
+        closure.income_invoices_status === 'uploaded'
+
+      const allApproved =
+        closure.bank_statement_status === 'approved' &&
+        closure.expense_documents_status === 'approved' &&
+        closure.income_invoices_status === 'approved'
+
+      if (hasMissing) {
+        missingMonths++
+        if (closure.bank_statement_status === 'missing') missingDocs++
+        if (closure.expense_documents_status === 'missing') missingDocs++
+        if (closure.income_invoices_status === 'missing') missingDocs++
+      }
+
+      // Počítat uploaded dokumenty (ke schválení)
+      if (closure.bank_statement_status === 'uploaded') uploadedDocs++
+      if (closure.expense_documents_status === 'uploaded') uploadedDocs++
+      if (closure.income_invoices_status === 'uploaded') uploadedDocs++
+
+      if (hasUploaded && !allApproved && !hasMissing) {
+        uploadedMonths++
+      }
+    })
+
+    // Určit celkový stav
+    let status: 'ok' | 'missing' | 'uploaded' = 'ok'
+    if (missingMonths > 0) status = 'missing'
+    else if (uploadedMonths > 0) status = 'uploaded'
 
     return {
-      status: allApproved ? 'complete' : missing > 0 ? 'missing' : 'uploaded',
-      missingCount: missing,
+      status,
+      missingMonths,
+      uploadedMonths,
+      missingDocs,
+      uploadedDocs,
     }
   }
 
-  const filteredCompanies = companies
-    .filter(company =>
-      company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      company.ico.includes(searchQuery) ||
-      company.dic.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => {
-      // Get status for both companies
-      const statusA = getCurrentMonthStatus(a.id).status
-      const statusB = getCurrentMonthStatus(b.id).status
+  // Zjistit unikátní hodnoty pro filtry
+  const uniqueGroups = useMemo(() =>
+    Array.from(new Set(companies.map(c => c.group_name).filter(Boolean))).sort() as string[],
+    [companies]
+  )
 
-      // Separate into categories: 'missing' (red) vs others (green/yellow)
-      const isRedA = statusA === 'missing'
-      const isRedB = statusB === 'missing'
+  const uniqueLegalForms = useMemo(() =>
+    Array.from(new Set(companies.map(c => c.legal_form))).sort(),
+    [companies]
+  )
 
-      // Red clients first
-      if (isRedA && !isRedB) return -1
-      if (!isRedA && isRedB) return 1
+  const activeFiltersCount = [
+    filterGroup,
+    filterLegalForm,
+    filterVatPayer,
+    filterVatPeriod,
+    filterHasEmployees,
+    filterStatus
+  ].filter(f => f !== null).length
 
-      // Within same category, sort alphabetically by name
-      return a.name.localeCompare(b.name, 'cs')
-    })
+  const clearAllFilters = () => {
+    setFilterGroup(null)
+    setFilterLegalForm(null)
+    setFilterVatPayer(null)
+    setFilterVatPeriod(null)
+    setFilterHasEmployees(null)
+    // Clear URL status param
+    if (filterStatus) {
+      setStatusFilter(null)
+    }
+  }
+
+  const filteredCompanies = useMemo(() => {
+    return companies
+      .filter(company => {
+        // Text search - hledá i ve skupině
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase()
+          if (!company.name.toLowerCase().includes(query) &&
+              !company.ico.includes(query) &&
+              !(company.dic || '').toLowerCase().includes(query) &&
+              !(company.group_name || '').toLowerCase().includes(query)) {
+            return false
+          }
+        }
+
+        // Filters
+        if (filterGroup && company.group_name !== filterGroup) return false
+        if (filterLegalForm && company.legal_form !== filterLegalForm) return false
+        if (filterVatPayer !== null && company.vat_payer !== filterVatPayer) return false
+        if (filterVatPeriod && company.vat_period !== filterVatPeriod) return false
+        if (filterHasEmployees !== null && company.has_employees !== filterHasEmployees) return false
+
+        if (filterStatus) {
+          const status = getCompanyFullStatus(company.id).status
+          if (filterStatus === 'missing' && status !== 'missing') return false
+          if (filterStatus === 'uploaded' && status !== 'uploaded') return false
+          if (filterStatus === 'complete' && status !== 'ok') return false
+        }
+
+        return true
+      })
+      .sort((a, b) => {
+        // Řadit podle skupiny (pokud existuje) nebo názvu firmy - vše v jedné abecedě
+        const sortKeyA = a.group_name || a.name
+        const sortKeyB = b.group_name || b.name
+
+        if (sortKeyA !== sortKeyB) {
+          return sortKeyA.localeCompare(sortKeyB, 'cs')
+        }
+
+        // V rámci stejné skupiny řadit podle názvu firmy
+        return a.name.localeCompare(b.name, 'cs')
+      })
+  }, [companies, closures, searchQuery, filterGroup, filterLegalForm, filterVatPayer, filterVatPeriod, filterHasEmployees, filterStatus, currentPeriod])
 
   if (loading) {
     return (
@@ -107,124 +261,260 @@ export default function ClientsPage() {
 
   return (
     <div className="max-w-7xl">
-      <div className="mb-8">
+      {/* Header */}
+      <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Klienti</h1>
-        <p className="mt-2 text-gray-600">Přehled všech vašich klientů ({companies.length})</p>
+        <p className="mt-1 text-gray-600">
+          {companies.length} klientů • Stav za {currentMonthName}
+        </p>
       </div>
 
-      {/* Search bar */}
+      {/* Search and Filters */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="flex items-center gap-2">
-            <Search className="h-5 w-5 text-gray-400" />
-            <Input
-              placeholder="Hledat podle názvu, IČ nebo DIČ..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1"
-            />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 flex-1">
+              <Search className="h-5 w-5 text-gray-400" />
+              <Input
+                placeholder="Hledat podle názvu, IČ nebo DIČ..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1"
+              />
+            </div>
+            <Button
+              variant={showFilters ? 'default' : 'outline'}
+              onClick={() => setShowFilters(!showFilters)}
+              className={showFilters ? 'bg-purple-600 hover:bg-purple-700' : ''}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filtry
+              {activeFiltersCount > 0 && (
+                <Badge className="ml-2 bg-white text-purple-600">{activeFiltersCount}</Badge>
+              )}
+            </Button>
           </div>
+
+          {/* Filter Panel */}
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t">
+              <div className="flex flex-wrap gap-4">
+                {/* Group/Owner */}
+                {uniqueGroups.length > 0 && (
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Skupina/Vlastník</label>
+                    <select
+                      value={filterGroup || ''}
+                      onChange={(e) => setFilterGroup(e.target.value || null)}
+                      className="px-3 py-2 border rounded-lg text-sm"
+                    >
+                      <option value="">Všechny skupiny</option>
+                      {uniqueGroups.map(group => (
+                        <option key={group} value={group}>{group}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Legal Form */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Právní forma</label>
+                  <select
+                    value={filterLegalForm || ''}
+                    onChange={(e) => setFilterLegalForm(e.target.value || null)}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    <option value="">Všechny</option>
+                    {uniqueLegalForms.map(form => (
+                      <option key={form} value={form}>{form}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* VAT Payer */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Plátce DPH</label>
+                  <select
+                    value={filterVatPayer === null ? '' : filterVatPayer ? 'yes' : 'no'}
+                    onChange={(e) => setFilterVatPayer(e.target.value === '' ? null : e.target.value === 'yes')}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    <option value="">Všichni</option>
+                    <option value="yes">Plátci DPH</option>
+                    <option value="no">Neplátci DPH</option>
+                  </select>
+                </div>
+
+                {/* VAT Period */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">DPH období</label>
+                  <select
+                    value={filterVatPeriod || ''}
+                    onChange={(e) => setFilterVatPeriod(e.target.value || null)}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    <option value="">Všechny</option>
+                    <option value="monthly">Měsíční</option>
+                    <option value="quarterly">Kvartální</option>
+                  </select>
+                </div>
+
+                {/* Has Employees */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Zaměstnanci</label>
+                  <select
+                    value={filterHasEmployees === null ? '' : filterHasEmployees ? 'yes' : 'no'}
+                    onChange={(e) => setFilterHasEmployees(e.target.value === '' ? null : e.target.value === 'yes')}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    <option value="">Všichni</option>
+                    <option value="yes">Se zaměstnanci</option>
+                    <option value="no">Bez zaměstnanců</option>
+                  </select>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Stav dokumentů</label>
+                  <select
+                    value={filterStatus || ''}
+                    onChange={(e) => setStatusFilter(e.target.value || null)}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    <option value="">Všechny stavy</option>
+                    <option value="missing">Chybí podklady</option>
+                    <option value="uploaded">Čeká na schválení</option>
+                    <option value="complete">V pořádku</option>
+                  </select>
+                </div>
+
+                {/* Clear filters */}
+                {activeFiltersCount > 0 && (
+                  <div className="flex items-end">
+                    <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                      <X className="h-4 w-4 mr-1" />
+                      Zrušit filtry
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
+      {/* Results info */}
+      {(searchQuery || activeFiltersCount > 0) && (
+        <div className="mb-4 text-sm text-gray-600">
+          Zobrazeno {filteredCompanies.length} z {companies.length} klientů
+        </div>
+      )}
+
       {/* Clients list */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {filteredCompanies.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Building2 className="mx-auto h-16 w-16 text-gray-400 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Žádní klienti</h3>
               <p className="text-gray-600">
-                {searchQuery
-                  ? 'Nenalezeny žádné výsledky pro tento dotaz'
+                {searchQuery || activeFiltersCount > 0
+                  ? 'Nenalezeny žádné výsledky pro tyto filtry'
                   : 'Zatím nemáte žádné přiřazené klienty'}
               </p>
+              {activeFiltersCount > 0 && (
+                <Button variant="outline" className="mt-4" onClick={clearAllFilters}>
+                  Zrušit filtry
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
           filteredCompanies.map((company) => {
-            const monthStatus = getCurrentMonthStatus(company.id)
-            const statusIcon =
-              monthStatus.status === 'complete' ? (
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              ) : monthStatus.status === 'missing' ? (
-                <AlertCircle className="h-5 w-5 text-red-600" />
-              ) : (
-                <AlertCircle className="h-5 w-5 text-yellow-600" />
-              )
+            const fullStatus = getCompanyFullStatus(company.id)
 
-            const statusText =
-              monthStatus.status === 'complete'
-                ? 'Vše OK'
-                : monthStatus.status === 'missing'
-                ? `Chybí ${monthStatus.missingCount} dokumenty`
-                : 'Čeká na schválení'
+            // Barva levého okraje podle stavu
+            const borderColor = fullStatus.status === 'missing' ? 'border-l-red-500' :
+                               fullStatus.status === 'uploaded' ? 'border-l-yellow-500' :
+                               'border-l-green-500'
+
+            // Formátování adresy
+            const address = [company.street, company.city, company.zip].filter(Boolean).join(', ')
 
             return (
-              <Card key={company.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Building2 className="h-6 w-6 text-purple-600" />
-                        <div>
-                          <h3 className="text-xl font-semibold text-gray-900">
-                            {company.name}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            IČ: {company.ico} | DIČ: {company.dic}
-                          </p>
+              <Link key={company.id} href={`/accountant/clients/${company.id}`}>
+                <Card className={`hover:shadow-md transition-all cursor-pointer border-l-4 ${borderColor}`}>
+                  <CardContent className="py-3 px-4">
+                    {/* Grid layout pro konzistentní zarovnání */}
+                    <div className="grid grid-cols-12 gap-4 items-center">
+
+                      {/* Sloupec 1: Název a identifikace (5 sloupců) */}
+                      <div className="col-span-5 min-w-0">
+                        <h3 className="font-semibold text-gray-900 truncate">
+                          {company.group_name && (
+                            <span className="text-purple-600">{company.group_name} – </span>
+                          )}
+                          {company.name}
+                        </h3>
+                        <div className="text-sm text-gray-500 truncate">
+                          {company.ico}{company.dic && ` • ${company.dic}`}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4 mb-4">
-                        <Badge variant="outline">{company.legal_form}</Badge>
-                        <Badge className={company.vat_payer ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-500 text-white'}>
-                          {company.vat_payer ? 'Plátce DPH' : 'Neplátce DPH'}
-                        </Badge>
-                        <div className="flex items-center gap-2 text-sm">
-                          {statusIcon}
-                          <span
-                            className={
-                              monthStatus.status === 'complete'
-                                ? 'text-green-700 font-medium'
-                                : monthStatus.status === 'missing'
-                                ? 'text-red-700 font-medium'
-                                : 'text-yellow-700 font-medium'
-                            }
-                          >
-                            {statusText}
+                      {/* Sloupec 2: Adresa (3 sloupce) */}
+                      <div className="col-span-3 text-sm text-gray-500 truncate">
+                        {address || '—'}
+                      </div>
+
+                      {/* Sloupec 3: Vlastnosti - fixní šířky (2 sloupce) */}
+                      <div className="col-span-2 flex items-center gap-1.5">
+                        {/* DPH - vždy na první pozici */}
+                        <div className="w-8 flex-shrink-0">
+                          {company.vat_payer ? (
+                            <Badge className="bg-blue-500 text-white hover:bg-blue-500 text-xs font-bold px-2">
+                              {company.vat_period === 'monthly' ? 'M' : 'Q'}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-gray-300">—</span>
+                          )}
+                        </div>
+                        {/* Zaměstnanci - vždy na druhé pozici */}
+                        <div className="w-10 flex-shrink-0">
+                          {company.has_employees ? (
+                            <Badge variant="outline" className="text-gray-600 text-xs px-1.5">
+                              <Users className="h-3 w-3 mr-0.5" />
+                              {company.employee_count}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-gray-300">—</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Sloupec 4: Stav dokumentů (2 sloupce) */}
+                      <div className="col-span-2 text-right">
+                        {fullStatus.status === 'ok' ? (
+                          <span className="inline-flex items-center gap-1 text-green-600 text-sm font-medium">
+                            <CheckCircle className="h-4 w-4" />
+                            OK
                           </span>
-                        </div>
+                        ) : fullStatus.status === 'missing' ? (
+                          <span className="inline-flex items-center gap-1 text-red-600 text-sm font-medium">
+                            <AlertCircle className="h-4 w-4" />
+                            Chybí {fullStatus.missingDocs} dok.
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-yellow-600 text-sm font-medium">
+                            <Clock className="h-4 w-4" />
+                            Ke schválení {fullStatus.uploadedDocs} dok.
+                          </span>
+                        )}
                       </div>
 
-                      <div className="flex gap-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <Mail className="h-4 w-4" />
-                          <span>kontakt@{company.name.toLowerCase().replace(/\s+/g, '')}.cz</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-4 w-4" />
-                          <span>+420 777 {Math.floor(Math.random() * 900 + 100)} {Math.floor(Math.random() * 900 + 100)}</span>
-                        </div>
-                      </div>
                     </div>
-
-                    <div className="flex flex-col gap-2">
-                      <Link href={`/accountant/clients/${company.id}`}>
-                        <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                          Detail
-                        </Button>
-                      </Link>
-                      {monthStatus.status === 'missing' && (
-                        <Button size="sm" variant="outline" className="w-full text-orange-600 border-orange-300 hover:bg-orange-50">
-                          Urgovat
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             )
           })
         )}
