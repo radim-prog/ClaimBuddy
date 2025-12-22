@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { Suspense, useEffect, useState, useMemo, useCallback } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -46,7 +46,7 @@ type MonthlyClosure = {
   income_invoices_status: string
 }
 
-export default function ClientsPage() {
+function ClientsPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
@@ -520,5 +520,20 @@ export default function ClientsPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function ClientsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          <p className="mt-4 text-gray-600">Načítám klienty...</p>
+        </div>
+      </div>
+    }>
+      <ClientsPageContent />
+    </Suspense>
   )
 }
