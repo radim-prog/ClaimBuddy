@@ -9,6 +9,7 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   AlertTriangle,
   Phone,
   Mail,
@@ -32,9 +33,11 @@ type EmployeesSectionProps = {
   companyId: string
   employees: Employee[]
   onEmployeesChange?: (employees: Employee[]) => void
+  defaultOpen?: boolean
 }
 
-export function EmployeesSection({ companyId, employees, onEmployeesChange }: EmployeesSectionProps) {
+export function EmployeesSection({ companyId, employees, onEmployeesChange, defaultOpen = true }: EmployeesSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
   const [expandedEmployee, setExpandedEmployee] = useState<string | null>(null)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
   const [isAddingNew, setIsAddingNew] = useState(false)
@@ -91,21 +94,32 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange }: Em
   const hasDeductions = (emp: Employee) => emp.deductions.filter(d => d.active).length > 0
 
   return (
-    <Card>
+    <Card className="scroll-mt-4">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center gap-2 hover:text-purple-600 transition-colors"
+          >
+            {isOpen ? (
+              <ChevronDown className="h-5 w-5 text-gray-400" />
+            ) : (
+              <ChevronRight className="h-5 w-5 text-gray-400" />
+            )}
             <Users className="h-5 w-5 text-purple-600" />
-            Zaměstnanci ({employees.length})
-          </CardTitle>
-          <Button size="sm" variant="default" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => setIsAddingNew(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Přidat zaměstnance
-          </Button>
+            <CardTitle className="text-lg">Zaměstnanci ({employees.length})</CardTitle>
+          </button>
+          {isOpen && (
+            <Button size="sm" variant="default" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => setIsAddingNew(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Přidat zaměstnance
+            </Button>
+          )}
         </div>
       </CardHeader>
-      <CardContent>
-        {employees.length === 0 ? (
+      {isOpen && (
+        <CardContent>
+          {employees.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Users className="h-12 w-12 mx-auto mb-2 text-gray-300" />
             <p className="mb-2">Žádní zaměstnanci</p>
@@ -343,7 +357,8 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange }: Em
             ))}
           </div>
         )}
-      </CardContent>
+        </CardContent>
+      )}
 
       {/* Modal pro editaci/přidání */}
       {(editingEmployee || isAddingNew) && (

@@ -1,10 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { DollarSign, Settings as SettingsIcon, Users as UsersIcon, Building2 } from 'lucide-react'
-import { createBrowserClient } from '@supabase/ssr'
 
 export default function SettingsLayout({
   children,
@@ -12,28 +10,9 @@ export default function SettingsLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
-  useEffect(() => {
-    fetchCurrentUser()
-  }, [])
-
-  const fetchCurrentUser = async () => {
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    if (authUser) {
-      const { data } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', authUser.id)
-        .single()
-      setCurrentUserRole(data?.role || null)
-    }
-  }
+  // TODO: Check user role from Supabase when connected
+  const isAdmin = true // For now, show all tabs
 
   const tabs = [
     {
@@ -58,7 +37,7 @@ export default function SettingsLayout({
       name: 'Správa uživatelů',
       href: '/accountant/settings/users',
       icon: UsersIcon,
-      show: currentUserRole === 'admin'
+      show: isAdmin
     }
   ]
 

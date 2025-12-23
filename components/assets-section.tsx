@@ -14,6 +14,7 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Edit2,
   Trash2,
   Calendar,
@@ -36,6 +37,7 @@ type AssetsSectionProps = {
   companyId: string
   assets: Asset[]
   onAssetsChange?: (assets: Asset[]) => void
+  defaultOpen?: boolean
 }
 
 const CATEGORY_ICONS: Record<AssetCategory, React.ReactNode> = {
@@ -56,7 +58,8 @@ const CATEGORY_COLORS: Record<AssetCategory, string> = {
   other: 'bg-yellow-100 text-yellow-700',
 }
 
-export function AssetsSection({ companyId, assets, onAssetsChange }: AssetsSectionProps) {
+export function AssetsSection({ companyId, assets, onAssetsChange, defaultOpen = true }: AssetsSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
   const [expandedAsset, setExpandedAsset] = useState<string | null>(null)
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null)
   const [isAddingNew, setIsAddingNew] = useState(false)
@@ -430,26 +433,39 @@ export function AssetsSection({ companyId, assets, onAssetsChange }: AssetsSecti
   )
 
   return (
-    <Card>
+    <Card className="scroll-mt-4">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Car className="h-5 w-5 text-purple-600" />
-            Majetek firmy
-            {activeAssets.length > 0 && (
-              <span className="text-sm font-normal text-gray-500">
-                ({activeAssets.length} položek • {formatCurrency(totalValue)})
-              </span>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center gap-2 hover:text-purple-600 transition-colors"
+          >
+            {isOpen ? (
+              <ChevronDown className="h-5 w-5 text-gray-400" />
+            ) : (
+              <ChevronRight className="h-5 w-5 text-gray-400" />
             )}
-          </CardTitle>
-          <Button size="sm" variant="default" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => setIsAddingNew(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Přidat majetek
-          </Button>
+            <Car className="h-5 w-5 text-purple-600" />
+            <CardTitle className="text-lg">
+              Majetek firmy
+              {activeAssets.length > 0 && (
+                <span className="text-sm font-normal text-gray-500 ml-2">
+                  ({activeAssets.length} položek • {formatCurrency(totalValue)})
+                </span>
+              )}
+            </CardTitle>
+          </button>
+          {isOpen && (
+            <Button size="sm" variant="default" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => setIsAddingNew(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Přidat majetek
+            </Button>
+          )}
         </div>
       </CardHeader>
-      <CardContent>
-        {assets.length === 0 ? (
+      {isOpen && (
+        <CardContent>
+          {assets.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Car className="h-12 w-12 mx-auto mb-2 text-gray-300" />
             <p className="mb-2">Zatím žádný evidovaný majetek</p>
@@ -475,7 +491,8 @@ export function AssetsSection({ companyId, assets, onAssetsChange }: AssetsSecti
             )}
           </div>
         )}
-      </CardContent>
+        </CardContent>
+      )}
 
       {/* Modal pro editaci/přidání */}
       {(editingAsset || isAddingNew) && (

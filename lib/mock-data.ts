@@ -2000,6 +2000,16 @@ export function getAllTimelineEvents(companyId: string) {
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }
 
+// Get tasks by company
+export function getTasksByCompany(companyId: string) {
+  return mockTasks.filter(t => t.company_id === companyId)
+}
+
+// Get all tasks
+export function getAllTasks() {
+  return mockTasks
+}
+
 // ==========================================
 // MAJETEK FIRMY
 // ==========================================

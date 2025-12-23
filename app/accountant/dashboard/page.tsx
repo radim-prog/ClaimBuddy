@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react'
 import Link from 'next/link'
-// DeadlineDashboardWidget odstraněn - používáme globální alert bar v layoutu
-
 type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
 
 type Company = {

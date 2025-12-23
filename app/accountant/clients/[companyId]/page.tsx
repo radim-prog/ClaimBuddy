@@ -25,9 +25,15 @@ import {
   Copy,
   Key,
   Car,
+  Users,
+  Shield,
+  CalendarDays,
+  MessageCircle,
+  ClipboardList,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import {
   Popover,
   PopoverContent,
@@ -40,10 +46,15 @@ import { AssetsSection } from '@/components/assets-section'
 import { InsuranceSection } from '@/components/insurance-section'
 import { AnniversaryCalendar } from '@/components/anniversary-calendar'
 import { UrgencyEmailModal } from '@/components/urgency-email-modal'
+import { CollapsibleSection } from '@/components/collapsible-section'
+import { SectionNav, clientDetailNavItems } from '@/components/section-nav'
+import { AccountantMessagesSection } from '@/components/accountant/messages-section'
+import { AccountantTasksSection } from '@/components/accountant/tasks-section'
+import { AccountantDeadlineCalendar } from '@/components/accountant/deadline-calendar'
 import { Employee } from '@/lib/types/employee'
 import { Asset } from '@/lib/types/asset'
 import { Insurance } from '@/lib/types/insurance'
-import { getEmployeesByCompany, getAssetsByCompany, getInsurancesByCompany } from '@/lib/mock-data'
+import { Task, getEmployeesByCompany, getAssetsByCompany, getInsurancesByCompany, getTasksByCompany } from '@/lib/mock-data'
 
 type Company = {
   id: string
@@ -98,6 +109,7 @@ export default function ClientDetailPage() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [assets, setAssets] = useState<Asset[]>([])
   const [insurances, setInsurances] = useState<Insurance[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth())
@@ -133,6 +145,10 @@ export default function ClientDetailPage() {
       // Načíst pojištění (v produkci by to bylo z API)
       const companyInsurances = getInsurancesByCompany(companyId)
       setInsurances(companyInsurances)
+
+      // Načíst úkoly (v produkci by to bylo z API)
+      const companyTasks = getTasksByCompany(companyId)
+      setTasks(companyTasks)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
@@ -177,6 +193,24 @@ export default function ClientDetailPage() {
     return 'unknown'
   }
 
+  // Navigation items with dynamic badges
+  const navItems = useMemo(() => {
+    const activeTasks = tasks.filter(t =>
+      t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress'
+    ).length
+
+    return [
+      { id: 'info', label: 'Info o firmě', icon: Building2 },
+      { id: 'closures', label: 'Uzávěrky', icon: Calendar },
+      { id: 'tasks', label: 'Úkoly', icon: ClipboardList, badge: activeTasks > 0 ? activeTasks : undefined },
+      { id: 'messages', label: 'Zprávy', icon: MessageCircle },
+      { id: 'employees', label: 'Zaměstnanci', icon: Users, badge: employees.length > 0 ? employees.length : undefined },
+      { id: 'assets', label: 'Majetek', icon: Car, badge: assets.length > 0 ? assets.length : undefined },
+      { id: 'insurance', label: 'Pojištění', icon: Shield, badge: insurances.length > 0 ? insurances.length : undefined },
+      { id: 'deadlines', label: 'Termíny', icon: CalendarDays },
+    ]
+  }, [tasks, employees, assets, insurances])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -206,25 +240,47 @@ export default function ClientDetailPage() {
   }
 
   return (
-    <div className="max-w-5xl">
-      {/* Navigation */}
-      <div className="mb-4">
-        <Link href="/accountant/clients">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Zpět na seznam klientů
-          </Button>
-        </Link>
+    <div className="flex gap-6">
+      {/* Sidebar Navigation */}
+      <div className="w-48 flex-shrink-0 hidden lg:block">
+        <SectionNav items={navItems} />
       </div>
 
-      {/* ============================================ */}
-      {/* HLAVIČKA - Info o firmě */}
-      {/* ============================================ */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          {/* Horní řádek: Název firmy + tlačítko Upravit */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
+      {/* Main Content */}
+      <div className="flex-1 max-w-4xl space-y-6">
+        {/* Navigation */}
+        <div className="flex items-center justify-between">
+          <Link href="/accountant/clients">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Zpět na seznam klientů
+            </Button>
+          </Link>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setEditModalOpen(true)}>
+              <Pencil className="h-4 w-4 mr-1" />
+              Upravit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                window.open(`/client/companies/${companyId}`, '_blank')
+              }}
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              Jako klient
+            </Button>
+          </div>
+        </div>
+
+        {/* ============================================ */}
+        {/* HLAVIČKA - Info o firmě */}
+        {/* ============================================ */}
+        <Card id="info" className="scroll-mt-4">
+          <CardContent className="pt-6">
+            {/* Horní řádek: Název firmy */}
+            <div className="flex items-center gap-3 mb-4">
               <Building2 className="h-8 w-8 text-purple-600" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -237,206 +293,182 @@ export default function ClientDetailPage() {
                 <p className="text-gray-500 text-sm">{company.legal_form}</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setEditModalOpen(true)}>
-                <Pencil className="h-4 w-4 mr-1" />
-                Upravit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  // TODO: Implementovat pohled klienta
-                  window.open(`/client/companies/${companyId}`, '_blank')
-                }}
-              >
-                <Eye className="h-4 w-4 mr-1" />
-                Jako klient
-              </Button>
-            </div>
-          </div>
 
-          {/* Grid s kontaktními údaji - vždy na stejném místě */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y border-gray-100">
-            {/* IČO */}
-            <div>
-              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">IČO</div>
-              <div className="font-medium text-gray-900">{company.ico}</div>
-            </div>
-
-            {/* DIČ */}
-            <div>
-              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">DIČ</div>
-              <div className="font-medium text-gray-900">{company.dic || '—'}</div>
-            </div>
-
-            {/* Telefon */}
-            <div>
-              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Telefon</div>
-              <div className="font-medium text-gray-900 flex items-center gap-1">
-                <Phone className="h-3.5 w-3.5 text-gray-400" />
-                {contactPhone}
+            {/* Grid s kontaktními údaji */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y border-gray-100">
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">IČO</div>
+                <div className="font-medium text-gray-900">{company.ico}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">DIČ</div>
+                <div className="font-medium text-gray-900">{company.dic || '—'}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Telefon</div>
+                <div className="font-medium text-gray-900 flex items-center gap-1">
+                  <Phone className="h-3.5 w-3.5 text-gray-400" />
+                  {contactPhone}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Email</div>
+                <div className="font-medium text-gray-900 flex items-center gap-1 truncate">
+                  <Mail className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="truncate">{contactEmail}</span>
+                </div>
               </div>
             </div>
 
-            {/* Email */}
-            <div>
-              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Email</div>
-              <div className="font-medium text-gray-900 flex items-center gap-1 truncate">
-                <Mail className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                <span className="truncate">{contactEmail}</span>
+            {/* Adresa */}
+            <div className="py-3 border-b border-gray-100">
+              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Adresa</div>
+              <div className="text-gray-900 flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                {[company.street, company.zip, company.city].filter(Boolean).join(', ') || 'Adresa neuvedena'}
               </div>
             </div>
-          </div>
 
-          {/* Adresa - vlastní řádek */}
-          <div className="py-3 border-b border-gray-100">
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Adresa</div>
-            <div className="text-gray-900 flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5 text-gray-400" />
-              {[company.street, company.zip, company.city].filter(Boolean).join(', ') || 'Adresa neuvedena'}
-            </div>
-          </div>
+            {/* Tagy/Badges */}
+            <div className="flex flex-wrap gap-2 pt-4">
+              {company.vat_payer ? (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                  Plátce DPH • {company.vat_period === 'monthly' ? 'Měsíční' : 'Kvartální'}
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                  Neplátce DPH
+                </span>
+              )}
 
-          {/* Tagy/Badges - jen informativní, bez hover efektů */}
-          <div className="flex flex-wrap gap-2 pt-4">
-            {company.vat_payer ? (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                Plátce DPH • {company.vat_period === 'monthly' ? 'Měsíční' : 'Kvartální'}
-              </span>
-            ) : (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                Neplátce DPH
-              </span>
-            )}
-
-            {company.data_box && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer">
-                    <Inbox className="h-3 w-3 mr-1" />
-                    Datovka: {company.data_box.id}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-72" align="start">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                      <Key className="h-4 w-4 text-purple-600" />
-                      Přístupové údaje do datovky
-                    </div>
-
-                    {/* ID datové schránky */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-gray-500">ID datové schránky</label>
-                      <div className="flex items-center gap-2">
-                        <code className="flex-1 px-2 py-1 bg-gray-100 rounded text-sm font-mono">
-                          {company.data_box.id}
-                        </code>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => {
-                            navigator.clipboard.writeText(company.data_box!.id)
-                            toast.success('ID zkopírováno')
-                          }}
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </Button>
+              {company.data_box && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer">
+                      <Inbox className="h-3 w-3 mr-1" />
+                      Datovka: {company.data_box.id}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72" align="start">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                        <Key className="h-4 w-4 text-purple-600" />
+                        Přístupové údaje do datovky
                       </div>
-                    </div>
 
-                    {/* Login */}
-                    {company.data_box.login && (
                       <div className="space-y-1">
-                        <label className="text-xs text-gray-500">Přihlašovací jméno</label>
+                        <label className="text-xs text-gray-500">ID datové schránky</label>
                         <div className="flex items-center gap-2">
                           <code className="flex-1 px-2 py-1 bg-gray-100 rounded text-sm font-mono">
-                            {company.data_box.login}
+                            {company.data_box.id}
                           </code>
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-7 w-7 p-0"
                             onClick={() => {
-                              navigator.clipboard.writeText(company.data_box!.login!)
-                              toast.success('Login zkopírován')
+                              navigator.clipboard.writeText(company.data_box!.id)
+                              toast.success('ID zkopírováno')
                             }}
                           >
                             <Copy className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </div>
-                    )}
 
-                    {/* Heslo */}
-                    {company.data_box.password && (
-                      <div className="space-y-1">
-                        <label className="text-xs text-gray-500">Heslo</label>
-                        <div className="flex items-center gap-2">
-                          <code className="flex-1 px-2 py-1 bg-gray-100 rounded text-sm font-mono">
-                            {showDataBoxPassword ? company.data_box.password : '••••••••'}
-                          </code>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={() => setShowDataBoxPassword(!showDataBoxPassword)}
-                          >
-                            {showDataBoxPassword ? (
-                              <EyeOff className="h-3.5 w-3.5" />
-                            ) : (
-                              <Eye className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={() => {
-                              navigator.clipboard.writeText(company.data_box!.password!)
-                              toast.success('Heslo zkopírováno')
-                            }}
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </Button>
+                      {company.data_box.login && (
+                        <div className="space-y-1">
+                          <label className="text-xs text-gray-500">Přihlašovací jméno</label>
+                          <div className="flex items-center gap-2">
+                            <code className="flex-1 px-2 py-1 bg-gray-100 rounded text-sm font-mono">
+                              {company.data_box.login}
+                            </code>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => {
+                                navigator.clipboard.writeText(company.data_box!.login!)
+                                toast.success('Login zkopírován')
+                              }}
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {!company.data_box.login && !company.data_box.password && (
-                      <p className="text-xs text-gray-500 italic">
-                        Přihlašovací údaje nejsou uloženy
-                      </p>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
+                      {company.data_box.password && (
+                        <div className="space-y-1">
+                          <label className="text-xs text-gray-500">Heslo</label>
+                          <div className="flex items-center gap-2">
+                            <code className="flex-1 px-2 py-1 bg-gray-100 rounded text-sm font-mono">
+                              {showDataBoxPassword ? company.data_box.password : '••••••••'}
+                            </code>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => setShowDataBoxPassword(!showDataBoxPassword)}
+                            >
+                              {showDataBoxPassword ? (
+                                <EyeOff className="h-3.5 w-3.5" />
+                              ) : (
+                                <Eye className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => {
+                                navigator.clipboard.writeText(company.data_box!.password!)
+                                toast.success('Heslo zkopírováno')
+                              }}
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
 
-            {company.has_employees && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                <User className="h-3 w-3 mr-1" />
-                {company.employee_count} zaměstnanců
-              </span>
-            )}
+                      {!company.data_box.login && !company.data_box.password && (
+                        <p className="text-xs text-gray-500 italic">
+                          Přihlašovací údaje nejsou uloženy
+                        </p>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
 
-            {company.legal_form === 'OSVČ' && company.health_insurance_company && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                {healthInsuranceLabels[company.health_insurance_company] || company.health_insurance_company}
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              {company.has_employees && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                  <User className="h-3 w-3 mr-1" />
+                  {company.employee_count} zaměstnanců
+                </span>
+              )}
 
-      {/* ============================================ */}
-      {/* STAV UZÁVĚREK - S horizontálním menu měsíců */}
-      {/* ============================================ */}
-      <Card className="mb-6">
-        <CardContent className="p-0">
-          {/* Horizontální menu měsíců - hranaté tvary */}
-          <div className="grid grid-cols-12 gap-1 p-2 border-b bg-gray-50">
+              {company.legal_form === 'OSVČ' && company.health_insurance_company && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                  {healthInsuranceLabels[company.health_insurance_company] || company.health_insurance_company}
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ============================================ */}
+        {/* STAV UZÁVĚREK */}
+        {/* ============================================ */}
+        <CollapsibleSection
+          id="closures"
+          title="Stav uzávěrek"
+          icon={Calendar}
+          defaultOpen={true}
+        >
+          {/* Horizontální menu měsíců */}
+          <div className="grid grid-cols-12 gap-1 p-2 mb-4 bg-gray-50 rounded-lg">
             {monthNames.map((month, index) => {
               const period = `${currentYear}-${String(index + 1).padStart(2, '0')}`
               const closure = yearClosures.find(c => c.period === period)
@@ -444,7 +476,6 @@ export default function ClientDetailPage() {
               const isSelected = selectedMonth === index
               const isCurrentMonth = index === currentMonth
 
-              // Barvy podle stavu
               const statusColors = {
                 complete: 'bg-green-500 text-white',
                 uploaded: 'bg-yellow-400 text-yellow-900',
@@ -471,7 +502,6 @@ export default function ClientDetailPage() {
                     ${index > currentMonth ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
                   `}
                 >
-                  {/* Hranatý indikátor stavu */}
                   <div className={`
                     w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold
                     ${statusColors[status]}
@@ -494,7 +524,7 @@ export default function ClientDetailPage() {
           </div>
 
           {/* Detail vybraného měsíce */}
-          <div className="p-4">
+          <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 {monthNamesFull[selectedMonth]} {currentYear}
@@ -599,7 +629,6 @@ export default function ClientDetailPage() {
             {/* Akce pro vybraný měsíc */}
             {selectedClosure && (
               <div className="mt-4 pt-4 border-t flex flex-wrap gap-2">
-                {/* Nahrát dokumenty za klienta */}
                 {(selectedClosure.bank_statement_status === 'missing' ||
                   selectedClosure.expense_documents_status === 'missing' ||
                   selectedClosure.income_invoices_status === 'missing') && (
@@ -607,7 +636,6 @@ export default function ClientDetailPage() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        // TODO: Implementovat upload modal
                         alert('Upload dokumentů - bude implementováno')
                       }}
                     >
@@ -634,125 +662,149 @@ export default function ClientDetailPage() {
                 )}
               </div>
             )}
-          </div>
 
-          {/* Legenda */}
-          <div className="px-4 pb-4 flex items-center gap-4 text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-green-500"></span> Hotovo
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-yellow-400"></span> Ke schválení
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-red-500"></span> Chybí
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-gray-200"></span> Budoucí
-            </span>
+            {/* Legenda */}
+            <div className="mt-4 flex items-center gap-4 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full bg-green-500"></span> Hotovo
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full bg-yellow-400"></span> Ke schválení
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full bg-red-500"></span> Chybí
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded-full bg-gray-200"></span> Budoucí
+              </span>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </CollapsibleSection>
 
-      {/* ============================================ */}
-      {/* ÚKOLY */}
-      {/* ============================================ */}
-      <Card className="mb-6">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5 text-purple-600" />
-              Úkoly u tohoto klienta
-            </CardTitle>
-            <Button size="sm" variant="outline">
-              <Plus className="h-4 w-4 mr-1" />
-              Nový úkol
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* TODO: Napojit na skutečný systém úkolů */}
-          <div className="text-center py-8 text-gray-500">
-            <FileText className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-            <p className="mb-2">Zatím žádné úkoly</p>
-            <p className="text-sm text-gray-400">
-              Úkoly budou zobrazeny zde - kdo na čem pracuje, termíny, historie
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ============================================ */}
-      {/* ZAMĚSTNANCI */}
-      {/* ============================================ */}
-      {company.has_employees && (
-        <div className="mb-6">
-          <EmployeesSection
+        {/* ============================================ */}
+        {/* ÚKOLY */}
+        {/* ============================================ */}
+        <CollapsibleSection
+          id="tasks"
+          title="Úkoly"
+          icon={ClipboardList}
+          badge={tasks.filter(t => t.status !== 'completed' && t.status !== 'someday_maybe').length > 0 && (
+            <Badge variant="secondary" className="ml-2">
+              {tasks.filter(t => t.status !== 'completed' && t.status !== 'someday_maybe').length}
+            </Badge>
+          )}
+          defaultOpen={true}
+        >
+          <AccountantTasksSection
             companyId={companyId}
-            employees={employees}
-            onEmployeesChange={setEmployees}
+            companyName={company.name}
+            tasks={tasks}
+            onTasksChange={setTasks}
+          />
+        </CollapsibleSection>
+
+        {/* ============================================ */}
+        {/* ZPRÁVY */}
+        {/* ============================================ */}
+        <CollapsibleSection
+          id="messages"
+          title="Zprávy"
+          icon={MessageCircle}
+          defaultOpen={false}
+        >
+          <AccountantMessagesSection
+            companyId={companyId}
+            companyName={company.name}
+          />
+        </CollapsibleSection>
+
+        {/* ============================================ */}
+        {/* ZAMĚSTNANCI */}
+        {/* ============================================ */}
+        {company.has_employees && (
+          <div id="employees" className="scroll-mt-4">
+            <EmployeesSection
+              companyId={companyId}
+              employees={employees}
+              onEmployeesChange={setEmployees}
+              defaultOpen={false}
+            />
+          </div>
+        )}
+
+        {/* ============================================ */}
+        {/* MAJETEK FIRMY */}
+        {/* ============================================ */}
+        <div id="assets" className="scroll-mt-4">
+          <AssetsSection
+            companyId={companyId}
+            assets={assets}
+            onAssetsChange={setAssets}
+            defaultOpen={false}
           />
         </div>
-      )}
 
-      {/* ============================================ */}
-      {/* MAJETEK FIRMY */}
-      {/* ============================================ */}
-      <div className="mb-6">
-        <AssetsSection
-          companyId={companyId}
-          assets={assets}
-          onAssetsChange={setAssets}
+        {/* ============================================ */}
+        {/* POJIŠTĚNÍ A SMLOUVY */}
+        {/* ============================================ */}
+        <div id="insurance" className="scroll-mt-4">
+          <InsuranceSection
+            companyId={companyId}
+            insurances={insurances}
+            assets={assets}
+            employees={employees}
+            onInsurancesChange={setInsurances}
+            defaultOpen={false}
+          />
+        </div>
+
+        {/* ============================================ */}
+        {/* KALENDÁŘ TERMÍNŮ */}
+        {/* ============================================ */}
+        <CollapsibleSection
+          id="deadlines"
+          title="Termíny a výročí"
+          icon={CalendarDays}
+          defaultOpen={false}
+        >
+          <AccountantDeadlineCalendar
+            companyId={companyId}
+            companyName={company.name}
+          />
+          <div className="mt-6 pt-6 border-t">
+            <h4 className="text-sm font-medium text-gray-700 mb-4">Výročí z pojištění a majetku</h4>
+            <AnniversaryCalendar
+              insurances={insurances}
+              assets={assets}
+              employees={employees}
+            />
+          </div>
+        </CollapsibleSection>
+
+        {/* Modal pro editaci klienta */}
+        <EditClientModal
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          company={company}
+          onSave={handleCompanySave}
         />
+
+        {/* Modal pro urgování klienta */}
+        {selectedClosure && (
+          <UrgencyEmailModal
+            open={urgencyModalOpen}
+            onOpenChange={setUrgencyModalOpen}
+            companyName={company.name}
+            companyEmail={contactEmail}
+            period={selectedPeriod}
+            missingDocuments={[
+              ...(selectedClosure.bank_statement_status === 'missing' ? ['bank_statement' as const] : []),
+              ...(selectedClosure.expense_documents_status === 'missing' ? ['expense_documents' as const] : []),
+              ...(selectedClosure.income_invoices_status === 'missing' ? ['income_invoices' as const] : []),
+            ]}
+          />
+        )}
       </div>
-
-      {/* ============================================ */}
-      {/* POJIŠTĚNÍ A SMLOUVY */}
-      {/* ============================================ */}
-      <div className="mb-6">
-        <InsuranceSection
-          companyId={companyId}
-          insurances={insurances}
-          assets={assets}
-          employees={employees}
-          onInsurancesChange={setInsurances}
-        />
-      </div>
-
-      {/* ============================================ */}
-      {/* KALENDÁŘ VÝROČÍ A TERMÍNŮ */}
-      {/* ============================================ */}
-      <div className="mb-6">
-        <AnniversaryCalendar
-          insurances={insurances}
-          assets={assets}
-          employees={employees}
-        />
-      </div>
-
-      {/* Modal pro editaci klienta */}
-      <EditClientModal
-        open={editModalOpen}
-        onOpenChange={setEditModalOpen}
-        company={company}
-        onSave={handleCompanySave}
-      />
-
-      {/* Modal pro urgování klienta */}
-      {selectedClosure && (
-        <UrgencyEmailModal
-          open={urgencyModalOpen}
-          onOpenChange={setUrgencyModalOpen}
-          companyName={company.name}
-          companyEmail={contactEmail}
-          period={selectedPeriod}
-          missingDocuments={[
-            ...(selectedClosure.bank_statement_status === 'missing' ? ['bank_statement' as const] : []),
-            ...(selectedClosure.expense_documents_status === 'missing' ? ['expense_documents' as const] : []),
-            ...(selectedClosure.income_invoices_status === 'missing' ? ['income_invoices' as const] : []),
-          ]}
-        />
-      )}
     </div>
   )
 }

@@ -17,6 +17,7 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Edit2,
   Trash2,
   Calendar,
@@ -46,6 +47,7 @@ type InsuranceSectionProps = {
   assets?: Asset[]
   employees?: Employee[]
   onInsurancesChange?: (insurances: Insurance[]) => void
+  defaultOpen?: boolean
 }
 
 const CATEGORY_ICONS: Record<InsuranceCategory, React.ReactNode> = {
@@ -89,7 +91,9 @@ export function InsuranceSection({
   assets = [],
   employees = [],
   onInsurancesChange,
+  defaultOpen = true,
 }: InsuranceSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
   const [expandedInsurance, setExpandedInsurance] = useState<string | null>(null)
   const [editingInsurance, setEditingInsurance] = useState<Insurance | null>(null)
   const [isAddingNew, setIsAddingNew] = useState(false)
@@ -350,36 +354,46 @@ export function InsuranceSection({
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Pojištění a smlouvy
-            </CardTitle>
-            {insurances.length > 0 && (
-              <div className="text-sm text-gray-500 mt-1">
-                {activeInsurances.length} aktivních • Roční pojistné:{' '}
-                {formatCurrency(totalAnnualPremium)}
-                {totalTaxDeductible > 0 && (
-                  <span className="text-green-600 ml-2">
-                    • Daňový odpočet: {formatCurrency(totalTaxDeductible)}
-                  </span>
-                )}
-              </div>
+      <Card className="scroll-mt-4">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="flex items-center gap-2 hover:text-purple-600 transition-colors"
+            >
+              {isOpen ? (
+                <ChevronDown className="h-5 w-5 text-gray-400" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              )}
+              <Shield className="h-5 w-5 text-purple-600" />
+              <CardTitle className="text-lg">Pojištění a smlouvy</CardTitle>
+              {insurances.length > 0 && (
+                <span className="text-sm font-normal text-gray-500 ml-2">
+                  ({activeInsurances.length} aktivních • {formatCurrency(totalAnnualPremium)})
+                </span>
+              )}
+            </button>
+            {isOpen && (
+              <Button
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+                onClick={() => setIsAddingNew(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Přidat pojištění
+              </Button>
             )}
           </div>
-          <Button
-            size="sm"
-            className="bg-purple-600 hover:bg-purple-700 text-white"
-            onClick={() => setIsAddingNew(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Přidat pojištění
-          </Button>
+          {isOpen && totalTaxDeductible > 0 && (
+            <div className="text-sm text-green-600 mt-2 ml-12">
+              Daňový odpočet: {formatCurrency(totalTaxDeductible)}
+            </div>
+          )}
         </CardHeader>
-        <CardContent>
-          {/* Upozornění na blížící se výročí */}
+        {isOpen && (
+          <CardContent>
+            {/* Upozornění na blížící se výročí */}
           {upcomingAnniversaries.length > 0 && (
             <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
               <div className="flex items-center gap-2 text-orange-700 font-medium">
@@ -453,7 +467,8 @@ export function InsuranceSection({
               )}
             </div>
           )}
-        </CardContent>
+          </CardContent>
+        )}
       </Card>
 
       {/* Modal pro přidání/editaci */}

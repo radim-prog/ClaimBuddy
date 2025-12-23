@@ -15,7 +15,8 @@ import {
   Bell,
   DollarSign,
   Sparkles,
-  UserPlus
+  UserPlus,
+  Shield
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -37,6 +38,11 @@ const navigation = [
   { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare, badge: 5 },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: DollarSign },
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings },
+]
+
+// Admin navigation - only visible to admin users (TODO: hide based on role)
+const adminNavigation = [
+  { name: 'Administrace', href: '/accountant/admin', icon: Shield },
 ]
 
 const demoFeatures = [
@@ -94,6 +100,35 @@ export default function AccountantLayout({
                 </Link>
               )
             })}
+
+            {/* ADMIN SECTION - TODO: conditionally show based on user role */}
+            <div className="pt-4 mt-4 border-t border-white/20">
+              <p className="px-2 text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
+                🔒 Administrace
+              </p>
+              {adminNavigation.map((item) => {
+                const isActive = pathname.startsWith(item.href)
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`
+                      group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors
+                      ${isActive
+                        ? 'bg-gradient-to-r from-purple-400/30 to-indigo-400/30 text-white border border-purple-300/50'
+                        : 'text-white/80 hover:bg-gradient-to-r hover:from-purple-400/20 hover:to-indigo-400/20 hover:text-white border border-transparent'
+                      }
+                    `}
+                  >
+                    <span className="flex items-center">
+                      <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                      {item.name}
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
 
             {/* DEMO FEATURES SECTION */}
             <div className="pt-4 mt-4 border-t border-white/20">
@@ -212,6 +247,34 @@ export default function AccountantLayout({
                   </Link>
                 )
               })}
+
+              {/* Admin section - mobile */}
+              <div className="pt-2 mt-2 border-t border-gray-200">
+                <p className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  Administrace
+                </p>
+                {adminNavigation.map((item) => {
+                  const isActive = pathname.startsWith(item.href)
+                  const Icon = item.icon
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`
+                        group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
+                        ${isActive
+                          ? 'bg-purple-600 text-white'
+                          : 'text-gray-700 hover:bg-gray-100'
+                        }
+                      `}
+                    >
+                      <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                      {item.name}
+                    </Link>
+                  )
+                })}
+              </div>
             </nav>
 
             {/* Mobile user section */}
@@ -251,8 +314,10 @@ export default function AccountantLayout({
 
       {/* Main content */}
       <div className="md:pl-64 flex flex-col min-h-screen">
-        {/* Global deadline alert bar with full functionality */}
-        <GlobalDeadlineAlert />
+        {/* Global deadline alert bar - only on relevant pages (not admin/settings) */}
+        {!pathname.startsWith('/accountant/admin') && !pathname.startsWith('/accountant/settings') && (
+          <GlobalDeadlineAlert />
+        )}
 
         <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
           {children}
