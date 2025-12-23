@@ -4,6 +4,7 @@ import { TaskTimelineEvent } from '@/lib/types/tasks'
 import { Employee, Deduction } from '@/lib/types/employee'
 import { Asset } from '@/lib/types/asset'
 import { Insurance } from '@/lib/types/insurance'
+import { ClientOnboarding, ClientStatus, DEFAULT_ONBOARDING_STEPS } from '@/lib/types/onboarding'
 
 export const mockUsers = [
   {
@@ -66,6 +67,7 @@ export const mockCompanies = [
     phone: '+420 777 123 456',
     email: 'info@abc-sro.cz',
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-2',
@@ -88,6 +90,7 @@ export const mockCompanies = [
       id: 'xyz5678',
     },
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-3',
@@ -111,6 +114,7 @@ export const mockCompanies = [
       login: 'def_sro',
     },
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-4',
@@ -132,6 +136,7 @@ export const mockCompanies = [
       id: 'ghi3456',
     },
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-5',
@@ -150,6 +155,7 @@ export const mockCompanies = [
     bank_account: '777888999/0100',
     has_employees: false,
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-6',
@@ -169,6 +175,7 @@ export const mockCompanies = [
     employee_count: 8,
     data_box: { id: 'mno7890' },
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-7',
@@ -189,6 +196,7 @@ export const mockCompanies = [
     employee_count: 25,
     data_box: { id: 'pqr2345', login: 'pqr_dev' },
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-8',
@@ -208,6 +216,7 @@ export const mockCompanies = [
     health_insurance_company: 'cpzp' as const,
     has_employees: false,
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-9',
@@ -227,6 +236,7 @@ export const mockCompanies = [
     employee_count: 45,
     data_box: { id: 'vwx6789', login: 'vwx_log' },
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-10',
@@ -246,6 +256,7 @@ export const mockCompanies = [
     employee_count: 15,
     data_box: { id: 'yz01234' },
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-11',
@@ -267,6 +278,7 @@ export const mockCompanies = [
     phone: '+420 353 222 111',
     email: 'info@bcdfinance.cz',
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-12',
@@ -285,6 +297,7 @@ export const mockCompanies = [
     health_insurance_company: 'ozp' as const,
     has_employees: false,
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-13',
@@ -304,6 +317,7 @@ export const mockCompanies = [
     employee_count: 32,
     data_box: { id: 'hij9012', login: 'hij_con' },
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-14',
@@ -323,6 +337,7 @@ export const mockCompanies = [
     employee_count: 6,
     data_box: { id: 'klm3456' },
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
   },
   {
     id: 'company-15',
@@ -342,6 +357,99 @@ export const mockCompanies = [
     has_employees: false,
     data_box: { id: 'nop7890' },
     created_at: '2025-01-01T00:00:00Z',
+    status: 'active' as ClientStatus,
+  },
+  // ===== KLIENTI V ONBOARDINGU =====
+  {
+    id: 'company-onb-1',
+    owner_id: 'user-1-client',
+    assigned_accountant_id: 'user-2-accountant',
+    name: 'Fresh Start s.r.o.',
+    ico: '99001122',
+    legal_form: 's.r.o.' as const,
+    vat_payer: false,
+    vat_period: null,
+    street: 'Nová 1',
+    city: 'Praha',
+    zip: '110 00',
+    has_employees: false,
+    created_at: '2025-12-10T00:00:00Z',
+    status: 'onboarding' as ClientStatus,
+    onboarding: {
+      status: 'onboarding' as ClientStatus,
+      started_at: '2025-12-10T00:00:00Z',
+      last_activity_at: '2025-12-20T14:30:00Z',
+      assigned_to: 'user-2-accountant',
+      assigned_to_name: 'Jana Svobodová',
+      priority: 'high' as const,
+      is_new_company_setup: true,
+      steps: DEFAULT_ONBOARDING_STEPS.map((step, i) => ({
+        ...step,
+        completed: i < 5, // Prvních 5 kroků hotovo
+        completed_at: i < 5 ? '2025-12-15T10:00:00Z' : undefined,
+        completed_by: i < 5 ? 'Jana Svobodová' : undefined,
+      })),
+      notes: [
+        {
+          id: 'note-1',
+          content: 'Klient zakládá nové s.r.o., čekáme na výpis z OR.',
+          created_at: '2025-12-12T09:00:00Z',
+          created_by: 'user-2-accountant',
+          created_by_name: 'Jana Svobodová',
+        },
+        {
+          id: 'note-2',
+          content: 'OR výpis doručen, pokračujeme s datovou schránkou.',
+          created_at: '2025-12-18T11:30:00Z',
+          created_by: 'user-2-accountant',
+          created_by_name: 'Jana Svobodová',
+        },
+      ],
+    },
+  },
+  {
+    id: 'company-onb-2',
+    owner_id: 'user-1-client',
+    assigned_accountant_id: 'user-2-accountant',
+    name: 'Kováčová Marie - OSVČ',
+    ico: '88112233',
+    legal_form: 'OSVČ' as const,
+    vat_payer: false,
+    vat_period: null,
+    street: 'Řemeslnická 45',
+    city: 'Brno',
+    zip: '602 00',
+    health_insurance_company: 'vzp' as const,
+    has_employees: false,
+    phone: '+420 604 555 666',
+    email: 'marie.kovacova@email.cz',
+    created_at: '2025-12-01T00:00:00Z',
+    status: 'onboarding' as ClientStatus,
+    onboarding: {
+      status: 'onboarding' as ClientStatus,
+      started_at: '2025-12-01T00:00:00Z',
+      last_activity_at: '2025-12-15T16:00:00Z', // 8 dní bez aktivity - zaseklé!
+      assigned_to: 'user-2-accountant',
+      assigned_to_name: 'Jana Svobodová',
+      priority: 'medium' as const,
+      previous_accountant: 'Účetnictví Nováková',
+      takeover_date: '2025-01-01',
+      steps: DEFAULT_ONBOARDING_STEPS.map((step, i) => ({
+        ...step,
+        completed: i < 3, // Pouze 3 kroky hotovo
+        completed_at: i < 3 ? '2025-12-10T10:00:00Z' : undefined,
+        completed_by: i < 3 ? 'Jana Svobodová' : undefined,
+      })),
+      notes: [
+        {
+          id: 'note-3',
+          content: 'Převzetí od Účetnictví Nováková. Klientka má zájem od ledna.',
+          created_at: '2025-12-05T10:00:00Z',
+          created_by: 'user-2-accountant',
+          created_by_name: 'Jana Svobodová',
+        },
+      ],
+    },
   },
 ]
 

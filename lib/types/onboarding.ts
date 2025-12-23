@@ -1,200 +1,182 @@
-// Typy pro onboarding klientů
+// Typy pro onboarding klientů - integrované do klientského profilu
 
-export type OnboardingStage =
-  | 'new-lead'
-  | 'qualification'
-  | 'contracts'
-  | 'data-collection'
-  | 'system-setup'
-  | 'onboarding-meeting'
-  | 'active'
+export type ClientStatus = 'onboarding' | 'active'
 
-export type OnboardingPriority = 'high' | 'medium' | 'low'
-
-export type OnboardingDocumentType =
-  | 'contract'
-  | 'power-of-attorney'
-  | 'gdpr'
-  | 'business-registry'
-  | 'previous-closure'
-  | 'other'
-
-export interface OnboardingClient {
+// Jednotlivé kroky onboardingu
+export interface OnboardingStep {
   id: string
-  stage: OnboardingStage
-  priority: OnboardingPriority
-
-  // Základní údaje
-  company_name: string
-  ico?: string
-  dic?: string
-  legal_form?: string
-  vat_payer?: boolean
-  vat_registration_date?: string
-  address?: string
-
-  // Kontakty
-  contact_person: string
-  email: string
-  phone: string
-  secondary_contact?: string
-
-  // Bankovní údaje
-  bank_name?: string
-  bank_account?: string
-  bank_access_username?: string
-
-  // Systémové přístupy
-  data_box_id?: string
-  tax_office_access?: string
-  cssz_access?: string
-  health_insurance_access?: string
-
-  // Metadata
-  assigned_to?: string // UUID účetního
-  assigned_to_name?: string
-  expected_start_date?: string
-  service_scope?: string
-  previous_accountant?: string
-  estimated_documents_monthly?: number
-  special_requirements?: string
-  notes?: string
-
-  // Progress tracking
-  progress_percentage: number
-  completed_steps: string[]
-
-  // Timestamps
-  created_at: string
-  updated_at: string
+  label: string
+  description?: string
+  required: boolean
+  completed: boolean
   completed_at?: string
-
-  // Relations
-  converted_company_id?: string
+  completed_by?: string
+  notes?: string
 }
 
-export interface OnboardingDocument {
-  id: string
-  onboarding_client_id: string
-  document_type: OnboardingDocumentType
-  file_name: string
-  file_url: string
-  uploaded_at: string
-  uploaded_by: string
+// Onboarding data pro klienta
+export interface ClientOnboarding {
+  status: ClientStatus
+  started_at: string
+  completed_at?: string
+  last_activity_at: string
+  assigned_to?: string
+  assigned_to_name?: string
+  priority: 'high' | 'medium' | 'low'
+  steps: OnboardingStep[]
+  notes: OnboardingNote[]
+  // Speciální případy
+  is_new_company_setup?: boolean // Založení nového s.r.o.
+  is_restructuring?: boolean // Změna struktury (holding atd.)
+  previous_accountant?: string
+  takeover_date?: string // Datum převzetí účetnictví
 }
 
-export interface OnboardingTimelineEvent {
+export interface OnboardingNote {
   id: string
-  onboarding_client_id: string
-  event_type: 'stage_change' | 'note_added' | 'document_uploaded' | 'data_updated' | 'assigned'
-  event_data: any
+  content: string
   created_at: string
   created_by: string
   created_by_name?: string
 }
 
-export const STAGE_CONFIG: Record<
-  OnboardingStage,
+// Výchozí kroky onboardingu
+export const DEFAULT_ONBOARDING_STEPS: Omit<OnboardingStep, 'completed' | 'completed_at' | 'completed_by' | 'notes'>[] = [
   {
-    label: string
-    color: string
-    bgColor: string
-    borderColor: string
-    icon: string
-    description: string
-    requiredSteps: string[]
+    id: 'interest',
+    label: 'Zájem klienta o službu',
+    description: 'Potvrzení zájmu o spolupráci',
+    required: true,
+  },
+  {
+    id: 'initial-call',
+    label: 'Úvodní call',
+    description: 'Telefonický rozhovor s klientem',
+    required: false,
+  },
+  {
+    id: 'meeting',
+    label: 'Schůzka - zjištění stavu a představ',
+    description: 'Osobní nebo online schůzka k projednání detailů',
+    required: true,
+  },
+  {
+    id: 'materials-handover',
+    label: 'Předání materiálů účetnictví',
+    description: 'Převzetí dokumentů od předchozí účetní nebo klienta',
+    required: true,
+  },
+  {
+    id: 'data-box-access',
+    label: 'Přístup do datové schránky',
+    description: 'Získání přístupu do datové schránky klienta',
+    required: true,
+  },
+  {
+    id: 'authority-analysis',
+    label: 'Analýza úřadů (FÚ, OSSZ, ZP)',
+    description: 'Kontrola stavu u finančního úřadu, sociálky a zdravotní pojišťovny',
+    required: true,
+  },
+  {
+    id: 'debt-analysis',
+    label: 'Analýza dluhů/exekucí',
+    description: 'Prověření případných dluhů nebo exekucí',
+    required: false,
+  },
+  {
+    id: 'employee-data',
+    label: 'Údaje o zaměstnancích',
+    description: 'Pojišťovny, výplaty, srážky, exekuce zaměstnanců',
+    required: false,
+  },
+  {
+    id: 'profile-complete',
+    label: 'Vyplnění klientského profilu',
+    description: 'Kompletní vyplnění všech údajů v systému',
+    required: true,
+  },
+  {
+    id: 'contract-signed',
+    label: 'Podpis smlouvy o spolupráci',
+    description: 'Podepsaná smlouva o vedení účetnictví',
+    required: true,
+  },
+  {
+    id: 'bank-statements-confirmed',
+    label: 'Klient potvrdil zasílání bankovních výpisů',
+    description: 'Klient si nastavil automatické zasílání výpisů',
+    required: true,
+  },
+  {
+    id: 'calendar-setup',
+    label: 'Projít smlouvy → zapsat termíny do diáře',
+    description: 'Projít existující smlouvy a zapsat důležité termíny',
+    required: true,
+  },
+  {
+    id: 'company-setup',
+    label: 'Založení/změna s.r.o. nebo struktury',
+    description: 'Založení nové společnosti nebo restrukturalizace',
+    required: false,
+  },
+  {
+    id: 'client-training',
+    label: 'Školení klienta na systém',
+    description: 'Vysvětlení jak nahrávat dokumenty a používat portál',
+    required: true,
+  },
+]
+
+// Helper funkce pro vytvoření nového onboardingu
+export function createNewOnboarding(assignedTo?: string, assignedToName?: string): ClientOnboarding {
+  const now = new Date().toISOString()
+  return {
+    status: 'onboarding',
+    started_at: now,
+    last_activity_at: now,
+    assigned_to: assignedTo,
+    assigned_to_name: assignedToName,
+    priority: 'medium',
+    steps: DEFAULT_ONBOARDING_STEPS.map(step => ({
+      ...step,
+      completed: false,
+    })),
+    notes: [],
   }
-> = {
-  'new-lead': {
-    label: 'Nový lead',
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    icon: '🎯',
-    description: 'První kontakt s potenciálním klientem',
-    requiredSteps: ['Úvodní telefonát', 'Email s představením', 'Zaslání ceníku'],
-  },
-  qualification: {
-    label: 'Kvalifikace',
-    color: 'text-purple-700',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200',
-    icon: '📋',
-    description: 'Ověření vhodnosti klienta',
-    requiredSteps: ['První schůzka', 'Zjištění rozsahu služeb', 'Odhad náročnosti'],
-  },
-  contracts: {
-    label: 'Smlouvy',
-    color: 'text-yellow-700',
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-200',
-    icon: '📄',
-    description: 'Podpis smluv a plných mocí',
-    requiredSteps: [
-      'Smlouva o vedení účetnictví',
-      'Plná moc pro úřady',
-      'GDPR souhlas',
-      'Zaslání podepsaných smluv',
-    ],
-  },
-  'data-collection': {
-    label: 'Sběr údajů',
-    color: 'text-orange-700',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
-    icon: '📊',
-    description: 'Získání všech potřebných informací',
-    requiredSteps: [
-      'IČO/DIČ a základní údaje',
-      'Bankovní spojení',
-      'Přístupy do systémů (banka, ČSSZ, ZP, FÚ)',
-      'Datová schránka',
-    ],
-  },
-  'system-setup': {
-    label: 'Nastavení systému',
-    color: 'text-cyan-700',
-    bgColor: 'bg-cyan-50',
-    borderColor: 'border-cyan-200',
-    icon: '⚙️',
-    description: 'Konfigurace v účetním systému',
-    requiredSteps: [
-      'Vytvoření v databázi',
-      'Nastavení měsíčních uzávěrek',
-      'Konfigurace exportů',
-      'Test přístupu do systémů',
-    ],
-  },
-  'onboarding-meeting': {
-    label: 'Onboarding schůzka',
-    color: 'text-green-700',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
-    icon: '🎓',
-    description: 'Vysvětlení procesů klientovi',
-    requiredSteps: [
-      'Školení klienta',
-      'Vysvětlení procesů',
-      'První nahrání dokumentů',
-      'Zodpovězení dotazů',
-    ],
-  },
-  active: {
-    label: 'Aktivní klient',
-    color: 'text-emerald-700',
-    bgColor: 'bg-emerald-50',
-    borderColor: 'border-emerald-200',
-    icon: '✅',
-    description: 'Klient kompletně nastaven',
-    requiredSteps: ['Převod do standardního CRM', 'První uzávěrka dokončena'],
-  },
 }
 
-export const DOCUMENT_TYPE_LABELS: Record<OnboardingDocumentType, string> = {
-  contract: 'Smlouva o vedení účetnictví',
-  'power-of-attorney': 'Plná moc',
-  gdpr: 'GDPR souhlas',
-  'business-registry': 'Výpis z OR',
-  'previous-closure': 'Předchozí uzávěrka',
-  other: 'Ostatní',
+// Helper pro výpočet progress
+export function calculateOnboardingProgress(steps: OnboardingStep[]): number {
+  const requiredSteps = steps.filter(s => s.required)
+  const completedRequired = requiredSteps.filter(s => s.completed)
+  if (requiredSteps.length === 0) return 100
+  return Math.round((completedRequired.length / requiredSteps.length) * 100)
+}
+
+// Helper pro kontrolu jestli je onboarding kompletní
+export function isOnboardingComplete(steps: OnboardingStep[]): boolean {
+  return steps.filter(s => s.required).every(s => s.completed)
+}
+
+// Barvy priorit
+export const PRIORITY_CONFIG = {
+  high: {
+    label: 'Vysoká',
+    color: 'text-red-700',
+    bgColor: 'bg-red-100',
+    borderColor: 'border-red-300',
+  },
+  medium: {
+    label: 'Střední',
+    color: 'text-yellow-700',
+    bgColor: 'bg-yellow-100',
+    borderColor: 'border-yellow-300',
+  },
+  low: {
+    label: 'Nízká',
+    color: 'text-green-700',
+    bgColor: 'bg-green-100',
+    borderColor: 'border-green-300',
+  },
 }

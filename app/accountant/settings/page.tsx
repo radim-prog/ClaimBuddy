@@ -64,6 +64,43 @@ export default function AccountantSettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Onboarding */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Onboarding klientů</CardTitle>
+          <CardDescription>
+            Nastavení procesu onboardingu nových klientů
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="onboarding-stalled-days">Počet dní pro označení klienta jako zaseklého</Label>
+            <Input id="onboarding-stalled-days" type="number" defaultValue="7" min="1" max="30" />
+            <p className="text-xs text-muted-foreground">
+              Klienti bez aktivity po tento počet dní budou označeni jako "zaseklí" a zobrazeni v upozornění
+            </p>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Upozornění na zaseklé klienty</Label>
+              <p className="text-sm text-muted-foreground">
+                Zobrazovat upozornění na klienty, kteří jsou v onboardingu příliš dlouho bez aktivity
+              </p>
+            </div>
+            <Switch defaultChecked />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Email při zaseknutí klienta</Label>
+              <p className="text-sm text-muted-foreground">
+                Posílat emailové upozornění když klient dosáhne limitu dní bez aktivity
+              </p>
+            </div>
+            <Switch />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Automatizace */}
       <Card>
         <CardHeader>

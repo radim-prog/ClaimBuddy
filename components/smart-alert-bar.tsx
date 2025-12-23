@@ -6,6 +6,8 @@ import { AlertCircle, X, ChevronDown, ChevronUp, FileText, Users, UserPlus, Clip
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { mockCompanies } from '@/lib/mock-data'
+import { calculateOnboardingProgress } from '@/lib/types/onboarding'
 
 type StatusType = 'missing' | 'uploaded' | 'approved'
 
@@ -431,16 +433,63 @@ export function SmartAlertBar() {
       }
 
       case 'onboarding': {
-        // Onboarding: Klienti čekající na náběr (simulace)
-        // V reálné aplikaci by to bralo data z onboarding tabulky
+        // Onboarding: Klienti v procesu onboardingu
+        const onboardingClients = mockCompanies.filter(c => c.status === 'onboarding' && c.onboarding)
+
+        const stats = {
+          total: onboardingClients.length,
+          stalled: 0,
+          highPriority: 0,
+          avgProgress: 0
+        }
+
+        const items: AlertItem[] = []
+        let totalProgress = 0
+
+        onboardingClients.forEach(client => {
+          if (!client.onboarding) return
+
+          const progress = calculateOnboardingProgress(client.onboarding.steps)
+          totalProgress += progress
+
+          // Check if stalled (7+ days without activity)
+          const lastActivity = new Date(client.onboarding.last_activity_at)
+          const daysDiff = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24))
+          const isStalled = daysDiff >= 7
+
+          if (isStalled) {
+            stats.stalled++
+            items.push({
+              id: client.id,
+              type: 'critical',
+              title: client.name,
+              subtitle: `Zaseklé ${daysDiff} dní`,
+              link: `/accountant/clients/${client.id}`,
+              details: [`Pokrok: ${progress}%`, `Priorita: ${client.onboarding.priority}`]
+            })
+          }
+
+          if (client.onboarding.priority === 'high') {
+            stats.highPriority++
+          }
+        })
+
+        stats.avgProgress = stats.total > 0 ? Math.round(totalProgress / stats.total) : 0
+
         return {
           icon: UserPlus,
-          label: 'klientů čeká na náběr',
-          color: 'bg-blue-500',
-          count: 0,
-          items: [],
-          emptyMessage: 'Žádní noví klienti k náběru',
-          summaryPrefix: 'Náběr'
+          label: 'klientů v onboardingu',
+          color: stats.stalled > 0 ? 'bg-red-600' : 'bg-purple-600',
+          count: stats.total,
+          items,
+          emptyMessage: 'Žádní noví klienti v onboardingu',
+          summaryPrefix: 'Onboarding',
+          onboardingStats: {
+            total: stats.total,
+            stalled: stats.stalled,
+            highPriority: stats.highPriority,
+            avgProgress: stats.avgProgress
+          }
         }
       }
 
@@ -761,6 +810,123 @@ export function SmartAlertBar() {
                           <Button size="sm" className="text-xs h-7 bg-green-600 hover:bg-green-700 text-white">
                             Schválit dokumenty
                           </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Check for onboarding stats
+  const onboardingStats = 'onboardingStats' in alertData ? alertData.onboardingStats : null
+
+  // Special render for onboarding context
+  if (context === 'onboarding' && onboardingStats) {
+    return (
+      <div className="relative">
+        <div className="bg-gray-800 text-white px-4 py-2">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-purple-400" />
+                <span className="font-medium">{onboardingStats.total} klientů v onboardingu</span>
+                <span className="text-gray-400 mx-2">•</span>
+                <span className="text-sm text-gray-300">Průměrný pokrok: {onboardingStats.avgProgress}%</span>
+              </div>
+
+              {/* Interactive stat buttons */}
+              <div className="flex items-center gap-2">
+                {/* Stalled clients */}
+                {onboardingStats.stalled > 0 && (
+                  <button
+                    onClick={() => setExpanded(!expanded)}
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all"
+                  >
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    <span>Zaseklé: {onboardingStats.stalled} klientů</span>
+                  </button>
+                )}
+
+                {/* High priority */}
+                {onboardingStats.highPriority > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-orange-500/20 text-orange-300">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>Vysoká priorita: {onboardingStats.highPriority}</span>
+                  </div>
+                )}
+
+                {/* All good message */}
+                {onboardingStats.stalled === 0 && onboardingStats.total > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1 text-sm font-medium text-green-300">
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    <span>Vše běží hladce</span>
+                  </div>
+                )}
+
+                {/* Expand/collapse toggle for stalled */}
+                {onboardingStats.stalled > 0 && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-7 text-xs bg-white/10 hover:bg-white/20 text-white border-0 ml-2"
+                    onClick={() => setExpanded(!expanded)}
+                  >
+                    {expanded ? 'Skrýt' : 'Detail'}
+                    {expanded ? <ChevronUp className="h-3 w-3 ml-1" /> : <ChevronDown className="h-3 w-3 ml-1" />}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Expanded dropdown for stalled clients */}
+        {expanded && hasItems && (
+          <div className="absolute left-0 right-0 top-full bg-gray-50 border-b shadow-xl z-40 max-h-[50vh] overflow-y-auto">
+            <div className="max-w-7xl mx-auto p-4">
+              <div className="space-y-2">
+                {alertData.items.map(item => (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-lg border p-3 hover:shadow-md transition-shadow border-l-4 border-l-red-500"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-gray-900">{item.title}</span>
+                          {item.subtitle && (
+                            <Badge variant="outline" className="text-xs text-red-600 border-red-300">
+                              {item.subtitle}
+                            </Badge>
+                          )}
+                        </div>
+                        {item.details && item.details.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {item.details.map((detail, idx) => (
+                              <span key={idx} className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                {detail}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Button size="sm" variant="outline" className="text-xs h-7 text-orange-600 border-orange-300 hover:bg-orange-50">
+                          Kontaktovat
+                        </Button>
+                        {item.link && (
+                          <Link href={item.link}>
+                            <Button size="sm" variant="ghost" className="text-xs h-7 text-gray-500 hover:text-purple-600">
+                              Detail →
+                            </Button>
+                          </Link>
                         )}
                       </div>
                     </div>

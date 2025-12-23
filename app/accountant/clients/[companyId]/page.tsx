@@ -30,6 +30,7 @@ import {
   CalendarDays,
   MessageCircle,
   ClipboardList,
+  Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -51,10 +52,12 @@ import { SectionNav, clientDetailNavItems } from '@/components/section-nav'
 import { AccountantMessagesSection } from '@/components/accountant/messages-section'
 import { AccountantTasksSection } from '@/components/accountant/tasks-section'
 import { AccountantDeadlineCalendar } from '@/components/accountant/deadline-calendar'
+import { OnboardingSection } from '@/components/onboarding-section'
 import { Employee } from '@/lib/types/employee'
 import { Asset } from '@/lib/types/asset'
 import { Insurance } from '@/lib/types/insurance'
-import { Task, getEmployeesByCompany, getAssetsByCompany, getInsurancesByCompany, getTasksByCompany } from '@/lib/mock-data'
+import { ClientOnboarding } from '@/lib/types/onboarding'
+import { Task, getEmployeesByCompany, getAssetsByCompany, getInsurancesByCompany, getTasksByCompany, mockCompanies } from '@/lib/mock-data'
 
 type Company = {
   id: string
@@ -110,6 +113,7 @@ export default function ClientDetailPage() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [insurances, setInsurances] = useState<Insurance[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
+  const [onboarding, setOnboarding] = useState<ClientOnboarding | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth())
@@ -149,6 +153,12 @@ export default function ClientDetailPage() {
       // Načíst úkoly (v produkci by to bylo z API)
       const companyTasks = getTasksByCompany(companyId)
       setTasks(companyTasks)
+
+      // Načíst onboarding data (v produkci by to bylo z API)
+      const mockCompany = mockCompanies.find(c => c.id === companyId)
+      if (mockCompany?.onboarding) {
+        setOnboarding(mockCompany.onboarding)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
@@ -199,8 +209,22 @@ export default function ClientDetailPage() {
       t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress'
     ).length
 
-    return [
+    type NavItem = { id: string; label: string; icon: typeof Building2; badge?: number }
+
+    const items: NavItem[] = [
       { id: 'info', label: 'Info o firmě', icon: Building2 },
+    ]
+
+    // Add onboarding section if client has onboarding data
+    if (onboarding) {
+      items.push({
+        id: 'onboarding',
+        label: 'Onboarding',
+        icon: Sparkles,
+      })
+    }
+
+    items.push(
       { id: 'closures', label: 'Uzávěrky', icon: Calendar },
       { id: 'tasks', label: 'Úkoly', icon: ClipboardList, badge: activeTasks > 0 ? activeTasks : undefined },
       { id: 'messages', label: 'Zprávy', icon: MessageCircle },
@@ -208,8 +232,10 @@ export default function ClientDetailPage() {
       { id: 'assets', label: 'Majetek', icon: Car, badge: assets.length > 0 ? assets.length : undefined },
       { id: 'insurance', label: 'Pojištění', icon: Shield, badge: insurances.length > 0 ? insurances.length : undefined },
       { id: 'deadlines', label: 'Termíny', icon: CalendarDays },
-    ]
-  }, [tasks, employees, assets, insurances])
+    )
+
+    return items
+  }, [tasks, employees, assets, insurances, onboarding])
 
   if (loading) {
     return (
@@ -457,6 +483,20 @@ export default function ClientDetailPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* ============================================ */}
+        {/* ONBOARDING (pokud existuje) */}
+        {/* ============================================ */}
+        {onboarding && (
+          <div id="onboarding" className="scroll-mt-4">
+            <OnboardingSection
+              companyId={companyId}
+              companyName={company.name}
+              onboarding={onboarding}
+              onOnboardingChange={setOnboarding}
+            />
+          </div>
+        )}
 
         {/* ============================================ */}
         {/* STAV UZÁVĚREK */}

@@ -17,6 +17,8 @@ import {
   X
 } from 'lucide-react'
 import Link from 'next/link'
+import { mockCompanies } from '@/lib/mock-data'
+import { Sparkles, UserCheck } from 'lucide-react'
 
 type Company = {
   id: string
@@ -62,9 +64,18 @@ function ClientsPageContent() {
   const [filterVatPayer, setFilterVatPayer] = useState<boolean | null>(null)
   const [filterVatPeriod, setFilterVatPeriod] = useState<string | null>(null)
   const [filterHasEmployees, setFilterHasEmployees] = useState<boolean | null>(null)
+  const [filterClientStatus, setFilterClientStatus] = useState<string | null>(null)
 
   // Read status filter from URL params (set by SmartAlertBar)
   const filterStatus = searchParams.get('status')
+
+  // Read client status from URL (for onboarding filter from navigation)
+  const urlClientStatus = searchParams.get('clientStatus')
+
+  // Sync URL clientStatus with state
+  useEffect(() => {
+    setFilterClientStatus(urlClientStatus)
+  }, [urlClientStatus])
 
   // Function to update status filter via URL
   const setStatusFilter = useCallback((status: string | null) => {
@@ -77,6 +88,25 @@ function ClientsPageContent() {
     const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
     router.push(newUrl)
   }, [pathname, router, searchParams])
+
+  // Function to update client status filter via URL
+  const setClientStatusFilter = useCallback((status: string | null) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (status) {
+      params.set('clientStatus', status)
+    } else {
+      params.delete('clientStatus')
+    }
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
+    router.push(newUrl)
+    setFilterClientStatus(status)
+  }, [pathname, router, searchParams])
+
+  // Helper to get client status from mock data
+  const getClientStatus = useCallback((companyId: string) => {
+    const mockCompany = mockCompanies.find(c => c.id === companyId)
+    return mockCompany?.status || 'active'
+  }, [])
 
   // Dynamické aktuální období
   const currentPeriod = useMemo(() => {
@@ -189,7 +219,8 @@ function ClientsPageContent() {
     filterVatPayer,
     filterVatPeriod,
     filterHasEmployees,
-    filterStatus
+    filterStatus,
+    filterClientStatus
   ].filter(f => f !== null).length
 
   const clearAllFilters = () => {
@@ -201,6 +232,9 @@ function ClientsPageContent() {
     // Clear URL status param
     if (filterStatus) {
       setStatusFilter(null)
+    }
+    if (filterClientStatus) {
+      setClientStatusFilter(null)
     }
   }
 
@@ -232,6 +266,12 @@ function ClientsPageContent() {
           if (filterStatus === 'complete' && status !== 'ok') return false
         }
 
+        // Client status filter (onboarding/active)
+        if (filterClientStatus) {
+          const clientStatus = getClientStatus(company.id)
+          if (filterClientStatus !== clientStatus) return false
+        }
+
         return true
       })
       .sort((a, b) => {
@@ -246,7 +286,7 @@ function ClientsPageContent() {
         // V rámci stejné skupiny řadit podle názvu firmy
         return a.name.localeCompare(b.name, 'cs')
       })
-  }, [companies, closures, searchQuery, filterGroup, filterLegalForm, filterVatPayer, filterVatPeriod, filterHasEmployees, filterStatus, currentPeriod])
+  }, [companies, closures, searchQuery, filterGroup, filterLegalForm, filterVatPayer, filterVatPeriod, filterHasEmployees, filterStatus, filterClientStatus, currentPeriod, getClientStatus])
 
   if (loading) {
     return (
@@ -373,6 +413,20 @@ function ClientsPageContent() {
                   </select>
                 </div>
 
+                {/* Client Status */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Stav klienta</label>
+                  <select
+                    value={filterClientStatus || ''}
+                    onChange={(e) => setClientStatusFilter(e.target.value || null)}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                  >
+                    <option value="">Všichni klienti</option>
+                    <option value="onboarding">V onboardingu</option>
+                    <option value="active">Aktivní</option>
+                  </select>
+                </div>
+
                 {/* Status */}
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">Stav dokumentů</label>
@@ -432,9 +486,12 @@ function ClientsPageContent() {
         ) : (
           filteredCompanies.map((company) => {
             const fullStatus = getCompanyFullStatus(company.id)
+            const clientStatus = getClientStatus(company.id)
+            const isOnboarding = clientStatus === 'onboarding'
 
             // Barva levého okraje podle stavu
-            const borderColor = fullStatus.status === 'missing' ? 'border-l-red-500' :
+            const borderColor = isOnboarding ? 'border-l-purple-500' :
+                               fullStatus.status === 'missing' ? 'border-l-red-500' :
                                fullStatus.status === 'uploaded' ? 'border-l-yellow-500' :
                                'border-l-green-500'
 
@@ -468,7 +525,14 @@ function ClientsPageContent() {
 
                       {/* Sloupec 3: Vlastnosti - fixní šířky (2 sloupce) */}
                       <div className="col-span-2 flex items-center gap-1.5">
-                        {/* DPH - vždy na první pozici */}
+                        {/* Onboarding badge - první pozice pokud je v onboardingu */}
+                        {isOnboarding && (
+                          <Badge className="bg-purple-500 text-white hover:bg-purple-500 text-xs px-1.5">
+                            <Sparkles className="h-3 w-3 mr-0.5" />
+                            ONB
+                          </Badge>
+                        )}
+                        {/* DPH */}
                         <div className="w-8 flex-shrink-0">
                           {company.vat_payer ? (
                             <Badge className="bg-blue-500 text-white hover:bg-blue-500 text-xs font-bold px-2">
@@ -478,7 +542,7 @@ function ClientsPageContent() {
                             <span className="text-xs text-gray-300">—</span>
                           )}
                         </div>
-                        {/* Zaměstnanci - vždy na druhé pozici */}
+                        {/* Zaměstnanci */}
                         <div className="w-10 flex-shrink-0">
                           {company.has_employees ? (
                             <Badge variant="outline" className="text-gray-600 text-xs px-1.5">

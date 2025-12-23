@@ -34,7 +34,7 @@ import { logout } from '@/app/auth/login/actions'
 const navigation = [
   { name: 'Dashboard', href: '/accountant/dashboard', icon: LayoutDashboard },
   { name: 'Klienti', href: '/accountant/clients', icon: Users },
-  { name: 'Náběr klientů', href: '/accountant/onboarding', icon: UserPlus },
+  { name: 'Onboarding', href: '/accountant/onboarding', icon: UserPlus },
   { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare, badge: 5 },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: DollarSign },
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings },
