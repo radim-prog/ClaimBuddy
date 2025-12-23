@@ -6,7 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Building2, FileText, TrendingUp, AlertCircle, ImageIcon, Download } from 'lucide-react'
+import {
+  Building2,
+  FileText,
+  AlertCircle,
+  ImageIcon,
+  Download,
+  MessageCircle,
+  CalendarDays,
+  ClipboardList
+} from 'lucide-react'
+import { TaskStatusSection } from '@/components/client/task-status-section'
+import { MessagesSection } from '@/components/client/messages-section'
+import { DeadlineCalendar } from '@/components/client/deadline-calendar'
 
 interface Company {
   id: string
@@ -108,10 +120,27 @@ export default function CompanyDetailPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Přehled</TabsTrigger>
-          <TabsTrigger value="closures">Měsíční uzávěrky</TabsTrigger>
-          <TabsTrigger value="documents">Dokumenty</TabsTrigger>
+        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+          <TabsTrigger value="overview" className="flex items-center gap-1">
+            <Building2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Přehled</span>
+          </TabsTrigger>
+          <TabsTrigger value="tasks" className="flex items-center gap-1">
+            <ClipboardList className="h-4 w-4" />
+            <span className="hidden sm:inline">Stav</span>
+          </TabsTrigger>
+          <TabsTrigger value="deadlines" className="flex items-center gap-1">
+            <CalendarDays className="h-4 w-4" />
+            <span className="hidden sm:inline">Termíny</span>
+          </TabsTrigger>
+          <TabsTrigger value="messages" className="flex items-center gap-1">
+            <MessageCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">Zprávy</span>
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="flex items-center gap-1">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Dokumenty</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Přehled */}
@@ -135,7 +164,7 @@ export default function CompanyDetailPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Aktuální stav</CardTitle>
+                <CardTitle>Aktuální stav dokladů</CardTitle>
               </CardHeader>
               <CardContent>
                 {closures.length > 0 ? (
@@ -159,68 +188,72 @@ export default function CompanyDetailPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Quick summary of tasks and deadlines */}
+          <div className="grid gap-6 md:grid-cols-2">
+            <TaskStatusSection companyId={companyId} />
+            <DeadlineCalendar companyId={companyId} companyName={company.name} />
+          </div>
         </TabsContent>
 
-        {/* Měsíční uzávěrky */}
-        <TabsContent value="closures" className="space-y-4">
-          {closures.length > 0 ? (
-            closures.map((closure) => (
-              <Card key={closure.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">Období: {closure.period}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Statusy dokladů:</p>
-                      <div className="space-y-1">
-                        <div className="flex justify-between">
-                          <span className="text-sm">Výpis z účtu:</span>
-                          <Badge className={statusColors[closure.bank_statement_status as keyof typeof statusColors]}>
-                            {closure.bank_statement_status}
+        {/* Stav zpracování - úkoly */}
+        <TabsContent value="tasks" className="space-y-4">
+          <TaskStatusSection companyId={companyId} />
+
+          {/* Měsíční uzávěrky */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Měsíční uzávěrky</CardTitle>
+              <CardDescription>Stav zpracování účetních období</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {closures.length > 0 ? (
+                <div className="space-y-4">
+                  {closures.map((closure) => (
+                    <div key={closure.id} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium">Období: {closure.period}</h4>
+                        {closure.vat_payable !== null && (
+                          <Badge variant="outline">
+                            DPH: {closure.vat_payable.toLocaleString()} Kč
                           </Badge>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className={`px-3 py-2 rounded text-xs text-center ${statusColors[closure.bank_statement_status as keyof typeof statusColors]}`}>
+                          <div className="font-medium">Výpis z účtu</div>
+                          <div className="capitalize">{closure.bank_statement_status}</div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">Nákladové doklady:</span>
-                          <Badge className={statusColors[closure.expense_documents_status as keyof typeof statusColors]}>
-                            {closure.expense_documents_status}
-                          </Badge>
+                        <div className={`px-3 py-2 rounded text-xs text-center ${statusColors[closure.expense_documents_status as keyof typeof statusColors]}`}>
+                          <div className="font-medium">Náklady</div>
+                          <div className="capitalize">{closure.expense_documents_status}</div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">Příjmové faktury:</span>
-                          <Badge className={statusColors[closure.income_invoices_status as keyof typeof statusColors]}>
-                            {closure.income_invoices_status}
-                          </Badge>
+                        <div className={`px-3 py-2 rounded text-xs text-center ${statusColors[closure.income_invoices_status as keyof typeof statusColors]}`}>
+                          <div className="font-medium">Příjmy</div>
+                          <div className="capitalize">{closure.income_invoices_status}</div>
                         </div>
                       </div>
                     </div>
-                    {closure.vat_payable !== null && (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">Finanční údaje:</p>
-                        <div className="space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-sm">DPH k úhradě:</span>
-                            <span className="font-medium">{closure.vat_payable.toLocaleString()} Kč</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm">Daň z příjmu:</span>
-                            <span className="font-medium">{closure.income_tax_accrued?.toLocaleString()} Kč</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <Card>
-              <CardContent className="py-8 text-center">
-                <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                <p className="text-muted-foreground">Žádné měsíční uzávěrky</p>
-              </CardContent>
-            </Card>
-          )}
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center">
+                  <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground">Žádné měsíční uzávěrky</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Kalendář termínů */}
+        <TabsContent value="deadlines" className="space-y-4">
+          <DeadlineCalendar companyId={companyId} companyName={company.name} />
+        </TabsContent>
+
+        {/* Zprávy */}
+        <TabsContent value="messages" className="space-y-4">
+          <MessagesSection companyId={companyId} companyName={company.name} />
         </TabsContent>
 
         {/* Dokumenty - Galerie */}
@@ -238,6 +271,9 @@ export default function CompanyDetailPage() {
                 <div className="py-8 text-center">
                   <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
                   <p className="text-muted-foreground">Zatím žádné nahrané dokumenty</p>
+                  <Button className="mt-4" asChild>
+                    <a href="/client/upload">Nahrát první dokument</a>
+                  </Button>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

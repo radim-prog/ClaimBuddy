@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Building2, FileText, Upload, AlertCircle } from 'lucide-react'
+import { Building2, FileText, Upload, AlertCircle, CalendarDays, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { DeadlineCalendar } from '@/components/client/deadline-calendar'
 
 const months = [
   'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
@@ -229,7 +230,7 @@ export default function ClientDashboard() {
       {/* Quick Actions */}
       <div className="mt-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Rychlé akce</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Button asChild variant="outline" size="lg" className="h-auto py-6">
             <Link href="/client/upload" className="flex flex-col items-center">
               <Upload className="h-8 w-8 mb-2" />
@@ -244,7 +245,20 @@ export default function ClientDashboard() {
               <span className="text-sm text-gray-500">Všechny nahrané soubory</span>
             </Link>
           </Button>
+          <Button asChild variant="outline" size="lg" className="h-auto py-6">
+            <Link href={companies.length > 0 ? `/client/companies/${companies[0].id}?tab=messages` : '/client/companies'} className="flex flex-col items-center">
+              <MessageCircle className="h-8 w-8 mb-2" />
+              <span className="text-lg font-semibold">Zprávy</span>
+              <span className="text-sm text-gray-500">Komunikace s účetním</span>
+            </Link>
+          </Button>
         </div>
+      </div>
+
+      {/* Upcoming Deadlines */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Nadcházející termíny</h2>
+        <DeadlineCalendar />
       </div>
     </div>
   )
