@@ -73,7 +73,7 @@ function ClientsPageContent() {
   const [filterHasEmployees, setFilterHasEmployees] = useState<boolean | null>(null)
   const [filterClientStatus, setFilterClientStatus] = useState<string | null>(null)
 
-  // Read status filter from URL params (set by SmartAlertBar)
+  // Read status filter from URL params
   const filterStatus = searchParams.get('status')
 
   // Read client status from URL (for onboarding filter from navigation)
