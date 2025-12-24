@@ -12,6 +12,8 @@ export interface OnboardingStep {
   completed_at?: string
   completed_by?: string
   notes?: string
+  custom?: boolean  // true = uživatelem přidaný krok
+  order: number     // pořadí v seznamu
 }
 
 // Onboarding data pro klienta
@@ -40,8 +42,10 @@ export interface OnboardingNote {
   created_by_name?: string
 }
 
-// Výchozí kroky onboardingu
-export const DEFAULT_ONBOARDING_STEPS: Omit<OnboardingStep, 'completed' | 'completed_at' | 'completed_by' | 'notes'>[] = [
+// Výchozí kroky onboardingu (bez runtime polí)
+export type DefaultOnboardingStep = Omit<OnboardingStep, 'completed' | 'completed_at' | 'completed_by' | 'notes' | 'custom' | 'order'>
+
+export const DEFAULT_ONBOARDING_STEPS: DefaultOnboardingStep[] = [
   {
     id: 'interest',
     label: 'Zájem klienta o službu',
@@ -128,7 +132,7 @@ export const DEFAULT_ONBOARDING_STEPS: Omit<OnboardingStep, 'completed' | 'compl
   },
 ]
 
-// Helper funkce pro vytvoření nového onboardingu
+// Helper funkce pro vytvoření nového onboardingu s výchozími kroky
 export function createNewOnboarding(assignedTo?: string, assignedToName?: string): ClientOnboarding {
   const now = new Date().toISOString()
   return {
@@ -138,9 +142,34 @@ export function createNewOnboarding(assignedTo?: string, assignedToName?: string
     assigned_to: assignedTo,
     assigned_to_name: assignedToName,
     priority: 'medium',
-    steps: DEFAULT_ONBOARDING_STEPS.map(step => ({
+    steps: DEFAULT_ONBOARDING_STEPS.map((step, index) => ({
       ...step,
       completed: false,
+      order: index,
+    })),
+    notes: [],
+  }
+}
+
+// Helper funkce pro vytvoření onboardingu s vlastními kroky
+export function createOnboardingWithSteps(
+  steps: OnboardingStep[],
+  assignedTo?: string,
+  assignedToName?: string,
+  priority: 'high' | 'medium' | 'low' = 'medium'
+): ClientOnboarding {
+  const now = new Date().toISOString()
+  return {
+    status: 'onboarding',
+    started_at: now,
+    last_activity_at: now,
+    assigned_to: assignedTo,
+    assigned_to_name: assignedToName,
+    priority,
+    steps: steps.map((step, index) => ({
+      ...step,
+      order: index,
+      completed: step.completed || false,
     })),
     notes: [],
   }

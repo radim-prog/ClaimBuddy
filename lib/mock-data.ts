@@ -388,6 +388,7 @@ export const mockCompanies = [
         completed: i < 5, // Prvních 5 kroků hotovo
         completed_at: i < 5 ? '2025-12-15T10:00:00Z' : undefined,
         completed_by: i < 5 ? 'Jana Svobodová' : undefined,
+        order: i,
       })),
       notes: [
         {
@@ -439,6 +440,7 @@ export const mockCompanies = [
         completed: i < 3, // Pouze 3 kroky hotovo
         completed_at: i < 3 ? '2025-12-10T10:00:00Z' : undefined,
         completed_by: i < 3 ? 'Jana Svobodová' : undefined,
+        order: i,
       })),
       notes: [
         {

@@ -15,6 +15,7 @@ import {
   Sparkles,
   Building2,
   ArrowRightLeft,
+  Settings2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -23,6 +24,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { CollapsibleSection } from '@/components/collapsible-section'
+import { OnboardingSetupEditor } from '@/components/onboarding-setup-editor'
 import {
   ClientOnboarding,
   OnboardingStep,
@@ -50,6 +52,7 @@ export function OnboardingSection({
   const [newNote, setNewNote] = useState('')
   const [stepNotes, setStepNotes] = useState<Record<string, string>>({})
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set())
+  const [showStepsEditor, setShowStepsEditor] = useState(false)
 
   const progress = calculateOnboardingProgress(onboarding.steps)
   const isComplete = isOnboardingComplete(onboarding.steps)
@@ -151,6 +154,31 @@ export function OnboardingSection({
     })
 
     toast.success(`Onboarding klienta ${companyName} byl úspěšně dokončen!`)
+  }
+
+  const handleStepsUpdate = (newSteps: OnboardingStep[]) => {
+    // Zachovat stav dokončení u existujících kroků
+    const mergedSteps = newSteps.map(newStep => {
+      const existingStep = onboarding.steps.find(s => s.id === newStep.id)
+      if (existingStep) {
+        return {
+          ...newStep,
+          completed: existingStep.completed,
+          completed_at: existingStep.completed_at,
+          completed_by: existingStep.completed_by,
+          notes: existingStep.notes,
+        }
+      }
+      return newStep
+    })
+
+    onOnboardingChange({
+      ...onboarding,
+      steps: mergedSteps,
+      last_activity_at: new Date().toISOString(),
+    })
+
+    toast.success('Kroky onboardingu byly aktualizovány')
   }
 
   const toggleStepExpanded = (stepId: string) => {
@@ -325,12 +353,25 @@ export function OnboardingSection({
               </p>
             </div>
           </div>
-          <Badge
-            variant="outline"
-            className={`${priorityConfig.bgColor} ${priorityConfig.color} ${priorityConfig.borderColor}`}
-          >
-            {priorityConfig.label} priorita
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className={`${priorityConfig.bgColor} ${priorityConfig.color} ${priorityConfig.borderColor}`}
+            >
+              {priorityConfig.label} priorita
+            </Badge>
+            {onboarding.status !== 'active' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowStepsEditor(true)}
+                className="h-7"
+              >
+                <Settings2 className="h-3.5 w-3.5 mr-1" />
+                Upravit kroky
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Progress bar */}
@@ -492,6 +533,15 @@ export function OnboardingSection({
           )}
         </div>
       )}
+
+      {/* Steps Editor Modal */}
+      <OnboardingSetupEditor
+        open={showStepsEditor}
+        onOpenChange={setShowStepsEditor}
+        initialSteps={onboarding.steps}
+        onConfirm={handleStepsUpdate}
+        title="Upravit kroky onboardingu"
+      />
     </CollapsibleSection>
   )
 }

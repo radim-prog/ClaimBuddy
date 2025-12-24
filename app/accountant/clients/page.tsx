@@ -14,11 +14,15 @@ import {
   Clock,
   Filter,
   Users,
-  X
+  X,
+  Plus,
+  Sparkles,
+  UserCheck,
 } from 'lucide-react'
 import Link from 'next/link'
 import { mockCompanies } from '@/lib/mock-data'
-import { Sparkles, UserCheck } from 'lucide-react'
+import { OnboardingSetupEditor } from '@/components/onboarding-setup-editor'
+import { OnboardingStep } from '@/lib/types/onboarding'
 
 type Company = {
   id: string
@@ -56,6 +60,9 @@ function ClientsPageContent() {
   const [closures, setClosures] = useState<MonthlyClosure[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Onboarding editor modal
+  const [showOnboardingEditor, setShowOnboardingEditor] = useState(false)
 
   // Filtry
   const [showFilters, setShowFilters] = useState(false)
@@ -106,6 +113,14 @@ function ClientsPageContent() {
   const getClientStatus = useCallback((companyId: string) => {
     const mockCompany = mockCompanies.find(c => c.id === companyId)
     return mockCompany?.status || 'active'
+  }, [])
+
+  // Handler for onboarding setup confirmation
+  const handleOnboardingConfirm = useCallback((steps: OnboardingStep[]) => {
+    // TODO: V produkci by se zde vytvořil nový klient s onboardingem
+    console.log('Onboarding steps configured:', steps)
+    // Prozatím jen ukážeme alert
+    alert(`Onboarding nakonfigurován s ${steps.length} kroky (${steps.filter(s => s.required).length} povinných).\n\nV produkční verzi by se nyní otevřel formulář pro zadání údajů klienta.`)
   }, [])
 
   // Dynamické aktuální období
@@ -303,11 +318,30 @@ function ClientsPageContent() {
     <div className="max-w-7xl">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Klienti</h1>
-        <p className="mt-1 text-gray-600">
-          {companies.length} klientů • Stav za {currentMonthName}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Klienti</h1>
+            <p className="mt-1 text-gray-600">
+              {companies.length} klientů • Stav za {currentMonthName}
+            </p>
+          </div>
+          <Button
+            onClick={() => setShowOnboardingEditor(true)}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nový klient
+          </Button>
+        </div>
       </div>
+
+      {/* Onboarding Setup Editor Modal */}
+      <OnboardingSetupEditor
+        open={showOnboardingEditor}
+        onOpenChange={setShowOnboardingEditor}
+        onConfirm={handleOnboardingConfirm}
+        title="Nastavení onboardingu pro nového klienta"
+      />
 
       {/* Search and Filters */}
       <Card className="mb-6">
