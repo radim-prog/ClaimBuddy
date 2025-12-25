@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@/lib/supabase-server'
+import { requireAdmin, createErrorResponse } from '@/lib/api/task-helpers'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -9,22 +10,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 export async function GET() {
   try {
     const supabase = createServerClient()
-
-    // Check if current user is admin
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    if (!authUser) {
-      return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
-    }
-
-    const { data: currentUser } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', authUser.id)
-      .single()
-
-    if (currentUser?.role !== 'admin') {
-      return NextResponse.json({ error: 'Nemáte oprávnění' }, { status: 403 })
-    }
+    await requireAdmin(supabase)
 
     // Get all users
     const { data: users, error } = await supabase
@@ -40,7 +26,8 @@ export async function GET() {
     return NextResponse.json({ users })
   } catch (error: any) {
     console.error('GET users error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const apiError = createErrorResponse(error)
+    return NextResponse.json({ error: apiError.message }, { status: apiError.status })
   }
 }
 
@@ -48,22 +35,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const supabase = createServerClient()
-
-    // Check if current user is admin
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    if (!authUser) {
-      return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
-    }
-
-    const { data: currentUser } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', authUser.id)
-      .single()
-
-    if (currentUser?.role !== 'admin') {
-      return NextResponse.json({ error: 'Nemáte oprávnění' }, { status: 403 })
-    }
+    await requireAdmin(supabase)
 
     const body = await request.json()
     const { name, password, role } = body
@@ -153,9 +125,7 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     console.error('POST user error:', error)
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    )
+    const apiError = createErrorResponse(error)
+    return NextResponse.json({ error: apiError.message }, { status: apiError.status })
   }
 }

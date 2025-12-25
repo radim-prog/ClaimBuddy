@@ -2,7 +2,18 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Shield, FileText, Users, Download, Activity, Settings, AlertTriangle } from 'lucide-react'
+import {
+  Shield,
+  FileText,
+  Users,
+  Download,
+  Activity,
+  Settings,
+  AlertTriangle,
+  Network,
+  Bell,
+  GitBranch,
+} from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
 const adminNavItems = [
@@ -12,18 +23,33 @@ const adminNavItems = [
     icon: Shield,
   },
   {
+    href: '/accountant/admin/hierarchy',
+    label: 'Hierarchie týmu',
+    icon: Network,
+  },
+  {
+    href: '/accountant/admin/notifications',
+    label: 'Notifikace',
+    icon: Bell,
+  },
+  {
+    href: '/accountant/admin/workflow',
+    label: 'Workflow',
+    icon: GitBranch,
+  },
+  {
     href: '/accountant/admin/audit-logs',
     label: 'Audit logy',
     icon: FileText,
   },
   {
     href: '/accountant/admin/user-activity',
-    label: 'Aktivita uživatelů',
+    label: 'Aktivita',
     icon: Activity,
   },
   {
     href: '/accountant/admin/export',
-    label: 'Export dat',
+    label: 'Export',
     icon: Download,
   },
 ]

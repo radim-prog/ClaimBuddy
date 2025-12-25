@@ -32,6 +32,7 @@ import {
   FUEL_TYPE_LABELS,
 } from '@/lib/types/asset'
 import { EditAssetModal } from './edit-asset-modal'
+import { formatCurrency, formatDate } from '@/lib/utils'
 
 type AssetsSectionProps = {
   companyId: string
@@ -66,19 +67,6 @@ export function AssetsSection({ companyId, assets, onAssetsChange, defaultOpen =
 
   const toggleExpand = (id: string) => {
     setExpandedAsset(expandedAsset === id ? null : id)
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('cs-CZ', {
-      style: 'currency',
-      currency: 'CZK',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('cs-CZ')
   }
 
   const handleSaveAsset = (asset: Asset) => {

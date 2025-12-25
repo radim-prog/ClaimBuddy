@@ -5,9 +5,12 @@
   "description": "Kompletní webová aplikace pro účetní firmu - samoobslužný portál pro klienty a master dashboard pro účetní",
   "scripts": {
     "dev": "next dev",
+    "dev:clean": "rm -rf .next && next dev",
     "build": "next build",
+    "build:clean": "rm -rf .next && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "clean": "rm -rf .next node_modules/.cache"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

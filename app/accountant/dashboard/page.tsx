@@ -114,9 +114,11 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
   }> = []
 
   const now = new Date()
+  // Build lookup map for O(1) company access instead of O(n) find per closure
+  const companyMap = new Map(companies.map(c => [c.id, c]))
 
   closures.forEach(closure => {
-    const company = companies.find(c => c.id === closure.company_id)
+    const company = companyMap.get(closure.company_id)
     if (!company) return
 
     // Parse period (e.g., "2025-01")
@@ -253,9 +255,11 @@ function generateDeadlineTasks(closures: MonthlyClosure[], companies: Company[])
 
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  // Build lookup map for O(1) company access instead of O(n) find per closure
+  const companyMap = new Map(companies.map(c => [c.id, c]))
 
   closures.forEach(closure => {
-    const company = companies.find(c => c.id === closure.company_id)
+    const company = companyMap.get(closure.company_id)
     if (!company) return
 
     const [year, month] = closure.period.split('-').map(Number)

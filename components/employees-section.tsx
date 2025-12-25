@@ -28,6 +28,7 @@ import {
   HealthInsuranceCode,
 } from '@/lib/types/employee'
 import { EditEmployeeModal } from './edit-employee-modal'
+import { formatCurrency, formatDate } from '@/lib/utils'
 
 type EmployeesSectionProps = {
   companyId: string
@@ -44,19 +45,6 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
 
   const toggleExpand = (id: string) => {
     setExpandedEmployee(expandedEmployee === id ? null : id)
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('cs-CZ', {
-      style: 'currency',
-      currency: 'CZK',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('cs-CZ')
   }
 
   const handleSaveEmployee = (employee: Employee) => {

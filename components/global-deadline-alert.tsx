@@ -5,14 +5,38 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { DeadlineAlertBar } from './deadline-alert-bar'
 import { ClientsAlertBar } from './clients-alert-bar'
 import { ClientDetailAlertBar } from './client-detail-alert-bar'
+import { useAlertSettings } from '@/lib/contexts/settings-context'
 
 type StatusType = 'missing' | 'uploaded' | 'approved'
+
+// Typ pro nastavení předaná do funkcí
+type AlertSettingsParams = {
+  documentCriticalDays: number
+  documentUrgentDays: number
+  closureDeadlineDay: number
+  onboardingStalledDays: number
+  onboardingLowProgressPercent: number
+  onboardingShowStalled: boolean
+}
 
 type Company = {
   id: string
   name: string
   group_name?: string | null
   ico: string
+  status?: string
+  onboarding?: {
+    status: string
+    started_at: string
+    last_activity_at: string
+    assigned_to_name?: string
+    priority: 'high' | 'medium' | 'low'
+    steps: Array<{
+      id: string
+      label: string
+      completed: boolean
+    }>
+  }
 }
 
 type MonthlyClosure = {
@@ -25,14 +49,18 @@ type MonthlyClosure = {
   income_invoices_status: StatusType
 }
 
-export type AlertContext = 'dashboard' | 'clients' | 'client-detail' | 'tasks' | 'other'
+export type AlertContext = 'dashboard' | 'clients' | 'client-detail' | 'tasks' | 'onboarding' | 'other'
 
 const months = [
   'Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čer',
   'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro'
 ]
 
-function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
+function generateDeadlines(
+  closures: MonthlyClosure[],
+  companies: Company[],
+  settings: AlertSettingsParams
+) {
   const deadlines: Array<{
     id: string
     title: string
@@ -48,9 +76,11 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
   }> = []
 
   const now = new Date()
+  // Build lookup map for O(1) company access instead of O(n) find per closure
+  const companyMap = new Map(companies.map(c => [c.id, c]))
 
   closures.forEach(closure => {
-    const company = companies.find(c => c.id === closure.company_id)
+    const company = companyMap.get(closure.company_id)
     if (!company) return
 
     // Sestavit display name se skupinou
@@ -59,8 +89,8 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
       : company.name
 
     const [year, month] = closure.period.split('-').map(Number)
-    // Deadline je 10. den následujícího měsíce po uzávěrkovém období
-    const deadline = new Date(year, month, 10)
+    // Deadline je nastavitelný den následujícího měsíce po uzávěrkovém období
+    const deadline = new Date(year, month, settings.closureDeadlineDay)
     const daysUntil = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
     const hasMissing =
@@ -99,14 +129,11 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         checklist.push({ id: `${closure.id}-income`, label: 'Příjmové faktury', completed: true })
       }
 
-      // Určení typu podle urgentnosti
-      // critical = po termínu nebo do 3 dnů
-      // urgent = do 7 dnů
-      // warning = více než 7 dnů
+      // Určení typu podle urgentnosti (konfigurovatelné prahy)
       const alertType: 'critical' | 'urgent' | 'warning' =
         daysUntil < 0 ? 'critical' :
-        daysUntil <= 3 ? 'critical' :
-        daysUntil <= 7 ? 'urgent' : 'warning'
+        daysUntil <= settings.documentCriticalDays ? 'critical' :
+        daysUntil <= settings.documentUrgentDays ? 'urgent' : 'warning'
 
       deadlines.push({
         id: `${closure.id}-missing`,
@@ -154,10 +181,10 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         attachments.push({ name: `prijmy_${months[month - 1]}_2025.pdf`, url: '#' })
       }
 
-      // Určení typu pro schválení
+      // Určení typu pro schválení (konfigurovatelné prahy)
       const approvalType: 'critical' | 'urgent' | 'warning' =
         daysUntil < 0 ? 'urgent' :
-        daysUntil <= 3 ? 'urgent' : 'warning'
+        daysUntil <= settings.documentCriticalDays ? 'urgent' : 'warning'
 
       deadlines.push({
         id: `${closure.id}-approval`,
@@ -182,10 +209,110 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
   })
 }
 
+function generateOnboardingDeadlines(
+  companies: Company[],
+  settings: AlertSettingsParams
+) {
+  const deadlines: Array<{
+    id: string
+    title: string
+    dueDate: string
+    type: 'critical' | 'urgent' | 'warning'
+    caseId?: string
+    companyId?: string
+    companyName?: string
+    description?: string
+    checklist?: Array<{ id: string; label: string; completed: boolean }>
+    assignedTo?: string
+  }> = []
+
+  const now = new Date()
+
+  // Filter only onboarding companies
+  const onboardingCompanies = companies.filter(c => c.status === 'onboarding' && c.onboarding)
+
+  onboardingCompanies.forEach(company => {
+    if (!company.onboarding) return
+
+    const { onboarding } = company
+    const lastActivity = new Date(onboarding.last_activity_at)
+    const daysSinceActivity = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24))
+
+    // Calculate progress
+    const totalSteps = onboarding.steps.length
+    const completedSteps = onboarding.steps.filter(s => s.completed).length
+    const progressPercent = Math.round((completedSteps / totalSteps) * 100)
+
+    // Display name
+    const displayName = company.group_name
+      ? `${company.group_name} – ${company.name}`
+      : company.name
+
+    // Checklist from onboarding steps (first 5 for brevity)
+    const checklist = onboarding.steps.slice(0, 5).map(step => ({
+      id: step.id,
+      label: step.label,
+      completed: step.completed
+    }))
+
+    // Determine type and create deadline (using configurable thresholds)
+    if (settings.onboardingShowStalled && daysSinceActivity >= settings.onboardingStalledDays) {
+      // Zaseklý klient - CRITICAL
+      deadlines.push({
+        id: `onb-stalled-${company.id}`,
+        title: `Zaseklý onboarding - ${daysSinceActivity} dní bez aktivity`,
+        dueDate: lastActivity.toISOString(), // Use last activity as "due date"
+        type: 'critical',
+        companyId: company.id,
+        companyName: displayName,
+        description: `Klient ${displayName} nemá žádnou aktivitu ${daysSinceActivity} dní. Poslední aktivita: ${lastActivity.toLocaleDateString('cs-CZ')}. Postup: ${progressPercent}% (${completedSteps}/${totalSteps} kroků).`,
+        checklist,
+        assignedTo: onboarding.assigned_to_name
+      })
+    } else if (onboarding.priority === 'high') {
+      // Vysoká priorita - URGENT
+      deadlines.push({
+        id: `onb-priority-${company.id}`,
+        title: `Vysoká priorita - ${progressPercent}% dokončeno`,
+        dueDate: now.toISOString(),
+        type: 'urgent',
+        companyId: company.id,
+        companyName: displayName,
+        description: `Onboarding klienta ${displayName} má vysokou prioritu. Postup: ${completedSteps}/${totalSteps} kroků dokončeno.`,
+        checklist,
+        assignedTo: onboarding.assigned_to_name
+      })
+    } else if (progressPercent < settings.onboardingLowProgressPercent) {
+      // Nízký postup - WARNING (konfigurovatelný práh)
+      deadlines.push({
+        id: `onb-progress-${company.id}`,
+        title: `Nízký postup - ${progressPercent}% dokončeno`,
+        dueDate: now.toISOString(),
+        type: 'warning',
+        companyId: company.id,
+        companyName: displayName,
+        description: `Onboarding klienta ${displayName} má nízký postup. Dokončeno ${completedSteps}/${totalSteps} kroků.`,
+        checklist,
+        assignedTo: onboarding.assigned_to_name
+      })
+    }
+  })
+
+  return deadlines.sort((a, b) => {
+    if (a.type === 'critical' && b.type !== 'critical') return -1
+    if (a.type !== 'critical' && b.type === 'critical') return 1
+    if (a.type === 'urgent' && b.type === 'warning') return -1
+    if (a.type === 'warning' && b.type === 'urgent') return 1
+    return 0
+  })
+}
+
 export function GlobalDeadlineAlert() {
   const pathname = usePathname()
+  const alertSettings = useAlertSettings()
   const [data, setData] = useState<{ companies: Company[], closures: MonthlyClosure[] } | null>(null)
   const [deadlines, setDeadlines] = useState<ReturnType<typeof generateDeadlines>>([])
+  const [onboardingDeadlines, setOnboardingDeadlines] = useState<ReturnType<typeof generateOnboardingDeadlines>>([])
   const [loading, setLoading] = useState(true)
   const originalTitle = 'Účetní OS'
 
@@ -193,6 +320,7 @@ export function GlobalDeadlineAlert() {
   const context: AlertContext = useMemo(() => {
     if (pathname.match(/\/accountant\/clients\/[^/]+/)) return 'client-detail'
     if (pathname.includes('/accountant/clients')) return 'clients'
+    if (pathname.includes('/accountant/onboarding')) return 'onboarding'
     if (pathname.includes('/accountant/tasks')) return 'tasks'
     if (pathname.includes('/accountant/dashboard')) return 'dashboard'
     return 'dashboard' // default to dashboard for other pages
@@ -204,6 +332,7 @@ export function GlobalDeadlineAlert() {
     return match ? match[1] : null
   }, [pathname])
 
+  // Fetch data on mount
   useEffect(() => {
     async function fetchData() {
       try {
@@ -211,8 +340,6 @@ export function GlobalDeadlineAlert() {
         if (!response.ok) return
         const fetchedData = await response.json()
         setData(fetchedData)
-        const generated = generateDeadlines(fetchedData.closures, fetchedData.companies)
-        setDeadlines(generated)
       } catch (err) {
         // Silently fail - alert bar just won't show
       } finally {
@@ -221,6 +348,35 @@ export function GlobalDeadlineAlert() {
     }
     fetchData()
   }, [])
+
+  // Regenerate deadlines when data or settings change
+  // Use individual settings values as dependencies to avoid infinite loop
+  const {
+    documentCriticalDays,
+    documentUrgentDays,
+    closureDeadlineDay,
+    onboardingStalledDays,
+    onboardingLowProgressPercent,
+    onboardingShowStalled,
+    isLoaded: settingsLoaded
+  } = alertSettings
+
+  useEffect(() => {
+    if (data && settingsLoaded) {
+      const settingsParams = {
+        documentCriticalDays,
+        documentUrgentDays,
+        closureDeadlineDay,
+        onboardingStalledDays,
+        onboardingLowProgressPercent,
+        onboardingShowStalled
+      }
+      const generated = generateDeadlines(data.closures, data.companies, settingsParams)
+      setDeadlines(generated)
+      const onbGenerated = generateOnboardingDeadlines(data.companies, settingsParams)
+      setOnboardingDeadlines(onbGenerated)
+    }
+  }, [data, settingsLoaded, documentCriticalDays, documentUrgentDays, closureDeadlineDay, onboardingStalledDays, onboardingLowProgressPercent, onboardingShowStalled])
 
   // Update browser tab title with count of urgent deadlines
   useEffect(() => {
@@ -240,7 +396,7 @@ export function GlobalDeadlineAlert() {
     }
   }, [deadlines])
 
-  if (loading || !data) return null
+  if (loading || !data || !settingsLoaded) return null
 
   // Render different alert bar based on context
   switch (context) {
@@ -259,6 +415,10 @@ export function GlobalDeadlineAlert() {
         />
       }
       return <DeadlineAlertBar deadlines={deadlines} />
+
+    case 'onboarding':
+      if (onboardingDeadlines.length === 0) return null
+      return <DeadlineAlertBar deadlines={onboardingDeadlines} />
 
     case 'dashboard':
     case 'tasks':

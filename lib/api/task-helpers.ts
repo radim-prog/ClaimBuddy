@@ -44,6 +44,50 @@ export async function isAdminOrAccountant(
 }
 
 /**
+ * Require admin or accountant role - throws if not authorized
+ * Use this for protecting API routes that require admin/accountant access
+ * @throws Error if not authenticated or not admin/accountant
+ */
+export async function requireAdminOrAccountant(supabase: SupabaseClient) {
+  const user = await requireAuth(supabase)
+  const hasAccess = await isAdminOrAccountant(supabase, user.id)
+  if (!hasAccess) {
+    throw new Error('Unauthorized')
+  }
+  return user
+}
+
+/**
+ * Check if user has admin role only
+ */
+export async function isAdmin(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<boolean> {
+  const { data: user } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single()
+
+  return user?.role === 'admin'
+}
+
+/**
+ * Require admin role only - throws if not authorized
+ * Use this for protecting API routes that require admin-only access
+ * @throws Error if not authenticated or not admin
+ */
+export async function requireAdmin(supabase: SupabaseClient) {
+  const user = await requireAuth(supabase)
+  const hasAccess = await isAdmin(supabase, user.id)
+  if (!hasAccess) {
+    throw new Error('Unauthorized')
+  }
+  return user
+}
+
+/**
  * Check if user has permission to access task
  */
 export async function canAccessTask(

@@ -22,6 +22,8 @@ export async function GET(request: Request) {
       has_employees: (c as any).has_employees || false,
       employee_count: (c as any).employee_count || 0,
       data_box: (c as any).data_box || null,
+      status: c.status || 'active',
+      onboarding: (c as any).onboarding || null,
     }))
 
     const closures = mockMonthlyClosures

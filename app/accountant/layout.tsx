@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { logout } from '@/app/auth/login/actions'
+import { SettingsProvider } from '@/lib/contexts/settings-context'
 
 const navigation = [
   { name: 'Dashboard', href: '/accountant/dashboard', icon: LayoutDashboard },
@@ -62,6 +63,7 @@ export default function AccountantLayout({
   }
 
   return (
+    <SettingsProvider>
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
@@ -324,5 +326,6 @@ export default function AccountantLayout({
         </main>
       </div>
     </div>
+    </SettingsProvider>
   )
 }

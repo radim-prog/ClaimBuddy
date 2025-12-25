@@ -150,72 +150,102 @@ function ClientsPageContent() {
       })
   }, [])
 
-  // Získat stav VŠECH měsíců pro firmu (ne jen aktuální)
-  const getCompanyFullStatus = (companyId: string) => {
+  // Memoized map of company statuses - calculated once for all companies
+  // This avoids O(n²) complexity from calling getCompanyFullStatus for each company
+  const companyStatusMap = useMemo(() => {
     const now = new Date()
     const currentYear = now.getFullYear()
     const currentMonth = now.getMonth() + 1
 
-    // Filtrovat jen aktuální a minulé měsíce (ne budoucí)
-    const companyClosures = closures.filter(c => {
-      if (c.company_id !== companyId) return false
-      const [year, month] = c.period.split('-').map(Number)
-      if (year < currentYear) return true
-      if (year === currentYear && month <= currentMonth) return true
-      return false
-    })
+    const statusMap = new Map<string, {
+      status: 'ok' | 'missing' | 'uploaded'
+      missingMonths: number
+      uploadedMonths: number
+      missingDocs: number
+      uploadedDocs: number
+    }>()
 
-    let missingMonths = 0
-    let uploadedMonths = 0
-    let missingDocs = 0
-    let uploadedDocs = 0
-
-    companyClosures.forEach(closure => {
-      const hasMissing =
-        closure.bank_statement_status === 'missing' ||
-        closure.expense_documents_status === 'missing' ||
-        closure.income_invoices_status === 'missing'
-
-      const hasUploaded =
-        closure.bank_statement_status === 'uploaded' ||
-        closure.expense_documents_status === 'uploaded' ||
-        closure.income_invoices_status === 'uploaded'
-
-      const allApproved =
-        closure.bank_statement_status === 'approved' &&
-        closure.expense_documents_status === 'approved' &&
-        closure.income_invoices_status === 'approved'
-
-      if (hasMissing) {
-        missingMonths++
-        if (closure.bank_statement_status === 'missing') missingDocs++
-        if (closure.expense_documents_status === 'missing') missingDocs++
-        if (closure.income_invoices_status === 'missing') missingDocs++
-      }
-
-      // Počítat uploaded dokumenty (ke schválení)
-      if (closure.bank_statement_status === 'uploaded') uploadedDocs++
-      if (closure.expense_documents_status === 'uploaded') uploadedDocs++
-      if (closure.income_invoices_status === 'uploaded') uploadedDocs++
-
-      if (hasUploaded && !allApproved && !hasMissing) {
-        uploadedMonths++
+    // Group closures by company_id first for O(n) access
+    const closuresByCompany = new Map<string, MonthlyClosure[]>()
+    closures.forEach(closure => {
+      const [year, month] = closure.period.split('-').map(Number)
+      // Only include current and past months
+      if (year < currentYear || (year === currentYear && month <= currentMonth)) {
+        const existing = closuresByCompany.get(closure.company_id) || []
+        existing.push(closure)
+        closuresByCompany.set(closure.company_id, existing)
       }
     })
 
-    // Určit celkový stav
-    let status: 'ok' | 'missing' | 'uploaded' = 'ok'
-    if (missingMonths > 0) status = 'missing'
-    else if (uploadedMonths > 0) status = 'uploaded'
+    // Calculate status for each company
+    companies.forEach(company => {
+      const companyClosures = closuresByCompany.get(company.id) || []
 
-    return {
-      status,
-      missingMonths,
-      uploadedMonths,
-      missingDocs,
-      uploadedDocs,
+      let missingMonths = 0
+      let uploadedMonths = 0
+      let missingDocs = 0
+      let uploadedDocs = 0
+
+      companyClosures.forEach(closure => {
+        const hasMissing =
+          closure.bank_statement_status === 'missing' ||
+          closure.expense_documents_status === 'missing' ||
+          closure.income_invoices_status === 'missing'
+
+        const hasUploaded =
+          closure.bank_statement_status === 'uploaded' ||
+          closure.expense_documents_status === 'uploaded' ||
+          closure.income_invoices_status === 'uploaded'
+
+        const allApproved =
+          closure.bank_statement_status === 'approved' &&
+          closure.expense_documents_status === 'approved' &&
+          closure.income_invoices_status === 'approved'
+
+        if (hasMissing) {
+          missingMonths++
+          if (closure.bank_statement_status === 'missing') missingDocs++
+          if (closure.expense_documents_status === 'missing') missingDocs++
+          if (closure.income_invoices_status === 'missing') missingDocs++
+        }
+
+        // Count uploaded documents (waiting for approval)
+        if (closure.bank_statement_status === 'uploaded') uploadedDocs++
+        if (closure.expense_documents_status === 'uploaded') uploadedDocs++
+        if (closure.income_invoices_status === 'uploaded') uploadedDocs++
+
+        if (hasUploaded && !allApproved && !hasMissing) {
+          uploadedMonths++
+        }
+      })
+
+      // Determine overall status
+      let status: 'ok' | 'missing' | 'uploaded' = 'ok'
+      if (missingMonths > 0) status = 'missing'
+      else if (uploadedMonths > 0) status = 'uploaded'
+
+      statusMap.set(company.id, {
+        status,
+        missingMonths,
+        uploadedMonths,
+        missingDocs,
+        uploadedDocs,
+      })
+    })
+
+    return statusMap
+  }, [companies, closures])
+
+  // Helper to get status from memoized map
+  const getCompanyFullStatus = useCallback((companyId: string) => {
+    return companyStatusMap.get(companyId) || {
+      status: 'ok' as const,
+      missingMonths: 0,
+      uploadedMonths: 0,
+      missingDocs: 0,
+      uploadedDocs: 0,
     }
-  }
+  }, [companyStatusMap])
 
   // Zjistit unikátní hodnoty pro filtry
   const uniqueGroups = useMemo(() =>
@@ -301,7 +331,7 @@ function ClientsPageContent() {
         // V rámci stejné skupiny řadit podle názvu firmy
         return a.name.localeCompare(b.name, 'cs')
       })
-  }, [companies, closures, searchQuery, filterGroup, filterLegalForm, filterVatPayer, filterVatPeriod, filterHasEmployees, filterStatus, filterClientStatus, currentPeriod, getClientStatus])
+  }, [companies, searchQuery, filterGroup, filterLegalForm, filterVatPayer, filterVatPeriod, filterHasEmployees, filterStatus, filterClientStatus, getCompanyFullStatus, getClientStatus])
 
   if (loading) {
     return (
