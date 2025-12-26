@@ -67,6 +67,7 @@ import {
   Project,
   getEscalatedTasksForManager,
   getTasksNeedingUrgency,
+  getUserWipCount,
 } from '@/lib/mock-data'
 import Link from 'next/link'
 import { GTDWizard } from '@/components/tasks/gtd-wizard'
@@ -1172,10 +1173,8 @@ export default function TasksPage() {
         const userSettings = getUserTaskSettings(MOCK_CONFIG.CURRENT_USER_ID)
         const canClaimBonus = canUserClaimBonus(MOCK_CONFIG.CURRENT_USER_ID)
         const availableBonusTasks = getAvailableBonusTasks()
-        const inProgressTasks = tasks.filter(t =>
-          ['in_progress', 'accepted'].includes(t.status) &&
-          t.assigned_to === MOCK_CONFIG.CURRENT_USER_ID
-        ).length
+        const wipCount = getUserWipCount(MOCK_CONFIG.CURRENT_USER_ID)
+        const inProgressTasks = wipCount.total
         const monthlyStatus = getMonthlyStatus(MOCK_CONFIG.CURRENT_USER_ID)
 
         return (
