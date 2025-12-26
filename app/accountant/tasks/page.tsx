@@ -1172,7 +1172,10 @@ export default function TasksPage() {
         const userSettings = getUserTaskSettings(MOCK_CONFIG.CURRENT_USER_ID)
         const canClaimBonus = canUserClaimBonus(MOCK_CONFIG.CURRENT_USER_ID)
         const availableBonusTasks = getAvailableBonusTasks()
-        const inProgressTasks = tasks.filter(t => ['in_progress', 'accepted'].includes(t.status)).length
+        const inProgressTasks = tasks.filter(t =>
+          ['in_progress', 'accepted'].includes(t.status) &&
+          t.assigned_to === MOCK_CONFIG.CURRENT_USER_ID
+        ).length
         const monthlyStatus = getMonthlyStatus(MOCK_CONFIG.CURRENT_USER_ID)
 
         return (
