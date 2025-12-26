@@ -122,11 +122,11 @@ export default function UserManagementPage() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'admin':
-        return <Badge className="bg-purple-600"><Shield className="h-3 w-3 mr-1" />Admin</Badge>
+        return <Badge className="bg-purple-600 text-white"><Shield className="h-3 w-3 mr-1" />Admin</Badge>
       case 'accountant':
-        return <Badge className="bg-blue-600"><User className="h-3 w-3 mr-1" />Účetní</Badge>
+        return <Badge className="bg-blue-600 text-white"><User className="h-3 w-3 mr-1" />Účetní</Badge>
       case 'assistant':
-        return <Badge className="bg-gray-600"><User className="h-3 w-3 mr-1" />Asistent</Badge>
+        return <Badge className="bg-gray-600 text-white"><User className="h-3 w-3 mr-1" />Asistent</Badge>
       default:
         return <Badge>{role}</Badge>
     }
@@ -150,7 +150,7 @@ export default function UserManagementPage() {
         </div>
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
               <UserPlus className="h-4 w-4 mr-2" />
               Přidat uživatele
             </Button>
@@ -215,7 +215,7 @@ export default function UserManagementPage() {
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
                 Zrušit
               </Button>
-              <Button onClick={handleCreateUser} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleCreateUser} className="bg-blue-600 hover:bg-blue-700 text-white">
                 Vytvořit uživatele
               </Button>
             </DialogFooter>
@@ -311,7 +311,7 @@ export default function UserManagementPage() {
                         <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                           Zrušit
                         </Button>
-                        <Button onClick={handleUpdateUser} className="bg-blue-600 hover:bg-blue-700">
+                        <Button onClick={handleUpdateUser} className="bg-blue-600 hover:bg-blue-700 text-white">
                           Uložit změny
                         </Button>
                       </DialogFooter>
@@ -345,7 +345,7 @@ export default function UserManagementPage() {
                         <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
                           Zrušit
                         </Button>
-                        <Button onClick={handleDeleteUser} className="bg-red-600 hover:bg-red-700">
+                        <Button onClick={handleDeleteUser} className="bg-red-600 hover:bg-red-700 text-white">
                           Smazat uživatele
                         </Button>
                       </DialogFooter>
