@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
+import { ThemeToggle } from '@/components/theme-toggle'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,7 +67,7 @@ export default function AccountantLayout({
 
   return (
     <SettingsProvider>
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
         <div className="flex flex-col flex-grow bg-purple-700 overflow-y-auto">
@@ -168,6 +169,11 @@ export default function AccountantLayout({
                 )
               })}
             </div>
+
+            {/* Theme Toggle */}
+            <div className="pt-4 mt-4 border-t border-white/20">
+              <ThemeToggle variant="full" className="text-white/80 hover:text-white hover:bg-purple-600" />
+            </div>
           </nav>
 
           {/* User section */}
@@ -231,7 +237,7 @@ export default function AccountantLayout({
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="bg-white border-b shadow-lg">
+          <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-lg">
             <nav className="px-2 py-2 space-y-1">
               {navigation.map((item) => {
                 const isActive = pathname === item.href
@@ -245,7 +251,7 @@ export default function AccountantLayout({
                       group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                       ${isActive
                         ? 'bg-purple-600 text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }
                     `}
                   >
@@ -256,8 +262,8 @@ export default function AccountantLayout({
               })}
 
               {/* Admin section - mobile */}
-              <div className="pt-2 mt-2 border-t border-gray-200">
-                <p className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
+                <p className="px-3 py-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                   Administrace
                 </p>
                 {adminNavigation.map((item) => {
@@ -272,7 +278,7 @@ export default function AccountantLayout({
                         group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                         ${isActive
                           ? 'bg-purple-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-100'
+                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                         }
                       `}
                     >
@@ -285,7 +291,7 @@ export default function AccountantLayout({
             </nav>
 
             {/* Mobile user section */}
-            <div className="border-t px-4 py-3">
+            <div className="border-t dark:border-gray-700 px-4 py-3">
               <div className="flex items-center mb-3">
                 <Avatar className="h-10 w-10">
                   <AvatarFallback className="bg-purple-600 text-white font-bold">
@@ -293,22 +299,23 @@ export default function AccountantLayout({
                   </AvatarFallback>
                 </Avatar>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">{MOCK_CONFIG.CURRENT_USER_NAME}</p>
-                  <p className="text-xs text-gray-500">Účetní</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{MOCK_CONFIG.CURRENT_USER_NAME}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Účetní</p>
                 </div>
               </div>
               <div className="space-y-1">
                 <Link
                   href="/accountant/profile"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                  className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
                 >
                   <User className="mr-2 h-4 w-4" />
                   Profil
                 </Link>
+                <ThemeToggle variant="full" className="px-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" />
                 <button
                   onClick={handleLogout}
-                  className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md"
+                  className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Odhlásit se
