@@ -64,6 +64,7 @@ import {
   canUserClaimBonus,
   getAvailableBonusTasks,
   getMonthlyStatus,
+  canUserTakeMoreTasks,
   Project,
   getEscalatedTasksForManager,
   getTasksNeedingUrgency,
@@ -440,6 +441,20 @@ export default function TasksPage() {
 
   // Handler for wizard completion
   const handleWizardComplete = (data: TaskWizardData) => {
+    // WIP limit check - only if task will be assigned to current user and not blocked
+    const assignedToCurrentUser = data.assigned_to_id === MOCK_CONFIG.CURRENT_USER_ID
+    const willCountAsWip = !data.is_blocked && assignedToCurrentUser
+
+    if (willCountAsWip) {
+      const wipCheck = canUserTakeMoreTasks(MOCK_CONFIG.CURRENT_USER_ID)
+      if (!wipCheck.canTake) {
+        toast.error('Nelze přijmout další úkol', {
+          description: wipCheck.reason || 'Dosažen WIP limit. Nejdříve dokončete rozpracované úkoly.',
+        })
+        return
+      }
+    }
+
     const company = mockCompanies.find(c => c.id === data.client_id)
 
     const newTask: Task = {
@@ -788,12 +803,29 @@ export default function TasksPage() {
 
     const taskId = active.id as string
     const overId = over.id as string
+    const currentTask = tasks.find(t => t.id === taskId)
 
     // Check if dropped on a column
     const targetColumn = kanbanColumns.find(col => col.id === overId)
 
     if (targetColumn) {
       const newStatus = getStatusForColumn(targetColumn.id)
+
+      // WIP limit check - only when moving TO accepted/in_progress FROM non-WIP status
+      const wipStatuses: TaskStatus[] = ['accepted', 'in_progress', 'awaiting_approval']
+      const currentIsWip = currentTask && wipStatuses.includes(currentTask.status)
+      const newIsWip = wipStatuses.includes(newStatus)
+
+      if (!currentIsWip && newIsWip && currentTask?.assigned_to === MOCK_CONFIG.CURRENT_USER_ID) {
+        const wipCheck = canUserTakeMoreTasks(MOCK_CONFIG.CURRENT_USER_ID)
+        if (!wipCheck.canTake) {
+          toast.error('Nelze přijmout další úkol', {
+            description: wipCheck.reason || 'Dosažen WIP limit. Nejdříve dokončete rozpracované úkoly.',
+          })
+          return
+        }
+      }
+
       setTasks(prev => prev.map(task => {
         if (task.id === taskId) {
           return {
@@ -811,6 +843,22 @@ export default function TasksPage() {
       if (overTask) {
         const targetColumnId = getColumnForStatus(overTask.status)
         const newStatus = targetColumnId ? getStatusForColumn(targetColumnId) : overTask.status
+
+        // WIP limit check - same as above
+        const wipStatuses: TaskStatus[] = ['accepted', 'in_progress', 'awaiting_approval']
+        const currentIsWip = currentTask && wipStatuses.includes(currentTask.status)
+        const newIsWip = wipStatuses.includes(newStatus)
+
+        if (!currentIsWip && newIsWip && currentTask?.assigned_to === MOCK_CONFIG.CURRENT_USER_ID) {
+          const wipCheck = canUserTakeMoreTasks(MOCK_CONFIG.CURRENT_USER_ID)
+          if (!wipCheck.canTake) {
+            toast.error('Nelze přijmout další úkol', {
+              description: wipCheck.reason || 'Dosažen WIP limit. Nejdříve dokončete rozpracované úkoly.',
+            })
+            return
+          }
+        }
+
         setTasks(prev => prev.map(task => {
           if (task.id === taskId) {
             return {

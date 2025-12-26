@@ -2743,11 +2743,15 @@ export function needsUrgency(task: Task): boolean {
   if (!task.last_urged_at) return true
 
   // Zjisti kolik dní od poslední urgence
-  const lastUrged = new Date(task.last_urged_at)
-  const now = new Date()
-  const daysSinceLastUrge = Math.floor((now.getTime() - lastUrged.getTime()) / (1000 * 60 * 60 * 24))
-
-  return daysSinceLastUrge >= URGENCY_CONFIG.DAYS_BETWEEN_URGENCIES
+  try {
+    const lastUrged = new Date(task.last_urged_at)
+    if (isNaN(lastUrged.getTime())) return true // Invalid date = needs urgency
+    const now = new Date()
+    const daysSinceLastUrge = Math.floor((now.getTime() - lastUrged.getTime()) / (1000 * 60 * 60 * 24))
+    return daysSinceLastUrge >= URGENCY_CONFIG.DAYS_BETWEEN_URGENCIES
+  } catch {
+    return true // On error, assume urgency needed
+  }
 }
 
 /**
