@@ -942,33 +942,35 @@ export default function TasksPage() {
         )}
 
         {/* Task title and client */}
-        <Link href={`/accountant/tasks/${task.id}`} className="flex-1 min-w-0 block">
-          <span className="flex items-center gap-2">
-            <span className={`font-medium text-gray-900 truncate ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}>
-              {task.title}
+        <div className="flex-1 min-w-0">
+          <Link href={`/accountant/tasks/${task.id}`} className="block">
+            <span className="flex items-center gap-2">
+              <span className={`font-medium text-gray-900 truncate ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}>
+                {task.title}
+              </span>
+              {task.is_next_action && (
+                <Badge className="bg-blue-500 text-white text-xs py-0 h-5 flex-shrink-0">
+                  <Zap className="h-3 w-3 mr-0.5" />
+                  Next
+                </Badge>
+              )}
+              {/* Urgency indicator */}
+              <UrgencyIndicator task={task} />
+              {isQuickAction(task) && !task.is_next_action && (
+                <Badge variant="outline" className="bg-purple-50 text-purple-700 text-xs py-0 h-5 flex-shrink-0">
+                  <Zap className="h-3 w-3 mr-0.5" />
+                  {quickActionThreshold >= 60 ? `${quickActionThreshold / 60}h` : `${quickActionThreshold}min`}
+                </Badge>
+              )}
+              {task.is_project && (
+                <Badge variant="outline" className="bg-indigo-50 text-indigo-700 text-xs py-0 h-5 flex-shrink-0">
+                  <FolderKanban className="h-3 w-3 mr-0.5" />
+                  Projekt
+                </Badge>
+              )}
             </span>
-            {task.is_next_action && (
-              <Badge className="bg-blue-500 text-white text-xs py-0 h-5 flex-shrink-0">
-                <Zap className="h-3 w-3 mr-0.5" />
-                Next
-              </Badge>
-            )}
-            {/* Urgency indicator */}
-            <UrgencyIndicator task={task} />
-            {isQuickAction(task) && !task.is_next_action && (
-              <Badge variant="outline" className="bg-purple-50 text-purple-700 text-xs py-0 h-5 flex-shrink-0">
-                <Zap className="h-3 w-3 mr-0.5" />
-                {quickActionThreshold >= 60 ? `${quickActionThreshold / 60}h` : `${quickActionThreshold}min`}
-              </Badge>
-            )}
-            {task.is_project && (
-              <Badge variant="outline" className="bg-indigo-50 text-indigo-700 text-xs py-0 h-5 flex-shrink-0">
-                <FolderKanban className="h-3 w-3 mr-0.5" />
-                Projekt
-              </Badge>
-            )}
-          </span>
-          <span className="flex items-center gap-2 text-xs text-gray-500 truncate mt-0.5 block">
+          </Link>
+          <div className="flex items-center gap-2 text-xs text-gray-500 truncate mt-0.5">
             {showClient && <span>{task.company_name}</span>}
             {task.project_name && (() => {
               const project = getProjectForTask(task)
@@ -991,8 +993,8 @@ export default function TasksPage() {
                 </>
               )
             })()}
-          </span>
-        </Link>
+          </div>
+        </div>
 
         {/* Deadline */}
         <div className={`text-sm flex-shrink-0 min-w-[80px] text-right ${
