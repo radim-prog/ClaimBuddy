@@ -22,9 +22,16 @@ export type TaskStatus =
   | 'someday_maybe'
   | 'invoiced';
 
-export type TaskPriority = 'critical' | 'high' | 'medium' | 'low';
-
 export type GTDEnergyLevel = 'high' | 'medium' | 'low';
+
+// R-Tasks Scoring System types
+export type ScoreMoney = 0 | 1 | 2 | 3;      // 0=<5k, 1=5k+, 2=15k+, 3=50k+ Kč
+export type ScoreFire = 0 | 1 | 2 | 3;       // 0=Easy, 1=Normal, 2=High, 3=Critical
+export type ScoreTime = 0 | 1 | 2 | 3;       // 0=den+, 1=2-4h, 2=<1h, 3=<30min
+export type ScoreDistance = 0 | 1 | 2;       // 0=Daleko, 1=Lokálně, 2=PC
+export type ScorePersonal = 0 | 1;           // 0=Poor, 1=Good
+export type ScorePriority = 'high' | 'medium' | 'low';  // Derived from total score
+export type TaskPriority = 'critical' | 'high' | 'medium' | 'low';  // UI-facing priority level
 
 export type GTDContext =
   | '@telefon'
@@ -68,7 +75,14 @@ export interface Task {
 
   // Workflow
   status: TaskStatus;
-  priority: TaskPriority;
+
+  // R-Tasks Scoring System (0-12 total)
+  // Quick actions (<30 min) don't require scores
+  score_money?: ScoreMoney;
+  score_fire?: ScoreFire;
+  score_time?: ScoreTime;
+  score_distance?: ScoreDistance;
+  score_personal?: ScorePersonal;
 
   // Assignování & Delegování
   created_by: string;
@@ -274,7 +288,12 @@ export interface CreateTaskInput {
   project_outcome?: string;
   parent_project_id?: string;
   status?: TaskStatus;
-  priority?: TaskPriority;
+  // R-Tasks scores (optional for quick actions <30min)
+  score_money?: ScoreMoney;
+  score_fire?: ScoreFire;
+  score_time?: ScoreTime;
+  score_distance?: ScoreDistance;
+  score_personal?: ScorePersonal;
   created_by: string;
   created_by_name: string;
   assigned_to?: string;
@@ -301,7 +320,12 @@ export interface UpdateTaskInput {
   title?: string;
   description?: string;
   status?: TaskStatus;
-  priority?: TaskPriority;
+  // R-Tasks scores
+  score_money?: ScoreMoney;
+  score_fire?: ScoreFire;
+  score_time?: ScoreTime;
+  score_distance?: ScoreDistance;
+  score_personal?: ScorePersonal;
   assigned_to?: string;
   assigned_to_name?: string;
   delegated_from?: string;
@@ -397,7 +421,7 @@ export interface BillableSummary {
 
 export interface TaskFilter {
   status?: TaskStatus | TaskStatus[];
-  priority?: TaskPriority | TaskPriority[];
+  score_priority?: ScorePriority | ScorePriority[];  // Filter by R-Tasks derived priority
   assigned_to?: string;
   created_by?: string;
   company_id?: string;
@@ -413,7 +437,7 @@ export interface TaskFilter {
 }
 
 export interface TaskSortOptions {
-  field: 'created_at' | 'due_date' | 'priority' | 'title' | 'status';
+  field: 'created_at' | 'due_date' | 'score' | 'title' | 'status';
   direction: 'asc' | 'desc';
 }
 
@@ -461,7 +485,13 @@ export interface GTDWizardData {
   // Step 6: When?
   due_date?: string;
   due_time?: string;
-  priority: TaskPriority;
+
+  // R-Tasks Scoring (optional for quick actions)
+  score_money?: ScoreMoney;
+  score_fire?: ScoreFire;
+  score_time?: ScoreTime;
+  score_distance?: ScoreDistance;
+  score_personal?: ScorePersonal;
 
   // Company info
   company_id: string;
@@ -475,7 +505,7 @@ export interface GTDWizardData {
 export interface TaskStatistics {
   total: number;
   by_status: Record<TaskStatus, number>;
-  by_priority: Record<TaskPriority, number>;
+  by_score_priority: Record<ScorePriority, number>;  // Grouped by R-Tasks derived priority
   overdue: number;
   due_today: number;
   due_this_week: number;
@@ -515,11 +545,10 @@ export const TASK_STATUSES: TaskStatus[] = [
   'invoiced',
 ];
 
-export const TASK_PRIORITIES: TaskPriority[] = [
-  'critical',
-  'high',
-  'medium',
-  'low',
+export const SCORE_PRIORITIES: ScorePriority[] = [
+  'high',    // Score >= 9
+  'medium',  // Score 6-8
+  'low',     // Score < 6
 ];
 
 export const GTD_ENERGY_LEVELS: GTDEnergyLevel[] = ['high', 'medium', 'low'];
@@ -552,12 +581,11 @@ export const TASK_STATUS_COLORS: Record<TaskStatus, string> = {
   invoiced: 'green',
 };
 
-// Priority colors for UI
-export const TASK_PRIORITY_COLORS: Record<TaskPriority, string> = {
-  critical: 'red',
-  high: 'orange',
-  medium: 'yellow',
-  low: 'gray',
+// Score-based priority colors for UI
+export const SCORE_PRIORITY_COLORS: Record<ScorePriority, string> = {
+  high: 'red',      // Score >= 9
+  medium: 'yellow', // Score 6-8
+  low: 'green',     // Score < 6
 };
 
 // Energy level colors for UI

@@ -6,6 +6,8 @@
 
 export { GTDWizard } from './gtd-wizard'
 export { TimeTracker } from './time-tracker'
+export { UrgencyBadge, UrgencyIndicator } from './UrgencyBadge'
+export { UrgencyActions, QuickUrgencyButton, ManagerActions } from './UrgencyActions'
 export type {
   Task,
   TaskStatus,

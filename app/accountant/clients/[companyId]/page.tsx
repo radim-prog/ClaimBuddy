@@ -57,7 +57,7 @@ import { Employee } from '@/lib/types/employee'
 import { Asset } from '@/lib/types/asset'
 import { Insurance } from '@/lib/types/insurance'
 import { ClientOnboarding } from '@/lib/types/onboarding'
-import { Task, getEmployeesByCompany, getAssetsByCompany, getInsurancesByCompany, getTasksByCompany, mockCompanies } from '@/lib/mock-data'
+import { Task, getEmployeesByCompany, getAssetsByCompany, getInsurancesByCompany, getTasksByCompany, mockCompanies, getCompanyReliabilityScore, getReliabilityLabel, getReliabilityEmoji } from '@/lib/mock-data'
 
 type Company = {
   id: string
@@ -480,6 +480,23 @@ export default function ClientDetailPage() {
                   {healthInsuranceLabels[company.health_insurance_company] || company.health_insurance_company}
                 </span>
               )}
+
+              {/* Reliability Score Badge */}
+              {(() => {
+                const score = getCompanyReliabilityScore(companyId)
+                const label = getReliabilityLabel(score)
+                const emoji = getReliabilityEmoji(score)
+                const bgColor = score === 0 ? 'bg-red-100 text-red-700' :
+                               score === 1 ? 'bg-orange-100 text-orange-700' :
+                               score === 2 ? 'bg-gray-100 text-gray-700' :
+                               'bg-green-100 text-green-700'
+                return (
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bgColor}`}
+                        title="Spolehlivost klienta při dodávání podkladů">
+                    {emoji} {label}
+                  </span>
+                )
+              })()}
             </div>
           </CardContent>
         </Card>

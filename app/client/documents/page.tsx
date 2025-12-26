@@ -196,7 +196,7 @@ export default function DocumentsPage() {
                           <span className="font-medium ml-2">Období:</span> {doc.period} •
                           <span className="font-medium ml-2">Velikost:</span> {formatFileSize(doc.file_size_bytes)}
                         </div>
-                        <div>
+                        <div suppressHydrationWarning>
                           <span className="font-medium">Nahráno:</span> {new Date(doc.uploaded_at).toLocaleString('cs-CZ')}
                         </div>
                         {doc.status === 'rejected' && doc.rejection_reason && (

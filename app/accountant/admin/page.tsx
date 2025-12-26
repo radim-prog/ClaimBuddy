@@ -17,6 +17,7 @@ import {
   Calendar,
 } from 'lucide-react'
 import Link from 'next/link'
+import { MOCK_CONFIG } from '@/lib/mock-data'
 
 // Mock data pro admin dashboard
 const mockAdminStats = {
@@ -31,7 +32,7 @@ const mockAdminStats = {
 const mockRecentActivity = [
   {
     id: '1',
-    user: 'Jana Svobodová',
+    user: MOCK_CONFIG.CURRENT_USER_NAME,
     action: 'Schválila uzávěrku',
     target: 'Horák s.r.o. - Prosinec 2025',
     timestamp: '2025-12-23T10:30:00Z',
@@ -55,7 +56,7 @@ const mockRecentActivity = [
   },
   {
     id: '4',
-    user: 'Jana Svobodová',
+    user: MOCK_CONFIG.CURRENT_USER_NAME,
     action: 'Upravila nastavení',
     target: 'Ceník služeb',
     timestamp: '2025-12-23T09:30:00Z',

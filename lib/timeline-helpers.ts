@@ -5,7 +5,22 @@
 // Purpose: Helper functions for creating and managing task timeline events
 // ============================================
 
-import { TaskTimelineEvent, Task, TimeTrackingEntry, TaskInvoice } from '@/lib/types/tasks'
+import { TaskTimelineEvent, Task, TimeTrackingEntry, TaskInvoice, TaskPriority } from '@/lib/types/tasks'
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Derive priority from score_fire
+ */
+function getTaskPriority(scoreFire: number | undefined | null): TaskPriority {
+  if (scoreFire === undefined || scoreFire === null) return 'low'
+  if (scoreFire >= 4) return 'critical'
+  if (scoreFire >= 3) return 'high'
+  if (scoreFire >= 2) return 'medium'
+  return 'low'
+}
 
 // ============================================
 // EVENT CREATION HELPERS
@@ -26,7 +41,7 @@ export function createTaskCreatedEvent(
     event_data: {
       task_title: task.title,
       task_description: task.description,
-      priority: task.priority,
+      priority: getTaskPriority(task.score_fire),
       is_project: task.is_project,
       assigned_to_name: task.assigned_to_name,
       due_date: task.due_date,
@@ -59,7 +74,7 @@ export function createTaskAssignedEvent(
     event_data: {
       task_title: task.title,
       assigned_to_name: assignedToName,
-      priority: task.priority,
+      priority: getTaskPriority(task.score_fire),
       due_date: task.due_date,
     },
     created_by: userId,

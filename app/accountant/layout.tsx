@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Users,
   CheckSquare,
+  FolderKanban,
   Settings,
   LogOut,
   Menu,
@@ -16,7 +17,7 @@ import {
   DollarSign,
   Sparkles,
   UserPlus,
-  Shield
+  Shield,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -31,12 +32,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { logout } from '@/app/auth/login/actions'
 import { SettingsProvider } from '@/lib/contexts/settings-context'
+import { MOCK_CONFIG, getAttentionRequiredCount } from '@/lib/mock-data'
 
 const navigation = [
   { name: 'Dashboard', href: '/accountant/dashboard', icon: LayoutDashboard },
   { name: 'Klienti', href: '/accountant/clients', icon: Users },
   { name: 'Onboarding', href: '/accountant/onboarding', icon: UserPlus },
-  { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare, badge: 5 },
+  { name: 'Projekty', href: '/accountant/projects', icon: FolderKanban },
+  { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare, badge: 'dynamic' as const },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: DollarSign },
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings },
 ]
@@ -46,9 +49,8 @@ const adminNavigation = [
   { name: 'Administrace', href: '/accountant/admin', icon: Shield },
 ]
 
-const demoFeatures = [
-  { name: '⏰ Timeline Demo', href: '/accountant/demo-timeline', icon: Sparkles, badge: 'DEMO' },
-]
+// Demo features array - currently empty as timeline is now integrated into Tasks/Projects
+const demoFeatures: { name: string; href: string; icon: typeof Sparkles; badge: string }[] = []
 
 export default function AccountantLayout({
   children,
@@ -94,11 +96,14 @@ export default function AccountantLayout({
                     <Icon className={`mr-3 h-5 w-5 flex-shrink-0`} />
                     {item.name}
                   </span>
-                  {item.badge && (
-                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                      {item.badge}
-                    </span>
-                  )}
+                  {item.badge === 'dynamic' && (() => {
+                    const badgeValue = getAttentionRequiredCount()
+                    return badgeValue > 0 ? (
+                      <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {badgeValue}
+                      </span>
+                    ) : null
+                  })()}
                 </Link>
               )
             })}
@@ -176,7 +181,7 @@ export default function AccountantLayout({
                     </AvatarFallback>
                   </Avatar>
                   <div className="ml-3 text-left">
-                    <p className="text-sm font-medium text-white">Jana Svobodová</p>
+                    <p className="text-sm font-medium text-white">{MOCK_CONFIG.CURRENT_USER_NAME}</p>
                     <p className="text-xs text-white/70">Účetní</p>
                   </div>
                 </button>
@@ -288,7 +293,7 @@ export default function AccountantLayout({
                   </AvatarFallback>
                 </Avatar>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">Jana Svobodová</p>
+                  <p className="text-sm font-medium text-gray-900">{MOCK_CONFIG.CURRENT_USER_NAME}</p>
                   <p className="text-xs text-gray-500">Účetní</p>
                 </div>
               </div>

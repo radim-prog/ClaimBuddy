@@ -194,6 +194,15 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
 
   if (visibleDeadlines.length === 0) return null
 
+  // Počítá DNY od půlnoci - úkol na "dnes" není overdue
+  const getDaysUntilMidnight = (dueDate: string) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const due = new Date(dueDate)
+    due.setHours(0, 0, 0, 0)
+    return Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  }
+
   const getHoursUntil = (dueDate: string) => {
     const now = new Date()
     const due = new Date(dueDate)
@@ -206,26 +215,21 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
   }
 
   const formatTimeLeft = (dueDate: string) => {
-    const hours = getHoursUntil(dueDate)
-    if (hours < 0) {
-      const days = Math.abs(Math.floor(hours / 24))
-      if (days === 0) return 'dnes prošlo'
-      return `${days}d po termínu`
+    const days = getDaysUntilMidnight(dueDate)
+    if (days < 0) {
+      return `${Math.abs(days)}d po termínu`
     }
-    if (hours === 0) return 'teď!'
-    if (hours < 24) return `${hours}h`
-    return `${Math.floor(hours / 24)}d`
+    if (days === 0) return 'dnes'
+    if (days === 1) return 'zítra'
+    return `${days}d`
   }
 
-  // Group deadlines (use filtered list)
-  const overdue = visibleDeadlinesFiltered.filter(d => getHoursUntil(d.dueDate) < 0)
-  const today = visibleDeadlinesFiltered.filter(d => {
-    const hours = getHoursUntil(d.dueDate)
-    return hours >= 0 && hours < 24
-  })
+  // Group deadlines - použít půlnoc pro férové porovnání
+  const overdue = visibleDeadlinesFiltered.filter(d => getDaysUntilMidnight(d.dueDate) < 0)
+  const today = visibleDeadlinesFiltered.filter(d => getDaysUntilMidnight(d.dueDate) === 0)
   const thisWeek = visibleDeadlinesFiltered.filter(d => {
-    const hours = getHoursUntil(d.dueDate)
-    return hours >= 24 && hours < 168
+    const days = getDaysUntilMidnight(d.dueDate)
+    return days >= 1 && days <= 7
   })
 
   const handleComplete = (id: string) => {

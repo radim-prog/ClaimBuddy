@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react'
 import Link from 'next/link'
+import { MOCK_CONFIG } from '@/lib/mock-data'
+
 type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
 
 type Company = {
@@ -175,7 +177,7 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         companyName: company.name,
         description: `Měsíční uzávěrka za ${months[month - 1]} ${year} pro firmu ${company.name}. Klient musí dodat chybějící dokumenty do ${deadline.toLocaleDateString('cs-CZ')}.`,
         checklist,
-        assignedTo: 'Jana Svobodová'
+        assignedTo: MOCK_CONFIG.CURRENT_USER_NAME
       })
     }
 
@@ -226,7 +228,7 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         companyName: company.name,
         description: `Klient ${company.name} nahrál všechny dokumenty pro uzávěrku za ${months[month - 1]} ${year}. Je třeba zkontrolovat a schválit.`,
         checklist,
-        assignedTo: 'Jana Svobodová',
+        assignedTo: MOCK_CONFIG.CURRENT_USER_NAME,
         attachments
       })
     }
@@ -311,7 +313,7 @@ function generateDeadlineTasks(closures: MonthlyClosure[], companies: Company[])
         status,
         companyId: company.id,
         companyName: company.name,
-        assignedTo: 'Jana Svobodová'
+        assignedTo: MOCK_CONFIG.CURRENT_USER_NAME
       })
     }
   })
@@ -549,7 +551,7 @@ export default function AccountantDashboard() {
           <button
             onClick={() => setSelectedYear(y => y - 1)}
             className="p-2 rounded-lg bg-white border hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={selectedYear <= 2025}
+            disabled={selectedYear <= MOCK_CONFIG.DATA_START_YEAR}
           >
             ←
           </button>

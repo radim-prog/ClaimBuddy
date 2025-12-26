@@ -7,7 +7,7 @@ import { CreateTaskInput, TaskFilter } from '@/lib/types/tasks'
  *
  * Query params:
  * - status: TaskStatus (can be comma-separated for multiple)
- * - priority: TaskPriority (can be comma-separated for multiple)
+ * - score_priority: ScorePriority (high|medium|low, derived from R-Tasks score)
  * - assigned_to: UUID
  * - created_by: UUID
  * - company_id: UUID
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
 
     const filters: TaskFilter = {
       status: searchParams.get('status')?.split(',') as any,
-      priority: searchParams.get('priority')?.split(',') as any,
+      score_priority: searchParams.get('score_priority')?.split(',') as any,
       assigned_to: searchParams.get('assigned_to') || undefined,
       created_by: searchParams.get('created_by') || undefined,
       company_id: searchParams.get('company_id') || undefined,
@@ -77,13 +77,8 @@ export async function GET(request: Request) {
       }
     }
 
-    if (filters.priority) {
-      if (Array.isArray(filters.priority)) {
-        query = query.in('priority', filters.priority)
-      } else {
-        query = query.eq('priority', filters.priority)
-      }
-    }
+    // Note: priority filtering is done in the client via score_priority
+    // The R-Tasks score is calculated from multiple score fields, not a direct DB column
 
     if (filters.assigned_to) {
       query = query.eq('assigned_to', filters.assigned_to)
@@ -189,20 +184,30 @@ export async function POST(request: Request) {
     }
 
     // Ensure created_by is set to current user
+    // Quick actions (<30 min) don't require R-Tasks scores
+    const isQuickAction = body.gtd_is_quick_action || (body.estimated_minutes && body.estimated_minutes <= 30)
+
     const taskData = {
       ...body,
       created_by: authUser.id,
       created_by_name: body.created_by_name || authUser.user_metadata?.name || authUser.email,
       // Set defaults if not provided
       status: body.status || 'pending',
-      priority: body.priority || 'medium',
       is_project: body.is_project || false,
       is_billable: body.is_billable || false,
-      gtd_is_quick_action: body.gtd_is_quick_action || false,
+      gtd_is_quick_action: isQuickAction,
       progress_percentage: 0,
       actual_minutes: 0,
       billable_hours: 0,
       invoiced_amount: 0,
+      // R-Tasks default scores (only for non-quick actions)
+      ...(isQuickAction ? {} : {
+        score_money: body.score_money ?? 1,
+        score_fire: body.score_fire ?? 1,
+        score_time: body.score_time ?? 1,
+        score_distance: body.score_distance ?? 2,
+        score_personal: body.score_personal ?? 0,
+      }),
     }
 
     // Create task

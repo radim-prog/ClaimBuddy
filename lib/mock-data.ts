@@ -1,6 +1,88 @@
 // Mock data pro testování UI (než napojíme backend)
 
 import { TaskTimelineEvent } from '@/lib/types/tasks'
+
+// ============================================
+// HELPER FUNKCE PRO DYNAMICKÁ DATA
+// ============================================
+
+// Generuje datum relativně k dnešku
+function getRelativeDate(daysOffset: number): string {
+  const date = new Date()
+  date.setDate(date.getDate() + daysOffset)
+  return date.toISOString().split('T')[0] // YYYY-MM-DD
+}
+
+// Konstanty pro relativní data (použijeme v mockTasks)
+export const MOCK_DATES = {
+  // Po termínu
+  OVERDUE_3_DAYS: getRelativeDate(-3),
+  OVERDUE_2_DAYS: getRelativeDate(-2),
+  OVERDUE_1_DAY: getRelativeDate(-1),
+  // Aktuální
+  TODAY: getRelativeDate(0),
+  TOMORROW: getRelativeDate(1),
+  IN_2_DAYS: getRelativeDate(2),
+  IN_3_DAYS: getRelativeDate(3),
+  IN_4_DAYS: getRelativeDate(4),
+  // Budoucí
+  IN_5_DAYS: getRelativeDate(5),
+  IN_7_DAYS: getRelativeDate(7),
+  IN_14_DAYS: getRelativeDate(14),
+  IN_30_DAYS: getRelativeDate(30),
+  END_OF_MONTH: (() => {
+    const d = new Date()
+    d.setMonth(d.getMonth() + 1, 0) // Poslední den aktuálního měsíce
+    return d.toISOString().split('T')[0]
+  })(),
+  END_OF_NEXT_MONTH: (() => {
+    const d = new Date()
+    d.setMonth(d.getMonth() + 2, 0) // Poslední den příštího měsíce
+    return d.toISOString().split('T')[0]
+  })(),
+}
+
+// ============================================
+// CENTRÁLNÍ KONFIGURACE MOCK DAT
+// ============================================
+
+// Aktuální období (pro fakturaci, uzávěrky atd.)
+function getCurrentPeriod(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+export const MOCK_CONFIG = {
+  // Aktuální období (dynamicky generováno)
+  CURRENT_PERIOD: getCurrentPeriod(),
+  PREVIOUS_PERIOD: (() => {
+    const d = new Date()
+    d.setMonth(d.getMonth() - 1)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  })(),
+
+  // Limity pro zobrazení
+  COMPANIES_DROPDOWN_LIMIT: 10,      // Limit firem v dropdownu
+  COMPANIES_CLIENT_VIEW_LIMIT: 3,     // Limit firem pro klientský pohled
+  TASKS_PAGE_SIZE: 50,                // Počet úkolů na stránku
+  RECENT_COMPLETED_LIMIT: 5,          // Počet nedávno dokončených úkolů
+
+  // ID aktuálního uživatele (účetní)
+  CURRENT_USER_ID: 'user-2-accountant',
+  CURRENT_USER_NAME: 'Jana Svobodová',
+
+  // Prahy pro quick actions (v minutách)
+  QUICK_ACTION_THRESHOLD: 30,         // Úkoly pod 30 min = quick action
+  GTD_DO_IT_NOW_THRESHOLD: 2,         // Úkoly pod 2 min = udělej hned
+
+  // Prahy pro R-Tasks prioritu
+  SCORE_HIGH_THRESHOLD: 9,            // Score >= 9 = vysoká priorita
+  SCORE_MEDIUM_THRESHOLD: 6,          // Score >= 6 = střední priorita
+
+  // Rok odkdy začínají data (pro year selector)
+  DATA_START_YEAR: new Date().getFullYear(),  // Aktuální rok jako minimum
+  CURRENT_YEAR: new Date().getFullYear(),
+}
 import { Employee, Deduction } from '@/lib/types/employee'
 import { Asset } from '@/lib/types/asset'
 import { Insurance } from '@/lib/types/insurance'
@@ -68,6 +150,8 @@ export const mockCompanies = [
     email: 'info@abc-sro.cz',
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 2 as 0 | 1 | 2 | 3,  // 0=beznadějný, 1=problémový, 2=normální, 3=spolehlivý
+    reliability_note: 'Občas pozdní dodání dokumentů',
   },
   {
     id: 'company-2',
@@ -91,6 +175,7 @@ export const mockCompanies = [
     },
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 3 as 0 | 1 | 2 | 3,  // Spolehlivý klient
   },
   {
     id: 'company-3',
@@ -115,6 +200,8 @@ export const mockCompanies = [
     },
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 1 as 0 | 1 | 2 | 3,  // Problémový klient
+    reliability_note: 'Opakovaně pozdě dodává dokumenty, nutno urgovat',
   },
   {
     id: 'company-4',
@@ -137,6 +224,8 @@ export const mockCompanies = [
     },
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 0 as 0 | 1 | 2 | 3,  // Beznadějný klient!
+    reliability_note: 'Nereaguje na urgence, zvážit ukončení spolupráce',
   },
   {
     id: 'company-5',
@@ -156,6 +245,7 @@ export const mockCompanies = [
     has_employees: false,
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 3 as 0 | 1 | 2 | 3,  // Spolehlivý
   },
   {
     id: 'company-6',
@@ -176,6 +266,7 @@ export const mockCompanies = [
     data_box: { id: 'mno7890' },
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 2 as 0 | 1 | 2 | 3,  // Normální
   },
   {
     id: 'company-7',
@@ -197,6 +288,7 @@ export const mockCompanies = [
     data_box: { id: 'pqr2345', login: 'pqr_dev' },
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 3 as 0 | 1 | 2 | 3,  // Spolehlivý
   },
   {
     id: 'company-8',
@@ -217,6 +309,7 @@ export const mockCompanies = [
     has_employees: false,
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 2 as 0 | 1 | 2 | 3,  // Normální
   },
   {
     id: 'company-9',
@@ -237,6 +330,8 @@ export const mockCompanies = [
     data_box: { id: 'vwx6789', login: 'vwx_log' },
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 1 as 0 | 1 | 2 | 3,  // Problémový
+    reliability_note: 'Velká firma, ale pomalá reakce',
   },
   {
     id: 'company-10',
@@ -257,6 +352,7 @@ export const mockCompanies = [
     data_box: { id: 'yz01234' },
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 3 as 0 | 1 | 2 | 3,  // Spolehlivý
   },
   {
     id: 'company-11',
@@ -279,6 +375,7 @@ export const mockCompanies = [
     email: 'info@bcdfinance.cz',
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 2 as 0 | 1 | 2 | 3,  // Normální
   },
   {
     id: 'company-12',
@@ -298,6 +395,7 @@ export const mockCompanies = [
     has_employees: false,
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 3 as 0 | 1 | 2 | 3,  // Spolehlivý
   },
   {
     id: 'company-13',
@@ -318,6 +416,7 @@ export const mockCompanies = [
     data_box: { id: 'hij9012', login: 'hij_con' },
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 2 as 0 | 1 | 2 | 3,  // Normální
   },
   {
     id: 'company-14',
@@ -338,6 +437,7 @@ export const mockCompanies = [
     data_box: { id: 'klm3456' },
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 3 as 0 | 1 | 2 | 3,  // Spolehlivý
   },
   {
     id: 'company-15',
@@ -358,6 +458,7 @@ export const mockCompanies = [
     data_box: { id: 'nop7890' },
     created_at: '2025-01-01T00:00:00Z',
     status: 'active' as ClientStatus,
+    reliability_score: 2 as 0 | 1 | 2 | 3,  // Normální
   },
   // ===== KLIENTI V ONBOARDINGU =====
   {
@@ -936,24 +1037,260 @@ export const mockDocuments = Array.from({ length: 30 }, (_, index) => {
 })
 
 // Task types with GTD methodology
-export type TaskPriority = 'critical' | 'high' | 'medium' | 'low'
-export type TaskStatus = 'pending' | 'accepted' | 'in_progress' | 'waiting_for' | 'completed' | 'someday_maybe'
+export type TaskStatus =
+  | 'pending'           // Inbox - nový, netříděný
+  | 'clarifying'        // Inbox - vyžaduje upřesnění
+  | 'accepted'          // K práci - přijato
+  | 'in_progress'       // Probíhá - pracuje se
+  | 'waiting_for'       // Čeká interně
+  | 'waiting_client'    // Čeká na klienta
+  | 'awaiting_approval' // Čeká na schválení manažerem
+  | 'completed'         // Hotovo (schváleno)
+  | 'invoiced'          // Vyfakturováno
+  | 'cancelled'         // Zrušeno
+  | 'someday_maybe'     // Někdy/Možná
+
+export type TaskType = 'base' | 'bonus'
 export type GTDContext = '@email' | '@telefon' | '@pocitac' | '@kancelar' | '@meeting' | '@anywhere'
 export type EnergyLevel = 'high' | 'medium' | 'low'
+
+// ============================================
+// TIME LOGGING
+// ============================================
+export type ActivityType = 'task' | 'general' | 'admin' | 'meeting' | 'call' | 'email'
+
+export interface TimeLog {
+  id: string
+  task_id?: string       // Optional - null for non-task time
+  user_id: string
+  user_name: string
+  client_id?: string     // For non-task time logs
+  client_name?: string
+  activity_type: ActivityType
+  date: string           // YYYY-MM-DD
+  minutes: number
+  description: string
+  is_billable: boolean
+  created_at: string
+}
+
+// ============================================
+// USER TASK SETTINGS (WIP limits, quality)
+// ============================================
+export interface UserTaskSettings {
+  user_id: string
+  user_name: string
+
+  // WIP Limits (nastavuje admin)
+  max_wip_total: number       // Max rozpracovaných celkem
+  max_wip_bonus: number       // Max rozpracovaných BONUS úkolů
+  can_claim_bonus: boolean    // Může claimovat bonus úkoly?
+
+  // Quality Score (skrytý, počítá systém)
+  quality_score: number       // 0-100, účetní nevidí
+  quality_factors: {
+    on_time_rate: number      // % úkolů dokončených včas
+    no_rejection_rate: number // % úkolů bez vrácení
+    estimate_accuracy: number // Přesnost odhadů
+  }
+
+  // Monthly Stats
+  current_month: string       // YYYY-MM
+  monthly_base_required: number
+  monthly_base_completed: number
+  monthly_bonus_points: number
+  monthly_bonus_cashed_out: boolean
+}
+
+// ============================================
+// TASK APPROVAL
+// ============================================
+export interface TaskApproval {
+  id: string
+  task_id: string
+  action: 'approved' | 'rejected'
+  by_user_id: string
+  by_user_name: string
+  comment?: string
+  created_at: string
+}
+
+// ============================================
+// SYSTEM SETTINGS (admin configurable)
+// ============================================
+export interface TaskSystemSettings {
+  monthly_cutoff_day: number        // Default: 5
+  approval_deadline_hours: number   // Default: 24
+  min_quality_for_bonus: number     // Default: 80
+  points_to_currency_rate: number   // Default: 1 (1 bod = 1 Kč)
+}
+
+// ============================================
+// CLIENT REQUESTS (požadavky od klientů)
+// ============================================
+export type ClientRequestStatus = 'new' | 'reviewed' | 'in_progress' | 'completed' | 'rejected'
+export type ClientRequestPriority = 'low' | 'normal' | 'high' | 'urgent'
+export type ClientRequestCategory = 'accounting' | 'tax' | 'payroll' | 'consulting' | 'documents' | 'other'
+
+export interface ClientRequest {
+  id: string
+  client_id: string
+  client_name: string
+
+  // Request details
+  title: string
+  description: string
+  category: ClientRequestCategory
+  priority: ClientRequestPriority
+  status: ClientRequestStatus
+
+  // Attachments (file URLs)
+  attachments?: string[]
+
+  // Assignment
+  assigned_to?: string      // user_id
+  assigned_to_name?: string
+
+  // Related task (if request was converted to task)
+  related_task_id?: string
+
+  // Dates
+  requested_by_date?: string  // Client's requested deadline
+  created_at: string
+  updated_at: string
+  resolved_at?: string
+
+  // Communication
+  internal_notes?: string     // Not visible to client
+  response_to_client?: string // Visible to client
+}
+
+// ============================================
+// PROJECT (kontejner pro fáze a úkoly)
+// ============================================
+export type ProjectType = 'recurring' | 'one_time' | 'ongoing'
+export type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'review' | 'completed' | 'cancelled'
+
+export interface Project {
+  id: string
+  title: string
+  description?: string
+  outcome: string                    // GTD: Požadovaný výsledek
+
+  // Vztah ke klientovi
+  company_id: string
+  company_name: string
+
+  // Typ projektu
+  project_type: ProjectType
+
+  // Pro opakující se projekty
+  recurrence?: {
+    pattern: 'monthly' | 'quarterly' | 'yearly'
+    period_label: string             // "12/2024", "Q4/2024", "2024"
+    template_id?: string
+  }
+
+  // Časové rozpětí
+  start_date?: string
+  target_date: string
+  actual_end_date?: string
+
+  // Stav
+  status: ProjectStatus
+
+  // Vlastnictví
+  owner_id: string
+  owner_name: string
+  team_ids: string[]
+  team_names: string[]
+
+  // GTD
+  next_action_id?: string
+  is_someday_maybe: boolean
+
+  // Priority (dědí se do úkolů projektu)
+  priority?: 0 | 1 | 2 | 3  // 0=low, 1=normal, 2=high, 3=critical
+
+  // Finance
+  is_billable: boolean
+  budget_hours?: number
+  hourly_rate?: number
+
+  // Počítané hodnoty
+  total_tasks?: number
+  completed_tasks?: number
+  progress_percent?: number
+
+  // Tracking
+  created_at: string
+  updated_at: string
+}
+
+// ============================================
+// PHASE (fáze v projektu)
+// ============================================
+export type PhaseStatus = 'pending' | 'active' | 'completed'
+
+export interface Phase {
+  id: string
+  project_id: string
+
+  title: string
+  description?: string
+  position: number                   // Pořadí v projektu (1, 2, 3...)
+
+  // Stav
+  status: PhaseStatus
+
+  // Časový rámec (volitelný)
+  start_date?: string
+  target_date?: string
+
+  // Počítané hodnoty
+  total_tasks?: number
+  completed_tasks?: number
+  progress_percent?: number
+
+  created_at: string
+  updated_at: string
+}
 
 export interface Task {
   id: string
   title: string
   description: string
 
-  // Task vs Project
-  is_project: boolean
-  project_outcome?: string
-  parent_project_id?: string
+  // === HIERARCHIE (volitelné - NULL = volný úkol) ===
+  project_id?: string               // ID projektu
+  project_name?: string
+  phase_id?: string                 // ID fáze v projektu
+  phase_name?: string
+  position_in_phase?: number        // Pořadí ve fázi
+
+  // === ZÁVISLOSTI ===
+  depends_on_task_ids?: string[]    // Úkoly které musí být hotové první
+  is_blocked?: boolean              // Computed: má nesplněné závislosti?
+
+  // === GTD FLAGS ===
+  is_next_action?: boolean          // Toto je Next Action projektu
+
+  // === LEGACY (zpětná kompatibilita) ===
+  is_project: boolean               // DEPRECATED: použij Project entitu
+  project_outcome?: string          // DEPRECATED
+  parent_project_id?: string        // DEPRECATED: použij project_id
 
   // Workflow
   status: TaskStatus
-  priority: TaskPriority
+
+  // === GAMIFICATION: Task Type ===
+  task_type?: TaskType            // 'base' (default) | 'bonus'
+  points_value?: number           // Bodová hodnota (jen pro bonus, nastavuje admin)
+
+  // === GAMIFICATION: Claim (pro bonus úkoly) ===
+  claimed_by?: string             // User ID kdo si claimnul
+  claimed_by_name?: string
+  claimed_at?: string
 
   // Assignment
   created_by: string
@@ -979,9 +1316,10 @@ export interface Task {
   gtd_energy_level?: EnergyLevel
   gtd_is_quick_action?: boolean  // < 2 min
 
-  // Time tracking
-  estimated_minutes?: number
-  actual_minutes?: number
+  // === GAMIFICATION: Time Tracking ===
+  estimated_minutes?: number      // Odhad při vytvoření (LOCKED po vytvoření)
+  estimate_locked?: boolean       // true = nelze měnit estimate (default: true po vytvoření)
+  actual_minutes?: number         // Skutečný čas (vyplní se před uzavřením)
 
   // Billing
   is_billable: boolean
@@ -991,6 +1329,31 @@ export interface Task {
   tags?: string[]
   progress_percentage?: number
 
+  // R-Tasks Scoring System (0-12 total)
+  score_money?: 0 | 1 | 2 | 3        // 0 = <5k, 1 = 5k+, 2 = 15k+, 3 = 50k+ Kč
+  score_fire?: 0 | 1 | 2 | 3         // 0 = Easy, 1 = Normal, 2 = High, 3 = Critical
+  score_time?: 0 | 1 | 2 | 3         // 0 = den+, 1 = 2-4h, 2 = <1h, 3 = <30min
+  score_distance?: 0 | 1 | 2         // 0 = Daleko, 1 = Lokálně, 2 = PC
+  score_personal?: 0 | 1             // 0 = Poor, 1 = Good
+
+  // === GAMIFICATION: Approval ===
+  approved_by?: string
+  approved_by_name?: string
+  approved_at?: string
+  rejected_by?: string
+  rejected_by_name?: string
+  rejected_at?: string
+  rejection_comment?: string
+  rejection_count?: number          // Kolikrát byl úkol vrácen (default: 0)
+
+  // === URGENCY & ESCALATION ===
+  urgency_count?: number            // Kolikrát bylo urgováno (0-5)
+  last_urged_at?: string            // Datum poslední urgence
+  escalated_to?: string             // ID manažera (pokud eskalováno)
+  escalated_at?: string             // Kdy eskalováno
+  escalation_reason?: string        // Důvod eskalace
+  auto_notifications_sent?: number  // Počet automatických notifikací
+
   // Timestamps
   created_at: string
   updated_at: string
@@ -999,20 +1362,19 @@ export interface Task {
 
 // Mock tasks pro účetní s GTD kategoriemi
 export const mockTasks: Task[] = [
-  // QUICK ACTIONS (< 2 min)
+  // QUICK ACTIONS (< 2 min) - PO TERMÍNU
   {
     id: 'task-1',
     title: 'Zaslat připomínku emailem',
     description: 'Poslat automatický email klientovi ABC s.r.o. o chybějícím výpisu',
     is_project: false,
     status: 'pending',
-    priority: 'high',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-07',
+    due_date: MOCK_DATES.OVERDUE_2_DAYS, // PO TERMÍNU
     due_time: '14:00',
     company_id: 'company-1',
     company_name: 'ABC s.r.o.',
@@ -1022,6 +1384,12 @@ export const mockTasks: Task[] = [
     estimated_minutes: 2,
     is_billable: false,
     tags: ['email', 'urgence'],
+    // R-Tasks Score: 7 (střední priorita)
+    score_money: 1,      // 5k+ potenciál
+    score_fire: 2,       // High urgency
+    score_time: 3,       // <30min
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good
     created_at: '2025-12-06T10:00:00Z',
     updated_at: '2025-12-06T10:00:00Z',
   },
@@ -1031,13 +1399,12 @@ export const mockTasks: Task[] = [
     description: 'Rychlý telefonát klientovi XYZ OSVČ pro potvrzení zítřejší schůzky',
     is_project: false,
     status: 'pending',
-    priority: 'medium',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-07',
+    due_date: MOCK_DATES.TODAY, // DNES
     due_time: '10:00',
     company_id: 'company-2',
     company_name: 'XYZ OSVČ',
@@ -1047,6 +1414,12 @@ export const mockTasks: Task[] = [
     estimated_minutes: 2,
     is_billable: false,
     tags: ['telefon', 'schuzka'],
+    // R-Tasks Score: 6 (střední priorita)
+    score_money: 0,      // <5k
+    score_fire: 1,       // Normal
+    score_time: 3,       // <30min
+    score_distance: 2,   // PC (telefonovat můžu odkudkoliv)
+    score_personal: 0,   // Poor (nerad volám)
     created_at: '2025-12-06T09:00:00Z',
     updated_at: '2025-12-06T09:00:00Z',
   },
@@ -1055,16 +1428,15 @@ export const mockTasks: Task[] = [
   {
     id: 'task-3',
     title: 'DPH přiznání - listopad 2025',
-    description: 'URGENTNÍ: Podat DPH přiznání za listopad do 25.12. Deadline blíží!',
+    description: 'URGENTNÍ: Podat DPH přiznání. Deadline blíží!',
     is_project: false,
     status: 'in_progress',
-    priority: 'critical',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-08',
+    due_date: MOCK_DATES.TOMORROW, // ZÍTRA
     due_time: '23:59',
     company_id: 'company-4',
     company_name: 'GHI Trading',
@@ -1077,22 +1449,27 @@ export const mockTasks: Task[] = [
     hourly_rate: 1200,
     tags: ['dph', 'deadline', 'urgentni'],
     progress_percentage: 40,
+    // R-Tasks Score: 11 (vysoká priorita!)
+    score_money: 3,      // 50k+ hodnota (DPH = velké částky)
+    score_fire: 3,       // Critical - deadline!
+    score_time: 1,       // 2-4 hodiny práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good (důležité)
     created_at: '2025-12-01T08:00:00Z',
     updated_at: '2025-12-06T14:30:00Z',
   },
   {
     id: 'task-4',
-    title: 'Chybí bankovní výpis - poslední den!',
-    description: 'Klient dosud nenahrál výpis za listopad. Deadline dnes!',
+    title: 'Chybí bankovní výpis - PO TERMÍNU!',
+    description: 'Klient dosud nenahrál výpis za listopad. Už po termínu!',
     is_project: false,
     status: 'pending',
-    priority: 'critical',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-07',
+    due_date: MOCK_DATES.OVERDUE_3_DAYS, // PO TERMÍNU - 3 DNY
     due_time: '17:00',
     company_id: 'company-1',
     company_name: 'ABC s.r.o.',
@@ -1102,6 +1479,16 @@ export const mockTasks: Task[] = [
     estimated_minutes: 15,
     is_billable: false,
     tags: ['urgence', 'dokumenty'],
+    // R-Tasks Score: 8 (střední-vysoká priorita)
+    score_money: 2,      // 15k+ hodnota (bankovní výpisy důležité)
+    score_fire: 3,       // Critical - deadline dnes!
+    score_time: 2,       // <1h práce
+    score_distance: 2,   // PC
+    score_personal: 0,   // Poor (administrativní práce)
+    // === URGENCY DATA ===
+    urgency_count: 2,                        // Urgováno 2×
+    last_urged_at: '2025-12-24T10:00:00Z',   // Poslední urgence před 2 dny
+    auto_notifications_sent: 3,              // Systém poslal 3 automatické notifikace
     created_at: '2025-12-05T10:00:00Z',
     updated_at: '2025-12-07T09:00:00Z',
   },
@@ -1113,7 +1500,6 @@ export const mockTasks: Task[] = [
     description: 'Smlouva o vedení účetnictví zaslána klientovi 3.12., čeká na podpis a vrácení',
     is_project: false,
     status: 'waiting_for',
-    priority: 'high',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
@@ -1121,7 +1507,7 @@ export const mockTasks: Task[] = [
     is_waiting_for: true,
     waiting_for_who: 'Petr Svoboda (TechSolutions)',
     waiting_for_what: 'Podepsaná smlouva o vedení účetnictví',
-    due_date: '2025-12-10',
+    due_date: MOCK_DATES.IN_2_DAYS, // za 2 dny
     company_id: 'company-3',
     company_name: 'DEF s.r.o.',
     gtd_context: ['@anywhere'],
@@ -1130,6 +1516,19 @@ export const mockTasks: Task[] = [
     estimated_minutes: 5,
     is_billable: false,
     tags: ['smlouva', 'waiting'],
+    // R-Tasks Score: 5 (nižší priorita - čekáme)
+    score_money: 1,      // 5k+ hodnota
+    score_fire: 1,       // Normal
+    score_time: 3,       // <30min (jen kontrola)
+    score_distance: 2,   // PC
+    score_personal: 0,   // Poor
+    // === URGENCY DATA - ESKALOVÁNO! ===
+    urgency_count: 3,                        // Urgováno 3× - dosažen limit
+    last_urged_at: '2025-12-22T14:00:00Z',   // Poslední urgence před 4 dny
+    escalated_to: 'user-3-manager',          // Eskalováno na manažera
+    escalated_at: '2025-12-23T09:00:00Z',    // Kdy eskalováno
+    escalation_reason: 'Klient nereaguje na opakované výzvy k podpisu smlouvy',
+    auto_notifications_sent: 5,              // 5 automatických notifikací
     created_at: '2025-12-03T11:00:00Z',
     updated_at: '2025-12-03T11:00:00Z',
   },
@@ -1139,7 +1538,6 @@ export const mockTasks: Task[] = [
     description: 'Požádáno klienta o export dat z účetního systému Pohoda. Čeká na dodání.',
     is_project: false,
     status: 'waiting_for',
-    priority: 'medium',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
@@ -1147,7 +1545,7 @@ export const mockTasks: Task[] = [
     is_waiting_for: true,
     waiting_for_who: 'Eva Malá (Green Energy)',
     waiting_for_what: 'Export dat z Pohoda za Q4 2025',
-    due_date: '2025-12-12',
+    due_date: MOCK_DATES.IN_5_DAYS, // za 5 dní
     company_id: 'company-5',
     company_name: 'JKL Consulting',
     gtd_context: ['@anywhere'],
@@ -1157,6 +1555,16 @@ export const mockTasks: Task[] = [
     is_billable: true,
     hourly_rate: 800,
     tags: ['pohoda', 'export', 'waiting'],
+    // R-Tasks Score: 6 (střední priorita - čekáme)
+    score_money: 2,      // 15k+ hodnota (Q4 data)
+    score_fire: 1,       // Normal
+    score_time: 2,       // <1h práce po dodání
+    score_distance: 2,   // PC
+    score_personal: 0,   // Poor
+    // === URGENCY DATA ===
+    urgency_count: 1,                        // Urgováno 1× (čerstvé)
+    last_urged_at: '2025-12-25T10:00:00Z',   // Včera
+    auto_notifications_sent: 2,              // 2 automatické notifikace
     created_at: '2025-12-04T14:00:00Z',
     updated_at: '2025-12-04T14:00:00Z',
   },
@@ -1168,13 +1576,12 @@ export const mockTasks: Task[] = [
     description: '5 faktur čeká na kontrolu a schválení v systému',
     is_project: false,
     status: 'accepted',
-    priority: 'high',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-09',
+    due_date: MOCK_DATES.OVERDUE_1_DAY,
     due_time: '15:00',
     company_id: 'company-3',
     company_name: 'DEF s.r.o.',
@@ -1185,6 +1592,12 @@ export const mockTasks: Task[] = [
     is_billable: true,
     hourly_rate: 1000,
     tags: ['faktury', 'kontrola'],
+    // R-Tasks Score: 9 (vysoká priorita)
+    score_money: 2,      // 15k+ hodnota (faktury = peníze)
+    score_fire: 2,       // High urgency
+    score_time: 2,       // <1h práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good (důležité)
     created_at: '2025-12-05T09:15:00Z',
     updated_at: '2025-12-06T10:00:00Z',
   },
@@ -1194,13 +1607,12 @@ export const mockTasks: Task[] = [
     description: 'Ověřit správnost 3 nových příjmových faktur a zaúčtovat',
     is_project: false,
     status: 'accepted',
-    priority: 'medium',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-11',
+    due_date: MOCK_DATES.IN_3_DAYS,
     company_id: 'company-5',
     company_name: 'JKL Consulting',
     gtd_context: ['@pocitac'],
@@ -1210,6 +1622,12 @@ export const mockTasks: Task[] = [
     is_billable: true,
     hourly_rate: 1000,
     tags: ['faktury', 'kontrola'],
+    // R-Tasks Score: 8 (střední-vysoká priorita)
+    score_money: 2,      // 15k+ hodnota
+    score_fire: 1,       // Normal
+    score_time: 2,       // <1h práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good
     created_at: '2025-12-06T16:20:00Z',
     updated_at: '2025-12-06T16:20:00Z',
   },
@@ -1219,13 +1637,12 @@ export const mockTasks: Task[] = [
     description: 'Sběr a kontrola všech dokumentů potřebných pro roční závěrku 2025',
     is_project: false,
     status: 'accepted',
-    priority: 'medium',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-20',
+    due_date: MOCK_DATES.IN_7_DAYS,
     company_id: 'company-9',
     company_name: 'VWX Logistics s.r.o.',
     gtd_context: ['@pocitac', '@kancelar'],
@@ -1235,6 +1652,12 @@ export const mockTasks: Task[] = [
     is_billable: true,
     hourly_rate: 1200,
     tags: ['rocni-uzaverka', 'podklady'],
+    // R-Tasks Score: 10 (vysoká priorita)
+    score_money: 3,      // 50k+ hodnota (roční uzávěrka)
+    score_fire: 2,       // High (deadline se blíží)
+    score_time: 0,       // den+ práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good (důležité)
     created_at: '2025-12-02T15:00:00Z',
     updated_at: '2025-12-02T15:00:00Z',
   },
@@ -1247,13 +1670,12 @@ export const mockTasks: Task[] = [
     is_project: true,
     project_outcome: 'Klient plně migrován na Money S5, školení dokončeno, první měsíc zpracován v novém systému',
     status: 'in_progress',
-    priority: 'high',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-31',
+    due_date: MOCK_DATES.END_OF_MONTH,
     company_id: 'company-6',
     company_name: 'MNO Services s.r.o.',
     gtd_context: ['@pocitac', '@meeting', '@kancelar'],
@@ -1265,6 +1687,12 @@ export const mockTasks: Task[] = [
     hourly_rate: 1500,
     tags: ['projekt', 'migrace', 'skoleni'],
     progress_percentage: 40,
+    // R-Tasks Score: 9 (vysoká priorita - projekt)
+    score_money: 3,      // 50k+ hodnota (velký projekt)
+    score_fire: 1,       // Normal (deadline ještě daleko)
+    score_time: 0,       // den+ práce (projekt)
+    score_distance: 1,   // Lokálně (potřeba schůzky)
+    score_personal: 1,   // Good (zajímavý projekt)
     created_at: '2025-11-15T09:00:00Z',
     updated_at: '2025-12-06T17:00:00Z',
   },
@@ -1275,13 +1703,12 @@ export const mockTasks: Task[] = [
     is_project: true,
     project_outcome: 'Všechny dokumenty připraveny, nesrovnalosti vyřešeny, klient připraven na kontrolu',
     status: 'in_progress',
-    priority: 'critical',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-15',
+    due_date: MOCK_DATES.IN_5_DAYS,
     company_id: 'company-7',
     company_name: 'PQR Development',
     gtd_context: ['@pocitac', '@kancelar'],
@@ -1293,6 +1720,12 @@ export const mockTasks: Task[] = [
     hourly_rate: 1800,
     tags: ['projekt', 'kontrola', 'urgentni'],
     progress_percentage: 25,
+    // R-Tasks Score: 12 (maximální priorita!)
+    score_money: 3,      // 50k+ hodnota (daňová kontrola = riziko)
+    score_fire: 3,       // Critical (brzy deadline)
+    score_time: 0,       // den+ práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good (důležité)
     created_at: '2025-11-20T10:00:00Z',
     updated_at: '2025-12-05T16:00:00Z',
   },
@@ -1304,13 +1737,12 @@ export const mockTasks: Task[] = [
     description: 'Prozkoumat možnosti automatického exportu dat z Pohody pro klienty',
     is_project: false,
     status: 'someday_maybe',
-    priority: 'low',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2026-01-31',
+    due_date: MOCK_DATES.END_OF_NEXT_MONTH,
     company_id: 'company-1',
     company_name: 'ABC s.r.o.',
     gtd_context: ['@pocitac'],
@@ -1319,6 +1751,12 @@ export const mockTasks: Task[] = [
     estimated_minutes: 120,
     is_billable: false,
     tags: ['automatizace', 'vylepseni'],
+    // R-Tasks Score: 4 (nízká priorita - someday/maybe)
+    score_money: 1,      // 5k+ potenciální hodnota
+    score_fire: 0,       // Easy (není urgentní)
+    score_time: 0,       // den+ práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good (zajímavé)
     created_at: '2025-11-10T12:00:00Z',
     updated_at: '2025-11-10T12:00:00Z',
   },
@@ -1328,13 +1766,12 @@ export const mockTasks: Task[] = [
     description: 'Připravit článek pro klienty o připravovaných změnách v DPH legislativě',
     is_project: false,
     status: 'someday_maybe',
-    priority: 'low',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2026-02-28',
+    due_date: MOCK_DATES.END_OF_NEXT_MONTH,
     company_id: 'company-2',
     company_name: 'XYZ OSVČ',
     gtd_context: ['@pocitac'],
@@ -1343,6 +1780,12 @@ export const mockTasks: Task[] = [
     estimated_minutes: 90,
     is_billable: false,
     tags: ['content', 'blog'],
+    // R-Tasks Score: 4 (nízká priorita - someday/maybe)
+    score_money: 0,      // <5k (blog = marketing)
+    score_fire: 0,       // Easy (není urgentní)
+    score_time: 1,       // 2-4h práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good (kreativní práce)
     created_at: '2025-11-15T14:00:00Z',
     updated_at: '2025-11-15T14:00:00Z',
   },
@@ -1354,13 +1797,12 @@ export const mockTasks: Task[] = [
     description: 'Zpracovat mzdové podklady a zaúčtovat',
     is_project: false,
     status: 'completed',
-    priority: 'medium',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-06',
+    due_date: MOCK_DATES.OVERDUE_1_DAY,
     company_id: 'company-1',
     company_name: 'ABC s.r.o.',
     gtd_context: ['@pocitac'],
@@ -1372,6 +1814,12 @@ export const mockTasks: Task[] = [
     hourly_rate: 1200,
     tags: ['mzdy', 'dokonceno'],
     progress_percentage: 100,
+    // R-Tasks Score: 8 (střední-vysoká priorita - dokončeno)
+    score_money: 2,      // 15k+ hodnota
+    score_fire: 2,       // High (měsíční povinnost)
+    score_time: 1,       // 2-4h práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good
     created_at: '2025-12-01T08:00:00Z',
     updated_at: '2025-12-06T14:00:00Z',
     completed_at: '2025-12-06T14:00:00Z',
@@ -1382,13 +1830,12 @@ export const mockTasks: Task[] = [
     description: 'Dokončit měsíční uzávěrku za listopad 2025',
     is_project: false,
     status: 'completed',
-    priority: 'medium',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-05',
+    due_date: MOCK_DATES.OVERDUE_2_DAYS,
     company_id: 'company-7',
     company_name: 'PQR Development',
     gtd_context: ['@pocitac', '@kancelar'],
@@ -1400,6 +1847,12 @@ export const mockTasks: Task[] = [
     hourly_rate: 1200,
     tags: ['uzaverka', 'dokonceno'],
     progress_percentage: 100,
+    // R-Tasks Score: 9 (vysoká priorita - dokončeno)
+    score_money: 2,      // 15k+ hodnota
+    score_fire: 2,       // High (měsíční povinnost)
+    score_time: 1,       // 2-4h práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good
     created_at: '2025-12-01T09:00:00Z',
     updated_at: '2025-12-06T11:30:00Z',
     completed_at: '2025-12-06T11:30:00Z',
@@ -1416,13 +1869,12 @@ export const mockTasks: Task[] = [
     description: 'Poslat klientovi email s potvrzením úhrady faktury za listopad',
     is_project: false,
     status: 'pending',
-    priority: 'medium',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-23',
+    due_date: MOCK_DATES.TODAY,
     due_time: '10:00',
     company_id: 'company-11',
     company_name: 'BCD Finance',
@@ -1434,6 +1886,12 @@ export const mockTasks: Task[] = [
     is_billable: false,
     tags: ['email', 'potvrzeni'],
     progress_percentage: 0,
+    // R-Tasks Score: 7 (střední priorita - quick action)
+    score_money: 0,      // <5k (jen potvrzení)
+    score_fire: 1,       // Normal
+    score_time: 3,       // <30min
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good
     created_at: '2025-12-20T08:00:00Z',
     updated_at: '2025-12-20T08:00:00Z',
   },
@@ -1445,13 +1903,12 @@ export const mockTasks: Task[] = [
     description: 'URGENTNÍ: Připravit a podat čtvrtletní DPH přiznání. Deadline blíží!',
     is_project: false,
     status: 'in_progress',
-    priority: 'critical',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-25',
+    due_date: MOCK_DATES.TODAY,
     due_time: '23:59',
     company_id: 'company-11',
     company_name: 'BCD Finance',
@@ -1464,6 +1921,12 @@ export const mockTasks: Task[] = [
     hourly_rate: 1500,
     tags: ['dph', 'deadline', 'urgentni'],
     progress_percentage: 35,
+    // R-Tasks Score: 11 (vysoká priorita!)
+    score_money: 3,      // 50k+ hodnota (DPH)
+    score_fire: 3,       // Critical - deadline!
+    score_time: 0,       // den+ práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good
     created_at: '2025-12-15T09:00:00Z',
     updated_at: '2025-12-22T10:30:00Z',
   },
@@ -1475,13 +1938,12 @@ export const mockTasks: Task[] = [
     description: 'Zaúčtování mezd pro 3 zaměstnance včetně srážek a odvodů',
     is_project: false,
     status: 'in_progress',
-    priority: 'high',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-28',
+    due_date: MOCK_DATES.IN_3_DAYS,
     company_id: 'company-11',
     company_name: 'BCD Finance',
     gtd_context: ['@pocitac'],
@@ -1493,6 +1955,12 @@ export const mockTasks: Task[] = [
     hourly_rate: 1200,
     tags: ['mzdy', 'mesicni'],
     progress_percentage: 40,
+    // R-Tasks Score: 8 (střední-vysoká priorita)
+    score_money: 2,      // 15k+ hodnota
+    score_fire: 2,       // High (měsíční povinnost)
+    score_time: 1,       // 2-4h práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good
     created_at: '2025-12-18T08:00:00Z',
     updated_at: '2025-12-21T14:00:00Z',
   },
@@ -1504,7 +1972,6 @@ export const mockTasks: Task[] = [
     description: 'Čekáme na dodání 5 faktur za služby od dodavatelů',
     is_project: false,
     status: 'waiting_for',
-    priority: 'medium',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
@@ -1512,7 +1979,7 @@ export const mockTasks: Task[] = [
     is_waiting_for: true,
     waiting_for_who: 'Klient BCD Finance',
     waiting_for_what: 'Chybějící faktury za IT služby a marketing',
-    due_date: '2025-12-30',
+    due_date: MOCK_DATES.IN_5_DAYS,
     company_id: 'company-11',
     company_name: 'BCD Finance',
     gtd_context: ['@email', '@telefon'],
@@ -1523,6 +1990,12 @@ export const mockTasks: Task[] = [
     is_billable: false,
     tags: ['podklady', 'cekani'],
     progress_percentage: 10,
+    // R-Tasks Score: 5 (nižší priorita - čekáme)
+    score_money: 1,      // 5k+ hodnota
+    score_fire: 1,       // Normal
+    score_time: 2,       // <1h práce po dodání
+    score_distance: 2,   // PC
+    score_personal: 0,   // Poor
     created_at: '2025-12-10T10:00:00Z',
     updated_at: '2025-12-20T09:00:00Z',
   },
@@ -1535,13 +2008,12 @@ export const mockTasks: Task[] = [
     is_project: true,
     project_outcome: 'Kompletní roční uzávěrka připravená k auditu',
     status: 'pending',
-    priority: 'high',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2026-01-31',
+    due_date: MOCK_DATES.END_OF_NEXT_MONTH,
     company_id: 'company-11',
     company_name: 'BCD Finance',
     gtd_context: ['@pocitac', '@kancelar'],
@@ -1553,6 +2025,12 @@ export const mockTasks: Task[] = [
     hourly_rate: 1500,
     tags: ['rocni-uzaverka', 'projekt', '2025'],
     progress_percentage: 0,
+    // R-Tasks Score: 10 (vysoká priorita - projekt)
+    score_money: 3,      // 50k+ hodnota (roční uzávěrka)
+    score_fire: 2,       // High (důležité)
+    score_time: 0,       // den+ práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good
     created_at: '2025-12-15T08:00:00Z',
     updated_at: '2025-12-15T08:00:00Z',
   },
@@ -1564,13 +2042,12 @@ export const mockTasks: Task[] = [
     description: 'Naskenovat a archivovat papírové doklady za 3. čtvrtletí',
     is_project: false,
     status: 'in_progress',
-    priority: 'low',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-4-assistant',
     assigned_to_name: 'Marie Dvořáková',
     is_waiting_for: false,
-    due_date: '2025-12-31',
+    due_date: MOCK_DATES.END_OF_MONTH,
     company_id: 'company-11',
     company_name: 'BCD Finance',
     gtd_context: ['@kancelar'],
@@ -1581,6 +2058,12 @@ export const mockTasks: Task[] = [
     is_billable: false,
     tags: ['archivace', 'dokumenty'],
     progress_percentage: 35,
+    // R-Tasks Score: 3 (nízká priorita - delegováno)
+    score_money: 0,      // <5k
+    score_fire: 0,       // Easy
+    score_time: 0,       // den+ práce
+    score_distance: 0,   // Daleko (kancelář)
+    score_personal: 0,   // Poor
     created_at: '2025-12-05T10:00:00Z',
     updated_at: '2025-12-19T16:00:00Z',
   },
@@ -1592,13 +2075,12 @@ export const mockTasks: Task[] = [
     description: 'Odeslat kontrolní hlášení DPH za listopad 2025',
     is_project: false,
     status: 'completed',
-    priority: 'high',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-15',
+    due_date: MOCK_DATES.IN_5_DAYS,
     company_id: 'company-11',
     company_name: 'BCD Finance',
     gtd_context: ['@pocitac'],
@@ -1610,6 +2092,12 @@ export const mockTasks: Task[] = [
     hourly_rate: 1200,
     tags: ['kh', 'dph', 'dokonceno'],
     progress_percentage: 100,
+    // R-Tasks Score: 9 (vysoká priorita - dokončeno)
+    score_money: 2,      // 15k+ hodnota
+    score_fire: 2,       // High (povinnost)
+    score_time: 2,       // <1h práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good
     created_at: '2025-12-10T08:00:00Z',
     updated_at: '2025-12-14T11:30:00Z',
     completed_at: '2025-12-14T11:30:00Z',
@@ -1622,13 +2110,12 @@ export const mockTasks: Task[] = [
     description: 'Připravit analýzu možností daňové optimalizace pro rok 2026',
     is_project: false,
     status: 'someday_maybe',
-    priority: 'low',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2026-03-31',
+    due_date: MOCK_DATES.END_OF_NEXT_MONTH,
     company_id: 'company-11',
     company_name: 'BCD Finance',
     gtd_context: ['@pocitac'],
@@ -1640,6 +2127,12 @@ export const mockTasks: Task[] = [
     hourly_rate: 1500,
     tags: ['optimalizace', 'dane', 'budouci'],
     progress_percentage: 0,
+    // R-Tasks Score: 6 (střední priorita - someday)
+    score_money: 2,      // 15k+ hodnota (potenciální úspory)
+    score_fire: 0,       // Easy (není urgentní)
+    score_time: 0,       // den+ práce
+    score_distance: 2,   // PC
+    score_personal: 1,   // Good (zajímavé)
     created_at: '2025-11-15T08:00:00Z',
     updated_at: '2025-11-15T08:00:00Z',
   },
@@ -1651,13 +2144,12 @@ export const mockTasks: Task[] = [
     description: 'Provést odsouhlasení zůstatků s hlavními dodavateli',
     is_project: false,
     status: 'pending',
-    priority: 'medium',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-15',
+    due_date: MOCK_DATES.IN_5_DAYS,
     company_id: 'company-11',
     company_name: 'BCD Finance',
     gtd_context: ['@email', '@telefon'],
@@ -1669,6 +2161,12 @@ export const mockTasks: Task[] = [
     hourly_rate: 1200,
     tags: ['saldo', 'dodavatele', 'zpozdeneno'],
     progress_percentage: 0,
+    // R-Tasks Score: 7 (střední priorita - overdue!)
+    score_money: 1,      // 5k+ hodnota
+    score_fire: 2,       // High (zpožděno!)
+    score_time: 2,       // <1h práce
+    score_distance: 2,   // PC
+    score_personal: 0,   // Poor
     created_at: '2025-12-01T09:00:00Z',
     updated_at: '2025-12-01T09:00:00Z',
   },
@@ -1680,13 +2178,12 @@ export const mockTasks: Task[] = [
     description: 'Ověřit stav vratky DPH za Q3',
     is_project: false,
     status: 'pending',
-    priority: 'medium',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-23',
+    due_date: MOCK_DATES.TODAY,
     due_time: '14:00',
     company_id: 'company-11',
     company_name: 'BCD Finance',
@@ -1698,6 +2195,12 @@ export const mockTasks: Task[] = [
     is_billable: false,
     tags: ['telefon', 'fu'],
     progress_percentage: 0,
+    // R-Tasks Score: 8 (střední-vysoká priorita - quick action)
+    score_money: 1,      // 5k+ hodnota (vratka)
+    score_fire: 2,       // High (důležité zjistit)
+    score_time: 3,       // <30min
+    score_distance: 2,   // PC (telefon)
+    score_personal: 0,   // Poor (volání)
     created_at: '2025-12-20T09:00:00Z',
     updated_at: '2025-12-20T09:00:00Z',
   },
@@ -1709,13 +2212,12 @@ export const mockTasks: Task[] = [
     description: 'Osobní schůzka k projednání hospodářských výsledků za rok 2025',
     is_project: false,
     status: 'accepted',
-    priority: 'high',
     created_by: 'user-1-client',
     created_by_name: 'Karel Novák',
     assigned_to: 'user-2-accountant',
     assigned_to_name: 'Jana Svobodová',
     is_waiting_for: false,
-    due_date: '2025-12-27',
+    due_date: MOCK_DATES.IN_2_DAYS,
     due_time: '10:00',
     company_id: 'company-11',
     company_name: 'BCD Finance',
@@ -1728,6 +2230,12 @@ export const mockTasks: Task[] = [
     hourly_rate: 1500,
     tags: ['schuzka', 'jednatel', 'vysledky'],
     progress_percentage: 0,
+    // R-Tasks Score: 8 (střední-vysoká priorita)
+    score_money: 2,      // 15k+ hodnota (důležitá schůzka)
+    score_fire: 2,       // High (deadline blízko)
+    score_time: 2,       // <1h práce
+    score_distance: 0,   // Daleko (osobní schůzka)
+    score_personal: 1,   // Good
     created_at: '2025-12-18T10:00:00Z',
     updated_at: '2025-12-19T08:00:00Z',
   },
@@ -1739,7 +2247,6 @@ export const mockTasks: Task[] = [
     description: 'Na účet přišla platba bez VS - nutno zjistit od koho a za co',
     is_project: false,
     status: 'waiting_for',
-    priority: 'medium',
     created_by: 'user-2-accountant',
     created_by_name: 'Jana Svobodová',
     assigned_to: 'user-2-accountant',
@@ -1747,7 +2254,7 @@ export const mockTasks: Task[] = [
     is_waiting_for: true,
     waiting_for_who: 'Jednatel BCD Finance',
     waiting_for_what: 'Informace o původu platby',
-    due_date: '2025-12-24',
+    due_date: MOCK_DATES.OVERDUE_1_DAY,
     company_id: 'company-11',
     company_name: 'BCD Finance',
     gtd_context: ['@email'],
@@ -1758,6 +2265,12 @@ export const mockTasks: Task[] = [
     is_billable: false,
     tags: ['platba', 'identifikace'],
     progress_percentage: 20,
+    // R-Tasks Score: 6 (střední priorita - čekáme na info)
+    score_money: 2,      // 15k+ hodnota (45k platba)
+    score_fire: 1,       // Normal
+    score_time: 2,       // <1h práce po zjištění
+    score_distance: 2,   // PC
+    score_personal: 0,   // Poor
     created_at: '2025-12-19T11:00:00Z',
     updated_at: '2025-12-20T10:00:00Z',
   },
@@ -1776,10 +2289,9 @@ export const mockTaskTimelineEvents: TaskTimelineEvent[] = [
     event_type: 'task_created',
     event_data: {
       task_title: 'Zaúčtovat mzdy - listopad',
-      priority: 'medium',
       is_project: false,
       assigned_to_name: 'Jana Svobodová',
-      due_date: '2025-12-06',
+      due_date: MOCK_DATES.OVERDUE_1_DAY,
       estimated_minutes: 60,
       is_billable: true,
     },
@@ -1837,10 +2349,9 @@ export const mockTaskTimelineEvents: TaskTimelineEvent[] = [
     event_type: 'task_created',
     event_data: {
       task_title: 'Měsíční uzávěrka - listopad',
-      priority: 'medium',
       is_project: false,
       assigned_to_name: 'Jana Svobodová',
-      due_date: '2025-12-05',
+      due_date: MOCK_DATES.OVERDUE_2_DAYS,
       estimated_minutes: 90,
       is_billable: true,
     },
@@ -1881,10 +2392,9 @@ export const mockTaskTimelineEvents: TaskTimelineEvent[] = [
     event_type: 'task_created',
     event_data: {
       task_title: 'Poslat email klientovi ohledně chybějících dokladů',
-      priority: 'high',
       is_project: false,
       assigned_to_name: 'Jana Svobodová',
-      due_date: '2025-12-07',
+      due_date: MOCK_DATES.TODAY,
       estimated_minutes: 10,
       is_billable: true,
     },
@@ -1921,10 +2431,9 @@ export const mockTaskTimelineEvents: TaskTimelineEvent[] = [
     event_type: 'project_created',
     event_data: {
       project_title: 'PROJEKT: Implementace nového účetního systému',
-      priority: 'high',
       is_project: true,
       assigned_to_name: 'Jana Svobodová',
-      due_date: '2025-12-31',
+      due_date: MOCK_DATES.END_OF_MONTH,
       estimated_minutes: 600,
       is_billable: true,
     },
@@ -2006,10 +2515,9 @@ export const mockTaskTimelineEvents: TaskTimelineEvent[] = [
     event_type: 'task_created',
     event_data: {
       task_title: 'Zkontrolovat bankovní výpisy',
-      priority: 'medium',
       is_project: false,
       assigned_to_name: 'Jana Svobodová',
-      due_date: '2025-12-08',
+      due_date: MOCK_DATES.TOMORROW,
       estimated_minutes: 20,
       is_billable: true,
     },
@@ -2051,10 +2559,9 @@ export const mockTaskTimelineEvents: TaskTimelineEvent[] = [
     event_type: 'task_created',
     event_data: {
       task_title: 'Připravit podklady pro DPH',
-      priority: 'high',
       is_project: false,
       assigned_to_name: 'Jana Svobodová',
-      due_date: '2025-12-10',
+      due_date: MOCK_DATES.IN_2_DAYS,
       estimated_minutes: 60,
       is_billable: true,
     },
@@ -2115,9 +2622,226 @@ export function getTasksByCompany(companyId: string) {
   return mockTasks.filter(t => t.company_id === companyId)
 }
 
-// Get all tasks
+// Get all tasks (including bonus tasks and project tasks)
 export function getAllTasks() {
-  return mockTasks
+  return [...mockTasks, ...mockBonusTasks, ...mockProjectTasks]
+}
+
+// Get only free tasks (not part of any project)
+export function getFreeTasks() {
+  return [...mockTasks, ...mockBonusTasks].filter(t => !t.project_id)
+}
+
+// Get all project tasks
+export function getAllProjectTasks() {
+  return mockProjectTasks
+}
+
+/**
+ * Get tasks for the main Tasks list based on user context
+ *
+ * Rules:
+ * 1. Free tasks (no project_id) - always shown
+ * 2. Project tasks shown only if:
+ *    - Assigned to current user AND not blocked
+ *    - OR is_next_action === true (project owner sees next step)
+ *
+ * @param userId - Current user ID to filter assigned tasks
+ * @param includeNextActions - Show next actions even if not assigned to user
+ */
+export function getTasksForMainList(userId: string, includeNextActions: boolean = true): Task[] {
+  // Free tasks (not part of any project)
+  const freeTasks = [...mockTasks, ...mockBonusTasks].filter(t => !t.project_id && !t.is_project)
+
+  // Project tasks filtered by rules
+  const eligibleProjectTasks = mockProjectTasks.filter(task => {
+    // Skip completed tasks in main list
+    if (task.status === 'completed' || task.status === 'cancelled') {
+      return false
+    }
+
+    // Rule: is_next_action always visible (if enabled)
+    if (includeNextActions && task.is_next_action) {
+      return true
+    }
+
+    // Rule: Assigned to user AND not blocked
+    if (task.assigned_to === userId && !task.is_blocked) {
+      return true
+    }
+
+    return false
+  })
+
+  return [...freeTasks, ...eligibleProjectTasks]
+}
+
+/**
+ * Get project info for a task (for display purposes)
+ */
+export function getProjectForTask(task: Task): Project | undefined {
+  if (!task.project_id) return undefined
+  return mockProjects.find(p => p.id === task.project_id)
+}
+
+/**
+ * Get effective priority for a task (inherits from project if not set)
+ */
+export function getEffectivePriority(task: Task): number {
+  // If task has its own score_fire, use it
+  if (task.score_fire !== undefined && task.score_fire > 0) {
+    return task.score_fire
+  }
+
+  // Otherwise, inherit from project
+  if (task.project_id) {
+    const project = mockProjects.find(p => p.id === task.project_id)
+    if (project?.priority !== undefined) {
+      return project.priority
+    }
+  }
+
+  // Default to normal (1)
+  return 1
+}
+
+// ==========================================
+// URGENCY & ESCALATION HELPERS
+// ==========================================
+
+/**
+ * Konfigurace pro urgování
+ */
+export const URGENCY_CONFIG = {
+  MAX_URGENCIES_BEFORE_ESCALATION: 3,  // Po 3 urgencích eskalovat
+  DAYS_BETWEEN_URGENCIES: 2,            // Minimální interval mezi urgencemi
+  AUTO_ESCALATE_AFTER_DAYS: 7,          // Automaticky eskalovat po 7 dnech bez reakce
+}
+
+/**
+ * Získá úroveň eskalace pro úkol (0-3)
+ * 0 = bez eskalace, 1 = urgováno 1-2×, 2 = urgováno 3×, 3 = eskalováno na manažera
+ */
+export function getEscalationLevel(task: Task): 0 | 1 | 2 | 3 {
+  if (task.escalated_to) return 3
+  if (!task.urgency_count) return 0
+  if (task.urgency_count >= URGENCY_CONFIG.MAX_URGENCIES_BEFORE_ESCALATION) return 2
+  return 1
+}
+
+/**
+ * Zjistí jestli úkol potřebuje urgenci (čeká na klienta a nebyl urgován dostatečně nedávno)
+ */
+export function needsUrgency(task: Task): boolean {
+  // Jen úkoly čekající na klienta
+  if (task.status !== 'waiting_for' && task.status !== 'waiting_client') return false
+
+  // Pokud je eskalováno, už ne
+  if (task.escalated_to) return false
+
+  // Pokud nebyl nikdy urgován, potřebuje urgenci
+  if (!task.last_urged_at) return true
+
+  // Zjisti kolik dní od poslední urgence
+  const lastUrged = new Date(task.last_urged_at)
+  const now = new Date()
+  const daysSinceLastUrge = Math.floor((now.getTime() - lastUrged.getTime()) / (1000 * 60 * 60 * 24))
+
+  return daysSinceLastUrge >= URGENCY_CONFIG.DAYS_BETWEEN_URGENCIES
+}
+
+/**
+ * Zjistí jestli je čas na eskalaci (dosažen limit urgencí nebo dlouhá doba bez reakce)
+ */
+export function shouldEscalate(task: Task, maxUrgencies: number = URGENCY_CONFIG.MAX_URGENCIES_BEFORE_ESCALATION): boolean {
+  // Už eskalováno
+  if (task.escalated_to) return false
+
+  // Dosažen limit urgencí
+  if (task.urgency_count && task.urgency_count >= maxUrgencies) return true
+
+  // Dlouhá doba od první urgence bez reakce
+  if (task.last_urged_at) {
+    const lastUrged = new Date(task.last_urged_at)
+    const now = new Date()
+    const daysSinceLastUrge = Math.floor((now.getTime() - lastUrged.getTime()) / (1000 * 60 * 60 * 24))
+    if (daysSinceLastUrge >= URGENCY_CONFIG.AUTO_ESCALATE_AFTER_DAYS) return true
+  }
+
+  return false
+}
+
+/**
+ * Provede urgenci na úkolu (vrací nový task objekt)
+ */
+export function urgeTask(task: Task): Task {
+  return {
+    ...task,
+    urgency_count: (task.urgency_count || 0) + 1,
+    last_urged_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+}
+
+/**
+ * Eskaluje úkol na manažera (vrací nový task objekt)
+ */
+export function escalateTask(task: Task, managerId: string, reason: string): Task {
+  return {
+    ...task,
+    escalated_to: managerId,
+    escalated_at: new Date().toISOString(),
+    escalation_reason: reason,
+    updated_at: new Date().toISOString(),
+  }
+}
+
+/**
+ * Získá reliability score pro firmu
+ */
+export function getCompanyReliabilityScore(companyId: string): 0 | 1 | 2 | 3 {
+  const company = mockCompanies.find(c => c.id === companyId) as typeof mockCompanies[0] & { reliability_score?: 0 | 1 | 2 | 3 }
+  return company?.reliability_score ?? 2  // Default: normální
+}
+
+/**
+ * Vrátí textový popis reliability score
+ */
+export function getReliabilityLabel(score: 0 | 1 | 2 | 3): string {
+  switch (score) {
+    case 0: return 'Beznadějný'
+    case 1: return 'Problémový'
+    case 2: return 'Normální'
+    case 3: return 'Spolehlivý'
+  }
+}
+
+/**
+ * Vrátí emoji pro reliability score
+ */
+export function getReliabilityEmoji(score: 0 | 1 | 2 | 3): string {
+  switch (score) {
+    case 0: return '🔴'  // Beznadějný
+    case 1: return '🟠'  // Problémový
+    case 2: return '🟡'  // Normální
+    case 3: return '🟢'  // Spolehlivý
+  }
+}
+
+/**
+ * Vrátí úkoly eskalované na daného manažera
+ */
+export function getEscalatedTasksForManager(managerId: string): Task[] {
+  return [...mockTasks, ...mockProjectTasks].filter(t => t.escalated_to === managerId)
+}
+
+/**
+ * Vrátí úkoly které potřebují urgenci pro daného uživatele
+ */
+export function getTasksNeedingUrgency(userId: string): Task[] {
+  return [...mockTasks, ...mockProjectTasks].filter(t =>
+    t.assigned_to === userId && needsUrgency(t)
+  )
 }
 
 // ==========================================
@@ -2590,4 +3314,1402 @@ export function getActiveInsurancesByCompany(companyId: string): Insurance[] {
 
 export function getTaxDeductibleInsurances(companyId: string): Insurance[] {
   return mockInsurances.filter(i => i.company_id === companyId && i.is_tax_deductible && i.status === 'active')
+}
+
+// ============================================
+// GAMIFICATION: TIME LOGS
+// ============================================
+export const mockTimeLogs: TimeLog[] = [
+  // Task-related time logs
+  {
+    id: 'tl-1',
+    task_id: 'task-3',
+    user_id: 'user-2-accountant',
+    user_name: 'Jana Svobodová',
+    activity_type: 'task',
+    date: MOCK_DATES.OVERDUE_1_DAY,
+    minutes: 45,
+    description: 'Kontrola vstupních dokladů pro DPH',
+    is_billable: true,
+    created_at: '2025-12-22T10:00:00Z',
+  },
+  {
+    id: 'tl-2',
+    task_id: 'task-3',
+    user_id: 'user-2-accountant',
+    user_name: 'Jana Svobodová',
+    activity_type: 'task',
+    date: MOCK_DATES.TODAY,
+    minutes: 90,
+    description: 'Zpracování DPH přiznání v Pohoda',
+    is_billable: true,
+    created_at: '2025-12-23T14:00:00Z',
+  },
+  {
+    id: 'tl-3',
+    task_id: 'task-5',
+    user_id: 'user-2-accountant',
+    user_name: 'Jana Svobodová',
+    activity_type: 'task',
+    date: MOCK_DATES.TODAY,
+    minutes: 30,
+    description: 'Příprava podkladů pro kontrolu',
+    is_billable: true,
+    created_at: '2025-12-23T09:00:00Z',
+  },
+  // Non-task time logs (general time tracking)
+  {
+    id: 'tl-4',
+    user_id: 'user-2-accountant',
+    user_name: 'Jana Svobodová',
+    client_id: 'c1',
+    client_name: 'ABC Company s.r.o.',
+    activity_type: 'call',
+    date: MOCK_DATES.TODAY,
+    minutes: 15,
+    description: 'Telefonát s klientem - dotaz k fakturaci',
+    is_billable: true,
+    created_at: '2025-12-23T11:30:00Z',
+  },
+  {
+    id: 'tl-5',
+    user_id: 'user-2-accountant',
+    user_name: 'Jana Svobodová',
+    client_id: 'c2',
+    client_name: 'XYZ Trading a.s.',
+    activity_type: 'email',
+    date: MOCK_DATES.TODAY,
+    minutes: 20,
+    description: 'Odpověď na dotazy ohledně DPH',
+    is_billable: true,
+    created_at: '2025-12-23T10:00:00Z',
+  },
+  {
+    id: 'tl-6',
+    user_id: 'user-2-accountant',
+    user_name: 'Jana Svobodová',
+    client_id: 'c3',
+    client_name: 'Klientská Firma 3',
+    activity_type: 'meeting',
+    date: MOCK_DATES.OVERDUE_1_DAY,
+    minutes: 60,
+    description: 'Schůzka - roční uzávěrka',
+    is_billable: true,
+    created_at: '2025-12-22T14:00:00Z',
+  },
+  {
+    id: 'tl-7',
+    user_id: 'user-2-accountant',
+    user_name: 'Jana Svobodová',
+    activity_type: 'admin',
+    date: MOCK_DATES.TODAY,
+    minutes: 30,
+    description: 'Organizace a třídění dokumentů',
+    is_billable: false,
+    created_at: '2025-12-23T08:00:00Z',
+  },
+  {
+    id: 'tl-8',
+    user_id: 'user-3-accountant',
+    user_name: 'Marie Účetní',
+    client_id: 'c1',
+    client_name: 'ABC Company s.r.o.',
+    activity_type: 'general',
+    date: MOCK_DATES.TODAY,
+    minutes: 45,
+    description: 'Příprava podkladů pro audit',
+    is_billable: true,
+    created_at: '2025-12-23T09:00:00Z',
+  },
+]
+
+// ============================================
+// GAMIFICATION: USER TASK SETTINGS
+// ============================================
+export const mockUserTaskSettings: UserTaskSettings[] = [
+  {
+    user_id: 'user-2-accountant',
+    user_name: 'Jana Svobodová',
+    max_wip_total: 5,
+    max_wip_bonus: 2,
+    can_claim_bonus: true,
+    quality_score: 92,
+    quality_factors: {
+      on_time_rate: 95,
+      no_rejection_rate: 88,
+      estimate_accuracy: 93,
+    },
+    current_month: '2025-12',
+    monthly_base_required: 15,
+    monthly_base_completed: 12,
+    monthly_bonus_points: 450,
+    monthly_bonus_cashed_out: false,
+  },
+  {
+    user_id: 'user-3-accountant',
+    user_name: 'Marie Účetní',
+    max_wip_total: 4,
+    max_wip_bonus: 1,
+    can_claim_bonus: true,
+    quality_score: 85,
+    quality_factors: {
+      on_time_rate: 88,
+      no_rejection_rate: 82,
+      estimate_accuracy: 85,
+    },
+    current_month: '2025-12',
+    monthly_base_required: 12,
+    monthly_base_completed: 10,
+    monthly_bonus_points: 200,
+    monthly_bonus_cashed_out: false,
+  },
+  {
+    user_id: 'user-4-junior',
+    user_name: 'Petr Nováček',
+    max_wip_total: 3,
+    max_wip_bonus: 0,  // Junior zatím nemůže bonus
+    can_claim_bonus: false,
+    quality_score: 75,
+    quality_factors: {
+      on_time_rate: 78,
+      no_rejection_rate: 70,
+      estimate_accuracy: 77,
+    },
+    current_month: '2025-12',
+    monthly_base_required: 8,
+    monthly_base_completed: 6,
+    monthly_bonus_points: 0,
+    monthly_bonus_cashed_out: false,
+  },
+]
+
+// ============================================
+// GAMIFICATION: TASK SYSTEM SETTINGS
+// ============================================
+export const mockTaskSystemSettings: TaskSystemSettings = {
+  monthly_cutoff_day: 5,
+  approval_deadline_hours: 24,
+  min_quality_for_bonus: 80,
+  points_to_currency_rate: 1,
+}
+
+// ============================================
+// PROJECTS (kontejnery pro fáze a úkoly)
+// ============================================
+export const mockProjects: Project[] = [
+  {
+    id: 'project-1',
+    title: 'Účetní uzávěrka 11/2024',
+    description: 'Kompletní měsíční uzávěrka za listopad 2024',
+    outcome: 'Uzavřený měsíc listopad 2024 s odeslanými reporty klientovi',
+    company_id: 'company-1',
+    company_name: 'ABC s.r.o.',
+    project_type: 'recurring',
+    recurrence: {
+      pattern: 'monthly',
+      period_label: '11/2024',
+    },
+    start_date: '2024-12-01',
+    target_date: MOCK_DATES.IN_5_DAYS,
+    status: 'active',
+    owner_id: 'user-2-accountant',
+    owner_name: 'Jana Svobodová',
+    team_ids: ['user-3-accountant'],
+    team_names: ['Marie Černá'],
+    is_someday_maybe: false,
+    priority: 2, // high - blíží se deadline
+    is_billable: true,
+    budget_hours: 4,
+    hourly_rate: 800,
+    total_tasks: 8,
+    completed_tasks: 3,
+    progress_percent: 38,
+    created_at: '2024-12-01T08:00:00Z',
+    updated_at: '2024-12-20T14:00:00Z',
+  },
+  {
+    id: 'project-2',
+    title: 'DPH Q4/2024',
+    description: 'Přiznání k DPH za 4. kvartál 2024',
+    outcome: 'Podané DPH přiznání za Q4 2024',
+    company_id: 'company-3',
+    company_name: 'MNO Holding',
+    project_type: 'recurring',
+    recurrence: {
+      pattern: 'quarterly',
+      period_label: 'Q4/2024',
+    },
+    start_date: '2024-12-15',
+    target_date: MOCK_DATES.IN_14_DAYS,
+    status: 'active',
+    owner_id: 'user-3-accountant',
+    owner_name: 'Marie Černá',
+    team_ids: [],
+    team_names: [],
+    is_someday_maybe: false,
+    priority: 1, // normal
+    is_billable: true,
+    budget_hours: 6,
+    hourly_rate: 900,
+    total_tasks: 5,
+    completed_tasks: 1,
+    progress_percent: 20,
+    created_at: '2024-12-15T09:00:00Z',
+    updated_at: '2024-12-22T10:00:00Z',
+  },
+  {
+    id: 'project-3',
+    title: 'Onboarding - Nový klient XYZ',
+    description: 'Kompletní nastavení nového klienta v systému',
+    outcome: 'Plně funkční klient s nastaveným účetnictvím',
+    company_id: 'company-5',
+    company_name: 'BCD Finance a.s.',
+    project_type: 'one_time',
+    start_date: '2024-12-10',
+    target_date: MOCK_DATES.IN_7_DAYS,
+    status: 'active',
+    owner_id: 'user-2-accountant',
+    owner_name: 'Jana Svobodová',
+    team_ids: ['user-3-accountant', 'user-4-admin'],
+    team_names: ['Marie Černá', 'Admin Účetní'],
+    is_someday_maybe: false,
+    priority: 1, // normal
+    is_billable: false,
+    budget_hours: 10,
+    total_tasks: 12,
+    completed_tasks: 5,
+    progress_percent: 42,
+    created_at: '2024-12-10T08:00:00Z',
+    updated_at: '2024-12-23T11:00:00Z',
+  },
+  {
+    id: 'project-4',
+    title: 'Roční uzávěrka 2024',
+    description: 'Kompletní roční účetní uzávěrka za rok 2024',
+    outcome: 'Uzavřený rok 2024 s kompletní dokumentací pro audit',
+    company_id: 'company-1',
+    company_name: 'ABC s.r.o.',
+    project_type: 'recurring',
+    recurrence: {
+      pattern: 'yearly',
+      period_label: '2024',
+    },
+    start_date: '2025-01-02',
+    target_date: '2025-03-31',
+    status: 'planning',
+    owner_id: 'user-2-accountant',
+    owner_name: 'Jana Svobodová',
+    team_ids: ['user-3-accountant'],
+    team_names: ['Marie Černá'],
+    is_someday_maybe: false,
+    priority: 3, // critical - roční uzávěrka
+    is_billable: true,
+    budget_hours: 40,
+    hourly_rate: 800,
+    total_tasks: 0,
+    completed_tasks: 0,
+    progress_percent: 0,
+    created_at: '2024-12-20T08:00:00Z',
+    updated_at: '2024-12-20T08:00:00Z',
+  },
+  {
+    id: 'project-5',
+    title: 'Průběžná podpora',
+    description: 'Průběžné dotazy a konzultace',
+    outcome: 'Spokojený klient s odpověďmi na dotazy',
+    company_id: 'company-2',
+    company_name: 'XYZ a.s.',
+    project_type: 'ongoing',
+    target_date: MOCK_DATES.END_OF_NEXT_MONTH,
+    status: 'active',
+    owner_id: 'user-3-accountant',
+    owner_name: 'Marie Černá',
+    team_ids: [],
+    team_names: [],
+    is_someday_maybe: false,
+    priority: 0, // low - průběžná podpora
+    is_billable: true,
+    hourly_rate: 700,
+    total_tasks: 3,
+    completed_tasks: 1,
+    progress_percent: 33,
+    created_at: '2024-01-01T08:00:00Z',
+    updated_at: '2024-12-23T15:00:00Z',
+  },
+]
+
+// ============================================
+// PHASES (fáze v projektech)
+// ============================================
+export const mockPhases: Phase[] = [
+  // Project 1: Účetní uzávěrka 11/2024
+  {
+    id: 'phase-1-1',
+    project_id: 'project-1',
+    title: 'Příprava podkladů',
+    description: 'Sběr a kontrola vstupních dokumentů',
+    position: 1,
+    status: 'completed',
+    total_tasks: 3,
+    completed_tasks: 3,
+    progress_percent: 100,
+    created_at: '2024-12-01T08:00:00Z',
+    updated_at: '2024-12-15T10:00:00Z',
+  },
+  {
+    id: 'phase-1-2',
+    project_id: 'project-1',
+    title: 'Účtování',
+    description: 'Zaúčtování všech dokladů',
+    position: 2,
+    status: 'active',
+    total_tasks: 3,
+    completed_tasks: 0,
+    progress_percent: 0,
+    created_at: '2024-12-01T08:00:00Z',
+    updated_at: '2024-12-20T14:00:00Z',
+  },
+  {
+    id: 'phase-1-3',
+    project_id: 'project-1',
+    title: 'Kontrola a reporting',
+    description: 'Finální kontrola a generování výstupů',
+    position: 3,
+    status: 'pending',
+    total_tasks: 2,
+    completed_tasks: 0,
+    progress_percent: 0,
+    created_at: '2024-12-01T08:00:00Z',
+    updated_at: '2024-12-01T08:00:00Z',
+  },
+  // Project 2: DPH Q4/2024
+  {
+    id: 'phase-2-1',
+    project_id: 'project-2',
+    title: 'Sběr dokladů',
+    description: 'Shromáždění všech dokladů pro DPH',
+    position: 1,
+    status: 'completed',
+    total_tasks: 2,
+    completed_tasks: 2,
+    progress_percent: 100,
+    created_at: '2024-12-15T09:00:00Z',
+    updated_at: '2024-12-20T11:00:00Z',
+  },
+  {
+    id: 'phase-2-2',
+    project_id: 'project-2',
+    title: 'Výpočet a kontrola',
+    description: 'Výpočet DPH a kontrola správnosti',
+    position: 2,
+    status: 'active',
+    total_tasks: 2,
+    completed_tasks: 0,
+    progress_percent: 0,
+    created_at: '2024-12-15T09:00:00Z',
+    updated_at: '2024-12-22T10:00:00Z',
+  },
+  {
+    id: 'phase-2-3',
+    project_id: 'project-2',
+    title: 'Podání přiznání',
+    description: 'Finální podání DPH přiznání',
+    position: 3,
+    status: 'pending',
+    total_tasks: 1,
+    completed_tasks: 0,
+    progress_percent: 0,
+    created_at: '2024-12-15T09:00:00Z',
+    updated_at: '2024-12-15T09:00:00Z',
+  },
+  // Project 3: Onboarding
+  {
+    id: 'phase-3-1',
+    project_id: 'project-3',
+    title: 'Sběr informací',
+    description: 'Získání všech potřebných údajů od klienta',
+    position: 1,
+    status: 'completed',
+    total_tasks: 4,
+    completed_tasks: 4,
+    progress_percent: 100,
+    created_at: '2024-12-10T08:00:00Z',
+    updated_at: '2024-12-15T14:00:00Z',
+  },
+  {
+    id: 'phase-3-2',
+    project_id: 'project-3',
+    title: 'Nastavení systému',
+    description: 'Konfigurace účetního systému',
+    position: 2,
+    status: 'active',
+    total_tasks: 5,
+    completed_tasks: 1,
+    progress_percent: 20,
+    created_at: '2024-12-10T08:00:00Z',
+    updated_at: '2024-12-23T11:00:00Z',
+  },
+  {
+    id: 'phase-3-3',
+    project_id: 'project-3',
+    title: 'Testování a předání',
+    description: 'Ověření funkčnosti a školení klienta',
+    position: 3,
+    status: 'pending',
+    total_tasks: 3,
+    completed_tasks: 0,
+    progress_percent: 0,
+    created_at: '2024-12-10T08:00:00Z',
+    updated_at: '2024-12-10T08:00:00Z',
+  },
+]
+
+// ============================================
+// PROJECT TASKS (úkoly patřící do projektů)
+// ============================================
+export const mockProjectTasks: Task[] = [
+  // Project 1, Phase 1: Příprava podkladů (completed)
+  {
+    id: 'ptask-1-1-1',
+    title: 'Import bankovních výpisů',
+    description: 'Stáhnout a importovat bankovní výpisy za listopad',
+    project_id: 'project-1',
+    project_name: 'Účetní uzávěrka 11/2024',
+    phase_id: 'phase-1-1',
+    phase_name: 'Příprava podkladů',
+    position_in_phase: 1,
+    is_next_action: false,
+    is_project: false,
+    status: 'completed',
+    created_by: 'user-2-accountant',
+    created_by_name: 'Jana Svobodová',
+    assigned_to: 'user-2-accountant',
+    assigned_to_name: 'Jana Svobodová',
+    is_waiting_for: false,
+    due_date: '2024-12-05',
+    company_id: 'company-1',
+    company_name: 'ABC s.r.o.',
+    estimated_minutes: 30,
+    actual_minutes: 25,
+    is_billable: true,
+    created_at: '2024-12-01T08:00:00Z',
+    updated_at: '2024-12-05T10:00:00Z',
+  },
+  {
+    id: 'ptask-1-1-2',
+    title: 'Zkontrolovat přijaté faktury',
+    description: 'Ověřit úplnost přijatých faktur za měsíc',
+    project_id: 'project-1',
+    project_name: 'Účetní uzávěrka 11/2024',
+    phase_id: 'phase-1-1',
+    phase_name: 'Příprava podkladů',
+    position_in_phase: 2,
+    depends_on_task_ids: ['ptask-1-1-1'],
+    is_next_action: false,
+    is_project: false,
+    status: 'completed',
+    created_by: 'user-2-accountant',
+    created_by_name: 'Jana Svobodová',
+    assigned_to: 'user-2-accountant',
+    assigned_to_name: 'Jana Svobodová',
+    is_waiting_for: false,
+    due_date: '2024-12-08',
+    company_id: 'company-1',
+    company_name: 'ABC s.r.o.',
+    estimated_minutes: 45,
+    actual_minutes: 50,
+    is_billable: true,
+    created_at: '2024-12-01T08:00:00Z',
+    updated_at: '2024-12-08T11:00:00Z',
+  },
+  {
+    id: 'ptask-1-1-3',
+    title: 'Nahrát dokumenty do systému',
+    description: 'Uploadovat všechny dokumenty do DMS',
+    project_id: 'project-1',
+    project_name: 'Účetní uzávěrka 11/2024',
+    phase_id: 'phase-1-1',
+    phase_name: 'Příprava podkladů',
+    position_in_phase: 3,
+    depends_on_task_ids: ['ptask-1-1-2'],
+    is_next_action: false,
+    is_project: false,
+    status: 'completed',
+    created_by: 'user-2-accountant',
+    created_by_name: 'Jana Svobodová',
+    assigned_to: 'user-3-accountant',
+    assigned_to_name: 'Marie Černá',
+    is_waiting_for: false,
+    due_date: '2024-12-10',
+    company_id: 'company-1',
+    company_name: 'ABC s.r.o.',
+    estimated_minutes: 20,
+    actual_minutes: 15,
+    is_billable: true,
+    created_at: '2024-12-01T08:00:00Z',
+    updated_at: '2024-12-10T09:00:00Z',
+  },
+  // Project 1, Phase 2: Účtování (active)
+  {
+    id: 'ptask-1-2-1',
+    title: 'Zaúčtovat přijaté faktury',
+    description: 'Zaúčtování všech přijatých faktur za listopad',
+    project_id: 'project-1',
+    project_name: 'Účetní uzávěrka 11/2024',
+    phase_id: 'phase-1-2',
+    phase_name: 'Účtování',
+    position_in_phase: 1,
+    is_next_action: true, // NEXT ACTION
+    is_project: false,
+    status: 'in_progress',
+    created_by: 'user-2-accountant',
+    created_by_name: 'Jana Svobodová',
+    assigned_to: 'user-2-accountant',
+    assigned_to_name: 'Jana Svobodová',
+    is_waiting_for: false,
+    due_date: MOCK_DATES.TOMORROW,
+    company_id: 'company-1',
+    company_name: 'ABC s.r.o.',
+    estimated_minutes: 60,
+    is_billable: true,
+    created_at: '2024-12-01T08:00:00Z',
+    updated_at: '2024-12-23T08:00:00Z',
+  },
+  {
+    id: 'ptask-1-2-2',
+    title: 'Zaúčtovat vydané faktury',
+    description: 'Zaúčtování všech vydaných faktur za listopad',
+    project_id: 'project-1',
+    project_name: 'Účetní uzávěrka 11/2024',
+    phase_id: 'phase-1-2',
+    phase_name: 'Účtování',
+    position_in_phase: 2,
+    depends_on_task_ids: ['ptask-1-2-1'],
+    is_blocked: true,
+    is_next_action: false,
+    is_project: false,
+    status: 'pending',
+    created_by: 'user-2-accountant',
+    created_by_name: 'Jana Svobodová',
+    assigned_to: 'user-2-accountant',
+    assigned_to_name: 'Jana Svobodová',
+    is_waiting_for: false,
+    due_date: MOCK_DATES.IN_2_DAYS,
+    company_id: 'company-1',
+    company_name: 'ABC s.r.o.',
+    estimated_minutes: 45,
+    is_billable: true,
+    created_at: '2024-12-01T08:00:00Z',
+    updated_at: '2024-12-01T08:00:00Z',
+  },
+  {
+    id: 'ptask-1-2-3',
+    title: 'Kontrola DPH',
+    description: 'Zkontrolovat správnost DPH na všech dokladech',
+    project_id: 'project-1',
+    project_name: 'Účetní uzávěrka 11/2024',
+    phase_id: 'phase-1-2',
+    phase_name: 'Účtování',
+    position_in_phase: 3,
+    depends_on_task_ids: ['ptask-1-2-1', 'ptask-1-2-2'],
+    is_blocked: true,
+    is_next_action: false,
+    is_project: false,
+    status: 'pending',
+    created_by: 'user-2-accountant',
+    created_by_name: 'Jana Svobodová',
+    assigned_to: 'user-3-accountant',
+    assigned_to_name: 'Marie Černá',
+    is_waiting_for: false,
+    due_date: MOCK_DATES.IN_3_DAYS,
+    company_id: 'company-1',
+    company_name: 'ABC s.r.o.',
+    estimated_minutes: 60,
+    is_billable: true,
+    created_at: '2024-12-01T08:00:00Z',
+    updated_at: '2024-12-01T08:00:00Z',
+  },
+  // Project 1, Phase 3: Kontrola a reporting (pending)
+  {
+    id: 'ptask-1-3-1',
+    title: 'Generovat měsíční reporty',
+    description: 'Vygenerovat všechny měsíční výkazy',
+    project_id: 'project-1',
+    project_name: 'Účetní uzávěrka 11/2024',
+    phase_id: 'phase-1-3',
+    phase_name: 'Kontrola a reporting',
+    position_in_phase: 1,
+    depends_on_task_ids: ['ptask-1-2-3'],
+    is_blocked: true,
+    is_next_action: false,
+    is_project: false,
+    status: 'pending',
+    created_by: 'user-2-accountant',
+    created_by_name: 'Jana Svobodová',
+    assigned_to: 'user-2-accountant',
+    assigned_to_name: 'Jana Svobodová',
+    is_waiting_for: false,
+    due_date: MOCK_DATES.IN_4_DAYS,
+    company_id: 'company-1',
+    company_name: 'ABC s.r.o.',
+    estimated_minutes: 30,
+    is_billable: true,
+    created_at: '2024-12-01T08:00:00Z',
+    updated_at: '2024-12-01T08:00:00Z',
+  },
+  {
+    id: 'ptask-1-3-2',
+    title: 'Odeslat reporty klientovi',
+    description: 'Odeslat finální reporty na email klienta',
+    project_id: 'project-1',
+    project_name: 'Účetní uzávěrka 11/2024',
+    phase_id: 'phase-1-3',
+    phase_name: 'Kontrola a reporting',
+    position_in_phase: 2,
+    depends_on_task_ids: ['ptask-1-3-1'],
+    is_blocked: true,
+    is_next_action: false,
+    is_project: false,
+    status: 'pending',
+    created_by: 'user-2-accountant',
+    created_by_name: 'Jana Svobodová',
+    assigned_to: 'user-2-accountant',
+    assigned_to_name: 'Jana Svobodová',
+    is_waiting_for: false,
+    due_date: MOCK_DATES.IN_5_DAYS,
+    company_id: 'company-1',
+    company_name: 'ABC s.r.o.',
+    estimated_minutes: 10,
+    is_billable: true,
+    created_at: '2024-12-01T08:00:00Z',
+    updated_at: '2024-12-01T08:00:00Z',
+  },
+]
+
+// Helper functions for projects
+export function getAllProjects(): Project[] {
+  return mockProjects
+}
+
+export function getProjectById(projectId: string): Project | undefined {
+  return mockProjects.find(p => p.id === projectId)
+}
+
+export function getProjectsByStatus(status: ProjectStatus): Project[] {
+  return mockProjects.filter(p => p.status === status)
+}
+
+export function getProjectsByCompany(companyId: string): Project[] {
+  return mockProjects.filter(p => p.company_id === companyId)
+}
+
+export function getProjectsByOwner(ownerId: string): Project[] {
+  return mockProjects.filter(p => p.owner_id === ownerId)
+}
+
+export function getPhasesForProject(projectId: string): Phase[] {
+  return mockPhases.filter(p => p.project_id === projectId).sort((a, b) => a.position - b.position)
+}
+
+export function getTasksForProject(projectId: string): Task[] {
+  return mockProjectTasks.filter(t => t.project_id === projectId)
+}
+
+export function getTasksForPhase(phaseId: string): Task[] {
+  return mockProjectTasks.filter(t => t.phase_id === phaseId).sort((a, b) => (a.position_in_phase || 0) - (b.position_in_phase || 0))
+}
+
+export function getNextActionForProject(projectId: string): Task | undefined {
+  return mockProjectTasks.find(t => t.project_id === projectId && t.is_next_action)
+}
+
+export function getActiveProjects(): Project[] {
+  return mockProjects.filter(p => p.status === 'active')
+}
+
+// ============================================
+// GAMIFICATION: BONUS TASKS (pool)
+// ============================================
+export const mockBonusTasks: Task[] = [
+  {
+    id: 'bonus-1',
+    title: 'Mimořádná kontrola DPH za Q3',
+    description: 'Detailní kontrola DPH přiznání za 3. kvartál - klient požádal o extra revizi',
+    is_project: false,
+    status: 'pending',
+    task_type: 'bonus',
+    points_value: 180,
+    created_by: MOCK_CONFIG.CURRENT_USER_ID,
+    created_by_name: MOCK_CONFIG.CURRENT_USER_NAME,
+    is_waiting_for: false,
+    due_date: MOCK_DATES.IN_5_DAYS,
+    company_id: 'company-5',
+    company_name: 'BCD Finance a.s.',
+    estimated_minutes: 180,
+    estimate_locked: true,
+    is_billable: true,
+    hourly_rate: 800,
+    tags: ['bonus', 'dph', 'kontrola'],
+    created_at: '2025-12-20T10:00:00Z',
+    updated_at: '2025-12-20T10:00:00Z',
+  },
+  {
+    id: 'bonus-2',
+    title: 'Export dat pro nového auditora',
+    description: 'Připravit kompletní export účetních dat pro externího auditora',
+    is_project: false,
+    status: 'pending',
+    task_type: 'bonus',
+    points_value: 250,
+    created_by: MOCK_CONFIG.CURRENT_USER_ID,
+    created_by_name: MOCK_CONFIG.CURRENT_USER_NAME,
+    is_waiting_for: false,
+    due_date: MOCK_DATES.IN_7_DAYS,
+    company_id: 'company-3',
+    company_name: 'MNO Holding',
+    estimated_minutes: 240,
+    estimate_locked: true,
+    is_billable: true,
+    hourly_rate: 900,
+    tags: ['bonus', 'audit', 'export'],
+    created_at: '2025-12-19T14:00:00Z',
+    updated_at: '2025-12-19T14:00:00Z',
+  },
+  {
+    id: 'bonus-3',
+    title: 'Urgentní oprava chyby v uzávěrce',
+    description: 'Klient našel chybu v měsíční uzávěrce - potřeba rychlé opravy',
+    is_project: false,
+    status: 'accepted',
+    task_type: 'bonus',
+    points_value: 120,
+    claimed_by: 'user-2-accountant',
+    claimed_by_name: 'Jana Svobodová',
+    claimed_at: '2025-12-23T08:00:00Z',
+    created_by: MOCK_CONFIG.CURRENT_USER_ID,
+    created_by_name: MOCK_CONFIG.CURRENT_USER_NAME,
+    assigned_to: 'user-2-accountant',
+    assigned_to_name: 'Jana Svobodová',
+    is_waiting_for: false,
+    due_date: MOCK_DATES.TOMORROW,
+    company_id: 'company-1',
+    company_name: 'ABC s.r.o.',
+    estimated_minutes: 60,
+    estimate_locked: true,
+    is_billable: false,
+    tags: ['bonus', 'urgentni', 'oprava'],
+    score_fire: 3,
+    created_at: '2025-12-22T16:00:00Z',
+    updated_at: '2025-12-23T08:00:00Z',
+  },
+]
+
+// ============================================
+// GAMIFICATION: TASK APPROVALS HISTORY
+// ============================================
+export const mockTaskApprovals: TaskApproval[] = [
+  {
+    id: 'approval-1',
+    task_id: 'task-15',
+    action: 'approved',
+    by_user_id: MOCK_CONFIG.CURRENT_USER_ID,
+    by_user_name: MOCK_CONFIG.CURRENT_USER_NAME,
+    created_at: '2025-12-20T15:00:00Z',
+  },
+  {
+    id: 'approval-2',
+    task_id: 'task-16',
+    action: 'approved',
+    by_user_id: MOCK_CONFIG.CURRENT_USER_ID,
+    by_user_name: MOCK_CONFIG.CURRENT_USER_NAME,
+    created_at: '2025-12-21T10:00:00Z',
+  },
+  {
+    id: 'approval-3',
+    task_id: 'task-10',
+    action: 'rejected',
+    by_user_id: MOCK_CONFIG.CURRENT_USER_ID,
+    by_user_name: MOCK_CONFIG.CURRENT_USER_NAME,
+    comment: 'Chybí kontrola bankovních výpisů za listopad',
+    created_at: '2025-12-19T14:00:00Z',
+  },
+]
+
+// ============================================
+// CLIENT REQUESTS DATA
+// ============================================
+export const mockClientRequests: ClientRequest[] = [
+  {
+    id: 'req-1',
+    client_id: 'company-1',
+    client_name: 'ABC s.r.o.',
+    title: 'Potřebuji potvrzení o bezdlužnosti',
+    description: 'Zdravím, potřeboval bych potvrzení o bezdlužnosti pro banku kvůli novému úvěru. Je to urgentní, musím to dodat do konce týdne.',
+    category: 'documents',
+    priority: 'urgent',
+    status: 'new',
+    requested_by_date: MOCK_DATES.IN_3_DAYS,
+    created_at: MOCK_DATES.TODAY + 'T08:30:00Z',
+    updated_at: MOCK_DATES.TODAY + 'T08:30:00Z',
+  },
+  {
+    id: 'req-2',
+    client_id: 'company-3',
+    client_name: 'DEF s.r.o.',
+    title: 'Dotaz na odpočet DPH u firemního vozu',
+    description: 'Pořídili jsme nový firemní vůz. Můžeme si celou DPH odečíst, nebo jen poměrnou část? Vůz bude používán i pro soukromé účely asi z 20%.',
+    category: 'tax',
+    priority: 'normal',
+    status: 'reviewed',
+    assigned_to: 'user-2-accountant',
+    assigned_to_name: 'Jana Svobodová',
+    response_to_client: 'Děkuji za dotaz. Připravuji pro vás podrobnou odpověď s výpočtem.',
+    created_at: MOCK_DATES.OVERDUE_1_DAY + 'T14:00:00Z',
+    updated_at: MOCK_DATES.TODAY + 'T09:00:00Z',
+  },
+  {
+    id: 'req-3',
+    client_id: 'company-2',
+    client_name: 'XYZ a.s.',
+    title: 'Změna fakturační adresy',
+    description: 'Prosím o změnu fakturační adresy na: Nová ulice 123, Praha 1, 110 00. Děkuji.',
+    category: 'other',
+    priority: 'low',
+    status: 'completed',
+    assigned_to: 'user-2-accountant',
+    assigned_to_name: 'Jana Svobodová',
+    response_to_client: 'Fakturační adresa byla změněna. Změna se projeví na všech nových dokladech.',
+    resolved_at: MOCK_DATES.OVERDUE_1_DAY + 'T16:00:00Z',
+    created_at: MOCK_DATES.OVERDUE_2_DAYS + 'T10:00:00Z',
+    updated_at: MOCK_DATES.OVERDUE_1_DAY + 'T16:00:00Z',
+  },
+  {
+    id: 'req-4',
+    client_id: 'company-4',
+    client_name: 'GHI Praha s.r.o.',
+    title: 'Příprava podkladů pro bankovní audit',
+    description: 'Banka požaduje komplexní účetní výkazy za poslední 3 roky pro posouzení úvěru. Potřebuji: rozvahu, výsledovku, cash flow a přílohu k účetní závěrce.',
+    category: 'accounting',
+    priority: 'high',
+    status: 'in_progress',
+    assigned_to: 'user-2-accountant',
+    assigned_to_name: 'Jana Svobodová',
+    related_task_id: 'task-20',
+    internal_notes: 'Velký klient, priorita. Ověřit s Petrem konzistenci dat.',
+    requested_by_date: MOCK_DATES.IN_7_DAYS,
+    created_at: MOCK_DATES.OVERDUE_1_DAY + 'T11:00:00Z',
+    updated_at: MOCK_DATES.TODAY + 'T10:00:00Z',
+  },
+  {
+    id: 'req-5',
+    client_id: 'company-5',
+    client_name: 'JKL Tech s.r.o.',
+    title: 'Konzultace k zaměstnávání na DPP',
+    description: 'Plánujeme zaměstnat několik brigádníků na DPP. Jaké jsou limity a povinnosti? Můžeme se domluvit na schůzce?',
+    category: 'consulting',
+    priority: 'normal',
+    status: 'new',
+    created_at: MOCK_DATES.TODAY + 'T07:00:00Z',
+    updated_at: MOCK_DATES.TODAY + 'T07:00:00Z',
+  },
+  {
+    id: 'req-6',
+    client_id: 'company-1',
+    client_name: 'ABC s.r.o.',
+    title: 'Oprava chyby ve mzdách za říjen',
+    description: 'Zaměstnanec Jan Novák nahlásil, že mu v říjnu chyběla příplatek za přesčasy. Prosím o kontrolu a případnou opravu.',
+    category: 'payroll',
+    priority: 'high',
+    status: 'reviewed',
+    assigned_to: 'user-3-manager',
+    assigned_to_name: 'Petr Novotný',
+    internal_notes: 'Ověřeno - chybí 8h přesčasů. Připravit doplatek pro prosinec.',
+    created_at: MOCK_DATES.OVERDUE_2_DAYS + 'T15:00:00Z',
+    updated_at: MOCK_DATES.TODAY + 'T11:00:00Z',
+  },
+  {
+    id: 'req-7',
+    client_id: 'company-6',
+    client_name: 'MNO Consulting s.r.o.',
+    title: 'Nahrání faktur za listopad',
+    description: 'V příloze zasílám faktury za listopad ke zpracování.',
+    category: 'documents',
+    priority: 'normal',
+    status: 'in_progress',
+    attachments: ['faktury_listopad_2025.zip'],
+    assigned_to: 'user-2-accountant',
+    assigned_to_name: 'Jana Svobodová',
+    created_at: MOCK_DATES.OVERDUE_1_DAY + 'T09:00:00Z',
+    updated_at: MOCK_DATES.TODAY + 'T08:00:00Z',
+  },
+]
+
+// ============================================
+// GAMIFICATION: HELPER FUNCTIONS
+// ============================================
+
+// Get task type with default
+export function getTaskType(task: Task): TaskType {
+  return task.task_type || 'base'
+}
+
+// Get rejection count with default
+export function getTaskRejectionCount(task: Task): number {
+  return task.rejection_count || 0
+}
+
+// Check if estimate is locked (default: true for existing tasks)
+export function isEstimateLocked(task: Task): boolean {
+  return task.estimate_locked !== false
+}
+
+// Get time logs for task
+export function getTimeLogsForTask(taskId: string): TimeLog[] {
+  return mockTimeLogs.filter(tl => tl.task_id === taskId)
+}
+
+// Get total logged time for task
+export function getTotalLoggedMinutes(taskId: string): number {
+  return getTimeLogsForTask(taskId).reduce((sum, tl) => sum + tl.minutes, 0)
+}
+
+// Get time logs for user
+export function getTimeLogsForUser(userId: string): TimeLog[] {
+  return mockTimeLogs.filter(tl => tl.user_id === userId)
+}
+
+// Get time logs for client
+export function getTimeLogsForClient(clientId: string): TimeLog[] {
+  return mockTimeLogs.filter(tl => tl.client_id === clientId ||
+    // Also include task-based logs if task is for this client
+    (tl.task_id && mockTasks.find(t => t.id === tl.task_id)?.company_id === clientId)
+  )
+}
+
+// Get non-task time logs (general time tracking)
+export function getNonTaskTimeLogs(): TimeLog[] {
+  return mockTimeLogs.filter(tl => !tl.task_id)
+}
+
+// Get time logs for user for specific date range
+export function getTimeLogsForUserInRange(userId: string, startDate: string, endDate: string): TimeLog[] {
+  return mockTimeLogs.filter(tl =>
+    tl.user_id === userId &&
+    tl.date &&
+    tl.date >= startDate &&
+    tl.date <= endDate
+  )
+}
+
+// Get aggregated time stats for user
+export function getUserTimeStats(userId: string, month?: string): {
+  totalMinutes: number
+  billableMinutes: number
+  nonBillableMinutes: number
+  taskMinutes: number
+  nonTaskMinutes: number
+  byActivityType: Record<ActivityType, number>
+} {
+  const logs = month
+    ? mockTimeLogs.filter(tl => tl.user_id === userId && tl.date && tl.date.startsWith(month))
+    : mockTimeLogs.filter(tl => tl.user_id === userId)
+
+  const byActivityType: Record<ActivityType, number> = {
+    task: 0,
+    general: 0,
+    admin: 0,
+    meeting: 0,
+    call: 0,
+    email: 0,
+  }
+
+  let totalMinutes = 0
+  let billableMinutes = 0
+  let nonBillableMinutes = 0
+  let taskMinutes = 0
+  let nonTaskMinutes = 0
+
+  logs.forEach(log => {
+    totalMinutes += log.minutes
+    if (log.is_billable) {
+      billableMinutes += log.minutes
+    } else {
+      nonBillableMinutes += log.minutes
+    }
+    if (log.task_id) {
+      taskMinutes += log.minutes
+    } else {
+      nonTaskMinutes += log.minutes
+    }
+    byActivityType[log.activity_type] += log.minutes
+  })
+
+  return {
+    totalMinutes,
+    billableMinutes,
+    nonBillableMinutes,
+    taskMinutes,
+    nonTaskMinutes,
+    byActivityType,
+  }
+}
+
+// Get aggregated time stats for client
+export function getClientTimeStats(clientId: string, month?: string): {
+  totalMinutes: number
+  billableMinutes: number
+  byUser: { userId: string; userName: string; minutes: number }[]
+  byActivityType: Record<ActivityType, number>
+} {
+  const clientLogs = getTimeLogsForClient(clientId).filter(tl =>
+    !month || (tl.date && tl.date.startsWith(month))
+  )
+
+  const byActivityType: Record<ActivityType, number> = {
+    task: 0,
+    general: 0,
+    admin: 0,
+    meeting: 0,
+    call: 0,
+    email: 0,
+  }
+
+  const userMap = new Map<string, { userName: string; minutes: number }>()
+  let totalMinutes = 0
+  let billableMinutes = 0
+
+  clientLogs.forEach(log => {
+    totalMinutes += log.minutes
+    if (log.is_billable) {
+      billableMinutes += log.minutes
+    }
+    byActivityType[log.activity_type] += log.minutes
+
+    const existing = userMap.get(log.user_id)
+    if (existing) {
+      existing.minutes += log.minutes
+    } else {
+      userMap.set(log.user_id, { userName: log.user_name, minutes: log.minutes })
+    }
+  })
+
+  return {
+    totalMinutes,
+    billableMinutes,
+    byUser: Array.from(userMap.entries()).map(([userId, data]) => ({
+      userId,
+      userName: data.userName,
+      minutes: data.minutes,
+    })),
+    byActivityType,
+  }
+}
+
+// Add a new time log
+export function addTimeLog(log: Omit<TimeLog, 'id' | 'created_at'>): TimeLog {
+  const newLog: TimeLog = {
+    ...log,
+    id: `tl-${Date.now()}`,
+    created_at: new Date().toISOString(),
+  }
+  mockTimeLogs.push(newLog)
+  return newLog
+}
+
+// Get user task settings
+export function getUserTaskSettings(userId: string): UserTaskSettings | undefined {
+  return mockUserTaskSettings.find(s => s.user_id === userId)
+}
+
+// Check if user can claim bonus tasks
+export function canUserClaimBonus(userId: string): boolean {
+  const settings = getUserTaskSettings(userId)
+  if (!settings) return false
+  return settings.can_claim_bonus && settings.quality_score >= mockTaskSystemSettings.min_quality_for_bonus
+}
+
+// Get available bonus tasks (not claimed)
+export function getAvailableBonusTasks(): Task[] {
+  return mockBonusTasks.filter(t => !t.claimed_by && t.status === 'pending')
+}
+
+// Get user's current WIP count
+export function getUserWipCount(userId: string): { total: number; bonus: number } {
+  const allTasks = [...mockTasks, ...mockBonusTasks]
+  const inProgressStatuses: TaskStatus[] = ['accepted', 'in_progress', 'awaiting_approval']
+
+  const userTasks = allTasks.filter(t =>
+    t.assigned_to === userId &&
+    inProgressStatuses.includes(t.status)
+  )
+
+  return {
+    total: userTasks.length,
+    bonus: userTasks.filter(t => getTaskType(t) === 'bonus').length,
+  }
+}
+
+// Check if user can take more tasks
+export function canUserTakeMoreTasks(userId: string): { canTake: boolean; canTakeBonus: boolean; reason?: string } {
+  const settings = getUserTaskSettings(userId)
+  if (!settings) return { canTake: false, canTakeBonus: false, reason: 'Uživatel nemá nastavení' }
+
+  const wip = getUserWipCount(userId)
+
+  const canTake = wip.total < settings.max_wip_total
+  const canTakeBonus = settings.can_claim_bonus &&
+                       wip.bonus < settings.max_wip_bonus &&
+                       settings.quality_score >= mockTaskSystemSettings.min_quality_for_bonus
+
+  let reason: string | undefined
+  if (!canTake) {
+    reason = `Dosažen limit ${settings.max_wip_total} rozpracovaných úkolů`
+  } else if (!canTakeBonus && settings.can_claim_bonus) {
+    if (settings.quality_score < mockTaskSystemSettings.min_quality_for_bonus) {
+      reason = 'Kvalita pod minimem pro bonus úkoly'
+    } else if (wip.bonus >= settings.max_wip_bonus) {
+      reason = `Dosažen limit ${settings.max_wip_bonus} bonus úkolů`
+    }
+  }
+
+  return { canTake, canTakeBonus, reason }
+}
+
+// FÁZE 6: Check monthly cutoff and base completion status
+export function getMonthlyStatus(userId: string): {
+  cutoffDay: number
+  isBaseComplete: boolean
+  canCashOut: boolean
+  daysUntilCutoff: number
+  baseRequired: number
+  baseCompleted: number
+  bonusPoints: number
+} {
+  const settings = getUserTaskSettings(userId)
+  const today = new Date()
+  const cutoffDay = mockTaskSystemSettings.monthly_cutoff_day
+
+  // Calculate days until next cutoff
+  let nextCutoff = new Date(today.getFullYear(), today.getMonth(), cutoffDay)
+  if (today.getDate() >= cutoffDay) {
+    nextCutoff = new Date(today.getFullYear(), today.getMonth() + 1, cutoffDay)
+  }
+  const daysUntilCutoff = Math.ceil((nextCutoff.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+  // Check base completion
+  const baseRequired = settings?.monthly_base_required || 0
+  const baseCompleted = settings?.monthly_base_completed || 0
+  const isBaseComplete = baseCompleted >= baseRequired
+  const bonusPoints = settings?.monthly_bonus_points || 0
+
+  return {
+    cutoffDay,
+    isBaseComplete,
+    canCashOut: isBaseComplete && bonusPoints > 0 && !settings?.monthly_bonus_cashed_out,
+    daysUntilCutoff,
+    baseRequired,
+    baseCompleted,
+    bonusPoints,
+  }
+}
+
+// Calculate inbox + overdue for menu badge
+export function getAttentionRequiredCount(): number {
+  const archivedStatuses: TaskStatus[] = ['completed', 'invoiced', 'cancelled']
+  const waitingStatuses: TaskStatus[] = ['waiting_for', 'waiting_client']
+  const inboxStatuses: TaskStatus[] = ['pending', 'clarifying']
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const allTasks = [...mockTasks, ...mockBonusTasks]
+
+  // Inbox tasks
+  const inboxTasks = allTasks.filter(t =>
+    inboxStatuses.includes(t.status) &&
+    !archivedStatuses.includes(t.status)
+  )
+
+  // Overdue tasks (not waiting, not archived)
+  const overdueTasks = allTasks.filter(t => {
+    if (archivedStatuses.includes(t.status)) return false
+    if (waitingStatuses.includes(t.status)) return false
+    if (inboxStatuses.includes(t.status)) return false // Already counted in inbox
+
+    const dueDate = new Date(t.due_date)
+    dueDate.setHours(0, 0, 0, 0)
+    return dueDate < today
+  })
+
+  return inboxTasks.length + overdueTasks.length
+}
+
+// Get tasks awaiting approval (for manager view)
+export function getTasksAwaitingApproval(): Task[] {
+  const allTasks = [...mockTasks, ...mockBonusTasks]
+  return allTasks.filter(t => t.status === 'awaiting_approval')
+}
+
+// FÁZE 7: Aggregate billable time logs by client for invoicing
+export interface BillableSummary {
+  company_id: string
+  company_name: string
+  totalMinutes: number
+  totalAmount: number
+  uninvoicedTasks: {
+    task_id: string
+    task_title: string
+    minutes: number
+    amount: number
+    logs: TimeLog[]
+  }[]
+}
+
+export function getBillableByClient(): BillableSummary[] {
+  const allTasks = [...mockTasks, ...mockBonusTasks]
+  const billableByCompany: Map<string, BillableSummary> = new Map()
+
+  // Find tasks that are billable and completed (but not invoiced)
+  const billableTasks = allTasks.filter(t =>
+    t.is_billable &&
+    t.status === 'completed' // Completed but not yet invoiced
+  )
+
+  for (const task of billableTasks) {
+    const logs = getTimeLogsForTask(task.id)
+    const taskMinutes = logs.reduce((sum, log) => sum + log.minutes, 0) || task.actual_minutes || 0
+    const hourlyRate = task.hourly_rate || 0
+    const taskAmount = Math.round((taskMinutes / 60) * hourlyRate)
+
+    if (!billableByCompany.has(task.company_id)) {
+      billableByCompany.set(task.company_id, {
+        company_id: task.company_id,
+        company_name: task.company_name,
+        totalMinutes: 0,
+        totalAmount: 0,
+        uninvoicedTasks: [],
+      })
+    }
+
+    const summary = billableByCompany.get(task.company_id)!
+    summary.totalMinutes += taskMinutes
+    summary.totalAmount += taskAmount
+    summary.uninvoicedTasks.push({
+      task_id: task.id,
+      task_title: task.title,
+      minutes: taskMinutes,
+      amount: taskAmount,
+      logs,
+    })
+  }
+
+  return Array.from(billableByCompany.values()).sort((a, b) => b.totalAmount - a.totalAmount)
+}
+
+// ============================================
+// CLIENT REQUESTS HELPER FUNCTIONS
+// ============================================
+
+// Get all client requests
+export function getClientRequests(): ClientRequest[] {
+  return mockClientRequests
+}
+
+// Get client requests for a specific client
+export function getClientRequestsByClient(clientId: string): ClientRequest[] {
+  return mockClientRequests.filter(r => r.client_id === clientId)
+}
+
+// Get client requests assigned to a user
+export function getClientRequestsByAssignee(userId: string): ClientRequest[] {
+  return mockClientRequests.filter(r => r.assigned_to === userId)
+}
+
+// Get new/unassigned requests (for manager view)
+export function getUnassignedClientRequests(): ClientRequest[] {
+  return mockClientRequests.filter(r => !r.assigned_to && r.status === 'new')
+}
+
+// Get active requests (not completed/rejected)
+export function getActiveClientRequests(): ClientRequest[] {
+  return mockClientRequests.filter(r => !['completed', 'rejected'].includes(r.status))
+}
+
+// Get request stats for dashboard
+export function getClientRequestStats(): {
+  total: number
+  new: number
+  inProgress: number
+  urgent: number
+  completed: number
+} {
+  const requests = mockClientRequests
+  return {
+    total: requests.length,
+    new: requests.filter(r => r.status === 'new').length,
+    inProgress: requests.filter(r => r.status === 'in_progress' || r.status === 'reviewed').length,
+    urgent: requests.filter(r => r.priority === 'urgent' && r.status !== 'completed').length,
+    completed: requests.filter(r => r.status === 'completed').length,
+  }
+}
+
+// Get category label
+export function getRequestCategoryLabel(category: ClientRequestCategory): string {
+  const labels: Record<ClientRequestCategory, string> = {
+    accounting: 'Účetnictví',
+    tax: 'Daně',
+    payroll: 'Mzdy',
+    consulting: 'Poradenství',
+    documents: 'Dokumenty',
+    other: 'Ostatní',
+  }
+  return labels[category]
+}
+
+// Get priority label
+export function getRequestPriorityLabel(priority: ClientRequestPriority): string {
+  const labels: Record<ClientRequestPriority, string> = {
+    low: 'Nízká',
+    normal: 'Normální',
+    high: 'Vysoká',
+    urgent: 'Urgentní',
+  }
+  return labels[priority]
+}
+
+// Get status label
+export function getRequestStatusLabel(status: ClientRequestStatus): string {
+  const labels: Record<ClientRequestStatus, string> = {
+    new: 'Nový',
+    reviewed: 'Posouzeno',
+    in_progress: 'Řeší se',
+    completed: 'Vyřešeno',
+    rejected: 'Zamítnuto',
+  }
+  return labels[status]
+}
+
+// Add new client request
+export function addClientRequest(request: Omit<ClientRequest, 'id' | 'created_at' | 'updated_at'>): ClientRequest {
+  const newRequest: ClientRequest = {
+    ...request,
+    id: `req-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+  mockClientRequests.push(newRequest)
+  return newRequest
+}
+
+// Update client request
+export function updateClientRequest(id: string, updates: Partial<ClientRequest>): ClientRequest | null {
+  const index = mockClientRequests.findIndex(r => r.id === id)
+  if (index === -1) return null
+
+  mockClientRequests[index] = {
+    ...mockClientRequests[index],
+    ...updates,
+    updated_at: new Date().toISOString(),
+  }
+  return mockClientRequests[index]
 }

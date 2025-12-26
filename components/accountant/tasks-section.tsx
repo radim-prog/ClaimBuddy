@@ -25,7 +25,19 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { format, isToday, isTomorrow, isPast, differenceInDays } from 'date-fns'
 import { cs } from 'date-fns/locale'
-import { Task, TaskStatus, TaskPriority } from '@/lib/mock-data'
+import { Task, TaskStatus } from '@/lib/mock-data'
+
+// Priority derived from R-Tasks score_fire
+type TaskPriority = 'critical' | 'high' | 'medium' | 'low'
+
+// Helper function to derive priority from score_fire
+function getTaskPriority(scoreFire: number | undefined | null): TaskPriority {
+  if (scoreFire === undefined || scoreFire === null) return 'low'
+  if (scoreFire >= 4) return 'critical'
+  if (scoreFire >= 3) return 'high'
+  if (scoreFire >= 2) return 'medium'
+  return 'low'
+}
 
 interface AccountantTasksSectionProps {
   companyId: string
@@ -50,19 +62,29 @@ const priorityLabels: Record<TaskPriority, string> = {
 
 const statusColors: Record<TaskStatus, string> = {
   pending: 'bg-gray-100 text-gray-700',
+  clarifying: 'bg-orange-100 text-orange-700',
   accepted: 'bg-blue-100 text-blue-700',
   in_progress: 'bg-purple-100 text-purple-700',
   waiting_for: 'bg-yellow-100 text-yellow-700',
+  waiting_client: 'bg-amber-100 text-amber-700',
+  awaiting_approval: 'bg-indigo-100 text-indigo-700',
   completed: 'bg-green-100 text-green-700',
+  invoiced: 'bg-emerald-100 text-emerald-700',
+  cancelled: 'bg-red-100 text-red-700',
   someday_maybe: 'bg-gray-100 text-gray-500',
 }
 
 const statusLabels: Record<TaskStatus, string> = {
   pending: 'Čeká',
+  clarifying: 'Upřesňuje se',
   accepted: 'Přijato',
   in_progress: 'Rozpracováno',
-  waiting_for: 'Čeká na...',
+  waiting_for: 'Čeká interně',
+  waiting_client: 'Čeká na klienta',
+  awaiting_approval: 'Ke schválení',
   completed: 'Dokončeno',
+  invoiced: 'Vyfakturováno',
+  cancelled: 'Zrušeno',
   someday_maybe: 'Někdy',
 }
 
@@ -95,8 +117,10 @@ export function AccountantTasksSection({
     // Sort by priority and due date
     return filtered.sort((a, b) => {
       const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 }
-      if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
-        return priorityOrder[a.priority] - priorityOrder[b.priority]
+      const aPriority = getTaskPriority(a.score_fire)
+      const bPriority = getTaskPriority(b.score_fire)
+      if (priorityOrder[aPriority] !== priorityOrder[bPriority]) {
+        return priorityOrder[aPriority] - priorityOrder[bPriority]
       }
       return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
     })
@@ -240,9 +264,9 @@ export function AccountantTasksSection({
                     </span>
                     <Badge
                       variant="outline"
-                      className={`text-xs ${priorityColors[task.priority]}`}
+                      className={`text-xs ${priorityColors[getTaskPriority(task.score_fire)]}`}
                     >
-                      {priorityLabels[task.priority]}
+                      {priorityLabels[getTaskPriority(task.score_fire)]}
                     </Badge>
                   </div>
 

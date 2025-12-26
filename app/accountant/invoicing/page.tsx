@@ -34,6 +34,7 @@ import {
   Users,
 } from 'lucide-react'
 import { mockInvoicingData, getUserStats, type InvoiceStatus, type UserStats } from '@/lib/invoicing-mock-data'
+import { getBillableByClient } from '@/lib/mock-data'
 
 type FilterStatus = 'all' | InvoiceStatus
 
@@ -147,6 +148,11 @@ export default function InvoicingPage() {
   const userStats = useMemo(() => {
     return getUserStats(filteredProjects)
   }, [filteredProjects])
+
+  // FÁZE 7: Get uninvoiced time from task system
+  const billableTimeLogs = useMemo(() => {
+    return getBillableByClient()
+  }, [])
 
   // Toggle project expansion
   const toggleProjectExpansion = (projectId: string) => {
@@ -314,6 +320,70 @@ export default function InvoicingPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* FÁZE 7: Uninvoiced Time Logs from Task System */}
+        {billableTimeLogs.length > 0 && (
+          <Card className="mb-6 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-amber-900">
+                <Clock className="h-5 w-5" />
+                Neprofakturované time logy z úkolů
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Dokončené úkoly s logovaným časem, které ještě nebyly vyfakturovány
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {billableTimeLogs.map((summary) => (
+                  <div
+                    key={summary.company_id}
+                    className="p-4 bg-white rounded-lg border border-amber-200"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-amber-600" />
+                        <span className="font-semibold text-gray-900">
+                          {summary.company_name}
+                        </span>
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                          {summary.uninvoicedTasks.length} {summary.uninvoicedTasks.length === 1 ? 'úkol' : 'úkolů'}
+                        </Badge>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-lg font-bold text-amber-700">
+                          {formatCurrency(summary.totalAmount)}
+                        </span>
+                        <span className="text-sm text-gray-500 ml-2">
+                          ({Math.round(summary.totalMinutes / 60 * 10) / 10}h)
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      {summary.uninvoicedTasks.slice(0, 3).map((task) => (
+                        <div key={task.task_id} className="flex justify-between">
+                          <span className="truncate">{task.task_title}</span>
+                          <span className="text-gray-900">{formatCurrency(task.amount)}</span>
+                        </div>
+                      ))}
+                      {summary.uninvoicedTasks.length > 3 && (
+                        <p className="text-amber-600">+ {summary.uninvoicedTasks.length - 3} dalších úkolů</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 pt-4 border-t border-amber-200 flex justify-between items-center">
+                <span className="text-sm text-gray-600">
+                  Celkem k fakturaci z time logů:
+                </span>
+                <span className="text-xl font-bold text-amber-700">
+                  {formatCurrency(billableTimeLogs.reduce((sum, s) => sum + s.totalAmount, 0))}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* User Statistics */}
         {userStats.length > 0 && (

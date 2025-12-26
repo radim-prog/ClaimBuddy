@@ -541,35 +541,35 @@ export default function ClientTimelinePage() {
           <Button
             variant={activeView === 'summary' ? 'default' : 'ghost'}
             onClick={() => setActiveView('summary')}
-            className={activeView === 'summary' ? 'bg-blue-600' : ''}
+            className={activeView === 'summary' ? 'bg-blue-600 hover:bg-blue-700' : ''}
           >
             📋 Souhrn spisu
           </Button>
           <Button
             variant={activeView === 'notes' ? 'default' : 'ghost'}
             onClick={() => setActiveView('notes')}
-            className={activeView === 'notes' ? 'bg-blue-600' : ''}
+            className={activeView === 'notes' ? 'bg-blue-600 hover:bg-blue-700' : ''}
           >
             📝 Poznámky o průběhu
           </Button>
           <Button
             variant={activeView === 'tasks' ? 'default' : 'ghost'}
             onClick={() => setActiveView('tasks')}
-            className={activeView === 'tasks' ? 'bg-blue-600' : ''}
+            className={activeView === 'tasks' ? 'bg-blue-600 hover:bg-blue-700' : ''}
           >
             ✓ Úkoly ({completedTasks}/{totalTasks})
           </Button>
           <Button
             variant={activeView === 'documents' ? 'default' : 'ghost'}
             onClick={() => setActiveView('documents')}
-            className={activeView === 'documents' ? 'bg-blue-600' : ''}
+            className={activeView === 'documents' ? 'bg-blue-600 hover:bg-blue-700' : ''}
           >
             📎 Dokumenty ({getAllDocuments().length})
           </Button>
           <Button
             variant={activeView === 'timeline' ? 'default' : 'ghost'}
             onClick={() => setActiveView('timeline')}
-            className={activeView === 'timeline' ? 'bg-blue-600' : ''}
+            className={activeView === 'timeline' ? 'bg-blue-600 hover:bg-blue-700' : ''}
           >
             🕐 Timeline
           </Button>
@@ -744,7 +744,7 @@ export default function ClientTimelinePage() {
               <CardContent className="p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-3">📍 Kde jsme skončili</h2>
                 <div className="bg-white rounded-lg p-4">
-                  <div className="text-sm text-gray-600 mb-2">
+                  <div className="text-sm text-gray-600 mb-2" suppressHydrationWarning>
                     {new Date(caseData.progressNotes[0].date).toLocaleString('cs-CZ')} • {caseData.progressNotes[0].author}
                   </div>
                   <div className="space-y-3">
@@ -854,7 +854,7 @@ export default function ClientTimelinePage() {
           {caseData.progressNotes.map(note => (
             <Card key={note.id} className="border-l-4 border-blue-500">
               <CardContent className="p-6">
-                <div className="text-sm text-gray-600 mb-4">{new Date(note.date).toLocaleString('cs-CZ')} • {note.author}</div>
+                <div className="text-sm text-gray-600 mb-4" suppressHydrationWarning>{new Date(note.date).toLocaleString('cs-CZ')} • {note.author}</div>
                 <div className="space-y-3">
                   <div>
                     <div className="font-semibold text-gray-900 mb-1">📌 Aktuální stav:</div>

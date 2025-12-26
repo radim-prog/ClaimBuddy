@@ -47,6 +47,7 @@ export interface TimeTrackerProps {
   onTimeUpdate?: (actualMinutes: number, entries: TimeTrackingEntry[]) => void
   currentUserId: string
   currentUserName: string
+  initialEntries?: TimeTrackingEntry[]
 }
 
 // Helper function to format duration
@@ -87,7 +88,8 @@ export function TimeTracker({
   isProject = false,
   onTimeUpdate,
   currentUserId,
-  currentUserName
+  currentUserName,
+  initialEntries = []
 }: TimeTrackerProps) {
   // Timer state
   const [isRunning, setIsRunning] = useState(false)
@@ -104,8 +106,8 @@ export function TimeTracker({
   const [manualDate, setManualDate] = useState(new Date().toISOString().split('T')[0])
   const [manualTime, setManualTime] = useState(new Date().toTimeString().slice(0, 5))
 
-  // Entries state
-  const [entries, setEntries] = useState<TimeTrackingEntry[]>([])
+  // Entries state - initialize from props
+  const [entries, setEntries] = useState<TimeTrackingEntry[]>(initialEntries)
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null)
 
   // Timer tick effect
@@ -359,7 +361,8 @@ export function TimeTracker({
                 <div className="flex gap-2 justify-center">
                   <Button
                     size="lg"
-                    variant={isPaused ? "default" : "secondary"}
+                    variant="outline"
+                    className={isPaused ? "bg-green-600 hover:bg-green-700 text-white border-green-600" : "bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500"}
                     onClick={handlePause}
                   >
                     {isPaused ? (
@@ -376,7 +379,7 @@ export function TimeTracker({
                   </Button>
                   <Button
                     size="lg"
-                    variant="destructive"
+                    className="bg-red-600 hover:bg-red-700 text-white"
                     onClick={handleStop}
                   >
                     <Square className="mr-2 h-4 w-4" />
@@ -390,7 +393,7 @@ export function TimeTracker({
             {!isRunning && (
               <Button
                 size="lg"
-                className="w-full"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={handleStart}
               >
                 <Play className="mr-2 h-4 w-4" />
@@ -400,51 +403,38 @@ export function TimeTracker({
 
             {/* Quick Time Buttons */}
             {!isRunning && (
-              <div className="space-y-2">
-                <Label>Quick Time Entry</Label>
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickTime(15)}
-                  >
-                    15min
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickTime(30)}
-                  >
-                    30min
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickTime(60)}
-                  >
-                    1h
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickTime(120)}
-                  >
-                    2h
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickTime(240)}
-                  >
-                    4h
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickTime(480)}
-                  >
-                    8h
-                  </Button>
+              <div className="space-y-3">
+                <Label>Rychlý záznam času</Label>
+                <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleQuickTime(5)}>5 min</Button>
+                  <Button variant="outline" size="sm" onClick={() => handleQuickTime(10)}>10 min</Button>
+                  <Button variant="outline" size="sm" onClick={() => handleQuickTime(15)}>15 min</Button>
+                  <Button variant="outline" size="sm" onClick={() => handleQuickTime(20)}>20 min</Button>
+                  <Button variant="outline" size="sm" onClick={() => handleQuickTime(30)}>30 min</Button>
+                  <Button variant="outline" size="sm" onClick={() => handleQuickTime(45)}>45 min</Button>
+                  <Button variant="outline" size="sm" onClick={() => handleQuickTime(60)}>1 hod</Button>
+                  <Button variant="outline" size="sm" onClick={() => handleQuickTime(120)}>2 hod</Button>
+                  <Button variant="outline" size="sm" onClick={() => handleQuickTime(180)}>3 hod</Button>
+                </div>
+
+                {/* Custom time input */}
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="Vlastní (min)"
+                    className="w-32 h-8"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const value = parseInt((e.target as HTMLInputElement).value)
+                        if (!isNaN(value) && value > 0) {
+                          handleQuickTime(value);
+                          (e.target as HTMLInputElement).value = ''
+                        }
+                      }
+                    }}
+                  />
+                  <span className="text-sm text-muted-foreground">Enter pro přidání</span>
                 </div>
               </div>
             )}
@@ -519,7 +509,7 @@ export function TimeTracker({
                 </div>
 
                 <Button
-                  className="w-full"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
                   onClick={handleManualEntry}
                   disabled={!manualMinutes || parseInt(manualMinutes) <= 0}
                 >
@@ -582,8 +572,15 @@ export function TimeTracker({
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{entry.user_name}</span>
-                        <Badge variant={entry.billable ? "default" : "secondary"} className="text-xs">
-                          {entry.billable ? 'Billable' : 'Non-billable'}
+                        <Badge
+                          className={cn(
+                            "text-xs",
+                            entry.billable
+                              ? "bg-green-600 text-white hover:bg-green-700"
+                              : "bg-gray-200 text-gray-700"
+                          )}
+                        >
+                          {entry.billable ? 'Fakturovatelné' : 'Nefakturovatelné'}
                         </Badge>
                         {entry.duration_minutes && (
                           <span className="text-sm font-mono">

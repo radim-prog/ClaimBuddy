@@ -31,55 +31,27 @@ import {
   User,
   Search,
 } from 'lucide-react'
+import { mockUsers as centralMockUsers } from '@/lib/mock-data'
 
-// Mock user data
-const mockUsers = [
-  {
-    id: 'user-1',
-    name: 'Jana Svobodová',
-    email: 'jana@ucetnictvi.cz',
-    role: 'admin',
-    avatar: 'JS',
-    isOnline: true,
-    lastActive: '2025-12-23T10:45:00Z',
-  },
-  {
-    id: 'user-2',
-    name: 'Marie Účetní',
-    email: 'marie@ucetnictvi.cz',
-    role: 'accountant',
-    avatar: 'MÚ',
-    isOnline: true,
-    lastActive: '2025-12-23T10:40:00Z',
-  },
-  {
-    id: 'user-3',
-    name: 'Radim',
-    email: 'radim@ucetnictvi.cz',
-    role: 'admin',
-    avatar: 'R',
-    isOnline: false,
-    lastActive: '2025-12-23T08:30:00Z',
-  },
-  {
-    id: 'user-4',
-    name: 'Petra Asistentka',
-    email: 'petra@ucetnictvi.cz',
-    role: 'assistant',
-    avatar: 'PA',
-    isOnline: false,
-    lastActive: '2025-12-22T17:00:00Z',
-  },
-]
+// Rozšířená data uživatelů pro activity tracking (odvozeno z centrálních mockUsers)
+const mockUsers = centralMockUsers.map((user, index) => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  role: user.role === 'accountant' ? 'admin' : user.role, // accountant = admin pro tuto stránku
+  avatar: user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
+  isOnline: index < 2, // První 2 uživatelé jsou online
+  lastActive: new Date(Date.now() - index * 2 * 60 * 60 * 1000).toISOString(), // Postupně starší aktivita
+}))
 
-// Mock session data
+// Mock session data (odvozeno z centrálních mockUsers)
 const mockSessions = [
   {
     id: 'session-1',
-    user_id: 'user-1',
-    user_name: 'Jana Svobodová',
-    user_email: 'jana@ucetnictvi.cz',
-    login_time: '2025-12-23T08:00:00Z',
+    user_id: centralMockUsers[1]?.id || 'user-2-accountant', // Jana Svobodová
+    user_name: centralMockUsers[1]?.name || 'Jana Svobodová',
+    user_email: centralMockUsers[1]?.email || 'jana@ucetni.cz',
+    login_time: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3h zpět
     logout_time: null,
     duration: null,
     ip_address: '192.168.1.100',
@@ -92,10 +64,10 @@ const mockSessions = [
   },
   {
     id: 'session-2',
-    user_id: 'user-2',
-    user_name: 'Marie Účetní',
-    user_email: 'marie@ucetnictvi.cz',
-    login_time: '2025-12-23T08:30:00Z',
+    user_id: centralMockUsers[2]?.id || 'user-3-accountant', // Petr Novotný
+    user_name: centralMockUsers[2]?.name || 'Petr Novotný',
+    user_email: centralMockUsers[2]?.email || 'petr@ucetni.cz',
+    login_time: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(), // 2.5h zpět
     logout_time: null,
     duration: null,
     ip_address: '192.168.1.101',
@@ -108,11 +80,11 @@ const mockSessions = [
   },
   {
     id: 'session-3',
-    user_id: 'user-3',
-    user_name: 'Radim',
-    user_email: 'radim@ucetnictvi.cz',
-    login_time: '2025-12-23T07:00:00Z',
-    logout_time: '2025-12-23T08:30:00Z',
+    user_id: centralMockUsers[0]?.id || 'user-1-client', // Karel Novák
+    user_name: centralMockUsers[0]?.name || 'Karel Novák',
+    user_email: centralMockUsers[0]?.email || 'karel@example.com',
+    login_time: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4h zpět
+    logout_time: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(), // 2.5h zpět
     duration: '1h 30m',
     ip_address: '192.168.1.102',
     device: 'mobile',
@@ -124,11 +96,11 @@ const mockSessions = [
   },
   {
     id: 'session-4',
-    user_id: 'user-4',
-    user_name: 'Petra Asistentka',
-    user_email: 'petra@ucetnictvi.cz',
-    login_time: '2025-12-22T09:00:00Z',
-    logout_time: '2025-12-22T17:00:00Z',
+    user_id: centralMockUsers[3]?.id || 'user-4-assistant', // Marie Dvořáková
+    user_name: centralMockUsers[3]?.name || 'Marie Dvořáková',
+    user_email: centralMockUsers[3]?.email || 'marie@ucetni.cz',
+    login_time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Včera
+    logout_time: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString(), // 8h sezení
     duration: '8h 0m',
     ip_address: '192.168.1.103',
     device: 'desktop',
@@ -140,11 +112,11 @@ const mockSessions = [
   },
   {
     id: 'session-5',
-    user_id: 'user-1',
-    user_name: 'Jana Svobodová',
-    user_email: 'jana@ucetnictvi.cz',
-    login_time: '2025-12-22T08:00:00Z',
-    logout_time: '2025-12-22T18:00:00Z',
+    user_id: centralMockUsers[1]?.id || 'user-2-accountant', // Jana Svobodová - včerejší session
+    user_name: centralMockUsers[1]?.name || 'Jana Svobodová',
+    user_email: centralMockUsers[1]?.email || 'jana@ucetni.cz',
+    login_time: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), // Předevčírem
+    logout_time: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString(), // 10h sezení
     duration: '10h 0m',
     ip_address: '192.168.1.100',
     device: 'desktop',
@@ -156,57 +128,19 @@ const mockSessions = [
   },
 ]
 
-// Mock user activity stats
-const mockUserStats = [
-  {
-    user_id: 'user-1',
-    user_name: 'Jana Svobodová',
-    total_sessions: 45,
-    total_time: '180h',
-    avg_session: '4h',
-    pages_viewed: 3420,
-    actions: 1560,
-    last_login: '2025-12-23T08:00:00Z',
-    most_visited: 'Klienti',
-    trend: 'up',
-  },
-  {
-    user_id: 'user-2',
-    user_name: 'Marie Účetní',
-    total_sessions: 38,
-    total_time: '152h',
-    avg_session: '4h',
-    pages_viewed: 2890,
-    actions: 1340,
-    last_login: '2025-12-23T08:30:00Z',
-    most_visited: 'Uzávěrky',
-    trend: 'up',
-  },
-  {
-    user_id: 'user-3',
-    user_name: 'Radim',
-    total_sessions: 12,
-    total_time: '24h',
-    avg_session: '2h',
-    pages_viewed: 456,
-    actions: 89,
-    last_login: '2025-12-23T07:00:00Z',
-    most_visited: 'Admin',
-    trend: 'same',
-  },
-  {
-    user_id: 'user-4',
-    user_name: 'Petra Asistentka',
-    total_sessions: 22,
-    total_time: '88h',
-    avg_session: '4h',
-    pages_viewed: 1780,
-    actions: 890,
-    last_login: '2025-12-22T09:00:00Z',
-    most_visited: 'Dokumenty',
-    trend: 'down',
-  },
-]
+// Mock user activity stats (odvozeno z centrálních mockUsers)
+const mockUserStats = centralMockUsers.map((user, index) => ({
+  user_id: user.id,
+  user_name: user.name,
+  total_sessions: [45, 38, 12, 22][index] || 10,
+  total_time: ['180h', '152h', '24h', '88h'][index] || '40h',
+  avg_session: ['4h', '4h', '2h', '4h'][index] || '4h',
+  pages_viewed: [3420, 2890, 456, 1780][index] || 500,
+  actions: [1560, 1340, 89, 890][index] || 200,
+  last_login: new Date(Date.now() - index * 2 * 60 * 60 * 1000).toISOString(),
+  most_visited: ['Klienti', 'Uzávěrky', 'Admin', 'Dokumenty'][index] || 'Dashboard',
+  trend: ['up', 'up', 'same', 'down'][index] || 'same',
+}))
 
 // Mock page views by section
 const mockPageViews = [

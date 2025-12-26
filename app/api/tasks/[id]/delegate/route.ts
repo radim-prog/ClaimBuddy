@@ -96,7 +96,12 @@ export async function POST(
       project_outcome: originalTask.project_outcome,
       parent_project_id: originalTask.parent_project_id,
       status: 'pending', // New task starts as pending
-      priority: originalTask.priority,
+      // Copy R-Tasks scores from original task
+      score_money: originalTask.score_money,
+      score_fire: originalTask.score_fire,
+      score_time: originalTask.score_time,
+      score_distance: originalTask.score_distance,
+      score_personal: originalTask.score_personal,
       created_by: authUser.id,
       created_by_name: authUser.user_metadata?.name || authUser.email || 'Unknown',
       assigned_to: delegated_to,
