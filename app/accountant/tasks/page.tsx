@@ -942,8 +942,8 @@ export default function TasksPage() {
         )}
 
         {/* Task title and client */}
-        <Link href={`/accountant/tasks/${task.id}`} className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+        <Link href={`/accountant/tasks/${task.id}`} className="flex-1 min-w-0 block">
+          <span className="flex items-center gap-2">
             <span className={`font-medium text-gray-900 truncate ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}>
               {task.title}
             </span>
@@ -967,8 +967,8 @@ export default function TasksPage() {
                 Projekt
               </Badge>
             )}
-          </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500 truncate mt-0.5">
+          </span>
+          <span className="flex items-center gap-2 text-xs text-gray-500 truncate mt-0.5 block">
             {showClient && <span>{task.company_name}</span>}
             {task.project_name && (() => {
               const project = getProjectForTask(task)
@@ -991,7 +991,7 @@ export default function TasksPage() {
                 </>
               )
             })()}
-          </div>
+          </span>
         </Link>
 
         {/* Deadline */}
