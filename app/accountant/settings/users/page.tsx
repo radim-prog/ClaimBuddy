@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Users as UsersIcon, UserPlus, Pencil, Trash2, Shield, User } from 'lucide-react'
-import { createBrowserClient } from '@supabase/ssr'
+import { toast } from 'sonner'
 
 interface User {
   id: string
@@ -32,6 +32,31 @@ interface User {
   role: 'admin' | 'accountant' | 'assistant'
   created_at: string
 }
+
+// Mock users data for demo
+const MOCK_USERS: User[] = [
+  {
+    id: '1',
+    email: 'jana@ucetni.cz',
+    full_name: 'Jana Svobodová',
+    role: 'admin',
+    created_at: '2024-01-15T10:00:00Z',
+  },
+  {
+    id: '2',
+    email: 'petr@ucetni.cz',
+    full_name: 'Petr Novák',
+    role: 'accountant',
+    created_at: '2024-02-20T14:30:00Z',
+  },
+  {
+    id: '3',
+    email: 'marie@ucetni.cz',
+    full_name: 'Marie Dvořáková',
+    role: 'assistant',
+    created_at: '2024-03-10T09:15:00Z',
+  },
+]
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -47,104 +72,51 @@ export default function UserManagementPage() {
     password: ''
   })
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
   useEffect(() => {
     fetchUsers()
   }, [])
 
   const fetchUsers = async () => {
     setLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setUsers(data || [])
-    } catch (error) {
-      console.error('Error fetching users:', error)
-    } finally {
-      setLoading(false)
-    }
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500))
+    setUsers(MOCK_USERS)
+    setLoading(false)
   }
 
   const handleCreateUser = async () => {
-    try {
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newUser.email,
-        password: newUser.password,
-      })
-
-      if (authError) throw authError
-
-      // Create user record
-      const { error: dbError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user?.id,
-          email: newUser.email,
-          full_name: newUser.full_name,
-          role: newUser.role,
-        })
-
-      if (dbError) throw dbError
-
-      setCreateDialogOpen(false)
-      setNewUser({ email: '', full_name: '', role: 'accountant', password: '' })
-      fetchUsers()
-    } catch (error) {
-      console.error('Error creating user:', error)
-      alert('Chyba při vytváření uživatele')
+    // Mock: Add new user to local state
+    const newUserData: User = {
+      id: String(Date.now()),
+      email: newUser.email,
+      full_name: newUser.full_name,
+      role: newUser.role,
+      created_at: new Date().toISOString(),
     }
+    setUsers(prev => [newUserData, ...prev])
+    setCreateDialogOpen(false)
+    setNewUser({ email: '', full_name: '', role: 'accountant', password: '' })
+    toast.success('Uživatel vytvořen (demo)')
   }
 
   const handleUpdateUser = async () => {
     if (!selectedUser) return
 
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          full_name: selectedUser.full_name,
-          role: selectedUser.role,
-        })
-        .eq('id', selectedUser.id)
-
-      if (error) throw error
-
-      setEditDialogOpen(false)
-      setSelectedUser(null)
-      fetchUsers()
-    } catch (error) {
-      console.error('Error updating user:', error)
-      alert('Chyba při aktualizaci uživatele')
-    }
+    // Mock: Update user in local state
+    setUsers(prev => prev.map(u => u.id === selectedUser.id ? selectedUser : u))
+    setEditDialogOpen(false)
+    setSelectedUser(null)
+    toast.success('Uživatel aktualizován (demo)')
   }
 
   const handleDeleteUser = async () => {
     if (!selectedUser) return
 
-    try {
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', selectedUser.id)
-
-      if (error) throw error
-
-      setDeleteDialogOpen(false)
-      setSelectedUser(null)
-      fetchUsers()
-    } catch (error) {
-      console.error('Error deleting user:', error)
-      alert('Chyba při mazání uživatele')
-    }
+    // Mock: Remove user from local state
+    setUsers(prev => prev.filter(u => u.id !== selectedUser.id))
+    setDeleteDialogOpen(false)
+    setSelectedUser(null)
+    toast.success('Uživatel smazán (demo)')
   }
 
   const getRoleBadge = (role: string) => {
