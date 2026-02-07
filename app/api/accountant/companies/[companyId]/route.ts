@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { mockCompanies, mockMonthlyClosures } from '@/lib/mock-data'
+import { mockCompanies, getClosures } from '@/lib/mock-data'
 
 // DEMO MODE - Using mock data instead of Supabase
 export async function GET(
@@ -17,7 +17,7 @@ export async function GET(
     }
 
     // Get monthly closures for this company
-    const closures = mockMonthlyClosures
+    const closures = getClosures()
       .filter(c => c.company_id === companyId)
       .sort((a, b) => b.period.localeCompare(a.period)) // Descending order
 

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
-import { mockCompanies, mockMonthlyClosures, getAllTasks } from '@/lib/mock-data'
+import { mockCompanies, getClosures, getAllTasks } from '@/lib/mock-data'
+
+// Force dynamic - this route reads mutable in-memory state
+export const dynamic = 'force-dynamic'
 
 // DEMO MODE - Using mock data instead of Supabase
 export async function GET(request: Request) {
@@ -26,7 +29,8 @@ export async function GET(request: Request) {
       onboarding: (c as any).onboarding || null,
     }))
 
-    const closures = mockMonthlyClosures
+    const closures = getClosures()
+
 
     // Pro statistiky počítáme pouze uzávěrky do aktuálního měsíce (ne budoucí)
     const now = new Date()

@@ -27,7 +27,6 @@ import {
   Receipt,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { addActivity } from '@/lib/activity-store'
 
 type ClosureData = {
   id: string
@@ -101,44 +100,34 @@ export function ClosureDetailModal({ open, onOpenChange, closure, companyName, o
 
   const handleSave = async () => {
     setSaving(true)
-    await new Promise(resolve => setTimeout(resolve, 300))
 
-    const allApproved = bankStatus === 'approved' && expenseStatus === 'approved' && incomeStatus === 'approved'
-    const anyMissing = bankStatus === 'missing' || expenseStatus === 'missing' || incomeStatus === 'missing'
-
-    const updated: ClosureData = {
-      ...closure,
-      bank_statement_status: bankStatus,
-      expense_documents_status: expenseStatus,
-      income_invoices_status: incomeStatus,
-      status: allApproved ? 'closed' : anyMissing ? 'open' : 'pending_review',
-      notes: notes || null,
-      updated_by: 'Jana Svobodová',
-      updated_at: new Date().toISOString(),
-    }
-
-    onSave(updated)
-
-    // Record activity
-    const changes: string[] = []
-    if (bankStatus !== closure.bank_statement_status) changes.push(`výpisy: ${bankStatus}`)
-    if (expenseStatus !== closure.expense_documents_status) changes.push(`náklady: ${expenseStatus}`)
-    if (incomeStatus !== closure.income_invoices_status) changes.push(`příjmy: ${incomeStatus}`)
-
-    if (changes.length > 0) {
-      addActivity({
-        type: 'closure_status_changed',
-        company_id: closure.company_id,
-        company_name: companyName,
-        title: `Uzávěrka ${formatPeriod(closure.period)} změněna`,
-        description: changes.join(', '),
-        created_by: 'Jana Svobodová',
+    try {
+      const res = await fetch('/api/accountant/closures', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          closure_id: closure.id,
+          bank_statement_status: bankStatus,
+          expense_documents_status: expenseStatus,
+          income_invoices_status: incomeStatus,
+          notes: notes || null,
+          company_name: companyName,
+          period: formatPeriod(closure.period),
+        }),
       })
-    }
 
-    setSaving(false)
-    toast.success(`Uzávěrka ${formatPeriod(closure.period)} aktualizována`)
-    onOpenChange(false)
+      if (!res.ok) throw new Error('Save failed')
+
+      const data = await res.json()
+      onSave(data.closure)
+
+      toast.success(`Uzávěrka ${formatPeriod(closure.period)} aktualizována`)
+      onOpenChange(false)
+    } catch {
+      toast.error('Chyba při ukládání')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const hasChanges =

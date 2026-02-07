@@ -13,14 +13,20 @@ export type Message = {
   attachments?: { name: string; url: string }[]
 }
 
-// In-memory store
-const messages: Message[] = []
-let messageCounter = 0
+// globalThis singleton - ensures all API routes share the same store
+const _storeKey = '__ucetni_message_store'
+function _getStore(): { messages: Message[]; counter: number } {
+  if (!(globalThis as any)[_storeKey]) {
+    (globalThis as any)[_storeKey] = { messages: [], counter: 0 }
+  }
+  return (globalThis as any)[_storeKey]
+}
+const messages = _getStore().messages
 
 export function addMessage(data: Omit<Message, 'id' | 'created_at'>): Message {
   const message: Message = {
     ...data,
-    id: `msg-${++messageCounter}`,
+    id: `msg-${++_getStore().counter}`,
     created_at: new Date().toISOString(),
   }
   messages.push(message)

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { mockCompanies, mockMonthlyClosures } from '@/lib/mock-data'
+import { mockCompanies, getClosures } from '@/lib/mock-data'
 
 export async function GET(request: Request) {
   try {
@@ -25,13 +25,13 @@ export async function GET(request: Request) {
     const currentYear = now.getFullYear()
 
     // Get closures for current month
-    const currentClosures = mockMonthlyClosures.filter(c =>
+    const currentClosures = getClosures().filter(c =>
       companies.some(comp => comp.id === c.company_id) &&
       c.period === currentPeriod
     )
 
     // Get closures for full year (all months)
-    const yearClosures = mockMonthlyClosures.filter(c =>
+    const yearClosures = getClosures().filter(c =>
       companies.some(comp => comp.id === c.company_id) &&
       c.period.startsWith(String(currentYear))
     )

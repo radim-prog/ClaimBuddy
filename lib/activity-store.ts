@@ -32,19 +32,23 @@ export type Reminder = {
   notes?: string
 }
 
-// In-memory stores
-const activities: Activity[] = []
-const reminders: Reminder[] = []
-
-let activityCounter = 0
-let reminderCounter = 0
+// globalThis singleton - ensures all API routes share the same store
+const _storeKey = '__ucetni_activity_store'
+function _getStore(): { activities: Activity[]; reminders: Reminder[]; activityCounter: number; reminderCounter: number } {
+  if (!(globalThis as any)[_storeKey]) {
+    (globalThis as any)[_storeKey] = { activities: [], reminders: [], activityCounter: 0, reminderCounter: 0 }
+  }
+  return (globalThis as any)[_storeKey]
+}
+const activities = _getStore().activities
+const reminders = _getStore().reminders
 
 // === ACTIVITIES ===
 
 export function addActivity(data: Omit<Activity, 'id' | 'created_at'>): Activity {
   const activity: Activity = {
     ...data,
-    id: `activity-${++activityCounter}`,
+    id: `activity-${++_getStore().activityCounter}`,
     created_at: new Date().toISOString(),
   }
   activities.unshift(activity) // newest first
@@ -64,7 +68,7 @@ export function getActivitiesByCompany(companyId: string, limit: number = 10): A
 export function addReminder(data: Omit<Reminder, 'id' | 'sent_at'>): Reminder {
   const reminder: Reminder = {
     ...data,
-    id: `reminder-${++reminderCounter}`,
+    id: `reminder-${++_getStore().reminderCounter}`,
     sent_at: new Date().toISOString(),
   }
   reminders.unshift(reminder) // newest first

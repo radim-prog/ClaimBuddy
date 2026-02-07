@@ -594,27 +594,41 @@ export type ClosureRecord = {
   created_at: string; updated_at: string;
 }
 
-export const mockMonthlyClosures: ClosureRecord[] = activeCompanies.flatMap((company: any) =>
-  activeMonths.map((month) => ({
-    id: `closure-${company.id}-${currentYear}-${month}`,
-    company_id: company.id,
-    period: `${currentYear}-${month}`,
-    status: 'open',
-    bank_statement_status: 'missing',
-    expense_documents_status: 'missing',
-    income_invoices_status: 'missing',
-    vat_payable: null,
-    income_tax_accrued: null,
-    social_insurance: null,
-    health_insurance: null,
-    reminder_count: 0,
-    last_reminder_sent_at: null,
-    notes: null,
-    updated_by: null,
-    created_at: `${currentYear}-${month}-01T00:00:00Z`,
-    updated_at: `${currentYear}-${month}-15T00:00:00Z`,
-  }))
-)
+// globalThis singleton - ensures all API routes share the same array
+// (Next.js standalone mode can create multiple module instances)
+const _closuresKey = '__ucetni_closures'
+function _initClosures(): ClosureRecord[] {
+  if (!(globalThis as any)[_closuresKey]) {
+    (globalThis as any)[_closuresKey] = activeCompanies.flatMap((company: any) =>
+      activeMonths.map((month) => ({
+        id: `closure-${company.id}-${currentYear}-${month}`,
+        company_id: company.id,
+        period: `${currentYear}-${month}`,
+        status: 'open',
+        bank_statement_status: 'missing',
+        expense_documents_status: 'missing',
+        income_invoices_status: 'missing',
+        vat_payable: null,
+        income_tax_accrued: null,
+        social_insurance: null,
+        health_insurance: null,
+        reminder_count: 0,
+        last_reminder_sent_at: null,
+        notes: null,
+        updated_by: null,
+        created_at: `${currentYear}-${month}-01T00:00:00Z`,
+        updated_at: `${currentYear}-${month}-15T00:00:00Z`,
+      }))
+    )
+  }
+  return (globalThis as any)[_closuresKey]
+}
+export const mockMonthlyClosures: ClosureRecord[] = _initClosures()
+
+// Runtime getter - ALWAYS reads from globalThis, bypasses module caching
+export function getClosures(): ClosureRecord[] {
+  return _initClosures()
+}
 
 // Mock documents (30 ukázkových dokumentů)
 const documentTypes = ['receipt', 'bank_statement', 'expense_invoice', 'income_invoice'] as const
@@ -1189,7 +1203,7 @@ export function getCompaniesByAccountant(accountantId: string) {
 }
 
 export function getClosuresByCompany(companyId: string) {
-  return mockMonthlyClosures.filter(c => c.company_id === companyId)
+  return getClosures().filter(c => c.company_id === companyId)
 }
 
 export function getDocumentsByCompany(companyId: string, period?: string) {
