@@ -130,7 +130,7 @@ export function DocumentUpload({ companyId, period, documentType, onUploadComple
         {...getRootProps()}
         className={`
           border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-          ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
+          ${isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'}
         `}
       >
         <input {...getInputProps()} />
@@ -182,7 +182,7 @@ export function DocumentUpload({ companyId, period, documentType, onUploadComple
                   {/* Status */}
                   {fileItem.status === 'uploading' && (
                     <div className="mt-2">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                         <div
                           className="bg-blue-600 h-2 rounded-full transition-all"
                           style={{ width: `${fileItem.progress || 0}%` }}

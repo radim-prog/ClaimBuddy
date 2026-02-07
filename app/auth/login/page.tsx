@@ -45,7 +45,14 @@ export default function LoginPage() {
   const handleDemoLogin = async (role: 'client' | 'accountant') => {
     setLoading(true)
 
-    // Přihlásit se jako Radim (admin)
+    if (role === 'client') {
+      // For client demo, redirect directly without Supabase auth
+      toast.success('Demo přihlášení (Klient)')
+      router.push('/client/dashboard')
+      return
+    }
+
+    // Přihlásit se jako Radim (admin) for accountant
     const formData = new FormData()
     formData.append('username', 'Radim')
     formData.append('password', 'admin')
@@ -59,7 +66,7 @@ export default function LoginPage() {
         })
         setLoading(false)
       } else {
-        toast.success(`Demo přihlášení (${role === 'client' ? 'Klient' : 'Účetní'})`)
+        toast.success('Demo přihlášení (Účetní)')
         // Redirect je handled by action
       }
     } catch (error) {

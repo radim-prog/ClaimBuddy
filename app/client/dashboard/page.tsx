@@ -1,265 +1,348 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Building2, FileText, Upload, AlertCircle, CalendarDays, MessageCircle } from 'lucide-react'
+import {
+  Upload,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  MessageCircle,
+  CalendarDays,
+  Phone,
+  Mail,
+  ChevronRight,
+} from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { DeadlineCalendar } from '@/components/client/deadline-calendar'
+import { Badge } from '@/components/ui/badge'
+import { useClientUser } from '@/lib/contexts/client-user-context'
+import { generateDeadlinesForCompany } from '@/lib/statutory-deadlines'
+import { MOCK_CONFIG } from '@/lib/mock-data'
 
-const months = [
+const monthNames = [
   'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
   'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'
 ]
 
-type Company = {
-  id: string
-  name: string
-  ico: string
-  legal_form: string
-  vat_payer: boolean
-  currentMonthStatus: {
-    period: string
-    missing_count: number
-    missing_types: string[]
-    all_uploaded: boolean
-  }
+type ClosureStatus = 'missing' | 'uploaded' | 'approved'
+
+function getOverallStatus(closure: { bank_statement_status: ClosureStatus; expense_documents_status: ClosureStatus; income_invoices_status: ClosureStatus }): 'action' | 'waiting' | 'ok' {
+  const statuses = [closure.bank_statement_status, closure.expense_documents_status, closure.income_invoices_status]
+  if (statuses.some(s => s === 'missing')) return 'action'
+  if (statuses.some(s => s === 'uploaded')) return 'waiting'
+  return 'ok'
 }
 
-type ApiResponse = {
-  companies: Company[]
-  stats: {
-    total_companies: number
-    companies_with_missing_docs: number
-    total_missing_docs: number
-  }
-  current_period: string
+function getMonthDotColor(closure: { bank_statement_status: ClosureStatus; expense_documents_status: ClosureStatus; income_invoices_status: ClosureStatus } | undefined, isFuture: boolean): string {
+  if (isFuture || !closure) return 'bg-gray-300 dark:bg-gray-600'
+  const status = getOverallStatus(closure)
+  if (status === 'action') return 'bg-red-500'
+  if (status === 'waiting') return 'bg-yellow-500'
+  return 'bg-green-500'
 }
 
 export default function ClientDashboard() {
-  const [data, setData] = useState<ApiResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { userName, companies, closures, loading, error } = useClientUser()
+  const [selectedCompanyIndex, setSelectedCompanyIndex] = useState(0)
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await fetch('/api/client/companies')
-        if (!response.ok) {
-          throw new Error('Failed to fetch companies')
-        }
-        const json = await response.json()
-        setData(json)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error')
-      } finally {
-        setLoading(false)
-      }
-    }
+  const now = new Date()
+  const currentMonth = now.getMonth() // 0-indexed
+  const currentYear = now.getFullYear()
+  const currentPeriod = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
 
-    fetchData()
-  }, [])
+  const selectedCompany = companies[selectedCompanyIndex]
+
+  // Get closures for selected company
+  const companyClosures = useMemo(() => {
+    if (!selectedCompany) return []
+    return closures.filter(c => c.company_id === selectedCompany.id)
+  }, [selectedCompany, closures])
+
+  // Current month closure
+  const currentClosure = companyClosures.find(c => c.period === currentPeriod)
+
+  // Current month status
+  const currentStatus = currentClosure ? getOverallStatus(currentClosure as any) : 'action'
+
+  // Missing docs for current month
+  const missingDocs = useMemo(() => {
+    if (!currentClosure) return ['Výpis z účtu', 'Nákladové doklady', 'Příjmové faktury']
+    const missing: string[] = []
+    if ((currentClosure as any).bank_statement_status === 'missing') missing.push('Výpis z účtu')
+    if ((currentClosure as any).expense_documents_status === 'missing') missing.push('Nákladové doklady')
+    if ((currentClosure as any).income_invoices_status === 'missing') missing.push('Příjmové faktury')
+    return missing
+  }, [currentClosure])
+
+  // Deadlines for current month
+  const deadlines = useMemo(() => {
+    if (!selectedCompany) return []
+    return generateDeadlinesForCompany(
+      selectedCompany as any,
+      currentYear,
+      currentMonth + 1
+    ).slice(0, 3)
+  }, [selectedCompany, currentYear, currentMonth])
+
+  // Year matrix data
+  const yearMatrix = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => {
+      const month = i + 1
+      const period = `${currentYear}-${String(month).padStart(2, '0')}`
+      const closure = companyClosures.find(c => c.period === period)
+      const isFuture = month > currentMonth + 1
+      return { month, period, closure, isFuture, name: monthNames[i] }
+    })
+  }, [companyClosures, currentYear, currentMonth])
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Načítám vaše firmy...</p>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
   }
 
-  if (error || !data) {
+  if (error || companies.length === 0) {
     return (
-      <div className="bg-red-50 border-l-4 border-red-400 p-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3">
-            <p className="text-sm text-red-700">
-              Nepodařilo se načíst data: {error || 'Neznámá chyba'}
-            </p>
-          </div>
-        </div>
+      <div className="text-center py-12">
+        <p className="text-gray-500 dark:text-gray-400">
+          {error || 'Nemáte přiřazené žádné firmy. Kontaktujte svého účetního.'}
+        </p>
       </div>
     )
   }
-
-  const { companies, stats } = data
-  const totalCompanies = stats.total_companies
-  const missingDocumentsCount = stats.total_missing_docs
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Vítejte zpět!</h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-300">
-          Přehled vašich firem a aktuálních úkolů
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Dobrý den, {userName.split(' ')[0]}
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400">
+          {now.toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Moje firmy</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalCompanies}</div>
-            <p className="text-xs text-muted-foreground">
-              Aktivních subjektů
-            </p>
-          </CardContent>
-        </Card>
+      {/* Multi-company tabs */}
+      {companies.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {companies.map((company, index) => (
+            <button
+              key={company.id}
+              onClick={() => setSelectedCompanyIndex(index)}
+              className={`
+                px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors
+                ${index === selectedCompanyIndex
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }
+              `}
+            >
+              {company.name}
+            </button>
+          ))}
+        </div>
+      )}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Chybějící dokumenty</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{missingDocumentsCount}</div>
-            <p className="text-xs text-muted-foreground">
-              Nutné nahrát
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Aktuální měsíc</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{months[new Date().getMonth()]}</div>
-            <p className="text-xs text-muted-foreground">
-              {new Date().getFullYear()}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Urgent Actions */}
-      {missingDocumentsCount > 0 && (
-        <Card className="mb-8 border-red-200 bg-red-50">
-          <CardHeader>
-            <CardTitle className="flex items-center text-red-900">
-              <AlertCircle className="mr-2 h-5 w-5" />
-              Vyžaduje pozornost
-            </CardTitle>
-            <CardDescription className="text-red-700">
-              Některé dokumenty stále chybí. Prosím nahrajte je co nejdříve.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="bg-red-600 hover:bg-red-700">
-              <Link href="/client/upload">
-                <Upload className="mr-2 h-4 w-4" />
-                Nahrát dokumenty
-              </Link>
-            </Button>
+      {/* Current Month Card - Adaptive */}
+      {currentStatus === 'action' && (
+        <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-full">
+                <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-red-900 dark:text-red-100">
+                  {monthNames[currentMonth]} {currentYear} — Chybí podklady
+                </h2>
+                <ul className="mt-2 space-y-1">
+                  {missingDocs.map(doc => (
+                    <li key={doc} className="text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0" />
+                      {doc}
+                    </li>
+                  ))}
+                </ul>
+                <Button asChild className="mt-4 bg-red-600 hover:bg-red-700">
+                  <Link href={`/client/upload?company=${selectedCompany?.id}&period=${currentPeriod}`}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Nahrát doklady
+                  </Link>
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Companies List */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Moje firmy</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {companies.map((company) => {
-            const hasMissing = company.currentMonthStatus.missing_count > 0
+      {currentStatus === 'waiting' && (
+        <Card className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950/30">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-full">
+                <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-yellow-900 dark:text-yellow-100">
+                  {monthNames[currentMonth]} {currentYear} — Zpracovává se
+                </h2>
+                <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
+                  Vaše podklady účetní zpracovává. Není potřeba nic dělat.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-            return (
-              <Card key={company.id} className={hasMissing ? 'border-red-200' : ''}>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>{company.name}</span>
-                    {hasMissing && (
-                      <span className="flex items-center justify-center w-6 h-6 bg-red-100 rounded-full">
-                        <span className="text-red-600 text-xs font-bold">{company.currentMonthStatus.missing_count}</span>
-                      </span>
-                    )}
-                  </CardTitle>
-                  <CardDescription>
-                    IČO: {company.ico}
-                    {company.vat_payer && ' • Plátce DPH'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="text-sm text-gray-600 dark:text-gray-300">
-                      <strong>Právní forma:</strong> {company.legal_form}
-                    </div>
-                    {hasMissing && (
-                      <div className="text-sm text-red-600 flex items-start">
-                        <AlertCircle className="mr-1 h-4 w-4 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <div>Chybí {company.currentMonthStatus.missing_count} dokumentů:</div>
-                          <ul className="mt-1 list-disc list-inside text-xs">
-                            {company.currentMonthStatus.missing_types.map((type, i) => (
-                              <li key={i}>{type}</li>
-                            ))}
-                          </ul>
-                        </div>
+      {currentStatus === 'ok' && (
+        <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-full">
+                <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-green-900 dark:text-green-100">
+                  {monthNames[currentMonth]} {currentYear} — Vše v pořádku
+                </h2>
+                <p className="mt-1 text-sm text-green-700 dark:text-green-300">
+                  Všechny doklady jsou zpracované.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Year Matrix */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Přehled roku {currentYear}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-2">
+            {yearMatrix.map(({ month, closure, isFuture, name }) => (
+              <div
+                key={month}
+                className={`
+                  text-center p-2 rounded-lg transition-colors
+                  ${month === currentMonth + 1
+                    ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/30'
+                    : 'bg-gray-50 dark:bg-gray-800'
+                  }
+                  ${isFuture ? 'opacity-40' : ''}
+                `}
+              >
+                <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">
+                  {name.slice(0, 3)}
+                </div>
+                <div className={`
+                  w-3 h-3 rounded-full mx-auto
+                  ${getMonthDotColor(closure as any, isFuture)}
+                `} />
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Chybí</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Nahráno</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Schváleno</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" /> Budoucí</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Two column layout: Messages + Deadlines */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Messages Widget */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <MessageCircle className="h-4 w-4" />
+                Zprávy
+              </CardTitle>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/client/messages">
+                  Zobrazit vše <ChevronRight className="ml-1 h-3 w-3" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+              <MessageCircle className="h-10 w-10 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">Zatím žádné zprávy od účetního</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Deadlines Widget */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              Nadcházející termíny
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {deadlines.length === 0 ? (
+              <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                <CalendarDays className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">Žádné blížící se termíny</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {deadlines.map(deadline => (
+                  <div key={deadline.id} className="flex items-start gap-3">
+                    <div className="text-center min-w-[40px]">
+                      <div className="text-lg font-bold text-gray-900 dark:text-white">
+                        {new Date(deadline.due_date).getDate()}
                       </div>
-                    )}
-                    <Button
-                      asChild
-                      variant={hasMissing ? "default" : "outline"}
-                      className={`w-full mt-4 ${hasMissing ? 'bg-red-600 hover:bg-red-700' : ''}`}
-                    >
-                      <Link href={`/client/companies/${company.id}`}>
-                        Zobrazit detail
-                      </Link>
-                    </Button>
+                      <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                        {monthNames[new Date(deadline.due_date).getMonth()]?.slice(0, 3)}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {deadline.title}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {deadline.description}
+                      </p>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Quick Actions */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Rychlé akce</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button asChild variant="outline" size="lg" className="h-auto py-6">
-            <Link href="/client/upload" className="flex flex-col items-center">
-              <Upload className="h-8 w-8 mb-2" />
-              <span className="text-lg font-semibold">Nahrát dokumenty</span>
-              <span className="text-sm text-gray-500 dark:text-gray-400">Faktury, účtenky, výpisy</span>
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="lg" className="h-auto py-6">
-            <Link href="/client/documents" className="flex flex-col items-center">
-              <FileText className="h-8 w-8 mb-2" />
-              <span className="text-lg font-semibold">Zobrazit dokumenty</span>
-              <span className="text-sm text-gray-500 dark:text-gray-400">Všechny nahrané soubory</span>
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="lg" className="h-auto py-6">
-            <Link href={companies.length > 0 ? `/client/companies/${companies[0].id}?tab=messages` : '/client/companies'} className="flex flex-col items-center">
-              <MessageCircle className="h-8 w-8 mb-2" />
-              <span className="text-lg font-semibold">Zprávy</span>
-              <span className="text-sm text-gray-500 dark:text-gray-400">Komunikace s účetním</span>
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      {/* Upcoming Deadlines */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Nadcházející termíny</h2>
-        <DeadlineCalendar />
-      </div>
+      {/* Contact Card */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Vaše účetní</p>
+              <p className="font-semibold text-gray-900 dark:text-white">{MOCK_CONFIG.CURRENT_USER_NAME}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/client/messages">
+                  <Mail className="mr-1 h-3.5 w-3.5" />
+                  Napsat zprávu
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

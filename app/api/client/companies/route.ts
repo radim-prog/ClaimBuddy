@@ -1,23 +1,44 @@
 import { NextResponse } from 'next/server'
 import { mockCompanies, mockMonthlyClosures } from '@/lib/mock-data'
 
-// DEMO MODE - Using mock data instead of Supabase
 export async function GET(request: Request) {
   try {
-    // Use mock data (first company for demo)
-    const companies = mockCompanies.slice(0, 3) // Show first 3 companies
+    const { searchParams } = new URL(request.url)
+    const ownerId = searchParams.get('owner_id')
+    const demo = searchParams.get('demo')
 
-    // Get monthly closures for current month
-    const currentPeriod = '2025-11' // November 2025 (mock current month)
+    // Filter companies by owner_id, or use first 3 for demo
+    let companies: any[]
+    if (ownerId) {
+      companies = (mockCompanies as any[]).filter(c => c.owner_id === ownerId && c.status === 'active')
+    } else if (demo === 'true') {
+      // Demo: show first 3 active companies
+      companies = (mockCompanies as any[]).filter(c => c.status === 'active').slice(0, 3)
+    } else {
+      // Fallback: first 3
+      companies = (mockCompanies as any[]).filter(c => c.status === 'active').slice(0, 3)
+    }
 
-    const closures = mockMonthlyClosures.filter(c =>
+    // Dynamic current period
+    const now = new Date()
+    const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const currentYear = now.getFullYear()
+
+    // Get closures for current month
+    const currentClosures = mockMonthlyClosures.filter(c =>
       companies.some(comp => comp.id === c.company_id) &&
       c.period === currentPeriod
     )
 
-    // Enrich companies with closure status
+    // Get closures for full year (all months)
+    const yearClosures = mockMonthlyClosures.filter(c =>
+      companies.some(comp => comp.id === c.company_id) &&
+      c.period.startsWith(String(currentYear))
+    )
+
+    // Enrich companies with current month closure status
     const enrichedCompanies = companies.map(company => {
-      const closure = closures.find(c => c.company_id === company.id)
+      const closure = currentClosures.find(c => c.company_id === company.id)
 
       const missingDocs = closure ? [
         closure.bank_statement_status === 'missing' ? 'Výpis z účtu' : null,
@@ -32,7 +53,9 @@ export async function GET(request: Request) {
         dic: company.dic,
         legal_form: company.legal_form,
         vat_payer: company.vat_payer,
-        created_at: company.created_at,
+        has_employees: company.has_employees,
+        status: company.status,
+        address: company.address,
         currentMonthStatus: {
           period: currentPeriod,
           missing_count: missingDocs.length,
@@ -41,13 +64,11 @@ export async function GET(request: Request) {
           bank_statement_status: closure?.bank_statement_status || 'missing',
           expense_documents_status: closure?.expense_documents_status || 'missing',
           income_invoices_status: closure?.income_invoices_status || 'missing',
-          vat_payable: closure?.vat_payable || null,
-          income_tax_accrued: closure?.income_tax_accrued || null,
         }
       }
     })
 
-    // Calculate overall stats
+    // Stats
     const stats = {
       total_companies: companies.length,
       companies_with_missing_docs: enrichedCompanies.filter(c => c.currentMonthStatus.missing_count > 0).length,
@@ -56,8 +77,16 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       companies: enrichedCompanies,
+      closures: yearClosures.map(c => ({
+        company_id: c.company_id,
+        period: c.period,
+        bank_statement_status: c.bank_statement_status,
+        expense_documents_status: c.expense_documents_status,
+        income_invoices_status: c.income_invoices_status,
+      })),
       stats,
       current_period: currentPeriod,
+      user_name: 'Karel Novák', // TODO: get from auth session
     })
   } catch (error) {
     console.error('Client Companies API error:', error)

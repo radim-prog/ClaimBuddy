@@ -1,172 +1,140 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { DocumentUpload } from '@/components/client/DocumentUpload'
+import { useClientUser } from '@/lib/contexts/client-user-context'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
+import {
+  Landmark,
+  Receipt,
+  FileText,
+  Camera,
+  Upload,
+} from 'lucide-react'
 
-type Company = {
-  id: string
-  name: string
-  ico: string
-}
+const monthNames = [
+  'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
+  'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'
+]
+
+type DocType = 'bank_statement' | 'expense_invoice' | 'income_invoice'
+
+const docTypes: { value: DocType; label: string; icon: typeof Landmark }[] = [
+  { value: 'bank_statement', label: 'Výpis z banky', icon: Landmark },
+  { value: 'expense_invoice', label: 'Nákladové doklady', icon: Receipt },
+  { value: 'income_invoice', label: 'Příjmové faktury', icon: FileText },
+]
 
 export default function UploadPage() {
   const router = useRouter()
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [loading, setLoading] = useState(true)
+  const searchParams = useSearchParams()
+  const { companies, loading } = useClientUser()
 
   const [selectedCompany, setSelectedCompany] = useState<string>('')
   const [selectedPeriod, setSelectedPeriod] = useState<string>('')
-  const [selectedType, setSelectedType] = useState<'bank_statement' | 'receipt' | 'expense_invoice' | 'income_invoice'>('receipt')
+  const [selectedType, setSelectedType] = useState<DocType | ''>('')
 
+  // Pre-fill from query params or auto-select
   useEffect(() => {
-    async function fetchCompanies() {
-      try {
-        const response = await fetch('/api/client/companies')
-        if (!response.ok) throw new Error('Failed to fetch companies')
-        const data = await response.json()
-        setCompanies(data.companies)
+    if (companies.length === 0) return
 
-        // Auto-select first company
-        if (data.companies.length > 0) {
-          setSelectedCompany(data.companies[0].id)
-        }
+    const companyParam = searchParams.get('company')
+    const periodParam = searchParams.get('period')
 
-        // Auto-select current period
-        const currentPeriod = new Date().toISOString().slice(0, 7) // YYYY-MM
-        setSelectedPeriod(currentPeriod)
-      } catch (error) {
-        console.error('Error fetching companies:', error)
-        toast.error('Nepodařilo se načíst firmy')
-      } finally {
-        setLoading(false)
-      }
+    // Auto-select company if only 1 or from param
+    if (companyParam && companies.find(c => c.id === companyParam)) {
+      setSelectedCompany(companyParam)
+    } else if (companies.length === 1) {
+      setSelectedCompany(companies[0].id)
     }
 
-    fetchCompanies()
-  }, [])
+    // Auto-select period
+    if (periodParam) {
+      setSelectedPeriod(periodParam)
+    } else {
+      const now = new Date()
+      setSelectedPeriod(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+    }
+  }, [companies, searchParams])
 
   // Generate periods (last 12 months)
   const periods = []
   for (let i = 0; i < 12; i++) {
     const date = new Date()
     date.setMonth(date.getMonth() - i)
-    const period = date.toISOString().slice(0, 7)
-    const monthNames = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec']
+    const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
     const month = monthNames[date.getMonth()]
     const year = date.getFullYear()
     periods.push({ value: period, label: `${month} ${year}` })
   }
 
-  const documentTypes = [
-    { value: 'bank_statement', label: 'Výpis z banky' },
-    { value: 'expense_invoice', label: 'Výdajová faktura' },
-    { value: 'income_invoice', label: 'Příjmová faktura' },
-    { value: 'receipt', label: 'Účtenka' },
-  ]
-
   const handleUploadComplete = () => {
-    toast.success('Všechny soubory byly úspěšně nahrány!')
-    setTimeout(() => {
-      router.push('/client/dashboard')
-    }, 2000)
+    toast.success('Doklady nahrány!')
+    setTimeout(() => router.push('/client/dashboard'), 1500)
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Načítám...</p>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
   }
 
   if (companies.length === 0) {
     return (
-      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3">
-            <p className="text-sm text-yellow-700">
-              Nemáte žádné firmy. Prosím kontaktujte svého účetního.
-            </p>
-          </div>
-        </div>
+      <div className="text-center py-12">
+        <Upload className="h-16 w-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+        <p className="text-gray-500 dark:text-gray-400">Nemáte žádné firmy. Kontaktujte svého účetního.</p>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Nahrát dokumenty</h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-300">
-          Nahrajte faktury, účtenky a výpisy z účtu pro měsíční uzávěrku
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nahrát doklady</h1>
+        <p className="mt-1 text-gray-600 dark:text-gray-400">
+          Nahrajte faktury, účtenky a výpisy z účtu
         </p>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Vyberte detaily</CardTitle>
-          <CardDescription>
-            Zvolte firmu, období a typ dokumentu
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="company">Firma</Label>
-              <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-                <SelectTrigger id="company">
-                  <SelectValue placeholder="Vyberte firmu" />
-                </SelectTrigger>
-                <SelectContent>
-                  {companies.map(company => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Company & Period selectors */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Company - only show if multiple */}
+            {companies.length > 1 && (
+              <div className="space-y-2">
+                <Label>Firma</Label>
+                <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Vyberte firmu" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
+            {/* Period */}
             <div className="space-y-2">
-              <Label htmlFor="period">Období</Label>
+              <Label>Období</Label>
               <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger id="period">
+                <SelectTrigger>
                   <SelectValue placeholder="Vyberte období" />
                 </SelectTrigger>
                 <SelectContent>
-                  {periods.map(period => (
-                    <SelectItem key={period.value} value={period.value}>
-                      {period.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="type">Typ dokumentu</Label>
-              <Select value={selectedType} onValueChange={(v: any) => setSelectedType(v)}>
-                <SelectTrigger id="type">
-                  <SelectValue placeholder="Vyberte typ" />
-                </SelectTrigger>
-                <SelectContent>
-                  {documentTypes.map(type => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
+                  {periods.map(p => (
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -175,21 +143,70 @@ export default function UploadPage() {
         </CardContent>
       </Card>
 
+      {/* Document type buttons */}
+      {selectedCompany && selectedPeriod && (
+        <div>
+          <Label className="mb-3 block">Typ dokumentu</Label>
+          <div className="grid grid-cols-3 gap-3">
+            {docTypes.map(dt => {
+              const Icon = dt.icon
+              const isSelected = selectedType === dt.value
+              return (
+                <button
+                  key={dt.value}
+                  onClick={() => setSelectedType(dt.value)}
+                  className={`
+                    flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all text-center
+                    ${isSelected
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-600 dark:text-gray-400'
+                    }
+                  `}
+                >
+                  <Icon className={`h-6 w-6 ${isSelected ? 'text-blue-600 dark:text-blue-400' : ''}`} />
+                  <span className="text-xs font-medium">{dt.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Upload zone */}
       {selectedCompany && selectedPeriod && selectedType && (
         <Card>
           <CardHeader>
-            <CardTitle>Upload souborů</CardTitle>
-            <CardDescription>
-              Přetáhněte soubory nebo klikněte pro výběr
-            </CardDescription>
+            <CardTitle className="text-base">Nahrát soubory</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <DocumentUpload
               companyId={selectedCompany}
               period={selectedPeriod}
               documentType={selectedType}
               onUploadComplete={handleUploadComplete}
             />
+
+            {/* Mobile camera button */}
+            <div className="md:hidden">
+              <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-lg cursor-pointer bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
+                <Camera className="h-5 w-5" />
+                <span className="font-medium">Vyfotit doklad</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    // This triggers the native camera on mobile
+                    // The file will be handled by the DocumentUpload dropzone
+                    // For now, just show a toast
+                    if (e.target.files?.[0]) {
+                      toast.info('Pro nahrání fotografií použijte oblast výše (přetáhněte nebo klikněte)')
+                    }
+                  }}
+                />
+              </label>
+            </div>
           </CardContent>
         </Card>
       )}
