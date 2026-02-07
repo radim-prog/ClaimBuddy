@@ -361,7 +361,7 @@ export function EditAssetModal({
                   className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
                     category === cat
                       ? 'border-purple-500 bg-purple-50 text-purple-700'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
                   }`}
                 >
                   {CATEGORY_ICONS[cat]}
@@ -614,8 +614,8 @@ export function EditAssetModal({
           )}
 
           {category === 'equipment' && (
-            <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-              <h4 className="font-medium text-gray-900 flex items-center gap-2">
+            <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
                 <Package className="h-4 w-4" /> Údaje o vybavení
               </h4>
               <div className="grid grid-cols-2 gap-4">

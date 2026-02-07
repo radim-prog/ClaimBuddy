@@ -196,7 +196,7 @@ export function MessagesSection({ companyId, companyName }: MessagesSectionProps
                       className={`p-3 rounded-lg ${
                         isClient
                           ? 'bg-blue-600 text-white rounded-br-none'
-                          : 'bg-gray-100 text-gray-900 rounded-bl-none'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap">{message.content}</p>

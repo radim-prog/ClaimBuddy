@@ -4,6 +4,98 @@ Všechny důležité změny v tomto projektu budou zdokumentovány v tomto soubo
 
 ---
 
+## [2025-12-27] - Kompletní Fakturační Systém
+
+### ✨ Přidáno
+
+#### Fáze 1: Rozšíření Task modelu
+- **lib/mock-data.ts**:
+  - Nový typ `BillingType = 'tariff' | 'extra' | 'free'`
+  - Přidáno `billing_type` do Task interface
+  - Přidáno `invoiced`, `invoiced_at`, `invoice_id` pro sledování fakturace
+
+- **components/tasks/gtd-wizard.tsx**:
+  - Přidán výběr billing type v Step 5
+  - Grid s možnostmi: Paušál / Zvlášť / Zdarma
+
+- **components/tasks/task-creation-wizard.tsx**:
+  - Přidána sekce fakturace s přepínačem billable/nebillable
+  - Výběr typu fakturace a hodinové sazby
+
+#### Fáze 2: Invoice entita
+- **lib/mock-data.ts**:
+  - Nový interface `Invoice` s kompletní strukturou
+  - Typy `InvoiceStatus` a `InvoiceType`
+  - Helper funkce: `generateInvoiceNumber`, `getUninvoicedTasksForCompany`, `getBillableTasksByCompany`, `createInvoiceFromTasks`, `markTasksAsInvoiced`
+  - Mock data pro faktury (accountant_to_client i client_to_customer)
+
+#### Fáze 3: Funkční UI invoicing stránky
+- **app/accountant/invoicing/page.tsx**:
+  - Propojení s novým Invoice systémem
+  - Handlery pro vytvoření faktury, označení jako odesláno/zaplaceno
+  - Tabulka faktur s akčními tlačítky
+
+#### Fáze 4: mPohoda API integrace
+- **lib/mpohoda-client.ts** (NOVÝ):
+  - MPohodaClient třída pro REST API
+  - Metody: createInvoice, getContacts, getBankAccounts, testConnection, exportInvoice
+  - Konfigurace přes env proměnné
+
+- **app/api/pohoda/export/route.ts** (NOVÝ):
+  - POST endpoint pro export faktury do mPohoda
+  - GET endpoint pro test připojení
+
+#### Fáze 5: Pohoda XML export
+- **lib/pohoda-xml.ts** (NOVÝ):
+  - XML generátor podle Pohoda mXML 2.0 specifikace
+  - Funkce: generateInvoiceXml, generateBatchXml, validatePohodaXml, createExportZipContent
+  - Správné namespaces a formátování
+
+- **app/api/invoices/export-xml/route.ts** (NOVÝ):
+  - POST endpoint pro export faktur do XML
+  - GET endpoint pro seznam exportovatelných faktur
+  - Podpora single i batch exportu
+
+#### Fáze 6: Klientský portál pro fakturaci
+- **app/client/invoices/page.tsx** (NOVÝ):
+  - Seznam faktur klienta (typ client_to_customer)
+  - Filtry a řazení
+  - Statistiky (celkem, koncepty, neuhrazeno, uhrazeno)
+  - XML download tlačítko
+
+- **app/client/invoices/new/page.tsx** (NOVÝ):
+  - Formulář pro vytvoření nové faktury
+  - Odběratel (zákazník) - kompletní údaje
+  - Položky faktury s DPH
+  - Automatický výpočet součtů
+  - Export do XML pro Pohodu
+
+- **app/client/layout.tsx**:
+  - Přidána navigace "Faktury" s ikonou Receipt
+
+### 📁 Struktura systému
+
+```
+Fakturační systém:
+├── Větev 1: Účetní → Klient
+│   ├── mPohoda REST API
+│   ├── Přímé napojení na naši Pohodu
+│   └── Automatická synchronizace
+│
+└── Větev 2: Klient → Zákazník
+    ├── Pohoda XML export (mXML 2.0)
+    ├── Univerzální kompatibilita
+    └── Download ZIP s XML soubory
+```
+
+### 🔧 Technické detaily
+- XML kódování: Windows-1250 (Pohoda standard)
+- Namespaces: dat, inv, typ
+- Validace XML před exportem
+- Podpora batch exportu více faktur
+
+---
+
 ## [2025-12-08] - User Tracking ve Fakturaci
 
 ### ✨ Přidáno

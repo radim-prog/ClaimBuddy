@@ -577,7 +577,7 @@ export function TimeTracker({
                             "text-xs",
                             entry.billable
                               ? "bg-green-600 text-white hover:bg-green-700"
-                              : "bg-gray-200 text-gray-700"
+                              : "bg-gray-200 text-gray-700 dark:text-gray-200"
                           )}
                         >
                           {entry.billable ? 'Fakturovatelné' : 'Nefakturovatelné'}

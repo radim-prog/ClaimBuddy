@@ -234,11 +234,11 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <Bell className="h-6 w-6" />
           Nastavení notifikací
         </h1>
-        <p className="text-gray-500 mt-1">
+        <p className="text-gray-500 dark:text-gray-400 mt-1">
           Konfigurace událostí a pravidel pro zasílání notifikací
         </p>
       </div>
@@ -331,7 +331,7 @@ export default function NotificationsPage() {
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-sm text-gray-500 truncate">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                               {event.description}
                             </p>
                           </div>
@@ -352,10 +352,10 @@ export default function NotificationsPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="pt-4 pb-4 text-center">
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
                   {events.length}
                 </p>
-                <p className="text-sm text-gray-500">Celkem událostí</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Celkem událostí</p>
               </CardContent>
             </Card>
             <Card>
@@ -363,7 +363,7 @@ export default function NotificationsPage() {
                 <p className="text-3xl font-bold text-green-600">
                   {events.filter((e) => e.is_active).length}
                 </p>
-                <p className="text-sm text-gray-500">Aktivních</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Aktivních</p>
               </CardContent>
             </Card>
             <Card>
@@ -371,13 +371,13 @@ export default function NotificationsPage() {
                 <p className="text-3xl font-bold text-gray-400">
                   {events.filter((e) => !e.is_active).length}
                 </p>
-                <p className="text-sm text-gray-500">Vypnutých</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Vypnutých</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4 pb-4 text-center">
                 <p className="text-3xl font-bold text-blue-600">{rules.length}</p>
-                <p className="text-sm text-gray-500">Pravidel</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Pravidel</p>
               </CardContent>
             </Card>
           </div>
@@ -399,7 +399,7 @@ export default function NotificationsPage() {
               <Card>
                 <CardContent className="py-12 text-center">
                   <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">
+                  <p className="text-gray-500 dark:text-gray-400">
                     Zatím nejsou nastavena žádná pravidla
                   </p>
                   <Button
@@ -429,7 +429,7 @@ export default function NotificationsPage() {
                           className={`p-2 rounded-lg ${
                             event
                               ? categoryColors[event.category]
-                              : 'bg-gray-100'
+                              : 'bg-gray-100 dark:bg-gray-700'
                           }`}
                         >
                           <CategoryIcon className="h-5 w-5" />
@@ -445,7 +445,7 @@ export default function NotificationsPage() {
                             )}
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 mb-2">
+                          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
                             <span className="flex items-center gap-1">
                               <Users className="h-4 w-4" />
                               {formatRecipients(rule.recipients)}
@@ -492,7 +492,7 @@ export default function NotificationsPage() {
           </div>
 
           {/* Channel Legend */}
-          <Card className="bg-gray-50">
+          <Card className="bg-gray-50 dark:bg-gray-800/50">
             <CardContent className="py-4">
               <h4 className="font-medium mb-3">Dostupné kanály</h4>
               <div className="flex flex-wrap gap-4">
@@ -503,7 +503,7 @@ export default function NotificationsPage() {
                       key={channel}
                       className="flex items-center gap-2 text-sm"
                     >
-                      <ChannelIcon className="h-4 w-4 text-gray-500" />
+                      <ChannelIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                       <span>{label}</span>
                     </div>
                   )
@@ -541,7 +541,7 @@ export default function NotificationsPage() {
                     ([category, categoryEvents]) =>
                       categoryEvents.length > 0 && (
                         <div key={category}>
-                          <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-50">
+                          <div className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50">
                             {categoryLabels[category as NotificationEventCategory]}
                           </div>
                           {categoryEvents
@@ -570,7 +570,7 @@ export default function NotificationsPage() {
                       ${
                         newRule.recipients.some((r) => r.type === type)
                           ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
                       }
                     `}
                   >
@@ -607,7 +607,7 @@ export default function NotificationsPage() {
                         ${
                           isSelected
                             ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-gray-200 hover:border-gray-300'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
                         }
                       `}
                     >

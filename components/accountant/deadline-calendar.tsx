@@ -151,12 +151,12 @@ const typeIcons: Record<string, typeof Calendar> = {
 }
 
 const typeColors: Record<string, string> = {
-  dph: 'bg-blue-100 text-blue-700 border-blue-200',
-  dan: 'bg-purple-100 text-purple-700 border-purple-200',
-  pojisteni: 'bg-green-100 text-green-700 border-green-200',
-  mzdy: 'bg-orange-100 text-orange-700 border-orange-200',
-  uzaverka: 'bg-gray-100 text-gray-700 border-gray-200',
-  ostatni: 'bg-gray-100 text-gray-600 border-gray-200',
+  dph: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200',
+  dan: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200',
+  pojisteni: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200',
+  mzdy: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200',
+  uzaverka: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700',
+  ostatni: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700',
 }
 
 const typeLabels: Record<string, string> = {
@@ -222,10 +222,10 @@ export function AccountantDeadlineCalendar({
 
   const getDateColor = (dateString: string) => {
     const date = new Date(dateString)
-    if (isPast(date) && !isToday(date)) return 'text-red-600'
-    if (isToday(date)) return 'text-orange-600'
-    if (isTomorrow(date)) return 'text-yellow-600'
-    return 'text-gray-600'
+    if (isPast(date) && !isToday(date)) return 'text-red-600 dark:text-red-400'
+    if (isToday(date)) return 'text-orange-600 dark:text-orange-400'
+    if (isTomorrow(date)) return 'text-yellow-600 dark:text-yellow-400'
+    return 'text-gray-600 dark:text-gray-400'
   }
 
   const renderDeadlineItem = (deadline: Deadline) => {
@@ -233,25 +233,25 @@ export function AccountantDeadlineCalendar({
     return (
       <div
         key={deadline.id}
-        className="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors"
+        className="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-colors"
       >
         <div className={`p-2 rounded-lg ${typeColors[deadline.type]}`}>
           <Icon className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-medium text-gray-900">{deadline.title}</span>
+            <span className="font-medium text-gray-900 dark:text-white">{deadline.title}</span>
             <Badge variant="outline" className={`text-xs ${typeColors[deadline.type]}`}>
               {typeLabels[deadline.type]}
             </Badge>
           </div>
           {showAllClients && deadline.companyName && (
-            <p className="text-sm text-gray-600 mb-1">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
               {deadline.companyName}
             </p>
           )}
           {deadline.description && (
-            <p className="text-sm text-gray-500 line-clamp-1">
+            <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
               {deadline.description}
             </p>
           )}
@@ -267,7 +267,7 @@ export function AccountantDeadlineCalendar({
     if (items.length === 0) return null
     return (
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+        <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
           {icon}
           {title}
           <Badge variant="secondary" className="ml-1">
@@ -300,29 +300,29 @@ export function AccountantDeadlineCalendar({
     <div className="space-y-6">
       {/* Summary stats */}
       <div className="grid grid-cols-4 gap-4">
-        <div className={`p-3 rounded-lg border ${groupedDeadlines.overdue.length > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50'}`}>
-          <div className="text-2xl font-bold text-red-600">
+        <div className={`p-3 rounded-lg border ${groupedDeadlines.overdue.length > 0 ? 'bg-red-50 dark:bg-red-900/20 border-red-200' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
+          <div className="text-2xl font-bold text-red-600 dark:text-red-400">
             {groupedDeadlines.overdue.length}
           </div>
-          <div className="text-xs text-gray-500">Po termínu</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Po termínu</div>
         </div>
-        <div className="p-3 rounded-lg border bg-orange-50 border-orange-200">
-          <div className="text-2xl font-bold text-orange-600">
+        <div className="p-3 rounded-lg border bg-orange-50 dark:bg-orange-900/20 border-orange-200">
+          <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
             {groupedDeadlines.thisWeek.length}
           </div>
-          <div className="text-xs text-gray-500">Tento týden</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Tento týden</div>
         </div>
-        <div className="p-3 rounded-lg border bg-blue-50 border-blue-200">
-          <div className="text-2xl font-bold text-blue-600">
+        <div className="p-3 rounded-lg border bg-blue-50 dark:bg-blue-900/20 border-blue-200">
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
             {groupedDeadlines.thisMonth.length}
           </div>
-          <div className="text-xs text-gray-500">Tento měsíc</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Tento měsíc</div>
         </div>
-        <div className="p-3 rounded-lg border bg-gray-50">
-          <div className="text-2xl font-bold text-gray-600">
+        <div className="p-3 rounded-lg border bg-gray-50 dark:bg-gray-800/50">
+          <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">
             {groupedDeadlines.later.length}
           </div>
-          <div className="text-xs text-gray-500">Později</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Později</div>
         </div>
       </div>
 
@@ -351,7 +351,7 @@ export function AccountantDeadlineCalendar({
       </div>
 
       {/* Add deadline button */}
-      <div className="pt-4 border-t">
+      <div className="pt-4 border-t dark:border-gray-700">
         <Button variant="outline" className="w-full">
           <Plus className="h-4 w-4 mr-2" />
           Přidat termín

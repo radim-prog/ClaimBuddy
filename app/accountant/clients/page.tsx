@@ -18,6 +18,12 @@ import {
   Plus,
   Sparkles,
   UserCheck,
+  XCircle,
+  CheckSquare,
+  Square,
+  Layers,
+  List,
+  Mail,
 } from 'lucide-react'
 import Link from 'next/link'
 import { mockCompanies } from '@/lib/mock-data'
@@ -41,6 +47,7 @@ type Company = {
   has_employees: boolean
   employee_count: number
   data_box: { id: string } | null
+  status?: string
 }
 
 type MonthlyClosure = {
@@ -50,6 +57,116 @@ type MonthlyClosure = {
   bank_statement_status: string
   expense_documents_status: string
   income_invoices_status: string
+}
+
+// Extracted company row component with checkbox
+function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelect }: {
+  company: Company
+  fullStatus: { status: 'ok' | 'missing' | 'uploaded'; missingDocs: number; uploadedDocs: number }
+  clientStatus: string
+  selected: boolean
+  onToggleSelect: (id: string, e: React.MouseEvent) => void
+}) {
+  const isOnboarding = clientStatus === 'onboarding'
+  const isInactive = clientStatus === 'inactive'
+  const borderColor = isInactive ? 'border-l-gray-400' :
+                     isOnboarding ? 'border-l-purple-500' :
+                     fullStatus.status === 'missing' ? 'border-l-red-500' :
+                     fullStatus.status === 'uploaded' ? 'border-l-yellow-500' :
+                     'border-l-green-500'
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={(e) => onToggleSelect(company.id, e)}
+        className={`flex-shrink-0 w-5 h-5 rounded border transition-colors ${
+          selected
+            ? 'bg-purple-600 border-purple-600 text-white'
+            : 'border-gray-300 dark:border-gray-600 hover:border-purple-400'
+        }`}
+      >
+        {selected && <CheckSquare className="h-5 w-5 p-0.5" />}
+      </button>
+      <Link href={`/accountant/clients/${company.id}`} className="flex-1">
+        <Card className={`hover:shadow-md transition-all cursor-pointer border-l-4 ${borderColor} ${isInactive ? 'opacity-60' : ''}`}>
+          <CardContent className="py-3 px-4">
+            <div className="grid grid-cols-12 gap-4 items-center">
+              {/* Název */}
+              <div className="col-span-4 min-w-0">
+                <h3 className={`font-semibold truncate ${isInactive ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
+                  {company.group_name && (
+                    <span className="text-purple-600">{company.group_name} – </span>
+                  )}
+                  {company.name}
+                </h3>
+                <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                  {company.ico}{company.dic && ` • ${company.dic}`}
+                </div>
+              </div>
+
+              {/* Právní forma + badges */}
+              <div className="col-span-3 flex items-center gap-1.5 flex-wrap">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-gray-500 dark:text-gray-400">
+                  {company.legal_form}
+                </Badge>
+                {isInactive && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-red-600 border-red-300 bg-red-50 dark:bg-red-900/20">
+                    Neaktivní
+                  </Badge>
+                )}
+                {isOnboarding && (
+                  <Badge className="bg-purple-500 text-white hover:bg-purple-500 text-[10px] px-1.5 py-0">
+                    ONB
+                  </Badge>
+                )}
+              </div>
+
+              {/* DPH + zaměstnanci */}
+              <div className="col-span-3 flex items-center gap-1.5">
+                {company.vat_payer ? (
+                  <Badge className="bg-blue-500 text-white hover:bg-blue-500 text-xs font-bold px-2">
+                    DPH {company.vat_period === 'monthly' ? 'M' : 'Q'}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-gray-400">ne-DPH</Badge>
+                )}
+                {company.has_employees && (
+                  <Badge variant="outline" className="text-gray-600 dark:text-gray-300 text-xs px-1.5">
+                    <Users className="h-3 w-3 mr-0.5" />
+                    {company.employee_count}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Stav */}
+              <div className="col-span-2 text-right">
+                {isInactive ? (
+                  <span className="inline-flex items-center gap-1 text-gray-400 text-sm">
+                    <XCircle className="h-4 w-4" />
+                  </span>
+                ) : fullStatus.status === 'ok' ? (
+                  <span className="inline-flex items-center gap-1 text-green-600 text-sm font-medium">
+                    <CheckCircle className="h-4 w-4" />
+                    OK
+                  </span>
+                ) : fullStatus.status === 'missing' ? (
+                  <span className="inline-flex items-center gap-1 text-red-600 text-sm font-medium">
+                    <AlertCircle className="h-4 w-4" />
+                    {fullStatus.missingDocs}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-yellow-600 text-sm font-medium">
+                    <Clock className="h-4 w-4" />
+                    {fullStatus.uploadedDocs}
+                  </span>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+    </div>
+  )
 }
 
 function ClientsPageContent() {
@@ -64,6 +181,12 @@ function ClientsPageContent() {
   // Onboarding editor modal
   const [showOnboardingEditor, setShowOnboardingEditor] = useState(false)
 
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  // Group view
+  const [groupView, setGroupView] = useState(false)
+
   // Filtry
   const [showFilters, setShowFilters] = useState(false)
   const [filterGroup, setFilterGroup] = useState<string | null>(null)
@@ -71,7 +194,7 @@ function ClientsPageContent() {
   const [filterVatPayer, setFilterVatPayer] = useState<boolean | null>(null)
   const [filterVatPeriod, setFilterVatPeriod] = useState<string | null>(null)
   const [filterHasEmployees, setFilterHasEmployees] = useState<boolean | null>(null)
-  const [filterClientStatus, setFilterClientStatus] = useState<string | null>(null)
+  const [filterClientStatus, setFilterClientStatus] = useState<string | null>('active')
 
   // Read status filter from URL params
   const filterStatus = searchParams.get('status')
@@ -79,9 +202,11 @@ function ClientsPageContent() {
   // Read client status from URL (for onboarding filter from navigation)
   const urlClientStatus = searchParams.get('clientStatus')
 
-  // Sync URL clientStatus with state
+  // Sync URL clientStatus with state - pokud URL specifikuje status, použij ho; jinak zachovej default 'active'
   useEffect(() => {
-    setFilterClientStatus(urlClientStatus)
+    if (urlClientStatus !== null) {
+      setFilterClientStatus(urlClientStatus)
+    }
   }, [urlClientStatus])
 
   // Function to update status filter via URL
@@ -265,7 +390,7 @@ function ClientsPageContent() {
     filterVatPeriod,
     filterHasEmployees,
     filterStatus,
-    filterClientStatus
+    filterClientStatus === 'active' ? null : filterClientStatus, // 'active' je default, nepočítat jako filtr
   ].filter(f => f !== null).length
 
   const clearAllFilters = () => {
@@ -278,8 +403,8 @@ function ClientsPageContent() {
     if (filterStatus) {
       setStatusFilter(null)
     }
-    if (filterClientStatus) {
-      setClientStatusFilter(null)
+    if (filterClientStatus && filterClientStatus !== 'active') {
+      setClientStatusFilter('active')
     }
   }
 
@@ -311,10 +436,10 @@ function ClientsPageContent() {
           if (filterStatus === 'complete' && status !== 'ok') return false
         }
 
-        // Client status filter (onboarding/active)
+        // Client status filter (onboarding/active/inactive)
         if (filterClientStatus) {
-          const clientStatus = getClientStatus(company.id)
-          if (filterClientStatus !== clientStatus) return false
+          const cs = (company as any).status || getClientStatus(company.id)
+          if (filterClientStatus !== cs) return false
         }
 
         return true
@@ -333,12 +458,45 @@ function ClientsPageContent() {
       })
   }, [companies, searchQuery, filterGroup, filterLegalForm, filterVatPayer, filterVatPeriod, filterHasEmployees, filterStatus, filterClientStatus, getCompanyFullStatus, getClientStatus])
 
+  // Selection helpers
+  const toggleSelection = useCallback((id: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(filteredCompanies.map(c => c.id)))
+  }, [filteredCompanies])
+
+  const deselectAll = useCallback(() => {
+    setSelectedIds(new Set())
+  }, [])
+
+  // Grouped companies
+  const groupedCompanies = useMemo(() => {
+    if (!groupView) return null
+    const groups = new Map<string, typeof filteredCompanies>()
+    filteredCompanies.forEach(company => {
+      const groupKey = company.group_name || 'Bez skupiny'
+      const existing = groups.get(groupKey) || []
+      existing.push(company)
+      groups.set(groupKey, existing)
+    })
+    return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0], 'cs'))
+  }, [filteredCompanies, groupView])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-          <p className="mt-4 text-gray-600">Načítám klienty...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Načítám klienty...</p>
         </div>
       </div>
     )
@@ -350,9 +508,9 @@ function ClientsPageContent() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Klienti</h1>
-            <p className="mt-1 text-gray-600">
-              {companies.length} klientů • Stav za {currentMonthName}
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Klienti</h1>
+            <p className="mt-1 text-gray-600 dark:text-gray-400">
+              {companies.filter((c: any) => (c.status || 'active') === 'active').length} aktivních z {companies.length} klientů • Stav za {currentMonthName}
             </p>
           </div>
           <Button
@@ -394,19 +552,19 @@ function ClientsPageContent() {
               <Filter className="h-4 w-4 mr-2" />
               Filtry
               {activeFiltersCount > 0 && (
-                <Badge className="ml-2 bg-white text-purple-600">{activeFiltersCount}</Badge>
+                <Badge className="ml-2 bg-white dark:bg-gray-800 text-purple-600">{activeFiltersCount}</Badge>
               )}
             </Button>
           </div>
 
           {/* Filter Panel */}
           {showFilters && (
-            <div className="mt-4 pt-4 border-t">
+            <div className="mt-4 pt-4 border-t dark:border-gray-700">
               <div className="flex flex-wrap gap-4">
                 {/* Group/Owner */}
                 {uniqueGroups.length > 0 && (
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Skupina/Vlastník</label>
+                    <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Skupina/Vlastník</label>
                     <select
                       value={filterGroup || ''}
                       onChange={(e) => setFilterGroup(e.target.value || null)}
@@ -422,7 +580,7 @@ function ClientsPageContent() {
 
                 {/* Legal Form */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Právní forma</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Právní forma</label>
                   <select
                     value={filterLegalForm || ''}
                     onChange={(e) => setFilterLegalForm(e.target.value || null)}
@@ -437,7 +595,7 @@ function ClientsPageContent() {
 
                 {/* VAT Payer */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Plátce DPH</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Plátce DPH</label>
                   <select
                     value={filterVatPayer === null ? '' : filterVatPayer ? 'yes' : 'no'}
                     onChange={(e) => setFilterVatPayer(e.target.value === '' ? null : e.target.value === 'yes')}
@@ -451,7 +609,7 @@ function ClientsPageContent() {
 
                 {/* VAT Period */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">DPH období</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">DPH období</label>
                   <select
                     value={filterVatPeriod || ''}
                     onChange={(e) => setFilterVatPeriod(e.target.value || null)}
@@ -465,7 +623,7 @@ function ClientsPageContent() {
 
                 {/* Has Employees */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Zaměstnanci</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Zaměstnanci</label>
                   <select
                     value={filterHasEmployees === null ? '' : filterHasEmployees ? 'yes' : 'no'}
                     onChange={(e) => setFilterHasEmployees(e.target.value === '' ? null : e.target.value === 'yes')}
@@ -479,21 +637,22 @@ function ClientsPageContent() {
 
                 {/* Client Status */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Stav klienta</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Stav klienta</label>
                   <select
                     value={filterClientStatus || ''}
                     onChange={(e) => setClientStatusFilter(e.target.value || null)}
                     className="px-3 py-2 border rounded-lg text-sm"
                   >
                     <option value="">Všichni klienti</option>
-                    <option value="onboarding">V onboardingu</option>
                     <option value="active">Aktivní</option>
+                    <option value="inactive">Neaktivní</option>
+                    <option value="onboarding">V onboardingu</option>
                   </select>
                 </div>
 
                 {/* Status */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Stav dokumentů</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Stav dokumentů</label>
                   <select
                     value={filterStatus || ''}
                     onChange={(e) => setStatusFilter(e.target.value || null)}
@@ -521,12 +680,59 @@ function ClientsPageContent() {
         </CardContent>
       </Card>
 
-      {/* Results info */}
-      {(searchQuery || activeFiltersCount > 0) && (
-        <div className="mb-4 text-sm text-gray-600">
-          Zobrazeno {filteredCompanies.length} z {companies.length} klientů
+      {/* Bulk action toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="mb-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+              Vybráno: {selectedIds.size} firem
+            </span>
+            <Button variant="ghost" size="sm" onClick={deselectAll} className="text-purple-600">
+              <X className="h-4 w-4 mr-1" /> Zrušit výběr
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => alert('TODO: Hromadná upomínka')}>
+              <Mail className="h-4 w-4 mr-1" /> Hromadná upomínka
+            </Button>
+          </div>
         </div>
       )}
+
+      {/* Results info + View toggle */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {(searchQuery || activeFiltersCount > 0) && (
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              Zobrazeno {filteredCompanies.length} z {companies.length} klientů
+            </span>
+          )}
+          {filteredCompanies.length > 0 && (
+            <button
+              onClick={selectedIds.size === filteredCompanies.length ? deselectAll : selectAll}
+              className="text-xs text-purple-600 hover:underline"
+            >
+              {selectedIds.size === filteredCompanies.length ? 'Odznačit vše' : 'Vybrat vše'}
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+          <button
+            onClick={() => setGroupView(false)}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${!groupView ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+          >
+            <List className="h-3.5 w-3.5 inline mr-1" />
+            Seznam
+          </button>
+          <button
+            onClick={() => setGroupView(true)}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${groupView ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+          >
+            <Layers className="h-3.5 w-3.5 inline mr-1" />
+            Skupiny
+          </button>
+        </div>
+      </div>
 
       {/* Clients list */}
       <div className="space-y-3">
@@ -534,8 +740,8 @@ function ClientsPageContent() {
           <Card>
             <CardContent className="py-12 text-center">
               <Building2 className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Žádní klienti</h3>
-              <p className="text-gray-600">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Žádní klienti</h3>
+              <p className="text-gray-600 dark:text-gray-400">
                 {searchQuery || activeFiltersCount > 0
                   ? 'Nenalezeny žádné výsledky pro tyto filtry'
                   : 'Zatím nemáte žádné přiřazené klienty'}
@@ -547,104 +753,41 @@ function ClientsPageContent() {
               )}
             </CardContent>
           </Card>
+        ) : groupView && groupedCompanies ? (
+          // === GROUP VIEW ===
+          groupedCompanies.map(([groupName, groupCompanies]) => (
+            <div key={groupName} className="space-y-2">
+              <div className="flex items-center gap-2 px-1">
+                <Layers className="h-4 w-4 text-purple-500" />
+                <h3 className="font-semibold text-gray-900 dark:text-white">{groupName}</h3>
+                <Badge variant="outline" className="text-xs">{groupCompanies.length}</Badge>
+              </div>
+              <div className="space-y-1 pl-2 border-l-2 border-purple-200 dark:border-purple-800">
+                {groupCompanies.map(company => (
+                  <CompanyRow
+                    key={company.id}
+                    company={company}
+                    fullStatus={getCompanyFullStatus(company.id)}
+                    clientStatus={(company as any).status || getClientStatus(company.id)}
+                    selected={selectedIds.has(company.id)}
+                    onToggleSelect={toggleSelection}
+                  />
+                ))}
+              </div>
+            </div>
+          ))
         ) : (
-          filteredCompanies.map((company) => {
-            const fullStatus = getCompanyFullStatus(company.id)
-            const clientStatus = getClientStatus(company.id)
-            const isOnboarding = clientStatus === 'onboarding'
-
-            // Barva levého okraje podle stavu
-            const borderColor = isOnboarding ? 'border-l-purple-500' :
-                               fullStatus.status === 'missing' ? 'border-l-red-500' :
-                               fullStatus.status === 'uploaded' ? 'border-l-yellow-500' :
-                               'border-l-green-500'
-
-            // Formátování adresy
-            const address = [company.street, company.city, company.zip].filter(Boolean).join(', ')
-
-            return (
-              <Link key={company.id} href={`/accountant/clients/${company.id}`}>
-                <Card className={`hover:shadow-md transition-all cursor-pointer border-l-4 ${borderColor}`}>
-                  <CardContent className="py-3 px-4">
-                    {/* Grid layout pro konzistentní zarovnání */}
-                    <div className="grid grid-cols-12 gap-4 items-center">
-
-                      {/* Sloupec 1: Název a identifikace (5 sloupců) */}
-                      <div className="col-span-5 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">
-                          {company.group_name && (
-                            <span className="text-purple-600">{company.group_name} – </span>
-                          )}
-                          {company.name}
-                        </h3>
-                        <div className="text-sm text-gray-500 truncate">
-                          {company.ico}{company.dic && ` • ${company.dic}`}
-                        </div>
-                      </div>
-
-                      {/* Sloupec 2: Adresa (3 sloupce) */}
-                      <div className="col-span-3 text-sm text-gray-500 truncate">
-                        {address || '—'}
-                      </div>
-
-                      {/* Sloupec 3: Vlastnosti - fixní šířky (2 sloupce) */}
-                      <div className="col-span-2 flex items-center gap-1.5">
-                        {/* Onboarding badge - první pozice pokud je v onboardingu */}
-                        {isOnboarding && (
-                          <Badge className="bg-purple-500 text-white hover:bg-purple-500 text-xs px-1.5">
-                            <Sparkles className="h-3 w-3 mr-0.5" />
-                            ONB
-                          </Badge>
-                        )}
-                        {/* DPH */}
-                        <div className="w-8 flex-shrink-0">
-                          {company.vat_payer ? (
-                            <Badge className="bg-blue-500 text-white hover:bg-blue-500 text-xs font-bold px-2">
-                              {company.vat_period === 'monthly' ? 'M' : 'Q'}
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-gray-300">—</span>
-                          )}
-                        </div>
-                        {/* Zaměstnanci */}
-                        <div className="w-10 flex-shrink-0">
-                          {company.has_employees ? (
-                            <Badge variant="outline" className="text-gray-600 text-xs px-1.5">
-                              <Users className="h-3 w-3 mr-0.5" />
-                              {company.employee_count}
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-gray-300">—</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Sloupec 4: Stav dokumentů (2 sloupce) */}
-                      <div className="col-span-2 text-right">
-                        {fullStatus.status === 'ok' ? (
-                          <span className="inline-flex items-center gap-1 text-green-600 text-sm font-medium">
-                            <CheckCircle className="h-4 w-4" />
-                            OK
-                          </span>
-                        ) : fullStatus.status === 'missing' ? (
-                          <span className="inline-flex items-center gap-1 text-red-600 text-sm font-medium">
-                            <AlertCircle className="h-4 w-4" />
-                            Chybí {fullStatus.missingDocs} dok.
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-yellow-600 text-sm font-medium">
-                            <Clock className="h-4 w-4" />
-                            Ke schválení {fullStatus.uploadedDocs} dok.
-                          </span>
-                        )}
-                      </div>
-
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            )
-          })
+          // === LIST VIEW ===
+          filteredCompanies.map(company => (
+            <CompanyRow
+              key={company.id}
+              company={company}
+              fullStatus={getCompanyFullStatus(company.id)}
+              clientStatus={(company as any).status || getClientStatus(company.id)}
+              selected={selectedIds.has(company.id)}
+              onToggleSelect={toggleSelection}
+            />
+          ))
         )}
       </div>
     </div>
@@ -657,7 +800,7 @@ export default function ClientsPage() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-          <p className="mt-4 text-gray-600">Načítám klienty...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Načítám klienty...</p>
         </div>
       </div>
     }>

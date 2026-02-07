@@ -302,14 +302,14 @@ export default function AuditLogsPage() {
       case 'create': return 'bg-green-100 text-green-700'
       case 'update': return 'bg-blue-100 text-blue-700'
       case 'delete': return 'bg-red-100 text-red-700'
-      case 'view': return 'bg-gray-100 text-gray-700'
+      case 'view': return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
       case 'export': return 'bg-orange-100 text-orange-700'
       case 'login': return 'bg-purple-100 text-purple-700'
-      case 'logout': return 'bg-gray-100 text-gray-600'
+      case 'logout': return 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
       case 'approve': return 'bg-green-100 text-green-700'
       case 'reject': return 'bg-red-100 text-red-700'
       case 'send': return 'bg-blue-100 text-blue-700'
-      default: return 'bg-gray-100 text-gray-700'
+      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
     }
   }
 
@@ -329,8 +329,8 @@ export default function AuditLogsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Audit logy</h1>
-          <p className="text-gray-600">Historie všech akcí v systému</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Audit logy</h1>
+          <p className="text-gray-600 dark:text-gray-300">Historie všech akcí v systému</p>
         </div>
         <Button variant="outline">
           <Download className="h-4 w-4 mr-2" />
@@ -355,7 +355,7 @@ export default function AuditLogsPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Uživatel</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Uživatel</label>
               <Select value={filterUser} onValueChange={setFilterUser}>
                 <SelectTrigger>
                   <SelectValue />
@@ -370,7 +370,7 @@ export default function AuditLogsPage() {
             </div>
 
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Typ akce</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Typ akce</label>
               <Select value={filterActionType} onValueChange={setFilterActionType}>
                 <SelectTrigger>
                   <SelectValue />
@@ -391,7 +391,7 @@ export default function AuditLogsPage() {
             </div>
 
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Typ entity</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Typ entity</label>
               <Select value={filterEntityType} onValueChange={setFilterEntityType}>
                 <SelectTrigger>
                   <SelectValue />
@@ -411,7 +411,7 @@ export default function AuditLogsPage() {
             </div>
 
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Období</label>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Období</label>
               <Select value={filterDateRange} onValueChange={setFilterDateRange}>
                 <SelectTrigger>
                   <SelectValue />
@@ -426,7 +426,7 @@ export default function AuditLogsPage() {
             </div>
           </div>
 
-          <div className="mt-4 text-sm text-gray-600">
+          <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
             Zobrazeno {filteredLogs.length} z {mockAuditLogs.length} záznamů
           </div>
         </CardContent>
@@ -437,7 +437,7 @@ export default function AuditLogsPage() {
         <CardContent className="pt-6">
           <div className="space-y-2">
             {filteredLogs.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                 <p>Žádné logy odpovídající filtrům</p>
               </div>
@@ -450,7 +450,7 @@ export default function AuditLogsPage() {
                 return (
                   <div
                     key={log.id}
-                    className="border rounded-lg hover:bg-gray-50 transition-colors"
+                    className="border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 transition-colors"
                   >
                     <div
                       className="p-4 cursor-pointer"
@@ -465,16 +465,16 @@ export default function AuditLogsPage() {
                         {/* Main Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium text-gray-900">{log.user_name}</span>
-                            <span className="text-gray-500">{log.action}</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{log.user_name}</span>
+                            <span className="text-gray-500 dark:text-gray-400">{log.action}</span>
                             {log.entity_name && (
                               <>
                                 <span className="text-gray-400">•</span>
-                                <span className="text-gray-700 truncate">{log.entity_name}</span>
+                                <span className="text-gray-700 dark:text-gray-200 truncate">{log.entity_name}</span>
                               </>
                             )}
                           </div>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {formatDateTime(log.timestamp)}
@@ -500,33 +500,33 @@ export default function AuditLogsPage() {
 
                     {/* Expanded Details */}
                     {isExpanded && (
-                      <div className="px-4 pb-4 border-t bg-gray-50">
+                      <div className="px-4 pb-4 border-t bg-gray-50 dark:bg-gray-800/50">
                         <div className="pt-4 grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <p className="text-gray-500">ID záznamu</p>
-                            <p className="font-mono text-gray-900">{log.id}</p>
+                            <p className="text-gray-500 dark:text-gray-400">ID záznamu</p>
+                            <p className="font-mono text-gray-900 dark:text-white">{log.id}</p>
                           </div>
                           <div>
-                            <p className="text-gray-500">Email uživatele</p>
-                            <p className="text-gray-900">{log.user_email}</p>
+                            <p className="text-gray-500 dark:text-gray-400">Email uživatele</p>
+                            <p className="text-gray-900 dark:text-white">{log.user_email}</p>
                           </div>
                           <div>
-                            <p className="text-gray-500">ID entity</p>
-                            <p className="font-mono text-gray-900">{log.entity_id}</p>
+                            <p className="text-gray-500 dark:text-gray-400">ID entity</p>
+                            <p className="font-mono text-gray-900 dark:text-white">{log.entity_id}</p>
                           </div>
                           <div>
-                            <p className="text-gray-500">User Agent</p>
-                            <p className="text-gray-900 truncate">{log.user_agent}</p>
+                            <p className="text-gray-500 dark:text-gray-400">User Agent</p>
+                            <p className="text-gray-900 dark:text-white truncate">{log.user_agent}</p>
                           </div>
 
                           {/* Changes */}
                           {log.changes && log.changes.length > 0 && (
                             <div className="col-span-2">
-                              <p className="text-gray-500 mb-2">Změny</p>
-                              <div className="bg-white rounded-lg p-3 border space-y-2">
+                              <p className="text-gray-500 dark:text-gray-400 mb-2">Změny</p>
+                              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border space-y-2">
                                 {log.changes.map((change, idx) => (
                                   <div key={idx} className="flex items-center gap-2 text-sm">
-                                    <span className="font-mono text-gray-600">{change.field}:</span>
+                                    <span className="font-mono text-gray-600 dark:text-gray-300">{change.field}:</span>
                                     <span className="text-red-600 line-through">{change.old_value}</span>
                                     <span className="text-gray-400">→</span>
                                     <span className="text-green-600">{change.new_value}</span>
@@ -539,8 +539,8 @@ export default function AuditLogsPage() {
                           {/* Metadata */}
                           {log.metadata && (
                             <div className="col-span-2">
-                              <p className="text-gray-500 mb-2">Metadata</p>
-                              <pre className="bg-white rounded-lg p-3 border text-xs overflow-x-auto">
+                              <p className="text-gray-500 dark:text-gray-400 mb-2">Metadata</p>
+                              <pre className="bg-white dark:bg-gray-800 rounded-lg p-3 border text-xs overflow-x-auto">
                                 {JSON.stringify(log.metadata, null, 2)}
                               </pre>
                             </div>

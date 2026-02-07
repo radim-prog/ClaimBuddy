@@ -48,7 +48,7 @@ export default function ClientLandingPage() {
               </p>
             </div>
 
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-gray-600 dark:text-gray-300">
               Mějte přehled o svém účetnictví kdykoliv a odkudkoliv.
               Nahrávejte doklady, sledujte stav uzávěrek a komunikujte
               se svým účetním - vše na jednom místě.
@@ -60,8 +60,8 @@ export default function ClientLandingPage() {
                   <FileText className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Nahrávání dokladů</h3>
-                  <p className="text-sm text-gray-600">Jednoduše nahrajte faktury a účtenky</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Nahrávání dokladů</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Jednoduše nahrajte faktury a účtenky</p>
                 </div>
               </div>
 
@@ -70,8 +70,8 @@ export default function ClientLandingPage() {
                   <PieChart className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Přehled financí</h3>
-                  <p className="text-sm text-gray-600">DPH, daně a uzávěrky na jednom místě</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Přehled financí</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">DPH, daně a uzávěrky na jednom místě</p>
                 </div>
               </div>
 
@@ -80,8 +80,8 @@ export default function ClientLandingPage() {
                   <Bell className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Upozornění</h3>
-                  <p className="text-sm text-gray-600">Včas vás upozorníme na důležité termíny</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Upozornění</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Včas vás upozorníme na důležité termíny</p>
                 </div>
               </div>
             </div>
@@ -93,7 +93,7 @@ export default function ClientLandingPage() {
               <CardContent className="p-8">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-bold text-blue-900">Přihlášení</h2>
-                  <p className="text-gray-600 mt-1">Vstupte do svého účtu</p>
+                  <p className="text-gray-600 dark:text-gray-300 mt-1">Vstupte do svého účtu</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -122,7 +122,7 @@ export default function ClientLandingPage() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200"
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -137,8 +137,8 @@ export default function ClientLandingPage() {
                   </Button>
                 </form>
 
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <p className="text-sm text-gray-500 text-center mb-3">
+                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-3">
                     Nemáte účet? Kontaktujte svého účetního.
                   </p>
                   <Link href="/client/dashboard">

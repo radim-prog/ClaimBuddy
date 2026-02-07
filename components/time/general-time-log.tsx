@@ -79,8 +79,8 @@ const ACTIVITY_TYPES: ActivityTypeConfig[] = [
     id: 'admin',
     label: 'Administrativa',
     icon: FileText,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-50 border-gray-200',
+    color: 'text-gray-600 dark:text-gray-300',
+    bgColor: 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700',
   },
 ]
 
@@ -207,13 +207,13 @@ export function GeneralTimeLog({
                       "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all",
                       isSelected
                         ? `${type.bgColor} border-current ${type.color}`
-                        : "border-gray-200 hover:border-gray-300 bg-white"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-800"
                     )}
                   >
-                    <Icon className={cn("h-4 w-4", isSelected ? type.color : "text-gray-500")} />
+                    <Icon className={cn("h-4 w-4", isSelected ? type.color : "text-gray-500 dark:text-gray-400")} />
                     <span className={cn(
                       "text-xs font-medium",
-                      isSelected ? type.color : "text-gray-600"
+                      isSelected ? type.color : "text-gray-600 dark:text-gray-300"
                     )}>
                       {type.label.split(' ')[0]}
                     </span>

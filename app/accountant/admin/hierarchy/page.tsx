@@ -58,7 +58,7 @@ const roleColors: Record<UserRole, string> = {
   admin: 'bg-purple-100 text-purple-700 border-purple-300',
   manager: 'bg-blue-100 text-blue-700 border-blue-300',
   accountant: 'bg-green-100 text-green-700 border-green-300',
-  client: 'bg-gray-100 text-gray-700 border-gray-300',
+  client: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300',
 }
 
 const roleIcons: Record<UserRole, typeof Shield> = {
@@ -82,7 +82,7 @@ function OrgNode({ member, members, level, onEdit }: OrgNodeProps) {
   const RoleIcon = roleIcons[member.role]
 
   return (
-    <div className={`${level > 0 ? 'ml-8 border-l-2 border-gray-200 pl-4' : ''}`}>
+    <div className={`${level > 0 ? 'ml-8 border-l-2 border-gray-200 dark:border-gray-700 pl-4' : ''}`}>
       <div
         className={`
           flex items-center gap-3 p-3 rounded-lg border-2 mb-2 transition-all
@@ -97,7 +97,7 @@ function OrgNode({ member, members, level, onEdit }: OrgNodeProps) {
               e.stopPropagation()
               setIsExpanded(!isExpanded)
             }}
-            className="p-1 hover:bg-white/50 rounded"
+            className="p-1 hover:bg-white dark:bg-gray-800/50 rounded"
           >
             {isExpanded ? (
               <ChevronDown className="h-4 w-4" />
@@ -108,7 +108,7 @@ function OrgNode({ member, members, level, onEdit }: OrgNodeProps) {
         )}
         {!hasSubordinates && <div className="w-6" />}
 
-        <div className="p-2 bg-white/50 rounded-lg">
+        <div className="p-2 bg-white dark:bg-gray-800/50 rounded-lg">
           <RoleIcon className="h-5 w-5" />
         </div>
 
@@ -273,7 +273,7 @@ export default function HierarchyPage() {
       case 'permanent':
         return 'bg-purple-100 text-purple-700'
       default:
-        return 'bg-gray-100 text-gray-700'
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
     }
   }
 
@@ -282,11 +282,11 @@ export default function HierarchyPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Network className="h-6 w-6" />
             Hierarchie týmu
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
             Správa organizační struktury a pravidel zastupování
           </p>
         </div>
@@ -334,7 +334,7 @@ export default function HierarchyPage() {
                     >
                       <Icon className="h-3 w-3" />
                     </div>
-                    <span className="text-gray-600">{label}</span>
+                    <span className="text-gray-600 dark:text-gray-300">{label}</span>
                   </div>
                 )
               })}
@@ -367,7 +367,7 @@ export default function HierarchyPage() {
           <CardContent>
             <div className="space-y-3">
               {substitutions.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">
+                <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">
                   Žádná pravidla zastupování
                 </p>
               ) : (
@@ -379,7 +379,7 @@ export default function HierarchyPage() {
                       key={sub.id}
                       className={`
                         p-3 rounded-lg border
-                        ${sub.is_active ? 'bg-white' : 'bg-gray-50 opacity-60'}
+                        ${sub.is_active ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50 opacity-60'}
                       `}
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -405,7 +405,7 @@ export default function HierarchyPage() {
                         </span>
                       </div>
                       {sub.type !== 'permanent' && (
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {sub.start_date && formatDate(sub.start_date)}
                           {sub.end_date && ` - ${formatDate(sub.end_date)}`}
                         </div>
@@ -428,7 +428,7 @@ export default function HierarchyPage() {
                 <Shield className="h-5 w-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Administrátoři</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Administrátoři</p>
                 <p className="text-xl font-bold">
                   {members.filter((m) => m.role === 'admin').length}
                 </p>
@@ -443,7 +443,7 @@ export default function HierarchyPage() {
                 <Briefcase className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Manažeři</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Manažeři</p>
                 <p className="text-xl font-bold">
                   {members.filter((m) => m.role === 'manager').length}
                 </p>
@@ -458,7 +458,7 @@ export default function HierarchyPage() {
                 <Calculator className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Účetní</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Účetní</p>
                 <p className="text-xl font-bold">
                   {members.filter((m) => m.role === 'accountant').length}
                 </p>
@@ -473,7 +473,7 @@ export default function HierarchyPage() {
                 <Calendar className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Aktivní zastoupení</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Aktivní zastoupení</p>
                 <p className="text-xl font-bold">
                   {substitutions.filter((s) => s.is_active).length}
                 </p>
@@ -714,10 +714,10 @@ export default function HierarchyPage() {
           </DialogHeader>
           {editingMember && (
             <div className="space-y-4 py-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 <div>
                   <p className="font-medium">{editingMember.name}</p>
-                  <p className="text-sm text-gray-500">{editingMember.email}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{editingMember.email}</p>
                 </div>
                 <Badge className={roleColors[editingMember.role]}>
                   {roleLabels[editingMember.role]}
@@ -765,7 +765,7 @@ export default function HierarchyPage() {
               <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div>
                   <p className="font-medium">Stav účtu</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {editingMember.is_active
                       ? 'Účet je aktivní'
                       : 'Účet je deaktivovaný'}

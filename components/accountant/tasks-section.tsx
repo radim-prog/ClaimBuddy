@@ -47,10 +47,10 @@ interface AccountantTasksSectionProps {
 }
 
 const priorityColors: Record<TaskPriority, string> = {
-  critical: 'bg-red-100 text-red-700 border-red-200',
-  high: 'bg-orange-100 text-orange-700 border-orange-200',
-  medium: 'bg-blue-100 text-blue-700 border-blue-200',
-  low: 'bg-gray-100 text-gray-600 border-gray-200',
+  critical: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200',
+  high: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200',
+  medium: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200',
+  low: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700',
 }
 
 const priorityLabels: Record<TaskPriority, string> = {
@@ -61,17 +61,17 @@ const priorityLabels: Record<TaskPriority, string> = {
 }
 
 const statusColors: Record<TaskStatus, string> = {
-  pending: 'bg-gray-100 text-gray-700',
-  clarifying: 'bg-orange-100 text-orange-700',
-  accepted: 'bg-blue-100 text-blue-700',
-  in_progress: 'bg-purple-100 text-purple-700',
-  waiting_for: 'bg-yellow-100 text-yellow-700',
+  pending: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+  clarifying: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
+  accepted: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+  in_progress: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+  waiting_for: 'bg-yellow-100 text-yellow-700 dark:text-yellow-400',
   waiting_client: 'bg-amber-100 text-amber-700',
   awaiting_approval: 'bg-indigo-100 text-indigo-700',
-  completed: 'bg-green-100 text-green-700',
+  completed: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
   invoiced: 'bg-emerald-100 text-emerald-700',
-  cancelled: 'bg-red-100 text-red-700',
-  someday_maybe: 'bg-gray-100 text-gray-500',
+  cancelled: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+  someday_maybe: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
 }
 
 const statusLabels: Record<TaskStatus, string> = {
@@ -152,8 +152,8 @@ export function AccountantTasksSection({
     const date = new Date(dateString)
     if (isPast(date) && !isToday(date)) return 'text-red-600 font-medium'
     if (isToday(date)) return 'text-orange-600 font-medium'
-    if (isTomorrow(date)) return 'text-yellow-600'
-    return 'text-gray-500'
+    if (isTomorrow(date)) return 'text-yellow-600 dark:text-yellow-400'
+    return 'text-gray-500 dark:text-gray-400'
   }
 
   const handleStatusChange = (taskId: string, newStatus: TaskStatus) => {
@@ -170,13 +170,13 @@ export function AccountantTasksSection({
     <div className="space-y-4">
       {/* Filter tabs and add button */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
           <button
             onClick={() => setFilter('active')}
             className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
               filter === 'active'
-                ? 'bg-white text-purple-700 font-medium shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white dark:bg-gray-800 text-purple-700 font-medium shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white'
             }`}
           >
             Aktivní ({counts.active})
@@ -185,8 +185,8 @@ export function AccountantTasksSection({
             onClick={() => setFilter('waiting')}
             className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
               filter === 'waiting'
-                ? 'bg-white text-purple-700 font-medium shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white dark:bg-gray-800 text-purple-700 font-medium shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white'
             }`}
           >
             Čeká na... ({counts.waiting})
@@ -195,8 +195,8 @@ export function AccountantTasksSection({
             onClick={() => setFilter('completed')}
             className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
               filter === 'completed'
-                ? 'bg-white text-purple-700 font-medium shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white dark:bg-gray-800 text-purple-700 font-medium shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white'
             }`}
           >
             Hotovo ({counts.completed})
@@ -205,8 +205,8 @@ export function AccountantTasksSection({
             onClick={() => setFilter('all')}
             className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
               filter === 'all'
-                ? 'bg-white text-purple-700 font-medium shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white dark:bg-gray-800 text-purple-700 font-medium shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white'
             }`}
           >
             Vše ({counts.all})
@@ -234,7 +234,7 @@ export function AccountantTasksSection({
           {filteredTasks.map((task) => (
             <div
               key={task.id}
-              className={`p-3 rounded-lg border transition-colors hover:bg-gray-50 ${
+              className={`p-3 rounded-lg border transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 ${
                 task.status === 'completed' ? 'opacity-60' : ''
               }`}
             >
@@ -244,11 +244,11 @@ export function AccountantTasksSection({
                   {task.status === 'in_progress' ? (
                     <Loader2 className="h-4 w-4 text-purple-600 animate-spin" />
                   ) : task.status === 'waiting_for' ? (
-                    <Clock className="h-4 w-4 text-yellow-600" />
+                    <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                   ) : task.status === 'completed' ? (
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                   ) : isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date)) ? (
-                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
                   ) : (
                     <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
                   )}
@@ -258,7 +258,7 @@ export function AccountantTasksSection({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`font-medium ${
-                      task.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'
+                      task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
                     }`}>
                       {task.title}
                     </span>
@@ -271,7 +271,7 @@ export function AccountantTasksSection({
                   </div>
 
                   {task.description && (
-                    <p className="text-sm text-gray-600 mb-2 line-clamp-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-1">
                       {task.description}
                     </p>
                   )}
@@ -286,7 +286,7 @@ export function AccountantTasksSection({
 
                     {/* Assigned to */}
                     {task.assigned_to_name && (
-                      <span className="flex items-center gap-1 text-gray-500">
+                      <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                         <User className="h-3 w-3" />
                         {task.assigned_to_name}
                       </span>
@@ -294,7 +294,7 @@ export function AccountantTasksSection({
 
                     {/* Waiting for info */}
                     {task.status === 'waiting_for' && task.waiting_for_who && (
-                      <span className="text-yellow-700">
+                      <span className="text-yellow-700 dark:text-yellow-400">
                         Čeká na: {task.waiting_for_who}
                       </span>
                     )}
@@ -338,7 +338,7 @@ export function AccountantTasksSection({
                     <DropdownMenuItem>
                       Upravit
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600">
+                    <DropdownMenuItem className="text-red-600 dark:text-red-400">
                       Smazat
                     </DropdownMenuItem>
                   </DropdownMenuContent>

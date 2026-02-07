@@ -64,8 +64,8 @@ export function SectionNav({ items, activeSection }: SectionNavProps) {
   }
 
   return (
-    <nav className="sticky top-4 space-y-1 bg-white rounded-lg border p-2 shadow-sm">
-      <div className="text-xs font-medium text-gray-400 uppercase tracking-wider px-3 py-2">
+    <nav className="sticky top-4 space-y-1 bg-white dark:bg-gray-800 rounded-lg border p-2 shadow-sm">
+      <div className="text-xs font-medium text-gray-400 dark:text-gray-400 uppercase tracking-wider px-3 py-2">
         Navigace
       </div>
       {items.map((item) => {
@@ -79,8 +79,8 @@ export function SectionNav({ items, activeSection }: SectionNavProps) {
             className={`
               w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all
               ${isActive
-                ? 'bg-purple-100 text-purple-700 font-medium'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 hover:text-gray-900 dark:text-white'
               }
             `}
           >
@@ -89,7 +89,7 @@ export function SectionNav({ items, activeSection }: SectionNavProps) {
             {item.badge !== undefined && (
               <span className={`
                 text-xs px-1.5 py-0.5 rounded-full
-                ${isActive ? 'bg-purple-200 text-purple-800' : 'bg-gray-200 text-gray-600'}
+                ${isActive ? 'bg-purple-200 text-purple-800' : 'bg-gray-200 text-gray-600 dark:text-gray-400'}
               `}>
                 {item.badge}
               </span>

@@ -34,7 +34,7 @@ const documentTypeLabels: Record<string, string> = {
 }
 
 const statusColors = {
-  pending: { bg: 'bg-gray-100', text: 'text-gray-700', icon: Clock },
+  pending: { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-700 dark:text-gray-200', icon: Clock },
   uploaded: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock },
   approved: { bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle },
   rejected: { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle },
@@ -92,7 +92,7 @@ export default function DocumentsPage() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Načítám dokumenty...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Načítám dokumenty...</p>
         </div>
       </div>
     )
@@ -101,8 +101,8 @@ export default function DocumentsPage() {
   return (
     <div className="max-w-6xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Moje dokumenty</h1>
-        <p className="mt-2 text-gray-600">Přehled všech nahraných dokumentů</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Moje dokumenty</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-300">Přehled všech nahraných dokumentů</p>
       </div>
 
       <Card className="mb-6">
@@ -122,7 +122,7 @@ export default function DocumentsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               Zobrazeno: {filteredDocuments.length} dokumentů
             </div>
           </div>
@@ -133,8 +133,8 @@ export default function DocumentsPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <FileText className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Žádné dokumenty</h3>
-            <p className="text-gray-600">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Žádné dokumenty</h3>
+            <p className="text-gray-600 dark:text-gray-300">
               {selectedCompany === 'all'
                 ? 'Zatím jste nenahrali žádné dokumenty'
                 : 'Pro tuto firmu nejsou nahrány žádné dokumenty'}
@@ -158,7 +158,7 @@ export default function DocumentsPage() {
                         <img
                           src={doc.thumbnail_url}
                           alt={doc.file_name}
-                          className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200"
+                          className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-700"
                           onError={(e) => {
                             // Fallback pokud obrázek selže
                             (e.target as HTMLImageElement).style.display = 'none'
@@ -173,7 +173,7 @@ export default function DocumentsPage() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-900 truncate">
+                        <h3 className="font-semibold text-gray-900 dark:text-white truncate">
                           {doc.file_name}
                         </h3>
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${colors.bg} ${colors.text}`}>
@@ -184,10 +184,10 @@ export default function DocumentsPage() {
 
                       {/* Popis dokumentu */}
                       {doc.description && (
-                        <p className="text-sm text-gray-700 mb-2 italic">{doc.description}</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-200 mb-2 italic">{doc.description}</p>
                       )}
 
-                      <div className="text-sm text-gray-600 space-y-1">
+                      <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                         <div>
                           <span className="font-medium">Firma:</span> {company?.name || 'N/A'}
                         </div>

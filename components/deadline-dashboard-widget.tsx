@@ -64,7 +64,7 @@ export function DeadlineDashboardWidget({ tasks }: DeadlineDashboardWidgetProps)
       case 'medium':
         return <Clock className="h-4 w-4 text-yellow-600" />
       default:
-        return <CheckCircle2 className="h-4 w-4 text-gray-600" />
+        return <CheckCircle2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
     }
   }
 
@@ -113,7 +113,7 @@ export function DeadlineDashboardWidget({ tasks }: DeadlineDashboardWidgetProps)
       </CardHeader>
       <CardContent className="space-y-4">
         {tasks.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-green-500" />
             <p className="text-sm">Žádné nadcházející deadlines</p>
           </div>
@@ -122,7 +122,7 @@ export function DeadlineDashboardWidget({ tasks }: DeadlineDashboardWidgetProps)
             {sections.map((section, idx) =>
               section.show ? (
                 <div key={idx} className="space-y-2">
-                  <h4 className="text-xs font-semibold text-gray-600 uppercase">
+                  <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">
                     {section.title} ({section.tasks.length})
                   </h4>
                   <div className="space-y-2">

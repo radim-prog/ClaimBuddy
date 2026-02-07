@@ -210,11 +210,11 @@ export default function TimeReportsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Clock className="h-7 w-7 text-blue-600" />
             Time Reports
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 dark:text-gray-300 mt-1">
             Přehled odpracovaného času účetních a klientů
           </p>
         </div>
@@ -245,8 +245,8 @@ export default function TimeReportsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Celkem odpracováno</p>
-                <p className="text-2xl font-bold text-gray-900">{formatMinutes(totalStats.totalMinutes)}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Celkem odpracováno</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatMinutes(totalStats.totalMinutes)}</p>
               </div>
               <Clock className="h-10 w-10 text-blue-100" />
             </div>
@@ -256,7 +256,7 @@ export default function TimeReportsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Fakturovatelné</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Fakturovatelné</p>
                 <p className="text-2xl font-bold text-green-600">{formatMinutes(totalStats.billableMinutes)}</p>
               </div>
               <TrendingUp className="h-10 w-10 text-green-100" />
@@ -267,7 +267,7 @@ export default function TimeReportsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Na úkolech</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Na úkolech</p>
                 <p className="text-2xl font-bold text-blue-600">{formatMinutes(totalStats.taskMinutes)}</p>
               </div>
               <Briefcase className="h-10 w-10 text-blue-100" />
@@ -278,7 +278,7 @@ export default function TimeReportsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Mimo úkoly</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Mimo úkoly</p>
                 <p className="text-2xl font-bold text-orange-600">{formatMinutes(totalStats.nonTaskMinutes)}</p>
               </div>
               <Timer className="h-10 w-10 text-orange-100" />
@@ -325,7 +325,7 @@ export default function TimeReportsPage() {
                 <TableBody>
                   {accountantStats.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                      <TableCell colSpan={7} className="text-center text-gray-500 dark:text-gray-400 py-8">
                         Žádné záznamy pro vybraný měsíc
                       </TableCell>
                     </TableRow>
@@ -336,7 +336,7 @@ export default function TimeReportsPage() {
                         : 0
 
                       return (
-                        <TableRow key={stat.userId} className="hover:bg-gray-50">
+                        <TableRow key={stat.userId} className="hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50">
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
@@ -412,7 +412,7 @@ export default function TimeReportsPage() {
                 <TableBody>
                   {clientStats.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                      <TableCell colSpan={6} className="text-center text-gray-500 dark:text-gray-400 py-8">
                         Žádné záznamy pro vybraný měsíc
                       </TableCell>
                     </TableRow>
@@ -422,7 +422,7 @@ export default function TimeReportsPage() {
                       const hasHighExtra = extraMinutes > 60 // More than 1 hour extra
 
                       return (
-                        <TableRow key={stat.clientId} className="hover:bg-gray-50">
+                        <TableRow key={stat.clientId} className="hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50">
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Building2 className="h-5 w-5 text-gray-400" />
@@ -535,7 +535,7 @@ export default function TimeReportsPage() {
             <TableBody>
               {filteredLogs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                  <TableCell colSpan={7} className="text-center text-gray-500 dark:text-gray-400 py-8">
                     Žádné záznamy pro vybrané filtry
                   </TableCell>
                 </TableRow>
@@ -544,7 +544,7 @@ export default function TimeReportsPage() {
                   const Icon = getActivityIcon(log.activity_type)
                   return (
                     <TableRow key={log.id}>
-                      <TableCell className="text-gray-600">
+                      <TableCell className="text-gray-600 dark:text-gray-300">
                         {log.date ? new Date(log.date).toLocaleDateString('cs-CZ') : '-'}
                       </TableCell>
                       <TableCell>
@@ -626,9 +626,9 @@ export default function TimeReportsPage() {
                         const percent = Math.round((minutes / stat.totalMinutes) * 100)
                         return (
                           <div key={type} className="flex items-center gap-3">
-                            <Icon className="h-4 w-4 text-gray-500" />
+                            <Icon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                             <span className="w-24 text-sm">{getActivityLabel(type as ActivityType)}</span>
-                            <div className="flex-1 bg-gray-100 rounded-full h-2">
+                            <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
                               <div
                                 className="bg-blue-500 rounded-full h-2"
                                 style={{ width: `${percent}%` }}
@@ -650,8 +650,8 @@ export default function TimeReportsPage() {
                       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                       .slice(0, 10)
                       .map(log => (
-                        <div key={log.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded text-sm">
-                          <span className="text-gray-500 w-20">{log.date ? new Date(log.date).toLocaleDateString('cs-CZ') : '-'}</span>
+                        <div key={log.id} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded text-sm">
+                          <span className="text-gray-500 dark:text-gray-400 w-20">{log.date ? new Date(log.date).toLocaleDateString('cs-CZ') : '-'}</span>
                           <span className="flex-1 truncate">{log.description}</span>
                           <span className="font-medium">{formatMinutes(log.minutes)}</span>
                         </div>
@@ -705,7 +705,7 @@ export default function TimeReportsPage() {
                             {user.userName.split(' ').map(n => n[0]).join('')}
                           </div>
                           <span className="w-32 text-sm">{user.userName}</span>
-                          <div className="flex-1 bg-gray-100 rounded-full h-2">
+                          <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
                             <div
                               className="bg-blue-500 rounded-full h-2"
                               style={{ width: `${percent}%` }}
@@ -730,9 +730,9 @@ export default function TimeReportsPage() {
                         const percent = Math.round((minutes / stat.totalMinutes) * 100)
                         return (
                           <div key={type} className="flex items-center gap-3">
-                            <Icon className="h-4 w-4 text-gray-500" />
+                            <Icon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                             <span className="w-24 text-sm">{getActivityLabel(type as ActivityType)}</span>
-                            <div className="flex-1 bg-gray-100 rounded-full h-2">
+                            <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
                               <div
                                 className="bg-green-500 rounded-full h-2"
                                 style={{ width: `${percent}%` }}

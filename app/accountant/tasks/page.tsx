@@ -109,10 +109,10 @@ interface CategoryConfig {
 }
 
 const CATEGORIES: CategoryConfig[] = [
-  { id: 'active', label: 'Aktivní', icon: PlayCircle, color: 'text-blue-600', bgColor: 'bg-blue-50 border-blue-200' },
-  { id: 'waiting', label: 'Čeká', icon: Clock, color: 'text-orange-600', bgColor: 'bg-orange-50 border-orange-200' },
+  { id: 'active', label: 'Aktivní', icon: PlayCircle, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200' },
+  { id: 'waiting', label: 'Čeká', icon: Clock, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200' },
   { id: 'someday', label: 'Někdy/Možná', icon: Coffee, color: 'text-purple-600', bgColor: 'bg-purple-50 border-purple-200' },
-  { id: 'archive', label: 'Archiv', icon: Archive, color: 'text-gray-600', bgColor: 'bg-gray-50 border-gray-200' },
+  { id: 'archive', label: 'Archiv', icon: Archive, color: 'text-gray-600 dark:text-gray-400', bgColor: 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700' },
 ]
 
 const CATEGORY_STORAGE_KEY = 'ucetni-task-categories'
@@ -200,7 +200,7 @@ function DraggableKanbanCard({ task, priorityConfig, isOverdue, isUrgent, getDay
   const getCardClassName = () => {
     if (escalationLevel === 3) return 'border-l-4 border-l-purple-500 bg-purple-50'
     if (escalationLevel === 2) return 'border-l-4 border-l-red-500 bg-red-50 animate-pulse'
-    if (overdue) return 'border-l-4 border-l-red-500 bg-red-50'
+    if (overdue) return 'border-l-4 border-l-red-500 bg-red-50 dark:bg-red-900/20'
     if (urgent) return 'border-l-4 border-l-amber-500 bg-amber-50'
     return ''
   }
@@ -213,18 +213,18 @@ function DraggableKanbanCard({ task, priorityConfig, isOverdue, isUrgent, getDay
             <div
               {...attributes}
               {...listeners}
-              className="mt-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+              className="mt-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:text-gray-400"
             >
               <GripVertical className="h-4 w-4" />
             </div>
             <div className="flex-1 space-y-2">
               <Link href={`/accountant/tasks/${task.id}`}>
-                <h4 className="font-semibold text-sm text-gray-900 line-clamp-2 hover:text-blue-600 flex items-center gap-1">
+                <h4 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2 hover:text-blue-600 flex items-center gap-1">
                   {task.title}
                   <UrgencyIndicator task={task} />
                 </h4>
               </Link>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-gray-600 dark:text-gray-400">
                 {task.company_name}
               </p>
               <div className="flex items-center gap-1 text-xs">
@@ -232,7 +232,7 @@ function DraggableKanbanCard({ task, priorityConfig, isOverdue, isUrgent, getDay
                 <span className={
                   overdue ? 'text-red-600 font-semibold' :
                   urgent ? 'text-orange-600 font-semibold' :
-                  'text-gray-600'
+                  'text-gray-600 dark:text-gray-400'
                 }>
                   {getDaysUntilDue(task.due_date) === 0 ? 'Dnes' :
                    getDaysUntilDue(task.due_date) === 1 ? 'Zítra' :
@@ -245,7 +245,7 @@ function DraggableKanbanCard({ task, priorityConfig, isOverdue, isUrgent, getDay
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 w-7 p-0 text-blue-600 hover:bg-blue-50"
+                  className="h-7 w-7 p-0 text-blue-600 hover:bg-blue-50 dark:bg-blue-900/20"
                   onClick={(e) => onStartTimer(task.id, e)}
                   title="Spustit časovač"
                 >
@@ -255,7 +255,7 @@ function DraggableKanbanCard({ task, priorityConfig, isOverdue, isUrgent, getDay
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 w-7 p-0 text-green-600 hover:bg-green-50"
+                    className="h-7 w-7 p-0 text-green-600 hover:bg-green-50 dark:bg-green-900/20"
                     onClick={(e) => onComplete(task.id, e)}
                     title="Dokončit"
                   >
@@ -718,21 +718,21 @@ export default function TasksPage() {
   const priorityConfig: Record<ScorePriority, { bg: string; text: string; border: string; label: string; icon: any }> = {
     high: {
       bg: 'bg-red-100',
-      text: 'text-red-700',
+      text: 'text-red-700 dark:text-red-400',
       border: 'border-red-300',
       label: 'Vysoká',
       icon: Flame
     },
     medium: {
       bg: 'bg-yellow-100',
-      text: 'text-yellow-700',
+      text: 'text-yellow-700 dark:text-yellow-400',
       border: 'border-yellow-300',
       label: 'Střední',
       icon: TrendingUp
     },
     low: {
       bg: 'bg-green-100',
-      text: 'text-green-700',
+      text: 'text-green-700 dark:text-green-400',
       border: 'border-green-300',
       label: 'Nízká',
       icon: Coffee
@@ -958,7 +958,7 @@ export default function TasksPage() {
       }
       if (escalationLevel === 2) {
         // Dosažen limit urgencí - červený pulsující
-        return 'bg-red-50 border-l-4 border-l-red-500 animate-pulse'
+        return 'bg-red-50 dark:bg-red-900/20 border-l-4 border-l-red-500 animate-pulse'
       }
       if (overdue) {
         return 'bg-red-100 border-l-4 border-l-red-500'
@@ -974,7 +974,7 @@ export default function TasksPage() {
     }
 
     return (
-      <div className={`flex items-center gap-3 py-2.5 px-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${getRowClassName()}`}>
+      <div className={`flex items-center gap-3 py-2.5 px-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-colors ${getRowClassName()}`}>
         {/* Complete checkbox */}
         {task.status !== 'completed' && (
           <button
@@ -986,7 +986,7 @@ export default function TasksPage() {
         )}
         {task.status === 'completed' && (
           <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-            <CheckCircle2 className="h-3 w-3 text-green-600" />
+            <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" />
           </div>
         )}
 
@@ -994,7 +994,7 @@ export default function TasksPage() {
         <div className="flex-1 min-w-0">
           <Link href={`/accountant/tasks/${task.id}`} className="block">
             <span className="flex items-center gap-2">
-              <span className={`font-medium text-gray-900 truncate ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}>
+              <span className={`font-medium text-gray-900 dark:text-white truncate ${task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>
                 {task.title}
               </span>
               {task.is_next_action && (
@@ -1019,7 +1019,7 @@ export default function TasksPage() {
               )}
             </span>
           </Link>
-          <div className="flex items-center gap-2 text-xs text-gray-500 truncate mt-0.5">
+          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
             {showClient && <span>{task.company_name}</span>}
             {task.project_name && (() => {
               const project = getProjectForTask(task)
@@ -1049,7 +1049,7 @@ export default function TasksPage() {
         <div className={`text-sm flex-shrink-0 min-w-[80px] text-right ${
           overdue ? 'text-red-600 font-semibold' :
           urgent ? 'text-orange-600 font-semibold' :
-          'text-gray-600'
+          'text-gray-600 dark:text-gray-400'
         }`}>
           {getDeadlineText(task.due_date, task.due_time)}
         </div>
@@ -1067,7 +1067,7 @@ export default function TasksPage() {
           <Button
             size="sm"
             variant="ghost"
-            className={`h-7 w-7 p-0 ${isTimerActive ? 'text-green-600 bg-green-50' : 'text-blue-600 hover:bg-blue-50'}`}
+            className={`h-7 w-7 p-0 ${isTimerActive ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : 'text-blue-600 hover:bg-blue-50'}`}
             onClick={(e) => handleStartTimer(task.id, e)}
             title={isTimerActive ? 'Časovač běží' : 'Spustit časovač'}
           >
@@ -1091,7 +1091,7 @@ export default function TasksPage() {
     const getCardClassName = () => {
       if (escalationLevel === 3) return 'border-l-4 border-l-purple-500 bg-purple-50'
       if (escalationLevel === 2) return 'border-l-4 border-l-red-500 bg-red-50 animate-pulse'
-      if (overdue) return 'border-l-4 border-l-red-500 bg-red-50'
+      if (overdue) return 'border-l-4 border-l-red-500 bg-red-50 dark:bg-red-900/20'
       if (urgent) return 'border-l-4 border-l-amber-500 bg-amber-50'
       return ''
     }
@@ -1130,13 +1130,13 @@ export default function TasksPage() {
           </div>
 
           <Link href={`/accountant/tasks/${task.id}`}>
-            <h4 className="font-semibold text-gray-900 line-clamp-2 hover:text-blue-600 mb-2 flex items-center gap-1">
+            <h4 className="font-semibold text-gray-900 dark:text-white line-clamp-2 hover:text-blue-600 mb-2 flex items-center gap-1">
               {task.title}
               <UrgencyIndicator task={task} />
             </h4>
           </Link>
 
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2">
             <Building2 className="h-4 w-4 flex-shrink-0" />
             <span className="truncate">{task.company_name}</span>
           </div>
@@ -1164,7 +1164,7 @@ export default function TasksPage() {
             <span className={
               overdue ? 'text-red-600 font-semibold' :
               urgent ? 'text-orange-600 font-semibold' :
-              'text-gray-600'
+              'text-gray-600 dark:text-gray-400'
             }>
               {getDeadlineText(task.due_date, task.due_time)}
             </span>
@@ -1174,7 +1174,7 @@ export default function TasksPage() {
           {task.is_project && task.progress_percentage !== undefined && (
             <div className="mb-3">
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-600">Pokrok</span>
+                <span className="text-gray-600 dark:text-gray-400">Pokrok</span>
                 <span className="font-semibold text-indigo-600">{task.progress_percentage}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-1.5">
@@ -1187,11 +1187,11 @@ export default function TasksPage() {
           )}
 
           {/* Quick actions */}
-          <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+          <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
             <Button
               size="sm"
               variant="ghost"
-              className={`flex-1 ${isTimerActive ? 'text-green-600 bg-green-50' : 'text-blue-600 hover:bg-blue-50'}`}
+              className={`flex-1 ${isTimerActive ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : 'text-blue-600 hover:bg-blue-50'}`}
               onClick={(e) => handleStartTimer(task.id, e)}
             >
               {isTimerActive ? <Timer className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
@@ -1201,7 +1201,7 @@ export default function TasksPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="flex-1 text-green-600 hover:bg-green-50"
+                className="flex-1 text-green-600 hover:bg-green-50 dark:bg-green-900/20"
                 onClick={(e) => handleCompleteTask(task.id, e)}
               >
                 <CheckCircle2 className="h-4 w-4 mr-1" />
@@ -1226,7 +1226,7 @@ export default function TasksPage() {
         const monthlyStatus = getMonthlyStatus(MOCK_CONFIG.CURRENT_USER_ID)
 
         return (
-          <div className="flex flex-wrap items-center gap-4 mb-4 p-3 bg-gray-50 rounded-lg border">
+          <div className="flex flex-wrap items-center gap-4 mb-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border">
             {/* Quality Status - Binary feedback */}
             <div className="flex items-center gap-2">
               {canClaimBonus ? (
@@ -1239,7 +1239,7 @@ export default function TasksPage() {
               ) : (
                 <>
                   <div className="w-2 h-2 rounded-full bg-gray-400" />
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
                     Bonus úkoly nedostupné
                   </span>
                 </>
@@ -1251,13 +1251,13 @@ export default function TasksPage() {
             {/* WIP Status */}
             {userSettings && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
                   Rozpracováno: <span className={`font-semibold ${
                     inProgressTasks >= userSettings.max_wip_total
-                      ? 'text-red-600'
+                      ? 'text-red-600 dark:text-red-400'
                       : inProgressTasks >= userSettings.max_wip_total - 1
-                        ? 'text-orange-600'
-                        : 'text-gray-900'
+                        ? 'text-orange-600 dark:text-orange-400'
+                        : 'text-gray-900 dark:text-white'
                   }`}>{inProgressTasks}/{userSettings.max_wip_total}</span>
                 </span>
               </div>
@@ -1268,8 +1268,8 @@ export default function TasksPage() {
             {/* Available Bonus Tasks */}
             {availableBonusTasks.length > 0 && canClaimBonus && (
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                <span className="text-sm text-green-700">
+                <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <span className="text-sm text-green-700 dark:text-green-400">
                   <span className="font-semibold">{availableBonusTasks.length}</span> bonus úkolů k převzetí
                 </span>
               </div>
@@ -1278,9 +1278,9 @@ export default function TasksPage() {
             {/* FÁZE 6: Base Progress & Monthly Cutoff */}
             <Separator orientation="vertical" className="h-5" />
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
                 Základ: <span className={`font-semibold ${
-                  monthlyStatus.isBaseComplete ? 'text-green-600' : 'text-gray-900'
+                  monthlyStatus.isBaseComplete ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'
                 }`}>{monthlyStatus.baseCompleted}/{monthlyStatus.baseRequired}</span>
               </span>
               {monthlyStatus.isBaseComplete && (
@@ -1290,7 +1290,7 @@ export default function TasksPage() {
 
             {/* Monthly Points & Cutoff */}
             <div className="flex items-center gap-2 ml-auto">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
                 Body:
               </span>
               <Badge
@@ -1303,7 +1303,7 @@ export default function TasksPage() {
               >
                 {monthlyStatus.bonusPoints} bodů
               </Badge>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
                 (uzávěrka za {monthlyStatus.daysUntilCutoff}d)
               </span>
             </div>
@@ -1343,7 +1343,7 @@ export default function TasksPage() {
           variant="ghost"
           size="sm"
           onClick={() => setShowFilters(!showFilters)}
-          className="h-9 text-gray-600"
+          className="h-9 text-gray-600 dark:text-gray-400"
         >
           Filtry
           {showFilters ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />}
@@ -1462,13 +1462,13 @@ export default function TasksPage() {
               </div>
 
               {/* Quick stats in filters */}
-              <div className="flex items-center gap-4 ml-auto text-sm text-gray-600">
+              <div className="flex items-center gap-4 ml-auto text-sm text-gray-600 dark:text-gray-400">
                 <span className="flex items-center gap-1">
-                  <Clock className="h-4 w-4 text-blue-600" />
+                  <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   Čeká: <strong>{urgencyStats.waiting}</strong>
                 </span>
                 <span className="flex items-center gap-1">
-                  <Banknote className="h-4 w-4 text-green-600" />
+                  <Banknote className="h-4 w-4 text-green-600 dark:text-green-400" />
                   K fakturaci: <strong>{urgencyStats.toInvoice}</strong>
                 </span>
               </div>
@@ -1494,7 +1494,7 @@ export default function TasksPage() {
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
                     isSelected
                       ? `${category.bgColor} border-2`
-                      : 'bg-white border-gray-200 hover:border-gray-300'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300'
                   }`}
                 >
                   {isSelected ? (
@@ -1503,12 +1503,12 @@ export default function TasksPage() {
                     <Circle className="h-4 w-4 text-gray-300" />
                   )}
                   <Icon className={`h-4 w-4 ${isSelected ? category.color : 'text-gray-400'}`} />
-                  <span className={`text-sm font-medium ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>
+                  <span className={`text-sm font-medium ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
                     {category.label}
                   </span>
                   <Badge
                     variant="secondary"
-                    className={`h-5 px-1.5 text-xs ${isSelected ? 'bg-white/80 text-gray-900' : 'bg-gray-100 text-gray-600'}`}
+                    className={`h-5 px-1.5 text-xs ${isSelected ? 'bg-white dark:bg-gray-800/80 text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
                   >
                     {count}
                   </Badge>
@@ -1522,7 +1522,7 @@ export default function TasksPage() {
                 variant="ghost"
                 size="sm"
                 onClick={selectOnlyActive}
-                className="h-7 px-2 text-xs text-gray-600 hover:text-gray-900"
+                className="h-7 px-2 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white"
                 title="Zobrazit pouze aktivní"
               >
                 Aktivní
@@ -1531,7 +1531,7 @@ export default function TasksPage() {
                 variant="ghost"
                 size="sm"
                 onClick={selectAllWithoutArchive}
-                className="h-7 px-2 text-xs text-gray-600 hover:text-gray-900"
+                className="h-7 px-2 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white"
                 title="Vše kromě archivu"
               >
                 Bez archivu
@@ -1540,7 +1540,7 @@ export default function TasksPage() {
                 variant="ghost"
                 size="sm"
                 onClick={selectAll}
-                className="h-7 px-2 text-xs text-gray-600 hover:text-gray-900"
+                className="h-7 px-2 text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white"
                 title="Zobrazit vše"
               >
                 Vše
@@ -1549,12 +1549,12 @@ export default function TasksPage() {
           </div>
 
           {/* View Mode Selector */}
-          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setViewMode('list')}
-              className={`h-7 px-2 ${viewMode === 'list' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:bg-gray-200'}`}
+              className={`h-7 px-2 ${viewMode === 'list' ? 'bg-white dark:bg-gray-800 shadow text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}
             >
               <List className="h-4 w-4" />
             </Button>
@@ -1562,7 +1562,7 @@ export default function TasksPage() {
               variant="ghost"
               size="sm"
               onClick={() => setViewMode('cards')}
-              className={`h-7 px-2 ${viewMode === 'cards' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:bg-gray-200'}`}
+              className={`h-7 px-2 ${viewMode === 'cards' ? 'bg-white dark:bg-gray-800 shadow text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -1572,7 +1572,7 @@ export default function TasksPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setViewMode('kanban')}
-                className={`h-7 px-2 ${viewMode === 'kanban' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:bg-gray-200'}`}
+                className={`h-7 px-2 ${viewMode === 'kanban' ? 'bg-white dark:bg-gray-800 shadow text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}
               >
                 <Columns3 className="h-4 w-4" />
               </Button>
@@ -1612,11 +1612,11 @@ export default function TasksPage() {
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-blue-100 rounded-lg">
-                          <Building2 className="h-5 w-5 text-blue-600" />
+                          <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
-                          <h4 className="font-semibold text-gray-900">{company.name}</h4>
-                          <p className="text-sm text-gray-600">IČO: {company.ico}</p>
+                          <h4 className="font-semibold text-gray-900 dark:text-white">{company.name}</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">IČO: {company.ico}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -1660,10 +1660,10 @@ export default function TasksPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <FolderKanban className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
               Žádné úkoly
             </h3>
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600 dark:text-gray-300 text-sm">
               {searchQuery || filterClient !== 'all' || filterPriority !== 'all'
                 ? 'Zkuste změnit filtry'
                 : 'V této kategorii zatím nejsou žádné úkoly'}
@@ -1709,10 +1709,10 @@ export default function TasksPage() {
             return (
               <div
                 key={column.id}
-                className="bg-gray-100 rounded-lg p-3 min-h-[300px]"
+                className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 min-h-[300px]"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-sm text-gray-900">
+                  <h3 className="font-semibold text-sm text-gray-900 dark:text-white">
                     {column.emoji} {column.title}
                   </h3>
                   <Badge variant="secondary" className="h-5 px-1.5">{columnTasks.length}</Badge>
@@ -1735,7 +1735,7 @@ export default function TasksPage() {
                       />
                     ))}
                     {columnTasks.length === 0 && (
-                      <div className="text-xs text-gray-500 text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-6 border-2 border-dashed border-gray-300 rounded-lg">
                         Přetáhněte sem
                       </div>
                     )}
@@ -1750,10 +1750,10 @@ export default function TasksPage() {
           {activeTask && (
             <Card className="shadow-xl ring-2 ring-blue-400 w-56">
               <CardContent className="p-3">
-                <h4 className="font-semibold text-sm text-gray-900 line-clamp-2">
+                <h4 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2">
                   {activeTask.title}
                 </h4>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
                   {activeTask.company_name}
                 </p>
               </CardContent>

@@ -107,8 +107,8 @@ export default function AdminDashboardPage() {
       case 'message': return 'text-blue-600 bg-blue-100'
       case 'export': return 'text-orange-600 bg-orange-100'
       case 'settings': return 'text-purple-600 bg-purple-100'
-      case 'login': return 'text-gray-600 bg-gray-100'
-      default: return 'text-gray-600 bg-gray-100'
+      case 'login': return 'text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700'
+      default: return 'text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700'
     }
   }
 
@@ -123,8 +123,8 @@ export default function AdminDashboardPage() {
                 <Users className="h-5 w-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Uživatelů</p>
-                <p className="text-xl font-bold text-gray-900">{mockAdminStats.totalUsers}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Uživatelů</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{mockAdminStats.totalUsers}</p>
               </div>
             </div>
           </CardContent>
@@ -134,11 +134,11 @@ export default function AdminDashboardPage() {
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Aktivních</p>
-                <p className="text-xl font-bold text-green-600">{mockAdminStats.activeUsers}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Aktivních</p>
+                <p className="text-xl font-bold text-green-600 dark:text-green-400">{mockAdminStats.activeUsers}</p>
               </div>
             </div>
           </CardContent>
@@ -148,11 +148,11 @@ export default function AdminDashboardPage() {
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <Building2 className="h-5 w-5 text-blue-600" />
+                <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Klientů</p>
-                <p className="text-xl font-bold text-gray-900">{mockAdminStats.totalClients}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Klientů</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{mockAdminStats.totalClients}</p>
               </div>
             </div>
           </CardContent>
@@ -162,11 +162,11 @@ export default function AdminDashboardPage() {
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-yellow-100 rounded-lg">
-                <FileText className="h-5 w-5 text-yellow-600" />
+                <FileText className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Logů dnes</p>
-                <p className="text-xl font-bold text-gray-900">{mockAdminStats.totalLogsToday}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Logů dnes</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{mockAdminStats.totalLogsToday}</p>
               </div>
             </div>
           </CardContent>
@@ -176,11 +176,11 @@ export default function AdminDashboardPage() {
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-100 rounded-lg">
-                <Download className="h-5 w-5 text-orange-600" />
+                <Download className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Exportů</p>
-                <p className="text-xl font-bold text-gray-900">{mockAdminStats.totalExportsThisMonth}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Exportů</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{mockAdminStats.totalExportsThisMonth}</p>
               </div>
             </div>
           </CardContent>
@@ -193,8 +193,8 @@ export default function AdminDashboardPage() {
                 <Calendar className="h-5 w-5 text-indigo-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Záloha</p>
-                <p className="text-xl font-bold text-gray-900">{formatTime(mockAdminStats.lastBackup)}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Záloha</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{formatTime(mockAdminStats.lastBackup)}</p>
               </div>
             </div>
           </CardContent>
@@ -214,7 +214,7 @@ export default function AdminDashboardPage() {
                 <CardDescription>Akce provedené uživateli systému</CardDescription>
               </div>
               <Link href="/accountant/admin/audit-logs">
-                <Badge variant="outline" className="cursor-pointer hover:bg-gray-100">
+                <Badge variant="outline" className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700">
                   Zobrazit vše
                 </Badge>
               </Link>
@@ -233,14 +233,14 @@ export default function AdminDashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900">{activity.user}</span>
-                        <span className="text-gray-500">{activity.action}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{activity.user}</span>
+                        <span className="text-gray-500 dark:text-gray-400">{activity.action}</span>
                       </div>
                       {activity.target && (
-                        <p className="text-sm text-gray-600 truncate">{activity.target}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 truncate">{activity.target}</p>
                       )}
                     </div>
-                    <span className="text-xs text-gray-500 flex-shrink-0">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
                       {formatTime(activity.timestamp)}
                     </span>
                   </div>
@@ -262,40 +262,40 @@ export default function AdminDashboardPage() {
           <CardContent>
             <div className="space-y-3">
               {mockSystemHealth.map((service) => (
-                <div key={service.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={service.name} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                   <div className="flex items-center gap-2">
                     {service.status === 'ok' ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                     ) : (
-                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                      <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
                     )}
-                    <span className="font-medium text-gray-900">{service.name}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{service.name}</span>
                   </div>
-                  <span className={`text-sm ${service.status === 'ok' ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className={`text-sm ${service.status === 'ok' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                     {service.message}
                   </span>
                 </div>
               ))}
             </div>
 
-            <div className="mt-6 pt-4 border-t">
-              <h4 className="font-medium text-gray-900 mb-2">Rychlé akce</h4>
+            <div className="mt-6 pt-4 border-t dark:border-gray-700">
+              <h4 className="font-medium text-gray-900 dark:text-white mb-2">Rychlé akce</h4>
               <div className="space-y-2">
                 <Link href="/accountant/admin/audit-logs">
-                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors">
-                    <FileText className="h-4 w-4 text-gray-500" />
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 cursor-pointer transition-colors">
+                    <FileText className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                     <span className="text-sm">Prohlédnout audit logy</span>
                   </div>
                 </Link>
                 <Link href="/accountant/admin/user-activity">
-                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors">
-                    <Users className="h-4 w-4 text-gray-500" />
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 cursor-pointer transition-colors">
+                    <Users className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                     <span className="text-sm">Aktivita uživatelů</span>
                   </div>
                 </Link>
                 <Link href="/accountant/admin/export">
-                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors">
-                    <Download className="h-4 w-4 text-gray-500" />
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 cursor-pointer transition-colors">
+                    <Download className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                     <span className="text-sm">Export dat klienta</span>
                   </div>
                 </Link>

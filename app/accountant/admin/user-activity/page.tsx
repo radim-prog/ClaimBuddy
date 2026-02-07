@@ -211,7 +211,7 @@ export default function UserActivityPage() {
       case 'admin': return 'bg-purple-100 text-purple-700'
       case 'accountant': return 'bg-blue-100 text-blue-700'
       case 'assistant': return 'bg-green-100 text-green-700'
-      default: return 'bg-gray-100 text-gray-700'
+      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
     }
   }
 
@@ -239,7 +239,7 @@ export default function UserActivityPage() {
                 <Users className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Online uživatelů</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Online uživatelů</p>
                 <p className="text-2xl font-bold text-green-600">{activeUsersCount}</p>
               </div>
             </div>
@@ -253,7 +253,7 @@ export default function UserActivityPage() {
                 <Activity className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Aktivní sessions</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Aktivní sessions</p>
                 <p className="text-2xl font-bold text-blue-600">{activeSessions}</p>
               </div>
             </div>
@@ -267,7 +267,7 @@ export default function UserActivityPage() {
                 <Eye className="h-5 w-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Zobrazení dnes</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Zobrazení dnes</p>
                 <p className="text-2xl font-bold text-purple-600">
                   {mockSessions.filter(s => s.is_active).reduce((sum, s) => sum + s.pages_viewed, 0)}
                 </p>
@@ -283,7 +283,7 @@ export default function UserActivityPage() {
                 <Clock className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Celkem sessions</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Celkem sessions</p>
                 <p className="text-2xl font-bold text-orange-600">{totalSessions}</p>
               </div>
             </div>
@@ -306,13 +306,13 @@ export default function UserActivityPage() {
               <div
                 key={user.id}
                 className={`p-4 rounded-lg border ${
-                  user.isOnline ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                  user.isOnline ? 'bg-green-50 border-green-200' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <div className="relative">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                      user.isOnline ? 'bg-green-200 text-green-700' : 'bg-gray-200 text-gray-600'
+                      user.isOnline ? 'bg-green-200 text-green-700' : 'bg-gray-200 text-gray-600 dark:text-gray-300'
                     }`}>
                       {user.avatar}
                     </div>
@@ -321,8 +321,8 @@ export default function UserActivityPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{user.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                    <p className="font-medium text-gray-900 dark:text-white truncate">{user.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
                     <div className="mt-1 flex items-center gap-2">
                       <Badge variant="outline" className={getRoleColor(user.role)}>
                         {getRoleLabel(user.role)}
@@ -330,7 +330,7 @@ export default function UserActivityPage() {
                       {user.isOnline ? (
                         <span className="text-xs text-green-600">Online</span>
                       ) : (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           {formatDateTime(user.lastActive)}
                         </span>
                       )}
@@ -390,7 +390,7 @@ export default function UserActivityPage() {
                   <div
                     key={session.id}
                     className={`p-4 rounded-lg border ${
-                      session.is_active ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                      session.is_active ? 'bg-green-50 border-green-200' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4">
@@ -401,13 +401,13 @@ export default function UserActivityPage() {
                           {session.is_active ? (
                             <LogIn className="h-4 w-4 text-green-700" />
                           ) : (
-                            <LogOut className="h-4 w-4 text-gray-600" />
+                            <LogOut className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           )}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{session.user_name}</p>
-                          <p className="text-xs text-gray-500">{session.user_email}</p>
-                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                          <p className="font-medium text-gray-900 dark:text-white">{session.user_name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{session.user_email}</p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
                               {formatDateTime(session.login_time)}
@@ -424,18 +424,18 @@ export default function UserActivityPage() {
                       <div className="text-right space-y-1">
                         <div className="flex items-center gap-2 justify-end">
                           <DeviceIcon className="h-4 w-4 text-gray-400" />
-                          <span className="text-xs text-gray-600">{session.browser}</span>
+                          <span className="text-xs text-gray-600 dark:text-gray-300">{session.browser}</span>
                         </div>
-                        <p className="text-xs text-gray-500">{session.ip_address}</p>
-                        <p className="text-xs text-gray-500">{session.location}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{session.ip_address}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{session.location}</p>
                       </div>
                     </div>
-                    <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-4 text-xs">
-                      <span className="flex items-center gap-1 text-gray-600">
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-4 text-xs">
+                      <span className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
                         <Eye className="h-3 w-3" />
                         {session.pages_viewed} zobrazení
                       </span>
-                      <span className="flex items-center gap-1 text-gray-600">
+                      <span className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
                         <Activity className="h-3 w-3" />
                         {session.actions_performed} akcí
                       </span>
@@ -465,9 +465,9 @@ export default function UserActivityPage() {
             <CardContent>
               <div className="space-y-3">
                 {mockUserStats.map((stat) => (
-                  <div key={stat.user_id} className="p-3 bg-gray-50 rounded-lg">
+                  <div key={stat.user_id} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-gray-900">{stat.user_name}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{stat.user_name}</span>
                       {stat.trend === 'up' && (
                         <Badge className="bg-green-100 text-green-700">
                           <TrendingUp className="h-3 w-3 mr-1" />
@@ -480,13 +480,13 @@ export default function UserActivityPage() {
                         </Badge>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
                       <div>Sessions: <span className="font-medium">{stat.total_sessions}</span></div>
                       <div>Čas: <span className="font-medium">{stat.total_time}</span></div>
                       <div>Stránky: <span className="font-medium">{stat.pages_viewed}</span></div>
                       <div>Akce: <span className="font-medium">{stat.actions}</span></div>
                     </div>
-                    <p className="mt-2 text-xs text-gray-500">
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                       Nejčastěji: <span className="font-medium">{stat.most_visited}</span>
                     </p>
                   </div>
@@ -508,8 +508,8 @@ export default function UserActivityPage() {
                 {mockPageViews.map((page) => (
                   <div key={page.section}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-gray-700">{page.section}</span>
-                      <span className="text-sm font-medium text-gray-900">{page.views}</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-200">{page.section}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{page.views}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div

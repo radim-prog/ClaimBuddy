@@ -189,7 +189,7 @@ const TIMELINE_EVENT_CONFIG: Record<TimelineEventType, {
   started: { label: 'Zahájeno', icon: Play, color: 'text-orange-600', bgColor: 'bg-orange-100' },
   completed: { label: 'Dokončeno', icon: CheckCircle2, color: 'text-green-600', bgColor: 'bg-green-100' },
   delegated: { label: 'Delegováno', icon: Users, color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
-  comment: { label: 'Komentář', icon: MessageSquare, color: 'text-gray-600', bgColor: 'bg-gray-100' },
+  comment: { label: 'Komentář', icon: MessageSquare, color: 'text-gray-600 dark:text-gray-300', bgColor: 'bg-gray-100 dark:bg-gray-700' },
   call: { label: 'Hovor', icon: Phone, color: 'text-cyan-600', bgColor: 'bg-cyan-100' },
   email: { label: 'Email', icon: Mail, color: 'text-blue-600', bgColor: 'bg-blue-100' },
   document: { label: 'Dokument', icon: FileText, color: 'text-amber-600', bgColor: 'bg-amber-100' },
@@ -512,7 +512,7 @@ export default function TaskDetailPage() {
       case 'low':
         return 'bg-green-100 text-green-700 border-green-300'
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300'
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300'
     }
   }
 
@@ -527,9 +527,9 @@ export default function TaskDetailPage() {
       case 'accepted':
         return 'bg-purple-100 text-purple-700 border-purple-300'
       case 'someday_maybe':
-        return 'bg-gray-100 text-gray-700 border-gray-300'
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300'
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300'
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300'
     }
   }
 
@@ -893,7 +893,7 @@ export default function TaskDetailPage() {
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-gray-900">{task.title}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{task.title}</h1>
               {/* FÁZE 4: Task Type Badge (BASE/BONUS) */}
               {task.task_type === 'bonus' && (
                 <Badge className="bg-amber-500 text-white font-semibold shadow-sm">
@@ -985,7 +985,7 @@ export default function TaskDetailPage() {
               <CardTitle>Popis úkolu</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 whitespace-pre-wrap">
+              <p className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
                 {task.description || 'Žádný popis.'}
               </p>
             </CardContent>
@@ -1068,7 +1068,7 @@ export default function TaskDetailPage() {
                       "flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors",
                       item.completed
                         ? 'bg-green-50 border-green-300'
-                        : 'bg-gray-50 border-gray-200 hover:border-purple-300'
+                        : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:border-purple-300'
                     )}
                     onClick={() => handleChecklistToggle(item.id)}
                   >
@@ -1077,7 +1077,7 @@ export default function TaskDetailPage() {
                       <div className="flex items-center justify-between">
                         <span className={cn(
                           "font-medium",
-                          item.completed && "line-through text-gray-500"
+                          item.completed && "line-through text-gray-500 dark:text-gray-400"
                         )}>
                           {item.text}
                         </span>
@@ -1130,14 +1130,14 @@ export default function TaskDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {comments.map((comment) => (
-                <div key={comment.id} className="p-4 bg-gray-50 rounded-lg">
+                <div key={comment.id} className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium text-sm">{comment.user_name}</span>
                     <span className="text-xs text-muted-foreground" suppressHydrationWarning>
                       {new Date(comment.created_at).toLocaleString('cs-CZ')}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700">{comment.text}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-200">{comment.text}</p>
                 </div>
               ))}
 
@@ -1207,7 +1207,7 @@ export default function TaskDetailPage() {
                         </div>
                         <div>
                           <p className="text-xs font-medium text-emerald-700 uppercase">Aktuální stav</p>
-                          <p className="text-sm text-gray-700">{note.current_status}</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-200">{note.current_status}</p>
                         </div>
                       </div>
 
@@ -1218,7 +1218,7 @@ export default function TaskDetailPage() {
                           </div>
                           <div>
                             <p className="text-xs font-medium text-orange-700 uppercase">Problémy</p>
-                            <p className="text-sm text-gray-700">{note.problems}</p>
+                            <p className="text-sm text-gray-700 dark:text-gray-200">{note.problems}</p>
                           </div>
                         </div>
                       )}
@@ -1230,7 +1230,7 @@ export default function TaskDetailPage() {
                           </div>
                           <div>
                             <p className="text-xs font-medium text-blue-700 uppercase">Další kroky</p>
-                            <p className="text-sm text-gray-700">{note.next_steps}</p>
+                            <p className="text-sm text-gray-700 dark:text-gray-200">{note.next_steps}</p>
                           </div>
                         </div>
                       )}
@@ -1355,11 +1355,11 @@ export default function TaskDetailPage() {
 
               {/* Show claimed info if bonus was claimed by someone else */}
               {isBonusClaimed && task.claimed_by !== currentUser.id && (
-                <div className="p-3 bg-gray-50 rounded-lg border mb-2">
-                  <p className="text-sm text-gray-700">
+                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border mb-2">
+                  <p className="text-sm text-gray-700 dark:text-gray-200">
                     <strong>Převzal(a):</strong> {task.claimed_by_name}
                   </p>
-                  <p className="text-xs text-gray-500" suppressHydrationWarning>
+                  <p className="text-xs text-gray-500 dark:text-gray-400" suppressHydrationWarning>
                     {task.claimed_at && new Date(task.claimed_at).toLocaleString('cs-CZ')}
                   </p>
                 </div>
@@ -1881,7 +1881,7 @@ export default function TaskDetailPage() {
       {/* GTD Wizard Dialog */}
       {showGTDWizard && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <GTDWizard
               companyId={task.company_id}
               companyName={task.company_name}
@@ -2005,7 +2005,7 @@ export default function TaskDetailPage() {
           <div className="space-y-4 py-4">
             {/* Estimate vs Actual comparison */}
             {task.estimated_minutes && (
-              <div className="p-4 bg-gray-50 rounded-lg border">
+              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Odhad:</span>
                   <span className="font-semibold">{task.estimated_minutes} min</span>
@@ -2118,8 +2118,8 @@ export default function TaskDetailPage() {
               </div>
             )}
 
-            <div className="p-3 bg-gray-50 rounded-lg border">
-              <p className="text-sm text-gray-700">
+            <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border">
+              <p className="text-sm text-gray-700 dark:text-gray-200">
                 <strong>Info:</strong> Vrácený úkol se zobrazí účetnímu s vaším komentářem
                 a bude opět potřeba odeslat ke schválení.
               </p>

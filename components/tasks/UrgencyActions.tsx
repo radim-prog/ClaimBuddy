@@ -181,14 +181,14 @@ export function UrgencyActions({
             <ArrowUpCircle size={14} />
             Eskalovat na manažera
           </Button>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Urgováno {task.urgency_count}× bez odezvy
           </p>
         </div>
       )}
 
       {!canUrge && !shouldShowEscalate && task.urgency_count && task.urgency_count > 0 && (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           <Bell size={14} className="inline mr-1" />
           Urgováno {task.urgency_count}× - počkejte min. {URGENCY_CONFIG.DAYS_BETWEEN_URGENCIES} dny
         </p>
@@ -240,9 +240,9 @@ function EscalateDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="bg-gray-50 p-3 rounded-lg">
+          <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
             <p className="font-medium">{task.title}</p>
-            <p className="text-sm text-gray-600">{task.company_name}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">{task.company_name}</p>
             {task.urgency_count && (
               <p className="text-sm text-amber-600 mt-1">
                 Urgováno {task.urgency_count}×
@@ -494,10 +494,10 @@ export function ManagerActions({
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
               <p className="font-medium">{task.title}</p>
-              <p className="text-sm text-gray-600">{task.company_name}</p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-600 dark:text-gray-300">{task.company_name}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Původně přiřazeno: {task.assigned_to_name}
               </p>
             </div>

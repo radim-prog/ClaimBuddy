@@ -278,9 +278,9 @@ export default function CompanyDetailPage() {
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {documents.map((doc) => (
-                    <div key={doc.id} className="group relative rounded-lg overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-all hover:shadow-lg">
+                    <div key={doc.id} className="group relative rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 transition-all hover:shadow-lg">
                       {/* Náhled */}
-                      <div className="aspect-square bg-gray-100 relative">
+                      <div className="aspect-square bg-gray-100 dark:bg-gray-700 relative">
                         {doc.thumbnail_url ? (
                           <img
                             src={doc.thumbnail_url}
@@ -297,7 +297,7 @@ export default function CompanyDetailPage() {
                           <Button
                             variant="secondary"
                             size="sm"
-                            className="bg-white hover:bg-gray-100"
+                            className="bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700"
                             onClick={() => doc.file_url && window.open(doc.file_url, '_blank')}
                           >
                             <Download className="h-4 w-4 mr-1" />
@@ -307,12 +307,12 @@ export default function CompanyDetailPage() {
                       </div>
 
                       {/* Informace pod obrázkem */}
-                      <div className="p-2 bg-white">
-                        <p className="text-xs font-medium text-gray-900 truncate" title={doc.file_name}>
+                      <div className="p-2 bg-white dark:bg-gray-800">
+                        <p className="text-xs font-medium text-gray-900 dark:text-white truncate" title={doc.file_name}>
                           {doc.file_name}
                         </p>
                         {doc.description && (
-                          <p className="text-xs text-gray-500 truncate mt-0.5" title={doc.description}>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5" title={doc.description}>
                             {doc.description}
                           </p>
                         )}

@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Zap, Users, Target, ListTodo } from 'lucide-react'
+import { BillingType } from '@/lib/mock-data'
 
 // GTD contexts
 const GTD_CONTEXTS = [
@@ -35,6 +36,13 @@ const TIME_PRESETS = [
   { value: 120, label: '2 hodiny' },
   { value: 240, label: 'Půl dne (4 hodiny)' },
   { value: 480, label: 'Celý den (8 hodin)' },
+] as const
+
+// Billing types
+const BILLING_TYPES = [
+  { value: 'tariff', label: 'Paušál', description: 'Zahrnuto v měsíčním paušálu klienta' },
+  { value: 'extra', label: 'Zvlášť', description: 'Fakturovat zvlášť nad rámec paušálu' },
+  { value: 'free', label: 'Zdarma', description: 'Nefakturovat (interní, goodwill, reklamace)' },
 ] as const
 
 interface Subtask {
@@ -70,7 +78,8 @@ interface GTDWizardData {
 
   // Step 5: Billable
   isBillable: boolean
-  hourlyRate?: number
+  billingType?: BillingType      // tariff = paušál, extra = zvlášť, free = zdarma
+  hourlyRate?: number            // jen pro extra
 
   // Additional fields
   dueDate?: string
@@ -535,37 +544,86 @@ export function GTDWizard({
                   checked={data.isBillable}
                   onCheckedChange={(checked) => updateData({
                     isBillable: checked,
-                    hourlyRate: checked ? data.hourlyRate : undefined,
+                    billingType: checked ? (data.billingType || 'tariff') : undefined,
+                    hourlyRate: checked && data.billingType === 'extra' ? data.hourlyRate : undefined,
                   })}
                 />
               </div>
 
               {data.isBillable && (
                 <div className="space-y-4 pl-4 border-l-2 border-emerald-200 animate-in fade-in-50 duration-200">
+                  {/* Billing Type Selection */}
                   <div>
-                    <Label htmlFor="hourlyRate">Hodinová sazba (Kč/hod) *</Label>
-                    <Input
-                      id="hourlyRate"
-                      type="number"
-                      min="0"
-                      value={data.hourlyRate || ''}
-                      onChange={(e) => updateData({ hourlyRate: parseInt(e.target.value) || undefined })}
-                      placeholder="Např. 800"
-                      className="mt-1.5"
-                    />
+                    <Label className="text-base mb-3 block">Typ fakturace</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {BILLING_TYPES.map((type) => (
+                        <button
+                          key={type.value}
+                          type="button"
+                          onClick={() => updateData({
+                            billingType: type.value as BillingType,
+                            hourlyRate: type.value === 'extra' ? data.hourlyRate : undefined
+                          })}
+                          className={cn(
+                            "p-3 border rounded-lg text-left transition-all",
+                            data.billingType === type.value
+                              ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/20"
+                              : "hover:border-gray-300"
+                          )}
+                        >
+                          <div className="font-medium text-sm">{type.label}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {type.description}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-                    <p className="text-sm text-emerald-800">
-                      <strong>Klientský projekt:</strong> Odpracovaný čas bude fakturován měsíčně, nemusíme čekat na konec projektu.
-                    </p>
-                  </div>
+                  {/* Hourly Rate - only for 'extra' billing type */}
+                  {data.billingType === 'extra' && (
+                    <div className="animate-in fade-in-50 duration-200">
+                      <Label htmlFor="hourlyRate">Hodinová sazba (Kč/hod) *</Label>
+                      <Input
+                        id="hourlyRate"
+                        type="number"
+                        min="0"
+                        value={data.hourlyRate || ''}
+                        onChange={(e) => updateData({ hourlyRate: parseInt(e.target.value) || undefined })}
+                        placeholder="Např. 800"
+                        className="mt-1.5"
+                      />
+                    </div>
+                  )}
+
+                  {/* Info boxes based on billing type */}
+                  {data.billingType === 'tariff' && (
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                      <p className="text-sm text-emerald-800">
+                        <strong>Paušální práce:</strong> Úkol je zahrnut v měsíčním paušálu klienta a nebude se fakturovat zvlášť.
+                      </p>
+                    </div>
+                  )}
+                  {data.billingType === 'extra' && (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-sm text-amber-800">
+                        <strong>Práce navíc:</strong> Úkol bude fakturován zvlášť podle hodinové sazby nad rámec měsíčního paušálu.
+                      </p>
+                    </div>
+                  )}
+                  {data.billingType === 'free' && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <strong>Práce zdarma:</strong> Úkol nebude fakturován (interní práce, goodwill, reklamace).
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
               {!data.isBillable && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
+                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <p className="text-sm text-gray-800">
                     <strong>Interní práce:</strong> Čas nebude fakturován klientovi.
                   </p>
                 </div>

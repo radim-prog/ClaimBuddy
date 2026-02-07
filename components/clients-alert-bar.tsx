@@ -317,7 +317,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
             return (
               <div
                 key={item.id}
-                className={`bg-white rounded-lg border transition-all ${
+                className={`bg-white dark:bg-gray-800 rounded-lg border transition-all ${
                   isTaskExpanded ? 'shadow-lg border-purple-300' : 'hover:shadow-md'
                 }`}
               >
@@ -334,7 +334,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-gray-900 text-sm">{item.title}</span>
+                          <span className="font-medium text-gray-900 dark:text-white text-sm">{item.title}</span>
                           <Badge variant="outline" className={`text-xs ${textColor} border-current`}>
                             {formatTimeLeft(item.dueDate)}
                           </Badge>
@@ -354,7 +354,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                           <span className="text-sm text-purple-600">{item.companyName}</span>
                         )}
                         {notes[item.id] && !isTaskExpanded && (
-                          <div className="mt-1 text-xs text-gray-500 italic bg-gray-50 px-2 py-1 rounded">
+                          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded">
                             📝 {notes[item.id]}
                           </div>
                         )}
@@ -368,7 +368,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 w-7 p-0 text-gray-400 hover:text-green-600"
+                            className="h-7 w-7 p-0 text-gray-400 hover:text-green-600 dark:text-green-400"
                             onClick={() => handleComplete(item.id)}
                             title="Označit jako hotové"
                           >
@@ -389,7 +389,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+                          className="h-7 px-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200 hover:bg-gray-200"
                           onClick={() => setExpandedTaskId(null)}
                           title="Zavřít detail"
                         >
@@ -407,13 +407,13 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                     {/* Description */}
                     {item.description && (
                       <div>
-                        <div className="text-xs font-semibold text-gray-500 mb-1">Popis</div>
-                        <p className="text-sm text-gray-700">{item.description}</p>
+                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Popis</div>
+                        <p className="text-sm text-gray-700 dark:text-gray-200">{item.description}</p>
                       </div>
                     )}
 
                     {/* Meta info */}
-                    <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                    <div className="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3.5 w-3.5" />
                         <span>Termín: {new Date(item.dueDate).toLocaleDateString('cs-CZ')}</span>
@@ -438,7 +438,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                     {/* Checklist */}
                     {hasChecklist && (
                       <div>
-                        <div className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-2">
+                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-2">
                           Stav dokumentů
                           <span className="text-purple-600">
                             ({checklistProgress.completed}/{checklistProgress.total})
@@ -450,8 +450,8 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                               key={checkItem.id}
                               className={`flex items-center gap-2 p-2 rounded ${
                                 checkItem.completed
-                                  ? 'bg-green-50 text-green-700'
-                                  : 'bg-red-50 text-red-700'
+                                  ? 'bg-green-50 text-green-700 dark:text-green-400'
+                                  : 'bg-red-50 text-red-700 dark:text-red-400'
                               }`}
                             >
                               {checkItem.completed ? (
@@ -474,7 +474,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                     {/* Attachments */}
                     {item.attachments && item.attachments.length > 0 && (
                       <div>
-                        <div className="text-xs font-semibold text-gray-500 mb-2">Přílohy</div>
+                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Přílohy</div>
                         <div className="flex flex-wrap gap-2">
                           {item.attachments.map((att, idx) => (
                             <a
@@ -492,17 +492,17 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
 
                     {/* Notes */}
                     {notes[item.id] && (
-                      <div className="bg-yellow-50 p-2 rounded text-sm text-yellow-800">
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-sm text-yellow-800">
                         📝 {notes[item.id]}
                       </div>
                     )}
 
                     {/* Action buttons */}
-                    <div className="flex flex-wrap gap-2 pt-2 border-t">
+                    <div className="flex flex-wrap gap-2 pt-2 border-t dark:border-gray-700">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-gray-600"
+                        className="text-gray-600 dark:text-gray-400"
                         onClick={() => {
                           setEditingNoteId(item.id)
                           setNoteInput(notes[item.id] || '')
@@ -517,7 +517,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                          className="text-blue-600 border-blue-300 hover:bg-blue-50 dark:bg-blue-900/20"
                           onClick={() => setShowSnoozeMenuForTask(
                             showSnoozeMenuForTask === item.id ? null : item.id
                           )}
@@ -526,28 +526,28 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                           Odložit
                         </Button>
                         {showSnoozeMenuForTask === item.id && (
-                          <div className="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-xl border p-1 z-50 min-w-[160px]">
-                            <div className="px-3 py-1 text-xs text-gray-500 font-medium">Jednorázově</div>
+                          <div className="absolute left-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border p-1 z-50 min-w-[160px]">
+                            <div className="px-3 py-1 text-xs text-gray-500 dark:text-gray-400 font-medium">Jednorázově</div>
                             <button
-                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded"
                               onClick={() => handleSnoozeTask(item.id, 1)}
                             >
                               1 hodinu
                             </button>
                             <button
-                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded"
                               onClick={() => handleSnoozeTask(item.id, 2)}
                             >
                               2 hodiny
                             </button>
                             <button
-                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded"
                               onClick={() => handleSnoozeTask(item.id, 4)}
                             >
                               4 hodiny
                             </button>
                             <button
-                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded"
                               onClick={() => handleSnoozeTomorrow(item.id)}
                             >
                               Zítra ráno
@@ -559,7 +559,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                             </div>
                             <button
                               className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 rounded ${
-                                recurringReminders[item.id] === 2 ? 'bg-blue-100 text-blue-700' : 'text-gray-700'
+                                recurringReminders[item.id] === 2 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'
                               }`}
                               onClick={() => handleSetRecurringReminder(item.id, 2)}
                             >
@@ -567,7 +567,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                             </button>
                             <button
                               className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 rounded ${
-                                recurringReminders[item.id] === 4 ? 'bg-blue-100 text-blue-700' : 'text-gray-700'
+                                recurringReminders[item.id] === 4 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'
                               }`}
                               onClick={() => handleSetRecurringReminder(item.id, 4)}
                             >
@@ -575,7 +575,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                             </button>
                             <button
                               className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 rounded ${
-                                recurringReminders[item.id] === 24 ? 'bg-blue-100 text-blue-700' : 'text-gray-700'
+                                recurringReminders[item.id] === 24 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'
                               }`}
                               onClick={() => handleSetRecurringReminder(item.id, 24)}
                             >
@@ -588,7 +588,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                        className="text-orange-600 border-orange-300 hover:bg-orange-50 dark:bg-orange-900/20"
                         onClick={() => handleSendReminder(item)}
                       >
                         <Mail className="h-3.5 w-3.5 mr-1" />
@@ -616,7 +616,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
 
                       {/* Complete button */}
                       {showCompleteConfirm === item.id ? (
-                        <div className="flex-1 flex flex-col gap-2 bg-green-50 p-2 rounded border border-green-200">
+                        <div className="flex-1 flex flex-col gap-2 bg-green-50 dark:bg-green-900/20 p-2 rounded border border-green-200">
                           <div className="text-xs text-green-700 font-medium">
                             Opravdu označit jako hotové?
                           </div>
@@ -733,7 +733,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                   onClick={() => setFilter(currentFilter === 'uploaded' ? null : 'uploaded')}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium transition-all ${
                     currentFilter === 'uploaded'
-                      ? 'bg-yellow-500 text-gray-900 ring-2 ring-yellow-300'
+                      ? 'bg-yellow-500 text-gray-900 dark:text-white ring-2 ring-yellow-300'
                       : 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
                   }`}
                 >
@@ -754,7 +754,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
               {currentFilter && (
                 <button
                   onClick={() => setFilter(null)}
-                  className="flex items-center gap-1 px-2 py-1 rounded text-sm text-gray-400 hover:text-white hover:bg-white/10"
+                  className="flex items-center gap-1 px-2 py-1 rounded text-sm text-gray-400 hover:text-white hover:bg-white dark:bg-gray-800/10"
                 >
                   <X className="h-3.5 w-3.5" />
                   Zrušit filtr
@@ -766,7 +766,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="h-7 text-xs bg-white/10 hover:bg-white/20 text-white border-0 ml-2"
+                  className="h-7 text-xs bg-white dark:bg-gray-800/10 hover:bg-white dark:bg-gray-800/20 text-white border-0 ml-2"
                   onClick={() => setExpanded(!expanded)}
                 >
                   {expanded ? 'Skrýt detail' : 'Zobrazit detail'}
@@ -780,18 +780,18 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
 
       {/* Expanded dropdown with tasks */}
       {expanded && visibleDeadlines.length > 0 && (
-        <div className="absolute left-0 right-0 top-full bg-gray-50 border-b shadow-xl z-40 max-h-[70vh] overflow-y-auto">
+        <div className="absolute left-0 right-0 top-full bg-gray-50 dark:bg-gray-800/50 border-b shadow-xl z-40 max-h-[70vh] overflow-y-auto">
           <div className="max-w-7xl mx-auto p-4">
             {/* Bulk actions for overdue */}
             {overdue.length > 0 && (
               <div className="mb-4 pb-4 border-b flex items-center justify-between">
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
                   {overdue.length} {overdue.length === 1 ? 'úkol' : overdue.length < 5 ? 'úkoly' : 'úkolů'} po termínu
                 </span>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                  className="text-orange-600 border-orange-300 hover:bg-orange-50 dark:bg-orange-900/20"
                   onClick={handleSendAllReminders}
                 >
                   <Send className="h-3.5 w-3.5 mr-1" />
@@ -801,12 +801,12 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
             )}
 
             {/* Grouped deadlines */}
-            {renderDeadlineGroup(overdue, 'PO TERMÍNU', 'bg-red-500', 'text-red-600')}
-            {renderDeadlineGroup(today, 'DNES', 'bg-orange-500', 'text-orange-600')}
-            {renderDeadlineGroup(thisWeek, 'TENTO TÝDEN', 'bg-yellow-500', 'text-yellow-600')}
+            {renderDeadlineGroup(overdue, 'PO TERMÍNU', 'bg-red-500', 'text-red-600 dark:text-red-400')}
+            {renderDeadlineGroup(today, 'DNES', 'bg-orange-500', 'text-orange-600 dark:text-orange-400')}
+            {renderDeadlineGroup(thisWeek, 'TENTO TÝDEN', 'bg-yellow-500', 'text-yellow-600 dark:text-yellow-400')}
 
             {/* Link to all tasks */}
-            <div className="mt-4 pt-4 border-t">
+            <div className="mt-4 pt-4 border-t dark:border-gray-700">
               <Link href="/accountant/tasks">
                 <Button variant="outline" className="w-full">
                   Zobrazit všechny úkoly

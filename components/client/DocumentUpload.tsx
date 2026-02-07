@@ -139,10 +139,10 @@ export function DocumentUpload({ companyId, period, documentType, onUploadComple
           <p className="text-lg text-blue-600">Přetáhněte soubory sem...</p>
         ) : (
           <div>
-            <p className="text-lg text-gray-700 mb-2">
+            <p className="text-lg text-gray-700 dark:text-gray-200 mb-2">
               Přetáhněte soubory sem nebo klikněte pro výběr
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Podporované formáty: PDF, JPG, PNG (max 10 MB)
             </p>
           </div>
@@ -164,7 +164,7 @@ export function DocumentUpload({ companyId, period, documentType, onUploadComple
                       className="w-16 h-16 object-cover rounded"
                     />
                   ) : (
-                    <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center">
+                    <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center">
                       <FileText className="h-8 w-8 text-gray-400" />
                     </div>
                   )}
@@ -172,10 +172,10 @@ export function DocumentUpload({ companyId, period, documentType, onUploadComple
 
                 {/* File Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                     {fileItem.file.name}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {formatFileSize(fileItem.file.size)}
                   </p>
 

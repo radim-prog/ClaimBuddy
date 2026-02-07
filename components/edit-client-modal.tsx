@@ -40,6 +40,7 @@ type Company = {
   data_box: { id: string; login?: string } | null
   phone?: string
   email?: string
+  status?: string
 }
 
 type EditClientModalProps = {
@@ -87,7 +88,7 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
         <div className="space-y-6 py-4">
           {/* Základní údaje */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 border-b pb-2">Základní údaje</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Základní údaje</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -107,6 +108,23 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
                   placeholder="Např. Holding ABC"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="status">Stav klienta</Label>
+              <Select
+                value={formData.status || 'active'}
+                onValueChange={(value) => setFormData({ ...formData, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Aktivní</SelectItem>
+                  <SelectItem value="inactive">Neaktivní</SelectItem>
+                  <SelectItem value="onboarding">V onboardingu</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -153,7 +171,7 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
 
           {/* DPH */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 border-b pb-2">DPH</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">DPH</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -193,7 +211,7 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
 
           {/* Adresa */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 border-b pb-2">Adresa sídla</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Adresa sídla</h3>
 
             <div>
               <Label htmlFor="street">Ulice a číslo</Label>
@@ -229,7 +247,7 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
 
           {/* Kontaktní údaje */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 border-b pb-2">Kontaktní údaje</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Kontaktní údaje</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -269,7 +287,7 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
 
           {/* Bankovní údaje */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 border-b pb-2">Bankovní spojení</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Bankovní spojení</h3>
 
             <div>
               <Label htmlFor="bank_account">Číslo účtu</Label>
@@ -284,7 +302,7 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
 
           {/* Zaměstnanci */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 border-b pb-2">Zaměstnanci</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Zaměstnanci</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -342,7 +360,7 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
         </div>
 
         {/* Buttons */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             <X className="mr-2 h-4 w-4" />
             Zrušit

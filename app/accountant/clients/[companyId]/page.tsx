@@ -31,6 +31,7 @@ import {
   MessageCircle,
   ClipboardList,
   Sparkles,
+  Receipt,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -42,6 +43,7 @@ import {
 } from '@/components/ui/popover'
 import { toast } from 'sonner'
 import { EditClientModal } from '@/components/edit-client-modal'
+import { ClosureDetailModal } from '@/components/closure-detail-modal'
 import { EmployeesSection } from '@/components/employees-section'
 import { AssetsSection } from '@/components/assets-section'
 import { InsuranceSection } from '@/components/insurance-section'
@@ -57,7 +59,9 @@ import { Employee } from '@/lib/types/employee'
 import { Asset } from '@/lib/types/asset'
 import { Insurance } from '@/lib/types/insurance'
 import { ClientOnboarding } from '@/lib/types/onboarding'
-import { Task, getEmployeesByCompany, getAssetsByCompany, getInsurancesByCompany, getTasksByCompany, mockCompanies, getCompanyReliabilityScore, getReliabilityLabel, getReliabilityEmoji } from '@/lib/mock-data'
+import { Task, getEmployeesByCompany, getAssetsByCompany, getInsurancesByCompany, getTasksByCompany, getVatReturnsByCompany, mockCompanies, getCompanyReliabilityScore, getReliabilityLabel, getReliabilityEmoji } from '@/lib/mock-data'
+import type { VatReturn } from '@/lib/types/vat'
+import { getVatReturnTypeLabel, getVatStatusLabel, getVatStatusColor } from '@/lib/types/vat'
 
 type Company = {
   id: string
@@ -82,11 +86,15 @@ type Company = {
 
 type MonthlyClosure = {
   id: string
+  company_id: string
   period: string
   status: string
   bank_statement_status: string
   expense_documents_status: string
   income_invoices_status: string
+  notes: string | null
+  updated_by: string | null
+  updated_at: string
 }
 
 // Mapování zdravotních pojišťoven
@@ -114,12 +122,15 @@ export default function ClientDetailPage() {
   const [insurances, setInsurances] = useState<Insurance[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [onboarding, setOnboarding] = useState<ClientOnboarding | null>(null)
+  const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth())
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [showDataBoxPassword, setShowDataBoxPassword] = useState(false)
   const [urgencyModalOpen, setUrgencyModalOpen] = useState(false)
+  const [closureModalOpen, setClosureModalOpen] = useState(false)
+  const [closureModalData, setClosureModalData] = useState<MonthlyClosure | null>(null)
 
   // Aktuální období
   const currentYear = new Date().getFullYear()
@@ -153,6 +164,10 @@ export default function ClientDetailPage() {
       // Načíst úkoly (v produkci by to bylo z API)
       const companyTasks = getTasksByCompany(companyId)
       setTasks(companyTasks)
+
+      // Načíst DPH data
+      const companyVatReturns = getVatReturnsByCompany(companyId)
+      setVatReturns(companyVatReturns)
 
       // Načíst onboarding data (v produkci by to bylo z API)
       const mockCompany = mockCompanies.find(c => c.id === companyId)
@@ -226,6 +241,14 @@ export default function ClientDetailPage() {
 
     items.push(
       { id: 'closures', label: 'Uzávěrky', icon: Calendar },
+    )
+
+    // DPH section only for VAT payers
+    if (company?.vat_payer) {
+      items.push({ id: 'dph', label: 'DPH', icon: Receipt })
+    }
+
+    items.push(
       { id: 'tasks', label: 'Úkoly', icon: ClipboardList, badge: activeTasks > 0 ? activeTasks : undefined },
       { id: 'messages', label: 'Zprávy', icon: MessageCircle },
       { id: 'employees', label: 'Zaměstnanci', icon: Users, badge: employees.length > 0 ? employees.length : undefined },
@@ -235,14 +258,14 @@ export default function ClientDetailPage() {
     )
 
     return items
-  }, [tasks, employees, assets, insurances, onboarding])
+  }, [tasks, employees, assets, insurances, onboarding, company])
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-          <p className="mt-4 text-gray-600">Načítám profil klienta...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Načítám profil klienta...</p>
         </div>
       </div>
     )
@@ -250,8 +273,8 @@ export default function ClientDetailPage() {
 
   if (error || !company) {
     return (
-      <div className="bg-red-50 border-l-4 border-red-400 p-4">
-        <p className="text-sm text-red-700">Nepodařilo se načíst profil klienta: {error}</p>
+      <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 p-4">
+        <p className="text-sm text-red-700 dark:text-red-400">Nepodařilo se načíst profil klienta: {error}</p>
       </div>
     )
   }
@@ -263,6 +286,17 @@ export default function ClientDetailPage() {
   // Handler pro uložení změn z modalu
   const handleCompanySave = (updatedCompany: Company) => {
     setCompany(updatedCompany)
+  }
+
+  // Handler pro otevření closure modalu
+  const handleClosureClick = (closure: MonthlyClosure) => {
+    setClosureModalData(closure)
+    setClosureModalOpen(true)
+  }
+
+  // Handler pro uložení closure změn
+  const handleClosureSave = (updated: any) => {
+    setClosures(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c))
   }
 
   return (
@@ -309,47 +343,57 @@ export default function ClientDetailPage() {
             <div className="flex items-center gap-3 mb-4">
               <Building2 className="h-8 w-8 text-purple-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {company.group_name && (
                     <span className="text-purple-600">{company.group_name}</span>
                   )}
                   {company.group_name && ' – '}
                   {company.name}
+                  {(company as any).status === 'inactive' && (
+                    <Badge variant="outline" className="ml-3 text-sm text-red-600 border-red-300 bg-red-50 align-middle">
+                      Neaktivní
+                    </Badge>
+                  )}
+                  {(company as any).status === 'active' && (
+                    <Badge variant="outline" className="ml-3 text-sm text-green-600 border-green-300 bg-green-50 align-middle">
+                      Aktivní
+                    </Badge>
+                  )}
                 </h1>
-                <p className="text-gray-500 text-sm">{company.legal_form}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">{company.legal_form}</p>
               </div>
             </div>
 
             {/* Grid s kontaktními údaji */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y border-gray-100">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y dark:border-gray-700 border-gray-100 dark:border-gray-700">
               <div>
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">IČO</div>
-                <div className="font-medium text-gray-900">{company.ico}</div>
+                <div className="text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wide mb-1">IČO</div>
+                <div className="font-medium text-gray-900 dark:text-white">{company.ico}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">DIČ</div>
-                <div className="font-medium text-gray-900">{company.dic || '—'}</div>
+                <div className="text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wide mb-1">DIČ</div>
+                <div className="font-medium text-gray-900 dark:text-white">{company.dic || '—'}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Telefon</div>
-                <div className="font-medium text-gray-900 flex items-center gap-1">
+                <div className="text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wide mb-1">Telefon</div>
+                <div className="font-medium text-gray-900 dark:text-white flex items-center gap-1">
                   <Phone className="h-3.5 w-3.5 text-gray-400" />
                   {contactPhone}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Email</div>
-                <div className="font-medium text-gray-900 flex items-center gap-1 truncate">
-                  <Mail className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                <div className="text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wide mb-1">Email</div>
+                <div className="font-medium text-gray-900 dark:text-white flex items-center gap-1 truncate">
+                  <Mail className="h-3.5 w-3.5 text-gray-400 dark:text-gray-400 flex-shrink-0" />
                   <span className="truncate">{contactEmail}</span>
                 </div>
               </div>
             </div>
 
             {/* Adresa */}
-            <div className="py-3 border-b border-gray-100">
-              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Adresa</div>
-              <div className="text-gray-900 flex items-center gap-1">
+            <div className="py-3 border-b border-gray-100 dark:border-gray-700">
+              <div className="text-xs text-gray-400 dark:text-gray-400 uppercase tracking-wide mb-1">Adresa</div>
+              <div className="text-gray-900 dark:text-white flex items-center gap-1">
                 <MapPin className="h-3.5 w-3.5 text-gray-400" />
                 {[company.street, company.zip, company.city].filter(Boolean).join(', ') || 'Adresa neuvedena'}
               </div>
@@ -358,11 +402,11 @@ export default function ClientDetailPage() {
             {/* Tagy/Badges */}
             <div className="flex flex-wrap gap-2 pt-4">
               {company.vat_payer ? (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
                   Plátce DPH • {company.vat_period === 'monthly' ? 'Měsíční' : 'Kvartální'}
                 </span>
               ) : (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                   Neplátce DPH
                 </span>
               )}
@@ -370,22 +414,22 @@ export default function ClientDetailPage() {
               {company.data_box && (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer">
+                    <button className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 transition-colors cursor-pointer">
                       <Inbox className="h-3 w-3 mr-1" />
                       Datovka: {company.data_box.id}
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-72" align="start">
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                      <div className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white">
                         <Key className="h-4 w-4 text-purple-600" />
                         Přístupové údaje do datovky
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs text-gray-500">ID datové schránky</label>
+                        <label className="text-xs text-gray-500 dark:text-gray-400">ID datové schránky</label>
                         <div className="flex items-center gap-2">
-                          <code className="flex-1 px-2 py-1 bg-gray-100 rounded text-sm font-mono">
+                          <code className="flex-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">
                             {company.data_box.id}
                           </code>
                           <Button
@@ -404,9 +448,9 @@ export default function ClientDetailPage() {
 
                       {company.data_box.login && (
                         <div className="space-y-1">
-                          <label className="text-xs text-gray-500">Přihlašovací jméno</label>
+                          <label className="text-xs text-gray-500 dark:text-gray-400">Přihlašovací jméno</label>
                           <div className="flex items-center gap-2">
-                            <code className="flex-1 px-2 py-1 bg-gray-100 rounded text-sm font-mono">
+                            <code className="flex-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">
                               {company.data_box.login}
                             </code>
                             <Button
@@ -426,9 +470,9 @@ export default function ClientDetailPage() {
 
                       {company.data_box.password && (
                         <div className="space-y-1">
-                          <label className="text-xs text-gray-500">Heslo</label>
+                          <label className="text-xs text-gray-500 dark:text-gray-400">Heslo</label>
                           <div className="flex items-center gap-2">
-                            <code className="flex-1 px-2 py-1 bg-gray-100 rounded text-sm font-mono">
+                            <code className="flex-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">
                               {showDataBoxPassword ? company.data_box.password : '••••••••'}
                             </code>
                             <Button
@@ -459,7 +503,7 @@ export default function ClientDetailPage() {
                       )}
 
                       {!company.data_box.login && !company.data_box.password && (
-                        <p className="text-xs text-gray-500 italic">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 italic">
                           Přihlašovací údaje nejsou uloženy
                         </p>
                       )}
@@ -469,14 +513,14 @@ export default function ClientDetailPage() {
               )}
 
               {company.has_employees && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                   <User className="h-3 w-3 mr-1" />
                   {company.employee_count} zaměstnanců
                 </span>
               )}
 
               {company.legal_form === 'OSVČ' && company.health_insurance_company && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                   {healthInsuranceLabels[company.health_insurance_company] || company.health_insurance_company}
                 </span>
               )}
@@ -486,10 +530,10 @@ export default function ClientDetailPage() {
                 const score = getCompanyReliabilityScore(companyId)
                 const label = getReliabilityLabel(score)
                 const emoji = getReliabilityEmoji(score)
-                const bgColor = score === 0 ? 'bg-red-100 text-red-700' :
-                               score === 1 ? 'bg-orange-100 text-orange-700' :
-                               score === 2 ? 'bg-gray-100 text-gray-700' :
-                               'bg-green-100 text-green-700'
+                const bgColor = score === 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                               score === 1 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
+                               score === 2 ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' :
+                               'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                 return (
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bgColor}`}
                         title="Spolehlivost klienta při dodávání podkladů">
@@ -525,7 +569,7 @@ export default function ClientDetailPage() {
           defaultOpen={true}
         >
           {/* Horizontální menu měsíců */}
-          <div className="grid grid-cols-12 gap-1 p-2 mb-4 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-12 gap-1 p-2 mb-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
             {monthNames.map((month, index) => {
               const period = `${currentYear}-${String(index + 1).padStart(2, '0')}`
               const closure = yearClosures.find(c => c.period === period)
@@ -538,7 +582,7 @@ export default function ClientDetailPage() {
                 uploaded: 'bg-yellow-400 text-yellow-900',
                 missing: 'bg-red-500 text-white',
                 future: 'bg-gray-200 text-gray-400',
-                unknown: 'bg-gray-300 text-gray-500',
+                unknown: 'bg-gray-300 text-gray-500 dark:text-gray-400',
               }
 
               const statusIcons = {
@@ -552,7 +596,11 @@ export default function ClientDetailPage() {
               return (
                 <button
                   key={month}
-                  onClick={() => index <= currentMonth && setSelectedMonth(index)}
+                  onClick={() => {
+                    if (index > currentMonth) return
+                    setSelectedMonth(index)
+                    if (closure) handleClosureClick(closure)
+                  }}
                   disabled={index > currentMonth}
                   className={`
                     flex flex-col items-center py-1 transition-all
@@ -570,7 +618,7 @@ export default function ClientDetailPage() {
                   </div>
                   <span className={`
                     text-[10px] mt-0.5
-                    ${isSelected ? 'text-purple-600 font-bold' : 'text-gray-500'}
+                    ${isSelected ? 'text-purple-600 font-bold' : 'text-gray-500 dark:text-gray-400'}
                     ${isCurrentMonth && !isSelected ? 'text-purple-500 font-medium' : ''}
                   `}>
                     {month}
@@ -583,11 +631,11 @@ export default function ClientDetailPage() {
           {/* Detail vybraného měsíce */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {monthNamesFull[selectedMonth]} {currentYear}
               </h3>
               {selectedMonth === currentMonth && (
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full">
                   Aktuální měsíc
                 </span>
               )}
@@ -597,24 +645,24 @@ export default function ClientDetailPage() {
               <div className="grid grid-cols-3 gap-4">
                 {/* Výpis z banky */}
                 <div className={`p-4 rounded-lg border-2 ${
-                  selectedClosure.bank_statement_status === 'approved' ? 'bg-green-50 border-green-200' :
-                  selectedClosure.bank_statement_status === 'uploaded' ? 'bg-yellow-50 border-yellow-200' :
-                  'bg-red-50 border-red-200'
+                  selectedClosure.bank_statement_status === 'approved' ? 'bg-green-50 dark:bg-green-900/20 border-green-200' :
+                  selectedClosure.bank_statement_status === 'uploaded' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200' :
+                  'bg-red-50 dark:bg-red-900/20 border-red-200'
                 }`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium text-sm">Výpis z banky</span>
                     {selectedClosure.bank_statement_status === 'approved' ? (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                     ) : selectedClosure.bank_statement_status === 'uploaded' ? (
-                      <Clock className="h-5 w-5 text-yellow-600" />
+                      <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                     ) : (
-                      <XCircle className="h-5 w-5 text-red-600" />
+                      <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
                     )}
                   </div>
                   <div className={`text-sm ${
-                    selectedClosure.bank_statement_status === 'approved' ? 'text-green-700' :
-                    selectedClosure.bank_statement_status === 'uploaded' ? 'text-yellow-700' :
-                    'text-red-700'
+                    selectedClosure.bank_statement_status === 'approved' ? 'text-green-700 dark:text-green-400' :
+                    selectedClosure.bank_statement_status === 'uploaded' ? 'text-yellow-700 dark:text-yellow-400' :
+                    'text-red-700 dark:text-red-400'
                   }`}>
                     {selectedClosure.bank_statement_status === 'approved' ? 'Schváleno' :
                      selectedClosure.bank_statement_status === 'uploaded' ? 'Čeká na schválení' :
@@ -624,24 +672,24 @@ export default function ClientDetailPage() {
 
                 {/* Nákladové doklady */}
                 <div className={`p-4 rounded-lg border-2 ${
-                  selectedClosure.expense_documents_status === 'approved' ? 'bg-green-50 border-green-200' :
-                  selectedClosure.expense_documents_status === 'uploaded' ? 'bg-yellow-50 border-yellow-200' :
-                  'bg-red-50 border-red-200'
+                  selectedClosure.expense_documents_status === 'approved' ? 'bg-green-50 dark:bg-green-900/20 border-green-200' :
+                  selectedClosure.expense_documents_status === 'uploaded' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200' :
+                  'bg-red-50 dark:bg-red-900/20 border-red-200'
                 }`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium text-sm">Nákladové doklady</span>
                     {selectedClosure.expense_documents_status === 'approved' ? (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                     ) : selectedClosure.expense_documents_status === 'uploaded' ? (
-                      <Clock className="h-5 w-5 text-yellow-600" />
+                      <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                     ) : (
-                      <XCircle className="h-5 w-5 text-red-600" />
+                      <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
                     )}
                   </div>
                   <div className={`text-sm ${
-                    selectedClosure.expense_documents_status === 'approved' ? 'text-green-700' :
-                    selectedClosure.expense_documents_status === 'uploaded' ? 'text-yellow-700' :
-                    'text-red-700'
+                    selectedClosure.expense_documents_status === 'approved' ? 'text-green-700 dark:text-green-400' :
+                    selectedClosure.expense_documents_status === 'uploaded' ? 'text-yellow-700 dark:text-yellow-400' :
+                    'text-red-700 dark:text-red-400'
                   }`}>
                     {selectedClosure.expense_documents_status === 'approved' ? 'Schváleno' :
                      selectedClosure.expense_documents_status === 'uploaded' ? 'Čeká na schválení' :
@@ -651,24 +699,24 @@ export default function ClientDetailPage() {
 
                 {/* Příjmové faktury */}
                 <div className={`p-4 rounded-lg border-2 ${
-                  selectedClosure.income_invoices_status === 'approved' ? 'bg-green-50 border-green-200' :
-                  selectedClosure.income_invoices_status === 'uploaded' ? 'bg-yellow-50 border-yellow-200' :
-                  'bg-red-50 border-red-200'
+                  selectedClosure.income_invoices_status === 'approved' ? 'bg-green-50 dark:bg-green-900/20 border-green-200' :
+                  selectedClosure.income_invoices_status === 'uploaded' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200' :
+                  'bg-red-50 dark:bg-red-900/20 border-red-200'
                 }`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium text-sm">Příjmové faktury</span>
                     {selectedClosure.income_invoices_status === 'approved' ? (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                     ) : selectedClosure.income_invoices_status === 'uploaded' ? (
-                      <Clock className="h-5 w-5 text-yellow-600" />
+                      <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                     ) : (
-                      <XCircle className="h-5 w-5 text-red-600" />
+                      <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
                     )}
                   </div>
                   <div className={`text-sm ${
-                    selectedClosure.income_invoices_status === 'approved' ? 'text-green-700' :
-                    selectedClosure.income_invoices_status === 'uploaded' ? 'text-yellow-700' :
-                    'text-red-700'
+                    selectedClosure.income_invoices_status === 'approved' ? 'text-green-700 dark:text-green-400' :
+                    selectedClosure.income_invoices_status === 'uploaded' ? 'text-yellow-700 dark:text-yellow-400' :
+                    'text-red-700 dark:text-red-400'
                   }`}>
                     {selectedClosure.income_invoices_status === 'approved' ? 'Schváleno' :
                      selectedClosure.income_invoices_status === 'uploaded' ? 'Čeká na schválení' :
@@ -677,7 +725,7 @@ export default function ClientDetailPage() {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <AlertCircle className="h-12 w-12 mx-auto mb-2 text-gray-400" />
                 <p>Žádná data pro {monthNamesFull[selectedMonth].toLowerCase()}</p>
               </div>
@@ -701,7 +749,7 @@ export default function ClientDetailPage() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                      className="text-orange-600 border-orange-300 hover:bg-orange-50 dark:bg-orange-900/20"
                       onClick={() => setUrgencyModalOpen(true)}
                     >
                       <Mail className="h-4 w-4 mr-1" />
@@ -721,7 +769,7 @@ export default function ClientDetailPage() {
             )}
 
             {/* Legenda */}
-            <div className="mt-4 flex items-center gap-4 text-xs text-gray-500">
+            <div className="mt-4 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
               <span className="flex items-center gap-1">
                 <span className="w-3 h-3 rounded-full bg-green-500"></span> Hotovo
               </span>
@@ -737,6 +785,121 @@ export default function ClientDetailPage() {
             </div>
           </div>
         </CollapsibleSection>
+
+        {/* ============================================ */}
+        {/* DPH (jen pro plátce) */}
+        {/* ============================================ */}
+        {company.vat_payer && vatReturns.length > 0 && (
+          <CollapsibleSection
+            id="dph"
+            title="DPH"
+            icon={Receipt}
+            badge={
+              vatReturns.filter(v => v.status === 'not_filed').length > 0 ? (
+                <Badge variant="secondary" className="ml-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
+                  {vatReturns.filter(v => v.status === 'not_filed').length} nepodáno
+                </Badge>
+              ) : undefined
+            }
+            defaultOpen={false}
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b dark:border-gray-700">
+                    <th className="text-left py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">Období</th>
+                    <th className="text-left py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">Typ</th>
+                    <th className="text-left py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">Stav</th>
+                    <th className="text-right py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">Částka</th>
+                    <th className="text-left py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">Podáno</th>
+                    <th className="text-left py-2 px-3 text-gray-500 dark:text-gray-400 font-medium">Zaplaceno</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    // Group by period and sort descending
+                    const periods = [...new Set(vatReturns.map(v => v.period))].sort((a, b) => b.localeCompare(a))
+
+                    return periods.map(period => {
+                      const periodReturns = vatReturns.filter(v => v.period === period)
+                      const [year, month] = period.split('-')
+                      const monthLabel = monthNamesFull[parseInt(month) - 1]
+
+                      return periodReturns.map((vr, idx) => {
+                        const statusColor = getVatStatusColor(vr.status)
+
+                        const handleStatusClick = () => {
+                          // Cycle: not_filed → filed → paid → not_filed
+                          const nextStatus = vr.status === 'not_filed' ? 'filed' : vr.status === 'filed' ? 'paid' : 'not_filed'
+                          setVatReturns(prev => prev.map(v =>
+                            v.id === vr.id
+                              ? {
+                                  ...v,
+                                  status: nextStatus as VatReturn['status'],
+                                  filed_date: nextStatus === 'filed' || nextStatus === 'paid' ? new Date().toISOString().split('T')[0] : null,
+                                  paid_date: nextStatus === 'paid' ? new Date().toISOString().split('T')[0] : null,
+                                }
+                              : v
+                          ))
+                          toast.success(`${getVatReturnTypeLabel(vr.type)} ${monthLabel} ${year}: ${getVatStatusLabel(nextStatus as VatReturn['status'])}`)
+                        }
+
+                        return (
+                          <tr key={vr.id} className="border-b dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50">
+                            {idx === 0 ? (
+                              <td className="py-2 px-3 font-medium text-gray-900 dark:text-white" rowSpan={periodReturns.length}>
+                                {monthLabel} {year}
+                              </td>
+                            ) : null}
+                            <td className="py-2 px-3 text-gray-700 dark:text-gray-300">
+                              {getVatReturnTypeLabel(vr.type)}
+                            </td>
+                            <td className="py-2 px-3">
+                              <button
+                                onClick={handleStatusClick}
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-colors hover:opacity-80 ${statusColor.bg} ${statusColor.text}`}
+                                title="Klikni pro změnu stavu"
+                              >
+                                {getVatStatusLabel(vr.status)}
+                              </button>
+                            </td>
+                            <td className="py-2 px-3 text-right font-mono text-gray-900 dark:text-white">
+                              {vr.amount !== null ? (
+                                <span className={vr.amount < 0 ? 'text-green-600 dark:text-green-400' : ''}>
+                                  {vr.amount < 0 ? '−' : ''}{Math.abs(vr.amount).toLocaleString('cs-CZ')} Kč
+                                </span>
+                              ) : '—'}
+                            </td>
+                            <td className="py-2 px-3 text-gray-500 dark:text-gray-400">
+                              {vr.filed_date ? new Date(vr.filed_date).toLocaleDateString('cs-CZ') : '—'}
+                            </td>
+                            <td className="py-2 px-3 text-gray-500 dark:text-gray-400">
+                              {vr.paid_date ? new Date(vr.paid_date).toLocaleDateString('cs-CZ') : '—'}
+                            </td>
+                          </tr>
+                        )
+                      })
+                    })
+                  })()}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Legenda */}
+            <div className="mt-4 pt-3 border-t dark:border-gray-700 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+              <span>Klikněte na stav pro změnu:</span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-red-500"></span> Nepodáno
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-yellow-500"></span> Podáno
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span> Zaplaceno
+              </span>
+            </div>
+          </CollapsibleSection>
+        )}
 
         {/* ============================================ */}
         {/* ÚKOLY */}
@@ -828,8 +991,8 @@ export default function ClientDetailPage() {
             companyId={companyId}
             companyName={company.name}
           />
-          <div className="mt-6 pt-6 border-t">
-            <h4 className="text-sm font-medium text-gray-700 mb-4">Výročí z pojištění a majetku</h4>
+          <div className="mt-6 pt-6 border-t dark:border-gray-700">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">Výročí z pojištění a majetku</h4>
             <AnniversaryCalendar
               insurances={insurances}
               assets={assets}
@@ -846,11 +1009,21 @@ export default function ClientDetailPage() {
           onSave={handleCompanySave}
         />
 
+        {/* Modal pro detail closure */}
+        <ClosureDetailModal
+          open={closureModalOpen}
+          onOpenChange={setClosureModalOpen}
+          closure={closureModalData}
+          companyName={company.name}
+          onSave={handleClosureSave}
+        />
+
         {/* Modal pro urgování klienta */}
         {selectedClosure && (
           <UrgencyEmailModal
             open={urgencyModalOpen}
             onOpenChange={setUrgencyModalOpen}
+            companyId={companyId}
             companyName={company.name}
             companyEmail={contactEmail}
             period={selectedPeriod}

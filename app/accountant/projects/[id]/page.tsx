@@ -65,12 +65,12 @@ const STATUS_CONFIG: Record<ProjectStatus, { label: string; icon: typeof PlayCir
   active: { label: 'Aktivní', icon: PlayCircle, color: 'text-green-600', bgColor: 'bg-green-50 border-green-200' },
   on_hold: { label: 'Pozastaveno', icon: PauseCircle, color: 'text-yellow-600', bgColor: 'bg-yellow-50 border-yellow-200' },
   review: { label: 'K review', icon: AlertCircle, color: 'text-purple-600', bgColor: 'bg-purple-50 border-purple-200' },
-  completed: { label: 'Dokončeno', icon: CheckCircle2, color: 'text-gray-500', bgColor: 'bg-gray-50 border-gray-200' },
+  completed: { label: 'Dokončeno', icon: CheckCircle2, color: 'text-gray-500 dark:text-gray-400', bgColor: 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700' },
   cancelled: { label: 'Zrušeno', icon: Archive, color: 'text-red-500', bgColor: 'bg-red-50 border-red-200' },
 }
 
 const PHASE_STATUS_CONFIG: Record<PhaseStatus, { label: string; color: string; bgColor: string }> = {
-  pending: { label: 'Čeká', color: 'text-gray-600', bgColor: 'bg-gray-100' },
+  pending: { label: 'Čeká', color: 'text-gray-600 dark:text-gray-300', bgColor: 'bg-gray-100 dark:bg-gray-700' },
   active: { label: 'Aktivní', color: 'text-green-600', bgColor: 'bg-green-100' },
   completed: { label: 'Hotovo', color: 'text-blue-600', bgColor: 'bg-blue-100' },
 }
@@ -109,7 +109,7 @@ function getDeadlineColor(days: number): string {
   if (days < 0) return 'text-red-600 bg-red-50'
   if (days <= 3) return 'text-orange-600 bg-orange-50'
   if (days <= 7) return 'text-yellow-600 bg-yellow-50'
-  return 'text-gray-600 bg-gray-50'
+  return 'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50'
 }
 
 function getTaskStatusColor(status: string): string {
@@ -117,7 +117,7 @@ function getTaskStatusColor(status: string): string {
     case 'completed': return 'text-green-600'
     case 'in_progress': return 'text-blue-600'
     case 'blocked': return 'text-red-600'
-    default: return 'text-gray-500'
+    default: return 'text-gray-500 dark:text-gray-400'
   }
 }
 
@@ -151,7 +151,7 @@ const TIMELINE_EVENT_CONFIG: Record<ProjectTimelineEventType, {
   started: { label: 'Zahájeno', icon: Play, color: 'text-orange-600', bgColor: 'bg-orange-100' },
   completed: { label: 'Dokončeno', icon: CheckCircle2, color: 'text-green-600', bgColor: 'bg-green-100' },
   delegated: { label: 'Delegováno', icon: Users, color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
-  comment: { label: 'Komentář', icon: MessageSquare, color: 'text-gray-600', bgColor: 'bg-gray-100' },
+  comment: { label: 'Komentář', icon: MessageSquare, color: 'text-gray-600 dark:text-gray-300', bgColor: 'bg-gray-100 dark:bg-gray-700' },
   call: { label: 'Hovor', icon: Phone, color: 'text-cyan-600', bgColor: 'bg-cyan-100' },
   email: { label: 'Email', icon: Mail, color: 'text-blue-600', bgColor: 'bg-blue-100' },
   document: { label: 'Dokument', icon: FileText, color: 'text-amber-600', bgColor: 'bg-amber-100' },
@@ -319,8 +319,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       <div
         className={`
           flex items-center gap-3 p-3 rounded-lg border cursor-pointer
-          hover:bg-gray-50 transition-colors
-          ${isNextAction ? 'bg-blue-50 border-blue-200' : 'bg-white'}
+          hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 transition-colors
+          ${isNextAction ? 'bg-blue-50 border-blue-200' : 'bg-white dark:bg-gray-800'}
           ${isBlocked ? 'opacity-60' : ''}
         `}
         onClick={() => router.push(`/accountant/tasks/${task.id}`)}
@@ -367,7 +367,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               className={`text-xs ${
                 task.score_fire === 3 ? 'border-red-300 text-red-600' :
                 task.score_fire === 2 ? 'border-orange-300 text-orange-600' :
-                'border-gray-300 text-gray-600'
+                'border-gray-300 text-gray-600 dark:text-gray-300'
               }`}
             >
               {task.score_fire === 3 ? 'Kritické' : task.score_fire === 2 ? 'Vysoká' : 'Normální'}
@@ -392,13 +392,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       <div className="border rounded-lg overflow-hidden">
         {/* Phase Header */}
         <div
-          className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 ${
+          className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 ${
             phase.status === 'active' ? 'bg-green-50/50' :
-            phase.status === 'completed' ? 'bg-gray-50' : ''
+            phase.status === 'completed' ? 'bg-gray-50 dark:bg-gray-800/50' : ''
           }`}
           onClick={() => togglePhase(phase.id)}
         >
-          <button className="text-gray-400 hover:text-gray-600">
+          <button className="text-gray-400 hover:text-gray-600 dark:text-gray-300">
             {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
 
@@ -617,7 +617,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               <CardContent className="space-y-4">
                 {/* Time Summary */}
                 <div className="grid grid-cols-3 gap-4 text-center">
-                  <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
                     <div className="text-2xl font-bold">{billingSummary.totalEstimatedHours}h</div>
                     <div className="text-xs text-muted-foreground">Odhad</div>
                   </div>
@@ -718,7 +718,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                       <div
                         key={event.id}
                         className={cn(
-                          "flex gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors",
+                          "flex gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 transition-colors",
                           event.task_id && "cursor-pointer"
                         )}
                         onClick={() => event.task_id && router.push(`/accountant/tasks/${event.task_id}`)}
@@ -789,7 +789,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     <div
                       key={event.id}
                       className={cn(
-                        "flex gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors",
+                        "flex gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 transition-colors",
                         event.task_id && "cursor-pointer"
                       )}
                       onClick={() => event.task_id && router.push(`/accountant/tasks/${event.task_id}`)}

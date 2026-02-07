@@ -328,7 +328,7 @@ export default function AccountantSettingsPage() {
         <Button
           variant="outline"
           onClick={handleReset}
-          className="text-gray-600"
+          className="text-gray-600 dark:text-gray-400"
         >
           <RotateCcw className="mr-2 h-4 w-4" />
           Obnovit výchozí

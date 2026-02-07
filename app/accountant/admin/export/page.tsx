@@ -239,8 +239,8 @@ export default function ExportPage() {
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 className="h-8 w-8 text-green-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Export dokončen</h3>
-                <p className="text-gray-600">Soubor byl úspěšně stažen. Export byl zalogován.</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Export dokončen</h3>
+                <p className="text-gray-600 dark:text-gray-300">Soubor byl úspěšně stažen. Export byl zalogován.</p>
               </div>
             ) : (
               <>
@@ -264,7 +264,7 @@ export default function ExportPage() {
                         className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                           selectedClient === client.id
                             ? 'bg-blue-50 border-blue-300'
-                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                            : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700'
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -273,7 +273,7 @@ export default function ExportPage() {
                           }`} />
                           <div>
                             <p className="font-medium text-sm">{client.name}</p>
-                            <p className="text-xs text-gray-500">IČO: {client.ico}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">IČO: {client.ico}</p>
                           </div>
                         </div>
                       </div>
@@ -295,7 +295,7 @@ export default function ExportPage() {
                               className={`p-3 rounded-lg border ${
                                 selectedDataTypes.includes(type.id)
                                   ? 'bg-blue-50 border-blue-300'
-                                  : 'bg-gray-50 border-gray-200'
+                                  : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
                               }`}
                             >
                               <div className="flex items-start gap-3">
@@ -306,7 +306,7 @@ export default function ExportPage() {
                                 />
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
-                                    <Icon className="h-4 w-4 text-gray-500" />
+                                    <Icon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                                     <Label htmlFor={type.id} className="font-medium cursor-pointer">
                                       {type.label}
                                     </Label>
@@ -317,7 +317,7 @@ export default function ExportPage() {
                                       </Badge>
                                     )}
                                   </div>
-                                  <p className="text-xs text-gray-500 mt-1">{type.description}</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{type.description}</p>
                                 </div>
                               </div>
                             </div>
@@ -343,14 +343,14 @@ export default function ExportPage() {
                               className={`flex-1 p-3 rounded-lg border cursor-pointer transition-colors text-center ${
                                 exportFormat === format.id
                                   ? 'bg-blue-50 border-blue-300'
-                                  : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                                  : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700'
                               }`}
                             >
                               <Icon className={`h-6 w-6 mx-auto mb-1 ${
                                 exportFormat === format.id ? 'text-blue-600' : 'text-gray-400'
                               }`} />
                               <p className="font-medium text-sm">{format.label}</p>
-                              <p className="text-xs text-gray-500">{format.desc}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{format.desc}</p>
                             </div>
                           )
                         })}
@@ -426,14 +426,14 @@ export default function ExportPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-500">Klient</p>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Klient</p>
                     <p className="font-medium">{selectedClientData?.name}</p>
-                    <p className="text-xs text-gray-500">IČO: {selectedClientData?.ico}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">IČO: {selectedClientData?.ico}</p>
                   </div>
 
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-2">Data k exportu</p>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Data k exportu</p>
                     <div className="space-y-1">
                       {selectedDataTypes.map(typeId => {
                         const type = dataTypes.find(t => t.id === typeId)
@@ -446,8 +446,8 @@ export default function ExportPage() {
                     </div>
                   </div>
 
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-500">Formát</p>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Formát</p>
                     <p className="font-medium uppercase">{exportFormat}</p>
                   </div>
 
@@ -475,24 +475,24 @@ export default function ExportPage() {
                 {mockExportHistory.map((exp) => {
                   const FormatIcon = getFormatIcon(exp.format)
                   return (
-                    <div key={exp.id} className="p-3 bg-gray-50 rounded-lg">
+                    <div key={exp.id} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
                           <p className="font-medium text-sm">{exp.client_name}</p>
-                          <p className="text-xs text-gray-500">{formatDateTime(exp.exported_at)}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(exp.exported_at)}</p>
                         </div>
                         <Badge variant="outline" className="text-xs">
                           <FormatIcon className="h-3 w-3 mr-1" />
                           {exp.format.toUpperCase()}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                         <User className="h-3 w-3" />
                         <span>{exp.exported_by}</span>
                         <span className="text-gray-400">|</span>
                         <span>{exp.file_size}</span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1 italic">"{exp.reason}"</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 italic">"{exp.reason}"</p>
                     </div>
                   )
                 })}

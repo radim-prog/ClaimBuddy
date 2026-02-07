@@ -22,12 +22,14 @@ import {
 } from '@/components/ui/select'
 import { Mail, Send, Clock, Calendar, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { addReminder } from '@/lib/activity-store'
 
 type MissingDocument = 'bank_statement' | 'expense_documents' | 'income_invoices'
 
 type UrgencyEmailModalProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  companyId: string
   companyName: string
   companyEmail: string
   period: string // format: "2024-12"
@@ -79,6 +81,7 @@ function formatDateTimeLocal(date: Date): string {
 export function UrgencyEmailModal({
   open,
   onOpenChange,
+  companyId,
   companyName,
   companyEmail,
   period,
@@ -220,6 +223,17 @@ Vaše účetní`
      * ============================================
      */
 
+    // Record reminder in activity store
+    addReminder({
+      company_id: companyId,
+      company_name: companyName,
+      period,
+      type: 'missing_docs',
+      channel: 'email',
+      sent_by: 'Jana Svobodová',
+      notes: `Chybí: ${missingDocsText}`,
+    })
+
     // DEMO: Simulace odeslání
     if (sendOption === 'now') {
       toast.success(`Email odeslán na ${recipient}`)
@@ -245,7 +259,7 @@ Vaše účetní`
 
         <div className="space-y-4 py-4">
           {/* Upozornění na chybějící dokumenty */}
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 rounded-lg p-3">
             <div className="flex items-start gap-2">
               <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5" />
               <div className="text-sm">
@@ -291,20 +305,20 @@ Vaše účetní`
           </div>
 
           {/* Možnosti odeslání */}
-          <div className="space-y-3 pt-2 border-t">
+          <div className="space-y-3 pt-2 border-t dark:border-gray-700">
             <Label>Kdy odeslat</Label>
             <RadioGroup value={sendOption} onValueChange={(v) => setSendOption(v as 'now' | 'scheduled')}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="now" id="now" />
                 <Label htmlFor="now" className="flex items-center gap-2 font-normal cursor-pointer">
-                  <Send className="h-4 w-4 text-gray-500" />
+                  <Send className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                   Odeslat ihned
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="scheduled" id="scheduled" />
                 <Label htmlFor="scheduled" className="flex items-center gap-2 font-normal cursor-pointer">
-                  <Clock className="h-4 w-4 text-gray-500" />
+                  <Clock className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                   Naplánovat odeslání
                 </Label>
               </div>
@@ -312,10 +326,10 @@ Vaše účetní`
 
             {/* Plánování */}
             {sendOption === 'scheduled' && (
-              <div className="ml-6 space-y-3 p-3 bg-gray-50 rounded-lg">
+              <div className="ml-6 space-y-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 {/* Rychlé volby */}
                 <div className="space-y-2">
-                  <Label className="text-sm text-gray-600">Rychlá volba</Label>
+                  <Label className="text-sm text-gray-600 dark:text-gray-400">Rychlá volba</Label>
                   <Select value={quickSchedule} onValueChange={handleQuickSchedule}>
                     <SelectTrigger>
                       <SelectValue />
@@ -332,7 +346,7 @@ Vaše účetní`
 
                 {/* Přesný čas */}
                 <div className="space-y-2">
-                  <Label htmlFor="scheduledTime" className="text-sm text-gray-600">
+                  <Label htmlFor="scheduledTime" className="text-sm text-gray-600 dark:text-gray-400">
                     Datum a čas odeslání
                   </Label>
                   <div className="flex items-center gap-2">

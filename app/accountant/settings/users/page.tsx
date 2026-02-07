@@ -136,7 +136,7 @@ export default function UserManagementPage() {
     return (
       <div className="text-center py-12">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="mt-4 text-gray-600">Načítám uživatele...</p>
+        <p className="mt-4 text-gray-600 dark:text-gray-300">Načítám uživatele...</p>
       </div>
     )
   }
@@ -146,7 +146,7 @@ export default function UserManagementPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Správa uživatelů</h2>
-          <p className="text-gray-600 mt-2">Spravujte přístup uživatelů k systému</p>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">Spravujte přístup uživatelů k systému</p>
         </div>
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
@@ -238,17 +238,17 @@ export default function UserManagementPage() {
             {users.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
                     <div>
                       <p className="font-semibold">{user.full_name}</p>
-                      <p className="text-sm text-gray-600">{user.email}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{user.email}</p>
                     </div>
                     {getRoleBadge(user.role)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                     Vytvořeno: {new Date(user.created_at).toLocaleDateString('cs-CZ')}
                   </p>
                 </div>
@@ -275,7 +275,7 @@ export default function UserManagementPage() {
                           <div className="space-y-2">
                             <Label>Email</Label>
                             <Input value={selectedUser.email} disabled />
-                            <p className="text-xs text-gray-500">Email nelze měnit</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Email nelze měnit</p>
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="edit-name">Celé jméno</Label>
@@ -358,8 +358,8 @@ export default function UserManagementPage() {
             {users.length === 0 && (
               <div className="text-center py-12">
                 <UsersIcon className="h-12 w-12 mx-auto text-gray-400" />
-                <p className="mt-4 text-gray-600">Zatím nemáte žádné uživatele</p>
-                <p className="text-sm text-gray-500">Začněte přidáním prvního člena týmu</p>
+                <p className="mt-4 text-gray-600 dark:text-gray-300">Zatím nemáte žádné uživatele</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Začněte přidáním prvního člena týmu</p>
               </div>
             )}
           </div>
@@ -376,21 +376,21 @@ export default function UserManagementPage() {
             <Shield className="h-4 w-4 mt-0.5 text-purple-600" />
             <div>
               <p className="font-semibold">Admin</p>
-              <p className="text-gray-700">Plný přístup včetně správy uživatelů a nastavení</p>
+              <p className="text-gray-700 dark:text-gray-200">Plný přístup včetně správy uživatelů a nastavení</p>
             </div>
           </div>
           <div className="flex items-start gap-2">
             <User className="h-4 w-4 mt-0.5 text-blue-600" />
             <div>
               <p className="font-semibold">Účetní</p>
-              <p className="text-gray-700">Standardní přístup k účetnictví a klientům</p>
+              <p className="text-gray-700 dark:text-gray-200">Standardní přístup k účetnictví a klientům</p>
             </div>
           </div>
           <div className="flex items-start gap-2">
-            <User className="h-4 w-4 mt-0.5 text-gray-600" />
+            <User className="h-4 w-4 mt-0.5 text-gray-600 dark:text-gray-300" />
             <div>
               <p className="font-semibold">Asistent</p>
-              <p className="text-gray-700">Omezený přístup pouze k prohlížení a základním operacím</p>
+              <p className="text-gray-700 dark:text-gray-200">Omezený přístup pouze k prohlížení a základním operacím</p>
             </div>
           </div>
         </CardContent>

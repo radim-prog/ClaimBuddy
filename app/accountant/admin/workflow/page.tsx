@@ -73,7 +73,7 @@ const actionColors: Record<DocumentWorkflowAction, string> = {
   require_manager_approval: 'bg-blue-100 text-blue-700',
   require_accountant_approval: 'bg-purple-100 text-purple-700',
   notify_only: 'bg-yellow-100 text-yellow-700',
-  manual: 'bg-gray-100 text-gray-700',
+  manual: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200',
 }
 
 const actionIcons: Record<DocumentWorkflowAction, typeof Check> = {
@@ -196,11 +196,11 @@ export default function WorkflowPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <GitBranch className="h-6 w-6" />
           Workflow dokumentů
         </h1>
-        <p className="text-gray-500 mt-1">
+        <p className="text-gray-500 dark:text-gray-400 mt-1">
           Konfigurace pravidel pro zpracování a schvalování dokumentů
         </p>
       </div>
@@ -242,7 +242,7 @@ export default function WorkflowPage() {
               <Card>
                 <CardContent className="py-12 text-center">
                   <GitBranch className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">
+                  <p className="text-gray-500 dark:text-gray-400">
                     Žádná pravidla pro klienty
                   </p>
                   <Button
@@ -265,8 +265,8 @@ export default function WorkflowPage() {
                   >
                     <CardContent className="py-4">
                       <div className="flex items-start gap-4">
-                        <div className="p-2 bg-gray-100 rounded-lg">
-                          <Building2 className="h-5 w-5 text-gray-600" />
+                        <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                          <Building2 className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -291,7 +291,7 @@ export default function WorkflowPage() {
                             </Badge>
                           </div>
 
-                          <div className="flex gap-4 text-sm text-gray-500">
+                          <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400">
                             {rule.approver_id && (
                               <span className="flex items-center gap-1">
                                 <UserCheck className="h-4 w-4" />
@@ -338,7 +338,7 @@ export default function WorkflowPage() {
           </div>
 
           {/* Action Legend */}
-          <Card className="bg-gray-50">
+          <Card className="bg-gray-50 dark:bg-gray-800/50">
             <CardContent className="py-4">
               <h4 className="font-medium mb-3">Typy akcí</h4>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -388,7 +388,7 @@ export default function WorkflowPage() {
                       <TableRow key={docType.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-gray-500" />
+                            <FileText className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                             <span className="font-medium">{docType.name}</span>
                           </div>
                         </TableCell>
@@ -739,10 +739,10 @@ export default function WorkflowPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
               {clientRules.length}
             </p>
-            <p className="text-sm text-gray-500">Pravidel klientů</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Pravidel klientů</p>
           </CardContent>
         </Card>
         <Card>
@@ -750,7 +750,7 @@ export default function WorkflowPage() {
             <p className="text-3xl font-bold text-green-600">
               {clientRules.filter((r) => r.action === 'auto_approve').length}
             </p>
-            <p className="text-sm text-gray-500">Automatické schválení</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Automatické schválení</p>
           </CardContent>
         </Card>
         <Card>
@@ -764,15 +764,15 @@ export default function WorkflowPage() {
                 ).length
               }
             </p>
-            <p className="text-sm text-gray-500">Vyžaduje schválení</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Vyžaduje schválení</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-3xl font-bold text-gray-600">
+            <p className="text-3xl font-bold text-gray-600 dark:text-gray-300">
               {documentTypes.length}
             </p>
-            <p className="text-sm text-gray-500">Typů dokumentů</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Typů dokumentů</p>
           </CardContent>
         </Card>
       </div>

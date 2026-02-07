@@ -12,7 +12,8 @@ import {
   LogOut,
   Menu,
   X,
-  User
+  User,
+  Receipt
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -29,6 +30,7 @@ import { logout } from '@/app/auth/login/actions'
 const navigation = [
   { name: 'Dashboard', href: '/client/dashboard', icon: LayoutDashboard },
   { name: 'Moje firmy', href: '/client/companies', icon: Building2 },
+  { name: 'Faktury', href: '/client/invoices', icon: Receipt },
   { name: 'Dokumenty', href: '/client/documents', icon: FileText },
   { name: 'Nahrát dokumenty', href: '/client/upload', icon: Upload },
   { name: 'Nastavení', href: '/client/settings', icon: Settings },
@@ -47,12 +49,12 @@ export default function ClientLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
         <div className="flex flex-col flex-grow bg-gradient-to-b from-blue-600 to-purple-600 overflow-y-auto">
           {/* Logo */}
-          <div className="flex items-center h-16 flex-shrink-0 px-4 bg-white/10">
+          <div className="flex items-center h-16 flex-shrink-0 px-4 bg-white dark:bg-gray-800/10">
             <h1 className="text-2xl font-bold text-white">Účetní OS</h1>
           </div>
 
@@ -68,8 +70,8 @@ export default function ClientLayout({
                   className={`
                     group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors
                     ${isActive
-                      ? 'bg-white/20 text-white'
-                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                      ? 'bg-white dark:bg-gray-800/20 text-white'
+                      : 'text-white/80 hover:bg-white dark:bg-gray-800/10 hover:text-white'
                     }
                   `}
                 >
@@ -84,9 +86,9 @@ export default function ClientLayout({
           <div className="flex-shrink-0 flex border-t border-white/10 p-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center w-full group hover:bg-white/10 rounded-lg p-2 transition-colors">
+                <button className="flex items-center w-full group hover:bg-white dark:bg-gray-800/10 rounded-lg p-2 transition-colors">
                   <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-white text-purple-600 font-bold">
+                    <AvatarFallback className="bg-white dark:bg-gray-800 text-purple-600 font-bold">
                       KN
                     </AvatarFallback>
                   </Avatar>
@@ -133,7 +135,7 @@ export default function ClientLayout({
             variant="ghost"
             size="icon"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-white hover:bg-white/10"
+            className="text-white hover:bg-white dark:bg-gray-800/10"
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
@@ -141,7 +143,7 @@ export default function ClientLayout({
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="bg-white border-b shadow-lg">
+          <div className="bg-white dark:bg-gray-800 border-b shadow-lg">
             <nav className="px-2 py-2 space-y-1">
               {navigation.map((item) => {
                 const isActive = pathname === item.href
@@ -155,7 +157,7 @@ export default function ClientLayout({
                       group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                       ${isActive
                         ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700'
                       }
                     `}
                   >
@@ -175,15 +177,15 @@ export default function ClientLayout({
                   </AvatarFallback>
                 </Avatar>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">Karel Novák</p>
-                  <p className="text-xs text-gray-500">Klient</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">Karel Novák</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Klient</p>
                 </div>
               </div>
               <div className="space-y-1">
                 <Link
                   href="/client/profile"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                  className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded-md"
                 >
                   <User className="mr-2 h-4 w-4" />
                   Profil

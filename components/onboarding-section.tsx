@@ -219,10 +219,10 @@ export function OnboardingSection({
         key={step.id}
         className={`border rounded-lg transition-all ${
           step.completed
-            ? 'bg-green-50 border-green-200'
+            ? 'bg-green-50 dark:bg-green-900/20 border-green-200'
             : step.required
-            ? 'bg-white border-gray-200 hover:border-purple-300'
-            : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+            ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-300'
+            : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:border-gray-300'
         }`}
       >
         <div className="p-3">
@@ -236,7 +236,7 @@ export function OnboardingSection({
               <div className="flex items-center gap-2">
                 <span
                   className={`font-medium ${
-                    step.completed ? 'text-green-700 line-through' : 'text-gray-900'
+                    step.completed ? 'text-green-700 line-through' : 'text-gray-900 dark:text-white'
                   }`}
                 >
                   {step.label}
@@ -253,7 +253,7 @@ export function OnboardingSection({
                 )}
               </div>
               {step.description && (
-                <p className="text-sm text-gray-500 mt-0.5">{step.description}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{step.description}</p>
               )}
               {step.completed && step.completed_at && (
                 <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
@@ -282,7 +282,7 @@ export function OnboardingSection({
           <div className="px-3 pb-3 pt-0 border-t bg-gray-50/50">
             <div className="pt-3 space-y-2">
               {step.notes && (
-                <div className="text-sm text-gray-600 bg-white p-2 rounded border">
+                <div className="text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 p-2 rounded border">
                   <p className="text-xs text-gray-400 mb-1">Poznámky:</p>
                   <p className="whitespace-pre-wrap">{step.notes}</p>
                 </div>
@@ -317,7 +317,7 @@ export function OnboardingSection({
       icon={Sparkles}
       badge={
         onboarding.status === 'active' ? (
-          <Badge variant="outline" className="ml-2 bg-green-100 text-green-700 border-green-300">
+          <Badge variant="outline" className="ml-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300">
             Dokončeno
           </Badge>
         ) : isStalled ? (
@@ -325,7 +325,7 @@ export function OnboardingSection({
             Zaseklé {daysSinceActivity} dní
           </Badge>
         ) : (
-          <Badge variant="outline" className="ml-2 bg-purple-100 text-purple-700 border-purple-300">
+          <Badge variant="outline" className="ml-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300">
             {progress}%
           </Badge>
         )
@@ -334,20 +334,20 @@ export function OnboardingSection({
     >
       {/* Status Header */}
       <div className={`rounded-lg p-4 mb-4 ${
-        isStalled ? 'bg-red-50 border border-red-200' :
-        onboarding.status === 'active' ? 'bg-green-50 border border-green-200' :
+        isStalled ? 'bg-red-50 dark:bg-red-900/20 border border-red-200' :
+        onboarding.status === 'active' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200' :
         'bg-gradient-to-r from-blue-50 to-purple-50 border border-purple-200'
       }`}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             {isStalled && onboarding.status !== 'active' && (
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
             )}
             <div>
-              <h4 className="font-semibold text-gray-900">
+              <h4 className="font-semibold text-gray-900 dark:text-white">
                 {onboarding.status === 'active' ? 'Onboarding dokončen' : 'Onboarding probíhá'}
               </h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Zahájeno: {formatDate(onboarding.started_at)}
                 {onboarding.completed_at && ` • Dokončeno: ${formatDate(onboarding.completed_at)}`}
               </p>
@@ -378,7 +378,7 @@ export function OnboardingSection({
         {onboarding.status !== 'active' && (
           <div className="mb-3">
             <div className="flex justify-between text-sm mb-1">
-              <span className="text-gray-600">Pokrok</span>
+              <span className="text-gray-600 dark:text-gray-400">Pokrok</span>
               <span className="font-medium text-purple-700">{progress}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -389,7 +389,7 @@ export function OnboardingSection({
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {completedSteps.filter(s => s.required).length} / {onboarding.steps.filter(s => s.required).length} povinných kroků dokončeno
             </p>
           </div>
@@ -415,7 +415,7 @@ export function OnboardingSection({
             </Badge>
           )}
           {onboarding.assigned_to_name && (
-            <Badge variant="outline" className="bg-gray-100 text-gray-700">
+            <Badge variant="outline" className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
               <User className="h-3 w-3 mr-1" />
               {onboarding.assigned_to_name}
             </Badge>
@@ -434,7 +434,7 @@ export function OnboardingSection({
       {/* Pending Steps */}
       {pendingSteps.length > 0 && (
         <div className="mb-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
             <Circle className="h-4 w-4 text-gray-400" />
             Zbývající kroky ({pendingSteps.length})
           </h4>
@@ -455,9 +455,9 @@ export function OnboardingSection({
         <div className="mb-4">
           <button
             onClick={() => setShowCompleted(!showCompleted)}
-            className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2 hover:text-gray-700"
+            className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-2 hover:text-gray-700 dark:text-gray-200"
           >
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
             Dokončené kroky ({completedSteps.length})
             {showCompleted ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
@@ -470,8 +470,8 @@ export function OnboardingSection({
       )}
 
       {/* Notes Section */}
-      <div className="mt-6 pt-4 border-t">
-        <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+      <div className="mt-6 pt-4 border-t dark:border-gray-700">
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
           <MessageSquare className="h-4 w-4 text-gray-400" />
           Poznámky k onboardingu
         </h4>
@@ -480,12 +480,12 @@ export function OnboardingSection({
         {onboarding.notes.length > 0 && (
           <div className="space-y-2 mb-3">
             {onboarding.notes.map(note => (
-              <div key={note.id} className="bg-gray-50 rounded-lg p-3 text-sm">
+              <div key={note.id} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-sm">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-gray-700">{note.created_by_name || 'Účetní'}</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-200">{note.created_by_name || 'Účetní'}</span>
                   <span className="text-xs text-gray-400">{formatDate(note.created_at)}</span>
                 </div>
-                <p className="text-gray-600 whitespace-pre-wrap">{note.content}</p>
+                <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{note.content}</p>
               </div>
             ))}
           </div>
@@ -513,7 +513,7 @@ export function OnboardingSection({
 
       {/* Complete Onboarding Button */}
       {onboarding.status !== 'active' && (
-        <div className="mt-6 pt-4 border-t">
+        <div className="mt-6 pt-4 border-t dark:border-gray-700">
           <Button
             className={`w-full ${
               isComplete
@@ -527,7 +527,7 @@ export function OnboardingSection({
             {isComplete ? 'Dokončit onboarding' : `Zbývá ${requiredPending.length} povinných kroků`}
           </Button>
           {!isComplete && (
-            <p className="text-xs text-gray-500 text-center mt-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
               Pro dokončení onboardingu musí být splněny všechny povinné kroky
             </p>
           )}

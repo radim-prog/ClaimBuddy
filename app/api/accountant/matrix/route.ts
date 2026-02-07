@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { mockCompanies, mockMonthlyClosures } from '@/lib/mock-data'
+import { mockCompanies, mockMonthlyClosures, getAllTasks } from '@/lib/mock-data'
 
 // DEMO MODE - Using mock data instead of Supabase
 export async function GET(request: Request) {
@@ -64,9 +64,19 @@ export async function GET(request: Request) {
       ).length,
     }
 
+    const tasks = getAllTasks().map(t => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      due_date: t.due_date || null,
+      company_id: t.company_id,
+      company_name: t.company_name || null,
+    }))
+
     return NextResponse.json({
       companies,
       closures,
+      tasks,
       stats,
     })
   } catch (error) {

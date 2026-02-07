@@ -72,17 +72,17 @@ const CATEGORY_ICONS: Record<InsuranceCategory, React.ReactNode> = {
 }
 
 const STATUS_ICONS: Record<InsuranceStatus, React.ReactNode> = {
-  active: <CheckCircle className="h-4 w-4 text-green-600" />,
-  pending: <Clock className="h-4 w-4 text-yellow-600" />,
-  expired: <AlertTriangle className="h-4 w-4 text-red-600" />,
-  cancelled: <XCircle className="h-4 w-4 text-gray-600" />,
+  active: <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />,
+  pending: <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />,
+  expired: <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />,
+  cancelled: <XCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />,
 }
 
 const STATUS_COLORS: Record<InsuranceStatus, string> = {
-  active: 'bg-green-100 text-green-700',
-  pending: 'bg-yellow-100 text-yellow-700',
-  expired: 'bg-red-100 text-red-700',
-  cancelled: 'bg-gray-100 text-gray-700',
+  active: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+  pending: 'bg-yellow-100 text-yellow-700 dark:text-yellow-400',
+  expired: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+  cancelled: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
 }
 
 export function InsuranceSection({
@@ -170,13 +170,13 @@ export function InsuranceSection({
     const group = getCategoryGroup(category)
     switch (group) {
       case 'tax_deductible':
-        return 'bg-green-100 text-green-700'
+        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
       case 'business':
-        return 'bg-blue-100 text-blue-700'
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
       case 'personal':
-        return 'bg-purple-100 text-purple-700'
+        return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
       default:
-        return 'bg-gray-100 text-gray-700'
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
     }
   }
 
@@ -198,7 +198,7 @@ export function InsuranceSection({
         className={`border rounded-lg overflow-hidden ${isAnniversarySoon ? 'border-orange-300 bg-orange-50' : ''}`}
       >
         <div
-          className="p-4 cursor-pointer hover:bg-gray-50 flex items-center justify-between"
+          className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 flex items-center justify-between"
           onClick={() => toggleExpand(insurance.id)}
         >
           <div className="flex items-center gap-3">
@@ -218,7 +218,7 @@ export function InsuranceSection({
                   </Badge>
                 )}
               </div>
-              <div className="text-sm text-gray-500 flex items-center gap-4">
+              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-4">
                 <span>{insurance.provider}</span>
                 <span>•</span>
                 <span>Smlouva: {insurance.contract_number}</span>
@@ -237,7 +237,7 @@ export function InsuranceSection({
           <div className="flex items-center gap-4">
             <div className="text-right">
               <div className="font-semibold">{formatCurrency(insurance.annual_premium)}/rok</div>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 {formatCurrency(insurance.premium_amount)} {PAYMENT_FREQUENCY_LABELS[insurance.payment_frequency].toLowerCase()}
               </div>
             </div>
@@ -246,67 +246,67 @@ export function InsuranceSection({
         </div>
 
         {isExpanded && (
-          <div className="p-4 border-t bg-gray-50 space-y-4">
+          <div className="p-4 border-t bg-gray-50 dark:bg-gray-800/50 space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <div>
-                <div className="text-gray-500">Kategorie</div>
+                <div className="text-gray-500 dark:text-gray-400">Kategorie</div>
                 <div className="font-medium">{INSURANCE_CATEGORY_LABELS[insurance.category]}</div>
               </div>
               <div>
-                <div className="text-gray-500">Předmět pojištění</div>
+                <div className="text-gray-500 dark:text-gray-400">Předmět pojištění</div>
                 <div className="font-medium">{insurance.insured_subject || '-'}</div>
               </div>
               {insurance.insured_person && (
                 <div>
-                  <div className="text-gray-500">Pojištěná osoba</div>
+                  <div className="text-gray-500 dark:text-gray-400">Pojištěná osoba</div>
                   <div className="font-medium">{insurance.insured_person}</div>
                 </div>
               )}
               {insurance.coverage_limit && (
                 <div>
-                  <div className="text-gray-500">Limit plnění</div>
+                  <div className="text-gray-500 dark:text-gray-400">Limit plnění</div>
                   <div className="font-medium">{formatCurrency(insurance.coverage_limit)}</div>
                 </div>
               )}
               {insurance.deductible && (
                 <div>
-                  <div className="text-gray-500">Spoluúčast</div>
+                  <div className="text-gray-500 dark:text-gray-400">Spoluúčast</div>
                   <div className="font-medium">{formatCurrency(insurance.deductible)}</div>
                 </div>
               )}
               <div>
-                <div className="text-gray-500">Datum účinnosti</div>
+                <div className="text-gray-500 dark:text-gray-400">Datum účinnosti</div>
                 <div className="font-medium">{formatDate(insurance.effective_date)}</div>
               </div>
               <div>
-                <div className="text-gray-500">Výroční datum</div>
-                <div className={`font-medium ${isAnniversarySoon ? 'text-orange-600' : ''}`}>
+                <div className="text-gray-500 dark:text-gray-400">Výroční datum</div>
+                <div className={`font-medium ${isAnniversarySoon ? 'text-orange-600 dark:text-orange-400' : ''}`}>
                   {formatDate(insurance.anniversary_date)}
                 </div>
               </div>
               {insurance.expiry_date && (
                 <div>
-                  <div className="text-gray-500">Datum ukončení</div>
+                  <div className="text-gray-500 dark:text-gray-400">Datum ukončení</div>
                   <div className="font-medium">{formatDate(insurance.expiry_date)}</div>
                 </div>
               )}
               {insurance.is_tax_deductible && insurance.tax_deductible_amount && (
                 <div>
-                  <div className="text-gray-500">Daňový odpočet</div>
-                  <div className="font-medium text-green-600">
+                  <div className="text-gray-500 dark:text-gray-400">Daňový odpočet</div>
+                  <div className="font-medium text-green-600 dark:text-green-400">
                     {formatCurrency(insurance.tax_deductible_amount)}/rok
                   </div>
                 </div>
               )}
               {linkedAsset && (
                 <div>
-                  <div className="text-gray-500">Propojený majetek</div>
+                  <div className="text-gray-500 dark:text-gray-400">Propojený majetek</div>
                   <div className="font-medium">{linkedAsset.name}</div>
                 </div>
               )}
               {linkedEmployee && (
                 <div>
-                  <div className="text-gray-500">Propojený zaměstnanec</div>
+                  <div className="text-gray-500 dark:text-gray-400">Propojený zaměstnanec</div>
                   <div className="font-medium">
                     {linkedEmployee.first_name} {linkedEmployee.last_name}
                   </div>
@@ -316,12 +316,12 @@ export function InsuranceSection({
 
             {insurance.notes && (
               <div>
-                <div className="text-gray-500 text-sm">Poznámky</div>
+                <div className="text-gray-500 dark:text-gray-400 text-sm">Poznámky</div>
                 <div className="text-sm">{insurance.notes}</div>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t">
+            <div className="flex justify-end gap-2 pt-2 border-t dark:border-gray-700">
               <Button
                 variant="outline"
                 size="sm"
@@ -336,7 +336,7 @@ export function InsuranceSection({
               <Button
                 variant="outline"
                 size="sm"
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:bg-red-900/20"
                 onClick={(e) => {
                   e.stopPropagation()
                   handleDeleteInsurance(insurance.id)
@@ -369,7 +369,7 @@ export function InsuranceSection({
               <Shield className="h-5 w-5 text-purple-600" />
               <CardTitle className="text-lg">Pojištění a smlouvy</CardTitle>
               {insurances.length > 0 && (
-                <span className="text-sm font-normal text-gray-500 ml-2">
+                <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
                   ({activeInsurances.length} aktivních • {formatCurrency(totalAnnualPremium)})
                 </span>
               )}
@@ -395,7 +395,7 @@ export function InsuranceSection({
           <CardContent>
             {/* Upozornění na blížící se výročí */}
           {upcomingAnniversaries.length > 0 && (
-            <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 rounded-lg">
               <div className="flex items-center gap-2 text-orange-700 font-medium">
                 <AlertTriangle className="h-4 w-4" />
                 Blížící se výročí ({upcomingAnniversaries.length})
@@ -408,7 +408,7 @@ export function InsuranceSection({
 
           {/* Souhrn daňových odpočtů */}
           {taxDeductibleInsurances.length > 0 && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-green-700 font-medium">
                   <Wallet className="h-4 w-4" />
@@ -428,7 +428,7 @@ export function InsuranceSection({
           )}
 
           {insurances.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               <Shield className="h-12 w-12 mx-auto mb-2 text-gray-300" />
               <p>Žádná pojištění</p>
               <p className="text-sm">Klikněte na "Přidat pojištění" pro přidání nového záznamu</p>
@@ -448,7 +448,7 @@ export function InsuranceSection({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="mb-2 text-gray-500"
+                    className="mb-2 text-gray-500 dark:text-gray-400"
                     onClick={() => setShowInactive(!showInactive)}
                   >
                     {showInactive ? (

@@ -167,7 +167,7 @@ export function AccountantMessagesSection({ companyId, companyName, clientName }
     <div className="space-y-4">
       {/* Unread indicator */}
       {unreadFromClient > 0 && (
-        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 rounded-lg">
           <Badge variant="default" className="bg-blue-600">
             {unreadFromClient} nová zpráva
           </Badge>
@@ -208,8 +208,8 @@ export function AccountantMessagesSection({ companyId, companyName, clientName }
                   <AvatarFallback
                     className={
                       isAccountant
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-blue-100 text-blue-700'
+                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                     }
                   >
                     {message.sender_name
@@ -236,7 +236,7 @@ export function AccountantMessagesSection({ companyId, companyName, clientName }
                       className={`p-3 rounded-lg ${
                         isAccountant
                           ? 'bg-purple-600 text-white rounded-br-none'
-                          : 'bg-gray-100 text-gray-900 rounded-bl-none'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -257,7 +257,7 @@ export function AccountantMessagesSection({ companyId, companyName, clientName }
                         {isAccountant && (
                           <DropdownMenuItem
                             onClick={() => handleDelete(message.id)}
-                            className="text-red-600"
+                            className="text-red-600 dark:text-red-400"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Smazat

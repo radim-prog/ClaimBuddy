@@ -512,32 +512,32 @@ export default function ClientTimelinePage() {
         <div className="mb-8">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{caseData.title}</h1>
-              <p className="text-gray-600 mt-2">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{caseData.title}</h1>
+              <p className="text-gray-600 dark:text-gray-300 mt-2">
                 Poslední aktivita: {new Date(caseData.lastActivity).toLocaleDateString('cs-CZ')} •
-                Status: <Badge className={caseData.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}>{caseData.status === 'active' ? 'Aktivní' : 'Ukončeno'}</Badge>
+                Status: <Badge className={caseData.status === 'active' ? 'bg-green-500' : 'bg-gray-50 dark:bg-gray-800/500'}>{caseData.status === 'active' ? 'Aktivní' : 'Ukončeno'}</Badge>
               </p>
             </div>
           {/* Celková statistika */}
           <div className="flex gap-3">
             <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
               <CardContent className="p-3 text-center min-w-[100px]">
-                <div className="text-xs text-gray-600 mb-1">Úkoly</div>
+                <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Úkoly</div>
                 <div className="text-2xl font-bold text-green-700">{completedTasks}/{totalTasks}</div>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
               <CardContent className="p-3 text-center min-w-[120px]">
-                <div className="text-xs text-gray-600 mb-1">Odpracováno</div>
+                <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Odpracováno</div>
                 <div className="text-lg font-bold text-blue-700">{formatDuration(totalMinutes)}</div>
-                <div className="text-xs font-semibold text-gray-900">{totalCost.toLocaleString()} Kč</div>
+                <div className="text-xs font-semibold text-gray-900 dark:text-white">{totalCost.toLocaleString()} Kč</div>
               </CardContent>
             </Card>
           </div>
         </div>
 
         {/* View Tabs */}
-        <div className="flex gap-2 border-b border-gray-200 pb-2">
+        <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
           <Button
             variant={activeView === 'summary' ? 'default' : 'ghost'}
             onClick={() => setActiveView('summary')}
@@ -655,7 +655,7 @@ export default function ClientTimelinePage() {
       {showBillingReport && (
         <Card className="mb-8 border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
           <CardContent className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
               Přehled hodin a podklad pro fakturaci
             </h2>
@@ -664,21 +664,21 @@ export default function ClientTimelinePage() {
               {events.filter(e => e.billable && e.timeEntries.length > 0).map((event) => {
                 const config = eventTypeConfig[event.type]
                 return (
-                  <div key={event.id} className="bg-white rounded-lg p-4">
+                  <div key={event.id} className="bg-white dark:bg-gray-800 rounded-lg p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <Badge className={`${config.bgColor} ${config.textColor} text-xs px-2 py-0.5`}>
                             {config.label}
                           </Badge>
-                          <h3 className="font-semibold text-gray-900">{event.title}</h3>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{event.title}</h3>
                         </div>
-                        <p className="text-sm text-gray-600">{event.description}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{event.description}</p>
                       </div>
                       <div className="text-right ml-4">
                         <div className="text-lg font-bold text-purple-700">{formatDuration(getTotalMinutes(event))}</div>
-                        <div className="text-sm text-gray-600">Sazba: {event.hourlyRate} Kč/hod</div>
-                        <div className="text-base font-semibold text-gray-900 mt-1">{getTotalCost(event).toLocaleString()} Kč</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300">Sazba: {event.hourlyRate} Kč/hod</div>
+                        <div className="text-base font-semibold text-gray-900 dark:text-white mt-1">{getTotalCost(event).toLocaleString()} Kč</div>
                       </div>
                     </div>
 
@@ -687,15 +687,15 @@ export default function ClientTimelinePage() {
                       {event.timeEntries.map((entry) => (
                         <div key={entry.id} className="text-sm flex items-start justify-between">
                           <div>
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-gray-900 dark:text-white">
                               {new Date(entry.date).toLocaleDateString('cs-CZ')} • {entry.startTime} - {entry.endTime}
                             </div>
-                            {entry.note && <div className="text-xs text-gray-600 italic mt-0.5">{entry.note}</div>}
-                            <div className="text-xs text-gray-500 mt-0.5">{entry.user}</div>
+                            {entry.note && <div className="text-xs text-gray-600 dark:text-gray-300 italic mt-0.5">{entry.note}</div>}
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{entry.user}</div>
                           </div>
                           <div className="text-right ml-4">
                             <div className="font-semibold text-purple-700">{formatDuration(entry.duration)}</div>
-                            <div className="text-xs text-gray-600">{((entry.duration / 60) * event.hourlyRate!).toFixed(0)} Kč</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-300">{((entry.duration / 60) * event.hourlyRate!).toFixed(0)} Kč</div>
                           </div>
                         </div>
                       ))}
@@ -707,17 +707,17 @@ export default function ClientTimelinePage() {
 
             {/* Celkový součet */}
             <div className="mt-6 pt-4 border-t-2 border-purple-300">
-              <div className="flex items-center justify-between bg-white rounded-lg p-4">
+              <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-4">
                 <div>
-                  <div className="text-sm text-gray-600 mb-1">Celkem k fakturaci</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Celkem k fakturaci</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
                     Standardní sazba: {standardRate} Kč/hod •
                     {events.filter(e => e.billable).flatMap(e => e.timeEntries).length} záznamů času
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-purple-700">{formatDuration(totalMinutes)}</div>
-                  <div className="text-3xl font-bold text-gray-900 mt-1">{totalCost.toLocaleString()} Kč</div>
+                  <div className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{totalCost.toLocaleString()} Kč</div>
                 </div>
               </div>
             </div>
@@ -742,26 +742,26 @@ export default function ClientTimelinePage() {
           {caseData.progressNotes.length > 0 && (
             <Card className="border-green-200 bg-green-50">
               <CardContent className="p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-3">📍 Kde jsme skončili</h2>
-                <div className="bg-white rounded-lg p-4">
-                  <div className="text-sm text-gray-600 mb-2" suppressHydrationWarning>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">📍 Kde jsme skončili</h2>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
+                  <div className="text-sm text-gray-600 dark:text-gray-300 mb-2" suppressHydrationWarning>
                     {new Date(caseData.progressNotes[0].date).toLocaleString('cs-CZ')} • {caseData.progressNotes[0].author}
                   </div>
                   <div className="space-y-3">
                     <div>
-                      <div className="font-semibold text-gray-900 mb-1">Aktuální stav:</div>
-                      <div className="text-gray-700">{caseData.progressNotes[0].currentStatus}</div>
+                      <div className="font-semibold text-gray-900 dark:text-white mb-1">Aktuální stav:</div>
+                      <div className="text-gray-700 dark:text-gray-200">{caseData.progressNotes[0].currentStatus}</div>
                     </div>
                     {caseData.progressNotes[0].problems && (
                       <div>
                         <div className="font-semibold text-red-700 mb-1">⚠️ Problémy:</div>
-                        <div className="text-gray-700">{caseData.progressNotes[0].problems}</div>
+                        <div className="text-gray-700 dark:text-gray-200">{caseData.progressNotes[0].problems}</div>
                       </div>
                     )}
                     {caseData.progressNotes[0].nextSteps && (
                       <div>
                         <div className="font-semibold text-blue-700 mb-1">⏭️ Další kroky:</div>
-                        <div className="text-gray-700 whitespace-pre-line">{caseData.progressNotes[0].nextSteps}</div>
+                        <div className="text-gray-700 dark:text-gray-200 whitespace-pre-line">{caseData.progressNotes[0].nextSteps}</div>
                       </div>
                     )}
                   </div>
@@ -774,23 +774,23 @@ export default function ClientTimelinePage() {
           <div className="grid grid-cols-3 gap-4">
             <Card>
               <CardContent className="p-4">
-                <div className="text-sm text-gray-600 mb-2">Úkoly</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Úkoly</div>
                 <div className="text-3xl font-bold">{completedTasks}/{totalTasks}</div>
-                <div className="text-xs text-gray-500 mt-1">{Math.round((completedTasks/totalTasks)*100)}% dokončeno</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{Math.round((completedTasks/totalTasks)*100)}% dokončeno</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-sm text-gray-600 mb-2">Dokumenty</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Dokumenty</div>
                 <div className="text-3xl font-bold">{getAllDocuments().length}</div>
-                <div className="text-xs text-gray-500 mt-1">Připojeno ke spisu</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Připojeno ke spisu</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-sm text-gray-600 mb-2">Fakturace</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Fakturace</div>
                 <div className="text-2xl font-bold">{totalCost.toLocaleString()} Kč</div>
-                <div className="text-xs text-gray-500 mt-1">{formatDuration(totalMinutes)}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{formatDuration(totalMinutes)}</div>
               </CardContent>
             </Card>
           </div>
@@ -798,13 +798,13 @@ export default function ClientTimelinePage() {
           {/* Nedokončené úkoly */}
           <Card>
             <CardContent className="p-6">
-              <h3 className="font-bold text-gray-900 mb-4">🚀 Nedokončené úkoly</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">🚀 Nedokončené úkoly</h3>
               <div className="space-y-2">
                 {caseData.tasks.filter(t => !t.completed).map(task => (
-                  <div key={task.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <Badge className={task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-orange-500' : 'bg-gray-500'}>{task.priority.toUpperCase()}</Badge>
+                  <div key={task.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <Badge className={task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-orange-500' : 'bg-gray-50 dark:bg-gray-800/500'}>{task.priority.toUpperCase()}</Badge>
                     <div className="flex-1">{task.title}</div>
-                    {task.dueDate && <div className="text-sm text-gray-600">⏰ {new Date(task.dueDate).toLocaleDateString('cs-CZ')}</div>}
+                    {task.dueDate && <div className="text-sm text-gray-600 dark:text-gray-300">⏰ {new Date(task.dueDate).toLocaleDateString('cs-CZ')}</div>}
                   </div>
                 ))}
               </div>
@@ -854,15 +854,15 @@ export default function ClientTimelinePage() {
           {caseData.progressNotes.map(note => (
             <Card key={note.id} className="border-l-4 border-blue-500">
               <CardContent className="p-6">
-                <div className="text-sm text-gray-600 mb-4" suppressHydrationWarning>{new Date(note.date).toLocaleString('cs-CZ')} • {note.author}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300 mb-4" suppressHydrationWarning>{new Date(note.date).toLocaleString('cs-CZ')} • {note.author}</div>
                 <div className="space-y-3">
                   <div>
-                    <div className="font-semibold text-gray-900 mb-1">📌 Aktuální stav:</div>
-                    <div className="text-gray-700">{note.currentStatus}</div>
+                    <div className="font-semibold text-gray-900 dark:text-white mb-1">📌 Aktuální stav:</div>
+                    <div className="text-gray-700 dark:text-gray-200">{note.currentStatus}</div>
                   </div>
-                  {note.problems && (<div><div className="font-semibold text-red-700 mb-1">⚠️ Problémy:</div><div className="text-gray-700">{note.problems}</div></div>)}
-                  {note.nextSteps && (<div><div className="font-semibold text-blue-700 mb-1">⏭️ Další kroky:</div><div className="text-gray-700 whitespace-pre-line">{note.nextSteps}</div></div>)}
-                  {note.note && (<div className="text-sm text-gray-600 italic mt-2">{note.note}</div>)}
+                  {note.problems && (<div><div className="font-semibold text-red-700 mb-1">⚠️ Problémy:</div><div className="text-gray-700 dark:text-gray-200">{note.problems}</div></div>)}
+                  {note.nextSteps && (<div><div className="font-semibold text-blue-700 mb-1">⏭️ Další kroky:</div><div className="text-gray-700 dark:text-gray-200 whitespace-pre-line">{note.nextSteps}</div></div>)}
+                  {note.note && (<div className="text-sm text-gray-600 dark:text-gray-300 italic mt-2">{note.note}</div>)}
                 </div>
               </CardContent>
             </Card>
@@ -879,13 +879,13 @@ export default function ClientTimelinePage() {
                 <h3 className="font-bold text-red-700 mb-4">🔥 Nedokončené úkoly ({caseData.tasks.filter(t => !t.completed).length})</h3>
                 <div className="space-y-2">
                   {caseData.tasks.filter(t => !t.completed).map(task => (
-                    <div key={task.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer" onClick={() => toggleTask(task.id)}>
+                    <div key={task.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 cursor-pointer" onClick={() => toggleTask(task.id)}>
                       <input type="checkbox" checked={false} onChange={() => {}} className="mt-1" />
                       <div className="flex-1">
                         <div className="font-medium">{task.title}</div>
                         <div className="flex gap-2 mt-1">
-                          <Badge className={task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-orange-500' : 'bg-gray-500'}>{task.priority}</Badge>
-                          {task.dueDate && <div className="text-xs text-gray-600">⏰ {new Date(task.dueDate).toLocaleDateString('cs-CZ')}</div>}
+                          <Badge className={task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-orange-500' : 'bg-gray-50 dark:bg-gray-800/500'}>{task.priority}</Badge>
+                          {task.dueDate && <div className="text-xs text-gray-600 dark:text-gray-300">⏰ {new Date(task.dueDate).toLocaleDateString('cs-CZ')}</div>}
                         </div>
                       </div>
                     </div>
@@ -921,13 +921,13 @@ export default function ClientTimelinePage() {
             <h2 className="text-xl font-bold mb-4">📎 Všechny dokumenty ve spisu ({getAllDocuments().length})</h2>
             <div className="space-y-2">
               {getAllDocuments().map((doc, idx) => (
-                <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded hover:bg-gray-100">
-                  <FileText className="h-5 w-5 text-gray-500" />
+                <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700">
+                  <FileText className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                   <div className="flex-1">
                     <div className="font-medium">{doc.name}</div>
-                    <div className="text-xs text-gray-500">{doc.eventTitle} • {new Date(doc.date).toLocaleDateString('cs-CZ')}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{doc.eventTitle} • {new Date(doc.date).toLocaleDateString('cs-CZ')}</div>
                   </div>
-                  <div className="text-sm text-gray-600">{doc.size}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">{doc.size}</div>
                   <Button size="sm" variant="ghost">Otevřít</Button>
                 </div>
               ))}
@@ -946,7 +946,7 @@ export default function ClientTimelinePage() {
                 {/* Date header */}
                 <div className="flex items-center gap-3 mb-3">
                   <div className="h-px flex-1 bg-gray-300"></div>
-                  <div className="text-sm font-bold text-gray-600 bg-gray-100 px-3 py-1 rounded">
+                  <div className="text-sm font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded">
                     {dateKey}
                   </div>
                   <div className="h-px flex-1 bg-gray-300"></div>
@@ -967,7 +967,7 @@ export default function ClientTimelinePage() {
                           <div className="flex items-start gap-3">
                             {/* Time */}
                             <div className="flex-shrink-0 w-12 text-center">
-                              <div className="text-sm font-semibold text-gray-700">
+                              <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                                 {formatTime(event.timestamp)}
                               </div>
                             </div>
@@ -978,10 +978,10 @@ export default function ClientTimelinePage() {
                                 <Badge className={`${config.bgColor} ${config.textColor} text-xs px-2 py-0.5 flex-shrink-0`}>
                                   {config.label}
                                 </Badge>
-                                <h4 className="font-semibold text-gray-900 text-sm flex-1">{event.title}</h4>
+                                <h4 className="font-semibold text-gray-900 dark:text-white text-sm flex-1">{event.title}</h4>
                               </div>
-                              <p className="text-sm text-gray-600 mb-1">{event.description}</p>
-                              <div className="flex items-center gap-3 text-xs text-gray-500">
+                              <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">{event.description}</p>
+                              <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                                 <span>{event.user}</span>
                                 {event.attachments && event.attachments.length > 0 && (
                                   <>
@@ -1011,7 +1011,7 @@ export default function ClientTimelinePage() {
                               {/* Time Tracking */}
                               <div className="bg-blue-50 rounded-lg p-4">
                                 <div className="flex items-center justify-between mb-3">
-                                  <h5 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                                     <Clock className="h-4 w-4" />
                                     Odpracovaný čas ({event.timeEntries.length})
                                   </h5>
@@ -1020,7 +1020,7 @@ export default function ClientTimelinePage() {
                                       <div className="text-sm font-bold text-blue-700">
                                         {formatDuration(getTotalMinutes(event))}
                                       </div>
-                                      <div className="text-xs text-gray-600">
+                                      <div className="text-xs text-gray-600 dark:text-gray-300">
                                         {getTotalCost(event).toLocaleString()} Kč
                                       </div>
                                     </div>
@@ -1031,25 +1031,25 @@ export default function ClientTimelinePage() {
                                 {event.timeEntries.length > 0 && (
                                   <div className="space-y-2 mb-3">
                                     {event.timeEntries.map((entry) => (
-                                      <div key={entry.id} className="bg-white rounded p-3 text-sm">
+                                      <div key={entry.id} className="bg-white dark:bg-gray-800 rounded p-3 text-sm">
                                         <div className="flex items-start justify-between mb-1">
                                           <div>
-                                            <div className="font-medium text-gray-900">
+                                            <div className="font-medium text-gray-900 dark:text-white">
                                               {new Date(entry.date).toLocaleDateString('cs-CZ')} • {entry.startTime} - {entry.endTime}
                                             </div>
-                                            <div className="text-xs text-gray-600">{entry.user}</div>
+                                            <div className="text-xs text-gray-600 dark:text-gray-300">{entry.user}</div>
                                           </div>
                                           <div className="text-right">
                                             <div className="font-semibold text-blue-700">{formatDuration(entry.duration)}</div>
                                             {event.billable && event.hourlyRate && (
-                                              <div className="text-xs text-gray-600">
+                                              <div className="text-xs text-gray-600 dark:text-gray-300">
                                                 {((entry.duration / 60) * event.hourlyRate).toFixed(0)} Kč
                                               </div>
                                             )}
                                           </div>
                                         </div>
                                         {entry.note && (
-                                          <div className="text-xs text-gray-600 italic mt-1">{entry.note}</div>
+                                          <div className="text-xs text-gray-600 dark:text-gray-300 italic mt-1">{entry.note}</div>
                                         )}
                                       </div>
                                     ))}
@@ -1058,10 +1058,10 @@ export default function ClientTimelinePage() {
 
                                 {/* Add Time Entry Form */}
                                 {showAddTime === event.id ? (
-                                  <div className="bg-white rounded-lg p-3 space-y-3">
+                                  <div className="bg-white dark:bg-gray-800 rounded-lg p-3 space-y-3">
                                     <div className="grid grid-cols-3 gap-2">
                                       <div>
-                                        <label className="text-xs font-medium text-gray-700 block mb-1">Datum</label>
+                                        <label className="text-xs font-medium text-gray-700 dark:text-gray-200 block mb-1">Datum</label>
                                         <Input
                                           type="date"
                                           value={newTimeDate}
@@ -1070,7 +1070,7 @@ export default function ClientTimelinePage() {
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-xs font-medium text-gray-700 block mb-1">Od</label>
+                                        <label className="text-xs font-medium text-gray-700 dark:text-gray-200 block mb-1">Od</label>
                                         <Input
                                           type="time"
                                           value={newTimeStart}
@@ -1079,7 +1079,7 @@ export default function ClientTimelinePage() {
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-xs font-medium text-gray-700 block mb-1">Do</label>
+                                        <label className="text-xs font-medium text-gray-700 dark:text-gray-200 block mb-1">Do</label>
                                         <Input
                                           type="time"
                                           value={newTimeEnd}
@@ -1089,7 +1089,7 @@ export default function ClientTimelinePage() {
                                       </div>
                                     </div>
                                     <div>
-                                      <label className="text-xs font-medium text-gray-700 block mb-1">Poznámka</label>
+                                      <label className="text-xs font-medium text-gray-700 dark:text-gray-200 block mb-1">Poznámka</label>
                                       <Textarea
                                         placeholder="Co se dělalo..."
                                         value={newTimeNote}
@@ -1134,17 +1134,17 @@ export default function ClientTimelinePage() {
                               {/* Attachments */}
                               {event.attachments && event.attachments.length > 0 && (
                                 <div>
-                                  <h5 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                  <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
                                     <Paperclip className="h-4 w-4" />
                                     Přílohy ({event.attachments.length})
                                   </h5>
                                   <div className="space-y-2">
                                     {event.attachments.map((att, idx) => (
-                                      <div key={idx} className="flex items-center gap-3 p-2 bg-gray-50 rounded hover:bg-gray-100">
-                                        <FileText className="h-4 w-4 text-gray-500" />
+                                      <div key={idx} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700">
+                                        <FileText className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                                         <div className="flex-1">
-                                          <p className="text-sm font-medium text-gray-900">{att.name}</p>
-                                          <p className="text-xs text-gray-500">{att.size}</p>
+                                          <p className="text-sm font-medium text-gray-900 dark:text-white">{att.name}</p>
+                                          <p className="text-xs text-gray-500 dark:text-gray-400">{att.size}</p>
                                         </div>
                                         <Button size="sm" variant="ghost">Otevřít</Button>
                                       </div>
@@ -1156,18 +1156,18 @@ export default function ClientTimelinePage() {
                               {/* Comments */}
                               {event.comments && (
                                 <div>
-                                  <h5 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                  <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
                                     <MessageSquare className="h-4 w-4" />
                                     Komentáře ({event.comments.length})
                                   </h5>
                                   <div className="space-y-2">
                                     {event.comments.map((comment) => (
-                                      <div key={comment.id} className="bg-gray-50 rounded p-3">
+                                      <div key={comment.id} className="bg-gray-50 dark:bg-gray-800/50 rounded p-3">
                                         <div className="flex items-center gap-2 mb-1">
-                                          <span className="text-sm font-semibold text-gray-900">{comment.user}</span>
-                                          <span className="text-xs text-gray-500">• {comment.time}</span>
+                                          <span className="text-sm font-semibold text-gray-900 dark:text-white">{comment.user}</span>
+                                          <span className="text-xs text-gray-500 dark:text-gray-400">• {comment.time}</span>
                                         </div>
-                                        <p className="text-sm text-gray-700">{comment.text}</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-200">{comment.text}</p>
                                       </div>
                                     ))}
 

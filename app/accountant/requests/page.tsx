@@ -93,7 +93,7 @@ function getCategoryIcon(category: ClientRequestCategory) {
 // Priority colors
 function getPriorityColor(priority: ClientRequestPriority): string {
   const colors: Record<ClientRequestPriority, string> = {
-    low: 'bg-gray-100 text-gray-700',
+    low: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200',
     normal: 'bg-blue-100 text-blue-700',
     high: 'bg-orange-100 text-orange-700',
     urgent: 'bg-red-100 text-red-700',
@@ -433,7 +433,7 @@ export default function ClientRequestsPage() {
                     return (
                       <TableRow
                         key={request.id}
-                        className="cursor-pointer hover:bg-gray-50"
+                        className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50"
                         onClick={() => setSelectedRequest(request)}
                       >
                         <TableCell>
@@ -452,7 +452,7 @@ export default function ClientRequestsPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <CategoryIcon className="h-4 w-4 text-gray-500" />
+                            <CategoryIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                             <span>{getRequestCategoryLabel(request.category)}</span>
                           </div>
                         </TableCell>
@@ -471,7 +471,7 @@ export default function ClientRequestsPage() {
                             {getRequestStatusLabel(request.status)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-gray-500">
+                        <TableCell className="text-gray-500 dark:text-gray-400">
                           {new Date(request.created_at).toLocaleDateString('cs-CZ')}
                         </TableCell>
                         <TableCell>
@@ -516,7 +516,7 @@ export default function ClientRequestsPage() {
                   myRequests.map(request => (
                     <TableRow
                       key={request.id}
-                      className="cursor-pointer hover:bg-gray-50"
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50"
                       onClick={() => setSelectedRequest(request)}
                     >
                       <TableCell>
@@ -599,11 +599,11 @@ export default function ClientRequestsPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <CategoryIcon className="h-4 w-4 text-gray-500" />
+                            <CategoryIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                             <span>{getRequestCategoryLabel(request.category)}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-gray-500">
+                        <TableCell className="text-gray-500 dark:text-gray-400">
                           {new Date(request.created_at).toLocaleDateString('cs-CZ')}
                         </TableCell>
                         <TableCell>
@@ -664,7 +664,7 @@ export default function ClientRequestsPage() {
                 {/* Description */}
                 <div>
                   <h4 className="font-semibold mb-2">Popis požadavku</h4>
-                  <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                     <p className="whitespace-pre-wrap">{selectedRequest.description}</p>
                   </div>
                 </div>

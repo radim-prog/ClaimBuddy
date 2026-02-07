@@ -42,7 +42,7 @@ export default function SetupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>🚀 První spuštění</CardTitle>
@@ -56,7 +56,7 @@ export default function SetupPage() {
               <div className="text-green-600 font-semibold">
                 ✅ Admin vytvořen!
               </div>
-              <div className="bg-gray-100 p-4 rounded-lg text-sm">
+              <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-sm">
                 <div className="font-mono">
                   <div><strong>Jméno:</strong> Radim</div>
                   <div><strong>Heslo:</strong> admin</div>
@@ -74,7 +74,7 @@ export default function SetupPage() {
               <p className="text-sm text-muted-foreground">
                 Klikni pro vytvoření prvního admin účtu:
               </p>
-              <div className="bg-gray-100 p-4 rounded-lg text-sm">
+              <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-sm">
                 <div className="font-mono">
                   <div><strong>Jméno:</strong> Radim</div>
                   <div><strong>Heslo:</strong> admin</div>

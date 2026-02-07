@@ -176,7 +176,7 @@ export function EditEmployeeModal({
         <div className="space-y-6 py-4">
           {/* Osobní údaje */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 border-b pb-2">Osobní údaje</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Osobní údaje</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -250,7 +250,7 @@ export function EditEmployeeModal({
 
           {/* Pracovní poměr */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 border-b pb-2">Pracovní poměr</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Pracovní poměr</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -303,7 +303,7 @@ export function EditEmployeeModal({
 
           {/* Mzda */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 border-b pb-2">Mzda</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Mzda</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -360,7 +360,7 @@ export function EditEmployeeModal({
 
           {/* Pojištění a daně */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 border-b pb-2">Pojištění a daně</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Pojištění a daně</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -442,7 +442,7 @@ export function EditEmployeeModal({
           {/* Srážky ze mzdy */}
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="font-semibold text-gray-900">Srážky ze mzdy</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Srážky ze mzdy</h3>
               <Button size="sm" variant="outline" onClick={addDeduction}>
                 <Plus className="h-4 w-4 mr-1" />
                 Přidat srážku
@@ -450,7 +450,7 @@ export function EditEmployeeModal({
             </div>
 
             {formData.deductions.length === 0 ? (
-              <p className="text-sm text-gray-500">Žádné srážky</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Žádné srážky</p>
             ) : (
               <div className="space-y-4">
                 {formData.deductions.map((ded, index) => (
@@ -568,7 +568,7 @@ export function EditEmployeeModal({
 
           {/* Poznámky */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 border-b pb-2">Poznámky</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Poznámky</h3>
             <Textarea
               value={formData.notes || ''}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}

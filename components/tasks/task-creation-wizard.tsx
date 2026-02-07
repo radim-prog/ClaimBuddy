@@ -44,13 +44,13 @@ import {
   ListTodo,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { mockCompanies, mockUsers, MOCK_CONFIG } from '@/lib/mock-data'
+import { mockCompanies, mockUsers, MOCK_CONFIG, BillingType } from '@/lib/mock-data'
 import { toast } from 'sonner'
 
 // R-Tasks Scoring Configuration
 const SCORE_OPTIONS = {
   money: [
-    { value: 0, label: '0 - Méně než 5k Kč', color: 'text-gray-600' },
+    { value: 0, label: '0 - Méně než 5k Kč', color: 'text-gray-600 dark:text-gray-300' },
     { value: 1, label: '1 - 5k+ Kč', color: 'text-purple-600' },
     { value: 2, label: '2 - 15k+ Kč', color: 'text-blue-600' },
     { value: 3, label: '3 - 50k+ Kč', color: 'text-green-600' },
@@ -97,6 +97,11 @@ export interface TaskWizardData {
   description?: string
   client_id?: string
   client_name?: string
+
+  // Billing
+  is_billable: boolean
+  billing_type?: BillingType     // tariff = paušál, extra = zvlášť, free = zdarma
+  hourly_rate?: number           // jen pro extra
 
   // Step 2: How big
   estimated_minutes: number
@@ -157,6 +162,11 @@ export function TaskCreationWizard({
   const [outcome, setOutcome] = useState('')
   const [description, setDescription] = useState('')
   const [clientId, setClientId] = useState(initialData?.client_id || '')
+
+  // Billing
+  const [isBillable, setIsBillable] = useState(true)
+  const [billingType, setBillingType] = useState<BillingType>('tariff')
+  const [hourlyRate, setHourlyRate] = useState('')
 
   // Step 2: How big
   const [estimatedHours, setEstimatedHours] = useState('')
@@ -286,6 +296,9 @@ export function TaskCreationWizard({
       description: description || undefined,
       client_id: clientId && clientId !== 'none' ? clientId : undefined,
       client_name: client?.name,
+      is_billable: isBillable,
+      billing_type: isBillable ? billingType : undefined,
+      hourly_rate: isBillable && billingType === 'extra' ? (parseInt(hourlyRate) || undefined) : undefined,
       estimated_minutes: totalEstimatedMinutes || 30,
       subtasks,
       dependencies,
@@ -317,6 +330,9 @@ export function TaskCreationWizard({
     setOutcome('')
     setDescription('')
     setClientId(initialData?.client_id || '')
+    setIsBillable(true)
+    setBillingType('tariff')
+    setHourlyRate('')
     setEstimatedHours('')
     setEstimatedMinutes('')
     setSubtasks([])
@@ -466,6 +482,68 @@ export function TaskCreationWizard({
                   </Select>
                 </div>
               </div>
+
+              {/* Billing Section */}
+              <div className="pt-4 border-t space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Fakturovatelné klientovi?</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Zapnout pokud to není interní práce
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="isBillable"
+                      checked={isBillable}
+                      onCheckedChange={(checked) => setIsBillable(checked === true)}
+                    />
+                  </div>
+                </div>
+
+                {isBillable && (
+                  <div className="space-y-3 pl-4 border-l-2 border-emerald-200">
+                    <Label className="text-sm">Typ fakturace</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { value: 'tariff' as BillingType, label: 'Paušál', desc: 'V ceně paušálu' },
+                        { value: 'extra' as BillingType, label: 'Zvlášť', desc: 'Fakturovat navíc' },
+                        { value: 'free' as BillingType, label: 'Zdarma', desc: 'Goodwill/reklamace' },
+                      ].map((type) => (
+                        <button
+                          key={type.value}
+                          type="button"
+                          onClick={() => setBillingType(type.value)}
+                          className={cn(
+                            "p-2 border rounded-lg text-left transition-all text-sm",
+                            billingType === type.value
+                              ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500/20"
+                              : "hover:border-gray-300"
+                          )}
+                        >
+                          <div className="font-medium">{type.label}</div>
+                          <div className="text-xs text-muted-foreground">{type.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {billingType === 'extra' && (
+                      <div className="pt-2">
+                        <Label htmlFor="hourlyRate" className="text-sm">Hodinová sazba (Kč/hod)</Label>
+                        <Input
+                          id="hourlyRate"
+                          type="number"
+                          min="0"
+                          value={hourlyRate}
+                          onChange={(e) => setHourlyRate(e.target.value)}
+                          placeholder="Např. 800"
+                          className="mt-1 w-32"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -543,7 +621,7 @@ export function TaskCreationWizard({
                     {subtasks.map((subtask, index) => (
                       <div
                         key={subtask.id}
-                        className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
+                        className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
                       >
                         <span className="text-sm text-muted-foreground w-6">{index + 1}.</span>
                         <span className="flex-1 text-sm">{subtask.title}</span>

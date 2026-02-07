@@ -31,7 +31,7 @@ export default function PricingSettingsPage() {
     return (
       <div className="text-center py-12">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="mt-4 text-gray-600">Načítám nastavení...</p>
+        <p className="mt-4 text-gray-600 dark:text-gray-300">Načítám nastavení...</p>
       </div>
     )
   }
@@ -81,7 +81,7 @@ export default function PricingSettingsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Ceník a Sazby</h2>
-          <p className="text-gray-600 mt-2">Nastavení hodinových sazeb, dopravy a poplatků pro fakturaci</p>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">Nastavení hodinových sazeb, dopravy a poplatků pro fakturaci</p>
         </div>
         <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
           <Save className="h-4 w-4 mr-2" />
@@ -110,9 +110,9 @@ export default function PricingSettingsPage() {
                   onChange={(e) => updateHourlyRate('standard', e.target.value)}
                   className="text-right"
                 />
-                <span className="text-gray-600">Kč/hod</span>
+                <span className="text-gray-600 dark:text-gray-300">Kč/hod</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Běžné účetní práce, uzávěrky</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Běžné účetní práce, uzávěrky</p>
             </div>
 
             <div>
@@ -125,9 +125,9 @@ export default function PricingSettingsPage() {
                   onChange={(e) => updateHourlyRate('expert', e.target.value)}
                   className="text-right"
                 />
-                <span className="text-gray-600">Kč/hod</span>
+                <span className="text-gray-600 dark:text-gray-300">Kč/hod</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Náročné případy, kontroly FÚ</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Náročné případy, kontroly FÚ</p>
             </div>
 
             <div>
@@ -140,9 +140,9 @@ export default function PricingSettingsPage() {
                   onChange={(e) => updateHourlyRate('urgent', e.target.value)}
                   className="text-right"
                 />
-                <span className="text-gray-600">Kč/hod</span>
+                <span className="text-gray-600 dark:text-gray-300">Kč/hod</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Práce mimo pracovní dobu, urgence</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Práce mimo pracovní dobu, urgence</p>
             </div>
 
             <div>
@@ -155,9 +155,9 @@ export default function PricingSettingsPage() {
                   onChange={(e) => updateHourlyRate('partner', e.target.value)}
                   className="text-right"
                 />
-                <span className="text-gray-600">Kč/hod</span>
+                <span className="text-gray-600 dark:text-gray-300">Kč/hod</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Senior partner, konzultace</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Senior partner, konzultace</p>
             </div>
           </div>
         </CardContent>
@@ -215,7 +215,7 @@ export default function PricingSettingsPage() {
                   disabled={settings.travel.type === 'per-km'}
                   className="text-right"
                 />
-                <span className="text-gray-600">Kč</span>
+                <span className="text-gray-600 dark:text-gray-300">Kč</span>
               </div>
             </div>
 
@@ -230,7 +230,7 @@ export default function PricingSettingsPage() {
                   disabled={settings.travel.type === 'fixed'}
                   className="text-right"
                 />
-                <span className="text-gray-600">Kč/km</span>
+                <span className="text-gray-600 dark:text-gray-300">Kč/km</span>
               </div>
             </div>
 
@@ -244,9 +244,9 @@ export default function PricingSettingsPage() {
                   onChange={(e) => updateTravel('minDistance', parseFloat(e.target.value) || 0)}
                   className="text-right"
                 />
-                <span className="text-gray-600">km</span>
+                <span className="text-gray-600 dark:text-gray-300">km</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Neúčtuje se pod tuto vzdálenost</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Neúčtuje se pod tuto vzdálenost</p>
             </div>
           </div>
         </CardContent>
@@ -273,7 +273,7 @@ export default function PricingSettingsPage() {
                   onChange={(e) => updateFees('court', e.target.value)}
                   className="text-right"
                 />
-                <span className="text-gray-600">%</span>
+                <span className="text-gray-600 dark:text-gray-300">%</span>
               </div>
             </div>
 
@@ -287,7 +287,7 @@ export default function PricingSettingsPage() {
                   onChange={(e) => updateFees('administrative', e.target.value)}
                   className="text-right"
                 />
-                <span className="text-gray-600">%</span>
+                <span className="text-gray-600 dark:text-gray-300">%</span>
               </div>
             </div>
 
@@ -301,11 +301,11 @@ export default function PricingSettingsPage() {
                   onChange={(e) => updateFees('other', e.target.value)}
                   className="text-right"
                 />
-                <span className="text-gray-600">%</span>
+                <span className="text-gray-600 dark:text-gray-300">%</span>
               </div>
             </div>
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             💡 Tip: 0% = poplatky účtujeme v plné výši, 10% = přidáme 10% k poplatku jako marži
           </p>
         </CardContent>
@@ -333,9 +333,9 @@ export default function PricingSettingsPage() {
                   onChange={(e) => updatePenalties('latePayment', (parseFloat(e.target.value) / 100).toString())}
                   className="text-right"
                 />
-                <span className="text-gray-600">% měsíčně</span>
+                <span className="text-gray-600 dark:text-gray-300">% měsíčně</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Např. 0.05 = 0.05% za každý měsíc prodlení</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Např. 0.05 = 0.05% za každý měsíc prodlení</p>
             </div>
 
             <div>
@@ -348,13 +348,13 @@ export default function PricingSettingsPage() {
                   onChange={(e) => updatePenalties('missedDeadline', e.target.value)}
                   className="text-right"
                 />
-                <span className="text-gray-600">Kč</span>
+                <span className="text-gray-600 dark:text-gray-300">Kč</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Fixní poplatek pokud klient nestihl dodať podklady</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Fixní poplatek pokud klient nestihl dodať podklady</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg p-3 border border-orange-200">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-orange-200">
             <p className="text-xs text-orange-800">
               ⚠️ <strong>Upozornění:</strong> Penalizace musí být smluvně ošetřeny v mandátní smlouvě s klientem.
               Automatické připočítání penalty bez právního základu může být neplatné.
@@ -373,7 +373,7 @@ export default function PricingSettingsPage() {
           <CardDescription>Ukázka výpočtu pro typickou daňovou kontrolu</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="bg-white rounded-lg p-4 space-y-2 text-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2 text-sm">
             <div className="flex justify-between">
               <span>Expert práce (10h × {settings.hourlyRates.expert} Kč)</span>
               <span className="font-semibold">{(10 * settings.hourlyRates.expert).toLocaleString()} Kč</span>

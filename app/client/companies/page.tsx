@@ -44,7 +44,7 @@ export default function CompaniesPage() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Načítám firmy...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Načítám firmy...</p>
         </div>
       </div>
     )
@@ -53,16 +53,16 @@ export default function CompaniesPage() {
   return (
     <div className="max-w-6xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Moje firmy</h1>
-        <p className="mt-2 text-gray-600">Přehled všech vašich firem a jejich stavu</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Moje firmy</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-300">Přehled všech vašich firem a jejich stavu</p>
       </div>
 
       {companies.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Building2 className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Žádné firmy</h3>
-            <p className="text-gray-600">Zatím nemáte přiřazené žádné firmy</p>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Žádné firmy</h3>
+            <p className="text-gray-600 dark:text-gray-300">Zatím nemáte přiřazené žádné firmy</p>
           </CardContent>
         </Card>
       ) : (
@@ -86,19 +86,19 @@ export default function CompaniesPage() {
                 {/* Základní info */}
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">IČ:</span>
+                    <span className="text-gray-600 dark:text-gray-300">IČ:</span>
                     <span className="font-medium">{company.ico}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">DIČ:</span>
+                    <span className="text-gray-600 dark:text-gray-300">DIČ:</span>
                     <span className="font-medium">{company.dic}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Právní forma:</span>
+                    <span className="text-gray-600 dark:text-gray-300">Právní forma:</span>
                     <Badge variant="outline">{company.legal_form}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">DPH:</span>
+                    <span className="text-gray-600 dark:text-gray-300">DPH:</span>
                     <Badge variant={company.vat_payer ? 'default' : 'secondary'}>
                       {company.vat_payer ? 'Plátce' : 'Neplátce'}
                     </Badge>
@@ -108,8 +108,8 @@ export default function CompaniesPage() {
                 {/* Aktuální měsíc */}
                 <div className="pt-4 border-t">
                   <div className="flex items-center gap-2 mb-2">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">
+                    <Clock className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                       {company.currentMonthStatus.period}
                     </span>
                   </div>
@@ -123,7 +123,7 @@ export default function CompaniesPage() {
                       <div className="text-orange-700 font-medium">
                         Chybí {company.currentMonthStatus.missing_count} {company.currentMonthStatus.missing_count === 1 ? 'dokument' : 'dokumenty'}:
                       </div>
-                      <ul className="text-gray-600 text-xs space-y-0.5 ml-4">
+                      <ul className="text-gray-600 dark:text-gray-300 text-xs space-y-0.5 ml-4">
                         {company.currentMonthStatus.missing_types.map((type, idx) => (
                           <li key={idx}>• {type}</li>
                         ))}

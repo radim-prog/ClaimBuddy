@@ -273,7 +273,7 @@ export function EditInsuranceModal({
 
     Object.entries(INSURANCE_CATEGORY_GROUPS).forEach(([groupKey, group]) => {
       options.push(
-        <div key={groupKey} className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
+        <div key={groupKey} className="px-2 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50">
           {group.label}
         </div>
       )
@@ -432,7 +432,7 @@ export function EditInsuranceModal({
             </div>
 
             {calculatedAnnualPremium > 0 && (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 Roční pojistné: <span className="font-medium">{calculatedAnnualPremium.toLocaleString('cs-CZ')} Kč</span>
               </p>
             )}
@@ -526,7 +526,7 @@ export function EditInsuranceModal({
                   value={anniversaryDate}
                   onChange={e => setAnniversaryDate(e.target.value)}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Datum, kdy se smlouva obnovuje nebo je potřeba kontrola
                 </p>
               </div>

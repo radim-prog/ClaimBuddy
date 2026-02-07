@@ -372,7 +372,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
             return (
               <div
                 key={item.id}
-                className={`bg-white rounded-lg border transition-all ${
+                className={`bg-white dark:bg-gray-800 rounded-lg border transition-all ${
                   isTaskExpanded ? 'shadow-lg border-purple-300' : 'hover:shadow-md'
                 } ${isSelected ? 'ring-2 ring-purple-400 ring-offset-1' : ''}`}
               >
@@ -390,7 +390,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-gray-900 text-sm">{item.title}</span>
+                          <span className="font-medium text-gray-900 dark:text-white text-sm">{item.title}</span>
                           <Badge variant="outline" className={`text-xs ${textColor} border-current`}>
                             {formatTimeLeft(item.dueDate)}
                           </Badge>
@@ -410,7 +410,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                           <span className="text-sm text-purple-600">{item.companyName}</span>
                         )}
                         {notes[item.id] && !isTaskExpanded && (
-                          <div className="mt-1 text-xs text-gray-500 italic bg-gray-50 px-2 py-1 rounded">
+                          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded">
                             📝 {notes[item.id]}
                           </div>
                         )}
@@ -424,7 +424,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 w-7 p-0 text-gray-400 hover:text-green-600"
+                            className="h-7 w-7 p-0 text-gray-400 hover:text-green-600 dark:text-green-400"
                             onClick={() => handleComplete(item.id)}
                             title="Označit jako hotové"
                           >
@@ -445,7 +445,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+                          className="h-7 px-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200 hover:bg-gray-200"
                           onClick={() => setExpandedTaskId(null)}
                           title="Zavřít detail"
                         >
@@ -463,13 +463,13 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                     {/* Description */}
                     {item.description && (
                       <div>
-                        <div className="text-xs font-semibold text-gray-500 mb-1">Popis</div>
-                        <p className="text-sm text-gray-700">{item.description}</p>
+                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Popis</div>
+                        <p className="text-sm text-gray-700 dark:text-gray-200">{item.description}</p>
                       </div>
                     )}
 
                     {/* Meta info */}
-                    <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                    <div className="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3.5 w-3.5" />
                         <span>Termín: {new Date(item.dueDate).toLocaleDateString('cs-CZ')}</span>
@@ -494,7 +494,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                     {/* Checklist - pouze read-only stav odvozený ze systému */}
                     {hasChecklist && (
                       <div>
-                        <div className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-2">
+                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-2">
                           Stav dokumentů
                           <span className="text-purple-600">
                             ({checklistProgress.completed}/{checklistProgress.total})
@@ -506,8 +506,8 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                               key={checkItem.id}
                               className={`flex items-center gap-2 p-2 rounded ${
                                 checkItem.completed
-                                  ? 'bg-green-50 text-green-700'
-                                  : 'bg-red-50 text-red-700'
+                                  ? 'bg-green-50 text-green-700 dark:text-green-400'
+                                  : 'bg-red-50 text-red-700 dark:text-red-400'
                               }`}
                             >
                               {checkItem.completed ? (
@@ -533,7 +533,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                     {/* Attachments */}
                     {item.attachments && item.attachments.length > 0 && (
                       <div>
-                        <div className="text-xs font-semibold text-gray-500 mb-2">Přílohy</div>
+                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Přílohy</div>
                         <div className="flex flex-wrap gap-2">
                           {item.attachments.map((att, idx) => (
                             <a
@@ -551,17 +551,17 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
 
                     {/* Notes */}
                     {notes[item.id] && (
-                      <div className="bg-yellow-50 p-2 rounded text-sm text-yellow-800">
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-sm text-yellow-800">
                         📝 {notes[item.id]}
                       </div>
                     )}
 
                     {/* Action buttons */}
-                    <div className="flex flex-wrap gap-2 pt-2 border-t">
+                    <div className="flex flex-wrap gap-2 pt-2 border-t dark:border-gray-700">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-gray-600"
+                        className="text-gray-600 dark:text-gray-400"
                         onClick={() => {
                           setEditingNoteId(item.id)
                           setNoteInput(notes[item.id] || '')
@@ -576,7 +576,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                          className="text-blue-600 border-blue-300 hover:bg-blue-50 dark:bg-blue-900/20"
                           onClick={() => setShowSnoozeMenuForTask(
                             showSnoozeMenuForTask === item.id ? null : item.id
                           )}
@@ -585,28 +585,28 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                           Odložit
                         </Button>
                         {showSnoozeMenuForTask === item.id && (
-                          <div className="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-xl border p-1 z-50 min-w-[160px]">
-                            <div className="px-3 py-1 text-xs text-gray-500 font-medium">Jednorázově</div>
+                          <div className="absolute left-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border p-1 z-50 min-w-[160px]">
+                            <div className="px-3 py-1 text-xs text-gray-500 dark:text-gray-400 font-medium">Jednorázově</div>
                             <button
-                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded"
                               onClick={() => handleSnoozeTask(item.id, 1)}
                             >
                               1 hodinu
                             </button>
                             <button
-                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded"
                               onClick={() => handleSnoozeTask(item.id, 2)}
                             >
                               2 hodiny
                             </button>
                             <button
-                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded"
                               onClick={() => handleSnoozeTask(item.id, 4)}
                             >
                               4 hodiny
                             </button>
                             <button
-                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                              className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded"
                               onClick={() => handleSnoozeTomorrow(item.id)}
                             >
                               Zítra ráno
@@ -618,7 +618,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                             </div>
                             <button
                               className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 rounded ${
-                                recurringReminders[item.id] === 2 ? 'bg-blue-100 text-blue-700' : 'text-gray-700'
+                                recurringReminders[item.id] === 2 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'
                               }`}
                               onClick={() => handleSetRecurringReminder(item.id, 2)}
                             >
@@ -626,7 +626,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                             </button>
                             <button
                               className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 rounded ${
-                                recurringReminders[item.id] === 4 ? 'bg-blue-100 text-blue-700' : 'text-gray-700'
+                                recurringReminders[item.id] === 4 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'
                               }`}
                               onClick={() => handleSetRecurringReminder(item.id, 4)}
                             >
@@ -634,7 +634,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                             </button>
                             <button
                               className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 rounded ${
-                                recurringReminders[item.id] === 24 ? 'bg-blue-100 text-blue-700' : 'text-gray-700'
+                                recurringReminders[item.id] === 24 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'
                               }`}
                               onClick={() => handleSetRecurringReminder(item.id, 24)}
                             >
@@ -665,7 +665,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                        className="text-orange-600 border-orange-300 hover:bg-orange-50 dark:bg-orange-900/20"
                         onClick={() => handleSendReminder(item)}
                       >
                         <Mail className="h-3.5 w-3.5 mr-1" />
@@ -693,7 +693,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
 
                       {/* Complete button - shows confirm */}
                       {showCompleteConfirm === item.id ? (
-                        <div className="flex-1 flex flex-col gap-2 bg-green-50 p-2 rounded border border-green-200">
+                        <div className="flex-1 flex flex-col gap-2 bg-green-50 dark:bg-green-900/20 p-2 rounded border border-green-200">
                           <div className="text-xs text-green-700 font-medium">
                             Opravdu označit jako hotové?
                           </div>
@@ -814,7 +814,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
             {pendingClients.size > 0 && (
               <button
                 onClick={() => setExpanded(!expanded)}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-yellow-500 text-gray-900 hover:bg-yellow-400 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-yellow-500 text-gray-900 dark:text-white hover:bg-yellow-400 transition-all"
               >
                 <Clock className="h-3.5 w-3.5" />
                 <span>Ke schválení: {pendingClients.size} {pendingClients.size === 1 ? 'klient' : pendingClients.size < 5 ? 'klienti' : 'klientů'}</span>
@@ -845,7 +845,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-7 text-xs bg-white/10 hover:bg-white/20 text-white border-0 ml-2"
+                className="h-7 text-xs bg-white dark:bg-gray-800/10 hover:bg-white dark:bg-gray-800/20 text-white border-0 ml-2"
                 onClick={() => setExpanded(!expanded)}
               >
                 {expanded ? 'Skrýt' : 'Detail'}
@@ -858,7 +858,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
 
       {/* Expanded dropdown */}
       {expanded && (
-        <div className="absolute left-0 right-0 top-full bg-gray-50 border-b shadow-xl z-40 max-h-[70vh] overflow-y-auto">
+        <div className="absolute left-0 right-0 top-full bg-gray-50 dark:bg-gray-800/50 border-b shadow-xl z-40 max-h-[70vh] overflow-y-auto">
           <div className="max-w-7xl mx-auto p-4">
             {/* Toolbar with filters and history */}
             <div className="mb-4 pb-4 border-b flex flex-wrap items-center justify-between gap-3">
@@ -876,10 +876,10 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                     <ChevronDown className="h-3 w-3 ml-1" />
                   </Button>
                   {showClientFilter && (
-                    <div className="absolute left-0 top-full mt-1 bg-white rounded-lg shadow-xl border p-1 z-50 min-w-[180px] max-h-[200px] overflow-y-auto">
+                    <div className="absolute left-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border p-1 z-50 min-w-[180px] max-h-[200px] overflow-y-auto">
                       <button
                         className={`w-full text-left px-3 py-1.5 text-sm rounded ${
-                          !clientFilter ? 'bg-purple-100 text-purple-700' : 'text-gray-700 hover:bg-gray-100'
+                          !clientFilter ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700'
                         }`}
                         onClick={() => {
                           setClientFilter(null)
@@ -892,7 +892,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                         <button
                           key={client}
                           className={`w-full text-left px-3 py-1.5 text-sm rounded ${
-                            clientFilter === client ? 'bg-purple-100 text-purple-700' : 'text-gray-700 hover:bg-gray-100'
+                            clientFilter === client ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700'
                           }`}
                           onClick={() => {
                             setClientFilter(client)
@@ -925,7 +925,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-gray-500"
+                  className="text-gray-500 dark:text-gray-400"
                   onClick={() => setShowKeyboardHelp(!showKeyboardHelp)}
                   title="Klávesové zkratky"
                 >
@@ -938,7 +938,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                  className="text-orange-600 border-orange-300 hover:bg-orange-50 dark:bg-orange-900/20"
                   onClick={handleSendAllReminders}
                 >
                   <Send className="h-3.5 w-3.5 mr-1" />
@@ -949,13 +949,13 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
 
             {/* Keyboard shortcuts help */}
             {showKeyboardHelp && (
-              <div className="mb-4 p-3 bg-gray-100 rounded-lg text-sm">
-                <div className="font-medium text-gray-700 mb-2">Klávesové zkratky:</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-gray-600">
-                  <div><kbd className="px-1.5 py-0.5 bg-white rounded border text-xs">D</kbd> Otevřít/zavřít</div>
-                  <div><kbd className="px-1.5 py-0.5 bg-white rounded border text-xs">↑↓</kbd> Navigace</div>
-                  <div><kbd className="px-1.5 py-0.5 bg-white rounded border text-xs">Enter</kbd> Rozbalit úkol</div>
-                  <div><kbd className="px-1.5 py-0.5 bg-white rounded border text-xs">Esc</kbd> Zavřít</div>
+              <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm">
+                <div className="font-medium text-gray-700 dark:text-gray-200 mb-2">Klávesové zkratky:</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-gray-600 dark:text-gray-400">
+                  <div><kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-800 rounded border text-xs">D</kbd> Otevřít/zavřít</div>
+                  <div><kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-800 rounded border text-xs">↑↓</kbd> Navigace</div>
+                  <div><kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-800 rounded border text-xs">Enter</kbd> Rozbalit úkol</div>
+                  <div><kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-800 rounded border text-xs">Esc</kbd> Zavřít</div>
                 </div>
               </div>
             )}
@@ -975,14 +975,14 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                       return completed.toDateString() === today.toDateString()
                     })
                     .map(item => (
-                      <div key={item.id} className="flex items-center justify-between bg-white p-2 rounded border border-green-100">
+                      <div key={item.id} className="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded border border-green-100">
                         <div>
                           <span className="text-sm font-medium text-gray-800">{item.title}</span>
                           {item.companyName && (
                             <span className="text-sm text-purple-600 ml-2">({item.companyName})</span>
                           )}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
                           {new Date(item.completedAt).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
@@ -992,16 +992,16 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
             )}
 
             {showHistory && completedHistory.length === 0 && (
-              <div className="mb-4 p-4 bg-gray-100 rounded-lg text-center text-gray-500 text-sm">
+              <div className="mb-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg text-center text-gray-500 dark:text-gray-400 text-sm">
                 Zatím žádné dokončené úkoly
               </div>
             )}
 
             {/* Empty state when filter shows no results */}
             {clientFilter && visibleDeadlinesFiltered.length === 0 && (
-              <div className="mb-4 p-6 bg-white rounded-lg border text-center">
+              <div className="mb-4 p-6 bg-white dark:bg-gray-800 rounded-lg border text-center">
                 <Filter className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <div className="text-gray-600">Žádné úkoly pro klienta <strong>{clientFilter}</strong></div>
+                <div className="text-gray-600 dark:text-gray-400">Žádné úkoly pro klienta <strong>{clientFilter}</strong></div>
                 <Button
                   size="sm"
                   variant="outline"
@@ -1014,12 +1014,12 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
             )}
 
             {/* Grouped deadlines */}
-            {renderDeadlineGroup(overdue, 'PO TERMÍNU', 'bg-red-500', 'text-red-600')}
-            {renderDeadlineGroup(today, 'DNES', 'bg-orange-500', 'text-orange-600')}
-            {renderDeadlineGroup(thisWeek, 'TENTO TÝDEN', 'bg-yellow-500', 'text-yellow-600')}
+            {renderDeadlineGroup(overdue, 'PO TERMÍNU', 'bg-red-500', 'text-red-600 dark:text-red-400')}
+            {renderDeadlineGroup(today, 'DNES', 'bg-orange-500', 'text-orange-600 dark:text-orange-400')}
+            {renderDeadlineGroup(thisWeek, 'TENTO TÝDEN', 'bg-yellow-500', 'text-yellow-600 dark:text-yellow-400')}
 
             {/* Link to all tasks */}
-            <div className="mt-4 pt-4 border-t">
+            <div className="mt-4 pt-4 border-t dark:border-gray-700">
               <Link href="/accountant/tasks">
                 <Button variant="outline" className="w-full">
                   Zobrazit všechny úkoly

@@ -110,7 +110,7 @@ export default function LoginPage() {
             <Separator />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-muted-foreground">
+            <span className="bg-white dark:bg-gray-800 px-2 text-muted-foreground">
               Nebo se přihlaste účtem
             </span>
           </div>

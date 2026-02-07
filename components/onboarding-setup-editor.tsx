@@ -69,14 +69,14 @@ function SortableStep({ step, onRemove }: SortableStepProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 p-2 bg-white border rounded-lg ${
+      className={`flex items-center gap-2 p-2 bg-white dark:bg-gray-800 border rounded-lg ${
         isDragging ? 'shadow-lg' : 'shadow-sm'
       }`}
     >
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded"
+        className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded"
       >
         <GripVertical className="h-4 w-4 text-gray-400" />
       </button>
@@ -95,7 +95,7 @@ function SortableStep({ step, onRemove }: SortableStepProps) {
               <Star className="h-3 w-3 fill-current" /> Povinný
             </span>
           ) : (
-            <span className="text-xs text-gray-500">Volitelný</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Volitelný</span>
           )}
         </div>
       </div>
@@ -253,7 +253,7 @@ export function OnboardingSetupEditor({
         <div className="grid grid-cols-2 gap-6 mt-4">
           {/* Levý panel - dostupné kroky */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
               Dostupné kroky
             </h3>
             <ScrollArea className="h-[400px] pr-4">
@@ -267,7 +267,7 @@ export function OnboardingSetupEditor({
                       className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                         selected
                           ? 'bg-purple-50 border-purple-300'
-                          : 'bg-white hover:bg-gray-50'
+                          : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50'
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -284,7 +284,7 @@ export function OnboardingSetupEditor({
                             )}
                           </div>
                           {step.description && (
-                            <p className="text-xs text-gray-500 mt-0.5">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                               {step.description}
                             </p>
                           )}
@@ -300,7 +300,7 @@ export function OnboardingSetupEditor({
           {/* Pravý panel - vybrané kroky */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-700">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                 Vybrané kroky ({selectedSteps.length})
               </h3>
               <Button
@@ -355,7 +355,7 @@ export function OnboardingSetupEditor({
 
               {/* Seznam vybraných kroků s drag & drop */}
               {selectedSteps.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <p className="text-sm">Žádné kroky nevybrány</p>
                   <p className="text-xs mt-1">Vyberte kroky z levého panelu</p>
                 </div>
@@ -387,7 +387,7 @@ export function OnboardingSetupEditor({
 
         <DialogFooter className="mt-6">
           <div className="flex items-center justify-between w-full">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               {selectedSteps.filter(s => s.required).length} povinných,{' '}
               {selectedSteps.filter(s => !s.required).length} volitelných
             </div>

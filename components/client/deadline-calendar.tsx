@@ -128,7 +128,7 @@ const typeLabels: Record<string, string> = {
 const priorityColors: Record<string, string> = {
   high: 'bg-red-100 text-red-700 border-red-200',
   medium: 'bg-amber-100 text-amber-700 border-amber-200',
-  low: 'bg-gray-100 text-gray-700 border-gray-200',
+  low: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700',
 }
 
 export function DeadlineCalendar({ companyId, companyName }: DeadlineCalendarProps) {
@@ -158,11 +158,11 @@ export function DeadlineCalendar({ companyId, companyName }: DeadlineCalendarPro
   }
 
   const getUrgencyClass = (days: number, completed?: boolean) => {
-    if (completed) return 'bg-gray-50 border-gray-200 opacity-60'
+    if (completed) return 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 opacity-60'
     if (days < 0) return 'bg-red-50 border-red-300'
     if (days <= 7) return 'bg-amber-50 border-amber-300'
     if (days <= 30) return 'bg-blue-50 border-blue-200'
-    return 'bg-gray-50 border-gray-200'
+    return 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
   }
 
   const formatDate = (dateString: string) => {
@@ -244,7 +244,7 @@ export function DeadlineCalendar({ companyId, companyName }: DeadlineCalendarPro
                         {typeIcons[deadline.type]}
                       </div>
                       <div>
-                        <h4 className={`font-medium ${deadline.completed ? 'line-through text-gray-500' : ''}`}>
+                        <h4 className={`font-medium ${deadline.completed ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>
                           {deadline.title}
                         </h4>
                         {deadline.description && (

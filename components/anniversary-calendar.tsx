@@ -51,21 +51,21 @@ const TYPE_ICONS: Record<AnniversaryType, React.ReactNode> = {
 }
 
 const TYPE_COLORS: Record<AnniversaryType, string> = {
-  insurance_renewal: 'bg-blue-100 text-blue-700',
-  insurance_payment: 'bg-green-100 text-green-700',
-  vehicle_stk: 'bg-orange-100 text-orange-700',
-  vehicle_insurance: 'bg-purple-100 text-purple-700',
+  insurance_renewal: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+  insurance_payment: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+  vehicle_stk: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
+  vehicle_insurance: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
   employee_contract: 'bg-cyan-100 text-cyan-700',
-  employee_medical: 'bg-red-100 text-red-700',
-  tax_deadline: 'bg-yellow-100 text-yellow-700',
-  other: 'bg-gray-100 text-gray-700',
+  employee_medical: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+  tax_deadline: 'bg-yellow-100 text-yellow-700 dark:text-yellow-400',
+  other: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
 }
 
 const STATUS_COLORS = {
-  overdue: 'bg-red-100 text-red-700 border-red-300',
-  due_soon: 'bg-orange-100 text-orange-700 border-orange-300',
+  overdue: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300',
+  due_soon: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300',
   upcoming: 'bg-yellow-100 text-yellow-700 border-yellow-300',
-  future: 'bg-gray-100 text-gray-600 border-gray-300',
+  future: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300',
 }
 
 export function AnniversaryCalendar({
@@ -275,7 +275,7 @@ export function AnniversaryCalendar({
             <Calendar className="h-5 w-5" />
             Kalendář výročí a termínů
           </CardTitle>
-          <div className="text-sm text-gray-500 mt-1 flex gap-4">
+          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex gap-4">
             {overdueCount > 0 && (
               <span className="text-red-600 font-medium">{overdueCount} po termínu</span>
             )}
@@ -283,7 +283,7 @@ export function AnniversaryCalendar({
               <span className="text-orange-600 font-medium">{dueSoonCount} do týdne</span>
             )}
             {upcomingCount > 0 && (
-              <span className="text-yellow-600">{upcomingCount} do měsíce</span>
+              <span className="text-yellow-600 dark:text-yellow-400">{upcomingCount} do měsíce</span>
             )}
           </div>
         </div>
@@ -317,7 +317,7 @@ export function AnniversaryCalendar({
       </CardHeader>
       <CardContent>
         {filteredEvents.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             <Calendar className="h-12 w-12 mx-auto mb-2 text-gray-300" />
             <p>Žádné nadcházející termíny</p>
           </div>
@@ -375,7 +375,7 @@ export function AnniversaryCalendar({
 
         {/* Měsíční přehled */}
         {monthEvents.length > 0 && (
-          <div className="mt-6 pt-4 border-t">
+          <div className="mt-6 pt-4 border-t dark:border-gray-700">
             <h4 className="font-medium mb-3">
               Události v {selectedMonth.toLocaleDateString('cs-CZ', { month: 'long' })} (
               {monthEvents.length})
@@ -384,9 +384,9 @@ export function AnniversaryCalendar({
               {monthEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="flex items-center gap-2 text-sm p-2 rounded hover:bg-gray-50"
+                  className="flex items-center gap-2 text-sm p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50"
                 >
-                  <span className="w-12 text-gray-500">{event.date.getDate()}.</span>
+                  <span className="w-12 text-gray-500 dark:text-gray-400">{event.date.getDate()}.</span>
                   <Badge variant="outline" className={TYPE_COLORS[event.type]}>
                     {TYPE_ICONS[event.type]}
                   </Badge>

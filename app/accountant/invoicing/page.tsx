@@ -33,8 +33,18 @@ import {
   AlertTriangle,
   Users,
 } from 'lucide-react'
-import { mockInvoicingData, getUserStats, type InvoiceStatus, type UserStats } from '@/lib/invoicing-mock-data'
-import { getBillableByClient } from '@/lib/mock-data'
+import { mockInvoicingData, getUserStats, type InvoiceStatus as OldInvoiceStatus, type UserStats } from '@/lib/invoicing-mock-data'
+import {
+  getBillableByClient,
+  getBillableTasksByCompany,
+  mockInvoices,
+  createInvoiceFromTasks,
+  markTasksAsInvoiced,
+  type Invoice,
+  type InvoiceStatus,
+} from '@/lib/mock-data'
+import { toast } from 'sonner'
+import { ProfitabilityWidget } from '@/components/accountant/profitability-widget'
 
 type FilterStatus = 'all' | InvoiceStatus
 
@@ -50,6 +60,53 @@ export default function InvoicingPage() {
 
   // Expandable card state
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
+
+  // Invoice state
+  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices)
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
+
+  // Get billable tasks grouped by company (using new system)
+  const billableTasksByCompany = useMemo(() => {
+    return getBillableTasksByCompany()
+  }, [invoices]) // Re-calculate when invoices change
+
+  // Handler: Create invoice from selected tasks
+  const handleCreateInvoice = (companyId: string, taskIds: string[]) => {
+    const invoice = createInvoiceFromTasks(taskIds)
+    if (invoice) {
+      setInvoices(prev => [...prev, invoice])
+      markTasksAsInvoiced(taskIds, invoice.id)
+      setSelectedTasks(new Set())
+      toast.success(`Faktura ${invoice.invoice_number} vytvořena`, {
+        description: `Částka: ${new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' }).format(invoice.total_with_vat)}`
+      })
+    }
+  }
+
+  // Handler: Mark invoice as sent
+  const handleMarkAsSent = (invoiceId: string) => {
+    setInvoices(prev => prev.map(inv =>
+      inv.id === invoiceId
+        ? { ...inv, status: 'sent' as InvoiceStatus, updated_at: new Date().toISOString() }
+        : inv
+    ))
+    toast.success('Faktura označena jako odeslaná')
+  }
+
+  // Handler: Mark invoice as paid
+  const handleMarkAsPaid = (invoiceId: string) => {
+    setInvoices(prev => prev.map(inv =>
+      inv.id === invoiceId
+        ? {
+            ...inv,
+            status: 'paid' as InvoiceStatus,
+            paid_at: new Date().toISOString().split('T')[0],
+            updated_at: new Date().toISOString()
+          }
+        : inv
+    ))
+    toast.success('Faktura označena jako zaplacená')
+  }
 
   // Get data for current period
   const periodData = mockInvoicingData.periods.find(p => p.period === currentPeriod)
@@ -149,11 +206,6 @@ export default function InvoicingPage() {
     return getUserStats(filteredProjects)
   }, [filteredProjects])
 
-  // FÁZE 7: Get uninvoiced time from task system
-  const billableTimeLogs = useMemo(() => {
-    return getBillableByClient()
-  }, [])
-
   // Toggle project expansion
   const toggleProjectExpansion = (projectId: string) => {
     const newExpanded = new Set(expandedProjects)
@@ -169,17 +221,17 @@ export default function InvoicingPage() {
   const statusConfig = {
     draft: {
       label: 'Koncept',
-      color: 'bg-gray-100 text-gray-700 border-gray-300',
+      color: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300',
       icon: FileText,
     },
     sent: {
       label: 'Odesláno',
-      color: 'bg-blue-100 text-blue-700 border-blue-300',
+      color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300',
       icon: Send,
     },
     paid: {
       label: 'Zaplaceno',
-      color: 'bg-green-100 text-green-700 border-green-300',
+      color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300',
       icon: CheckCheck,
     },
   }
@@ -200,11 +252,11 @@ export default function InvoicingPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Přehled fakturace</h1>
-            <p className="mt-2 text-gray-600">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Přehled fakturace</h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
               Služby a projekty připravené k vyfakturování
             </p>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               💡 Faktury se vystavují u jednotlivých úkolů, projektů a klientů. Zde máte přehled co je připraveno k fakturaci.
             </p>
           </div>
@@ -240,8 +292,8 @@ export default function InvoicingPage() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <div className="text-center flex-1">
-                  <Calendar className="h-5 w-5 mx-auto mb-1 text-blue-600" />
-                  <p className="text-sm font-semibold text-gray-900">
+                  <Calendar className="h-5 w-5 mx-auto mb-1 text-blue-600 dark:text-blue-400" />
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
                     {formatPeriod(currentPeriod)}
                   </p>
                 </div>
@@ -262,11 +314,11 @@ export default function InvoicingPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
-                  <Clock className="h-5 w-5 text-blue-600" />
+                  <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600">Celkem hodin</p>
-                  <p className="text-lg font-bold text-gray-900">{summary.totalHours}h</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Celkem hodin</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">{summary.totalHours}h</p>
                 </div>
               </div>
             </CardContent>
@@ -279,8 +331,8 @@ export default function InvoicingPage() {
                   <DollarSign className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600">Celková částka</p>
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Celková částka</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
                     {formatCurrency(summary.totalAmount)}
                   </p>
                 </div>
@@ -292,11 +344,11 @@ export default function InvoicingPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-100 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600">Zaplaceno</p>
-                  <p className="text-lg font-bold text-green-600">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Zaplaceno</p>
+                  <p className="text-lg font-bold text-green-600 dark:text-green-400">
                     {formatCurrency(summary.paidAmount)}
                   </p>
                 </div>
@@ -308,11 +360,11 @@ export default function InvoicingPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-orange-100 rounded-lg">
-                  <TrendingUp className="h-5 w-5 text-orange-600" />
+                  <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600">Nezaplaceno</p>
-                  <p className="text-lg font-bold text-orange-600">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Nezaplaceno</p>
+                  <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
                     {formatCurrency(summary.unpaidAmount)}
                   </p>
                 </div>
@@ -321,65 +373,168 @@ export default function InvoicingPage() {
           </Card>
         </div>
 
-        {/* FÁZE 7: Uninvoiced Time Logs from Task System */}
-        {billableTimeLogs.length > 0 && (
+        {/* Neprofakturované úkoly podle klientů */}
+        {Object.keys(billableTasksByCompany).length > 0 && (
           <Card className="mb-6 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-amber-900">
                 <Clock className="h-5 w-5" />
-                Neprofakturované time logy z úkolů
+                Neprofakturované úkoly (billing_type: extra)
               </CardTitle>
-              <p className="text-sm text-gray-600">
-                Dokončené úkoly s logovaným časem, které ještě nebyly vyfakturovány
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Dokončené úkoly typu "extra" připravené k fakturaci
               </p>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {billableTimeLogs.map((summary) => (
+                {Object.entries(billableTasksByCompany).map(([companyId, data]) => (
                   <div
-                    key={summary.company_id}
-                    className="p-4 bg-white rounded-lg border border-amber-200"
+                    key={companyId}
+                    className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-amber-200"
                   >
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-amber-600" />
-                        <span className="font-semibold text-gray-900">
-                          {summary.company_name}
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {data.company.name}
                         </span>
                         <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
-                          {summary.uninvoicedTasks.length} {summary.uninvoicedTasks.length === 1 ? 'úkol' : 'úkolů'}
+                          {data.tasks.length} {data.tasks.length === 1 ? 'úkol' : 'úkolů'}
                         </Badge>
                       </div>
-                      <div className="text-right">
-                        <span className="text-lg font-bold text-amber-700">
-                          {formatCurrency(summary.totalAmount)}
-                        </span>
-                        <span className="text-sm text-gray-500 ml-2">
-                          ({Math.round(summary.totalMinutes / 60 * 10) / 10}h)
-                        </span>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <span className="text-lg font-bold text-amber-700">
+                            {formatCurrency(data.totalAmount)}
+                          </span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
+                            ({data.totalHours.toFixed(1)}h)
+                          </span>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700"
+                          onClick={() => handleCreateInvoice(companyId, data.tasks.map(t => t.id))}
+                        >
+                          <FileText className="h-4 w-4 mr-1" />
+                          Vytvořit fakturu
+                        </Button>
                       </div>
                     </div>
-                    <div className="space-y-1 text-sm text-gray-600">
-                      {summary.uninvoicedTasks.slice(0, 3).map((task) => (
-                        <div key={task.task_id} className="flex justify-between">
-                          <span className="truncate">{task.task_title}</span>
-                          <span className="text-gray-900">{formatCurrency(task.amount)}</span>
-                        </div>
-                      ))}
-                      {summary.uninvoicedTasks.length > 3 && (
-                        <p className="text-amber-600">+ {summary.uninvoicedTasks.length - 3} dalších úkolů</p>
+                    <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                      {data.tasks.slice(0, 3).map((task) => {
+                        const hours = (task.actual_minutes || task.estimated_minutes || 0) / 60
+                        const amount = hours * (task.hourly_rate || 0)
+                        return (
+                          <div key={task.id} className="flex justify-between">
+                            <span className="truncate">{task.title}</span>
+                            <span className="text-gray-900 dark:text-white">{formatCurrency(amount)}</span>
+                          </div>
+                        )
+                      })}
+                      {data.tasks.length > 3 && (
+                        <p className="text-amber-600">+ {data.tasks.length - 3} dalších úkolů</p>
                       )}
                     </div>
                   </div>
                 ))}
               </div>
               <div className="mt-4 pt-4 border-t border-amber-200 flex justify-between items-center">
-                <span className="text-sm text-gray-600">
-                  Celkem k fakturaci z time logů:
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  Celkem k fakturaci:
                 </span>
                 <span className="text-xl font-bold text-amber-700">
-                  {formatCurrency(billableTimeLogs.reduce((sum, s) => sum + s.totalAmount, 0))}
+                  {formatCurrency(
+                    Object.values(billableTasksByCompany).reduce((sum, data) => sum + data.totalAmount, 0)
+                  )}
                 </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Existující faktury */}
+        {invoices.length > 0 && (
+          <Card className="mb-6 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-900">
+                <FileText className="h-5 w-5" />
+                Vytvořené faktury
+              </CardTitle>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Seznam vygenerovaných faktur a jejich stav
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-green-200">
+                      <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Číslo</th>
+                      <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Klient</th>
+                      <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Datum</th>
+                      <th className="text-right py-2 px-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Částka</th>
+                      <th className="text-center py-2 px-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Status</th>
+                      <th className="text-right py-2 px-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Akce</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.map((invoice) => (
+                      <tr key={invoice.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-white dark:bg-gray-800/50">
+                        <td className="py-2 px-3 font-medium text-gray-900 dark:text-white">{invoice.invoice_number}</td>
+                        <td className="py-2 px-3 text-gray-700 dark:text-gray-200">{invoice.company_name}</td>
+                        <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{invoice.issue_date}</td>
+                        <td className="py-2 px-3 text-right font-semibold text-gray-900 dark:text-white">
+                          {formatCurrency(invoice.total_with_vat)}
+                        </td>
+                        <td className="py-2 px-3 text-center">
+                          <Badge className={
+                            invoice.status === 'paid'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300'
+                              : invoice.status === 'sent'
+                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300'
+                          }>
+                            {invoice.status === 'paid' ? 'Zaplaceno' : invoice.status === 'sent' ? 'Odesláno' : 'Koncept'}
+                          </Badge>
+                        </td>
+                        <td className="py-2 px-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            {invoice.status === 'draft' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-blue-600 border-blue-300 hover:bg-blue-50 dark:bg-blue-900/20"
+                                onClick={() => handleMarkAsSent(invoice.id)}
+                              >
+                                <Send className="h-3 w-3 mr-1" />
+                                Odeslat
+                              </Button>
+                            )}
+                            {invoice.status === 'sent' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-green-600 border-green-300 hover:bg-green-50 dark:bg-green-900/20"
+                                onClick={() => handleMarkAsPaid(invoice.id)}
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Zaplaceno
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-gray-600 dark:text-gray-400"
+                            >
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
@@ -393,7 +548,7 @@ export default function InvoicingPage() {
                 <Users className="h-5 w-5" />
                 Statistiky podle účetních
               </CardTitle>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Přehled odpracovaných hodin a vyfakturované částky podle jednotlivých členů týmu
               </p>
             </CardHeader>
@@ -402,19 +557,19 @@ export default function InvoicingPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-blue-200">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
                         Účetní
                       </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
                         Počet projektů
                       </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
                         Odpracováno hodin
                       </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
                         Vyfakturováno
                       </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
                         Průměrná sazba
                       </th>
                     </tr>
@@ -423,12 +578,12 @@ export default function InvoicingPage() {
                     {userStats.map((stat) => (
                       <tr
                         key={stat.userId}
-                        className="border-b border-gray-200 hover:bg-white/50 transition-colors"
+                        className="border-b border-gray-200 dark:border-gray-700 hover:bg-white dark:bg-gray-800/50 transition-colors"
                       >
                         <td className="py-3 px-4">
-                          <p className="font-semibold text-gray-900">{stat.userName}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">{stat.userName}</p>
                         </td>
-                        <td className="text-right py-3 px-4 text-gray-700">
+                        <td className="text-right py-3 px-4 text-gray-700 dark:text-gray-200">
                           {stat.projectCount}
                         </td>
                         <td className="text-right py-3 px-4">
@@ -437,11 +592,11 @@ export default function InvoicingPage() {
                           </span>
                         </td>
                         <td className="text-right py-3 px-4">
-                          <span className="font-semibold text-green-700">
+                          <span className="font-semibold text-green-700 dark:text-green-400">
                             {formatCurrency(stat.totalRevenue)}
                           </span>
                         </td>
-                        <td className="text-right py-3 px-4 text-gray-600">
+                        <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">
                           {formatCurrency(stat.totalRevenue / stat.totalHours)}/h
                         </td>
                       </tr>
@@ -449,10 +604,10 @@ export default function InvoicingPage() {
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 border-blue-300 bg-blue-100/50">
-                      <td className="py-3 px-4 font-bold text-gray-900">
+                      <td className="py-3 px-4 font-bold text-gray-900 dark:text-white">
                         Celkem
                       </td>
-                      <td className="text-right py-3 px-4 font-bold text-gray-900">
+                      <td className="text-right py-3 px-4 font-bold text-gray-900 dark:text-white">
                         {userStats.reduce((sum, s) => sum + s.projectCount, 0)}
                       </td>
                       <td className="text-right py-3 px-4 font-bold text-blue-900">
@@ -461,7 +616,7 @@ export default function InvoicingPage() {
                       <td className="text-right py-3 px-4 font-bold text-green-900">
                         {formatCurrency(userStats.reduce((sum, s) => sum + s.totalRevenue, 0))}
                       </td>
-                      <td className="text-right py-3 px-4 text-gray-600">
+                      <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">
                         {formatCurrency(
                           userStats.reduce((sum, s) => sum + s.totalRevenue, 0) /
                           userStats.reduce((sum, s) => sum + s.totalHours, 0)
@@ -479,7 +634,7 @@ export default function InvoicingPage() {
         <Card className="mb-6">
           <CardContent className="pt-6 space-y-4">
             <div className="flex items-center gap-2">
-              <Search className="h-5 w-5 text-gray-400 flex-shrink-0" />
+              <Search className="h-5 w-5 text-gray-400 dark:text-gray-400 flex-shrink-0" />
               <Input
                 placeholder="Hledat podle klienta nebo projektu..."
                 value={searchQuery}
@@ -513,8 +668,8 @@ export default function InvoicingPage() {
                 </SelectContent>
               </Select>
 
-              <div className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-md border">
-                <span className="text-sm text-gray-600">
+              <div className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-md border">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
                   Zobrazeno projektů: <strong>{filteredProjects.length}</strong>
                 </span>
               </div>
@@ -529,10 +684,10 @@ export default function InvoicingPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <FileText className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 Žádné projekty k fakturaci
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-400">
                 {searchQuery || filterClient !== 'all' || filterStatus !== 'all'
                   ? 'Zkuste změnit filtry'
                   : 'V tomto období nejsou žádné fakturovatelné projekty'}
@@ -550,8 +705,8 @@ export default function InvoicingPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <Building2 className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                        <span className="text-sm font-semibold text-gray-600">
+                        <Building2 className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                        <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
                           {project.clientName}
                         </span>
                         <Badge className={`${statusConfig[project.invoiceStatus].color} flex items-center gap-1`}>
@@ -562,19 +717,19 @@ export default function InvoicingPage() {
                       <CardTitle className="text-xl mb-2">{project.projectTitle}</CardTitle>
                       <div className="grid grid-cols-3 gap-4 text-sm">
                         <div>
-                          <p className="text-gray-600">Odpracováno</p>
-                          <p className="font-semibold text-gray-900">
+                          <p className="text-gray-600 dark:text-gray-400">Odpracováno</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">
                             {project.totalBillableHours.toFixed(1)}h
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-600">Hodinová sazba</p>
-                          <p className="font-semibold text-gray-900">
+                          <p className="text-gray-600 dark:text-gray-400">Hodinová sazba</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">
                             {formatCurrency(project.hourlyRate)}/h
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-600">Celková částka</p>
+                          <p className="text-gray-600 dark:text-gray-400">Celková částka</p>
                           <p className="font-semibold text-blue-600 text-lg">
                             {formatCurrency(project.totalAmount)}
                           </p>
@@ -629,18 +784,18 @@ export default function InvoicingPage() {
 
                   {/* Time Entry Breakdown */}
                   {isExpanded && (
-                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                      <h4 className="font-semibold text-gray-900 mb-3">Rozpis odpracovaného času</h4>
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-3">
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Rozpis odpracovaného času</h4>
                       <div className="space-y-2">
                         {project.timeEntries.map((entry, index) => (
                           <div
                             key={index}
-                            className="bg-white rounded-lg p-3 border border-gray-200"
+                            className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
                           >
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs text-gray-500">
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
                                     {new Date(entry.date).toLocaleDateString('cs-CZ', {
                                       day: '2-digit',
                                       month: '2-digit',
@@ -648,22 +803,22 @@ export default function InvoicingPage() {
                                     })}
                                   </span>
                                   <span className="text-xs text-gray-400">•</span>
-                                  <span className="text-xs font-semibold text-gray-700">
+                                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
                                     {entry.userName}
                                   </span>
                                 </div>
-                                <p className="text-sm text-gray-900 mb-2">{entry.description}</p>
+                                <p className="text-sm text-gray-900 dark:text-white mb-2">{entry.description}</p>
                                 {entry.note && (
-                                  <p className="text-xs text-gray-600 italic">
+                                  <p className="text-xs text-gray-600 dark:text-gray-300 italic">
                                     Poznámka: {entry.note}
                                   </p>
                                 )}
                               </div>
                               <div className="text-right flex-shrink-0">
-                                <p className="text-sm font-semibold text-gray-900">
+                                <p className="text-sm font-semibold text-gray-900 dark:text-white">
                                   {entry.hours.toFixed(1)}h
                                 </p>
-                                <p className="text-xs text-gray-600">
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
                                   {formatCurrency(entry.hours * project.hourlyRate)}
                                 </p>
                               </div>
@@ -675,12 +830,12 @@ export default function InvoicingPage() {
                       {/* Summary */}
                       <div className="border-t border-gray-300 pt-3 mt-3">
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-gray-900">Celkem:</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">Celkem:</span>
                           <div className="text-right">
-                            <p className="font-bold text-gray-900">
+                            <p className="font-bold text-gray-900 dark:text-white">
                               {project.totalBillableHours.toFixed(1)}h
                             </p>
-                            <p className="text-sm font-semibold text-blue-600">
+                            <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
                               {formatCurrency(project.totalAmount)}
                             </p>
                           </div>
@@ -695,17 +850,22 @@ export default function InvoicingPage() {
         )}
       </div>
 
+      {/* Profitability Widget */}
+      <div className="mt-6">
+        <ProfitabilityWidget limit={20} />
+      </div>
+
       {/* Info Box */}
       <Card className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
             <FileText className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-semibold text-gray-900 mb-1">Jak funguje fakturace v aplikaci</h4>
-              <p className="text-sm text-gray-700 mb-2">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Jak funguje fakturace v aplikaci</h4>
+              <p className="text-sm text-gray-700 dark:text-gray-200 mb-2">
                 Faktury nevystavujete zde - tato stránka slouží jako **přehled** služeb připravených k fakturaci.
               </p>
-              <ul className="text-xs text-gray-600 space-y-1 ml-4 list-disc">
+              <ul className="text-xs text-gray-600 dark:text-gray-300 space-y-1 ml-4 list-disc">
                 <li><strong>Vystavení faktury:</strong> Faktury vystavujete přímo u úkolů, projektů nebo klientů</li>
                 <li><strong>Koncept (nevyfakturováno):</strong> Služba je dokončena a připravena k vyfakturování</li>
                 <li><strong>Odesláno:</strong> Faktura vystavena a odeslána klientovi</li>

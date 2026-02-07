@@ -1,6 +1,6 @@
 // Typy pro onboarding klientů - integrované do klientského profilu
 
-export type ClientStatus = 'onboarding' | 'active'
+export type ClientStatus = 'onboarding' | 'active' | 'inactive'
 
 // Jednotlivé kroky onboardingu
 export interface OnboardingStep {

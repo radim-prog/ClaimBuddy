@@ -81,7 +81,7 @@ export default function UploadPage() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Načítám...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Načítám...</p>
         </div>
       </div>
     )
@@ -109,8 +109,8 @@ export default function UploadPage() {
   return (
     <div className="max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Nahrát dokumenty</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Nahrát dokumenty</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-300">
           Nahrajte faktury, účtenky a výpisy z účtu pro měsíční uzávěrku
         </p>
       </div>

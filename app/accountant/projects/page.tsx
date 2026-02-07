@@ -30,12 +30,12 @@ import {
 
 // Status configuration - simplified
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; borderColor: string; textColor: string; bgColor: string }> = {
-  planning: { label: 'Plánování', borderColor: 'border-l-blue-500', textColor: 'text-blue-600', bgColor: 'bg-blue-50' },
-  active: { label: 'Aktivní', borderColor: 'border-l-green-500', textColor: 'text-green-600', bgColor: 'bg-green-50' },
-  on_hold: { label: 'Pozastaveno', borderColor: 'border-l-yellow-500', textColor: 'text-yellow-600', bgColor: 'bg-yellow-50' },
+  planning: { label: 'Plánování', borderColor: 'border-l-blue-500', textColor: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-50' },
+  active: { label: 'Aktivní', borderColor: 'border-l-green-500', textColor: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-900/20' },
+  on_hold: { label: 'Pozastaveno', borderColor: 'border-l-yellow-500', textColor: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-50 dark:bg-yellow-900/20' },
   review: { label: 'K review', borderColor: 'border-l-purple-500', textColor: 'text-purple-600', bgColor: 'bg-purple-50' },
-  completed: { label: 'Dokončeno', borderColor: 'border-l-gray-400', textColor: 'text-gray-500', bgColor: 'bg-gray-50' },
-  cancelled: { label: 'Zrušeno', borderColor: 'border-l-red-500', textColor: 'text-red-500', bgColor: 'bg-red-50' },
+  completed: { label: 'Dokončeno', borderColor: 'border-l-gray-400', textColor: 'text-gray-500 dark:text-gray-400', bgColor: 'bg-gray-50 dark:bg-gray-800/50' },
+  cancelled: { label: 'Zrušeno', borderColor: 'border-l-red-500', textColor: 'text-red-500', bgColor: 'bg-red-50 dark:bg-red-900/20' },
 }
 
 const TYPE_LABELS: Record<ProjectType, string> = {
@@ -131,8 +131,8 @@ export default function ProjectsPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Projekty</h1>
-            <p className="mt-1 text-gray-600">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Projekty</h1>
+            <p className="mt-1 text-gray-600 dark:text-gray-400">
               {projects.length} projektů • {activeCount} aktivních
               {reviewCount > 0 && ` • ${reviewCount} k review`}
             </p>
@@ -165,18 +165,18 @@ export default function ProjectsPage() {
               <Filter className="h-4 w-4 mr-2" />
               Filtry
               {activeFiltersCount > 0 && (
-                <Badge className="ml-2 bg-white text-purple-600">{activeFiltersCount}</Badge>
+                <Badge className="ml-2 bg-white dark:bg-gray-800 text-purple-600">{activeFiltersCount}</Badge>
               )}
             </Button>
           </div>
 
           {/* Filter Panel */}
           {showFilters && (
-            <div className="mt-4 pt-4 border-t">
+            <div className="mt-4 pt-4 border-t dark:border-gray-700">
               <div className="flex flex-wrap gap-4">
                 {/* Status */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Stav</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Stav</label>
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value as ProjectStatus | 'all')}
@@ -193,7 +193,7 @@ export default function ProjectsPage() {
 
                 {/* Type */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Typ</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Typ</label>
                   <select
                     value={filterType}
                     onChange={(e) => setFilterType(e.target.value as ProjectType | 'all')}
@@ -223,7 +223,7 @@ export default function ProjectsPage() {
 
       {/* Results info */}
       {(searchQuery || activeFiltersCount > 0) && (
-        <div className="mb-4 text-sm text-gray-600">
+        <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
           Zobrazeno {filteredProjects.length} z {projects.length} projektů
         </div>
       )}
@@ -234,8 +234,8 @@ export default function ProjectsPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <FolderKanban className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Žádné projekty</h3>
-              <p className="text-gray-600">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Žádné projekty</h3>
+              <p className="text-gray-600 dark:text-gray-400">
                 {searchQuery || activeFiltersCount > 0
                   ? 'Nenalezeny žádné výsledky pro tyto filtry'
                   : 'Zatím nemáte žádné projekty'}
@@ -264,10 +264,10 @@ export default function ProjectsPage() {
 
                       {/* Col 1: Project name and client (5 cols) */}
                       <div className="col-span-5 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">
+                        <h3 className="font-semibold text-gray-900 dark:text-white truncate">
                           {project.title}
                         </h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                           <Building2 className="h-3.5 w-3.5 flex-shrink-0" />
                           <span className="truncate">{project.company_name}</span>
                         </div>
@@ -284,11 +284,11 @@ export default function ProjectsPage() {
                       <div className="col-span-2 text-sm">
                         <div className="flex items-center gap-2">
                           {progress === 100 ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                           ) : (
                             <Clock className="h-4 w-4 text-gray-400" />
                           )}
-                          <span className="text-gray-700">
+                          <span className="text-gray-700 dark:text-gray-200">
                             {project.completed_tasks || 0}/{project.total_tasks || 0} úkolů
                           </span>
                         </div>
@@ -305,12 +305,12 @@ export default function ProjectsPage() {
                       {/* Col 4: Deadline (2 cols) */}
                       <div className="col-span-2 text-right">
                         <div className={`flex items-center justify-end gap-1 text-sm font-medium ${
-                          isOverdue ? 'text-red-600' : isUrgent ? 'text-orange-600' : 'text-gray-600'
+                          isOverdue ? 'text-red-600 dark:text-red-400' : isUrgent ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'
                         }`}>
                           <Calendar className="h-3.5 w-3.5" />
                           {formatDeadline(project.target_date)}
                         </div>
-                        <div className="text-xs text-gray-500 mt-0.5 flex items-center justify-end gap-1">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center justify-end gap-1">
                           <User className="h-3 w-3" />
                           {project.owner_name}
                         </div>

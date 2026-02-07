@@ -72,10 +72,10 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
 
   const getContractBadgeColor = (type: string) => {
     switch (type) {
-      case 'hpp': return 'bg-blue-100 text-blue-700'
-      case 'dpp': return 'bg-purple-100 text-purple-700'
-      case 'dpc': return 'bg-orange-100 text-orange-700'
-      default: return 'bg-gray-100 text-gray-700'
+      case 'hpp': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+      case 'dpp': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+      case 'dpc': return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
     }
   }
 
@@ -108,7 +108,7 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
       {isOpen && (
         <CardContent>
           {employees.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             <Users className="h-12 w-12 mx-auto mb-2 text-gray-300" />
             <p className="mb-2">Žádní zaměstnanci</p>
             <p className="text-sm text-gray-400">
@@ -121,12 +121,12 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
               <div
                 key={emp.id}
                 className={`border rounded-lg overflow-hidden transition-all ${
-                  hasDeductions(emp) ? 'border-orange-200' : 'border-gray-200'
+                  hasDeductions(emp) ? 'border-orange-200' : 'border-gray-200 dark:border-gray-700'
                 }`}
               >
                 {/* Hlavní řádek */}
                 <div
-                  className={`p-4 cursor-pointer hover:bg-gray-50 ${
+                  className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 ${
                     hasDeductions(emp) ? 'bg-orange-50' : ''
                   }`}
                   onClick={() => toggleExpand(emp.id)}
@@ -137,13 +137,13 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
                         {emp.first_name[0]}{emp.last_name[0]}
                       </div>
                       <div>
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-gray-900 dark:text-white">
                           {emp.first_name} {emp.last_name}
                           {hasDeductions(emp) && (
                             <AlertTriangle className="h-4 w-4 inline ml-2 text-orange-500" />
                           )}
                         </div>
-                        <div className="text-sm text-gray-500">{emp.position}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{emp.position}</div>
                       </div>
                     </div>
 
@@ -153,7 +153,7 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${getContractBadgeColor(emp.contract_type)}`}>
                           {CONTRACT_TYPE_LABELS[emp.contract_type]}
                         </span>
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                           {emp.wage_type === 'fixed'
                             ? formatCurrency(emp.base_salary)
                             : `${emp.hourly_rate} Kč/h`
@@ -173,24 +173,24 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
 
                 {/* Rozbalený detail */}
                 {expandedEmployee === emp.id && (
-                  <div className="border-t bg-gray-50 p-4">
+                  <div className="border-t bg-gray-50 dark:bg-gray-800/50 p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {/* Osobní údaje */}
                       <div className="space-y-2">
-                        <h4 className="font-medium text-sm text-gray-700 border-b pb-1">Osobní údaje</h4>
+                        <h4 className="font-medium text-sm text-gray-700 dark:text-gray-200 border-b pb-1">Osobní údaje</h4>
                         <div className="text-sm space-y-1">
                           <div className="flex justify-between">
-                            <span className="text-gray-500">Datum narození:</span>
+                            <span className="text-gray-500 dark:text-gray-400">Datum narození:</span>
                             <span>{formatDate(emp.birth_date)}</span>
                           </div>
                           {emp.email && (
-                            <div className="flex items-center gap-1 text-gray-600">
+                            <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                               <Mail className="h-3 w-3" />
                               <span className="truncate">{emp.email}</span>
                             </div>
                           )}
                           {emp.phone && (
-                            <div className="flex items-center gap-1 text-gray-600">
+                            <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                               <Phone className="h-3 w-3" />
                               <span>{emp.phone}</span>
                             </div>
@@ -200,18 +200,18 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
 
                       {/* Pracovní poměr */}
                       <div className="space-y-2">
-                        <h4 className="font-medium text-sm text-gray-700 border-b pb-1">Pracovní poměr</h4>
+                        <h4 className="font-medium text-sm text-gray-700 dark:text-gray-200 border-b pb-1">Pracovní poměr</h4>
                         <div className="text-sm space-y-1">
                           <div className="flex justify-between">
-                            <span className="text-gray-500">Typ:</span>
+                            <span className="text-gray-500 dark:text-gray-400">Typ:</span>
                             <span>{CONTRACT_TYPE_LABELS[emp.contract_type]}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-500">Od:</span>
+                            <span className="text-gray-500 dark:text-gray-400">Od:</span>
                             <span>{formatDate(emp.employment_start)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-500">Mzda:</span>
+                            <span className="text-gray-500 dark:text-gray-400">Mzda:</span>
                             <span>
                               {emp.wage_type === 'fixed'
                                 ? `${formatCurrency(emp.base_salary)}/měs.`
@@ -224,24 +224,24 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
 
                       {/* Pojištění a daně */}
                       <div className="space-y-2">
-                        <h4 className="font-medium text-sm text-gray-700 border-b pb-1">Pojištění a daně</h4>
+                        <h4 className="font-medium text-sm text-gray-700 dark:text-gray-200 border-b pb-1">Pojištění a daně</h4>
                         <div className="text-sm space-y-1">
                           <div className="flex justify-between">
-                            <span className="text-gray-500">ZP:</span>
+                            <span className="text-gray-500 dark:text-gray-400">ZP:</span>
                             <span>{HEALTH_INSURANCE_COMPANIES[emp.health_insurance]?.split(' - ')[0] || emp.health_insurance}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-500">Prohlášení:</span>
+                            <span className="text-gray-500 dark:text-gray-400">Prohlášení:</span>
                             <span>{emp.tax_declaration ? 'Ano' : 'Ne'}</span>
                           </div>
                           {emp.tax_bonus_children > 0 && (
                             <div className="flex justify-between">
-                              <span className="text-gray-500">Děti:</span>
+                              <span className="text-gray-500 dark:text-gray-400">Děti:</span>
                               <span>{emp.tax_bonus_children}</span>
                             </div>
                           )}
                           {emp.student && (
-                            <div className="text-blue-600">Student</div>
+                            <div className="text-blue-600 dark:text-blue-400">Student</div>
                           )}
                         </div>
                       </div>
@@ -249,7 +249,7 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
 
                     {/* Srážky */}
                     {emp.deductions.length > 0 && (
-                      <div className="mt-4 pt-4 border-t">
+                      <div className="mt-4 pt-4 border-t dark:border-gray-700">
                         <h4 className="font-medium text-sm text-orange-700 mb-2 flex items-center gap-1">
                           <AlertTriangle className="h-4 w-4" />
                           Srážky ze mzdy ({emp.deductions.filter(d => d.active).length})
@@ -282,7 +282,7 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
                                     }
                                   </div>
                                   {ded.end_date && (
-                                    <div className="text-xs text-orange-600">
+                                    <div className="text-xs text-orange-600 dark:text-orange-400">
                                       do {formatDate(ded.end_date)}
                                     </div>
                                   )}
@@ -296,18 +296,18 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
 
                     {/* Poznámky */}
                     {emp.notes && (
-                      <div className="mt-4 pt-4 border-t">
-                        <h4 className="font-medium text-sm text-gray-700 mb-1">Poznámky</h4>
-                        <p className="text-sm text-gray-600">{emp.notes}</p>
+                      <div className="mt-4 pt-4 border-t dark:border-gray-700">
+                        <h4 className="font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">Poznámky</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{emp.notes}</p>
                       </div>
                     )}
 
                     {/* Bankovní účet */}
                     {emp.bank_account && (
-                      <div className="mt-4 pt-4 border-t">
+                      <div className="mt-4 pt-4 border-t dark:border-gray-700">
                         <div className="flex items-center gap-2 text-sm">
                           <Banknote className="h-4 w-4 text-gray-400" />
-                          <span className="text-gray-500">Účet:</span>
+                          <span className="text-gray-500 dark:text-gray-400">Účet:</span>
                           <span className="font-mono">{emp.bank_account}</span>
                         </div>
                       </div>
@@ -329,7 +329,7 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-red-600 hover:bg-red-50"
+                        className="text-red-600 hover:bg-red-50 dark:bg-red-900/20"
                         onClick={(e) => {
                           e.stopPropagation()
                           handleDeleteEmployee(emp.id)

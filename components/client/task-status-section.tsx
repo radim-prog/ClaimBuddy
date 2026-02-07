@@ -43,7 +43,7 @@ interface TasksData {
 }
 
 const statusIcons: Record<string, React.ReactNode> = {
-  pending: <Clock className="h-4 w-4 text-gray-500" />,
+  pending: <Clock className="h-4 w-4 text-gray-500 dark:text-gray-400" />,
   accepted: <PlayCircle className="h-4 w-4 text-blue-500" />,
   in_progress: <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />,
   waiting_for: <PauseCircle className="h-4 w-4 text-amber-500" />,
@@ -55,7 +55,7 @@ const priorityColors: Record<string, string> = {
   critical: 'bg-red-100 text-red-700 border-red-200',
   high: 'bg-orange-100 text-orange-700 border-orange-200',
   medium: 'bg-blue-100 text-blue-700 border-blue-200',
-  low: 'bg-gray-100 text-gray-700 border-gray-200',
+  low: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700',
 }
 
 interface TaskStatusSectionProps {
@@ -165,12 +165,12 @@ export function TaskStatusSection({ companyId }: TaskStatusSectionProps) {
         {/* Active tasks */}
         {byStatus.active.length > 0 && (
           <div>
-            <h4 className="font-medium text-gray-700 mb-3">Právě se zpracovává</h4>
+            <h4 className="font-medium text-gray-700 dark:text-gray-200 mb-3">Právě se zpracovává</h4>
             <div className="space-y-2">
               {byStatus.active.slice(0, 5).map(task => (
                 <div
                   key={task.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
                     {statusIcons[task.status]}
@@ -208,7 +208,7 @@ export function TaskStatusSection({ companyId }: TaskStatusSectionProps) {
         {/* Recently completed */}
         {byStatus.completed.length > 0 && (
           <div>
-            <h4 className="font-medium text-gray-700 mb-3">Nedávno dokončeno</h4>
+            <h4 className="font-medium text-gray-700 dark:text-gray-200 mb-3">Nedávno dokončeno</h4>
             <div className="space-y-1">
               {byStatus.completed.slice(0, 3).map(task => (
                 <div

@@ -65,7 +65,7 @@ export default function ClientDashboard() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Načítám vaše firmy...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Načítám vaše firmy...</p>
         </div>
       </div>
     )
@@ -98,8 +98,8 @@ export default function ClientDashboard() {
     <div>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Vítejte zpět!</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Vítejte zpět!</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-300">
           Přehled vašich firem a aktuálních úkolů
         </p>
       </div>
@@ -171,7 +171,7 @@ export default function ClientDashboard() {
 
       {/* Companies List */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Moje firmy</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Moje firmy</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {companies.map((company) => {
             const hasMissing = company.currentMonthStatus.missing_count > 0
@@ -194,7 +194,7 @@ export default function ClientDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-gray-300">
                       <strong>Právní forma:</strong> {company.legal_form}
                     </div>
                     {hasMissing && (
@@ -229,27 +229,27 @@ export default function ClientDashboard() {
 
       {/* Quick Actions */}
       <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Rychlé akce</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Rychlé akce</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Button asChild variant="outline" size="lg" className="h-auto py-6">
             <Link href="/client/upload" className="flex flex-col items-center">
               <Upload className="h-8 w-8 mb-2" />
               <span className="text-lg font-semibold">Nahrát dokumenty</span>
-              <span className="text-sm text-gray-500">Faktury, účtenky, výpisy</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Faktury, účtenky, výpisy</span>
             </Link>
           </Button>
           <Button asChild variant="outline" size="lg" className="h-auto py-6">
             <Link href="/client/documents" className="flex flex-col items-center">
               <FileText className="h-8 w-8 mb-2" />
               <span className="text-lg font-semibold">Zobrazit dokumenty</span>
-              <span className="text-sm text-gray-500">Všechny nahrané soubory</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Všechny nahrané soubory</span>
             </Link>
           </Button>
           <Button asChild variant="outline" size="lg" className="h-auto py-6">
             <Link href={companies.length > 0 ? `/client/companies/${companies[0].id}?tab=messages` : '/client/companies'} className="flex flex-col items-center">
               <MessageCircle className="h-8 w-8 mb-2" />
               <span className="text-lg font-semibold">Zprávy</span>
-              <span className="text-sm text-gray-500">Komunikace s účetním</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Komunikace s účetním</span>
             </Link>
           </Button>
         </div>
@@ -257,7 +257,7 @@ export default function ClientDashboard() {
 
       {/* Upcoming Deadlines */}
       <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Nadcházející termíny</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Nadcházející termíny</h2>
         <DeadlineCalendar />
       </div>
     </div>
