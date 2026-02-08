@@ -13,13 +13,46 @@ import {
   Clock,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import {
-  getActivities,
-  getActivityTypeLabel,
-  getActivityTypeColor,
-  type Activity as ActivityItem,
-  type ActivityType,
-} from '@/lib/activity-store'
+
+type ActivityType =
+  | 'reminder_sent'
+  | 'closure_status_changed'
+  | 'deadline_completed'
+  | 'task_generated'
+  | 'vat_status_changed'
+
+type ActivityItem = {
+  id: string
+  type: ActivityType
+  company_id: string
+  company_name: string
+  title: string
+  description: string
+  created_at: string
+  created_by: string
+}
+
+function getActivityTypeLabel(type: ActivityType): string {
+  const labels: Record<ActivityType, string> = {
+    reminder_sent: 'Upomínka',
+    closure_status_changed: 'Stav uzávěrky',
+    deadline_completed: 'Termín splněn',
+    task_generated: 'Úkoly vygenerovány',
+    vat_status_changed: 'Stav DPH',
+  }
+  return labels[type]
+}
+
+function getActivityTypeColor(type: ActivityType): { bg: string; text: string } {
+  const colors: Record<ActivityType, { bg: string; text: string }> = {
+    reminder_sent: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-300' },
+    closure_status_changed: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300' },
+    deadline_completed: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300' },
+    task_generated: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300' },
+    vat_status_changed: { bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-300' },
+  }
+  return colors[type]
+}
 
 const activityIcons: Record<ActivityType, typeof Activity> = {
   reminder_sent: Mail,
@@ -54,14 +87,19 @@ export function ActivityFeed({ companyId, limit = 15 }: ActivityFeedProps) {
   const [items, setItems] = useState<ActivityItem[]>([])
   const [refreshKey, setRefreshKey] = useState(0)
 
-  // Refresh periodically
+  // Refresh periodically via API
   useEffect(() => {
-    const refresh = () => {
-      const all = getActivities(limit)
-      setItems(companyId ? all.filter(a => a.company_id === companyId) : all)
+    const refresh = async () => {
+      try {
+        const res = await fetch(`/api/accountant/activities?limit=${limit}`)
+        if (!res.ok) return
+        const data = await res.json()
+        const all: ActivityItem[] = data.activities || []
+        setItems(companyId ? all.filter(a => a.company_id === companyId) : all)
+      } catch {}
     }
     refresh()
-    const interval = setInterval(refresh, 5000) // Refresh every 5s
+    const interval = setInterval(refresh, 10000) // Refresh every 10s
     return () => clearInterval(interval)
   }, [companyId, limit, refreshKey])
 

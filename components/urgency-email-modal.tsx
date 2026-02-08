@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/select'
 import { Mail, Send, Clock, Calendar, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { addReminder } from '@/lib/activity-store'
 
 type MissingDocument = 'bank_statement' | 'expense_documents' | 'income_invoices'
 
@@ -223,16 +222,20 @@ Vaše účetní`
      * ============================================
      */
 
-    // Record reminder in activity store
-    addReminder({
-      company_id: companyId,
-      company_name: companyName,
-      period,
-      type: 'missing_docs',
-      channel: 'email',
-      sent_by: 'Jana Svobodová',
-      notes: `Chybí: ${missingDocsText}`,
-    })
+    // Record reminder via API
+    fetch('/api/accountant/activities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        company_id: companyId,
+        company_name: companyName,
+        period,
+        type: 'missing_docs',
+        channel: 'email',
+        sent_by: 'Účetní',
+        notes: `Chybí: ${missingDocsText}`,
+      }),
+    }).catch(() => {})
 
     // DEMO: Simulace odeslání
     if (sendOption === 'now') {
