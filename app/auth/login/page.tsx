@@ -1,24 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { User, Briefcase } from 'lucide-react'
+import { Lock, LogIn } from 'lucide-react'
 import { login } from './actions'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
+    setError('')
 
     const formData = new FormData(e.currentTarget)
 
@@ -26,113 +24,49 @@ export default function LoginPage() {
       const result = await login(formData)
 
       if (result?.error) {
-        toast.error('Chyba přihlášení', {
-          description: result.error,
-        })
+        setError(result.error)
         setLoading(false)
-      } else {
-        toast.success('Přihlášení úspěšné!')
-        // Redirect is handled by the action
       }
-    } catch (error) {
-      toast.error('Chyba přihlášení', {
-        description: 'Něco se pokazilo. Zkuste to prosím znovu.',
-      })
-      setLoading(false)
-    }
-  }
-
-  const handleDemoLogin = async (role: 'client' | 'accountant') => {
-    setLoading(true)
-
-    if (role === 'client') {
-      // For client demo, redirect directly without Supabase auth
-      toast.success('Demo přihlášení (Klient)')
-      router.push('/client/dashboard')
-      return
-    }
-
-    // Přihlásit se jako Radim (admin) for accountant
-    const formData = new FormData()
-    formData.append('username', 'Radim')
-    formData.append('password', 'admin')
-
-    try {
-      const result = await login(formData)
-
-      if (result?.error) {
-        toast.error('Chyba demo přihlášení', {
-          description: result.error,
-        })
-        setLoading(false)
-      } else {
-        toast.success('Demo přihlášení (Účetní)')
-        // Redirect je handled by action
-      }
-    } catch (error) {
-      toast.error('Chyba demo přihlášení')
+      // Successful login redirects via server action
+    } catch {
+      // redirect() throws NEXT_REDIRECT - this is expected behavior
+      // If we get here with a real error, show it
       setLoading(false)
     }
   }
 
   return (
     <Card className="w-full max-w-md">
-      <CardHeader className="space-y-1">
+      <CardHeader className="space-y-1 text-center">
+        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-purple-600">
+          <Lock className="h-6 w-6 text-white" />
+        </div>
         <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          Přihlášení
+          Účetní portál
         </CardTitle>
         <CardDescription>
-          Zadejte své přihlašovací údaje nebo použijte demo přístup
+          Zadejte své přihlašovací údaje
         </CardDescription>
       </CardHeader>
 
-      {/* Demo Mode - Quick Access */}
-      <CardContent className="space-y-4">
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-center">🎯 Demo režim - Rychlý přístup:</p>
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              onClick={() => handleDemoLogin('client')}
-              variant="outline"
-              className="h-auto flex-col gap-2 py-4 border-2 border-blue-200 hover:border-blue-500 hover:bg-blue-50 transition-all"
-            >
-              <User className="h-6 w-6 text-blue-600" />
-              <span className="font-semibold text-blue-700">Klient</span>
-              <span className="text-xs text-muted-foreground">Karel Novák</span>
-            </Button>
-            <Button
-              onClick={() => handleDemoLogin('accountant')}
-              variant="outline"
-              className="h-auto flex-col gap-2 py-4 border-2 border-purple-200 hover:border-purple-500 hover:bg-purple-50 transition-all"
-            >
-              <Briefcase className="h-6 w-6 text-purple-600" />
-              <span className="font-semibold text-purple-700">Účetní</span>
-              <span className="text-xs text-muted-foreground">Jana Svobodová</span>
-            </Button>
-          </div>
-        </div>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <Separator />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white dark:bg-gray-800 px-2 text-muted-foreground">
-              Nebo se přihlaste účtem
-            </span>
-          </div>
-        </div>
-
+      <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="rounded-md bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 p-3 text-sm text-red-700 dark:text-red-300">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="username">Jméno</Label>
             <Input
               id="username"
               name="username"
               type="text"
-              placeholder="Radim"
+              placeholder="Zadejte křestní jméno"
               required
               autoComplete="username"
+              autoFocus
             />
           </div>
           <div className="space-y-2">
@@ -141,7 +75,7 @@ export default function LoginPage() {
               id="password"
               name="password"
               type="password"
-              placeholder="••••••••"
+              placeholder="Zadejte heslo"
               required
               autoComplete="current-password"
             />
@@ -151,14 +85,21 @@ export default function LoginPage() {
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold"
             disabled={loading}
           >
-            {loading ? 'Přihlašování...' : 'Přihlásit se'}
+            {loading ? (
+              'Přihlašování...'
+            ) : (
+              <span className="flex items-center gap-2">
+                <LogIn className="h-4 w-4" />
+                Přihlásit se
+              </span>
+            )}
           </Button>
         </form>
       </CardContent>
 
       <CardFooter>
-        <p className="text-sm text-center text-muted-foreground w-full">
-          Uživatelské účty vytváří pouze administrátor
+        <p className="text-xs text-center text-muted-foreground w-full">
+          Přihlaste se křestním jménem (Karel, Jana, Petr, Marie nebo Radim)
         </p>
       </CardFooter>
     </Card>
