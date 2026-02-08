@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { DollarSign, Settings as SettingsIcon, Users as UsersIcon, Building2, Repeat } from 'lucide-react'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 export default function SettingsLayout({
   children,
@@ -10,9 +11,9 @@ export default function SettingsLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const { userRole, permissions } = useAccountantUser()
 
-  // TODO: Check user role from Supabase when connected
-  const isAdmin = true // For now, show all tabs
+  const isAdmin = userRole === 'admin' || permissions?.users_manage === true
 
   const tabs = [
     {

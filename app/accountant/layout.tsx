@@ -13,7 +13,6 @@ import {
   Menu,
   X,
   User,
-  Bell,
   DollarSign,
   Sparkles,
   UserPlus,
@@ -35,7 +34,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { logout } from '@/app/auth/login/actions'
 import { SettingsProvider } from '@/lib/contexts/settings-context'
-import { MOCK_CONFIG, getAttentionRequiredCount } from '@/lib/mock-data'
+import { AccountantUserProvider, useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { getAttentionRequiredCount } from '@/lib/mock-data'
 
 const navigation = [
   { name: 'Dashboard', href: '/accountant/dashboard', icon: LayoutDashboard },
@@ -49,12 +49,10 @@ const navigation = [
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings },
 ]
 
-// Admin navigation - only visible to admin users (TODO: hide based on role)
 const adminNavigation = [
   { name: 'Administrace', href: '/accountant/admin', icon: Shield },
 ]
 
-// Demo features array - currently empty as timeline is now integrated into Tasks/Projects
 const demoFeatures: { name: string; href: string; icon: typeof Sparkles; badge: string }[] = []
 
 export default function AccountantLayout({
@@ -62,15 +60,29 @@ export default function AccountantLayout({
 }: {
   children: React.ReactNode
 }) {
+  return (
+    <AccountantUserProvider>
+      <SettingsProvider>
+        <AccountantLayoutInner>{children}</AccountantLayoutInner>
+      </SettingsProvider>
+    </AccountantUserProvider>
+  )
+}
+
+function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { userName, userInitials, userRole, permissions } = useAccountantUser()
+
+  const showAdmin = userRole === 'admin' || permissions?.admin_access === true
 
   const handleLogout = async () => {
     await logout()
   }
 
+  const roleLabel = userRole === 'admin' ? 'Admin' : userRole === 'accountant' ? 'Účetní' : userRole === 'assistant' ? 'Asistentka' : 'Klient'
+
   return (
-    <SettingsProvider>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
@@ -113,66 +125,70 @@ export default function AccountantLayout({
               )
             })}
 
-            {/* ADMIN SECTION - TODO: conditionally show based on user role */}
-            <div className="pt-4 mt-4 border-t border-white/20">
-              <p className="px-2 text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
-                🔒 Administrace
-              </p>
-              {adminNavigation.map((item) => {
-                const isActive = pathname.startsWith(item.href)
-                const Icon = item.icon
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`
-                      group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors
-                      ${isActive
-                        ? 'bg-gradient-to-r from-purple-400/30 to-indigo-400/30 text-white border border-purple-300/50'
-                        : 'text-white/80 hover:bg-gradient-to-r hover:from-purple-400/20 hover:to-indigo-400/20 hover:text-white border border-transparent'
-                      }
-                    `}
-                  >
-                    <span className="flex items-center">
-                      <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
-                      {item.name}
-                    </span>
-                  </Link>
-                )
-              })}
-            </div>
+            {/* ADMIN SECTION - visible only to admin/users with admin_access */}
+            {showAdmin && (
+              <div className="pt-4 mt-4 border-t border-white/20">
+                <p className="px-2 text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
+                  Administrace
+                </p>
+                {adminNavigation.map((item) => {
+                  const isActive = pathname.startsWith(item.href)
+                  const Icon = item.icon
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`
+                        group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors
+                        ${isActive
+                          ? 'bg-gradient-to-r from-purple-400/30 to-indigo-400/30 text-white border border-purple-300/50'
+                          : 'text-white/80 hover:bg-gradient-to-r hover:from-purple-400/20 hover:to-indigo-400/20 hover:text-white border border-transparent'
+                        }
+                      `}
+                    >
+                      <span className="flex items-center">
+                        <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                        {item.name}
+                      </span>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
 
             {/* DEMO FEATURES SECTION */}
-            <div className="pt-4 mt-4 border-t border-white/20">
-              <p className="px-2 text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
-                ✨ Nové Funkce (Demo)
-              </p>
-              {demoFeatures.map((item) => {
-                const isActive = pathname === item.href
-                const Icon = item.icon
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`
-                      group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors
-                      ${isActive
-                        ? 'bg-gradient-to-r from-yellow-400/30 to-orange-400/30 text-white border border-yellow-400/50'
-                        : 'text-white/80 hover:bg-gradient-to-r hover:from-yellow-400/20 hover:to-orange-400/20 hover:text-white border border-transparent'
-                      }
-                    `}
-                  >
-                    <span className="flex items-center">
-                      <Icon className={`mr-3 h-5 w-5 flex-shrink-0`} />
-                      {item.name}
-                    </span>
-                    <span className="px-2 py-0.5 text-xs font-bold bg-yellow-400 text-gray-900 dark:text-white rounded">
-                      {item.badge}
-                    </span>
-                  </Link>
-                )
-              })}
-            </div>
+            {demoFeatures.length > 0 && (
+              <div className="pt-4 mt-4 border-t border-white/20">
+                <p className="px-2 text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
+                  Nové Funkce (Demo)
+                </p>
+                {demoFeatures.map((item) => {
+                  const isActive = pathname === item.href
+                  const Icon = item.icon
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`
+                        group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors
+                        ${isActive
+                          ? 'bg-gradient-to-r from-yellow-400/30 to-orange-400/30 text-white border border-yellow-400/50'
+                          : 'text-white/80 hover:bg-gradient-to-r hover:from-yellow-400/20 hover:to-orange-400/20 hover:text-white border border-transparent'
+                        }
+                      `}
+                    >
+                      <span className="flex items-center">
+                        <Icon className={`mr-3 h-5 w-5 flex-shrink-0`} />
+                        {item.name}
+                      </span>
+                      <span className="px-2 py-0.5 text-xs font-bold bg-yellow-400 text-gray-900 dark:text-white rounded">
+                        {item.badge}
+                      </span>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
 
             {/* Theme Toggle */}
             <div className="pt-4 mt-4 border-t border-white/20">
@@ -187,12 +203,12 @@ export default function AccountantLayout({
                 <button className="flex items-center w-full group hover:bg-white dark:bg-gray-800/10 rounded-lg p-2 transition-colors">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-white dark:bg-gray-800 text-purple-600 font-bold">
-                      JŠ
+                      {userInitials || '..'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="ml-3 text-left">
-                    <p className="text-sm font-medium text-white">{MOCK_CONFIG.CURRENT_USER_NAME}</p>
-                    <p className="text-xs text-white/70">Účetní</p>
+                    <p className="text-sm font-medium text-white">{userName || 'Načítání...'}</p>
+                    <p className="text-xs text-white/70">{roleLabel}</p>
                   </div>
                 </button>
               </DropdownMenuTrigger>
@@ -255,7 +271,7 @@ export default function AccountantLayout({
                       group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                       ${isActive
                         ? 'bg-purple-600 text-white'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-700'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }
                     `}
                   >
@@ -266,32 +282,34 @@ export default function AccountantLayout({
               })}
 
               {/* Admin section - mobile */}
-              <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
-                <p className="px-3 py-1 text-xs font-semibold text-gray-400 dark:text-gray-400 uppercase tracking-wider">
-                  Administrace
-                </p>
-                {adminNavigation.map((item) => {
-                  const isActive = pathname.startsWith(item.href)
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`
-                        group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
-                        ${isActive
-                          ? 'bg-purple-600 text-white'
-                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-700'
-                        }
-                      `}
-                    >
-                      <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
-                      {item.name}
-                    </Link>
-                  )
-                })}
-              </div>
+              {showAdmin && (
+                <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
+                  <p className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Administrace
+                  </p>
+                  {adminNavigation.map((item) => {
+                    const isActive = pathname.startsWith(item.href)
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`
+                          group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
+                          ${isActive
+                            ? 'bg-purple-600 text-white'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }
+                        `}
+                      >
+                        <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                        {item.name}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
             </nav>
 
             {/* Mobile user section */}
@@ -299,24 +317,24 @@ export default function AccountantLayout({
               <div className="flex items-center mb-3">
                 <Avatar className="h-10 w-10">
                   <AvatarFallback className="bg-purple-600 text-white font-bold">
-                    JŠ
+                    {userInitials || '..'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{MOCK_CONFIG.CURRENT_USER_NAME}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Účetní</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{userName || 'Načítání...'}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{roleLabel}</p>
                 </div>
               </div>
               <div className="space-y-1">
                 <Link
                   href="/accountant/profile"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-md"
+                  className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
                 >
                   <User className="mr-2 h-4 w-4" />
                   Profil
                 </Link>
-                <ThemeToggle variant="full" className="px-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-700" />
+                <ThemeToggle variant="full" className="px-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" />
                 <button
                   onClick={handleLogout}
                   className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md"
@@ -332,7 +350,6 @@ export default function AccountantLayout({
 
       {/* Main content */}
       <div className="md:pl-64 flex flex-col min-h-screen">
-        {/* Global deadline alert bar - only on relevant pages (not admin/settings) */}
         {!pathname.startsWith('/accountant/admin') && !pathname.startsWith('/accountant/settings') && (
           <GlobalDeadlineAlert />
         )}
@@ -342,6 +359,5 @@ export default function AccountantLayout({
         </main>
       </div>
     </div>
-    </SettingsProvider>
   )
 }

@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server'
 const COOKIE_NAME = 'auth_token'
 const AUTH_SECRET = process.env.AUTH_SECRET || '5ae35f505756d4e50f6e3e37b14ca985c92acaef936f26b708dc85b9e53d4f29'
 
-const PUBLIC_PATHS = ['/auth/login', '/api/auth']
+const PUBLIC_PATHS = ['/auth/login', '/api/auth/login', '/api/auth/logout']
 const STATIC_PREFIXES = ['/_next', '/static', '/favicon.ico']
 
 // Token verification using Web Crypto API (Edge Runtime compatible)
@@ -101,7 +101,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith('/client') || pathname.startsWith('/api/client')) {
-    if (user.role !== 'client') {
+    if (user.role !== 'client' && user.role !== 'admin') {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }

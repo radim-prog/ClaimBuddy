@@ -1,7 +1,9 @@
-// Standalone authentication - no external dependencies
+// Authentication module
 // Uses Node.js crypto for password hashing (PBKDF2) and token signing (HMAC)
+// User storage: Supabase PostgreSQL (via lib/user-store.ts)
 
 import crypto from 'crypto'
+import { getUserByLoginName } from '@/lib/user-store'
 
 // ============================================
 // CONFIG
@@ -12,7 +14,7 @@ const TOKEN_MAX_AGE = 7 * 24 * 60 * 60 // 7 days in seconds
 const COOKIE_NAME = 'auth_token'
 
 // ============================================
-// USERS
+// TYPES
 // ============================================
 
 export type UserRole = 'client' | 'accountant' | 'admin' | 'assistant'
@@ -22,60 +24,24 @@ export interface AuthUser {
   name: string
   email: string
   role: UserRole
-  loginName: string // First name for login (case-insensitive)
+  login_name: string
 }
-
-// Pre-computed hash for 'zajcon2026' using PBKDF2
-const SHARED_PASSWORD_HASH = '2107435b3243b175d114417eeaa8a753:9a9f242acf2cefe32dc3f49673af1e2eed972087c1a5754c6ef74c777e0c1fdd0c17271603dce91be0be738e53d9ce94fc4df57c2e47922a7c36dfaf87e331f7'
-
-const AUTH_USERS: (AuthUser & { passwordHash: string })[] = [
-  {
-    id: 'user-1-client',
-    name: 'Karel Novák',
-    email: 'karel@example.com',
-    role: 'client',
-    loginName: 'karel',
-    passwordHash: SHARED_PASSWORD_HASH,
-  },
-  {
-    id: 'user-2-accountant',
-    name: 'Jana Svobodová',
-    email: 'jana@ucetni.cz',
-    role: 'accountant',
-    loginName: 'jana',
-    passwordHash: SHARED_PASSWORD_HASH,
-  },
-  {
-    id: 'user-3-accountant',
-    name: 'Petr Novotný',
-    email: 'petr@ucetni.cz',
-    role: 'accountant',
-    loginName: 'petr',
-    passwordHash: SHARED_PASSWORD_HASH,
-  },
-  {
-    id: 'user-4-assistant',
-    name: 'Marie Dvořáková',
-    email: 'marie@ucetni.cz',
-    role: 'assistant',
-    loginName: 'marie',
-    passwordHash: SHARED_PASSWORD_HASH,
-  },
-  {
-    id: 'user-5-admin',
-    name: 'Radim',
-    email: 'admin@zajcon.cz',
-    role: 'admin',
-    loginName: 'radim',
-    passwordHash: SHARED_PASSWORD_HASH,
-  },
-]
 
 // ============================================
 // PASSWORD FUNCTIONS
 // ============================================
 
-function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+export function hashPassword(password: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const salt = crypto.randomBytes(16).toString('hex')
+    crypto.pbkdf2(password, salt, 100000, 64, 'sha512', (err, key) => {
+      if (err) return reject(err)
+      resolve(`${salt}:${key.toString('hex')}`)
+    })
+  })
+}
+
+export function verifyPassword(password: string, storedHash: string): Promise<boolean> {
   return new Promise((resolve, reject) => {
     const [salt, hash] = storedHash.split(':')
     crypto.pbkdf2(password, salt, 100000, 64, 'sha512', (err, key) => {
@@ -114,14 +80,12 @@ export function verifyToken(token: string): TokenPayload | null {
     const [json, signature] = token.split('.')
     if (!json || !signature) return null
 
-    // Verify signature
     const expectedSig = crypto
       .createHmac('sha256', AUTH_SECRET)
       .update(json)
       .digest('base64url')
     if (signature !== expectedSig) return null
 
-    // Decode and check expiry
     const payload: TokenPayload = JSON.parse(
       Buffer.from(json, 'base64url').toString()
     )
@@ -134,19 +98,17 @@ export function verifyToken(token: string): TokenPayload | null {
 }
 
 // ============================================
-// LOGIN / LOOKUP
+// LOGIN
 // ============================================
 
 export async function authenticate(
   loginName: string,
   password: string
 ): Promise<{ token: string; user: AuthUser } | null> {
-  const user = AUTH_USERS.find(
-    u => u.loginName === loginName.toLowerCase().trim()
-  )
+  const user = await getUserByLoginName(loginName)
   if (!user) return null
 
-  const valid = await verifyPassword(password, user.passwordHash)
+  const valid = await verifyPassword(password, user.password_hash)
   if (!valid) return null
 
   const token = createToken({
@@ -155,8 +117,16 @@ export async function authenticate(
     role: user.role,
   })
 
-  const { passwordHash: _, ...safeUser } = user
-  return { token, user: safeUser }
+  return {
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      login_name: user.login_name,
+    },
+  }
 }
 
 export function getRedirectPath(role: UserRole): string {
