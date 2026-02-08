@@ -4,7 +4,9 @@ import {
   getMessagesByCompany,
   getUnreadCountByCompany,
   markAllAsRead,
-} from '@/lib/message-store'
+} from '@/lib/message-store-db'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   try {
@@ -15,11 +17,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'company_id is required' }, { status: 400 })
     }
 
-    const messages = getMessagesByCompany(companyId)
-    const unreadCount = getUnreadCountByCompany(companyId, 'client')
+    const messages = await getMessagesByCompany(companyId)
+    const unreadCount = await getUnreadCountByCompany(companyId, 'client')
 
     // Mark messages as read when client fetches them
-    markAllAsRead(companyId, 'client')
+    await markAllAsRead(companyId, 'client')
 
     return NextResponse.json({
       messages,
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const message = addMessage({
+    const message = await addMessage({
       company_id,
       content: content.trim(),
       sender_type,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,21 +17,44 @@ import {
   CheckCircle,
 } from 'lucide-react'
 import Link from 'next/link'
-import { mockCompanies } from '@/lib/mock-data'
 import {
   calculateOnboardingProgress,
   PRIORITY_CONFIG,
   ClientOnboarding,
 } from '@/lib/types/onboarding'
 
-// Filtrovat pouze klienty v onboardingu
-const onboardingClients = mockCompanies.filter(c => c.status === 'onboarding' && c.onboarding)
+type CompanyWithOnboarding = {
+  id: string
+  name: string
+  ico: string
+  email?: string
+  status: string
+  onboarding?: ClientOnboarding
+}
 
 export default function OnboardingPage() {
+  const [allCompanies, setAllCompanies] = useState<CompanyWithOnboarding[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [filterPriority, setFilterPriority] = useState<string | null>(null)
   const [filterStalled, setFilterStalled] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    fetch('/api/accountant/companies')
+      .then(res => res.json())
+      .then(data => {
+        setAllCompanies(data.companies || [])
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  // Filter only onboarding clients
+  const onboardingClients = useMemo(() =>
+    allCompanies.filter(c => c.status === 'onboarding' && c.onboarding),
+    [allCompanies]
+  )
 
   const isStalled = (onboarding: ClientOnboarding) => {
     const lastActivity = new Date(onboarding.last_activity_at)
@@ -60,7 +83,6 @@ export default function OnboardingPage() {
   const filteredClients = useMemo(() => {
     return onboardingClients
       .filter(client => {
-        // Search filter
         if (searchQuery) {
           const query = searchQuery.toLowerCase()
           if (!client.name.toLowerCase().includes(query) &&
@@ -69,22 +91,16 @@ export default function OnboardingPage() {
             return false
           }
         }
-
-        // Priority filter
         if (filterPriority && client.onboarding?.priority !== filterPriority) {
           return false
         }
-
-        // Stalled filter
         if (filterStalled !== null && client.onboarding) {
           const stalled = isStalled(client.onboarding)
           if (filterStalled !== stalled) return false
         }
-
         return true
       })
       .sort((a, b) => {
-        // Zaseklé nahoře, pak podle priority
         const aStalled = a.onboarding ? isStalled(a.onboarding) : false
         const bStalled = b.onboarding ? isStalled(b.onboarding) : false
         if (aStalled !== bStalled) return aStalled ? -1 : 1
@@ -96,11 +112,18 @@ export default function OnboardingPage() {
 
         return a.name.localeCompare(b.name, 'cs')
       })
-  }, [searchQuery, filterPriority, filterStalled])
+  }, [onboardingClients, searchQuery, filterPriority, filterStalled])
 
-  // Stats pro header
   const totalClients = onboardingClients.length
   const stalledCount = onboardingClients.filter(c => c.onboarding && isStalled(c.onboarding)).length
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl flex items-center justify-center py-20">
+        <div className="text-gray-500">Načítání...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-7xl">
@@ -155,7 +178,6 @@ export default function OnboardingPage() {
           {showFilters && (
             <div className="mt-4 pt-4 border-t dark:border-gray-700">
               <div className="flex flex-wrap gap-4">
-                {/* Priority */}
                 <div>
                   <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Priorita</label>
                   <select
@@ -169,8 +191,6 @@ export default function OnboardingPage() {
                     <option value="low">Nízká</option>
                   </select>
                 </div>
-
-                {/* Stalled */}
                 <div>
                   <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Stav</label>
                   <select
@@ -183,8 +203,6 @@ export default function OnboardingPage() {
                     <option value="active">Aktivní</option>
                   </select>
                 </div>
-
-                {/* Clear filters */}
                 {activeFiltersCount > 0 && (
                   <div className="flex items-end">
                     <Button variant="ghost" size="sm" onClick={clearAllFilters}>
@@ -236,7 +254,6 @@ export default function OnboardingPage() {
             const completedRequired = onboarding.steps.filter((s: any) => s.required && s.completed).length
             const requiredSteps = onboarding.steps.filter((s: any) => s.required).length
 
-            // Barva levého okraje
             const borderColor = stalled ? 'border-l-red-500' :
                                onboarding.priority === 'high' ? 'border-l-orange-500' :
                                'border-l-purple-500'
@@ -246,8 +263,6 @@ export default function OnboardingPage() {
                 <Card className={`hover:shadow-md transition-all cursor-pointer border-l-4 ${borderColor}`}>
                   <CardContent className="py-3 px-4">
                     <div className="grid grid-cols-12 gap-4 items-center">
-
-                      {/* Název a IČO (4 sloupce) */}
                       <div className="col-span-4 min-w-0">
                         <h3 className="font-semibold text-gray-900 dark:text-white truncate flex items-center gap-2">
                           {client.name}
@@ -259,8 +274,6 @@ export default function OnboardingPage() {
                           {client.ico && `IČO: ${client.ico}`}
                         </div>
                       </div>
-
-                      {/* Progress bar (3 sloupce) */}
                       <div className="col-span-3">
                         <div className="flex items-center gap-2">
                           <div className="flex-1 bg-gray-200 rounded-full h-2">
@@ -275,8 +288,6 @@ export default function OnboardingPage() {
                           {completedRequired}/{requiredSteps} kroků
                         </div>
                       </div>
-
-                      {/* Badges (3 sloupce) */}
                       <div className="col-span-3 flex items-center gap-2">
                         <Badge
                           variant="outline"
@@ -295,15 +306,12 @@ export default function OnboardingPage() {
                           </Badge>
                         )}
                       </div>
-
-                      {/* Poslední aktivita (2 sloupce) */}
                       <div className="col-span-2 text-right">
                         <div className={`text-sm flex items-center justify-end gap-1 ${stalled ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
                           <Clock className="h-3.5 w-3.5" />
                           {getDaysAgo(onboarding.last_activity_at)}
                         </div>
                       </div>
-
                     </div>
                   </CardContent>
                 </Card>

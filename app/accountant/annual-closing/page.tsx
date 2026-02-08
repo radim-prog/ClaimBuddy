@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -35,7 +35,7 @@ import {
   FileText,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { mockCompanies, MOCK_CONFIG } from '@/lib/mock-data'
+// Companies fetched from API (Supabase-backed)
 import {
   getAllAnnualClosings,
   initAnnualClosingsForCompanies,
@@ -48,7 +48,15 @@ import {
 type FilterStatus = 'all' | 'not_started' | 'in_progress' | 'completed'
 
 export default function AnnualClosingPage() {
-  const [selectedYear, setSelectedYear] = useState(MOCK_CONFIG.CURRENT_YEAR)
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [apiCompanies, setApiCompanies] = useState<any[]>([])
+
+  useEffect(() => {
+    fetch('/api/accountant/companies')
+      .then(res => res.json())
+      .then(data => setApiCompanies(data.companies || []))
+      .catch(() => {})
+  }, [])
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [initialized, setInitialized] = useState(false)
@@ -60,7 +68,7 @@ export default function AnnualClosingPage() {
 
   // Initialize annual closings for all active companies
   const handleInitialize = () => {
-    const companies = (mockCompanies as any[]).map((c: any) => ({
+    const companies = apiCompanies.map((c: any) => ({
       id: c.id,
       name: c.name,
       status: c.status,
@@ -124,7 +132,7 @@ export default function AnnualClosingPage() {
     const newStatus = nextStatus[currentStatus]
     updateAnnualClosingStep(companyId, selectedYear, stepId, {
       status: newStatus,
-      completed_by: newStatus === 'completed' ? MOCK_CONFIG.CURRENT_USER_NAME : undefined,
+      completed_by: newStatus === 'completed' ? 'Účetní' : undefined,
       completed_at: newStatus === 'completed' ? new Date().toISOString() : undefined,
     })
     refreshClosings()
@@ -167,7 +175,7 @@ export default function AnnualClosingPage() {
     return { label: 'Nezahájeno', color: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-gray-300' }
   }
 
-  const years = Array.from({ length: 3 }, (_, i) => MOCK_CONFIG.CURRENT_YEAR - i)
+  const years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - i)
 
   return (
     <div className="max-w-7xl">

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
-import { addUpload } from '@/lib/upload-store'
-import type { DocumentType } from '@/lib/upload-store'
+import { addUpload } from '@/lib/upload-store-db'
+import type { DocumentType } from '@/lib/upload-store-db'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request) {
   try {
@@ -19,14 +21,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 400 })
     }
 
+    const uploadedBy = request.headers.get('x-user-name') || 'Klient'
+
     // Record upload and mutate closure status
-    const record = addUpload({
+    const record = await addUpload({
       company_id: companyId,
       period,
       document_type: type as DocumentType,
       file_name: file.name,
       file_size: file.size,
-      uploaded_by: 'Klient', // TODO: get from auth
+      uploaded_by: uploadedBy,
     })
 
     return NextResponse.json({

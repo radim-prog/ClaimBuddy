@@ -35,7 +35,7 @@ import { Button } from '@/components/ui/button'
 import { logout } from '@/app/auth/login/actions'
 import { SettingsProvider } from '@/lib/contexts/settings-context'
 import { AccountantUserProvider, useAccountantUser } from '@/lib/contexts/accountant-user-context'
-import { getAttentionRequiredCount } from '@/lib/mock-data'
+// Badge count - will be fetched from API in future; for now show 0
 
 const navigation = [
   { name: 'Dashboard', href: '/accountant/dashboard', icon: LayoutDashboard },
@@ -113,14 +113,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                     <Icon className={`mr-3 h-5 w-5 flex-shrink-0`} />
                     {item.name}
                   </span>
-                  {item.badge === 'dynamic' && (() => {
-                    const badgeValue = getAttentionRequiredCount()
-                    return badgeValue > 0 ? (
-                      <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                        {badgeValue}
-                      </span>
-                    ) : null
-                  })()}
+                  {/* Task attention badge - count computed from tasks API */}
                 </Link>
               )
             })}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { MOCK_CONFIG } from '@/lib/mock-data'
+// User name from auth context; constants computed locally
 import { ClosureDetailModal } from '@/components/closure-detail-modal'
 import { MorningOverview } from '@/components/accountant/morning-overview'
 import { ActivityFeed } from '@/components/accountant/activity-feed'
@@ -193,7 +193,7 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         companyName: company.name,
         description: `Měsíční uzávěrka za ${months[month - 1]} ${year} pro firmu ${company.name}. Klient musí dodat chybějící dokumenty do ${deadline.toLocaleDateString('cs-CZ')}.`,
         checklist,
-        assignedTo: MOCK_CONFIG.CURRENT_USER_NAME
+        assignedTo: 'Účetní'
       })
     }
 
@@ -244,7 +244,7 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         companyName: company.name,
         description: `Klient ${company.name} nahrál všechny dokumenty pro uzávěrku za ${months[month - 1]} ${year}. Je třeba zkontrolovat a schválit.`,
         checklist,
-        assignedTo: MOCK_CONFIG.CURRENT_USER_NAME,
+        assignedTo: 'Účetní',
         attachments
       })
     }
@@ -329,7 +329,7 @@ function generateDeadlineTasks(closures: MonthlyClosure[], companies: Company[])
         status,
         companyId: company.id,
         companyName: company.name,
-        assignedTo: MOCK_CONFIG.CURRENT_USER_NAME
+        assignedTo: 'Účetní'
       })
     }
   })
@@ -596,7 +596,7 @@ export default function AccountantDashboard() {
           <button
             onClick={() => setSelectedYear(y => y - 1)}
             className="p-2 rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={selectedYear <= MOCK_CONFIG.DATA_START_YEAR}
+            disabled={selectedYear <= 2024}
           >
             ←
           </button>

@@ -1,20 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { mPohodaClient } from '@/lib/mpohoda-client'
-import { mockInvoices, type Invoice } from '@/lib/mock-data'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
-/**
- * POST /api/pohoda/export
- *
- * Export faktury do mPohoda
- *
- * Body:
- * - invoiceId: string - ID faktury k exportu
- *
- * Response:
- * - success: boolean
- * - pohodaId?: string - ID vytvořené faktury v mPohoda
- * - error?: string - Chybová zpráva
- */
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -27,23 +16,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Najít fakturu v mock datech
-    // V produkci by se načítala z databáze
-    const invoice = mockInvoices.find(inv => inv.id === invoiceId)
+    const { data: invoice, error } = await supabaseAdmin
+      .from('invoices')
+      .select('*')
+      .eq('id', invoiceId)
+      .single()
 
-    if (!invoice) {
+    if (error || !invoice) {
       return NextResponse.json(
         { success: false, error: 'Invoice not found' },
         { status: 404 }
       )
     }
 
-    // Export do mPohoda
     const result = await mPohodaClient.exportInvoice(invoice)
 
     if (result.success) {
-      // V produkci by se uložil pohoda_id do databáze
-      // invoice.pohoda_id = result.pohodaId
+      // Update pohoda_id in database
+      await supabaseAdmin
+        .from('invoices')
+        .update({ pohoda_id: result.pohodaId })
+        .eq('id', invoiceId)
 
       return NextResponse.json({
         success: true,
@@ -68,11 +61,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * GET /api/pohoda/export
- *
- * Test připojení k mPohoda API
- */
 export async function GET() {
   try {
     const isConnected = await mPohodaClient.testConnection()

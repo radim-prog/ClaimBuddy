@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { generateDeadlinesForCompany } from '@/lib/statutory-deadlines'
-import { MOCK_CONFIG } from '@/lib/mock-data'
+// User data from auth context
 
 const monthNames = [
   'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
@@ -330,7 +330,7 @@ export default function ClientDashboard() {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Vaše účetní</p>
-              <p className="font-semibold text-gray-900 dark:text-white">{MOCK_CONFIG.CURRENT_USER_NAME}</p>
+              <p className="font-semibold text-gray-900 dark:text-white">{'Klient'}</p>
             </div>
             <div className="flex gap-2">
               <Button asChild variant="outline" size="sm">

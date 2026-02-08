@@ -1,20 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateInvoiceXml, generateBatchXml, validatePohodaXml } from '@/lib/pohoda-xml'
-import { mockInvoices, type Invoice } from '@/lib/mock-data'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
-/**
- * POST /api/invoices/export-xml
- *
- * Export faktur do Pohoda XML formátu
- *
- * Body:
- * - invoiceIds: string[] - ID faktur k exportu
- * - format: 'single' | 'batch' - Formát exportu (výchozí: single)
- *
- * Response:
- * - Pro single: vrátí XML přímo
- * - Pro batch: vrátí JSON se seznamem souborů
- */
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -27,8 +16,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Najít faktury
-    const invoices = mockInvoices.filter(inv => invoiceIds.includes(inv.id))
+    const { data, error } = await supabaseAdmin
+      .from('invoices')
+      .select('*')
+      .in('id', invoiceIds)
+
+    if (error) throw new Error(`Failed to fetch invoices: ${error.message}`)
+
+    const invoices = data ?? []
 
     if (invoices.length === 0) {
       return NextResponse.json(
@@ -37,13 +32,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generovat XML
     if (format === 'batch' || invoices.length > 1) {
-      // Batch export - vrátit všechny faktury v jednom XML
       const batchXml = generateBatchXml(invoices)
       const validation = validatePohodaXml(batchXml)
 
-      // Vytvořit seznam souborů pro stažení
       const files = invoices.map(invoice => ({
         name: `${invoice.invoice_number}.xml`,
         content: generateInvoiceXml(invoice),
@@ -62,15 +54,12 @@ export async function POST(request: NextRequest) {
         files: files.map(f => ({
           name: f.name,
           size: f.content.length,
-          // V produkci by to byl base64 encoded content nebo URL ke stažení
           content: f.content,
         })),
       })
     } else {
-      // Single export - vrátit XML přímo
       const invoice = invoices[0]
       const xml = generateInvoiceXml(invoice)
-      const validation = validatePohodaXml(xml)
 
       return new NextResponse(xml, {
         status: 200,
@@ -92,15 +81,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * GET /api/invoices/export-xml
- *
- * Získat seznam dostupných faktur pro export
- */
 export async function GET() {
   try {
-    // Vrátit seznam faktur které lze exportovat
-    const exportableInvoices = mockInvoices.map(inv => ({
+    const { data, error } = await supabaseAdmin
+      .from('invoices')
+      .select('id, invoice_number, company_name, total_with_vat, status, issue_date, pohoda_id')
+      .order('created_at', { ascending: false })
+
+    if (error) throw new Error(`Failed to fetch invoices: ${error.message}`)
+
+    const exportableInvoices = (data ?? []).map(inv => ({
       id: inv.id,
       invoice_number: inv.invoice_number,
       company_name: inv.company_name,

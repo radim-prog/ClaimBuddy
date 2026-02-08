@@ -1,32 +1,48 @@
 import { NextResponse } from 'next/server'
-import { mockDocuments } from '@/lib/mock-data'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
-// DEMO MODE - Using mock data instead of Supabase
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const companyId = searchParams.get('companyId')
     const period = searchParams.get('period')
 
-    // Filter documents based on query params
-    let filteredDocuments = mockDocuments.filter(d => !d.deleted_at)
+    let query = supabaseAdmin
+      .from('documents')
+      .select('*')
+      .is('deleted_at', null)
+      .order('uploaded_at', { ascending: false })
 
     if (companyId) {
-      filteredDocuments = filteredDocuments.filter(d => d.company_id === companyId)
+      query = query.eq('company_id', companyId)
     }
 
     if (period) {
-      filteredDocuments = filteredDocuments.filter(d => d.period === period)
+      query = query.eq('period', period)
     }
 
-    // Sort by upload date (newest first)
-    filteredDocuments.sort((a, b) =>
-      new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime()
-    )
+    const { data, error } = await query
+
+    if (error) throw new Error(`Failed to fetch documents: ${error.message}`)
+
+    const documents = (data ?? []).map(d => ({
+      id: d.id,
+      company_id: d.company_id,
+      period: d.period,
+      type: d.type,
+      file_name: d.file_name,
+      file_size_bytes: d.file_size_bytes || 0,
+      status: d.status,
+      uploaded_at: d.uploaded_at || d.created_at,
+      uploaded_by: d.uploaded_by || '',
+      upload_source: d.upload_source || 'web',
+    }))
 
     return NextResponse.json({
-      documents: filteredDocuments,
-      count: filteredDocuments.length,
+      documents,
+      count: documents.length,
     })
   } catch (error) {
     console.error('Documents API error:', error)

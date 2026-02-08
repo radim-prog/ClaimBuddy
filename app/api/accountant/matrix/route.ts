@@ -1,41 +1,42 @@
 import { NextResponse } from 'next/server'
-import { mockCompanies, getClosures, getAllTasks } from '@/lib/mock-data'
+import { getAllCompanies } from '@/lib/company-store'
+import { getClosures } from '@/lib/closure-store-db'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
-// Force dynamic - this route reads mutable in-memory state
 export const dynamic = 'force-dynamic'
 
-// DEMO MODE - Using mock data instead of Supabase
 export async function GET(request: Request) {
   try {
-    // Return mock data for demo - všechna pole pro klienty
-    const companies = mockCompanies.map(c => ({
+    const [allCompanies, closures] = await Promise.all([
+      getAllCompanies(),
+      getClosures(),
+    ])
+
+    const companies = allCompanies.map(c => ({
       id: c.id,
       name: c.name,
-      group_name: (c as any).group_name || null,
+      group_name: c.group_name || null,
       ico: c.ico,
       dic: c.dic,
       legal_form: c.legal_form,
       vat_payer: c.vat_payer,
       vat_period: c.vat_period || null,
       owner_id: c.owner_id,
-      street: c.street,
-      city: c.city,
-      zip: c.zip,
-      health_insurance_company: (c as any).health_insurance_company || null,
-      has_employees: (c as any).has_employees || false,
-      employee_count: (c as any).employee_count || 0,
-      data_box: (c as any).data_box || null,
+      street: c.address?.street || null,
+      city: c.address?.city || null,
+      zip: c.address?.zip || null,
+      health_insurance_company: null,
+      has_employees: c.has_employees || false,
+      employee_count: 0,
+      data_box: null,
       status: c.status || 'active',
-      onboarding: (c as any).onboarding || null,
+      onboarding: null,
     }))
 
-    const closures = getClosures()
-
-
-    // Pro statistiky počítáme pouze uzávěrky do aktuálního měsíce (ne budoucí)
+    // Filter closures to current and past months only
     const now = new Date()
     const currentYear = now.getFullYear()
-    const currentMonth = now.getMonth() + 1 // 1-indexed pro porovnání s period
+    const currentMonth = now.getMonth() + 1
 
     const currentAndPastClosures = closures.filter(c => {
       const [year, month] = c.period.split('-').map(Number)
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
       return false
     })
 
-    // Calculate stats pouze pro aktuální a minulé měsíce
+    // Calculate stats
     const stats = {
       total: currentAndPastClosures.length,
       missing: currentAndPastClosures.filter(c =>
@@ -56,7 +57,6 @@ export async function GET(request: Request) {
         (c.bank_statement_status === 'uploaded' ||
         c.expense_documents_status === 'uploaded' ||
         c.income_invoices_status === 'uploaded') &&
-        // Nepočítat ty, které mají něco missing
         c.bank_statement_status !== 'missing' &&
         c.expense_documents_status !== 'missing' &&
         c.income_invoices_status !== 'missing'
@@ -68,7 +68,14 @@ export async function GET(request: Request) {
       ).length,
     }
 
-    const tasks = getAllTasks().map(t => ({
+    // Get tasks from Supabase
+    const { data: tasksData } = await supabaseAdmin
+      .from('tasks')
+      .select('id, title, status, due_date, company_id, company_name')
+      .order('created_at', { ascending: false })
+      .limit(200)
+
+    const tasks = (tasksData ?? []).map(t => ({
       id: t.id,
       title: t.title,
       status: t.status,

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { updateClosureFull } from '@/lib/closure-store'
-import { addActivity } from '@/lib/activity-store'
-import { MOCK_CONFIG } from '@/lib/mock-data'
+import { updateClosureFull } from '@/lib/closure-store-db'
+import { addActivity } from '@/lib/activity-store-db'
+
+export const dynamic = 'force-dynamic'
 
 export async function PUT(request: Request) {
   try {
@@ -12,12 +13,14 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'closure_id is required' }, { status: 400 })
     }
 
-    const updated = updateClosureFull(closure_id, {
+    const userName = request.headers.get('x-user-name') || 'Účetní'
+
+    const updated = await updateClosureFull(closure_id, {
       bank_statement_status,
       expense_documents_status,
       income_invoices_status,
       notes,
-      updated_by: MOCK_CONFIG.CURRENT_USER_NAME,
+      updated_by: userName,
     })
 
     if (!updated) {
@@ -25,13 +28,13 @@ export async function PUT(request: Request) {
     }
 
     // Record activity
-    addActivity({
+    await addActivity({
       type: 'closure_status_changed',
       company_id: updated.company_id,
       company_name: company_name || '',
       title: `Uzávěrka ${period || updated.period} aktualizována`,
       description: `Výpisy: ${updated.bank_statement_status}, Náklady: ${updated.expense_documents_status}, Příjmy: ${updated.income_invoices_status}`,
-      created_by: MOCK_CONFIG.CURRENT_USER_NAME,
+      created_by: userName,
     })
 
     return NextResponse.json({ closure: updated })

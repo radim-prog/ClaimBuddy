@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
-import { mockCompanies, getClosures } from '@/lib/mock-data'
+import { getAllCompanies } from '@/lib/company-store'
+import { getClosures } from '@/lib/closure-store-db'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   try {
@@ -7,36 +10,32 @@ export async function GET(request: Request) {
     const ownerId = searchParams.get('owner_id')
     const demo = searchParams.get('demo')
 
-    // Filter companies by owner_id, or use first 3 for demo
-    let companies: any[]
+    const allCompanies = await getAllCompanies()
+
+    let companies: typeof allCompanies
     if (ownerId) {
-      companies = (mockCompanies as any[]).filter(c => c.owner_id === ownerId && c.status === 'active')
+      companies = allCompanies.filter(c => c.owner_id === ownerId && c.status === 'active')
     } else if (demo === 'true') {
-      // Demo: show first 3 active companies
-      companies = (mockCompanies as any[]).filter(c => c.status === 'active').slice(0, 3)
+      companies = allCompanies.filter(c => c.status === 'active').slice(0, 3)
     } else {
-      // Fallback: first 3
-      companies = (mockCompanies as any[]).filter(c => c.status === 'active').slice(0, 3)
+      companies = allCompanies.filter(c => c.status === 'active').slice(0, 3)
     }
 
-    // Dynamic current period
     const now = new Date()
     const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     const currentYear = now.getFullYear()
 
-    // Get closures for current month
-    const currentClosures = getClosures().filter(c =>
-      companies.some(comp => comp.id === c.company_id) &&
-      c.period === currentPeriod
+    const companyIds = new Set(companies.map(c => c.id))
+    const allClosures = await getClosures()
+
+    const currentClosures = allClosures.filter(c =>
+      companyIds.has(c.company_id) && c.period === currentPeriod
     )
 
-    // Get closures for full year (all months)
-    const yearClosures = getClosures().filter(c =>
-      companies.some(comp => comp.id === c.company_id) &&
-      c.period.startsWith(String(currentYear))
+    const yearClosures = allClosures.filter(c =>
+      companyIds.has(c.company_id) && c.period.startsWith(String(currentYear))
     )
 
-    // Enrich companies with current month closure status
     const enrichedCompanies = companies.map(company => {
       const closure = currentClosures.find(c => c.company_id === company.id)
 
@@ -68,12 +67,13 @@ export async function GET(request: Request) {
       }
     })
 
-    // Stats
     const stats = {
       total_companies: companies.length,
       companies_with_missing_docs: enrichedCompanies.filter(c => c.currentMonthStatus.missing_count > 0).length,
       total_missing_docs: enrichedCompanies.reduce((sum, c) => sum + c.currentMonthStatus.missing_count, 0),
     }
+
+    const userName = request.headers.get('x-user-name') || 'Klient'
 
     return NextResponse.json({
       companies: enrichedCompanies,
@@ -86,7 +86,7 @@ export async function GET(request: Request) {
       })),
       stats,
       current_period: currentPeriod,
-      user_name: 'Karel Novák', // TODO: get from auth session
+      user_name: userName,
     })
   } catch (error) {
     console.error('Client Companies API error:', error)

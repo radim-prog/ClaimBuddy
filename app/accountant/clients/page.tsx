@@ -26,7 +26,7 @@ import {
   Mail,
 } from 'lucide-react'
 import Link from 'next/link'
-import { mockCompanies } from '@/lib/mock-data'
+// Company data fetched from API (Supabase-backed)
 import { OnboardingSetupEditor } from '@/components/onboarding-setup-editor'
 import { OnboardingStep } from '@/lib/types/onboarding'
 
@@ -234,11 +234,11 @@ function ClientsPageContent() {
     setFilterClientStatus(status)
   }, [pathname, router, searchParams])
 
-  // Helper to get client status from mock data
+  // Helper to get client status from fetched companies data
   const getClientStatus = useCallback((companyId: string) => {
-    const mockCompany = mockCompanies.find(c => c.id === companyId)
-    return mockCompany?.status || 'active'
-  }, [])
+    const company = companies.find(c => c.id === companyId)
+    return company?.status || 'active'
+  }, [companies])
 
   // Handler for onboarding setup confirmation
   const handleOnboardingConfirm = useCallback((steps: OnboardingStep[]) => {

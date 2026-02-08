@@ -1,15 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import type { UserRole } from '@/lib/auth'
 import type { UserPermissions } from '@/lib/permissions'
-
-// ============================================
-// SUPABASE CLIENT (service_role - bypasses RLS)
-// ============================================
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 // ============================================
 // TYPES
