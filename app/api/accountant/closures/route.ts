@@ -1,8 +1,26 @@
 import { NextResponse } from 'next/server'
-import { updateClosureFull } from '@/lib/closure-store-db'
+import { getClosures, updateClosureFull } from '@/lib/closure-store-db'
 import { addActivity } from '@/lib/activity-store-db'
 
 export const dynamic = 'force-dynamic'
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const companyId = searchParams.get('companyId') || undefined
+    const period = searchParams.get('period') || undefined
+
+    const closures = await getClosures({
+      companyId,
+      period,
+    })
+
+    return NextResponse.json({ closures })
+  } catch (error) {
+    console.error('Closures fetch error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
 
 export async function PUT(request: Request) {
   try {

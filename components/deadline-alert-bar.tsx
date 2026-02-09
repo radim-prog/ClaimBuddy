@@ -845,7 +845,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-7 text-xs bg-white dark:bg-gray-800/10 hover:bg-white dark:bg-gray-800/20 text-white border-0 ml-2"
+                className="h-7 text-xs bg-gray-800 dark:bg-gray-800/10 hover:bg-gray-700 dark:hover:bg-gray-800/20 text-white border-0 ml-2"
                 onClick={() => setExpanded(!expanded)}
               >
                 {expanded ? 'Skrýt' : 'Detail'}

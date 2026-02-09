@@ -99,7 +99,7 @@ export default function LoginPage() {
 
       <CardFooter>
         <p className="text-xs text-center text-muted-foreground w-full">
-          Přihlaste se křestním jménem (Karel, Jana, Petr, Marie nebo Radim)
+          Přihlaste se jménem a heslem
         </p>
       </CardFooter>
     </Card>

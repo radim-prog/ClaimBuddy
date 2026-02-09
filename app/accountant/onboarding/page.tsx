@@ -22,6 +22,7 @@ import {
   PRIORITY_CONFIG,
   ClientOnboarding,
 } from '@/lib/types/onboarding'
+import { NewClientForm } from '@/components/new-client-form'
 
 type CompanyWithOnboarding = {
   id: string
@@ -39,8 +40,10 @@ export default function OnboardingPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [filterPriority, setFilterPriority] = useState<string | null>(null)
   const [filterStalled, setFilterStalled] = useState<boolean | null>(null)
+  const [showNewClient, setShowNewClient] = useState(false)
 
-  useEffect(() => {
+  const fetchData = () => {
+    setLoading(true)
     fetch('/api/accountant/companies')
       .then(res => res.json())
       .then(data => {
@@ -48,6 +51,10 @@ export default function OnboardingPage() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchData()
   }, [])
 
   // Filter only onboarding clients
@@ -139,12 +146,13 @@ export default function OnboardingPage() {
               )}
             </p>
           </div>
-          <Link href="/accountant/clients?clientStatus=onboarding&new=true">
-            <Button className="bg-purple-600 hover:bg-purple-700">
-              <Plus className="mr-2 h-4 w-4" />
-              Nový klient
-            </Button>
-          </Link>
+          <Button 
+            className="bg-purple-600 hover:bg-purple-700"
+            onClick={() => setShowNewClient(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nový klient
+          </Button>
         </div>
       </div>
 
@@ -320,6 +328,16 @@ export default function OnboardingPage() {
           })
         )}
       </div>
+
+      {/* New Client Dialog */}
+      <NewClientForm
+        open={showNewClient}
+        onOpenChange={setShowNewClient}
+        onSuccess={() => {
+          setShowNewClient(false)
+          fetchData()
+        }}
+      />
     </div>
   )
 }

@@ -9,6 +9,8 @@ import {
   Building2,
   LogOut,
   User,
+  BarChart3,
+  ScanSearch,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -27,6 +29,8 @@ const navigation = [
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard },
   { name: 'Nahrát doklady', href: '/client/upload', icon: Upload },
   { name: 'Zprávy', href: '/client/messages', icon: MessageCircle },
+  { name: 'Vytěžování', href: '/client/extraction', icon: ScanSearch },
+  { name: 'Reporty', href: '/client/reports', icon: BarChart3 },
   { name: 'Moje firma', href: '/client/company', icon: Building2 },
 ]
 
@@ -162,7 +166,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom tab bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50">
         <nav className="flex justify-around">
-          {navigation.map((item) => {
+          {navigation.slice(0, 4).map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
             const Icon = item.icon
             return (

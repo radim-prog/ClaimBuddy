@@ -8,6 +8,7 @@ interface ThemeContextType {
   theme: Theme
   setTheme: (theme: Theme) => void
   toggleTheme: () => void
+  mounted: boolean
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
@@ -52,14 +53,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState(prev => prev === 'light' ? 'dark' : 'light')
   }
 
-  // Prevent flash of wrong theme
-  if (!mounted) {
-    return null
-  }
-
+  // Always render children - use a div wrapper to suppress hydration warnings
+  // during SSR, the class will match the initial 'light' state
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
-      {children}
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, mounted }}>
+      <div style={{ display: 'contents' }} suppressHydrationWarning>
+        {children}
+      </div>
     </ThemeContext.Provider>
   )
 }

@@ -91,3 +91,54 @@ export async function updateCompany(id: string, updates: Partial<Company>): Prom
   }
   return data as Company
 }
+
+export interface CreateCompanyInput {
+  name: string
+  ico: string
+  dic?: string | null
+  legal_form: string
+  vat_payer: boolean
+  vat_period?: string | null
+  address: { street: string; city: string; zip: string }
+  email?: string | null
+  phone?: string | null
+  bank_account?: string | null
+  status?: string
+  assigned_accountant_id?: string | null
+  has_employees?: boolean
+}
+
+export async function createCompany(input: CreateCompanyInput): Promise<Company> {
+  const { data, error } = await supabaseAdmin
+    .from('companies')
+    .insert({
+      name: input.name,
+      ico: input.ico,
+      dic: input.dic || null,
+      legal_form: input.legal_form,
+      vat_payer: input.vat_payer,
+      vat_period: input.vat_period || null,
+      address: input.address,
+      email: input.email || null,
+      phone: input.phone || null,
+      bank_account: input.bank_account || null,
+      status: input.status || 'active',
+      assigned_accountant_id: input.assigned_accountant_id || null,
+      has_employees: input.has_employees || false,
+      pohoda_years: [],
+      invoice_stats: {},
+      total_revenue: 0,
+      reliability_score: 5,
+      pohoda_id: null,
+    })
+    .select('*')
+    .single()
+
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error(`Firma s IČO ${input.ico} již existuje`)
+    }
+    throw new Error(`Failed to create company: ${error.message}`)
+  }
+  return data as Company
+}

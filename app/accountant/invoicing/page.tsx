@@ -1,10 +1,19 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -32,6 +41,9 @@ import {
   CheckCheck,
   AlertTriangle,
   Users,
+  X,
+  Printer,
+  ArrowRight,
 } from 'lucide-react'
 import { mockInvoicingData, getUserStats, type InvoiceStatus as OldInvoiceStatus, type UserStats } from '@/lib/invoicing-mock-data'
 import {
@@ -48,7 +60,27 @@ import { ProfitabilityWidget } from '@/components/accountant/profitability-widge
 
 type FilterStatus = 'all' | InvoiceStatus
 
+// Invoice preview type
+interface InvoicePreview {
+  projectId: string
+  clientName: string
+  projectTitle: string
+  totalHours: number
+  hourlyRate: number
+  totalAmount: number
+  timeEntries: Array<{
+    date: string
+    userName: string
+    description: string
+    hours: number
+    note?: string
+  }>
+  vatRate: number
+}
+
 export default function InvoicingPage() {
+  const router = useRouter()
+
   // Period state (YYYY-MM format)
   const [currentPeriod, setCurrentPeriod] = useState('2025-11')
 
@@ -65,10 +97,73 @@ export default function InvoicingPage() {
   const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices)
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
 
+  // Invoice preview modal state
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [previewInvoice, setPreviewInvoice] = useState<InvoicePreview | null>(null)
+  const [generatingInvoice, setGeneratingInvoice] = useState(false)
+
   // Get billable tasks grouped by company (using new system)
   const billableTasksByCompany = useMemo(() => {
     return getBillableTasksByCompany()
   }, [invoices]) // Re-calculate when invoices change
+
+  // Handler: Open invoice preview modal
+  const handleGenerateInvoice = (project: typeof filteredProjects[0]) => {
+    const preview: InvoicePreview = {
+      projectId: project.id,
+      clientName: project.clientName,
+      projectTitle: project.projectTitle,
+      totalHours: project.totalBillableHours,
+      hourlyRate: project.hourlyRate,
+      totalAmount: project.totalAmount,
+      timeEntries: project.timeEntries,
+      vatRate: 21, // Standard Czech VAT rate
+    }
+    setPreviewInvoice(preview)
+    setIsPreviewOpen(true)
+  }
+
+  // Handler: Close preview modal
+  const handleClosePreview = () => {
+    setIsPreviewOpen(false)
+    setPreviewInvoice(null)
+    setGeneratingInvoice(false)
+  }
+
+  // Handler: Confirm and generate invoice
+  const handleConfirmInvoice = async () => {
+    if (!previewInvoice) return
+
+    setGeneratingInvoice(true)
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    // Create invoice from project data
+    const taskIds = previewInvoice.timeEntries.map((_, idx) => `${previewInvoice.projectId}-task-${idx}`)
+    const invoice = createInvoiceFromTasks(taskIds)
+
+    if (invoice) {
+      setInvoices(prev => [...prev, invoice])
+      markTasksAsInvoiced(taskIds, invoice.id)
+
+      toast.success(`Faktura ${invoice.invoice_number} vytvořena`, {
+        description: `Částka: ${new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' }).format(invoice.total_with_vat)}`
+      })
+    }
+
+    handleClosePreview()
+  }
+
+  // Handler: Navigate to time entry task detail
+  const handleTimeEntryClick = (entry: { description: string; userName: string }) => {
+    // Navigate to task detail - in a real app, you'd have taskId
+    // For now, we'll show a toast or could navigate to a search
+    toast.info('Navigace k úkolu', {
+      description: `Úkol: ${entry.description.substring(0, 50)}...`,
+    })
+    // router.push(`/accountant/tasks?search=${encodeURIComponent(entry.description.substring(0, 30))}`)
+  }
 
   // Handler: Create invoice from selected tasks
   const handleCreateInvoice = (companyId: string, taskIds: string[]) => {
@@ -244,6 +339,11 @@ export default function InvoicingPage() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount)
+  }
+
+  // Calculate VAT amount
+  const calculateVAT = (amount: number, vatRate: number) => {
+    return amount * (vatRate / 100)
   }
 
   return (
@@ -480,7 +580,14 @@ export default function InvoicingPage() {
                   </thead>
                   <tbody>
                     {invoices.map((invoice) => (
-                      <tr key={invoice.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-white dark:bg-gray-800/50">
+                      <tr 
+                        key={invoice.id} 
+                        className="border-b border-gray-100 dark:border-gray-700 hover:bg-white dark:bg-gray-800/50 cursor-pointer transition-colors"
+                        onClick={() => {
+                          // Navigate to invoice detail
+                          toast.info(`Faktura ${invoice.invoice_number}`, { description: 'Detail faktury se otevře v nové záložce' })
+                        }}
+                      >
                         <td className="py-2 px-3 font-medium text-gray-900 dark:text-white">{invoice.invoice_number}</td>
                         <td className="py-2 px-3 text-gray-700 dark:text-gray-200">{invoice.company_name}</td>
                         <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{invoice.issue_date}</td>
@@ -505,7 +612,10 @@ export default function InvoicingPage() {
                                 size="sm"
                                 variant="outline"
                                 className="text-blue-600 border-blue-300 hover:bg-blue-50 dark:bg-blue-900/20"
-                                onClick={() => handleMarkAsSent(invoice.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleMarkAsSent(invoice.id)
+                                }}
                               >
                                 <Send className="h-3 w-3 mr-1" />
                                 Odeslat
@@ -516,7 +626,10 @@ export default function InvoicingPage() {
                                 size="sm"
                                 variant="outline"
                                 className="text-green-600 border-green-300 hover:bg-green-50 dark:bg-green-900/20"
-                                onClick={() => handleMarkAsPaid(invoice.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleMarkAsPaid(invoice.id)
+                                }}
                               >
                                 <CheckCircle className="h-3 w-3 mr-1" />
                                 Zaplaceno
@@ -526,6 +639,7 @@ export default function InvoicingPage() {
                               size="sm"
                               variant="ghost"
                               className="text-gray-600 dark:text-gray-400"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <Eye className="h-3 w-3" />
                             </Button>
@@ -578,7 +692,8 @@ export default function InvoicingPage() {
                     {userStats.map((stat) => (
                       <tr
                         key={stat.userId}
-                        className="border-b border-gray-200 dark:border-gray-700 hover:bg-white dark:bg-gray-800/50 transition-colors"
+                        className="border-b border-gray-200 dark:border-gray-700 hover:bg-white dark:bg-gray-800/50 transition-colors cursor-pointer"
+                        onClick={() => router.push(`/accountant/team/${stat.userId}`)}
                       >
                         <td className="py-3 px-4">
                           <p className="font-semibold text-gray-900 dark:text-white">{stat.userName}</p>
@@ -703,7 +818,7 @@ export default function InvoicingPage() {
               <Card key={project.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => router.push(`/accountant/projects/${project.id}`)}>
                       <div className="flex items-center gap-2 mb-2">
                         <Building2 className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                         <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
@@ -714,7 +829,7 @@ export default function InvoicingPage() {
                           {statusConfig[project.invoiceStatus].label}
                         </Badge>
                       </div>
-                      <CardTitle className="text-xl mb-2">{project.projectTitle}</CardTitle>
+                      <CardTitle className="text-xl mb-2 hover:text-blue-600 transition-colors">{project.projectTitle}</CardTitle>
                       <div className="grid grid-cols-3 gap-4 text-sm">
                         <div>
                           <p className="text-gray-600 dark:text-gray-400">Odpracováno</p>
@@ -740,7 +855,11 @@ export default function InvoicingPage() {
                     {/* Action Buttons */}
                     <div className="flex flex-col gap-2">
                       {project.invoiceStatus === 'draft' && (
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                        <Button 
+                          size="sm" 
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={() => handleGenerateInvoice(project)}
+                        >
                           <FileText className="h-4 w-4 mr-1" />
                           Vygenerovat fakturu
                         </Button>
@@ -790,7 +909,9 @@ export default function InvoicingPage() {
                         {project.timeEntries.map((entry, index) => (
                           <div
                             key={index}
-                            className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
+                            className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer"
+                            onClick={() => handleTimeEntryClick(entry)}
+                            title="Klikněte pro zobrazení detailu úkolu"
                           >
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
@@ -806,8 +927,9 @@ export default function InvoicingPage() {
                                   <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
                                     {entry.userName}
                                   </span>
+                                  <ArrowRight className="h-3 w-3 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </div>
-                                <p className="text-sm text-gray-900 dark:text-white mb-2">{entry.description}</p>
+                                <p className="text-sm text-gray-900 dark:text-white mb-2 hover:text-blue-600 transition-colors">{entry.description}</p>
                                 {entry.note && (
                                   <p className="text-xs text-gray-600 dark:text-gray-300 italic">
                                     Poznámka: {entry.note}
@@ -849,6 +971,142 @@ export default function InvoicingPage() {
           })
         )}
       </div>
+
+      {/* Invoice Preview Modal */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <FileText className="h-5 w-5 text-blue-600" />
+              Náhled faktury
+            </DialogTitle>
+            <DialogDescription>
+              Zkontrolujte údaje před vygenerováním faktury
+            </DialogDescription>
+          </DialogHeader>
+
+          {previewInvoice && (
+            <div className="space-y-6">
+              {/* Invoice Header */}
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Odběratel</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{previewInvoice.clientName}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Projekt</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{previewInvoice.projectTitle}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Datum vystavení</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {new Date().toLocaleDateString('cs-CZ')}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Splatnost</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('cs-CZ')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Time Entries Table */}
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Rozpis položek</h4>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-100 dark:bg-gray-700">
+                      <tr>
+                        <th className="text-left py-2 px-3 font-medium">Datum</th>
+                        <th className="text-left py-2 px-3 font-medium">Popis</th>
+                        <th className="text-left py-2 px-3 font-medium">Pracovník</th>
+                        <th className="text-right py-2 px-3 font-medium">Hodiny</th>
+                        <th className="text-right py-2 px-3 font-medium">Cena/h</th>
+                        <th className="text-right py-2 px-3 font-medium">Celkem</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewInvoice.timeEntries.map((entry, idx) => (
+                        <tr key={idx} className="border-t dark:border-gray-700">
+                          <td className="py-2 px-3 text-gray-600 dark:text-gray-400">
+                            {new Date(entry.date).toLocaleDateString('cs-CZ')}
+                          </td>
+                          <td className="py-2 px-3 text-gray-900 dark:text-white">{entry.description}</td>
+                          <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{entry.userName}</td>
+                          <td className="py-2 px-3 text-right text-gray-900 dark:text-white">{entry.hours.toFixed(1)}h</td>
+                          <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">
+                            {formatCurrency(previewInvoice.hourlyRate)}
+                          </td>
+                          <td className="py-2 px-3 text-right font-medium text-gray-900 dark:text-white">
+                            {formatCurrency(entry.hours * previewInvoice.hourlyRate)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-gray-50 dark:bg-gray-800/50">
+                      <tr className="border-t-2 dark:border-gray-700">
+                        <td colSpan={3} className="py-2 px-3 font-semibold text-gray-900 dark:text-white">
+                          Celkem bez DPH
+                        </td>
+                        <td colSpan={3} className="py-2 px-3 text-right font-semibold text-gray-900 dark:text-white">
+                          {formatCurrency(previewInvoice.totalAmount)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colSpan={3} className="py-2 px-3 text-gray-600 dark:text-gray-400">
+                          DPH {previewInvoice.vatRate}%
+                        </td>
+                        <td colSpan={3} className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">
+                          {formatCurrency(calculateVAT(previewInvoice.totalAmount, previewInvoice.vatRate))}
+                        </td>
+                      </tr>
+                      <tr className="bg-blue-50 dark:bg-blue-900/20">
+                        <td colSpan={3} className="py-3 px-3 font-bold text-lg text-gray-900 dark:text-white">
+                          Celkem k úhradě
+                        </td>
+                        <td colSpan={3} className="py-3 px-3 text-right font-bold text-lg text-blue-700 dark:text-blue-400">
+                          {formatCurrency(previewInvoice.totalAmount + calculateVAT(previewInvoice.totalAmount, previewInvoice.vatRate))}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={handleClosePreview}>
+              <X className="h-4 w-4 mr-2" />
+              Zrušit
+            </Button>
+            <Button variant="outline">
+              <Printer className="h-4 w-4 mr-2" />
+              Tisk
+            </Button>
+            <Button 
+              onClick={handleConfirmInvoice} 
+              disabled={generatingInvoice}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {generatingInvoice ? (
+                <>
+                  <Clock className="h-4 w-4 mr-2 animate-spin" />
+                  Generuji...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Vygenerovat fakturu
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Profitability Widget */}
       <div className="mt-6">

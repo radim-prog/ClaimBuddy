@@ -13,6 +13,7 @@
     "clean": "rm -rf .next node_modules/.cache"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.74.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -40,6 +41,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.2.0",
+    "googleapis": "^171.4.0",
     "lucide-react": "^0.314.0",
     "next": "14.1.0",
     "react": "^18.2.0",

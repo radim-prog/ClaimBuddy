@@ -754,7 +754,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
               {currentFilter && (
                 <button
                   onClick={() => setFilter(null)}
-                  className="flex items-center gap-1 px-2 py-1 rounded text-sm text-gray-400 hover:text-white hover:bg-white dark:bg-gray-800/10"
+                  className="flex items-center gap-1 px-2 py-1 rounded text-sm text-gray-400 hover:text-white hover:bg-gray-600 dark:hover:bg-gray-800/10"
                 >
                   <X className="h-3.5 w-3.5" />
                   Zrušit filtr
@@ -766,7 +766,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="h-7 text-xs bg-white dark:bg-gray-800/10 hover:bg-white dark:bg-gray-800/20 text-white border-0 ml-2"
+                  className="h-7 text-xs bg-gray-800 dark:bg-gray-800/10 hover:bg-gray-700 dark:hover:bg-gray-800/20 text-white border-0 ml-2"
                   onClick={() => setExpanded(!expanded)}
                 >
                   {expanded ? 'Skrýt detail' : 'Zobrazit detail'}

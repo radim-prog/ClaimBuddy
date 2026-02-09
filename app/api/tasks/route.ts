@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { CreateTaskInput, TaskFilter } from '@/lib/types/tasks'
 
@@ -25,15 +25,15 @@ import { CreateTaskInput, TaskFilter } from '@/lib/types/tasks'
  * - page: number (default: 1)
  * - page_size: number (default: 50, max: 100)
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient()
-
-    // Check authentication
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    if (!authUser) {
+    // Check authentication via middleware header
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
       return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
     }
+
+    const supabase = createServerClient()
 
     // Parse query parameters
     const { searchParams } = new URL(request.url)
@@ -163,15 +163,15 @@ export async function GET(request: Request) {
  * Body: CreateTaskInput
  * Returns: Created task with ID
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient()
-
-    // Check authentication
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    if (!authUser) {
+    // Check authentication via middleware header
+    const userId = request.headers.get('x-user-id')
+    if (!userId) {
       return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
     }
+
+    const supabase = createServerClient()
 
     const body: CreateTaskInput = await request.json()
 
@@ -183,14 +183,13 @@ export async function POST(request: Request) {
       )
     }
 
-    // Ensure created_by is set to current user
     // Quick actions (<30 min) don't require R-Tasks scores
     const isQuickAction = body.gtd_is_quick_action || (body.estimated_minutes && body.estimated_minutes <= 30)
 
     const taskData = {
       ...body,
-      created_by: authUser.id,
-      created_by_name: body.created_by_name || authUser.user_metadata?.name || authUser.email,
+      created_by: userId,
+      created_by_name: body.created_by_name || request.headers.get('x-user-name') || '',
       // Set defaults if not provided
       status: body.status || 'pending',
       is_project: body.is_project || false,

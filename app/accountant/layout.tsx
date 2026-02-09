@@ -19,6 +19,8 @@ import {
   Shield,
   CalendarCheck,
   BookOpen,
+  FileSearch,
+  BarChart3,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -43,6 +45,8 @@ const navigation = [
   { name: 'Onboarding', href: '/accountant/onboarding', icon: UserPlus },
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
   { name: 'Roční uzávěrka', href: '/accountant/annual-closing', icon: BookOpen },
+  { name: 'Vytěžování', href: '/accountant/extraction', icon: FileSearch },
+  { name: 'Reporty', href: '/accountant/reports', icon: BarChart3 },
   { name: 'Projekty', href: '/accountant/projects', icon: FolderKanban },
   { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare, badge: 'dynamic' as const },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: DollarSign },
@@ -89,7 +93,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col flex-grow bg-purple-700 overflow-y-auto">
           {/* Logo */}
           <div className="flex items-center h-16 flex-shrink-0 px-4 bg-white dark:bg-gray-800/10">
-            <h1 className="text-2xl font-bold text-white">Účetní OS</h1>
+            <h1 className="text-2xl font-bold text-purple-700 dark:text-white">Účetní OS</h1>
           </div>
 
           {/* Navigation */}
@@ -193,7 +197,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           <div className="flex-shrink-0 flex border-t border-white/10 p-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center w-full group hover:bg-white dark:bg-gray-800/10 rounded-lg p-2 transition-colors">
+                <button className="flex items-center w-full group hover:bg-purple-600/50 dark:hover:bg-gray-800/10 rounded-lg p-2 transition-colors">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-white dark:bg-gray-800 text-purple-600 font-bold">
                       {userInitials || '..'}
@@ -242,7 +246,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
             variant="ghost"
             size="icon"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-white hover:bg-white dark:bg-gray-800/10"
+            className="text-white hover:bg-purple-600/50 dark:hover:bg-gray-800/10"
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>

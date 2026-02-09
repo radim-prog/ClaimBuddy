@@ -668,7 +668,7 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
                 variant="ghost"
                 size="sm"
                 onClick={() => router.push('/accountant/clients')}
-                className="text-gray-400 hover:text-white hover:bg-white dark:bg-gray-800/10 -ml-2"
+                className="text-gray-400 hover:text-white hover:bg-gray-600 dark:hover:bg-gray-800/10 -ml-2"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Klienti
@@ -722,7 +722,7 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="h-7 text-xs bg-white dark:bg-gray-800/10 hover:bg-white dark:bg-gray-800/20 text-white border-0 ml-2"
+                  className="h-7 text-xs bg-gray-800 dark:bg-gray-800/10 hover:bg-gray-700 dark:hover:bg-gray-800/20 text-white border-0 ml-2"
                   onClick={() => setExpanded(!expanded)}
                 >
                   {expanded ? 'Skrýt detail' : 'Zobrazit detail'}

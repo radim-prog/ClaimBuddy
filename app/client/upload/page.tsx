@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -30,7 +30,15 @@ const docTypes: { value: DocType; label: string; icon: typeof Landmark }[] = [
   { value: 'income_invoice', label: 'Příjmové faktury', icon: FileText },
 ]
 
-export default function UploadPage() {
+export default function UploadPageWrapper() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64">Načítání...</div>}>
+      <UploadPage />
+    </Suspense>
+  )
+}
+
+function UploadPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { companies, loading } = useClientUser()
