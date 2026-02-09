@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import Link from 'next/link'
@@ -272,7 +273,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
 
   const handleDelegateToClient = (item: DeadlineItem) => {
     // TODO: Implement actual delegation - send email to client with task details
-    alert(`Úkol "${item.title}" byl delegován klientovi ${item.companyName}. Email s instrukcemi byl odeslán.`)
+    toast.success(`Úkol "${item.title}" delegován klientovi ${item.companyName}`)
   }
 
   const handleSaveNote = (id: string) => {
@@ -285,13 +286,13 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
 
   const handleSendReminder = (item: DeadlineItem) => {
     // TODO: Implement actual email/SMS sending
-    alert(`Urgence odeslána klientovi: ${item.companyName}`)
+    toast.success(`Urgence odeslána klientovi: ${item.companyName}`)
   }
 
   const handleSendAllReminders = () => {
     const clientsToRemind = overdue.filter(d => d.companyName)
     // TODO: Implement actual bulk sending
-    alert(`Urgence odeslána ${clientsToRemind.length} klientům`)
+    toast.success(`Hromadná upomínka odeslána ${clientsToRemind.length} klientům`)
   }
 
   // Checklist položky jsou pouze read-only - odvozené ze skutečného stavu dokumentů

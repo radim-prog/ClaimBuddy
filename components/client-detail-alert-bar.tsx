@@ -25,6 +25,7 @@ import {
   Users
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -74,6 +75,7 @@ interface ClientDetailAlertBarProps {
   companies: Company[]
   closures: MonthlyClosure[]
   deadlines?: DeadlineItem[]
+  variant?: 'bar' | 'card'  // NEW PROP
 }
 
 const months = [
@@ -81,7 +83,7 @@ const months = [
   'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro'
 ]
 
-export function ClientDetailAlertBar({ companyId, companies, closures, deadlines = [] }: ClientDetailAlertBarProps) {
+export function ClientDetailAlertBar({ companyId, companies, closures, deadlines = [], variant = 'bar' }: ClientDetailAlertBarProps) {
   const router = useRouter()
 
   // Expanded state for dropdown
@@ -258,7 +260,7 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
   }
 
   const handleDelegateToClient = (item: DeadlineItem) => {
-    alert(`Úkol "${item.title}" byl delegován klientovi ${item.companyName}. Email s instrukcemi byl odeslán.`)
+    toast.success(`Úkol "${item.title}" delegován klientovi ${item.companyName}`)
   }
 
   const handleSaveNote = (id: string) => {
@@ -270,7 +272,7 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
   }
 
   const handleSendReminder = (item: DeadlineItem) => {
-    alert(`Urgence odeslána klientovi: ${item.companyName}`)
+    toast.success(`Urgence odeslána klientovi: ${item.companyName}`)
   }
 
   const getCompletedChecklistCount = (item: DeadlineItem) => {
@@ -644,9 +646,13 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
 
   if (!company) {
     return (
-      <div className="bg-gray-800 text-white px-4 py-2">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-2 text-gray-400">
+      <div className={`px-4 py-2 ${
+        variant === 'card'
+          ? 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm text-gray-900 dark:text-white'
+          : 'bg-gray-800 text-white'
+      }`}>
+        <div className={variant === 'card' ? '' : 'max-w-7xl mx-auto'}>
+          <div className={`flex items-center gap-2 ${variant === 'card' ? 'text-gray-500 dark:text-gray-400' : 'text-gray-400'}`}>
             <AlertCircle className="h-5 w-5" />
             <span>Klient nenalezen</span>
           </div>
@@ -659,8 +665,12 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <div className="bg-gray-800 text-white px-4 py-2">
-        <div className="max-w-7xl mx-auto">
+      <div className={`px-4 py-2 ${
+        variant === 'card'
+          ? 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm text-gray-900 dark:text-white'
+          : 'bg-gray-800 text-white'
+      } ${variant === 'card' ? 'mx-0' : ''}`}>
+        <div className={variant === 'card' ? '' : 'max-w-7xl mx-auto'}>
           <div className="flex items-center justify-between gap-4">
             {/* Left side - Client info */}
             <div className="flex items-center gap-3">
@@ -674,13 +684,13 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
                 Klienti
               </Button>
 
-              <span className="text-gray-500 dark:text-gray-400">|</span>
+              <span className={variant === 'card' ? 'text-gray-300 dark:text-gray-600' : 'text-gray-500 dark:text-gray-400'}>|</span>
 
               <div className="flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-purple-400" />
                 <span className="font-medium">{displayName}</span>
                 {company.ico && (
-                  <span className="text-gray-400 text-sm">IČO: {company.ico}</span>
+                  <span className={`text-sm ${variant === 'card' ? 'text-gray-500 dark:text-gray-400' : 'text-gray-400'}`}>IČO: {company.ico}</span>
                 )}
               </div>
             </div>
@@ -736,8 +746,10 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
 
       {/* Expanded dropdown with tasks */}
       {expanded && visibleDeadlines.length > 0 && (
-        <div className="absolute left-0 right-0 top-full bg-gray-50 dark:bg-gray-800/50 border-b shadow-xl z-40 max-h-[70vh] overflow-y-auto">
-          <div className="max-w-7xl mx-auto p-4">
+        <div className={`absolute left-0 right-0 top-full border-b shadow-xl z-40 max-h-[70vh] overflow-y-auto ${
+          variant === 'card' ? 'bg-white dark:bg-gray-800 rounded-b-lg border-gray-200 dark:border-gray-700' : 'bg-gray-50 dark:bg-gray-800/50'
+        }`}>
+          <div className={variant === 'card' ? 'p-4' : 'max-w-7xl mx-auto p-4'}>
             {/* Grouped deadlines */}
             {renderDeadlineGroup(overdue, 'PO TERMÍNU', 'bg-red-500', 'text-red-600 dark:text-red-400')}
             {renderDeadlineGroup(today, 'DNES', 'bg-orange-500', 'text-orange-600 dark:text-orange-400')}

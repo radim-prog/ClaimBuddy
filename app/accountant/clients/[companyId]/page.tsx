@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/popover'
 import { toast } from 'sonner'
 import { EditClientModal } from '@/components/edit-client-modal'
+import { ClientDetailAlertBar } from '@/components/client-detail-alert-bar'
 import { ClosureDetailModal } from '@/components/closure-detail-modal'
 import { EmployeesSection } from '@/components/employees-section'
 import { AssetsSection } from '@/components/assets-section'
@@ -84,14 +85,16 @@ type Company = {
   email?: string
 }
 
+type StatusType = 'missing' | 'uploaded' | 'approved'
+
 type MonthlyClosure = {
   id: string
   company_id: string
   period: string
   status: string
-  bank_statement_status: string
-  expense_documents_status: string
-  income_invoices_status: string
+  bank_statement_status: StatusType
+  expense_documents_status: StatusType
+  income_invoices_status: StatusType
   notes: string | null
   updated_by: string | null
   updated_at: string
@@ -113,6 +116,7 @@ const monthNamesFull = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červe
 
 export default function ClientDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const companyId = params.companyId as string
 
   const [company, setCompany] = useState<Company | null>(null)
@@ -123,6 +127,7 @@ export default function ClientDetailPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [onboarding, setOnboarding] = useState<ClientOnboarding | null>(null)
   const [vatReturns, setVatReturns] = useState<VatReturn[]>([])
+  const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth())
@@ -148,6 +153,13 @@ export default function ClientDetailPage() {
       const companyData = await companyRes.json()
       setCompany(companyData.company)
       setClosures(companyData.closures || [])
+
+      // Fetch all companies for alert bar navigation
+      const companiesRes = await fetch('/api/accountant/companies')
+      if (companiesRes.ok) {
+        const companiesData = await companiesRes.json()
+        setCompanies(companiesData.companies || [])
+      }
 
       // Načíst zaměstnance (v produkci by to bylo z API)
       const companyEmployees = getEmployeesByCompany(companyId)
@@ -308,6 +320,24 @@ export default function ClientDetailPage() {
 
       {/* Main Content */}
       <div className="flex-1 max-w-4xl space-y-6">
+        {/* Alert Bar - prominent at top */}
+        <ClientDetailAlertBar
+          companyId={companyId}
+          companies={companies.length > 0 ? companies : [company].filter(Boolean) as Company[]}
+          closures={closures}
+          deadlines={tasks.map(t => ({
+            id: t.id,
+            title: t.title,
+            dueDate: t.due_date || new Date().toISOString(),
+            type: t.status === 'pending' || t.status === 'clarifying' ? 'urgent' : 'warning' as const,
+            companyId: t.company_id || companyId,
+            companyName: company.name,
+            description: t.description,
+            assignedTo: t.assigned_to,
+          }))}
+          variant="card"
+        />
+
         {/* Navigation */}
         <div className="flex items-center justify-between">
           <Link href="/accountant/clients">
@@ -349,16 +379,7 @@ export default function ClientDetailPage() {
                   )}
                   {company.group_name && ' – '}
                   {company.name}
-                  {(company as any).status === 'inactive' && (
-                    <Badge variant="outline" className="ml-3 text-sm text-red-600 border-red-300 bg-red-50 align-middle">
-                      Neaktivní
-                    </Badge>
-                  )}
-                  {(company as any).status === 'active' && (
-                    <Badge variant="outline" className="ml-3 text-sm text-green-600 border-green-300 bg-green-50 align-middle">
-                      Aktivní
-                    </Badge>
-                  )}
+                  {/* Status badges removed - now shown in ClientDetailAlertBar */}
                 </h1>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">{company.legal_form}</p>
               </div>
@@ -741,7 +762,7 @@ export default function ClientDetailPage() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        alert('Upload dokumentů - bude implementováno')
+                        router.push(`/client/upload?company=${companyId}&period=${selectedPeriod}`)
                       }}
                     >
                       <Upload className="h-4 w-4 mr-1" />

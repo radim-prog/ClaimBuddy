@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Save, X } from 'lucide-react'
+import { Save, X, Check, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
 type Company = {
@@ -90,6 +90,49 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
           <div className="space-y-4">
             <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Základní údaje</h3>
 
+            {/* Status Toggle - prominent at top */}
+            <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700 mb-4">
+              <Label className="text-sm font-medium mb-2 block">Stav klienta</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, status: 'active' })}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    formData.status === 'active' || !formData.status
+                      ? 'bg-green-100 text-green-700 border-2 border-green-500 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  <Check className="w-4 h-4 inline mr-1" />
+                  Aktivní
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, status: 'inactive' })}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    formData.status === 'inactive'
+                      ? 'bg-red-100 text-red-700 border-2 border-red-500 dark:bg-red-900/30 dark:text-red-400'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  <X className="w-4 h-4 inline mr-1" />
+                  Neaktivní
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, status: 'onboarding' })}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    formData.status === 'onboarding'
+                      ? 'bg-blue-100 text-blue-700 border-2 border-blue-500 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 inline mr-1" />
+                  Onboarding
+                </button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Název firmy *</Label>
@@ -110,22 +153,7 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="status">Stav klienta</Label>
-              <Select
-                value={formData.status || 'active'}
-                onValueChange={(value) => setFormData({ ...formData, status: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Aktivní</SelectItem>
-                  <SelectItem value="inactive">Neaktivní</SelectItem>
-                  <SelectItem value="onboarding">V onboardingu</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
 
             <div className="grid grid-cols-3 gap-4">
               <div>
@@ -365,7 +393,11 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
             <X className="mr-2 h-4 w-4" />
             Zrušit
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed dark:bg-purple-600 dark:hover:bg-purple-700"
+          >
             <Save className="mr-2 h-4 w-4" />
             {saving ? 'Ukládám...' : 'Uložit změny'}
           </Button>

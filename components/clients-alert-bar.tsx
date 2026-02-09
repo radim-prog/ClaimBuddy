@@ -27,6 +27,7 @@ import {
   Keyboard
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -262,7 +263,7 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
   }
 
   const handleDelegateToClient = (item: DeadlineItem) => {
-    alert(`Úkol "${item.title}" byl delegován klientovi ${item.companyName}. Email s instrukcemi byl odeslán.`)
+    toast.success(`Úkol "${item.title}" delegován klientovi ${item.companyName}`)
   }
 
   const handleSaveNote = (id: string) => {
@@ -274,12 +275,12 @@ export function ClientsAlertBar({ companies, closures, deadlines = [] }: Clients
   }
 
   const handleSendReminder = (item: DeadlineItem) => {
-    alert(`Urgence odeslána klientovi: ${item.companyName}`)
+    toast.success(`Urgence odeslána klientovi: ${item.companyName}`)
   }
 
   const handleSendAllReminders = () => {
     const clientsToRemind = overdue.filter(d => d.companyName)
-    alert(`Urgence odeslána ${clientsToRemind.length} klientům`)
+    toast.success(`Hromadná upomínka odeslána ${clientsToRemind.length} klientům`)
   }
 
   const getCompletedChecklistCount = (item: DeadlineItem) => {

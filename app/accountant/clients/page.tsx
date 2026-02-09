@@ -244,8 +244,8 @@ function ClientsPageContent() {
   const handleOnboardingConfirm = useCallback((steps: OnboardingStep[]) => {
     // TODO: V produkci by se zde vytvořil nový klient s onboardingem
     console.log('Onboarding steps configured:', steps)
-    // Prozatím jen ukážeme alert
-    alert(`Onboarding nakonfigurován s ${steps.length} kroky (${steps.filter(s => s.required).length} povinných).\n\nV produkční verzi by se nyní otevřel formulář pro zadání údajů klienta.`)
+    // Přesměrování na onboarding stránku
+    router.push('/accountant/onboarding')
   }, [])
 
   // Dynamické aktuální období
@@ -692,9 +692,11 @@ function ClientsPageContent() {
             </Button>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => alert('TODO: Hromadná upomínka')}>
+            {/* Hromadná upomínka - TODO: implementovat později
+            <Button variant="outline" size="sm" onClick={() => toast.info('Hromadná upomínka - připravujeme')}>
               <Mail className="h-4 w-4 mr-1" /> Hromadná upomínka
             </Button>
+            */}
           </div>
         </div>
       )}
