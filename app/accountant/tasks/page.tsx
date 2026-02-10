@@ -1349,6 +1349,14 @@ export default function TasksPage() {
           {showFilters ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />}
         </Button>
 
+        {/* GTD Clarify button */}
+        <Link href="/accountant/tasks/clarify">
+          <Button size="sm" variant="outline" className="h-9">
+            <Zap className="h-4 w-4 mr-1" />
+            Zpracovat inbox
+          </Button>
+        </Link>
+
         {/* New task button - UnifiedInput */}
         <UnifiedInput
           onNoteCreated={handleNoteCreated}

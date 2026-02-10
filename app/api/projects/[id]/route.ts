@@ -1,0 +1,48 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+
+export const dynamic = 'force-dynamic'
+
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params
+
+  const [projectRes, phasesRes, tasksRes] = await Promise.all([
+    supabaseAdmin.from('projects').select('*').eq('id', id).single(),
+    supabaseAdmin.from('project_phases').select('*').eq('project_id', id).order('position'),
+    supabaseAdmin.from('tasks').select('id, title, status, assigned_to_name, due_date, is_next_action, phase_id, position_in_phase').eq('project_id', id),
+  ])
+
+  if (projectRes.error) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+
+  return NextResponse.json({
+    project: projectRes.data,
+    phases: phasesRes.data || [],
+    tasks: tasksRes.data || [],
+  })
+}
+
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params
+  const body = await req.json()
+
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  const allowed = ['title', 'description', 'outcome', 'status', 'company_id', 'owner_id', 'due_date', 'estimated_hours', 'actual_hours', 'progress_percentage', 'tags', 'completed_at']
+  for (const key of allowed) {
+    if (body[key] !== undefined) updates[key] = body[key]
+  }
+
+  if (body.status === 'completed' && !updates.completed_at) {
+    updates.completed_at = new Date().toISOString()
+  }
+
+  const { data, error } = await supabaseAdmin.from('projects').update(updates).eq('id', id).select().single()
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ project: data })
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const { id } = params
+  const { error } = await supabaseAdmin.from('projects').delete().eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}

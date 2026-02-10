@@ -37,6 +37,7 @@ import { Button } from '@/components/ui/button'
 import { logout } from '@/app/auth/login/actions'
 import { SettingsProvider } from '@/lib/contexts/settings-context'
 import { AccountantUserProvider, useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { QuickAddButton } from '@/components/gtd/quick-add-button'
 // Badge count - will be fetched from API in future; for now show 0
 
 const navigation = [
@@ -353,6 +354,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
         <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
           {children}
         </main>
+        <QuickAddButton />
       </div>
     </div>
   )

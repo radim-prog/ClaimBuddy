@@ -38,6 +38,9 @@ export async function GET(request: NextRequest) {
     // Parse query parameters
     const { searchParams } = new URL(request.url)
 
+    // count_only mode: return just the count
+    const countOnly = searchParams.get('count_only') === 'true'
+
     const filters: TaskFilter = {
       status: searchParams.get('status')?.split(',') as any,
       score_priority: searchParams.get('score_priority')?.split(',') as any,
@@ -57,6 +60,11 @@ export async function GET(request: NextRequest) {
       parent_project_id: searchParams.get('parent_project_id') || undefined,
       search: searchParams.get('search') || undefined,
     }
+
+    // GTD-specific filters
+    const projectId = searchParams.get('project_id')
+    const locationId = searchParams.get('location_id')
+    const isNextAction = searchParams.get('is_next_action')
 
     const sortBy = searchParams.get('sort_by') || 'created_at'
     const sortOrder = searchParams.get('sort_order') || 'desc'
@@ -124,6 +132,18 @@ export async function GET(request: NextRequest) {
       query = query.eq('parent_project_id', filters.parent_project_id)
     }
 
+    if (projectId) {
+      query = query.eq('project_id', projectId)
+    }
+
+    if (locationId) {
+      query = query.eq('location_id', locationId)
+    }
+
+    if (isNextAction === 'true') {
+      query = query.eq('is_next_action', true)
+    }
+
     if (filters.search) {
       query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
     }
@@ -142,6 +162,10 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Tasks fetch error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    if (countOnly) {
+      return NextResponse.json({ count: count || 0 })
     }
 
     return NextResponse.json({
@@ -175,10 +199,10 @@ export async function POST(request: NextRequest) {
 
     const body: CreateTaskInput = await request.json()
 
-    // Validate required fields
-    if (!body.title || !body.company_id || !body.company_name) {
+    // Validate required fields - company not required for inbox tasks
+    if (!body.title) {
       return NextResponse.json(
-        { error: 'Název úkolu, company_id a company_name jsou povinné' },
+        { error: 'Název úkolu je povinný' },
         { status: 400 }
       )
     }

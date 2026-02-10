@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { DollarSign, Settings as SettingsIcon, Users as UsersIcon, Building2, Repeat } from 'lucide-react'
+import { DollarSign, Settings as SettingsIcon, Users as UsersIcon, Building2, Repeat, MapPin } from 'lucide-react'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 export default function SettingsLayout({
@@ -38,6 +38,12 @@ export default function SettingsLayout({
       name: 'Šablony úkolů',
       href: '/accountant/settings/templates',
       icon: Repeat,
+      show: true
+    },
+    {
+      name: 'Místa',
+      href: '/accountant/settings/locations',
+      icon: MapPin,
       show: true
     },
     {
