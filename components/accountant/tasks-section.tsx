@@ -212,7 +212,7 @@ export function AccountantTasksSection({
             Vše ({counts.all})
           </button>
         </div>
-        <Button size="sm" variant="outline">
+        <Button size="sm" variant="outline" disabled title="Připravujeme">
           <Plus className="h-4 w-4 mr-1" />
           Nový úkol
         </Button>
@@ -335,10 +335,10 @@ export function AccountantTasksSection({
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>
+                    <DropdownMenuItem disabled>
                       Upravit
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600 dark:text-red-400">
+                    <DropdownMenuItem disabled className="text-red-600 dark:text-red-400">
                       Smazat
                     </DropdownMenuItem>
                   </DropdownMenuContent>
