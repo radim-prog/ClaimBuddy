@@ -7,7 +7,7 @@ import { ClientsAlertBar } from './clients-alert-bar'
 import { ClientDetailAlertBar } from './client-detail-alert-bar'
 import { useAlertSettings } from '@/lib/contexts/settings-context'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
-import { mockTasks, mockCompanies } from '@/lib/mock-data'
+// TODO: Task deadlines budou načítané z API /api/tasks až bude implementováno
 
 type StatusType = 'missing' | 'uploaded' | 'approved'
 
@@ -310,74 +310,8 @@ function generateOnboardingDeadlines(
   })
 }
 
-// Generuje deadlines z úkolů (mockTasks)
-function generateTaskDeadlines() {
-  const deadlines: Array<{
-    id: string
-    title: string
-    dueDate: string
-    type: 'critical' | 'urgent' | 'warning'
-    caseId?: string
-    companyId?: string
-    companyName?: string
-    description?: string
-    assignedTo?: string
-  }> = []
-
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  // Filtrovat pouze aktivní úkoly - stejný filtr jako v tasks/page.tsx
-  const archivedStatuses = ['completed', 'invoiced', 'cancelled']
-  const waitingStatuses = ['waiting_for', 'waiting_client']
-  const activeTasks = mockTasks.filter(task =>
-    !archivedStatuses.includes(task.status) &&
-    !waitingStatuses.includes(task.status) &&
-    task.status !== 'someday_maybe'
-  )
-
-  activeTasks.forEach(task => {
-    if (!task.due_date) return
-
-    const dueDate = new Date(task.due_date)
-    dueDate.setHours(0, 0, 0, 0)
-
-    // Výpočet dnů - půlnoc vs půlnoc pro přesnost
-    const diffTime = dueDate.getTime() - today.getTime()
-    const daysUntil = Math.round(diffTime / (1000 * 60 * 60 * 24))
-
-    // Pouze úkoly po termínu, dnes, nebo zítra (daysUntil <= 1)
-    if (daysUntil > 1) return
-
-    // Najít název firmy
-    const company = mockCompanies.find(c => c.id === task.company_id)
-    const displayName = company?.name || task.company_name
-
-    // Určení typu podle dní do termínu
-    const alertType: 'critical' | 'urgent' | 'warning' =
-      daysUntil < 0 ? 'critical' :  // Po termínu
-      daysUntil === 0 ? 'urgent' :   // Dnes
-      'warning'                      // Zítra
-
-    deadlines.push({
-      id: `task-${task.id}`,
-      title: `📋 ${task.title}`,  // Přidán prefix pro odlišení od uzávěrek
-      dueDate: new Date(task.due_date).toISOString(),
-      type: alertType,
-      caseId: task.id,
-      companyId: task.company_id,
-      companyName: displayName,
-      description: task.description,
-      assignedTo: task.assigned_to_name
-    })
-  })
-
-  return deadlines.sort((a, b) => {
-    if (a.type === 'critical' && b.type !== 'critical') return -1
-    if (a.type !== 'critical' && b.type === 'critical') return 1
-    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-  })
-}
+// TODO: generateTaskDeadlines() - bude načítat z /api/tasks
+// Momentálně task deadlines nejsou implementované (data v Supabase, ne v mock)
 
 export function GlobalDeadlineAlert() {
   const pathname = usePathname()
@@ -385,20 +319,12 @@ export function GlobalDeadlineAlert() {
   const { userName } = useAccountantUser()
   const [data, setData] = useState<{ companies: Company[], closures: MonthlyClosure[] } | null>(null)
   const [closureDeadlines, setClosureDeadlines] = useState<ReturnType<typeof generateDeadlines>>([])
-  const [taskDeadlines, setTaskDeadlines] = useState<ReturnType<typeof generateTaskDeadlines>>([])
   const [onboardingDeadlines, setOnboardingDeadlines] = useState<ReturnType<typeof generateOnboardingDeadlines>>([])
   const [loading, setLoading] = useState(true)
   const originalTitle = 'Účetní OS'
 
-  // Sloučené deadlines (uzávěrky + úkoly)
-  const deadlines = useMemo(() => {
-    const all = [...closureDeadlines, ...taskDeadlines]
-    return all.sort((a, b) => {
-      if (a.type === 'critical' && b.type !== 'critical') return -1
-      if (a.type !== 'critical' && b.type === 'critical') return 1
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-    })
-  }, [closureDeadlines, taskDeadlines])
+  // Deadlines z uzávěrek (task deadlines budou přidány až bude API)
+  const deadlines = closureDeadlines
 
   // Determine context based on URL
   const context: AlertContext = useMemo(() => {
@@ -458,9 +384,6 @@ export function GlobalDeadlineAlert() {
       // Generuj deadlines z uzávěrek
       const closureGen = generateDeadlines(data.closures, data.companies, settingsParams, userName)
       setClosureDeadlines(closureGen)
-      // Generuj deadlines z úkolů
-      const taskGen = generateTaskDeadlines()
-      setTaskDeadlines(taskGen)
       // Generuj deadlines z onboardingu
       const onbGenerated = generateOnboardingDeadlines(data.companies, settingsParams)
       setOnboardingDeadlines(onbGenerated)
@@ -510,9 +433,8 @@ export function GlobalDeadlineAlert() {
       return <DeadlineAlertBar deadlines={onboardingDeadlines} />
 
     case 'tasks':
-      // Na stránce úkolů zobrazit POUZE úkoly (ne uzávěrky)
-      if (taskDeadlines.length === 0) return null
-      return <DeadlineAlertBar deadlines={taskDeadlines} />
+      // TODO: Na stránce úkolů zobrazit task deadlines z API
+      return null
 
     case 'dashboard':
     default:

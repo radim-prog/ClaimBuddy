@@ -70,6 +70,8 @@ import { GTDWizard } from '@/components/tasks/gtd-wizard'
 import { TimeTracker, TimeTrackingEntry } from '@/components/tasks/time-tracker'
 import { UrgencyBadge } from '@/components/tasks/UrgencyBadge'
 import { UrgencyActions, ManagerActions } from '@/components/tasks/UrgencyActions'
+// TODO: This page is BROKEN - mockTasks is empty [], so line ~409 always returns undefined
+// and the page always shows "Úkol nenalezen". Needs refactor to fetch task from API.
 import { mockTasks, Task, mockUsers, MOCK_CONFIG, getTimeLogsForTask, TimeLog, mockTimeLogs, getEscalationLevel, getCompanyReliabilityScore, getReliabilityLabel, getReliabilityEmoji } from '@/lib/mock-data'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'

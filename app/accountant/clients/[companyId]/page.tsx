@@ -62,7 +62,7 @@ import { Employee } from '@/lib/types/employee'
 import { Asset } from '@/lib/types/asset'
 import { Insurance } from '@/lib/types/insurance'
 import { ClientOnboarding } from '@/lib/types/onboarding'
-import { Task, getAssetsByCompany, getInsurancesByCompany, getTasksByCompany, mockCompanies, getCompanyReliabilityScore, getReliabilityLabel, getReliabilityEmoji } from '@/lib/mock-data'
+import { Task, getReliabilityLabel, getReliabilityEmoji } from '@/lib/mock-data'
 import type { VatReturn } from '@/lib/types/vat'
 import { getVatReturnTypeLabel, getVatStatusLabel, getVatStatusColor } from '@/lib/types/vat'
 
@@ -167,27 +167,16 @@ export default function ClientDetailPage() {
       const companyEmployees: Employee[] = [] // TODO: fetch from Supabase
       setEmployees(companyEmployees)
 
-      // Načíst majetek (v produkci by to bylo z API)
-      const companyAssets = getAssetsByCompany(companyId)
-      setAssets(companyAssets)
-
-      // Načíst pojištění (v produkci by to bylo z API)
-      const companyInsurances = getInsurancesByCompany(companyId)
-      setInsurances(companyInsurances)
-
-      // Načíst úkoly (v produkci by to bylo z API)
-      const companyTasks = getTasksByCompany(companyId)
-      setTasks(companyTasks)
+      // TODO: fetch assets, insurances, tasks from Supabase API
+      setAssets([])
+      setInsurances([])
+      setTasks([])
 
       // Načíst DPH data
       const companyVatReturns: VatReturn[] = [] // TODO: fetch from Supabase vat-store
       setVatReturns(companyVatReturns)
 
-      // Načíst onboarding data (v produkci by to bylo z API)
-      const mockCompany = mockCompanies.find(c => c.id === companyId)
-      if (mockCompany?.onboarding) {
-        setOnboarding(mockCompany.onboarding)
-      }
+      // TODO: fetch onboarding data from Supabase API
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
@@ -575,21 +564,11 @@ export default function ClientDetailPage() {
               )}
 
               {/* Reliability Score Badge */}
-              {(() => {
-                const score = getCompanyReliabilityScore(companyId)
-                const label = getReliabilityLabel(score)
-                const emoji = getReliabilityEmoji(score)
-                const bgColor = score === 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
-                               score === 1 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
-                               score === 2 ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300' :
-                               'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                return (
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bgColor}`}
-                        title="Spolehlivost klienta při dodávání podkladů">
-                    {emoji} {label}
-                  </span>
-                )
-              })()}
+              {/* TODO: fetch reliability_score from company API data */}
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    title="Spolehlivost klienta při dodávání podkladů">
+                {getReliabilityEmoji(2)} {getReliabilityLabel(2)}
+              </span>
             </div>
           </CardContent>
         </Card>
