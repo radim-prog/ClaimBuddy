@@ -1,7 +1,6 @@
 // Šablony opakujících se úkolů pro účetní kancelář
 // Generuje měsíční/kvartální/roční úkoly na základě vlastností klienta
 
-import { pohodaCompanies } from '@/lib/pohoda-real-data'
 import { MOCK_CONFIG } from '@/lib/mock-data'
 import type { Task, TaskStatus, BillingType } from '@/lib/mock-data'
 
@@ -291,17 +290,23 @@ export function generateTasksForCompany(
 }
 
 // Generate all tasks for all companies for a given month
-export function generateAllTasks(year: number, month: number): Task[] {
-  const companies = (pohodaCompanies as CompanyForTemplates[]).filter(c => c.status === 'active')
-  return companies.flatMap(company => generateTasksForCompany(company, year, month))
+export function generateAllTasks(
+  year: number,
+  month: number,
+  companies: CompanyForTemplates[]
+): Task[] {
+  const activeCompanies = companies.filter(c => c.status === 'active')
+  return activeCompanies.flatMap(company => generateTasksForCompany(company, year, month))
 }
 
 // Get task count preview per template for active companies
-export function getTemplatePreview(): Array<{ template: TaskTemplate; matchingCompanies: number }> {
-  const companies = (pohodaCompanies as CompanyForTemplates[]).filter(c => c.status === 'active')
+export function getTemplatePreview(
+  companies: CompanyForTemplates[]
+): Array<{ template: TaskTemplate; matchingCompanies: number }> {
+  const activeCompanies = companies.filter(c => c.status === 'active')
   return TASK_TEMPLATES.map(template => ({
     template,
-    matchingCompanies: companies.filter(c => matchesTemplate(c, template)).length,
+    matchingCompanies: activeCompanies.filter(c => matchesTemplate(c, template)).length,
   }))
 }
 

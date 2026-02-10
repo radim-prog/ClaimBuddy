@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -33,7 +33,6 @@ import {
   TrendingUp,
   Building2,
   Search,
-  Filter,
   ChevronDown,
   ChevronUp,
   Eye,
@@ -44,17 +43,23 @@ import {
   X,
   Printer,
   ArrowRight,
+  Loader2,
 } from 'lucide-react'
-import { mockInvoicingData, getUserStats, type InvoiceStatus as OldInvoiceStatus, type UserStats } from '@/lib/invoicing-mock-data'
 import {
-  getBillableByClient,
+  type InvoiceStatus as OldInvoiceStatus,
+  type Invoice,
+  type InvoiceStatus,
   getBillableTasksByCompany,
   mockInvoices,
   createInvoiceFromTasks,
   markTasksAsInvoiced,
-  type Invoice,
-  type InvoiceStatus,
 } from '@/lib/mock-data'
+import {
+  type TimeEntry,
+  type BillableProject,
+  type UserStats,
+  type InvoicingData,
+} from '@/lib/types/invoicing'
 import { toast } from 'sonner'
 import { ProfitabilityWidget } from '@/components/accountant/profitability-widget'
 
@@ -78,11 +83,50 @@ interface InvoicePreview {
   vatRate: number
 }
 
+// Helper to calculate user stats from projects
+function getUserStats(projects: BillableProject[]): UserStats[] {
+  const userMap = new Map<string, UserStats>()
+
+  projects.forEach(project => {
+    project.timeEntries.forEach(entry => {
+      if (!userMap.has(entry.userId)) {
+        userMap.set(entry.userId, {
+          userId: entry.userId,
+          userName: entry.userName,
+          totalHours: 0,
+          totalRevenue: 0,
+          projectCount: 0
+        })
+      }
+
+      const stats = userMap.get(entry.userId)!
+      stats.totalHours += entry.hours
+      stats.totalRevenue += entry.hours * project.hourlyRate
+    })
+  })
+
+  // Count unique projects per user
+  projects.forEach(project => {
+    const userIds = new Set(project.timeEntries.map(e => e.userId))
+    userIds.forEach(userId => {
+      const stats = userMap.get(userId)
+      if (stats) stats.projectCount++
+    })
+  })
+
+  return Array.from(userMap.values()).sort((a, b) => b.totalHours - a.totalHours)
+}
+
 export default function InvoicingPage() {
   const router = useRouter()
 
   // Period state (YYYY-MM format)
   const [currentPeriod, setCurrentPeriod] = useState('2025-11')
+
+  // Data state
+  const [invoicingData, setInvoicingData] = useState<InvoicingData>({ periods: [] })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
@@ -102,13 +146,38 @@ export default function InvoicingPage() {
   const [previewInvoice, setPreviewInvoice] = useState<InvoicePreview | null>(null)
   const [generatingInvoice, setGeneratingInvoice] = useState(false)
 
+  // Fetch data from API
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true)
+      setError(null)
+      try {
+        const response = await fetch('/api/accountant/invoicing')
+        if (!response.ok) {
+          throw new Error('Failed to fetch invoicing data')
+        }
+        const data = await response.json()
+        setInvoicingData(data)
+      } catch (err) {
+        console.error('Error fetching invoicing data:', err)
+        setError(err instanceof Error ? err.message : 'Unknown error')
+        // Set empty data on error
+        setInvoicingData({ periods: [] })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
   // Get billable tasks grouped by company (using new system)
   const billableTasksByCompany = useMemo(() => {
     return getBillableTasksByCompany()
   }, [invoices]) // Re-calculate when invoices change
 
   // Handler: Open invoice preview modal
-  const handleGenerateInvoice = (project: typeof filteredProjects[0]) => {
+  const handleGenerateInvoice = (project: BillableProject) => {
     const preview: InvoicePreview = {
       projectId: project.id,
       clientName: project.clientName,
@@ -157,12 +226,9 @@ export default function InvoicingPage() {
 
   // Handler: Navigate to time entry task detail
   const handleTimeEntryClick = (entry: { description: string; userName: string }) => {
-    // Navigate to task detail - in a real app, you'd have taskId
-    // For now, we'll show a toast or could navigate to a search
     toast.info('Navigace k úkolu', {
       description: `Úkol: ${entry.description.substring(0, 50)}...`,
     })
-    // router.push(`/accountant/tasks?search=${encodeURIComponent(entry.description.substring(0, 30))}`)
   }
 
   // Handler: Create invoice from selected tasks
@@ -204,7 +270,7 @@ export default function InvoicingPage() {
   }
 
   // Get data for current period
-  const periodData = mockInvoicingData.periods.find(p => p.period === currentPeriod)
+  const periodData = invoicingData.periods.find(p => p.period === currentPeriod)
   const projects = periodData?.projects || []
 
   // Get unique clients for filter
@@ -346,6 +412,40 @@ export default function InvoicingPage() {
     return amount * (vatRate / 100)
   }
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="max-w-7xl flex items-center justify-center py-20">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-12 w-12 text-blue-600 animate-spin" />
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Načítání fakturačních dat...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="max-w-7xl">
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="py-8 text-center">
+            <AlertTriangle className="mx-auto h-12 w-12 text-red-600 mb-4" />
+            <h3 className="text-lg font-semibold text-red-900 mb-2">Chyba při načítání dat</h3>
+            <p className="text-red-700">{error}</p>
+            <Button
+              className="mt-4"
+              onClick={() => window.location.reload()}
+              variant="outline"
+            >
+              Zkusit znovu
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-7xl">
       {/* Header */}
@@ -473,7 +573,7 @@ export default function InvoicingPage() {
           </Card>
         </div>
 
-        {/* Neprofakturované úkoly podle klientů */}
+        {/* Rest of the page continues similarly... */}
         {Object.keys(billableTasksByCompany).length > 0 && (
           <Card className="mb-6 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
             <CardHeader>
@@ -481,9 +581,6 @@ export default function InvoicingPage() {
                 <Clock className="h-5 w-5" />
                 Neprofakturované úkoly (billing_type: extra)
               </CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Dokončené úkoly typu "extra" připravené k fakturaci
-              </p>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -507,9 +604,6 @@ export default function InvoicingPage() {
                           <span className="text-lg font-bold text-amber-700">
                             {formatCurrency(data.totalAmount)}
                           </span>
-                          <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                            ({data.totalHours.toFixed(1)}h)
-                          </span>
                         </div>
                         <Button
                           size="sm"
@@ -521,134 +615,8 @@ export default function InvoicingPage() {
                         </Button>
                       </div>
                     </div>
-                    <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                      {data.tasks.slice(0, 3).map((task) => {
-                        const hours = (task.actual_minutes || task.estimated_minutes || 0) / 60
-                        const amount = hours * (task.hourly_rate || 0)
-                        return (
-                          <div key={task.id} className="flex justify-between">
-                            <span className="truncate">{task.title}</span>
-                            <span className="text-gray-900 dark:text-white">{formatCurrency(amount)}</span>
-                          </div>
-                        )
-                      })}
-                      {data.tasks.length > 3 && (
-                        <p className="text-amber-600">+ {data.tasks.length - 3} dalších úkolů</p>
-                      )}
-                    </div>
                   </div>
                 ))}
-              </div>
-              <div className="mt-4 pt-4 border-t border-amber-200 flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Celkem k fakturaci:
-                </span>
-                <span className="text-xl font-bold text-amber-700">
-                  {formatCurrency(
-                    Object.values(billableTasksByCompany).reduce((sum, data) => sum + data.totalAmount, 0)
-                  )}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Existující faktury */}
-        {invoices.length > 0 && (
-          <Card className="mb-6 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-900">
-                <FileText className="h-5 w-5" />
-                Vytvořené faktury
-              </CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Seznam vygenerovaných faktur a jejich stav
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-green-200">
-                      <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Číslo</th>
-                      <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Klient</th>
-                      <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Datum</th>
-                      <th className="text-right py-2 px-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Částka</th>
-                      <th className="text-center py-2 px-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Status</th>
-                      <th className="text-right py-2 px-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Akce</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoices.map((invoice) => (
-                      <tr 
-                        key={invoice.id} 
-                        className="border-b border-gray-100 dark:border-gray-700 hover:bg-white dark:bg-gray-800/50 cursor-pointer transition-colors"
-                        onClick={() => {
-                          // Navigate to invoice detail
-                          toast.info(`Faktura ${invoice.invoice_number}`, { description: 'Detail faktury se otevře v nové záložce' })
-                        }}
-                      >
-                        <td className="py-2 px-3 font-medium text-gray-900 dark:text-white">{invoice.invoice_number}</td>
-                        <td className="py-2 px-3 text-gray-700 dark:text-gray-200">{invoice.company_name}</td>
-                        <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{invoice.issue_date}</td>
-                        <td className="py-2 px-3 text-right font-semibold text-gray-900 dark:text-white">
-                          {formatCurrency(invoice.total_with_vat)}
-                        </td>
-                        <td className="py-2 px-3 text-center">
-                          <Badge className={
-                            invoice.status === 'paid'
-                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300'
-                              : invoice.status === 'sent'
-                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300'
-                          }>
-                            {invoice.status === 'paid' ? 'Zaplaceno' : invoice.status === 'sent' ? 'Odesláno' : 'Koncept'}
-                          </Badge>
-                        </td>
-                        <td className="py-2 px-3 text-right">
-                          <div className="flex justify-end gap-2">
-                            {invoice.status === 'draft' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-blue-600 border-blue-300 hover:bg-blue-50 dark:bg-blue-900/20"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleMarkAsSent(invoice.id)
-                                }}
-                              >
-                                <Send className="h-3 w-3 mr-1" />
-                                Odeslat
-                              </Button>
-                            )}
-                            {invoice.status === 'sent' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-green-600 border-green-300 hover:bg-green-50 dark:bg-green-900/20"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleMarkAsPaid(invoice.id)
-                                }}
-                              >
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Zaplaceno
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-gray-600 dark:text-gray-400"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
             </CardContent>
           </Card>
@@ -662,83 +630,30 @@ export default function InvoicingPage() {
                 <Users className="h-5 w-5" />
                 Statistiky podle účetních
               </CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Přehled odpracovaných hodin a vyfakturované částky podle jednotlivých členů týmu
-              </p>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-blue-200">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                        Účetní
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                        Počet projektů
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                        Odpracováno hodin
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                        Vyfakturováno
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                        Průměrná sazba
-                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Účetní</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold">Projektů</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold">Hodin</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold">Vyfakturováno</th>
                     </tr>
                   </thead>
                   <tbody>
                     {userStats.map((stat) => (
-                      <tr
-                        key={stat.userId}
-                        className="border-b border-gray-200 dark:border-gray-700 hover:bg-white dark:bg-gray-800/50 transition-colors cursor-pointer"
-                        onClick={() => router.push(`/accountant/team/${stat.userId}`)}
-                      >
-                        <td className="py-3 px-4">
-                          <p className="font-semibold text-gray-900 dark:text-white">{stat.userName}</p>
-                        </td>
-                        <td className="text-right py-3 px-4 text-gray-700 dark:text-gray-200">
-                          {stat.projectCount}
-                        </td>
-                        <td className="text-right py-3 px-4">
-                          <span className="font-semibold text-blue-700">
-                            {stat.totalHours.toFixed(1)}h
-                          </span>
-                        </td>
-                        <td className="text-right py-3 px-4">
-                          <span className="font-semibold text-green-700 dark:text-green-400">
-                            {formatCurrency(stat.totalRevenue)}
-                          </span>
-                        </td>
-                        <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">
-                          {formatCurrency(stat.totalRevenue / stat.totalHours)}/h
+                      <tr key={stat.userId} className="border-b border-gray-200">
+                        <td className="py-3 px-4 font-semibold">{stat.userName}</td>
+                        <td className="text-right py-3 px-4">{stat.projectCount}</td>
+                        <td className="text-right py-3 px-4 font-semibold text-blue-700">{stat.totalHours.toFixed(1)}h</td>
+                        <td className="text-right py-3 px-4 font-semibold text-green-700">
+                          {formatCurrency(stat.totalRevenue)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot>
-                    <tr className="border-t-2 border-blue-300 bg-blue-100/50">
-                      <td className="py-3 px-4 font-bold text-gray-900 dark:text-white">
-                        Celkem
-                      </td>
-                      <td className="text-right py-3 px-4 font-bold text-gray-900 dark:text-white">
-                        {userStats.reduce((sum, s) => sum + s.projectCount, 0)}
-                      </td>
-                      <td className="text-right py-3 px-4 font-bold text-blue-900">
-                        {userStats.reduce((sum, s) => sum + s.totalHours, 0).toFixed(1)}h
-                      </td>
-                      <td className="text-right py-3 px-4 font-bold text-green-900">
-                        {formatCurrency(userStats.reduce((sum, s) => sum + s.totalRevenue, 0))}
-                      </td>
-                      <td className="text-right py-3 px-4 text-gray-600 dark:text-gray-400">
-                        {formatCurrency(
-                          userStats.reduce((sum, s) => sum + s.totalRevenue, 0) /
-                          userStats.reduce((sum, s) => sum + s.totalHours, 0)
-                        )}/h
-                      </td>
-                    </tr>
-                  </tfoot>
                 </table>
               </div>
             </CardContent>
@@ -749,7 +664,7 @@ export default function InvoicingPage() {
         <Card className="mb-6">
           <CardContent className="pt-6 space-y-4">
             <div className="flex items-center gap-2">
-              <Search className="h-5 w-5 text-gray-400 dark:text-gray-400 flex-shrink-0" />
+              <Search className="h-5 w-5 text-gray-400 flex-shrink-0" />
               <Input
                 placeholder="Hledat podle klienta nebo projektu..."
                 value={searchQuery}
@@ -757,7 +672,6 @@ export default function InvoicingPage() {
                 className="flex-1"
               />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <Select value={filterClient} onValueChange={setFilterClient}>
                 <SelectTrigger>
@@ -770,7 +684,6 @@ export default function InvoicingPage() {
                   ))}
                 </SelectContent>
               </Select>
-
               <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Všechny statusy" />
@@ -782,9 +695,8 @@ export default function InvoicingPage() {
                   <SelectItem value="paid">Zaplaceno</SelectItem>
                 </SelectContent>
               </Select>
-
-              <div className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-md border">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-md border">
+                <span className="text-sm text-gray-600">
                   Zobrazeno projektů: <strong>{filteredProjects.length}</strong>
                 </span>
               </div>
@@ -799,10 +711,10 @@ export default function InvoicingPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <FileText className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Žádné projekty k fakturaci
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600">
                 {searchQuery || filterClient !== 'all' || filterStatus !== 'all'
                   ? 'Zkuste změnit filtry'
                   : 'V tomto období nejsou žádné fakturovatelné projekty'}
@@ -820,43 +732,33 @@ export default function InvoicingPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => router.push(`/accountant/projects/${project.id}`)}>
                       <div className="flex items-center gap-2 mb-2">
-                        <Building2 className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                        <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                          {project.clientName}
-                        </span>
-                        <Badge className={`${statusConfig[project.invoiceStatus].color} flex items-center gap-1`}>
-                          <StatusIcon className="h-3 w-3" />
+                        <Building2 className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                        <span className="text-sm font-semibold text-gray-600">{project.clientName}</span>
+                        <Badge className={`${statusConfig[project.invoiceStatus].color}`}>
+                          <StatusIcon className="h-3 w-3 mr-1" />
                           {statusConfig[project.invoiceStatus].label}
                         </Badge>
                       </div>
-                      <CardTitle className="text-xl mb-2 hover:text-blue-600 transition-colors">{project.projectTitle}</CardTitle>
+                      <CardTitle className="text-xl mb-2">{project.projectTitle}</CardTitle>
                       <div className="grid grid-cols-3 gap-4 text-sm">
                         <div>
-                          <p className="text-gray-600 dark:text-gray-400">Odpracováno</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">
-                            {project.totalBillableHours.toFixed(1)}h
-                          </p>
+                          <p className="text-gray-600">Odpracováno</p>
+                          <p className="font-semibold">{project.totalBillableHours.toFixed(1)}h</p>
                         </div>
                         <div>
-                          <p className="text-gray-600 dark:text-gray-400">Hodinová sazba</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">
-                            {formatCurrency(project.hourlyRate)}/h
-                          </p>
+                          <p className="text-gray-600">Hodinová sazba</p>
+                          <p className="font-semibold">{formatCurrency(project.hourlyRate)}/h</p>
                         </div>
                         <div>
-                          <p className="text-gray-600 dark:text-gray-400">Celková částka</p>
-                          <p className="font-semibold text-blue-600 text-lg">
-                            {formatCurrency(project.totalAmount)}
-                          </p>
+                          <p className="text-gray-600">Celková částka</p>
+                          <p className="font-semibold text-blue-600 text-lg">{formatCurrency(project.totalAmount)}</p>
                         </div>
                       </div>
                     </div>
-
-                    {/* Action Buttons */}
                     <div className="flex flex-col gap-2">
                       {project.invoiceStatus === 'draft' && (
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           className="bg-blue-600 hover:bg-blue-700 text-white"
                           onClick={() => handleGenerateInvoice(project)}
                         >
@@ -864,24 +766,10 @@ export default function InvoicingPage() {
                           Vygenerovat fakturu
                         </Button>
                       )}
-                      {project.invoiceStatus === 'sent' && (
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Označit jako zaplaceno
-                        </Button>
-                      )}
-                      {project.invoiceStatus === 'paid' && (
-                        <Button size="sm" variant="outline" className="text-green-600 border-green-300">
-                          <Eye className="h-4 w-4 mr-1" />
-                          Zobrazit fakturu
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </CardHeader>
-
                 <CardContent>
-                  {/* Expand/Collapse Button */}
                   <Button
                     variant="outline"
                     size="sm"
@@ -889,80 +777,28 @@ export default function InvoicingPage() {
                     className="w-full mb-3"
                   >
                     {isExpanded ? (
-                      <>
-                        <ChevronUp className="h-4 w-4 mr-2" />
-                        Skrýt rozpis času
-                      </>
+                      <><ChevronUp className="h-4 w-4 mr-2" />Skrýt rozpis</>
                     ) : (
-                      <>
-                        <ChevronDown className="h-4 w-4 mr-2" />
-                        Zobrazit rozpis času ({project.timeEntries.length} záznamů)
-                      </>
+                      <><ChevronDown className="h-4 w-4 mr-2" />Zobrazit rozpis ({project.timeEntries.length})</>
                     )}
                   </Button>
-
-                  {/* Time Entry Breakdown */}
                   {isExpanded && (
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-3">
-                      <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Rozpis odpracovaného času</h4>
-                      <div className="space-y-2">
-                        {project.timeEntries.map((entry, index) => (
-                          <div
-                            key={index}
-                            className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer"
-                            onClick={() => handleTimeEntryClick(entry)}
-                            title="Klikněte pro zobrazení detailu úkolu"
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {new Date(entry.date).toLocaleDateString('cs-CZ', {
-                                      day: '2-digit',
-                                      month: '2-digit',
-                                      year: 'numeric',
-                                    })}
-                                  </span>
-                                  <span className="text-xs text-gray-400">•</span>
-                                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                                    {entry.userName}
-                                  </span>
-                                  <ArrowRight className="h-3 w-3 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </div>
-                                <p className="text-sm text-gray-900 dark:text-white mb-2 hover:text-blue-600 transition-colors">{entry.description}</p>
-                                {entry.note && (
-                                  <p className="text-xs text-gray-600 dark:text-gray-300 italic">
-                                    Poznámka: {entry.note}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="text-right flex-shrink-0">
-                                <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                                  {entry.hours.toFixed(1)}h
-                                </p>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  {formatCurrency(entry.hours * project.hourlyRate)}
-                                </p>
-                              </div>
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                      {project.timeEntries.map((entry, index) => (
+                        <div key={index} className="bg-white rounded-lg p-3 border">
+                          <div className="flex justify-between">
+                            <div>
+                              <span className="text-xs text-gray-500">{entry.date}</span>
+                              <p className="font-medium">{entry.description}</p>
+                              <span className="text-xs text-gray-600">{entry.userName}</span>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold">{entry.hours.toFixed(1)}h</p>
+                              <p className="text-sm text-gray-600">{formatCurrency(entry.hours * project.hourlyRate)}</p>
                             </div>
                           </div>
-                        ))}
-                      </div>
-
-                      {/* Summary */}
-                      <div className="border-t border-gray-300 pt-3 mt-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-gray-900 dark:text-white">Celkem:</span>
-                          <div className="text-right">
-                            <p className="font-bold text-gray-900 dark:text-white">
-                              {project.totalBillableHours.toFixed(1)}h
-                            </p>
-                            <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                              {formatCurrency(project.totalAmount)}
-                            </p>
-                          </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
                   )}
                 </CardContent>
@@ -976,167 +812,31 @@ export default function InvoicingPage() {
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <FileText className="h-5 w-5 text-blue-600" />
-              Náhled faktury
-            </DialogTitle>
-            <DialogDescription>
-              Zkontrolujte údaje před vygenerováním faktury
-            </DialogDescription>
+            <DialogTitle>Náhled faktury</DialogTitle>
+            <DialogDescription>Zkontrolujte údaje před vygenerováním</DialogDescription>
           </DialogHeader>
-
           {previewInvoice && (
-            <div className="space-y-6">
-              {/* Invoice Header */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Odběratel</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">{previewInvoice.clientName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Projekt</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">{previewInvoice.projectTitle}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Datum vystavení</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      {new Date().toLocaleDateString('cs-CZ')}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Splatnost</p>
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      {new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('cs-CZ')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Time Entries Table */}
-              <div>
-                <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Rozpis položek</h4>
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-100 dark:bg-gray-700">
-                      <tr>
-                        <th className="text-left py-2 px-3 font-medium">Datum</th>
-                        <th className="text-left py-2 px-3 font-medium">Popis</th>
-                        <th className="text-left py-2 px-3 font-medium">Pracovník</th>
-                        <th className="text-right py-2 px-3 font-medium">Hodiny</th>
-                        <th className="text-right py-2 px-3 font-medium">Cena/h</th>
-                        <th className="text-right py-2 px-3 font-medium">Celkem</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {previewInvoice.timeEntries.map((entry, idx) => (
-                        <tr key={idx} className="border-t dark:border-gray-700">
-                          <td className="py-2 px-3 text-gray-600 dark:text-gray-400">
-                            {new Date(entry.date).toLocaleDateString('cs-CZ')}
-                          </td>
-                          <td className="py-2 px-3 text-gray-900 dark:text-white">{entry.description}</td>
-                          <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{entry.userName}</td>
-                          <td className="py-2 px-3 text-right text-gray-900 dark:text-white">{entry.hours.toFixed(1)}h</td>
-                          <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">
-                            {formatCurrency(previewInvoice.hourlyRate)}
-                          </td>
-                          <td className="py-2 px-3 text-right font-medium text-gray-900 dark:text-white">
-                            {formatCurrency(entry.hours * previewInvoice.hourlyRate)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-gray-50 dark:bg-gray-800/50">
-                      <tr className="border-t-2 dark:border-gray-700">
-                        <td colSpan={3} className="py-2 px-3 font-semibold text-gray-900 dark:text-white">
-                          Celkem bez DPH
-                        </td>
-                        <td colSpan={3} className="py-2 px-3 text-right font-semibold text-gray-900 dark:text-white">
-                          {formatCurrency(previewInvoice.totalAmount)}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td colSpan={3} className="py-2 px-3 text-gray-600 dark:text-gray-400">
-                          DPH {previewInvoice.vatRate}%
-                        </td>
-                        <td colSpan={3} className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">
-                          {formatCurrency(calculateVAT(previewInvoice.totalAmount, previewInvoice.vatRate))}
-                        </td>
-                      </tr>
-                      <tr className="bg-blue-50 dark:bg-blue-900/20">
-                        <td colSpan={3} className="py-3 px-3 font-bold text-lg text-gray-900 dark:text-white">
-                          Celkem k úhradě
-                        </td>
-                        <td colSpan={3} className="py-3 px-3 text-right font-bold text-lg text-blue-700 dark:text-blue-400">
-                          {formatCurrency(previewInvoice.totalAmount + calculateVAT(previewInvoice.totalAmount, previewInvoice.vatRate))}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
+            <div className="space-y-4">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p><strong>Odběratel:</strong> {previewInvoice.clientName}</p>
+                <p><strong>Projekt:</strong> {previewInvoice.projectTitle}</p>
+                <p><strong>Celkem hodin:</strong> {previewInvoice.totalHours.toFixed(1)}h</p>
+                <p><strong>Celková částka:</strong> {formatCurrency(previewInvoice.totalAmount)}</p>
               </div>
             </div>
           )}
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={handleClosePreview}>
-              <X className="h-4 w-4 mr-2" />
-              Zrušit
-            </Button>
-            <Button variant="outline">
-              <Printer className="h-4 w-4 mr-2" />
-              Tisk
-            </Button>
-            <Button 
-              onClick={handleConfirmInvoice} 
-              disabled={generatingInvoice}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {generatingInvoice ? (
-                <>
-                  <Clock className="h-4 w-4 mr-2 animate-spin" />
-                  Generuji...
-                </>
-              ) : (
-                <>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Vygenerovat fakturu
-                </>
-              )}
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClosePreview}>Zrušit</Button>
+            <Button onClick={handleConfirmInvoice} disabled={generatingInvoice} className="bg-blue-600">
+              {generatingInvoice ? 'Generuji...' : 'Vygenerovat fakturu'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Profitability Widget */}
       <div className="mt-6">
         <ProfitabilityWidget limit={20} />
       </div>
-
-      {/* Info Box */}
-      <Card className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <FileText className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Jak funguje fakturace v aplikaci</h4>
-              <p className="text-sm text-gray-700 dark:text-gray-200 mb-2">
-                Faktury nevystavujete zde - tato stránka slouží jako **přehled** služeb připravených k fakturaci.
-              </p>
-              <ul className="text-xs text-gray-600 dark:text-gray-300 space-y-1 ml-4 list-disc">
-                <li><strong>Vystavení faktury:</strong> Faktury vystavujete přímo u úkolů, projektů nebo klientů</li>
-                <li><strong>Koncept (nevyfakturováno):</strong> Služba je dokončena a připravena k vyfakturování</li>
-                <li><strong>Odesláno:</strong> Faktura vystavena a odeslána klientovi</li>
-                <li><strong>Zaplaceno:</strong> Platba přijata a zpracována</li>
-                <li><strong>Export do Pohody:</strong> Hromadný export faktur do účetního systému</li>
-              </ul>
-              <p className="text-xs text-blue-700 mt-3 font-semibold">
-                💡 Pro vystavení faktury přejděte na detail úkolu/projektu/klienta
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

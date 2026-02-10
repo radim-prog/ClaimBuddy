@@ -2,7 +2,7 @@
 // Automaticky generováno z Pohoda MDB databází
 
 import { TaskTimelineEvent } from '@/lib/types/tasks'
-import { pohodaCompanies, POHODA_STATS } from '@/lib/pohoda-real-data'
+// Importy z pohoda-real-data odstraněny - data nyní v Supabase
 
 // ============================================
 // HELPER FUNKCE PRO DYNAMICKÁ DATA
@@ -126,7 +126,7 @@ export const mockUsers = [
 ]
 
 // REÁLNÁ DATA: 122 firem importovaných z Pohoda MDB databází
-export const mockCompanies = pohodaCompanies as any[]
+export const mockCompanies: any[] = []  // Data nyní v Supabase, použijte company-store.ts
 
 
 // Mock documents (30 ukázkových dokumentů)

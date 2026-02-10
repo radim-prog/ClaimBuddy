@@ -23,7 +23,6 @@ import {
   getExistingTasksForPeriod,
   type TaskTemplate,
 } from '@/lib/task-templates'
-import { mockTasks } from '@/lib/mock-data'
 import { toast } from 'sonner'
 
 const monthNames = [
@@ -35,20 +34,29 @@ export default function TemplatesPage() {
   const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [generated, setGenerated] = useState(false)
+  const [companies, setCompanies] = useState<any[]>([])
 
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth() + 1
   const period = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
 
+  // Fetch companies from Supabase
+  useEffect(() => {
+    fetch('/api/accountant/companies')
+      .then(r => r.json())
+      .then(data => setCompanies(data.companies || []))
+      .catch(() => setCompanies([]))
+  }, [])
+
   // Check if tasks already exist for this period
   const existingCount = useMemo(() =>
-    getExistingTasksForPeriod(mockTasks, period),
+    getExistingTasksForPeriod([], period),
     [period]
   )
 
   // Get template previews (how many companies match each)
-  const previews = useMemo(() => getTemplatePreview(), [])
+  const previews = useMemo(() => getTemplatePreview(companies), [companies])
 
   // Total tasks that would be generated
   const totalTasks = useMemo(() =>
@@ -66,13 +74,9 @@ export default function TemplatesPage() {
     setGenerating(true)
     // Simulate a short delay for UX
     setTimeout(() => {
-      const newTasks = generateAllTasks(currentYear, currentMonth)
-      // Add to mockTasks array (mutates the exported array)
-      newTasks.forEach(t => {
-        if (!mockTasks.find(existing => existing.id === t.id)) {
-          mockTasks.push(t)
-        }
-      })
+      const newTasks = generateAllTasks(currentYear, currentMonth, companies)
+      // TODO: Save generated tasks to Supabase via API
+      // For now just show success
       setGenerating(false)
       setGenerated(true)
       toast.success(`Vygenerováno ${newTasks.length} úkolů pro ${monthNames[currentMonth - 1]} ${currentYear}`)
