@@ -3,38 +3,13 @@
 
 
 // ============================================
-// CENTRÁLNÍ KONFIGURACE
+// KONFIGURACE (TODO: nahradit dynamickým user contextem)
 // ============================================
 
-function getCurrentPeriod(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-}
-
 export const MOCK_CONFIG = {
-  CURRENT_PERIOD: getCurrentPeriod(),
-  PREVIOUS_PERIOD: (() => {
-    const d = new Date()
-    d.setMonth(d.getMonth() - 1)
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-  })(),
-
-  COMPANIES_DROPDOWN_LIMIT: 10,
-  COMPANIES_CLIENT_VIEW_LIMIT: 3,
-  TASKS_PAGE_SIZE: 50,
-  RECENT_COMPLETED_LIMIT: 5,
-
+  // Used only by task-templates.ts for default task creator
   CURRENT_USER_ID: 'user-2-accountant',
   CURRENT_USER_NAME: 'Radim Zajíček',
-
-  QUICK_ACTION_THRESHOLD: 30,
-  GTD_DO_IT_NOW_THRESHOLD: 2,
-
-  SCORE_HIGH_THRESHOLD: 9,
-  SCORE_MEDIUM_THRESHOLD: 6,
-
-  DATA_START_YEAR: new Date().getFullYear(),
-  CURRENT_YEAR: new Date().getFullYear(),
 }
 
 // ============================================

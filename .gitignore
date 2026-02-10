@@ -40,6 +40,9 @@ next-env.d.ts
 *.swo
 *~
 
+# Credentials (never commit secrets)
+CREDENTIALS.md
+
 # Claude Code
 .claude-context/
 .claude-backup/

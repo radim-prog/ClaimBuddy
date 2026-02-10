@@ -55,7 +55,6 @@ import {
   mockUsers,
   TimeLog,
   ActivityType,
-  MOCK_CONFIG,
 } from '@/lib/mock-data'
 import Link from 'next/link'
 
