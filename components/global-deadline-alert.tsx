@@ -6,6 +6,7 @@ import { DeadlineAlertBar } from './deadline-alert-bar'
 import { ClientsAlertBar } from './clients-alert-bar'
 import { ClientDetailAlertBar } from './client-detail-alert-bar'
 import { useAlertSettings } from '@/lib/contexts/settings-context'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { mockTasks, mockCompanies } from '@/lib/mock-data'
 
 type StatusType = 'missing' | 'uploaded' | 'approved'
@@ -60,7 +61,8 @@ const months = [
 function generateDeadlines(
   closures: MonthlyClosure[],
   companies: Company[],
-  settings: AlertSettingsParams
+  settings: AlertSettingsParams,
+  accountantName?: string
 ) {
   const deadlines: Array<{
     id: string
@@ -146,7 +148,7 @@ function generateDeadlines(
         companyName: displayName,
         description: `Měsíční uzávěrka za ${months[month - 1]} ${year} pro firmu ${displayName}. Klient musí dodat chybějící dokumenty do ${deadline.toLocaleDateString('cs-CZ')}.`,
         checklist,
-        assignedTo: 'Jana Svobodová'
+        assignedTo: accountantName || 'Účetní'
       })
     }
 
@@ -197,7 +199,7 @@ function generateDeadlines(
         companyName: displayName,
         description: `Klient ${displayName} nahrál všechny dokumenty pro uzávěrku za ${months[month - 1]} ${year}. Je třeba zkontrolovat a schválit.`,
         checklist,
-        assignedTo: 'Jana Svobodová',
+        assignedTo: accountantName || 'Účetní',
         attachments
       })
     }
@@ -380,6 +382,7 @@ function generateTaskDeadlines() {
 export function GlobalDeadlineAlert() {
   const pathname = usePathname()
   const alertSettings = useAlertSettings()
+  const { userName } = useAccountantUser()
   const [data, setData] = useState<{ companies: Company[], closures: MonthlyClosure[] } | null>(null)
   const [closureDeadlines, setClosureDeadlines] = useState<ReturnType<typeof generateDeadlines>>([])
   const [taskDeadlines, setTaskDeadlines] = useState<ReturnType<typeof generateTaskDeadlines>>([])
@@ -453,7 +456,7 @@ export function GlobalDeadlineAlert() {
         onboardingShowStalled
       }
       // Generuj deadlines z uzávěrek
-      const closureGen = generateDeadlines(data.closures, data.companies, settingsParams)
+      const closureGen = generateDeadlines(data.closures, data.companies, settingsParams, userName)
       setClosureDeadlines(closureGen)
       // Generuj deadlines z úkolů
       const taskGen = generateTaskDeadlines()
@@ -462,7 +465,7 @@ export function GlobalDeadlineAlert() {
       const onbGenerated = generateOnboardingDeadlines(data.companies, settingsParams)
       setOnboardingDeadlines(onbGenerated)
     }
-  }, [data, settingsLoaded, documentCriticalDays, documentUrgentDays, closureDeadlineDay, onboardingStalledDays, onboardingLowProgressPercent, onboardingShowStalled])
+  }, [data, settingsLoaded, documentCriticalDays, documentUrgentDays, closureDeadlineDay, onboardingStalledDays, onboardingLowProgressPercent, onboardingShowStalled, userName])
 
   // Update browser tab title with count of urgent deadlines
   useEffect(() => {

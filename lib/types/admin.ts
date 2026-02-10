@@ -235,7 +235,7 @@ export const DOCUMENT_TYPES: DocumentType[] = [
 ]
 
 export const MOCK_TEAM_MEMBERS: TeamMember[] = [
-  { id: '1', name: 'Jana Svobodová', email: 'jana@example.com', role: 'admin', is_active: true, created_at: '2024-01-01' },
+  { id: '1', name: 'Radim Zajíček', email: 'jana@example.com', role: 'admin', is_active: true, created_at: '2024-01-01' },
   { id: '2', name: 'Petr Novák', email: 'petr@example.com', role: 'manager', supervisor_id: '1', is_active: true, created_at: '2024-02-01' },
   { id: '3', name: 'Marie Účetní', email: 'marie@example.com', role: 'accountant', supervisor_id: '2', supervisors: ['2'], is_active: true, created_at: '2024-03-01' },
   { id: '4', name: 'Eva Malá', email: 'eva@example.com', role: 'accountant', supervisor_id: '2', supervisors: ['2', '3'], is_active: true, created_at: '2024-04-01' },

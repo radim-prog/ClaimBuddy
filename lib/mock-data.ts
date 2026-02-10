@@ -71,7 +71,7 @@ export const MOCK_CONFIG = {
 
   // ID aktuálního uživatele (účetní)
   CURRENT_USER_ID: 'user-2-accountant',
-  CURRENT_USER_NAME: 'Jana Svobodová',
+  CURRENT_USER_NAME: 'Radim Zajíček',
 
   // Prahy pro quick actions (v minutách)
   QUICK_ACTION_THRESHOLD: 30,         // Úkoly pod 30 min = quick action
@@ -102,7 +102,7 @@ export const mockUsers = [
   {
     id: 'user-2-accountant',
     email: 'jana@ucetni.cz',
-    name: 'Jana Svobodová',
+    name: 'Radim Zajíček',
     role: 'accountant' as const,
     phone_number: '+420777654321',
     created_at: '2025-01-01T00:00:00Z',

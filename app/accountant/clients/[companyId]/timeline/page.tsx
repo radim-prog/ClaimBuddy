@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { getPricingSettings } from '@/lib/pricing-settings'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 // Typy událostí pro vedení spisu
 type CaseEventType = 'task' | 'call' | 'email' | 'sms' | 'document' | 'meeting' | 'note' | 'decision' | 'deadline'
@@ -82,9 +83,9 @@ const mockCaseEvents: CaseEvent[] = [
     timestamp: '2025-01-20T14:30:00',
     title: 'Doručena výzva k místnímu šetření',
     description: 'Finanční úřad pro Prahu 1 - kontrola období 2022-2023',
-    user: 'Jana Svobodová',
+    user: 'Radim Zajíček',
     timeEntries: [
-      { id: 't1', date: '2025-01-20', startTime: '14:30', endTime: '15:00', duration: 30, user: 'Jana Svobodová', note: 'Registrace, první přečtení' }
+      { id: 't1', date: '2025-01-20', startTime: '14:30', endTime: '15:00', duration: 30, user: 'Radim Zajíček', note: 'Registrace, první přečtení' }
     ],
     billable: true,
     hourlyRate: 800,
@@ -100,14 +101,14 @@ const mockCaseEvents: CaseEvent[] = [
     timestamp: '2025-01-20T15:45:00',
     title: 'Telefonát s klientem - informování o kontrole',
     description: 'Klient informován, domluvena příprava podkladů',
-    user: 'Jana Svobodová',
+    user: 'Radim Zajíček',
     timeEntries: [
-      { id: 't2', date: '2025-01-20', startTime: '15:45', endTime: '16:15', duration: 30, user: 'Jana Svobodová', note: 'Telefonát + poznámky' }
+      { id: 't2', date: '2025-01-20', startTime: '15:45', endTime: '16:15', duration: 30, user: 'Radim Zajíček', note: 'Telefonát + poznámky' }
     ],
     billable: true,
     hourlyRate: 800,
     comments: [
-      { id: 'c1', user: 'Jana Svobodová', text: 'Klient žádá schůzku osobně', time: '15:50' }
+      { id: 'c1', user: 'Radim Zajíček', text: 'Klient žádá schůzku osobně', time: '15:50' }
     ],
     expanded: false
   },
@@ -117,9 +118,9 @@ const mockCaseEvents: CaseEvent[] = [
     timestamp: '2025-01-22T10:00:00',
     title: 'Osobní schůzka - příprava na kontrolu',
     description: 'Probrány požadované doklady, harmonogram kontroly',
-    user: 'Jana Svobodová',
+    user: 'Radim Zajíček',
     timeEntries: [
-      { id: 't3', date: '2025-01-22', startTime: '10:00', endTime: '12:00', duration: 120, user: 'Jana Svobodová', note: 'Osobní schůzka v kanceláři klienta' }
+      { id: 't3', date: '2025-01-22', startTime: '10:00', endTime: '12:00', duration: 120, user: 'Radim Zajíček', note: 'Osobní schůzka v kanceláři klienta' }
     ],
     billable: true,
     hourlyRate: 800,
@@ -132,11 +133,11 @@ const mockCaseEvents: CaseEvent[] = [
     timestamp: '2025-01-22T11:30:00',
     title: 'Úkol: Kompletace účetních dokladů za 2022-2023',
     description: 'Priorita: VYSOKÁ - termín: 5. 2. 2025',
-    user: 'Jana Svobodová',
+    user: 'Radim Zajíček',
     timeEntries: [
-      { id: 't4a', date: '2025-01-23', startTime: '09:00', endTime: '12:30', duration: 210, user: 'Jana Svobodová', note: 'Sběr dokladů za 2022' },
-      { id: 't4b', date: '2025-01-24', startTime: '09:00', endTime: '13:00', duration: 240, user: 'Jana Svobodová', note: 'Sběr dokladů za 2023' },
-      { id: 't4c', date: '2025-01-25', startTime: '14:00', endTime: '17:30', duration: 210, user: 'Jana Svobodová', note: 'Kontrola kompletnosti, třídění' }
+      { id: 't4a', date: '2025-01-23', startTime: '09:00', endTime: '12:30', duration: 210, user: 'Radim Zajíček', note: 'Sběr dokladů za 2022' },
+      { id: 't4b', date: '2025-01-24', startTime: '09:00', endTime: '13:00', duration: 240, user: 'Radim Zajíček', note: 'Sběr dokladů za 2023' },
+      { id: 't4c', date: '2025-01-25', startTime: '14:00', endTime: '17:30', duration: 210, user: 'Radim Zajíček', note: 'Kontrola kompletnosti, třídění' }
     ],
     billable: true,
     hourlyRate: 800,
@@ -148,9 +149,9 @@ const mockCaseEvents: CaseEvent[] = [
     timestamp: '2025-01-23T09:15:00',
     title: 'Email finančnímu úřadu - žádost o odklad',
     description: 'Požádáno o prodloužení termínu o 14 dní',
-    user: 'Jana Svobodová',
+    user: 'Radim Zajíček',
     timeEntries: [
-      { id: 't5', date: '2025-01-23', startTime: '09:15', endTime: '09:45', duration: 30, user: 'Jana Svobodová', note: 'Sepsání žádosti' }
+      { id: 't5', date: '2025-01-23', startTime: '09:15', endTime: '09:45', duration: 30, user: 'Radim Zajíček', note: 'Sepsání žádosti' }
     ],
     billable: true,
     hourlyRate: 800,
@@ -165,9 +166,9 @@ const mockCaseEvents: CaseEvent[] = [
     timestamp: '2025-01-25T14:00:00',
     title: 'Přijato rozhodnutí o odkladu',
     description: 'Nový termín místního šetření: 19. 2. 2025',
-    user: 'Jana Svobodová',
+    user: 'Radim Zajíček',
     timeEntries: [
-      { id: 't6', date: '2025-01-25', startTime: '14:00', endTime: '14:15', duration: 15, user: 'Jana Svobodová', note: 'Přečtení a uložení' }
+      { id: 't6', date: '2025-01-25', startTime: '14:00', endTime: '14:15', duration: 15, user: 'Radim Zajíček', note: 'Přečtení a uložení' }
     ],
     billable: true,
     hourlyRate: 800,
@@ -182,7 +183,7 @@ const mockCaseEvents: CaseEvent[] = [
     timestamp: '2025-01-10T16:30:00',
     title: 'Poznámka: Potenciální rizika',
     description: 'Identifikovány nesrovnalosti v cestovních náhradách za Q2 2022',
-    user: 'Jana Svobodová',
+    user: 'Radim Zajíček',
     timeEntries: [],
     billable: false,
     comments: [],
@@ -194,9 +195,9 @@ const mockCaseEvents: CaseEvent[] = [
     timestamp: '2024-12-15T11:00:00',
     title: 'Telefonát z finančního úřadu',
     description: 'Předběžné oznámení o kontrole, neformální dotazy',
-    user: 'Jana Svobodová',
+    user: 'Radim Zajíček',
     timeEntries: [
-      { id: 't8', date: '2024-12-15', startTime: '11:00', endTime: '11:20', duration: 20, user: 'Jana Svobodová', note: 'Telefonát + zápis' }
+      { id: 't8', date: '2024-12-15', startTime: '11:00', endTime: '11:20', duration: 20, user: 'Radim Zajíček', note: 'Telefonát + zápis' }
     ],
     billable: true,
     hourlyRate: 800,
@@ -215,7 +216,7 @@ const mockCaseMetadata: CaseMetadata = {
     {
       id: 'note-1',
       date: '2025-01-25',
-      author: 'Jana Svobodová',
+      author: 'Radim Zajíček',
       currentStatus: 'Získali jsme odklad místního šetření do 19. 2. 2025. Všechny doklady za 2022-2023 jsou kompletní a setříděné.',
       problems: 'Zjištěny nesrovnalosti v cestovních náhradách Q2 2022 - rozdíl cca 15 000 Kč. Potřeba vysvětlit finančnímu úřadu.',
       nextSteps: '1. Připravit vysvětlení k cestovním náhradám (termín: 5.2.)\n2. Schůzka s klientem 10.2. - příprava na místní šetření\n3. Připravit podklady pro argumentaci (faktury, smlouvy)'
@@ -223,7 +224,7 @@ const mockCaseMetadata: CaseMetadata = {
     {
       id: 'note-2',
       date: '2025-01-22',
-      author: 'Jana Svobodová',
+      author: 'Radim Zajíček',
       currentStatus: 'Proběhla osobní schůzka s klientem. Probrány požadavky FÚ, domluven harmonogram přípravy.',
       problems: 'Klient zapomněl některé faktury doma, přinese je zítra.',
       nextSteps: 'Počkat na dodání zbylých faktur, pak pokračovat v kompletaci.',
@@ -232,18 +233,18 @@ const mockCaseMetadata: CaseMetadata = {
     {
       id: 'note-3',
       date: '2025-01-20',
-      author: 'Jana Svobodová',
+      author: 'Radim Zajíček',
       currentStatus: 'Přijata výzva k místnímu šetření. Termín: 5. 2. 2025.',
       nextSteps: 'Urgentně kontaktovat klienta, domluvit schůzku, začít připravovat doklady.'
     }
   ],
   tasks: [
-    { id: 'task-1', title: 'Kompletace účetních dokladů za 2022-2023', completed: true, priority: 'high', assignedTo: 'Jana Svobodová' },
-    { id: 'task-2', title: 'Příprava vysvětlení k cestovním náhradám', completed: false, priority: 'high', dueDate: '2025-02-05', assignedTo: 'Jana Svobodová' },
-    { id: 'task-3', title: 'Schůzka s klientem - příprava na šetření', completed: false, priority: 'high', dueDate: '2025-02-10', assignedTo: 'Jana Svobodová' },
-    { id: 'task-4', title: 'Zaslat žádost o odklad', completed: true, priority: 'medium', assignedTo: 'Jana Svobodová' },
-    { id: 'task-5', title: 'Připravit podklady pro argumentaci', completed: false, priority: 'medium', dueDate: '2025-02-15', assignedTo: 'Jana Svobodová' },
-    { id: 'task-6', title: 'Kontrola správnosti účetních záznamů', completed: false, priority: 'low', assignedTo: 'Jana Svobodová' }
+    { id: 'task-1', title: 'Kompletace účetních dokladů za 2022-2023', completed: true, priority: 'high', assignedTo: 'Radim Zajíček' },
+    { id: 'task-2', title: 'Příprava vysvětlení k cestovním náhradám', completed: false, priority: 'high', dueDate: '2025-02-05', assignedTo: 'Radim Zajíček' },
+    { id: 'task-3', title: 'Schůzka s klientem - příprava na šetření', completed: false, priority: 'high', dueDate: '2025-02-10', assignedTo: 'Radim Zajíček' },
+    { id: 'task-4', title: 'Zaslat žádost o odklad', completed: true, priority: 'medium', assignedTo: 'Radim Zajíček' },
+    { id: 'task-5', title: 'Připravit podklady pro argumentaci', completed: false, priority: 'medium', dueDate: '2025-02-15', assignedTo: 'Radim Zajíček' },
+    { id: 'task-6', title: 'Kontrola správnosti účetních záznamů', completed: false, priority: 'low', assignedTo: 'Radim Zajíček' }
   ]
 }
 
@@ -263,6 +264,7 @@ const eventTypeConfig: Record<CaseEventType, { label: string; bgColor: string; t
 export default function ClientTimelinePage() {
   const params = useParams()
   const companyId = params.companyId as string
+  const { userName } = useAccountantUser()
 
   const [events, setEvents] = useState<CaseEvent[]>(mockCaseEvents)
   const [caseData, setCaseData] = useState<CaseMetadata>(mockCaseMetadata)
@@ -361,7 +363,7 @@ export default function ClientTimelinePage() {
       timestamp: new Date().toISOString(),
       title: newEventTitle,
       description: newEventDescription,
-      user: 'Jana Svobodová',
+      user: userName || 'Účetní',
       timeEntries: [],
       billable: true,
       hourlyRate: standardRate, // Use rate from pricing settings
@@ -397,7 +399,7 @@ export default function ClientTimelinePage() {
       startTime: newTimeStart,
       endTime: newTimeEnd,
       duration,
-      user: 'Jana Svobodová', // V reálu by se tahlo z session
+      user: userName || 'Účetní',
       note: newTimeNote
     }
 
@@ -455,7 +457,7 @@ export default function ClientTimelinePage() {
     const newNote: ProgressNote = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
-      author: 'Jana Svobodová',
+      author: userName || 'Účetní',
       currentStatus: newNoteStatus,
       problems: newNoteProblems || undefined,
       nextSteps: newNoteNextSteps || undefined,

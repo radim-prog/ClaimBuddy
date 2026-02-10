@@ -48,8 +48,8 @@ const mockUsers = centralMockUsers.map((user, index) => ({
 const mockSessions = [
   {
     id: 'session-1',
-    user_id: centralMockUsers[1]?.id || 'user-2-accountant', // Jana Svobodová
-    user_name: centralMockUsers[1]?.name || 'Jana Svobodová',
+    user_id: centralMockUsers[1]?.id || 'user-2-accountant', // Radim Zajíček
+    user_name: centralMockUsers[1]?.name || 'Radim Zajíček',
     user_email: centralMockUsers[1]?.email || 'jana@ucetni.cz',
     login_time: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3h zpět
     logout_time: null,
@@ -112,8 +112,8 @@ const mockSessions = [
   },
   {
     id: 'session-5',
-    user_id: centralMockUsers[1]?.id || 'user-2-accountant', // Jana Svobodová - včerejší session
-    user_name: centralMockUsers[1]?.name || 'Jana Svobodová',
+    user_id: centralMockUsers[1]?.id || 'user-2-accountant', // Radim Zajíček - včerejší session
+    user_name: centralMockUsers[1]?.name || 'Radim Zajíček',
     user_email: centralMockUsers[1]?.email || 'jana@ucetni.cz',
     login_time: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), // Předevčírem
     logout_time: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString(), // 10h sezení

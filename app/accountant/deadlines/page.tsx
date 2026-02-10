@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import {
   Select,
   SelectContent,
@@ -43,6 +44,7 @@ const monthNamesFull = [
 ]
 
 export default function DeadlinesPage() {
+  const { userName } = useAccountantUser()
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -125,7 +127,7 @@ export default function DeadlinesPage() {
         ...prev,
         [deadlineId]: {
           at: new Date().toISOString(),
-          by: 'Jana Svobodová',
+          by: userName || 'Účetní',
         },
       }
     })

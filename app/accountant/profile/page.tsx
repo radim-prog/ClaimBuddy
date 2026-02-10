@@ -5,8 +5,11 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 export default function AccountantProfilePage() {
+  const { userName, userInitials } = useAccountantUser()
+
   return (
     <div className="space-y-6">
       <div>
@@ -22,7 +25,7 @@ export default function AccountantProfilePage() {
           <CardContent className="flex flex-col items-center pt-6">
             <Avatar className="h-32 w-32 mb-4">
               <AvatarFallback className="bg-gradient-to-br from-purple-600 to-blue-600 text-white text-3xl">
-                JS
+                {userInitials || '..'}
               </AvatarFallback>
             </Avatar>
             <Button variant="outline" size="sm">
@@ -43,7 +46,7 @@ export default function AccountantProfilePage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Jméno a příjmení</Label>
-                <Input id="name" defaultValue="Jana Svobodová" />
+                <Input id="name" defaultValue={userName || ''} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
