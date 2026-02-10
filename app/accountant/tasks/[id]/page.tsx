@@ -70,9 +70,8 @@ import { GTDWizard } from '@/components/tasks/gtd-wizard'
 import { TimeTracker, TimeTrackingEntry } from '@/components/tasks/time-tracker'
 import { UrgencyBadge } from '@/components/tasks/UrgencyBadge'
 import { UrgencyActions, ManagerActions } from '@/components/tasks/UrgencyActions'
-// TODO: This page is BROKEN - mockTasks is empty [], so line ~409 always returns undefined
-// and the page always shows "Úkol nenalezen". Needs refactor to fetch task from API.
-import { mockTasks, Task, mockUsers, MOCK_CONFIG, getTimeLogsForTask, TimeLog, mockTimeLogs, getEscalationLevel, getCompanyReliabilityScore, getReliabilityLabel, getReliabilityEmoji } from '@/lib/mock-data'
+import { Task, mockUsers, getReliabilityLabel, getReliabilityEmoji } from '@/lib/mock-data'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -200,216 +199,108 @@ const TIMELINE_EVENT_CONFIG: Record<TimelineEventType, {
   decision: { label: 'Rozhodnutí', icon: Lightbulb, color: 'text-emerald-600', bgColor: 'bg-emerald-100' },
 }
 
-// Generate mock checklist for project
-function generateMockChecklist(taskId: string): ChecklistItem[] {
-  if (taskId !== 'task-10' && taskId !== 'task-11') return []
-
-  return [
-    {
-      id: 'check-1',
-      task_id: taskId,
-      text: 'Nastavit nový účetní systém',
-      position: 1,
-      completed: true,
-      due_date: '2025-11-20',
-      assigned_to: MOCK_CONFIG.CURRENT_USER_ID,
-      assigned_to_name: MOCK_CONFIG.CURRENT_USER_NAME,
-      estimated_minutes: 120,
-      actual_minutes: 110,
-      completed_by: MOCK_CONFIG.CURRENT_USER_ID,
-      completed_at: '2025-11-20T15:00:00Z',
-    },
-    {
-      id: 'check-2',
-      task_id: taskId,
-      text: 'Migrovat historická data',
-      position: 2,
-      completed: true,
-      due_date: '2025-11-25',
-      assigned_to: MOCK_CONFIG.CURRENT_USER_ID,
-      assigned_to_name: MOCK_CONFIG.CURRENT_USER_NAME,
-      estimated_minutes: 180,
-      actual_minutes: 200,
-      completed_by: MOCK_CONFIG.CURRENT_USER_ID,
-      completed_at: '2025-11-25T17:30:00Z',
-    },
-    {
-      id: 'check-3',
-      task_id: taskId,
-      text: 'Vyškolit klienta na nový systém',
-      position: 3,
-      completed: false,
-      due_date: '2025-12-10',
-      assigned_to: MOCK_CONFIG.CURRENT_USER_ID,
-      assigned_to_name: MOCK_CONFIG.CURRENT_USER_NAME,
-      estimated_minutes: 120,
-    },
-    {
-      id: 'check-4',
-      task_id: taskId,
-      text: 'Zpracovat první měsíc v novém systému',
-      position: 4,
-      completed: false,
-      due_date: '2025-12-20',
-      assigned_to: MOCK_CONFIG.CURRENT_USER_ID,
-      assigned_to_name: MOCK_CONFIG.CURRENT_USER_NAME,
-      estimated_minutes: 90,
-    },
-    {
-      id: 'check-5',
-      task_id: taskId,
-      text: 'Ověřit správnost migrace',
-      position: 5,
-      completed: false,
-      due_date: '2025-12-30',
-      assigned_to: MOCK_CONFIG.CURRENT_USER_ID,
-      assigned_to_name: MOCK_CONFIG.CURRENT_USER_NAME,
-      estimated_minutes: 60,
-    },
-  ]
-}
-
-// Generate mock comments
-function generateMockComments(taskId: string): Comment[] {
-  return [
-    {
-      id: 'comment-1',
-      task_id: taskId,
-      user_id: MOCK_CONFIG.CURRENT_USER_ID,
-      user_name: MOCK_CONFIG.CURRENT_USER_NAME,
-      text: 'Začínám pracovat na tomto úkolu. Kontaktovala jsem klienta.',
-      created_at: '2025-12-06T09:00:00Z',
-    },
-    {
-      id: 'comment-2',
-      task_id: taskId,
-      user_id: MOCK_CONFIG.CURRENT_USER_ID,
-      user_name: MOCK_CONFIG.CURRENT_USER_NAME,
-      text: 'Klient potvrdil dostupnost podkladů. Pokračuji.',
-      created_at: '2025-12-06T11:30:00Z',
-    },
-  ]
-}
-
-// Generate mock timeline
-function generateMockTimeline(task: Task): TimelineEvent[] {
-  const baseEvents: TimelineEvent[] = [
-    {
-      id: 'timeline-1',
-      task_id: task.id,
-      event_type: 'created',
-      user_name: task.created_by_name,
-      description: `Vytvořil(a) úkol`,
-      created_at: task.created_at,
-    },
-    {
-      id: 'timeline-2',
-      task_id: task.id,
-      event_type: 'assigned',
-      user_name: task.created_by_name,
-      description: `Přiřadil(a) úkol: ${task.assigned_to_name}`,
-      created_at: task.created_at,
-    },
-  ]
-
-  // Add more events based on status
-  if (task.status === 'accepted' || task.status === 'in_progress' || task.status === 'completed') {
-    baseEvents.push({
-      id: 'timeline-3',
-      task_id: task.id,
-      event_type: 'accepted',
-      user_name: task.assigned_to_name || task.created_by_name,
-      description: `Přijal(a) úkol`,
-      created_at: new Date(new Date(task.created_at).getTime() + 3600000).toISOString(),
-    })
-  }
-
-  // Add sample communication events for in_progress tasks
-  if (task.status === 'in_progress' || task.status === 'completed') {
-    baseEvents.push({
-      id: 'timeline-4',
-      task_id: task.id,
-      event_type: 'started',
-      user_name: task.assigned_to_name || task.created_by_name,
-      description: `Začal(a) pracovat`,
-      created_at: task.updated_at,
-    })
-
-    // Add sample call event
-    baseEvents.push({
-      id: 'timeline-call-1',
-      task_id: task.id,
-      event_type: 'call',
-      user_name: task.assigned_to_name || task.created_by_name,
-      description: `Telefonát s klientem ohledně podkladů`,
-      contact_name: task.company_name,
-      duration_minutes: 15,
-      created_at: new Date(new Date(task.updated_at).getTime() + 1800000).toISOString(),
-    })
-
-    // Add sample email event
-    baseEvents.push({
-      id: 'timeline-email-1',
-      task_id: task.id,
-      event_type: 'email',
-      user_name: task.assigned_to_name || task.created_by_name,
-      description: `Odeslán email s požadavkem na doplnění`,
-      contact_name: task.company_name,
-      created_at: new Date(new Date(task.updated_at).getTime() + 3600000).toISOString(),
-    })
-
-    // Add sample note
-    baseEvents.push({
-      id: 'timeline-note-1',
-      task_id: task.id,
-      event_type: 'note',
-      user_name: task.assigned_to_name || task.created_by_name,
-      description: `Klient potvrdil dostupnost dokumentů do pátku`,
-      created_at: new Date(new Date(task.updated_at).getTime() + 7200000).toISOString(),
-    })
-  }
-
-  if (task.status === 'completed' && task.completed_at) {
-    baseEvents.push({
-      id: 'timeline-5',
-      task_id: task.id,
-      event_type: 'completed',
-      user_name: task.assigned_to_name || task.created_by_name,
-      description: `Dokončil(a) úkol`,
-      created_at: task.completed_at,
-    })
-  }
-
-  // Sort by date
-  return baseEvents.sort((a, b) =>
-    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-  )
-}
-
-// Generate mock progress notes
-function generateMockProgressNotes(taskId: string): ProgressNote[] {
-  return [
-    {
-      id: 'progress-1',
-      task_id: taskId,
-      user_id: MOCK_CONFIG.CURRENT_USER_ID,
-      user_name: MOCK_CONFIG.CURRENT_USER_NAME,
-      current_status: 'Čekám na doklady od klienta. Telefonicky potvrdil dodání do pátku.',
-      problems: 'Chybí faktury za Q3 - klient je hledá v archivu.',
-      next_steps: 'Po obdržení dokladů zpracovat a poslat k review.',
-      created_at: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-    },
-  ]
-}
-
 export default function TaskDetailPage() {
   const params = useParams()
   const router = useRouter()
   const taskId = params.id as string
+  const { userId, userName } = useAccountantUser()
 
-  // Find task
-  const initialTask = mockTasks.find(t => t.id === taskId)
-  if (!initialTask) {
+  // All useState calls BEFORE any conditional returns (React rules of hooks)
+  const [task, setTask] = useState<Task | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([])
+  const [comments, setComments] = useState<Comment[]>([])
+  const [timeline, setTimeline] = useState<TimelineEvent[]>([])
+  const [progressNotes, setProgressNotes] = useState<ProgressNote[]>([])
+  const [newComment, setNewComment] = useState('')
+  const [showGTDWizard, setShowGTDWizard] = useState(false)
+  const [showDelegateDialog, setShowDelegateDialog] = useState(false)
+  const [delegateTo, setDelegateTo] = useState('')
+  const [delegateReason, setDelegateReason] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false)
+  const [completionActualMinutes, setCompletionActualMinutes] = useState('')
+  const [completionNote, setCompletionNote] = useState('')
+  const [showRejectionDialog, setShowRejectionDialog] = useState(false)
+  const [rejectionComment, setRejectionComment] = useState('')
+  const [showEventDialog, setShowEventDialog] = useState(false)
+  const [newEventType, setNewEventType] = useState<TimelineEventType>('call')
+  const [newEventDescription, setNewEventDescription] = useState('')
+  const [newEventContact, setNewEventContact] = useState('')
+  const [newEventDuration, setNewEventDuration] = useState('')
+  const [showProgressNoteDialog, setShowProgressNoteDialog] = useState(false)
+  const [newProgressStatus, setNewProgressStatus] = useState('')
+  const [newProgressProblems, setNewProgressProblems] = useState('')
+  const [newProgressNextSteps, setNewProgressNextSteps] = useState('')
+  const [timelineExpanded, setTimelineExpanded] = useState(true)
+  const [timeEntries, setTimeEntries] = useState<TimeTrackingEntry[]>([])
+
+  // Type-safe task updater (task is Task | null but handlers only run when task exists)
+  const updateTask = (updater: (prev: Task) => Task) => {
+    setTask(prev => prev ? updater(prev) : null)
+  }
+
+  // Current user from auth context
+  const currentUser = { id: userId, name: userName, role: 'accountant' as const, email: '', phone_number: '', created_at: '' }
+  const availableAccountants = mockUsers.filter(u => u.role !== 'client' && u.id !== userId)
+
+  // Fetch task from Supabase API
+  useEffect(() => {
+    async function fetchTask() {
+      if (!userId) return
+      try {
+        const res = await fetch(`/api/tasks/${taskId}`, {
+          headers: { 'x-user-id': userId }
+        })
+        if (!res.ok) {
+          setFetchError('Úkol nenalezen')
+          return
+        }
+        const data = await res.json()
+        setTask(data.task)
+        if (data.task.checklist_items) {
+          setChecklistItems(data.task.checklist_items)
+        }
+        if (data.task.time_entries) {
+          setTimeEntries(data.task.time_entries.map((te: any) => ({
+            id: te.id,
+            task_id: te.task_id || taskId,
+            user_id: te.user_id,
+            user_name: te.user_name || '',
+            started_at: te.started_at,
+            stopped_at: te.stopped_at,
+            duration_minutes: te.duration_minutes,
+            note: te.note || te.description || '',
+            billable: te.billable || false,
+            created_at: te.created_at,
+          })))
+        }
+      } catch {
+        setFetchError('Nepodařilo se načíst úkol')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchTask()
+  }, [taskId, userId])
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="max-w-6xl">
+        <Card>
+          <CardContent className="p-12 text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Načítám úkol...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Not found / error state
+  if (fetchError || !task) {
     return (
       <div className="max-w-6xl">
         <Card>
@@ -417,7 +308,7 @@ export default function TaskDetailPage() {
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-2">Úkol nenalezen</h2>
             <p className="text-muted-foreground mb-4">
-              Úkol s ID {taskId} neexistuje.
+              {fetchError || `Úkol s ID ${taskId} neexistuje.`}
             </p>
             <Link href="/accountant/tasks">
               <Button>
@@ -430,61 +321,6 @@ export default function TaskDetailPage() {
       </div>
     )
   }
-
-  const [task, setTask] = useState<Task>(initialTask)
-  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(generateMockChecklist(taskId))
-  const [comments, setComments] = useState<Comment[]>(generateMockComments(taskId))
-  const [timeline, setTimeline] = useState<TimelineEvent[]>(generateMockTimeline(initialTask))
-  const [progressNotes, setProgressNotes] = useState<ProgressNote[]>(generateMockProgressNotes(taskId))
-  const [newComment, setNewComment] = useState('')
-  const [showGTDWizard, setShowGTDWizard] = useState(false)
-  const [showDelegateDialog, setShowDelegateDialog] = useState(false)
-  const [delegateTo, setDelegateTo] = useState('')
-  const [delegateReason, setDelegateReason] = useState('')
-  const [saving, setSaving] = useState(false)
-
-  // Completion dialog state (FÁZE 2: actual_minutes required)
-  const [showCompletionDialog, setShowCompletionDialog] = useState(false)
-  const [completionActualMinutes, setCompletionActualMinutes] = useState('')
-  const [completionNote, setCompletionNote] = useState('')
-
-  // Rejection dialog state (FÁZE 3: approval workflow)
-  const [showRejectionDialog, setShowRejectionDialog] = useState(false)
-  const [rejectionComment, setRejectionComment] = useState('')
-
-  // Timeline Event dialog state
-  const [showEventDialog, setShowEventDialog] = useState(false)
-  const [newEventType, setNewEventType] = useState<TimelineEventType>('call')
-  const [newEventDescription, setNewEventDescription] = useState('')
-  const [newEventContact, setNewEventContact] = useState('')
-  const [newEventDuration, setNewEventDuration] = useState('')
-
-  // Progress Note dialog state
-  const [showProgressNoteDialog, setShowProgressNoteDialog] = useState(false)
-  const [newProgressStatus, setNewProgressStatus] = useState('')
-  const [newProgressProblems, setNewProgressProblems] = useState('')
-  const [newProgressNextSteps, setNewProgressNextSteps] = useState('')
-
-  // Timeline expanded state
-  const [timelineExpanded, setTimelineExpanded] = useState(true)
-
-  // Load time logs from mock data and convert to TimeTrackingEntry format
-  const initialTimeEntries: TimeTrackingEntry[] = getTimeLogsForTask(taskId).map(tl => ({
-    id: tl.id,
-    task_id: tl.task_id || taskId,
-    user_id: tl.user_id,
-    user_name: tl.user_name,
-    started_at: new Date(new Date(tl.date).getTime() - tl.minutes * 60 * 1000).toISOString(),
-    stopped_at: tl.date,
-    duration_minutes: tl.minutes,
-    note: tl.description,
-    billable: task.is_billable || false,
-    created_at: tl.created_at,
-  }))
-  const [timeEntries, setTimeEntries] = useState<TimeTrackingEntry[]>(initialTimeEntries)
-
-  const currentUser = mockUsers.find(u => u.id === MOCK_CONFIG.CURRENT_USER_ID) || mockUsers[1]
-  const availableAccountants = mockUsers.filter(u => u.role !== 'client' && u.id !== currentUser.id)
 
   // Calculate R-Tasks total score
   const calculateTaskScore = (t: Task): number => {
@@ -587,7 +423,7 @@ export default function TaskDetailPage() {
   }
 
   const handleAcceptTask = () => {
-    setTask(prev => ({ ...prev, status: 'accepted' }))
+    updateTask(prev => ({ ...prev, status: 'accepted' }))
     toast.success('Úkol přijat')
   }
 
@@ -609,7 +445,7 @@ export default function TaskDetailPage() {
 
     const delegateUser = mockUsers.find(u => u.id === delegateTo)
 
-    setTask(prev => ({
+    updateTask(prev => ({
       ...prev,
       status: 'pending',
       assigned_to: delegateTo,
@@ -656,7 +492,7 @@ export default function TaskDetailPage() {
     }
 
     // Task goes to awaiting_approval status (per gamification design)
-    setTask(prev => ({
+    updateTask(prev => ({
       ...prev,
       status: 'awaiting_approval',
       actual_minutes: actualMinutes,
@@ -682,7 +518,7 @@ export default function TaskDetailPage() {
 
   // FÁZE 3: Approval handlers
   const handleApproveTask = () => {
-    setTask(prev => ({
+    updateTask(prev => ({
       ...prev,
       status: 'completed',
       completed_at: new Date().toISOString(),
@@ -710,7 +546,7 @@ export default function TaskDetailPage() {
       return
     }
 
-    setTask(prev => ({
+    updateTask(prev => ({
       ...prev,
       status: 'in_progress',
       rejected_by: currentUser.id,
@@ -741,7 +577,7 @@ export default function TaskDetailPage() {
 
   // FÁZE 4: Claim handler for bonus tasks
   const handleClaimTask = () => {
-    setTask(prev => ({
+    updateTask(prev => ({
       ...prev,
       claimed_by: currentUser.id,
       claimed_by_name: currentUser.name,
@@ -769,7 +605,7 @@ export default function TaskDetailPage() {
   const isBonusClaimed = task.task_type === 'bonus' && task.claimed_by
 
   const handleStartTask = () => {
-    setTask(prev => ({ ...prev, status: 'in_progress' }))
+    updateTask(prev => ({ ...prev, status: 'in_progress' }))
     toast.success('Úkol zahájen')
   }
 
@@ -852,13 +688,13 @@ export default function TaskDetailPage() {
   }
 
   const handleTimeUpdate = (actualMinutes: number, entries: TimeTrackingEntry[]) => {
-    setTask(prev => ({ ...prev, actual_minutes: actualMinutes }))
+    updateTask(prev => ({ ...prev, actual_minutes: actualMinutes }))
     setTimeEntries(entries)
   }
 
   const handleGTDWizardComplete = async (data: any) => {
     // Update task with GTD data
-    setTask(prev => ({
+    updateTask(prev => ({
       ...prev,
       title: data.title,
       description: data.description,
@@ -1032,23 +868,20 @@ export default function TaskDetailPage() {
                     <ManagerActions
                       task={task}
                       onTaskUpdate={(updated) => setTask(updated)}
-                      currentUserId={MOCK_CONFIG.CURRENT_USER_ID}
+                      currentUserId={userId}
                     />
                   </div>
                 )}
 
-                {/* Reliability Score */}
-                {task.company_id && (() => {
-                  const score = getCompanyReliabilityScore(task.company_id)
-                  return (
-                    <div className="pt-3 border-t border-yellow-200 mt-3">
-                      <Label className="text-yellow-900 text-xs">Spolehlivost klienta:</Label>
-                      <p className="text-yellow-800 font-medium flex items-center gap-1">
-                        {getReliabilityEmoji(score)} {getReliabilityLabel(score)}
-                      </p>
-                    </div>
-                  )
-                })()}
+                {/* Reliability Score - TODO: fetch from company API */}
+                {task.company_id && (
+                  <div className="pt-3 border-t border-yellow-200 mt-3">
+                    <Label className="text-yellow-900 text-xs">Spolehlivost klienta:</Label>
+                    <p className="text-yellow-800 font-medium flex items-center gap-1">
+                      {getReliabilityEmoji(2)} {getReliabilityLabel(2)}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -1586,7 +1419,7 @@ export default function TaskDetailPage() {
                       variant="outline"
                       className="border-amber-300 text-amber-700 hover:bg-amber-100"
                       onClick={() => {
-                        setTask(prev => ({
+                        updateTask(prev => ({
                           ...prev,
                           gtd_is_quick_action: false,
                           // Set default R-Tasks scores when upgrading
@@ -1607,7 +1440,7 @@ export default function TaskDetailPage() {
                       variant="outline"
                       className="border-purple-300 text-purple-700 hover:bg-purple-100"
                       onClick={() => {
-                        setTask(prev => ({
+                        updateTask(prev => ({
                           ...prev,
                           gtd_is_quick_action: false,
                           is_project: true,
@@ -1643,7 +1476,7 @@ export default function TaskDetailPage() {
                     variant="ghost"
                     className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                     onClick={() => {
-                      setTask(prev => ({
+                      updateTask(prev => ({
                         ...prev,
                         is_project: true,
                       }))
@@ -1664,7 +1497,7 @@ export default function TaskDetailPage() {
                     variant="ghost"
                     className="text-muted-foreground hover:text-foreground"
                     onClick={() => {
-                      setTask(prev => ({
+                      updateTask(prev => ({
                         ...prev,
                         is_project: false,
                       }))
@@ -1685,7 +1518,7 @@ export default function TaskDetailPage() {
                 <Select
                   value={task.score_money?.toString() || '0'}
                   onValueChange={(v) => {
-                    setTask(prev => ({ ...prev, score_money: parseInt(v) as 0|1|2|3 }))
+                    updateTask(prev => ({ ...prev, score_money: parseInt(v) as 0|1|2|3 }))
                     toast.success('Score aktualizováno')
                   }}
                 >
@@ -1710,7 +1543,7 @@ export default function TaskDetailPage() {
                 <Select
                   value={task.score_fire?.toString() || '0'}
                   onValueChange={(v) => {
-                    setTask(prev => ({ ...prev, score_fire: parseInt(v) as 0|1|2|3 }))
+                    updateTask(prev => ({ ...prev, score_fire: parseInt(v) as 0|1|2|3 }))
                     toast.success('Score aktualizováno')
                   }}
                 >
@@ -1735,7 +1568,7 @@ export default function TaskDetailPage() {
                 <Select
                   value={task.score_time?.toString() || '0'}
                   onValueChange={(v) => {
-                    setTask(prev => ({ ...prev, score_time: parseInt(v) as 0|1|2|3 }))
+                    updateTask(prev => ({ ...prev, score_time: parseInt(v) as 0|1|2|3 }))
                     toast.success('Score aktualizováno')
                   }}
                 >
@@ -1760,7 +1593,7 @@ export default function TaskDetailPage() {
                 <Select
                   value={task.score_distance?.toString() || '0'}
                   onValueChange={(v) => {
-                    setTask(prev => ({ ...prev, score_distance: parseInt(v) as 0|1|2 }))
+                    updateTask(prev => ({ ...prev, score_distance: parseInt(v) as 0|1|2 }))
                     toast.success('Score aktualizováno')
                   }}
                 >
@@ -1785,7 +1618,7 @@ export default function TaskDetailPage() {
                 <Select
                   value={task.score_personal?.toString() || '0'}
                   onValueChange={(v) => {
-                    setTask(prev => ({ ...prev, score_personal: parseInt(v) as 0|1 }))
+                    updateTask(prev => ({ ...prev, score_personal: parseInt(v) as 0|1 }))
                     toast.success('Score aktualizováno')
                   }}
                 >
