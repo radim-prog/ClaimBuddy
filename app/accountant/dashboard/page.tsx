@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
-// User name from auth context; constants computed locally
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { ClosureDetailModal } from '@/components/closure-detail-modal'
 import { MorningOverview } from '@/components/accountant/morning-overview'
 import { ActivityFeed } from '@/components/accountant/activity-feed'
@@ -353,31 +353,16 @@ function StatusCell({
   onCellClick: (closure: MonthlyClosure, companyName: string) => void
 }) {
   const cellRef = useRef<HTMLTableCellElement>(null)
-  const tooltipRef = useRef<HTMLDivElement>(null)
-  const arrowRef = useRef<HTMLDivElement>(null)
+  const [isHovered, setIsHovered] = useState(false)
+  const [showAbove, setShowAbove] = useState(false)
+  const tooltipId = `tooltip-${companyId}-${monthIndex}`
 
   const handleMouseEnter = () => {
-    if (!cellRef.current || !tooltipRef.current || !arrowRef.current) return
-
-    const rect = cellRef.current.getBoundingClientRect()
-    const viewportHeight = window.innerHeight
-
-    // If cell is in bottom half of viewport, show tooltip above
-    if (rect.top > viewportHeight / 2) {
-      // Show above
-      tooltipRef.current.className = 'absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 block z-50 pointer-events-none'
-      arrowRef.current.className = 'w-3 h-3 bg-gray-900 transform rotate-45 absolute top-full -mt-1.5 left-1/2 -translate-x-1/2'
-    } else {
-      // Show below
-      tooltipRef.current.className = 'absolute top-full mt-2 left-1/2 transform -translate-x-1/2 block z-50 pointer-events-none'
-      arrowRef.current.className = 'w-3 h-3 bg-gray-900 transform rotate-45 absolute bottom-full -mb-1.5 left-1/2 -translate-x-1/2'
+    if (cellRef.current) {
+      const rect = cellRef.current.getBoundingClientRect()
+      setShowAbove(rect.top > window.innerHeight / 2)
     }
-  }
-
-  const handleMouseLeave = () => {
-    if (tooltipRef.current) {
-      tooltipRef.current.className = tooltipRef.current.className.replace('block', 'hidden')
-    }
+    setIsHovered(true)
   }
 
   const status = getMonthStatus(closures, companyId, monthIndex, year)
@@ -399,15 +384,17 @@ function StatusCell({
     return 'bg-red-300'
   }
 
+  const getStatusIcon = (s: string) => s === 'approved' ? '✓' : s === 'uploaded' ? '⏳' : '✗'
+  const getStatusColor = (s: string) => s === 'approved' ? 'text-green-400' : s === 'uploaded' ? 'text-yellow-400' : 'text-red-400'
+
   return (
     <td
       ref={cellRef}
       className="px-1 py-2 text-center relative"
       onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {status === 'future' ? (
-        // Budoucí měsíc - bez kliknutí, šedý
         <div
           className={`
             w-14 h-14 mx-auto rounded-lg border-2
@@ -419,19 +406,22 @@ function StatusCell({
         </div>
       ) : (
         <div
+          role="button"
+          tabIndex={0}
+          aria-describedby={isHovered ? tooltipId : undefined}
           onClick={() => closure && onCellClick(closure, companyName)}
+          onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && closure) { e.preventDefault(); onCellClick(closure, companyName) } }}
           className={`
             w-14 h-14 mx-auto rounded-lg border-2 transition-all cursor-pointer
             ${colors.bg} ${colors.border}
             hover:scale-110 hover:shadow-lg
+            focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1
             flex flex-col items-center justify-center gap-1
           `}
         >
-          {/* Hlavní ikona */}
           <span className={`text-lg font-bold ${colors.text}`}>
             {status === 'approved' ? '✓' : status === 'uploaded' ? '⏳' : '!'}
           </span>
-          {/* 3 malé tečky pro jednotlivé dokumenty */}
           <div className="flex gap-0.5">
             <div className={`w-2 h-2 rounded-full ${getIndicatorColor(bankStatus)} border border-white/50`} title="Výpis"></div>
             <div className={`w-2 h-2 rounded-full ${getIndicatorColor(expenseStatus)} border border-white/50`} title="Náklady"></div>
@@ -440,37 +430,34 @@ function StatusCell({
         </div>
       )}
 
-      {/* Tooltip - smart positioning with direct DOM manipulation */}
-      {status !== 'future' && (
-        <div ref={tooltipRef} className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 hidden z-50 pointer-events-none">
+      {/* Tooltip - React state based positioning */}
+      {status !== 'future' && isHovered && (
+        <div
+          id={tooltipId}
+          role="tooltip"
+          className={`absolute ${showAbove ? 'bottom-full mb-2' : 'top-full mt-2'} left-1/2 transform -translate-x-1/2 z-50 pointer-events-none`}
+        >
           <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-xl">
             <div className="font-bold mb-1">{companyName}</div>
             <div className="text-gray-300 mb-2">{months[monthIndex]} {year}</div>
             {closure && (
               <div className="space-y-1 text-left">
                 <div className="flex items-center gap-2">
-                  <span className={closure.bank_statement_status === 'approved' ? 'text-green-400' : closure.bank_statement_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
-                    {closure.bank_statement_status === 'approved' ? '✓' : closure.bank_statement_status === 'uploaded' ? '⏳' : '✗'}
-                  </span>
+                  <span className={getStatusColor(closure.bank_statement_status)}>{getStatusIcon(closure.bank_statement_status)}</span>
                   <span>Výpis z banky</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={closure.expense_documents_status === 'approved' ? 'text-green-400' : closure.expense_documents_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
-                    {closure.expense_documents_status === 'approved' ? '✓' : closure.expense_documents_status === 'uploaded' ? '⏳' : '✗'}
-                  </span>
+                  <span className={getStatusColor(closure.expense_documents_status)}>{getStatusIcon(closure.expense_documents_status)}</span>
                   <span>Nákladové doklady</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={closure.income_invoices_status === 'approved' ? 'text-green-400' : closure.income_invoices_status === 'uploaded' ? 'text-yellow-400' : 'text-red-400'}>
-                    {closure.income_invoices_status === 'approved' ? '✓' : closure.income_invoices_status === 'uploaded' ? '⏳' : '✗'}
-                  </span>
+                  <span className={getStatusColor(closure.income_invoices_status)}>{getStatusIcon(closure.income_invoices_status)}</span>
                   <span>Příjmové faktury</span>
                 </div>
               </div>
             )}
           </div>
-          {/* Arrow */}
-          <div ref={arrowRef} className="w-3 h-3 bg-gray-900 transform rotate-45 absolute bottom-full -mb-1.5 left-1/2 -translate-x-1/2"></div>
+          <div className={`w-3 h-3 bg-gray-900 transform rotate-45 absolute ${showAbove ? 'top-full -mt-1.5' : 'bottom-full -mb-1.5'} left-1/2 -translate-x-1/2`}></div>
         </div>
       )}
     </td>
@@ -486,6 +473,7 @@ export default function AccountantDashboard() {
   const [closureModalOpen, setClosureModalOpen] = useState(false)
   const [selectedClosure, setSelectedClosure] = useState<MonthlyClosure | null>(null)
   const [selectedCompanyName, setSelectedCompanyName] = useState('')
+  const { userName } = useAccountantUser()
 
   useEffect(() => {
     async function fetchData() {
@@ -544,7 +532,7 @@ export default function AccountantDashboard() {
   if (error || !data) {
     return (
       <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 p-4">
-        <div className="flex">
+        <div className="flex items-start">
           <div className="flex-shrink-0">
             <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -554,6 +542,12 @@ export default function AccountantDashboard() {
             <p className="text-sm text-red-700 dark:text-red-400">
               Nepodařilo se načíst data: {error || 'Neznámá chyba'}
             </p>
+            <button
+              onClick={() => { setError(null); setLoading(true); fetch('/api/accountant/matrix').then(r => r.json()).then(setData).catch(e => setError(e.message)).finally(() => setLoading(false)) }}
+              className="mt-2 text-sm text-red-600 dark:text-red-400 underline hover:text-red-800 dark:hover:text-red-300"
+            >
+              Zkusit znovu
+            </button>
           </div>
         </div>
       </div>
@@ -596,7 +590,7 @@ export default function AccountantDashboard() {
           <button
             onClick={() => setSelectedYear(y => y - 1)}
             className="p-2 rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={selectedYear <= 2024}
+            disabled={selectedYear <= 2020}
           >
             ←
           </button>
@@ -674,7 +668,7 @@ export default function AccountantDashboard() {
                       bank_statement_status: c.bank_statement_status === 'uploaded' ? 'approved' as const : c.bank_statement_status,
                       expense_documents_status: c.expense_documents_status === 'uploaded' ? 'approved' as const : c.expense_documents_status,
                       income_invoices_status: c.income_invoices_status === 'uploaded' ? 'approved' as const : c.income_invoices_status,
-                      updated_by: 'Jana Svobodová',
+                      updated_by: userName || 'Účetní',
                       updated_at: now.toISOString(),
                     }
                   })
@@ -689,7 +683,7 @@ export default function AccountantDashboard() {
             {/* Filter indicator */}
             {filter !== 'all' && (
               <>
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="text-sm text-gray-600 dark:text-gray-400" aria-live="polite">
                   Zobrazeno: {filteredCompanies.length} z {companies.length} klientů
                 </span>
                 <button
@@ -732,7 +726,7 @@ export default function AccountantDashboard() {
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredCompanies.length === 0 ? (
               <tr>
-                <td colSpan={13} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={13} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400" aria-live="polite">
                   Žádní klienti neodpovídají filtru
                 </td>
               </tr>

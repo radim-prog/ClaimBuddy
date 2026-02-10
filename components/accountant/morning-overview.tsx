@@ -238,18 +238,23 @@ export function MorningOverview({ companies, closures, tasks }: MorningOverviewP
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {cards.map((card) => {
           const Icon = card.icon
-          return (
-            <div
-              key={card.title}
-              className={`${card.bg} ${card.border} border rounded-lg p-4 transition-all hover:shadow-md`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">{card.title}</p>
-                  <p className={`text-2xl font-bold ${card.color} mt-1`}>{card.count}</p>
-                </div>
-                <Icon className={`h-8 w-8 ${card.color} opacity-50`} />
+          const content = (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">{card.title}</p>
+                <p className={`text-2xl font-bold ${card.color} mt-1`}>{card.count}</p>
               </div>
+              <Icon className={`h-8 w-8 ${card.color} opacity-50`} />
+            </div>
+          )
+          const className = `${card.bg} ${card.border} border rounded-lg p-4 transition-all hover:shadow-md`
+          return card.href && card.href !== '#' ? (
+            <Link key={card.title} href={card.href} className={className}>
+              {content}
+            </Link>
+          ) : (
+            <div key={card.title} className={className}>
+              {content}
             </div>
           )
         })}

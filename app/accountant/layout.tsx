@@ -78,6 +78,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const showAdmin = userRole === 'admin' || permissions?.admin_access === true
 
   const handleLogout = async () => {
+    if (!confirm('Opravdu se chcete odhlásit?')) return
     await logout()
   }
 

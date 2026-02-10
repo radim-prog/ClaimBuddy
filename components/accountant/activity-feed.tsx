@@ -74,7 +74,8 @@ function timeAgo(dateStr: string): string {
   if (diffMin < 60) return `Před ${diffMin} min`
   if (diffH < 24) return `Před ${diffH} hod`
   if (diffD === 1) return 'Včera'
-  if (diffD < 7) return `Před ${diffD} dny`
+  if (diffD < 5) return `Před ${diffD} dny`
+  if (diffD < 7) return `Před ${diffD} dní`
   return date.toLocaleDateString('cs-CZ')
 }
 
@@ -85,23 +86,63 @@ type ActivityFeedProps = {
 
 export function ActivityFeed({ companyId, limit = 15 }: ActivityFeedProps) {
   const [items, setItems] = useState<ActivityItem[]>([])
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   // Refresh periodically via API
   useEffect(() => {
     const refresh = async () => {
       try {
         const res = await fetch(`/api/accountant/activities?limit=${limit}`)
-        if (!res.ok) return
+        if (!res.ok) {
+          console.error('ActivityFeed: Failed to fetch activities, status:', res.status)
+          return
+        }
         const data = await res.json()
         const all: ActivityItem[] = data.activities || []
         setItems(companyId ? all.filter(a => a.company_id === companyId) : all)
-      } catch {}
+        setFetchError(null)
+      } catch (err) {
+        console.error('ActivityFeed: Failed to load activities:', err)
+        setFetchError(err instanceof Error ? err.message : 'Nepodařilo se načíst aktivity')
+      } finally {
+        setIsLoading(false)
+      }
     }
     refresh()
-    const interval = setInterval(refresh, 10000) // Refresh every 10s
+    const interval = setInterval(refresh, 10000)
     return () => clearInterval(interval)
-  }, [companyId, limit, refreshKey])
+  }, [companyId, limit])
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="flex items-start gap-3 p-2 animate-pulse">
+            <div className="w-7 h-7 rounded-md bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (fetchError) {
+    return (
+      <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-red-500">{fetchError}</p>
+        <button
+          onClick={() => { setIsLoading(true); setFetchError(null) }}
+          className="mt-2 text-sm text-purple-600 hover:text-purple-700 underline"
+        >
+          Zkusit znovu
+        </button>
+      </div>
+    )
+  }
 
   if (items.length === 0) {
     return (
