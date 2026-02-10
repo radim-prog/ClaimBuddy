@@ -347,6 +347,18 @@ export default function ClientDetailPage() {
             </Button>
           </Link>
           <div className="flex gap-2">
+            <Link href={`/accountant/extraction?company=${companyId}`}>
+              <Button variant="outline" size="sm">
+                <FileText className="h-4 w-4 mr-1" />
+                Vytěžování
+              </Button>
+            </Link>
+            <Link href={`/accountant/annual-closing?company=${companyId}`}>
+              <Button variant="outline" size="sm">
+                <Calendar className="h-4 w-4 mr-1" />
+                Roční uzávěrka
+              </Button>
+            </Link>
             <Button variant="outline" size="sm" onClick={() => setEditModalOpen(true)}>
               <Pencil className="h-4 w-4 mr-1" />
               Upravit
@@ -381,7 +393,21 @@ export default function ClientDetailPage() {
                   {company.name}
                   {/* Status badges removed - now shown in ClientDetailAlertBar */}
                 </h1>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{company.legal_form}</p>
+                <div className="flex items-center gap-2">
+                  {company.legal_form === 'OSVČ' ? (
+                    <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-200 text-xs">
+                      FO
+                    </Badge>
+                  ) : company.legal_form === 's.r.o.' ? (
+                    <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200 text-xs">
+                      s.r.o.
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs">
+                      {company.legal_form}
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -590,7 +616,7 @@ export default function ClientDetailPage() {
           defaultOpen={true}
         >
           {/* Horizontální menu měsíců */}
-          <div className="grid grid-cols-12 gap-1 p-2 mb-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-1 p-2 mb-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
             {monthNames.map((month, index) => {
               const period = `${currentYear}-${String(index + 1).padStart(2, '0')}`
               const closure = yearClosures.find(c => c.period === period)
@@ -663,7 +689,7 @@ export default function ClientDetailPage() {
             </div>
 
             {selectedClosure ? (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {/* Výpis z banky */}
                 <div className={`p-4 rounded-lg border-2 ${
                   selectedClosure.bank_statement_status === 'approved' ? 'bg-green-50 dark:bg-green-900/20 border-green-200' :

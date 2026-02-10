@@ -90,9 +90,9 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
       <Link href={`/accountant/clients/${company.id}`} className="flex-1">
         <Card className={`hover:shadow-md transition-all cursor-pointer border-l-4 ${borderColor} ${isInactive ? 'opacity-60' : ''}`}>
           <CardContent className="py-3 px-4">
-            <div className="grid grid-cols-12 gap-4 items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 items-start sm:items-center">
               {/* Název */}
-              <div className="col-span-4 min-w-0">
+              <div className="col-span-1 sm:col-span-4 min-w-0">
                 <h3 className={`font-semibold truncate ${isInactive ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
                   {company.group_name && (
                     <span className="text-purple-600">{company.group_name} – </span>
@@ -105,10 +105,20 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
               </div>
 
               {/* Právní forma + badges */}
-              <div className="col-span-3 flex items-center gap-1.5 flex-wrap">
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-gray-500 dark:text-gray-400">
-                  {company.legal_form}
-                </Badge>
+              <div className="col-span-1 sm:col-span-3 flex items-center gap-1.5 flex-wrap mt-1 sm:mt-0">
+                {company.legal_form === 'OSVČ' ? (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 border-orange-200">
+                    FO
+                  </Badge>
+                ) : company.legal_form === 's.r.o.' ? (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-200">
+                    s.r.o.
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-gray-500 dark:text-gray-400">
+                    {company.legal_form}
+                  </Badge>
+                )}
                 {isInactive && (
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-red-600 border-red-300 bg-red-50 dark:bg-red-900/20">
                     Neaktivní
@@ -122,7 +132,7 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
               </div>
 
               {/* DPH + zaměstnanci */}
-              <div className="col-span-3 flex items-center gap-1.5">
+              <div className="col-span-1 sm:col-span-3 flex items-center gap-1.5 mt-1 sm:mt-0">
                 {company.vat_payer ? (
                   <Badge className="bg-blue-500 text-white hover:bg-blue-500 text-xs font-bold px-2">
                     DPH {company.vat_period === 'monthly' ? 'M' : 'Q'}
