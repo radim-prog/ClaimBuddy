@@ -1,349 +1,248 @@
 'use client'
-import { Label } from "@/components/ui/label"
 
-import { useState, useEffect, useCallback } from 'react'
-import { 
+import { useState, useCallback, useRef } from 'react'
+import {
   DocumentTypeSelector,
   ExtractedDataDisplay,
   ConfidenceBadge,
-  ExtractionRecord,
   ExtractionDocumentType,
-  AccountantExtractionMode,
   ExtractionStatus
 } from '@/components/extraction'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { Textarea } from '@/components/ui/textarea'
-import { 
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useToast } from '@/hooks/use-toast'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  ChevronLeft,
-  ChevronRight,
-  Check,
-  X,
-  Save,
+  Upload,
   FileText,
-  AlertCircle,
-  CheckCircle2,
-  AlertTriangle,
-  RefreshCw,
-  FolderOpen,
-  File,
+  Image,
+  X,
+  Check,
   Loader2,
-  Users,
-  Zap,
-  Search,
-  Filter,
-  ThumbsUp,
-  ThumbsDown,
-  Eye,
-  Inbox
+  AlertCircle,
+  History,
+  FileUp,
+  Eye
 } from 'lucide-react'
 
-// Types
-type DriveFolder = {
+type ExtractionHistoryItem = {
   id: string
-  name: string
+  file_name: string
+  file_type: 'pdf' | 'image'
+  document_type: ExtractionDocumentType
+  status: ExtractionStatus
+  extracted_data?: any
+  confidence_score?: number
+  created_at: string
+  updated_at: string
 }
 
-type DriveFile = {
-  id: string
-  name: string
-  mimeType: string
-}
-
-// Mock data for client submissions (will be replaced with API)
-const MOCK_SUBMISSIONS: ExtractionRecord[] = [
-  {
-    id: 'sub-1',
-    company_id: 'comp-1',
-    company_name: 'WikiPoradce s.r.o.',
-    file_name: 'uctenka_lidl_2024.jpg',
-    file_type: 'image',
-    document_type: 'receipt',
-    status: 'submitted',
-    source: 'client_upload',
-    extracted_data: {
-      document_type: 'receipt',
-      document_number: '12345',
-      supplier_name: 'Lidl ČR',
-      total_amount: 458.50,
-      date_issued: '2024-01-15'
-    },
-    confidence_score: 0.85,
-    submitted_by: 'user-1',
-    submitted_at: '2024-01-15T10:30:00Z',
-    created_at: '2024-01-15T10:30:00Z',
-    updated_at: '2024-01-15T10:30:00Z'
-  },
-  {
-    id: 'sub-2',
-    company_id: 'comp-2',
-    company_name: 'TechStart a.s.',
-    file_name: 'faktura_orlen_0124.pdf',
-    file_type: 'pdf',
-    document_type: 'invoice',
-    status: 'submitted',
-    source: 'client_upload',
-    extracted_data: {
-      document_type: 'invoice',
-      document_number: 'F2024/0012',
-      variable_symbol: '1234567890',
-      supplier_name: 'ORLEN Benzina',
-      supplier_ico: '12345678',
-      total_without_vat: 8500.00,
-      total_vat: 1785.00,
-      total_amount: 10285.00,
-      date_issued: '2024-01-10',
-      date_due: '2024-01-24'
-    },
-    confidence_score: 0.92,
-    submitted_by: 'user-2',
-    submitted_at: '2024-01-14T14:20:00Z',
-    created_at: '2024-01-14T14:20:00Z',
-    updated_at: '2024-01-14T14:20:00Z'
-  },
-  {
-    id: 'sub-3',
-    company_id: 'comp-1',
-    company_name: 'WikiPoradce s.r.o.',
-    file_name: 'restaurace_paragon.jpg',
-    file_type: 'image',
-    document_type: 'receipt',
-    status: 'submitted',
-    source: 'client_upload',
-    extracted_data: {
-      document_type: 'receipt',
-      supplier_name: 'Restaurace U Fleků',
-      total_amount: 1250.00,
-      date_issued: '2024-01-13'
-    },
-    confidence_score: 0.78,
-    corrections: [{
-      field: 'total_amount',
-      original: 125.00,
-      corrected: 1250.00,
-      timestamp: '2024-01-15T11:00:00Z'
-    }],
-    submitted_by: 'user-1',
-    submitted_at: '2024-01-13T18:45:00Z',
-    created_at: '2024-01-13T18:45:00Z',
-    updated_at: '2024-01-15T11:00:00Z'
-  }
-]
+const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']
+const MAX_FILE_SIZE = 10 * 1024 * 1024
 
 export default function AccountantExtractionPage() {
-  // Mode state
-  const [mode, setMode] = useState<AccountantExtractionMode>('client_submissions')
-  
-  // Mode A: Client submissions
-  const [submissions, setSubmissions] = useState<ExtractionRecord[]>(MOCK_SUBMISSIONS)
-  const [selectedSubmission, setSelectedSubmission] = useState<ExtractionRecord | null>(null)
-  const [submissionFilter, setSubmissionFilter] = useState<string>('all')
-  
-  // Mode B: Bulk processing
-  const [folders, setFolders] = useState<DriveFolder[]>([])
-  const [selectedFolder, setSelectedFolder] = useState<string>('')
-  const [files, setFiles] = useState<DriveFile[]>([])
-  const [bulkDocumentType, setBulkDocumentType] = useState<ExtractionDocumentType>('invoice')
-  const [bulkJobs, setBulkJobs] = useState<ExtractionRecord[]>([])
-  const [currentBulkIndex, setCurrentBulkIndex] = useState(0)
-  
-  // Common state
-  const [loading, setLoading] = useState(false)
-  const [extracting, setExtracting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [reviewNotes, setReviewNotes] = useState('')
+  const { toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [activeTab, setActiveTab] = useState('upload')
 
-  // Load folders on mount
-  useEffect(() => {
-    loadFolders()
+  const [isDragging, setIsDragging] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [documentType, setDocumentType] = useState<ExtractionDocumentType>('invoice')
+
+  const [extractionResult, setExtractionResult] = useState<{
+    success: boolean
+    data?: any
+    confidence_score?: number
+    document_type?: ExtractionDocumentType
+    error?: string
+  } | null>(null)
+
+  const [history, setHistory] = useState<ExtractionHistoryItem[]>([])
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState<ExtractionHistoryItem | null>(null)
+  const [historyFilter, setHistoryFilter] = useState<string>('all')
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
   }, [])
 
-  // Load files when folder selected in bulk mode
-  useEffect(() => {
-    if (selectedFolder && mode === 'bulk_processing') {
-      loadFiles(selectedFolder)
-    }
-  }, [selectedFolder, mode])
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }, [])
 
-  const loadFolders = async () => {
-    try {
-      setLoading(true)
-      const res = await fetch('/api/drive/folders')
-      const data = await res.json()
-      if (data.success) {
-        setFolders(data.folders)
-      } else {
-        setError(data.message || 'Nepodařilo se načíst složky')
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
+
+  const validateFile = (file: File): string | null => {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return 'Nepodporovaný formát. Pouze PDF, JPG, PNG.'
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      return 'Soubor je příliš velký. Maximum je 10MB.'
+    }
+    return null
+  }
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+
+    const files = e.dataTransfer.files
+    if (files.length > 0) {
+      const file = files[0]
+      const error = validateFile(file)
+      if (error) {
+        toast({ title: 'Chyba', description: error, variant: 'destructive' })
+        return
       }
-    } catch {
-      setError('Chyba připojení k Google Drive')
-    } finally {
-      setLoading(false)
+      setSelectedFile(file)
+      setExtractionResult(null)
+    }
+  }, [toast])
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files && files.length > 0) {
+      const file = files[0]
+      const error = validateFile(file)
+      if (error) {
+        toast({ title: 'Chyba', description: error, variant: 'destructive' })
+        return
+      }
+      setSelectedFile(file)
+      setExtractionResult(null)
+    }
+  }, [toast])
+
+  const clearSelectedFile = () => {
+    setSelectedFile(null)
+    setExtractionResult(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
   }
 
-  const loadFiles = async (folderId: string) => {
+  const handleExtract = async () => {
+    if (!selectedFile) return
+
+    setUploading(true)
+    setUploadProgress(0)
+    setExtractionResult(null)
+
     try {
-      setLoading(true)
-      const res = await fetch(`/api/drive/files/${folderId}`)
-      const data = await res.json()
-      if (data.success) {
-        setFiles(data.files)
-        // Create extraction jobs placeholders
-        const jobs: ExtractionRecord[] = data.files.map((f: DriveFile, idx: number) => ({
-          id: `bulk-${idx}`,
-          company_id: 'temp',
-          file_name: f.name,
-          file_type: f.mimeType.includes('pdf') ? 'pdf' : 'image',
-          document_type: bulkDocumentType,
-          status: 'uploaded',
-          source: 'drive_import',
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return 90
+          }
+          return prev + 10
+        })
+      }, 100)
+
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+      formData.append('documentType', documentType)
+
+      const response = await fetch('/api/documents/extract', {
+        method: 'POST',
+        body: formData
+      })
+
+      clearInterval(progressInterval)
+      setUploadProgress(100)
+
+      const result = await response.json()
+
+      if (result.success) {
+        setExtractionResult({
+          success: true,
+          data: result.data,
+          confidence_score: result.data?.confidence_score,
+          document_type: documentType
+        })
+
+        const newHistoryItem: ExtractionHistoryItem = {
+          id: `ext-${Date.now()}`,
+          file_name: selectedFile.name,
+          file_type: selectedFile.type === 'application/pdf' ? 'pdf' : 'image',
+          document_type: documentType,
+          status: 'extracted',
+          extracted_data: result.data,
+          confidence_score: result.data?.confidence_score,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        }))
-        setBulkJobs(jobs)
-        setCurrentBulkIndex(0)
-      }
-    } catch {
-      setError('Chyba při načítání souborů')
-    } finally {
-      setLoading(false)
-    }
-  }
+        }
+        setHistory(prev => [newHistoryItem, ...prev])
 
-  // Mode A: Handle submission approval
-  const handleApproveSubmission = async (generatePohoda: boolean = true) => {
-    if (!selectedSubmission) return
-
-    try {
-      const res = await fetch(`/api/extractions/${selectedSubmission.id}/review`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'approve',
-          notes: reviewNotes,
-          generate_pohoda: generatePohoda
-        }),
-      })
-
-      if (res.ok) {
-        setSubmissions(prev => prev.map(s => 
-          s.id === selectedSubmission.id 
-            ? { ...s, status: 'approved' as ExtractionStatus }
-            : s
-        ))
-        setSelectedSubmission(null)
-        setReviewNotes('')
-      }
-    } catch {
-      setError('Chyba při schvalování')
-    }
-  }
-
-  // Mode A: Handle submission rejection
-  const handleRejectSubmission = async () => {
-    if (!selectedSubmission) return
-
-    try {
-      const res = await fetch(`/api/extractions/${selectedSubmission.id}/review`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'reject',
-          notes: reviewNotes
-        }),
-      })
-
-      if (res.ok) {
-        setSubmissions(prev => prev.map(s => 
-          s.id === selectedSubmission.id 
-            ? { ...s, status: 'rejected' as ExtractionStatus }
-            : s
-        ))
-        setSelectedSubmission(null)
-        setReviewNotes('')
-      }
-    } catch {
-      setError('Chyba při zamítání')
-    }
-  }
-
-  // Mode B: Run bulk extraction
-  const handleBulkExtract = async () => {
-    if (bulkJobs.length === 0) return
-
-    setExtracting(true)
-    const fileIds = files.map(f => f.id)
-
-    try {
-      const res = await fetch('/api/documents/extract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileIds,
-          documentType: bulkDocumentType,
-          companyId: 'temp'
-        }),
-      })
-
-      const data = await res.json()
-
-      if (data.success) {
-        const updated = bulkJobs.map((job, idx) => {
-          const result = data.results[idx]
-          if (result?.status === 'success') {
-            return {
-              ...job,
-              status: 'extracted' as ExtractionStatus,
-              extracted_data: result.extractedData,
-              confidence_score: result.confidenceScore
-            }
-          }
-          return job
+        toast({
+          title: 'Úspěch',
+          description: `Dokument ${result.data?.document_number || selectedFile.name} byl úspěšně vytěžen. (${result.processingTime}ms)`,
         })
-        setBulkJobs(updated)
       } else {
-        setError(data.message || 'Extrakce selhala')
+        setExtractionResult({
+          success: false,
+          error: result.message || 'Extrakce selhala'
+        })
+        toast({
+          title: 'Chyba extrakce',
+          description: result.message || 'Nepodařilo se vytěžit data z dokumentu.',
+          variant: 'destructive'
+        })
       }
     } catch {
-      setError('Chyba při extrakci')
+      setExtractionResult({
+        success: false,
+        error: 'Chyba připojení k serveru'
+      })
+      toast({
+        title: 'Chyba',
+        description: 'Nepodařilo se připojit k serveru.',
+        variant: 'destructive'
+      })
     } finally {
-      setExtracting(false)
+      setUploading(false)
     }
   }
 
-  // Mode B: Approve bulk document
-  const handleApproveBulk = async () => {
-    const current = bulkJobs[currentBulkIndex]
-    if (!current) return
-
-    // Move to next
-    if (currentBulkIndex < bulkJobs.length - 1) {
-      setCurrentBulkIndex(prev => prev + 1)
-    }
+  const handleViewHistoryItem = (item: ExtractionHistoryItem) => {
+    setSelectedHistoryItem(item)
+    setExtractionResult({
+      success: true,
+      data: item.extracted_data,
+      confidence_score: item.confidence_score,
+      document_type: item.document_type
+    })
+    setActiveTab('upload')
+    setSelectedFile(null)
   }
 
-  // Get status badge
+  const filteredHistory = history.filter(item => {
+    if (historyFilter === 'all') return true
+    if (historyFilter === 'invoice') return item.document_type === 'invoice'
+    if (historyFilter === 'receipt') return item.document_type === 'receipt'
+    if (historyFilter === 'bank_statement') return item.document_type === 'bank_statement'
+    return true
+  })
+
   const getStatusBadge = (status: ExtractionStatus) => {
     const variants: Record<string, { color: string; label: string }> = {
       submitted: { color: 'bg-blue-100 text-blue-800', label: 'Ke kontrole' },
@@ -361,400 +260,308 @@ export default function AccountantExtractionPage() {
     )
   }
 
-  // Filtered submissions
-  const filteredSubmissions = submissions.filter(s => {
-    if (submissionFilter === 'all') return true
-    if (submissionFilter === 'pending') return s.status === 'submitted'
-    if (submissionFilter === 'approved') return s.status === 'approved'
-    if (submissionFilter === 'rejected') return s.status === 'rejected'
-    return true
-  })
-
-  // Current bulk job
-  const currentBulkJob = bulkJobs[currentBulkIndex]
+  const getFileIcon = (file: File) => {
+    if (file.type === 'application/pdf') {
+      return <FileText className="w-10 h-10 text-red-500" />
+    }
+    return <Image className="w-10 h-10 text-blue-500" />
+  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      {/* Header */}
       <div className="border-b bg-white p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">Vytěžování dokladů</h1>
-          
-          {/* Mode Switcher */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setMode('client_submissions')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${
-                mode === 'client_submissions' 
-                  ? 'bg-white shadow text-blue-600' 
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              <Inbox className="w-4 h-4" />
-              <span>Od klientů</span>
-              {submissions.filter(s => s.status === 'submitted').length > 0 && (
-                <Badge variant="secondary" className="ml-1">
-                  {submissions.filter(s => s.status === 'submitted').length}
-                </Badge>
-              )}
-            </button>
-            <button
-              onClick={() => setMode('bulk_processing')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${
-                mode === 'bulk_processing' 
-                  ? 'bg-white shadow text-blue-600' 
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              <Zap className="w-4 h-4" />
-              <span>Hromadné zpracování</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-red-600" />
-            <span className="text-red-800">{error}</span>
-            <Button variant="ghost" size="sm" onClick={() => setError(null)} className="ml-auto">
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
+        <h1 className="text-2xl font-bold">Vytěžování dokumentů</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Nahrání a automatické zpracování faktur a účtenek pomocí Kimi AI
+        </p>
       </div>
 
-      {/* MODE A: Client Submissions */}
-      {mode === 'client_submissions' && (
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left: Submissions list */}
-          <div className="w-1/3 border-r bg-white flex flex-col">
-            <div className="p-4 border-b space-y-3">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-gray-400" />
-                <Select value={submissionFilter} onValueChange={setSubmissionFilter}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Filtr" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Všechny</SelectItem>
-                    <SelectItem value="pending">Ke kontrole</SelectItem>
-                    <SelectItem value="approved">Schválené</SelectItem>
-                    <SelectItem value="rejected">Zamítnuté</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="text-sm text-gray-500">
-                {filteredSubmissions.length} dokladů
-              </div>
-            </div>
-            
-            <ScrollArea className="flex-1">
-              <div className="divide-y">
-                {filteredSubmissions.map((submission) => (
-                  <button
-                    key={submission.id}
-                    onClick={() => setSelectedSubmission(submission)}
-                    className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
-                      selectedSubmission?.id === submission.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">
-                          {submission.company_name}
-                        </div>
-                        <div className="text-sm text-gray-500 truncate">
-                          {submission.file_name}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          {getStatusBadge(submission.status)}
-                          {submission.corrections && submission.corrections.length > 0 && (
-                            <Badge variant="outline" className="text-amber-600">
-                              Opraveno
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      {submission.confidence_score && (
-                        <ConfidenceBadge 
-                          score={Math.round(submission.confidence_score * 100)} 
-                          size="sm"
+      <div className="flex-1 p-4 overflow-auto">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="upload" className="flex items-center gap-2">
+              <Upload className="w-4 h-4" />
+              Nahrání
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <History className="w-4 h-4" />
+              Historie
+              {history.length > 0 && (
+                <Badge variant="secondary" className="ml-1">{history.length}</Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="upload" className="h-[calc(100%-3rem)]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">Typ dokumentu</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <DocumentTypeSelector
+                      value={documentType}
+                      onChange={setDocumentType}
+                      showAll
+                    />
+                  </CardContent>
+                </Card>
+
+                <Card className={`border-2 border-dashed transition-colors ${
+                  isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                }`}>
+                  <CardContent className="p-6">
+                    {!selectedFile ? (
+                      <div
+                        onDragEnter={handleDragEnter}
+                        onDragLeave={handleDragLeave}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-center cursor-pointer py-8"
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={handleFileSelect}
+                          className="hidden"
                         />
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-
-          {/* Right: Detail view */}
-          <div className="flex-1 flex flex-col bg-gray-50">
-            {selectedSubmission ? (
-              <>
-                {/* Preview area */}
-                <div className="flex-1 p-4">
-                  <Card className="h-full">
-                    <CardContent className="p-0 h-full flex items-center justify-center bg-gray-100">
-                      {selectedSubmission.file_type === 'image' ? (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <FileText className="w-24 h-24 text-gray-300" />
-                          <span className="ml-4 text-gray-400">Náhled obrázku</span>
+                        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                          <FileUp className="w-8 h-8 text-gray-400" />
                         </div>
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <FileText className="w-24 h-24 text-gray-300" />
-                          <span className="ml-4 text-gray-400">PDF náhled</span>
+                        <p className="text-lg font-medium text-gray-700 mb-2">
+                          Přetáhněte soubor sem
+                        </p>
+                        <p className="text-sm text-gray-500 mb-4">
+                          nebo klikněte pro výběr
+                        </p>
+                        <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
+                          <span className="flex items-center gap-1">
+                            <FileText className="w-3 h-3" /> PDF
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Image className="w-3 h-3" /> JPG
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Image className="w-3 h-3" /> PNG
+                          </span>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Data review panel */}
-                <div className="h-96 bg-white border-t">
-                  <div className="h-full flex">
-                    {/* Extracted data */}
-                    <div className="flex-1 p-4 overflow-auto">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold">Vytěžená data</h3>
-                        <div className="flex items-center gap-2">
-                          <DocumentTypeSelector
-                            value={selectedSubmission.document_type}
-                            onChange={() => {}}
-                            disabled
-                          />
-                          {selectedSubmission.confidence_score && (
-                            <ConfidenceBadge 
-                              score={Math.round(selectedSubmission.confidence_score * 100)} 
-                            />
-                          )}
-                        </div>
+                        <p className="text-xs text-gray-400 mt-2">
+                          Maximum 10MB
+                        </p>
                       </div>
-                      
-                      {selectedSubmission.extracted_data && (
-                        <ExtractedDataDisplay
-                          data={selectedSubmission.extracted_data}
-                          documentType={selectedSubmission.document_type}
-                          editable={selectedSubmission.status === 'submitted'}
-                          corrections={selectedSubmission.corrections}
-                        />
-                      )}
-                    </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                          {getFileIcon(selectedFile)}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{selectedFile.name}</p>
+                            <p className="text-sm text-gray-500">
+                              {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearSelectedFile}
+                            disabled={uploading}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
 
-                    {/* Actions */}
-                    {selectedSubmission.status === 'submitted' && (
-                      <div className="w-80 border-l p-4 space-y-4">
-                        <div>
-                          <label className="text-sm font-medium">Poznámka</label>
-                          <Textarea
-                            value={reviewNotes}
-                            onChange={(e) => setReviewNotes(e.target.value)}
-                            placeholder="Interní poznámka..."
-                            className="mt-1"
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Button
-                            className="w-full bg-green-600 hover:bg-green-700"
-                            onClick={() => handleApproveSubmission(true)}
-                          >
-                            <Check className="w-4 h-4 mr-2" />
-                            Schválit + Pohoda
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => handleApproveSubmission(false)}
-                          >
-                            <Check className="w-4 h-4 mr-2" />
-                            Jen schválit
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            className="w-full"
-                            onClick={handleRejectSubmission}
-                          >
-                            <X className="w-4 h-4 mr-2" />
-                            Zamítnout
-                          </Button>
-                        </div>
+                        {uploading && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-gray-600">
+                                {uploadProgress < 100 ? 'Nahrávání...' : 'Zpracování pomocí Kimi AI...'}
+                              </span>
+                              <span className="text-gray-500">{uploadProgress}%</span>
+                            </div>
+                            <Progress value={uploadProgress} />
+                          </div>
+                        )}
+
+                        <Button
+                          onClick={handleExtract}
+                          disabled={uploading}
+                          className="w-full"
+                        >
+                          {uploading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Zpracovávám...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4 mr-2" />
+                              Vytěžit data
+                            </>
+                          )}
+                        </Button>
                       </div>
                     )}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-400">
-                <div className="text-center">
-                  <Inbox className="w-16 h-16 mx-auto mb-4" />
-                  <p>Vyberte doklad ke kontrole</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+                  </CardContent>
+                </Card>
 
-      {/* MODE B: Bulk Processing */}
-      {mode === 'bulk_processing' && (
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left: Controls & File list */}
-          <div className="w-80 border-r bg-white flex flex-col">
-            <div className="p-4 border-b space-y-4">
-              {/* Folder selector */}
-              <div>
-                <Label className="text-sm font-medium">Složka Google Drive</Label>
-                <Select value={selectedFolder} onValueChange={setSelectedFolder}>
-                  <SelectTrigger className="mt-1">
-                    <FolderOpen className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Vyberte složku..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {folders.map(f => (
-                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Document type */}
-              <div>
-                <Label className="text-sm font-medium">Typ dokladu</Label>
-                <DocumentTypeSelector
-                  value={bulkDocumentType}
-                  onChange={setBulkDocumentType}
-                  showAll
-                />
-              </div>
-
-              {/* Extract button */}
-              <Button
-                onClick={handleBulkExtract}
-                disabled={extracting || files.length === 0}
-                className="w-full"
-              >
-                {extracting ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Extrahuji...</>
-                ) : (
-                  <><Zap className="w-4 h-4 mr-2" /> Spustit OCR</>
-                )}
-              </Button>
-            </div>
-
-            {/* File list */}
-            <ScrollArea className="flex-1">
-              <div className="p-2 space-y-1">
-                {bulkJobs.map((job, idx) => (
-                  <button
-                    key={job.id}
-                    onClick={() => setCurrentBulkIndex(idx)}
-                    className={`w-full p-2 text-left rounded-md text-sm ${
-                      idx === currentBulkIndex 
-                        ? 'bg-blue-100 text-blue-900' 
-                        : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {job.status === 'extracted' ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      ) : job.status === 'extracting' ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-                      ) : (
-                        <File className="w-4 h-4 text-gray-400" />
-                      )}
-                      <span className="truncate">{job.file_name}</span>
+                {extractionResult && !extractionResult.success && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-red-800">Chyba při zpracování</p>
+                      <p className="text-sm text-red-600">{extractionResult.error}</p>
                     </div>
-                  </button>
-                ))}
-              </div>
-            </ScrollArea>
-
-            {/* Progress */}
-            {bulkJobs.length > 0 && (
-              <div className="p-4 border-t">
-                <div className="text-sm text-center text-gray-600">
-                  {currentBulkIndex + 1} / {bulkJobs.length}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Right: Preview & Data */}
-          <div className="flex-1 flex flex-col">
-            {currentBulkJob ? (
-              <>
-                {/* Preview */}
-                <div className="flex-1 bg-gray-100 p-4">
-                  <div className="h-full flex items-center justify-center">
-                    <FileText className="w-24 h-24 text-gray-300" />
-                    <span className="ml-4 text-gray-500">{currentBulkJob.file_name}</span>
                   </div>
-                </div>
+                )}
+              </div>
 
-                {/* Data panel */}
-                <div className="h-80 bg-white border-t p-4">
-                  {currentBulkJob.extracted_data ? (
+              <div className="h-full">
+                {extractionResult?.success && extractionResult.data ? (
+                  <Card className="h-full flex flex-col">
+                    <CardHeader className="border-b">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle>Vytěžená data</CardTitle>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Zkontrolujte a upravte extrahované údaje
+                          </p>
+                        </div>
+                        {extractionResult.confidence_score && (
+                          <ConfidenceBadge
+                            score={Math.round(extractionResult.confidence_score)}
+                          />
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 overflow-auto p-4">
+                      <ExtractedDataDisplay
+                        data={extractionResult.data}
+                        documentType={extractionResult.document_type || 'invoice'}
+                        editable
+                      />
+                    </CardContent>
+                    <div className="border-t p-4 flex gap-2">
+                      <Button className="flex-1" variant="outline">
+                        <X className="w-4 h-4 mr-2" />
+                        Zahodit
+                      </Button>
+                      <Button className="flex-1 bg-green-600 hover:bg-green-700">
+                        <Check className="w-4 h-4 mr-2" />
+                        Schválit
+                      </Button>
+                    </div>
+                  </Card>
+                ) : (
+                  <Card className="h-full flex items-center justify-center">
+                    <div className="text-center text-gray-400 p-8">
+                      <FileText className="w-16 h-16 mx-auto mb-4" />
+                      <p className="text-lg font-medium">Žádná data k zobrazení</p>
+                      <p className="text-sm mt-2">
+                        Nahrajte dokument pro automatické vytěžení
+                      </p>
+                    </div>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="history" className="h-[calc(100%-3rem)]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
+              <Card className="lg:col-span-1 flex flex-col h-full">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <History className="w-4 h-4 text-gray-500" />
+                    <CardTitle className="text-base">Naposledy vytěžené</CardTitle>
+                  </div>
+                  <Select value={historyFilter} onValueChange={setHistoryFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filtr typu" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Všechny typy</SelectItem>
+                      <SelectItem value="invoice">Faktury</SelectItem>
+                      <SelectItem value="receipt">Účtenky</SelectItem>
+                      <SelectItem value="bank_statement">Výpisy</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </CardHeader>
+                <CardContent className="flex-1 p-0">
+                  <ScrollArea className="h-full">
+                    {filteredHistory.length === 0 ? (
+                      <div className="p-8 text-center text-gray-400">
+                        <History className="w-12 h-12 mx-auto mb-4" />
+                        <p>Zatím žádná historie</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {filteredHistory.map((item) => (
+                          <button
+                            key={item.id}
+                            onClick={() => handleViewHistoryItem(item)}
+                            className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
+                              selectedHistoryItem?.id === item.id ? 'bg-blue-50' : ''
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              {item.file_type === 'pdf' ? (
+                                <FileText className="w-8 h-8 text-red-500 flex-shrink-0" />
+                              ) : (
+                                <Image className="w-8 h-8 text-blue-500 flex-shrink-0" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate text-sm">
+                                  {item.file_name}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  {getStatusBadge(item.status)}
+                                  {item.confidence_score && (
+                                    <ConfidenceBadge
+                                      score={Math.round(item.confidence_score)}
+                                      size="sm"
+                                    />
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {new Date(item.created_at).toLocaleDateString('cs-CZ')}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              <Card className="lg:col-span-2 flex flex-col h-full">
+                <CardHeader className="border-b">
+                  <CardTitle>Detail dokumentu</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-auto p-4">
+                  {selectedHistoryItem?.extracted_data ? (
                     <ExtractedDataDisplay
-                      data={currentBulkJob.extracted_data}
-                      documentType={currentBulkJob.document_type}
-                      confidenceScore={currentBulkJob.confidence_score}
+                      data={selectedHistoryItem.extracted_data}
+                      documentType={selectedHistoryItem.document_type}
                       editable
                     />
                   ) : (
                     <div className="h-full flex items-center justify-center text-gray-400">
-                      {currentBulkJob.status === 'extracting' ? (
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="w-6 h-6 animate-spin" />
-                          <span>Probíhá vytěžování...</span>
-                        </div>
-                      ) : (
-                        <span>Spusťte OCR pro vytěžení dat</span>
-                      )}
+                      <div className="text-center">
+                        <Eye className="w-16 h-16 mx-auto mb-4" />
+                        <p>Vyberte dokument z historie pro zobrazení</p>
+                      </div>
                     </div>
                   )}
-                </div>
-
-                {/* Navigation */}
-                <div className="border-t p-4 flex items-center justify-between bg-white">
-                  <Button
-                    variant="outline"
-                    disabled={currentBulkIndex === 0}
-                    onClick={() => setCurrentBulkIndex(prev => prev - 1)}
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-2" /> Předchozí
-                  </Button>
-                  
-                  {currentBulkJob.extracted_data && (
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={handleApproveBulk}>
-                        <ThumbsUp className="w-4 h-4 mr-2" /> Schválit
-                      </Button>
-                    </div>
-                  )}
-                  
-                  <Button
-                    variant="outline"
-                    disabled={currentBulkIndex >= bulkJobs.length - 1}
-                    onClick={() => setCurrentBulkIndex(prev => prev + 1)}
-                  >
-                    Další <ChevronRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-400">
-                <div className="text-center">
-                  <FolderOpen className="w-16 h-16 mx-auto mb-4" />
-                  <p>Vyberte složku se soubory</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   )
 }

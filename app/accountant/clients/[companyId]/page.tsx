@@ -32,6 +32,7 @@ import {
   ClipboardList,
   Sparkles,
   Receipt,
+  BarChart3,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -53,6 +54,7 @@ import { UrgencyEmailModal } from '@/components/urgency-email-modal'
 import { CollapsibleSection } from '@/components/collapsible-section'
 import { SectionNav, clientDetailNavItems } from '@/components/section-nav'
 import { AccountantMessagesSection } from '@/components/accountant/messages-section'
+import { CompanyReports } from '@/components/company/company-reports'
 import { AccountantTasksSection } from '@/components/accountant/tasks-section'
 import { AccountantDeadlineCalendar } from '@/components/accountant/deadline-calendar'
 import { OnboardingSection } from '@/components/onboarding-section'
@@ -947,6 +949,18 @@ export default function ClientDetailPage() {
             </div>
           </CollapsibleSection>
         )}
+
+        {/* ============================================ */}
+        {/* REPORTY */}
+        {/* ============================================ */}
+        <CollapsibleSection
+          id="reports"
+          title="Reporty"
+          icon={BarChart3}
+          defaultOpen={false}
+        >
+          <CompanyReports companyId={companyId} companyName={company.name} />
+        </CollapsibleSection>
 
         {/* ============================================ */}
         {/* ÚKOLY */}

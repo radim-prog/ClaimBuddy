@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Users,
   CheckSquare,
-  FolderKanban,
   Settings,
   LogOut,
   Menu,
@@ -20,7 +19,6 @@ import {
   CalendarCheck,
   BookOpen,
   FileSearch,
-  BarChart3,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -45,9 +43,8 @@ const navigation = [
   { name: 'Klienti', href: '/accountant/clients', icon: Users },
   { name: 'Onboarding', href: '/accountant/onboarding', icon: UserPlus },
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
+  { name: 'Roční uzávěrka', href: '/accountant/annual-closing', icon: BookOpen },
   { name: 'Vytěžování', href: '/accountant/extraction', icon: FileSearch },
-  { name: 'Reporty', href: '/accountant/reports', icon: BarChart3 },
-  { name: 'Projekty', href: '/accountant/projects', icon: FolderKanban },
   { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare, badge: 'dynamic' as const },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: DollarSign },
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings },

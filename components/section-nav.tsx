@@ -11,6 +11,7 @@ import {
   CalendarDays,
   MessageCircle,
   ClipboardList,
+  BarChart3,
   LucideIcon
 } from 'lucide-react'
 
@@ -111,4 +112,5 @@ export const clientDetailNavItems: NavItem[] = [
   { id: 'assets', label: 'Majetek', icon: Car },
   { id: 'insurance', label: 'Pojištění', icon: Shield },
   { id: 'deadlines', label: 'Termíny', icon: CalendarDays },
+  { id: 'reports', label: 'Reporty', icon: BarChart3 },
 ]
