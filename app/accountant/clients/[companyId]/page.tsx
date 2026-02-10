@@ -60,7 +60,7 @@ import { Employee } from '@/lib/types/employee'
 import { Asset } from '@/lib/types/asset'
 import { Insurance } from '@/lib/types/insurance'
 import { ClientOnboarding } from '@/lib/types/onboarding'
-import { Task, getEmployeesByCompany, getAssetsByCompany, getInsurancesByCompany, getTasksByCompany, getVatReturnsByCompany, mockCompanies, getCompanyReliabilityScore, getReliabilityLabel, getReliabilityEmoji } from '@/lib/mock-data'
+import { Task, getAssetsByCompany, getInsurancesByCompany, getTasksByCompany, mockCompanies, getCompanyReliabilityScore, getReliabilityLabel, getReliabilityEmoji } from '@/lib/mock-data'
 import type { VatReturn } from '@/lib/types/vat'
 import { getVatReturnTypeLabel, getVatStatusLabel, getVatStatusColor } from '@/lib/types/vat'
 
@@ -162,7 +162,7 @@ export default function ClientDetailPage() {
       }
 
       // Načíst zaměstnance (v produkci by to bylo z API)
-      const companyEmployees = getEmployeesByCompany(companyId)
+      const companyEmployees: Employee[] = [] // TODO: fetch from Supabase
       setEmployees(companyEmployees)
 
       // Načíst majetek (v produkci by to bylo z API)
@@ -178,7 +178,7 @@ export default function ClientDetailPage() {
       setTasks(companyTasks)
 
       // Načíst DPH data
-      const companyVatReturns = getVatReturnsByCompany(companyId)
+      const companyVatReturns: VatReturn[] = [] // TODO: fetch from Supabase vat-store
       setVatReturns(companyVatReturns)
 
       // Načíst onboarding data (v produkci by to bylo z API)

@@ -254,45 +254,6 @@ export function MorningOverview({ companies, closures, tasks }: MorningOverviewP
           )
         })}
       </div>
-
-      {/* Top urgent items */}
-      {urgentItems.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 border rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Vyžaduje pozornost</h3>
-          <div className="space-y-2">
-            {urgentItems.map((item) => (
-              <Link
-                key={item.id}
-                href={item.href}
-                className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    item.type === 'task' ? 'bg-orange-500' :
-                    item.type === 'missing' ? 'bg-red-500' :
-                    'bg-yellow-500'
-                  }`} />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      {item.companyName && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 flex-shrink-0">
-                          <Building2 className="h-3 w-3 mr-0.5" />
-                          {item.companyName}
-                        </span>
-                      )}
-                      {item.subtitle && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{item.subtitle}</span>
-                      )}
-                    </div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.title}</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-300 flex-shrink-0" />
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
