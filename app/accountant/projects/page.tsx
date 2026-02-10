@@ -22,7 +22,6 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import {
-  getAllProjects,
   Project,
   ProjectStatus,
   ProjectType,
@@ -63,7 +62,8 @@ function formatDeadline(dateString: string): string {
 
 export default function ProjectsPage() {
   const router = useRouter()
-  const [projects] = useState<Project[]>(getAllProjects())
+  // TODO: Fetch projects from /api/tasks?is_project=true
+  const [projects] = useState<Project[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [filterStatus, setFilterStatus] = useState<ProjectStatus | 'all'>('all')

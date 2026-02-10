@@ -52,11 +52,7 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import {
-  mockTimeLogs,
   mockUsers,
-  mockCompanies,
-  getUserTimeStats,
-  getClientTimeStats,
   TimeLog,
   ActivityType,
   MOCK_CONFIG,
@@ -97,6 +93,18 @@ function getActivityIcon(type: ActivityType) {
 }
 
 // Get available months from time logs
+// TODO: Fetch time logs and companies from Supabase API
+const mockTimeLogs: TimeLog[] = []
+const mockCompanies: { id: string; name: string }[] = []
+
+function getUserTimeStats(_userId: string, _month?: string) {
+  return { totalMinutes: 0, billableMinutes: 0, nonBillableMinutes: 0, taskMinutes: 0, nonTaskMinutes: 0, byActivityType: { task: 0, general: 0, admin: 0, meeting: 0, call: 0, email: 0 } as Record<ActivityType, number> }
+}
+
+function getClientTimeStats(_clientId: string, _month?: string) {
+  return { totalMinutes: 0, billableMinutes: 0, byUser: [] as { userId: string; userName: string; minutes: number }[], byActivityType: { task: 0, general: 0, admin: 0, meeting: 0, call: 0, email: 0 } as Record<ActivityType, number> }
+}
+
 function getAvailableMonths(): string[] {
   const months = new Set<string>()
   mockTimeLogs.forEach(log => {

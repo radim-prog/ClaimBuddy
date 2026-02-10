@@ -46,13 +46,8 @@ import {
   Loader2,
 } from 'lucide-react'
 import {
-  type InvoiceStatus as OldInvoiceStatus,
   type Invoice,
   type InvoiceStatus,
-  getBillableTasksByCompany,
-  mockInvoices,
-  createInvoiceFromTasks,
-  markTasksAsInvoiced,
 } from '@/lib/mock-data'
 import {
   type TimeEntry,
@@ -138,7 +133,8 @@ export default function InvoicingPage() {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
 
   // Invoice state
-  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices)
+  // TODO: Fetch invoices from Supabase API
+  const [invoices, setInvoices] = useState<Invoice[]>([])
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
 
   // Invoice preview modal state
@@ -171,10 +167,10 @@ export default function InvoicingPage() {
     fetchData()
   }, [])
 
-  // Get billable tasks grouped by company (using new system)
+  // TODO: Fetch billable tasks from Supabase API
   const billableTasksByCompany = useMemo(() => {
-    return getBillableTasksByCompany()
-  }, [invoices]) // Re-calculate when invoices change
+    return {} as Record<string, { company: any, tasks: any[], totalHours: number, totalAmount: number }>
+  }, [invoices])
 
   // Handler: Open invoice preview modal
   const handleGenerateInvoice = (project: BillableProject) => {
@@ -202,25 +198,9 @@ export default function InvoicingPage() {
   // Handler: Confirm and generate invoice
   const handleConfirmInvoice = async () => {
     if (!previewInvoice) return
-
     setGeneratingInvoice(true)
-
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // Create invoice from project data
-    const taskIds = previewInvoice.timeEntries.map((_, idx) => `${previewInvoice.projectId}-task-${idx}`)
-    const invoice = createInvoiceFromTasks(taskIds)
-
-    if (invoice) {
-      setInvoices(prev => [...prev, invoice])
-      markTasksAsInvoiced(taskIds, invoice.id)
-
-      toast.success(`Faktura ${invoice.invoice_number} vytvořena`, {
-        description: `Částka: ${new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' }).format(invoice.total_with_vat)}`
-      })
-    }
-
+    // TODO: Create invoice via Supabase API
+    toast.info('Fakturace zatím není napojena na API')
     handleClosePreview()
   }
 
@@ -232,16 +212,9 @@ export default function InvoicingPage() {
   }
 
   // Handler: Create invoice from selected tasks
-  const handleCreateInvoice = (companyId: string, taskIds: string[]) => {
-    const invoice = createInvoiceFromTasks(taskIds)
-    if (invoice) {
-      setInvoices(prev => [...prev, invoice])
-      markTasksAsInvoiced(taskIds, invoice.id)
-      setSelectedTasks(new Set())
-      toast.success(`Faktura ${invoice.invoice_number} vytvořena`, {
-        description: `Částka: ${new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' }).format(invoice.total_with_vat)}`
-      })
-    }
+  const handleCreateInvoice = (_companyId: string, _taskIds: string[]) => {
+    // TODO: Create invoice via Supabase API
+    toast.info('Fakturace zatím není napojena na API')
   }
 
   // Handler: Mark invoice as sent

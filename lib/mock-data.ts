@@ -1,8 +1,6 @@
 // Mock data a typy pro UcetniWebApp
 // Data jsou v Supabase, zde zůstávají typy, konstanty a helper funkce
 
-import { Asset } from '@/lib/types/asset'
-import { Insurance } from '@/lib/types/insurance'
 
 // ============================================
 // CENTRÁLNÍ KONFIGURACE
@@ -77,9 +75,6 @@ export const mockUsers = [
     created_at: '2025-01-01T00:00:00Z',
   },
 ]
-
-// Data v Supabase, použijte company-store.ts
-export const mockCompanies: any[] = []
 
 // ============================================
 // TYPES
@@ -319,19 +314,6 @@ export interface Project {
 }
 
 // ============================================
-// MOCK DATA ARRAYS (prázdné - data v Supabase)
-// ============================================
-
-export const mockTasks: Task[] = []
-export const mockTimeLogs: TimeLog[] = []
-export const mockInvoices: Invoice[] = []
-export const mockProjects: Project[] = []
-
-// Interní arrays pro helper funkce
-const mockAssets: Asset[] = []
-const mockInsurances: Insurance[] = []
-
-// ============================================
 // URGENCY & ESCALATION
 // ============================================
 
@@ -401,11 +383,6 @@ export function escalateTask(task: Task, managerId: string, reason: string): Tas
 // COMPANY HELPERS
 // ============================================
 
-export function getCompanyReliabilityScore(companyId: string): 0 | 1 | 2 | 3 {
-  const company = mockCompanies.find(c => c.id === companyId) as typeof mockCompanies[0] & { reliability_score?: 0 | 1 | 2 | 3 }
-  return company?.reliability_score ?? 2
-}
-
 export function getReliabilityLabel(score: 0 | 1 | 2 | 3): string {
   switch (score) {
     case 0: return 'Beznadějný'
@@ -424,245 +401,3 @@ export function getReliabilityEmoji(score: 0 | 1 | 2 | 3): string {
   }
 }
 
-// ============================================
-// TASK HELPERS
-// ============================================
-
-export function getTasksByCompany(companyId: string) {
-  return mockTasks.filter(t => t.company_id === companyId)
-}
-
-export function getAllProjects(): Project[] {
-  return mockProjects
-}
-
-// ============================================
-// ASSET & INSURANCE HELPERS
-// ============================================
-
-export function getAssetsByCompany(companyId: string): Asset[] {
-  return mockAssets.filter(a => a.company_id === companyId)
-}
-
-export function getInsurancesByCompany(companyId: string): Insurance[] {
-  return mockInsurances.filter(i => i.company_id === companyId)
-}
-
-// ============================================
-// TIME LOG HELPERS
-// ============================================
-
-export function getTimeLogsForTask(taskId: string): TimeLog[] {
-  return mockTimeLogs.filter(tl => tl.task_id === taskId)
-}
-
-function getTimeLogsForClient(clientId: string): TimeLog[] {
-  return mockTimeLogs.filter(tl => tl.client_id === clientId ||
-    (tl.task_id && mockTasks.find(t => t.id === tl.task_id)?.company_id === clientId)
-  )
-}
-
-export function getUserTimeStats(userId: string, month?: string): {
-  totalMinutes: number
-  billableMinutes: number
-  nonBillableMinutes: number
-  taskMinutes: number
-  nonTaskMinutes: number
-  byActivityType: Record<ActivityType, number>
-} {
-  const logs = month
-    ? mockTimeLogs.filter(tl => tl.user_id === userId && tl.date && tl.date.startsWith(month))
-    : mockTimeLogs.filter(tl => tl.user_id === userId)
-
-  const byActivityType: Record<ActivityType, number> = {
-    task: 0, general: 0, admin: 0, meeting: 0, call: 0, email: 0,
-  }
-
-  let totalMinutes = 0
-  let billableMinutes = 0
-  let nonBillableMinutes = 0
-  let taskMinutes = 0
-  let nonTaskMinutes = 0
-
-  logs.forEach(log => {
-    totalMinutes += log.minutes
-    if (log.is_billable) billableMinutes += log.minutes
-    else nonBillableMinutes += log.minutes
-    if (log.task_id) taskMinutes += log.minutes
-    else nonTaskMinutes += log.minutes
-    byActivityType[log.activity_type] += log.minutes
-  })
-
-  return { totalMinutes, billableMinutes, nonBillableMinutes, taskMinutes, nonTaskMinutes, byActivityType }
-}
-
-export function getClientTimeStats(clientId: string, month?: string): {
-  totalMinutes: number
-  billableMinutes: number
-  byUser: { userId: string; userName: string; minutes: number }[]
-  byActivityType: Record<ActivityType, number>
-} {
-  const clientLogs = getTimeLogsForClient(clientId).filter(tl =>
-    !month || (tl.date && tl.date.startsWith(month))
-  )
-
-  const byActivityType: Record<ActivityType, number> = {
-    task: 0, general: 0, admin: 0, meeting: 0, call: 0, email: 0,
-  }
-
-  const userMap = new Map<string, { userName: string; minutes: number }>()
-  let totalMinutes = 0
-  let billableMinutes = 0
-
-  clientLogs.forEach(log => {
-    totalMinutes += log.minutes
-    if (log.is_billable) billableMinutes += log.minutes
-    byActivityType[log.activity_type] += log.minutes
-
-    const existing = userMap.get(log.user_id)
-    if (existing) existing.minutes += log.minutes
-    else userMap.set(log.user_id, { userName: log.user_name, minutes: log.minutes })
-  })
-
-  return {
-    totalMinutes,
-    billableMinutes,
-    byUser: Array.from(userMap.entries()).map(([userId, data]) => ({
-      userId, userName: data.userName, minutes: data.minutes,
-    })),
-    byActivityType,
-  }
-}
-
-export function addTimeLog(log: Omit<TimeLog, 'id' | 'created_at'>): TimeLog {
-  const newLog: TimeLog = {
-    ...log,
-    id: `tl-${Date.now()}`,
-    created_at: new Date().toISOString(),
-  }
-  mockTimeLogs.push(newLog)
-  return newLog
-}
-
-// ============================================
-// INVOICE HELPERS
-// ============================================
-
-type MockCompany = typeof mockCompanies[number]
-
-let invoiceCounter = 1
-
-function generateInvoiceNumber(type: InvoiceType): string {
-  const year = new Date().getFullYear()
-  const prefix = type === 'accountant_to_client' ? 'FV' : 'FA'
-  const number = String(invoiceCounter++).padStart(4, '0')
-  return `${prefix}-${year}-${number}`
-}
-
-function getAllBillableTasks(): Task[] {
-  return mockTasks.filter(task =>
-    task.status === 'completed' &&
-    task.is_billable === true &&
-    task.billing_type === 'extra' &&
-    !task.invoiced
-  )
-}
-
-export function getBillableTasksByCompany(): Record<string, { company: MockCompany, tasks: Task[], totalHours: number, totalAmount: number }> {
-  const billableTasks = getAllBillableTasks()
-  const grouped: Record<string, { company: MockCompany, tasks: Task[], totalHours: number, totalAmount: number }> = {}
-
-  billableTasks.forEach(task => {
-    if (!grouped[task.company_id]) {
-      const company = mockCompanies.find(c => c.id === task.company_id)
-      if (company) {
-        grouped[task.company_id] = { company, tasks: [], totalHours: 0, totalAmount: 0 }
-      }
-    }
-    if (grouped[task.company_id]) {
-      grouped[task.company_id].tasks.push(task)
-      const hours = (task.actual_minutes || task.estimated_minutes || 0) / 60
-      grouped[task.company_id].totalHours += hours
-      grouped[task.company_id].totalAmount += hours * (task.hourly_rate || 0)
-    }
-  })
-
-  return grouped
-}
-
-export function createInvoiceFromTasks(
-  taskIds: string[],
-  type: InvoiceType = 'accountant_to_client'
-): Invoice | null {
-  const tasks = mockTasks.filter(t => taskIds.includes(t.id))
-  if (tasks.length === 0) return null
-
-  const firstTask = tasks[0]
-  const company = mockCompanies.find(c => c.id === firstTask.company_id)
-  if (!company) return null
-
-  const items: InvoiceItem[] = tasks.map((task, index) => {
-    const hours = (task.actual_minutes || task.estimated_minutes || 0) / 60
-    const unitPrice = task.hourly_rate || 800
-    const totalWithoutVat = hours * unitPrice
-    const vatRate = 21
-    const totalWithVat = totalWithoutVat * (1 + vatRate / 100)
-
-    return {
-      id: `item-${index + 1}`,
-      description: task.title,
-      quantity: Math.round(hours * 100) / 100,
-      unit: 'hod',
-      unit_price: unitPrice,
-      vat_rate: vatRate,
-      total_without_vat: Math.round(totalWithoutVat * 100) / 100,
-      total_with_vat: Math.round(totalWithVat * 100) / 100,
-      task_id: task.id
-    }
-  })
-
-  const totalWithoutVat = items.reduce((sum, item) => sum + item.total_without_vat, 0)
-  const totalVat = items.reduce((sum, item) => sum + (item.total_with_vat - item.total_without_vat), 0)
-  const totalWithVat = totalWithoutVat + totalVat
-
-  const now = new Date()
-  const dueDate = new Date(now)
-  const billingSettings = (company as unknown as { billing_settings?: { invoice_maturity?: number } }).billing_settings
-  dueDate.setDate(dueDate.getDate() + (billingSettings?.invoice_maturity || 14))
-
-  const invoiceNumber = generateInvoiceNumber(type)
-  const variableSymbol = invoiceNumber.replace(/[^0-9]/g, '')
-
-  return {
-    id: `inv-${Date.now()}`,
-    type,
-    company_id: company.id,
-    company_name: company.name,
-    invoice_number: invoiceNumber,
-    variable_symbol: variableSymbol,
-    issue_date: now.toISOString().split('T')[0],
-    due_date: dueDate.toISOString().split('T')[0],
-    tax_date: now.toISOString().split('T')[0],
-    items,
-    total_without_vat: Math.round(totalWithoutVat * 100) / 100,
-    total_vat: Math.round(totalVat * 100) / 100,
-    total_with_vat: Math.round(totalWithVat * 100) / 100,
-    status: 'draft',
-    task_ids: taskIds,
-    created_at: now.toISOString(),
-    created_by: MOCK_CONFIG.CURRENT_USER_ID,
-    updated_at: now.toISOString()
-  }
-}
-
-export function markTasksAsInvoiced(taskIds: string[], invoiceId: string): void {
-  const now = new Date().toISOString()
-  taskIds.forEach(taskId => {
-    const task = mockTasks.find(t => t.id === taskId)
-    if (task) {
-      task.invoiced = true
-      task.invoiced_at = now
-      task.invoice_id = invoiceId
-    }
-  })
-}
