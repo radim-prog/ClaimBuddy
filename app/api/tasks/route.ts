@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { CreateTaskInput, TaskFilter } from '@/lib/types/tasks'
@@ -69,7 +71,7 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sort_by') || 'created_at'
     const sortOrder = searchParams.get('sort_order') || 'desc'
     const page = parseInt(searchParams.get('page') || '1', 10)
-    const pageSize = Math.min(parseInt(searchParams.get('page_size') || '50', 10), 100)
+    const pageSize = Math.min(parseInt(searchParams.get('page_size') || '50', 10), 500)
 
     // Build query
     let query = supabase
