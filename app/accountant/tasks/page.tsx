@@ -71,11 +71,10 @@ import {
   getUserWipCount,
 } from '@/lib/mock-data'
 import Link from 'next/link'
-import { GTDWizard } from '@/components/tasks/gtd-wizard'
+// GTDWizard removed - GTD flow now handled via /accountant/tasks/clarify
 import { UrgencyIndicator } from '@/components/tasks/UrgencyBadge'
 import { getEscalationLevel, needsUrgency } from '@/lib/mock-data'
-import { UnifiedInput, NoteData, QuickTaskData, TaskWizardInitialData, ProjectWizardInitialData, TimeLogData } from '@/components/tasks/unified-input'
-import { TaskCreationWizard, TaskWizardData } from '@/components/tasks/task-creation-wizard'
+// UnifiedInput + TaskCreationWizard removed - replaced by QuickAddButton (floating +) + GTD Clarify flow
 import { toast } from 'sonner'
 import {
   DndContext,
@@ -371,126 +370,6 @@ export default function TasksPage() {
     return task.gtd_is_quick_action || false
   }
 
-  // Modal states
-  const [showNewTaskDialog, setShowNewTaskDialog] = useState(false)
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
-
-  // UnifiedInput & TaskCreationWizard states
-  const [showTaskWizard, setShowTaskWizard] = useState(false)
-  const [wizardMode, setWizardMode] = useState<'task' | 'project'>('task')
-  const [wizardInitialData, setWizardInitialData] = useState<TaskWizardInitialData | ProjectWizardInitialData | undefined>()
-  const [notes, setNotes] = useState<NoteData[]>([])
-
-  // Handler for notes
-  const handleNoteCreated = (note: NoteData) => {
-    setNotes(prev => [note, ...prev])
-    toast.success('Poznámka uložena')
-  }
-
-  // Handler for quick tasks
-  const handleQuickTaskCreated = (quickTask: QuickTaskData) => {
-    const company = mockCompanies.find(c => c.id === quickTask.client_id)
-
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      title: quickTask.title,
-      description: quickTask.purpose, // Purpose becomes description
-      is_project: false,
-      status: 'pending',
-      created_by: MOCK_CONFIG.CURRENT_USER_ID,
-      created_by_name: MOCK_CONFIG.CURRENT_USER_NAME,
-      assigned_to: quickTask.assigned_to_id,
-      assigned_to_name: quickTask.assigned_to_name,
-      is_waiting_for: false,
-      due_date: quickTask.deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      due_time: quickTask.deadline_time,
-      company_id: quickTask.client_id || '',
-      company_name: company?.name || 'Bez klienta',
-      gtd_is_quick_action: true,
-      estimated_minutes: quickTask.estimated_minutes || 15,
-      is_billable: false,
-      tags: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-
-    setTasks(prev => [newTask, ...prev])
-    toast.success('Rychlý úkol vytvořen')
-  }
-
-  // Handler for opening task wizard
-  const handleTaskWizardOpen = (initialData: TaskWizardInitialData) => {
-    setWizardMode('task')
-    setWizardInitialData(initialData)
-    setShowTaskWizard(true)
-  }
-
-  // Handler for opening project wizard
-  const handleProjectWizardOpen = (initialData: ProjectWizardInitialData) => {
-    setWizardMode('project')
-    setWizardInitialData(initialData)
-    setShowTaskWizard(true)
-  }
-
-  // Handler for time logging
-  const handleTimeLogged = (data: TimeLogData) => {
-    // Time is already added to mock data in UnifiedInput
-    // Just update UI if needed
-    toast.success('Čas zaznamenán')
-  }
-
-  // Handler for wizard completion
-  const handleWizardComplete = (data: TaskWizardData) => {
-    // WIP limit check - only if task will be assigned to current user and not blocked
-    const assignedToCurrentUser = data.assigned_to_id === MOCK_CONFIG.CURRENT_USER_ID
-    const willCountAsWip = !data.is_blocked && assignedToCurrentUser
-
-    if (willCountAsWip) {
-      const wipCheck = canUserTakeMoreTasks(MOCK_CONFIG.CURRENT_USER_ID)
-      if (!wipCheck.canTake) {
-        toast.error('Nelze přijmout další úkol', {
-          description: wipCheck.reason || 'Dosažen WIP limit. Nejdříve dokončete rozpracované úkoly.',
-        })
-        return
-      }
-    }
-
-    const company = mockCompanies.find(c => c.id === data.client_id)
-
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      title: data.title,
-      description: data.description || data.outcome,
-      is_project: data.is_project,
-      status: data.is_blocked ? 'waiting_for' : 'accepted',
-      created_by: MOCK_CONFIG.CURRENT_USER_ID,
-      created_by_name: MOCK_CONFIG.CURRENT_USER_NAME,
-      assigned_to: data.assigned_to_id,
-      assigned_to_name: data.assigned_to_name,
-      is_waiting_for: data.is_blocked || data.needs_client_input || data.needs_colleague,
-      due_date: data.deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      due_time: data.deadline_time,
-      company_id: data.client_id || '',
-      company_name: company?.name || 'Bez klienta',
-      estimated_minutes: data.estimated_minutes,
-      is_billable: true,
-      tags: [],
-      // R-Tasks scores
-      score_money: data.score_money as 0 | 1 | 2 | 3,
-      score_fire: data.score_fire as 0 | 1 | 2 | 3,
-      score_time: data.score_time as 0 | 1 | 2 | 3,
-      score_distance: data.score_distance as 0 | 1 | 2,
-      score_personal: data.score_personal as 0 | 1,
-      // Progress
-      progress_percentage: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-
-    setTasks(prev => [newTask, ...prev])
-    setShowTaskWizard(false)
-    toast.success(data.is_project ? 'Projekt vytvořen' : 'Úkol vytvořen')
-  }
 
   // Drag state
   const [activeTask, setActiveTask] = useState<Task | null>(null)
@@ -737,55 +616,6 @@ export default function TasksPage() {
       label: 'Nízká',
       icon: Coffee
     },
-  }
-
-  // Handle new task creation
-  const handleCreateTask = async (data: any) => {
-    const company = mockCompanies.find(c => c.id === selectedCompanyId)
-
-    // Quick actions (<30 min) don't need R-Tasks scores, regular tasks get default scores
-    const isQuickAction = data.isQuickAction || (data.estimatedMinutes && data.estimatedMinutes <= 30)
-
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      title: data.title,
-      description: data.description || '',
-      is_project: data.isProject,
-      status: isQuickAction ? 'pending' : (data.shouldDelegate ? 'pending' : 'accepted'),
-      created_by: MOCK_CONFIG.CURRENT_USER_ID,
-      created_by_name: MOCK_CONFIG.CURRENT_USER_NAME,
-      assigned_to: data.shouldDelegate && data.delegateTo ? data.delegateTo : MOCK_CONFIG.CURRENT_USER_ID,
-      assigned_to_name: data.shouldDelegate && data.delegateTo
-        ? mockUsers.find(u => u.id === data.delegateTo)?.name || MOCK_CONFIG.CURRENT_USER_NAME
-        : MOCK_CONFIG.CURRENT_USER_NAME,
-      is_waiting_for: false,
-      due_date: data.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      due_time: data.dueTime,
-      company_id: selectedCompanyId,
-      company_name: company?.name || 'Neznámý klient',
-      gtd_context: data.contexts || [],
-      gtd_energy_level: data.energyLevel || 'medium',
-      gtd_is_quick_action: isQuickAction,
-      estimated_minutes: data.estimatedMinutes,
-      is_billable: data.isBillable || false,
-      hourly_rate: data.hourlyRate,
-      tags: [],
-      // R-Tasks scores - only set defaults for non-quick actions
-      // Quick actions (<30 min) don't require scoring
-      ...(isQuickAction ? {} : {
-        score_money: 1 as const,     // Default: 5k+ Kč
-        score_fire: 1 as const,      // Default: Normal
-        score_time: 1 as const,      // Default: 2-4h
-        score_distance: 2 as const,  // Default: PC
-        score_personal: 0 as const,  // Default: Poor
-      }),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-
-    setTasks(prev => [newTask, ...prev])
-    setShowNewTaskDialog(false)
-    setSelectedCompanyId('')
   }
 
   // Handle drag start
@@ -1351,26 +1181,11 @@ export default function TasksPage() {
 
         {/* GTD Clarify button */}
         <Link href="/accountant/tasks/clarify">
-          <Button size="sm" variant="outline" className="h-9">
+          <Button size="sm" className="h-9 bg-purple-600 hover:bg-purple-700 text-white">
             <Zap className="h-4 w-4 mr-1" />
             Zpracovat inbox
           </Button>
         </Link>
-
-        {/* New task button - UnifiedInput */}
-        <UnifiedInput
-          onNoteCreated={handleNoteCreated}
-          onQuickTaskCreated={handleQuickTaskCreated}
-          onTaskWizardOpen={handleTaskWizardOpen}
-          onProjectWizardOpen={handleProjectWizardOpen}
-          onTimeLogged={handleTimeLogged}
-          trigger={
-            <Button size="sm" className="h-9 bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-1" />
-              Nový záznam
-            </Button>
-          }
-        />
       </div>
 
       {/* Expandable Filters */}
@@ -1594,70 +1409,6 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* New Task Dialog */}
-      <Dialog open={showNewTaskDialog} onOpenChange={setShowNewTaskDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Vytvořit nový úkol</DialogTitle>
-            <DialogDescription>
-              Nejprve vyberte klienta, pro kterého úkol vytváříte
-            </DialogDescription>
-          </DialogHeader>
-
-          {!selectedCompanyId ? (
-            <div className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input placeholder="Hledat klienta..." className="pl-9" />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
-                {mockCompanies.slice(0, 10).map((company) => (
-                  <Card
-                    key={company.id}
-                    className="cursor-pointer hover:shadow-md hover:border-blue-300 transition-all"
-                    onClick={() => setSelectedCompanyId(company.id)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900 dark:text-white">{company.name}</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">IČO: {company.ico}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <GTDWizard
-              companyId={selectedCompanyId}
-              companyName={mockCompanies.find(c => c.id === selectedCompanyId)?.name || ''}
-              onComplete={handleCreateTask}
-              onCancel={() => {
-                setSelectedCompanyId('')
-                setShowNewTaskDialog(false)
-              }}
-              availableUsers={mockUsers.filter(u => u.role !== 'client').map(u => ({
-                id: u.id,
-                name: u.name,
-              }))}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Task Creation Wizard */}
-      <TaskCreationWizard
-        open={showTaskWizard}
-        onOpenChange={setShowTaskWizard}
-        initialData={wizardInitialData}
-        onComplete={handleWizardComplete}
-        mode={wizardMode}
-      />
     </div>
   )
 
