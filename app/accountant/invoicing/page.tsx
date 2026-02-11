@@ -443,7 +443,14 @@ export default function InvoicingPage() {
               <AlertTriangle className="mr-2 h-5 w-5" />
               {showOnlyPending ? 'Jen nevyfakturované' : 'Zobrazit všechno'}
             </Button>
-            <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            <Button
+              size="lg"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              onClick={() => {
+                const url = `/api/accountant/invoicing/export-xml?period=${currentPeriod}`
+                window.open(url, '_blank')
+              }}
+            >
               <Download className="mr-2 h-5 w-5" />
               Export do Pohody
             </Button>
