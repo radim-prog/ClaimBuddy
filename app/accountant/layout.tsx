@@ -38,6 +38,7 @@ import { SettingsProvider } from '@/lib/contexts/settings-context'
 import { AccountantUserProvider, useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { QuickAddButton } from '@/components/gtd/quick-add-button'
 import { useInboxCount } from '@/components/gtd/use-inbox-count'
+import { KeyboardShortcuts } from '@/components/keyboard-shortcuts'
 
 const navigation = [
   { name: 'Dashboard', href: '/accountant/dashboard', icon: LayoutDashboard },
@@ -360,6 +361,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           {children}
         </main>
         <QuickAddButton />
+        <KeyboardShortcuts />
       </div>
     </div>
   )

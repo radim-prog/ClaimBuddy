@@ -683,6 +683,32 @@ export default function AccountantDashboard() {
               </button>
             )}
 
+            {/* CSV Export */}
+            <button
+              onClick={() => {
+                if (!data) return
+                const header = ['Klient', 'IČO', ...months.map((m, i) => `${m} ${selectedYear}`)].join(';')
+                const rows = filteredCompanies.map(company => {
+                  const statuses = months.map((_, i) => {
+                    const status = getMonthStatus(closures, company.id, i, selectedYear)
+                    return status === 'approved' ? 'OK' : status === 'uploaded' ? 'Čeká' : status === 'missing' ? 'Chybí' : '-'
+                  })
+                  return [company.name, company.ico, ...statuses].join(';')
+                })
+                const csv = '\uFEFF' + [header, ...rows].join('\n')
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `matice-${selectedYear}.csv`
+                a.click()
+                URL.revokeObjectURL(url)
+              }}
+              className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+            >
+              Export CSV
+            </button>
+
             {/* Filter indicator */}
             {filter !== 'all' && (
               <>
