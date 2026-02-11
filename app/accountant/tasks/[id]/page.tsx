@@ -71,7 +71,7 @@ import { GTDWizard } from '@/components/tasks/gtd-wizard'
 import { TimeTracker, TimeTrackingEntry } from '@/components/tasks/time-tracker'
 import { UrgencyBadge } from '@/components/tasks/UrgencyBadge'
 import { UrgencyActions, ManagerActions } from '@/components/tasks/UrgencyActions'
-import { Task, mockUsers, getReliabilityLabel, getReliabilityEmoji } from '@/lib/mock-data'
+import { Task } from '@/lib/mock-data'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -236,6 +236,7 @@ export default function TaskDetailPage() {
   const [newProgressNextSteps, setNewProgressNextSteps] = useState('')
   const [timelineExpanded, setTimelineExpanded] = useState(true)
   const [timeEntries, setTimeEntries] = useState<TimeTrackingEntry[]>([])
+  const [apiUsers, setApiUsers] = useState<{ id: string; name: string; role: string }[]>([])
 
   // Type-safe task updater (task is Task | null but handlers only run when task exists)
   const updateTask = (updater: (prev: Task) => Task) => {
@@ -244,7 +245,7 @@ export default function TaskDetailPage() {
 
   // Current user from auth context
   const currentUser = { id: userId, name: userName, role: 'accountant' as const, email: '', phone_number: '', created_at: '' }
-  const availableAccountants = mockUsers.filter(u => u.role !== 'client' && u.id !== userId)
+  const availableAccountants = apiUsers.filter(u => u.role !== 'client' && u.id !== userId)
 
   // Fetch task from Supabase API
   useEffect(() => {
@@ -285,6 +286,14 @@ export default function TaskDetailPage() {
     }
     fetchTask()
   }, [taskId, userId])
+
+  // Fetch users for delegation
+  useEffect(() => {
+    fetch('/api/accountant/users')
+      .then(r => r.json())
+      .then(data => setApiUsers((data.users || []).map((u: any) => ({ id: u.id, name: u.name || u.full_name, role: u.role }))))
+      .catch(() => {})
+  }, [])
 
   // Loading state
   if (loading) {
@@ -444,7 +453,7 @@ export default function TaskDetailPage() {
       return
     }
 
-    const delegateUser = mockUsers.find(u => u.id === delegateTo)
+    const delegateUser = apiUsers.find(u => u.id === delegateTo)
 
     updateTask(prev => ({
       ...prev,
@@ -875,13 +884,11 @@ export default function TaskDetailPage() {
                   </div>
                 )}
 
-                {/* Reliability Score - TODO: fetch from company API */}
-                {task.company_id && (
+                {/* Reliability Score - placeholder */}
+                {task.company_name && (
                   <div className="pt-3 border-t border-yellow-200 mt-3">
-                    <Label className="text-yellow-900 text-xs">Spolehlivost klienta:</Label>
-                    <p className="text-yellow-800 font-medium flex items-center gap-1">
-                      {getReliabilityEmoji(2)} {getReliabilityLabel(2)}
-                    </p>
+                    <Label className="text-yellow-900 text-xs">Klient:</Label>
+                    <p className="text-yellow-800 font-medium">{task.company_name}</p>
                   </div>
                 )}
               </CardContent>
@@ -1740,7 +1747,7 @@ export default function TaskDetailPage() {
                 assignedTo: task.assigned_to,
                 subtasks: [],
               }}
-              availableUsers={mockUsers.map(u => ({ id: u.id, name: u.name }))}
+              availableUsers={apiUsers.map(u => ({ id: u.id, name: u.name }))}
             />
           </div>
         </div>

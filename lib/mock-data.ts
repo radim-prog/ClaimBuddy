@@ -119,6 +119,7 @@ export interface Task {
 
   // Workflow
   status: TaskStatus
+  priority?: string
 
   // Gamification
   task_type?: TaskType
@@ -147,6 +148,7 @@ export interface Task {
   company_name: string
 
   // GTD context
+  location_id?: string
   gtd_context?: GTDContext[]
   gtd_energy_level?: EnergyLevel
   gtd_is_quick_action?: boolean
@@ -174,6 +176,7 @@ export interface Task {
   score_time?: 0 | 1 | 2 | 3
   score_distance?: 0 | 1 | 2
   score_personal?: 0 | 1
+  total_score?: number
 
   // Approval
   approved_by?: string
