@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { ScoringWizard } from '@/components/gtd/scoring-wizard'
+import { fireTaskConfetti, fireInboxClearedConfetti } from '@/components/gtd/confetti'
 import { toast } from 'sonner'
 
 type Task = {
@@ -100,6 +101,7 @@ export default function ClarifyPage() {
 
     if (currentIndex + 1 >= totalTasks) {
       setAllDone(true)
+      fireInboxClearedConfetti()
     } else {
       setCurrentIndex(currentIndex + 1)
     }
@@ -145,6 +147,7 @@ export default function ClarifyPage() {
       status: 'completed',
       gtd_is_quick_action: true,
     })
+    fireTaskConfetti()
     toast.success('Hotovo!')
     nextTask()
   }
@@ -185,6 +188,7 @@ export default function ClarifyPage() {
       assigned_to: assignedTo,
       due_date: dueDate || null,
     })
+    fireTaskConfetti()
     toast.success(`Úkol ohodnocen: ${result.total_score}/12`)
     nextTask()
   }

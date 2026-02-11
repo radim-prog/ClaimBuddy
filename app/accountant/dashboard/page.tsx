@@ -7,6 +7,8 @@ import { ClosureDetailModal } from '@/components/closure-detail-modal'
 import { MorningOverview } from '@/components/accountant/morning-overview'
 import { ActivityFeed } from '@/components/accountant/activity-feed'
 import { GtdDashboardSection } from '@/components/gtd/dashboard-section'
+import { DailyProgressRing } from '@/components/gtd/progress-ring'
+import { GamificationStats } from '@/components/gtd/gamification-stats'
 
 type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
 
@@ -763,6 +765,12 @@ export default function AccountantDashboard() {
       {/* GTD Dashboard Section */}
       <div className="mt-6">
         <GtdDashboardSection />
+      </div>
+
+      {/* Gamification: Progress Ring + Level/Streak */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DailyProgressRing />
+        <GamificationStats />
       </div>
 
       {/* Activity Feed */}

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
+import { fireTaskConfetti } from '@/components/gtd/confetti'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -520,6 +521,7 @@ export default function TasksPage() {
         body: JSON.stringify({ status: 'completed' })
       })
       if (!response.ok) throw new Error()
+      fireTaskConfetti()
     } catch {
       toast.error('Nepodařilo se dokončit úkol')
       if (currentTask) {

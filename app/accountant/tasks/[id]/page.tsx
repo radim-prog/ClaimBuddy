@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { fireTaskConfetti } from '@/components/gtd/confetti'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -526,6 +527,7 @@ export default function TaskDetailPage() {
       approved_by_name: currentUser.name,
       approved_at: new Date().toISOString(),
     }))
+    fireTaskConfetti()
 
     // Add to timeline
     setTimeline(prev => [...prev, {
