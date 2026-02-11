@@ -300,8 +300,8 @@ export interface CreateTaskInput {
   assigned_to_name?: string;
   due_date?: string;
   due_time?: string;
-  company_id: string;
-  company_name: string;
+  company_id?: string;
+  company_name?: string;
   monthly_closure_id?: string;
   document_id?: string;
   onboarding_client_id?: string;
@@ -313,6 +313,12 @@ export interface CreateTaskInput {
   gtd_is_quick_action?: boolean;
   tags?: string[];
   task_data?: Record<string, any>;
+  // GTD project & location refs
+  project_id?: string;
+  phase_id?: string;
+  location_id?: string;
+  position_in_phase?: number;
+  is_next_action?: boolean;
 }
 
 // For updating tasks
@@ -348,6 +354,14 @@ export interface UpdateTaskInput {
   progress_percentage?: number;
   task_data?: Record<string, any>;
   completed_at?: string;
+  // GTD project & location refs
+  project_id?: string | null;
+  phase_id?: string | null;
+  location_id?: string | null;
+  position_in_phase?: number;
+  is_next_action?: boolean;
+  company_id?: string;
+  company_name?: string;
 }
 
 // For creating time tracking entries
@@ -434,6 +448,9 @@ export interface TaskFilter {
   due_date_to?: string;
   parent_project_id?: string;
   search?: string;
+  project_id?: string;
+  location_id?: string;
+  is_next_action?: boolean;
 }
 
 export interface TaskSortOptions {

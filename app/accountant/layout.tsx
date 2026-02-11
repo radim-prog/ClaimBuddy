@@ -19,6 +19,7 @@ import {
   CalendarCheck,
   BookOpen,
   FileSearch,
+  FolderKanban,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -36,7 +37,7 @@ import { logout } from '@/app/auth/login/actions'
 import { SettingsProvider } from '@/lib/contexts/settings-context'
 import { AccountantUserProvider, useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { QuickAddButton } from '@/components/gtd/quick-add-button'
-// Badge count - will be fetched from API in future; for now show 0
+import { useInboxCount } from '@/components/gtd/use-inbox-count'
 
 const navigation = [
   { name: 'Dashboard', href: '/accountant/dashboard', icon: LayoutDashboard },
@@ -46,6 +47,7 @@ const navigation = [
   { name: 'Roční uzávěrka', href: '/accountant/annual-closing', icon: BookOpen },
   { name: 'Vytěžování', href: '/accountant/extraction', icon: FileSearch },
   { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare, badge: 'dynamic' as const },
+  { name: 'Projekty', href: '/accountant/projects', icon: FolderKanban },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: DollarSign },
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings },
 ]
@@ -74,6 +76,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { userName, userInitials, userRole, permissions } = useAccountantUser()
+  const inboxCount = useInboxCount()
 
   const showAdmin = userRole === 'admin' || permissions?.admin_access === true
 
@@ -115,7 +118,11 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                     <Icon className={`mr-3 h-5 w-5 flex-shrink-0`} />
                     {item.name}
                   </span>
-                  {/* Task attention badge - count computed from tasks API */}
+                  {item.badge === 'dynamic' && inboxCount > 0 && (
+                    <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold bg-yellow-400 text-gray-900 rounded-full min-w-[1.25rem]">
+                      {inboxCount}
+                    </span>
+                  )}
                 </Link>
               )
             })}

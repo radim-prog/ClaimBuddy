@@ -6,6 +6,7 @@ import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { ClosureDetailModal } from '@/components/closure-detail-modal'
 import { MorningOverview } from '@/components/accountant/morning-overview'
 import { ActivityFeed } from '@/components/accountant/activity-feed'
+import { GtdDashboardSection } from '@/components/gtd/dashboard-section'
 
 type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
 
@@ -757,6 +758,11 @@ export default function AccountantDashboard() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* GTD Dashboard Section */}
+      <div className="mt-6">
+        <GtdDashboardSection />
       </div>
 
       {/* Activity Feed */}

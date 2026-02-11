@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,9 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   FolderKanban,
-  Building2,
   Calendar,
-  User,
   Search,
   Plus,
   Filter,
@@ -21,11 +18,26 @@ import {
   PauseCircle,
   AlertCircle,
 } from 'lucide-react'
-import {
-  Project,
-  ProjectStatus,
-  ProjectType,
-} from '@/lib/mock-data'
+
+type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'review' | 'completed' | 'cancelled'
+
+type Project = {
+  id: string
+  title: string
+  description?: string
+  outcome?: string
+  status: ProjectStatus
+  company_id?: string
+  owner_id?: string
+  due_date?: string
+  estimated_hours?: number
+  actual_hours?: number
+  progress_percentage: number
+  tags?: string[]
+  created_at: string
+  updated_at: string
+  completed_at?: string
+}
 
 // Status configuration - simplified
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; borderColor: string; textColor: string; bgColor: string }> = {
@@ -35,12 +47,6 @@ const STATUS_CONFIG: Record<ProjectStatus, { label: string; borderColor: string;
   review: { label: 'K review', borderColor: 'border-l-purple-500', textColor: 'text-purple-600', bgColor: 'bg-purple-50' },
   completed: { label: 'Dokončeno', borderColor: 'border-l-gray-400', textColor: 'text-gray-500 dark:text-gray-400', bgColor: 'bg-gray-50 dark:bg-gray-800/50' },
   cancelled: { label: 'Zrušeno', borderColor: 'border-l-red-500', textColor: 'text-red-500', bgColor: 'bg-red-50 dark:bg-red-900/20' },
-}
-
-const TYPE_LABELS: Record<ProjectType, string> = {
-  recurring: 'Opakující se',
-  one_time: 'Jednorázový',
-  ongoing: 'Průběžný',
 }
 
 function getDaysUntilDeadline(dateString: string): number {
@@ -61,13 +67,19 @@ function formatDeadline(dateString: string): string {
 }
 
 export default function ProjectsPage() {
-  const router = useRouter()
-  // TODO: Fetch projects from /api/tasks?is_project=true
-  const [projects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [filterStatus, setFilterStatus] = useState<ProjectStatus | 'all'>('all')
-  const [filterType, setFilterType] = useState<ProjectType | 'all'>('all')
+
+  useEffect(() => {
+    fetch('/api/projects')
+      .then(r => r.json())
+      .then(data => setProjects(data.projects || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
   // Filter projects
   const filteredProjects = useMemo(() => {
@@ -77,19 +89,13 @@ export default function ProjectsPage() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(p =>
-        p.title.toLowerCase().includes(query) ||
-        p.company_name.toLowerCase().includes(query)
+        p.title.toLowerCase().includes(query)
       )
     }
 
     // Status filter
     if (filterStatus !== 'all') {
       filtered = filtered.filter(p => p.status === filterStatus)
-    }
-
-    // Type filter
-    if (filterType !== 'all') {
-      filtered = filtered.filter(p => p.project_type === filterType)
     }
 
     // Sort: active first, then by deadline
@@ -105,25 +111,31 @@ export default function ProjectsPage() {
       if (statusOrder[a.status] !== statusOrder[b.status]) {
         return statusOrder[a.status] - statusOrder[b.status]
       }
-      return new Date(a.target_date).getTime() - new Date(b.target_date).getTime()
+      const aDate = a.due_date ? new Date(a.due_date).getTime() : Infinity
+      const bDate = b.due_date ? new Date(b.due_date).getTime() : Infinity
+      return aDate - bDate
     })
 
     return filtered
-  }, [projects, searchQuery, filterStatus, filterType])
+  }, [projects, searchQuery, filterStatus])
 
-  const activeFiltersCount = [
-    filterStatus !== 'all' ? filterStatus : null,
-    filterType !== 'all' ? filterType : null,
-  ].filter(Boolean).length
+  const activeFiltersCount = filterStatus !== 'all' ? 1 : 0
 
   const clearFilters = () => {
     setFilterStatus('all')
-    setFilterType('all')
   }
 
   // Count by status for quick info
   const activeCount = projects.filter(p => p.status === 'active').length
   const reviewCount = projects.filter(p => p.status === 'review').length
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-7xl">
@@ -137,9 +149,11 @@ export default function ProjectsPage() {
               {reviewCount > 0 && ` • ${reviewCount} k review`}
             </p>
           </div>
-          <Button className="bg-purple-600 hover:bg-purple-700">
-            <Plus className="mr-2 h-4 w-4" />
-            Nový projekt
+          <Button asChild className="bg-purple-600 hover:bg-purple-700">
+            <Link href="/accountant/projects/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Nový projekt
+            </Link>
           </Button>
         </div>
       </div>
@@ -191,21 +205,6 @@ export default function ProjectsPage() {
                   </select>
                 </div>
 
-                {/* Type */}
-                <div>
-                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Typ</label>
-                  <select
-                    value={filterType}
-                    onChange={(e) => setFilterType(e.target.value as ProjectType | 'all')}
-                    className="px-3 py-2 border rounded-lg text-sm"
-                  >
-                    <option value="all">Všechny typy</option>
-                    <option value="recurring">Opakující se</option>
-                    <option value="one_time">Jednorázový</option>
-                    <option value="ongoing">Průběžný</option>
-                  </select>
-                </div>
-
                 {/* Clear */}
                 {activeFiltersCount > 0 && (
                   <div className="flex items-end">
@@ -250,37 +249,35 @@ export default function ProjectsPage() {
         ) : (
           filteredProjects.map((project) => {
             const config = STATUS_CONFIG[project.status]
-            const daysUntil = getDaysUntilDeadline(project.target_date)
-            const isOverdue = daysUntil < 0
-            const isUrgent = daysUntil >= 0 && daysUntil <= 3
-            const progress = project.progress_percent || 0
+            const daysUntil = project.due_date ? getDaysUntilDeadline(project.due_date) : null
+            const isOverdue = daysUntil !== null && daysUntil < 0
+            const isUrgent = daysUntil !== null && daysUntil >= 0 && daysUntil <= 3
+            const progress = project.progress_percentage || 0
 
             return (
               <Link key={project.id} href={`/accountant/projects/${project.id}`}>
                 <Card className={`hover:shadow-md transition-all cursor-pointer border-l-4 ${config.borderColor}`}>
                   <CardContent className="py-3 px-4">
-                    {/* Grid layout */}
                     <div className="grid grid-cols-12 gap-4 items-center">
 
-                      {/* Col 1: Project name and client (5 cols) */}
+                      {/* Project name */}
                       <div className="col-span-5 min-w-0">
                         <h3 className="font-semibold text-gray-900 dark:text-white truncate">
                           {project.title}
                         </h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                          <Building2 className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span className="truncate">{project.company_name}</span>
-                        </div>
+                        {project.outcome && (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{project.outcome}</p>
+                        )}
                       </div>
 
-                      {/* Col 2: Status and type (2 cols) */}
+                      {/* Status */}
                       <div className="col-span-2 flex items-center gap-1.5">
                         <Badge className={`${config.bgColor} ${config.textColor} text-xs`}>
                           {config.label}
                         </Badge>
                       </div>
 
-                      {/* Col 3: Progress (2 cols) */}
+                      {/* Progress */}
                       <div className="col-span-2 text-sm">
                         <div className="flex items-center gap-2">
                           {progress === 100 ? (
@@ -288,9 +285,7 @@ export default function ProjectsPage() {
                           ) : (
                             <Clock className="h-4 w-4 text-gray-400" />
                           )}
-                          <span className="text-gray-700 dark:text-gray-200">
-                            {project.completed_tasks || 0}/{project.total_tasks || 0} úkolů
-                          </span>
+                          <span className="text-gray-700 dark:text-gray-200">{progress}%</span>
                         </div>
                         {progress > 0 && progress < 100 && (
                           <div className="mt-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
@@ -302,31 +297,25 @@ export default function ProjectsPage() {
                         )}
                       </div>
 
-                      {/* Col 4: Deadline (2 cols) */}
+                      {/* Deadline */}
                       <div className="col-span-2 text-right">
-                        <div className={`flex items-center justify-end gap-1 text-sm font-medium ${
-                          isOverdue ? 'text-red-600 dark:text-red-400' : isUrgent ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'
-                        }`}>
-                          <Calendar className="h-3.5 w-3.5" />
-                          {formatDeadline(project.target_date)}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center justify-end gap-1">
-                          <User className="h-3 w-3" />
-                          {project.owner_name}
-                        </div>
+                        {project.due_date ? (
+                          <div className={`flex items-center justify-end gap-1 text-sm font-medium ${
+                            isOverdue ? 'text-red-600 dark:text-red-400' : isUrgent ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'
+                          }`}>
+                            <Calendar className="h-3.5 w-3.5" />
+                            {formatDeadline(project.due_date)}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">Bez termínu</span>
+                        )}
                       </div>
 
-                      {/* Col 5: Alert indicator (1 col) */}
+                      {/* Alert indicator */}
                       <div className="col-span-1 text-right">
-                        {isOverdue && (
-                          <AlertCircle className="h-5 w-5 text-red-500 inline" />
-                        )}
-                        {!isOverdue && isUrgent && (
-                          <Clock className="h-5 w-5 text-orange-500 inline" />
-                        )}
-                        {project.status === 'on_hold' && (
-                          <PauseCircle className="h-5 w-5 text-yellow-500 inline" />
-                        )}
+                        {isOverdue && <AlertCircle className="h-5 w-5 text-red-500 inline" />}
+                        {!isOverdue && isUrgent && <Clock className="h-5 w-5 text-orange-500 inline" />}
+                        {project.status === 'on_hold' && <PauseCircle className="h-5 w-5 text-yellow-500 inline" />}
                       </div>
 
                     </div>

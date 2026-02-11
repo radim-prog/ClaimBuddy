@@ -92,14 +92,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       const prevNext = tasks.find(t => t.is_next_action)
       if (prevNext) {
         await fetch(`/api/tasks/${prevNext.id}`, {
-          method: 'PUT',
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ is_next_action: false }),
         })
       }
     }
     await fetch(`/api/tasks/${taskId}`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_next_action: !current }),
     })

@@ -81,7 +81,7 @@ export default function ClarifyPage() {
 
   const updateTask = async (taskId: string, updates: Record<string, unknown>) => {
     await fetch(`/api/tasks/${taskId}`, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     })
