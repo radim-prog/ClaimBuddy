@@ -12,44 +12,7 @@ export const MOCK_CONFIG = {
   CURRENT_USER_NAME: 'Radim Zajíček',
 }
 
-// ============================================
-// MOCK USERS
-// ============================================
-
-export const mockUsers = [
-  {
-    id: 'user-1-client',
-    email: 'karel@example.com',
-    name: 'Karel Novák',
-    role: 'client' as const,
-    phone_number: '+420777123456',
-    created_at: '2025-01-01T00:00:00Z',
-  },
-  {
-    id: 'user-2-accountant',
-    email: 'jana@ucetni.cz',
-    name: 'Radim Zajíček',
-    role: 'accountant' as const,
-    phone_number: '+420777654321',
-    created_at: '2025-01-01T00:00:00Z',
-  },
-  {
-    id: 'user-3-accountant',
-    email: 'petr@ucetni.cz',
-    name: 'Petr Novotný',
-    role: 'accountant' as const,
-    phone_number: '+420777888999',
-    created_at: '2025-01-01T00:00:00Z',
-  },
-  {
-    id: 'user-4-assistant',
-    email: 'marie@ucetni.cz',
-    name: 'Marie Dvořáková',
-    role: 'assistant' as const,
-    phone_number: '+420777111222',
-    created_at: '2025-01-01T00:00:00Z',
-  },
-]
+// mockUsers DELETED - all pages now fetch from /api/accountant/users
 
 // ============================================
 // TYPES

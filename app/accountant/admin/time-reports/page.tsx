@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -52,7 +52,6 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import {
-  mockUsers,
   TimeLog,
   ActivityType,
 } from '@/lib/mock-data'
@@ -127,11 +126,19 @@ export default function TimeReportsPage() {
   const [selectedClient, setSelectedClient] = useState<string | null>(null)
   const [filterAccountant, setFilterAccountant] = useState<string>('all')
   const [filterClient, setFilterClient] = useState<string>('all')
+  const [apiUsers, setApiUsers] = useState<{ id: string; name: string; role: string; email: string; phone_number: string; created_at: string }[]>([])
+
+  useEffect(() => {
+    fetch('/api/accountant/users')
+      .then(r => r.json())
+      .then(data => setApiUsers((data.users || []).map((u: any) => ({ id: u.id, name: u.name || u.full_name, role: u.role, email: u.email || '', phone_number: u.phone_number || '', created_at: u.created_at || '' }))))
+      .catch(() => {})
+  }, [])
 
   // Get all accountants
   const accountants = useMemo(() => {
-    return mockUsers.filter(u => u.role === 'accountant' || u.role === 'assistant')
-  }, [])
+    return apiUsers.filter(u => u.role === 'accountant' || u.role === 'assistant')
+  }, [apiUsers])
 
   // Get time stats by accountant
   const accountantStats = useMemo(() => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -31,116 +31,43 @@ import {
   User,
   Search,
 } from 'lucide-react'
-import { mockUsers as centralMockUsers } from '@/lib/mock-data'
+// User activity data is generated from API users
+// TODO: Replace with real session tracking when available
 
-// Rozšířená data uživatelů pro activity tracking (odvozeno z centrálních mockUsers)
-const mockUsers = centralMockUsers.map((user, index) => ({
-  id: user.id,
-  name: user.name,
-  email: user.email,
-  role: user.role === 'accountant' ? 'admin' : user.role, // accountant = admin pro tuto stránku
-  avatar: user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
-  isOnline: index < 2, // První 2 uživatelé jsou online
-  lastActive: new Date(Date.now() - index * 2 * 60 * 60 * 1000).toISOString(), // Postupně starší aktivita
-}))
+// Placeholder session/stats generators
+function generateMockSessions(users: { id: string; name: string; email: string }[]) {
+  return users.slice(0, 5).map((user, index) => ({
+    id: `session-${index + 1}`,
+    user_id: user.id,
+    user_name: user.name,
+    user_email: user.email,
+    login_time: new Date(Date.now() - (index + 1) * 3 * 60 * 60 * 1000).toISOString(),
+    logout_time: index >= 2 ? new Date(Date.now() - index * 2 * 60 * 60 * 1000).toISOString() : null,
+    duration: index >= 2 ? `${index}h 30m` : null,
+    ip_address: `192.168.1.${100 + index}`,
+    device: index === 2 ? 'mobile' as const : 'desktop' as const,
+    browser: ['Chrome 120', 'Firefox 121', 'Safari Mobile', 'Edge 120', 'Chrome 120'][index] || 'Chrome',
+    location: ['Praha, CZ', 'Brno, CZ', 'Praha, CZ', 'Ostrava, CZ', 'Praha, CZ'][index] || 'CZ',
+    is_active: index < 2,
+    pages_viewed: [47, 32, 12, 156, 234][index] || 10,
+    actions_performed: [23, 15, 5, 78, 112][index] || 5,
+  }))
+}
 
-// Mock session data (odvozeno z centrálních mockUsers)
-const mockSessions = [
-  {
-    id: 'session-1',
-    user_id: centralMockUsers[1]?.id || 'user-2-accountant', // Radim Zajíček
-    user_name: centralMockUsers[1]?.name || 'Radim Zajíček',
-    user_email: centralMockUsers[1]?.email || 'jana@ucetni.cz',
-    login_time: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3h zpět
-    logout_time: null,
-    duration: null,
-    ip_address: '192.168.1.100',
-    device: 'desktop',
-    browser: 'Chrome 120',
-    location: 'Praha, CZ',
-    is_active: true,
-    pages_viewed: 47,
-    actions_performed: 23,
-  },
-  {
-    id: 'session-2',
-    user_id: centralMockUsers[2]?.id || 'user-3-accountant', // Petr Novotný
-    user_name: centralMockUsers[2]?.name || 'Petr Novotný',
-    user_email: centralMockUsers[2]?.email || 'petr@ucetni.cz',
-    login_time: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(), // 2.5h zpět
-    logout_time: null,
-    duration: null,
-    ip_address: '192.168.1.101',
-    device: 'desktop',
-    browser: 'Firefox 121',
-    location: 'Brno, CZ',
-    is_active: true,
-    pages_viewed: 32,
-    actions_performed: 15,
-  },
-  {
-    id: 'session-3',
-    user_id: centralMockUsers[0]?.id || 'user-1-client', // Karel Novák
-    user_name: centralMockUsers[0]?.name || 'Karel Novák',
-    user_email: centralMockUsers[0]?.email || 'karel@example.com',
-    login_time: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4h zpět
-    logout_time: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(), // 2.5h zpět
-    duration: '1h 30m',
-    ip_address: '192.168.1.102',
-    device: 'mobile',
-    browser: 'Safari Mobile',
-    location: 'Praha, CZ',
-    is_active: false,
-    pages_viewed: 12,
-    actions_performed: 5,
-  },
-  {
-    id: 'session-4',
-    user_id: centralMockUsers[3]?.id || 'user-4-assistant', // Marie Dvořáková
-    user_name: centralMockUsers[3]?.name || 'Marie Dvořáková',
-    user_email: centralMockUsers[3]?.email || 'marie@ucetni.cz',
-    login_time: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Včera
-    logout_time: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString(), // 8h sezení
-    duration: '8h 0m',
-    ip_address: '192.168.1.103',
-    device: 'desktop',
-    browser: 'Edge 120',
-    location: 'Ostrava, CZ',
-    is_active: false,
-    pages_viewed: 156,
-    actions_performed: 78,
-  },
-  {
-    id: 'session-5',
-    user_id: centralMockUsers[1]?.id || 'user-2-accountant', // Radim Zajíček - včerejší session
-    user_name: centralMockUsers[1]?.name || 'Radim Zajíček',
-    user_email: centralMockUsers[1]?.email || 'jana@ucetni.cz',
-    login_time: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), // Předevčírem
-    logout_time: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString(), // 10h sezení
-    duration: '10h 0m',
-    ip_address: '192.168.1.100',
-    device: 'desktop',
-    browser: 'Chrome 120',
-    location: 'Praha, CZ',
-    is_active: false,
-    pages_viewed: 234,
-    actions_performed: 112,
-  },
-]
-
-// Mock user activity stats (odvozeno z centrálních mockUsers)
-const mockUserStats = centralMockUsers.map((user, index) => ({
-  user_id: user.id,
-  user_name: user.name,
-  total_sessions: [45, 38, 12, 22][index] || 10,
-  total_time: ['180h', '152h', '24h', '88h'][index] || '40h',
-  avg_session: ['4h', '4h', '2h', '4h'][index] || '4h',
-  pages_viewed: [3420, 2890, 456, 1780][index] || 500,
-  actions: [1560, 1340, 89, 890][index] || 200,
-  last_login: new Date(Date.now() - index * 2 * 60 * 60 * 1000).toISOString(),
-  most_visited: ['Klienti', 'Uzávěrky', 'Admin', 'Dokumenty'][index] || 'Dashboard',
-  trend: ['up', 'up', 'same', 'down'][index] || 'same',
-}))
+function generateMockUserStats(users: { id: string; name: string }[]) {
+  return users.map((user, index) => ({
+    user_id: user.id,
+    user_name: user.name,
+    total_sessions: [45, 38, 12, 22][index % 4] || 10,
+    total_time: ['180h', '152h', '24h', '88h'][index % 4] || '40h',
+    avg_session: ['4h', '4h', '2h', '4h'][index % 4] || '4h',
+    pages_viewed: [3420, 2890, 456, 1780][index % 4] || 500,
+    actions: [1560, 1340, 89, 890][index % 4] || 200,
+    last_login: new Date(Date.now() - index * 2 * 60 * 60 * 1000).toISOString(),
+    most_visited: ['Klienti', 'Uzávěrky', 'Admin', 'Dokumenty'][index % 4] || 'Dashboard',
+    trend: ['up', 'up', 'same', 'down'][index % 4] || 'same',
+  }))
+}
 
 // Mock page views by section
 const mockPageViews = [
@@ -157,6 +84,28 @@ const mockPageViews = [
 export default function UserActivityPage() {
   const [selectedUser, setSelectedUser] = useState<string>('all')
   const [dateRange, setDateRange] = useState<string>('today')
+  const [apiUsers, setApiUsers] = useState<{ id: string; name: string; email: string; role: string }[]>([])
+
+  useEffect(() => {
+    fetch('/api/accountant/users')
+      .then(r => r.json())
+      .then(data => setApiUsers((data.users || []).map((u: any) => ({ id: u.id, name: u.name || u.full_name, email: u.email || '', role: u.role }))))
+      .catch(() => {})
+  }, [])
+
+  // Generate mock data from real users
+  const mockUsers = useMemo(() => apiUsers.map((user, index) => ({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role === 'accountant' ? 'admin' : user.role,
+    avatar: user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
+    isOnline: index < 2,
+    lastActive: new Date(Date.now() - index * 2 * 60 * 60 * 1000).toISOString(),
+  })), [apiUsers])
+
+  const mockSessions = useMemo(() => generateMockSessions(apiUsers), [apiUsers])
+  const mockUserStats = useMemo(() => generateMockUserStats(apiUsers), [apiUsers])
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredSessions = useMemo(() => {
