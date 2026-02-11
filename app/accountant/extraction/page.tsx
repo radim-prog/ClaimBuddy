@@ -278,6 +278,10 @@ export default function AccountantExtractionPage() {
                 <Badge variant="secondary" className="ml-1">{history.length}</Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="compare" className="flex items-center gap-2">
+              <Eye className="w-4 h-4" />
+              A/B Porovnání
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="upload" className="h-[calc(100%-3rem)]">
@@ -548,8 +552,161 @@ export default function AccountantExtractionPage() {
               </Card>
             </div>
           </TabsContent>
+          <TabsContent value="compare">
+            <CompareTab />
+          </TabsContent>
         </Tabs>
       </div>
+    </div>
+  )
+}
+
+// A/B comparison tab component
+function CompareTab() {
+  const [comparing, setComparing] = useState(false)
+  const [compareFile, setCompareFile] = useState<File | null>(null)
+  const [compareResult, setCompareResult] = useState<{
+    filename: string
+    comparison: Array<{
+      model: string
+      modelName: string
+      success: boolean
+      processingTime: number
+      data?: any
+      error?: string
+      confidence: number
+    }>
+    agreementScore: number
+    bestModel: { model: string; modelName: string }
+  } | null>(null)
+
+  const handleCompare = async () => {
+    if (!compareFile) return
+    setComparing(true)
+    setCompareResult(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', compareFile)
+      const res = await fetch('/api/documents/compare', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.error) {
+        toast.error(data.error)
+      } else {
+        setCompareResult(data)
+        toast.success('Porovnání dokončeno')
+      }
+    } catch {
+      toast.error('Chyba při porovnávání')
+    } finally {
+      setComparing(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>A/B Porovnání Kimi modelů</CardTitle>
+          <p className="text-sm text-gray-500">
+            Nahrajte fakturu a porovnejte výsledky extrakce mezi modely Kimi K2.5 a Moonshot V1
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={e => setCompareFile(e.target.files?.[0] || null)}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleCompare}
+              disabled={!compareFile || comparing}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {comparing ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Porovnávám...</>
+              ) : (
+                <><Eye className="h-4 w-4 mr-2" /> Porovnat modely</>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {compareResult && (
+        <>
+          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Shoda mezi modely</p>
+                  <p className="text-2xl font-bold">{compareResult.agreementScore}%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Nejlepší model</p>
+                  <p className="text-lg font-bold text-purple-600">{compareResult.bestModel.modelName}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Soubor</p>
+                  <p className="text-sm font-medium">{compareResult.filename}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {compareResult.comparison.map(result => (
+              <Card key={result.model} className={result.model === compareResult.bestModel.model ? 'border-purple-400 border-2' : ''}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{result.modelName}</CardTitle>
+                    <Badge variant={result.success ? 'default' : 'destructive'}>
+                      {result.success ? `${result.confidence}%` : 'Chyba'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-gray-500">{result.processingTime}ms</p>
+                </CardHeader>
+                <CardContent>
+                  {result.success && result.data ? (
+                    <div className="space-y-2 text-sm">
+                      <div className="grid grid-cols-2 gap-1">
+                        <span className="text-gray-500">Číslo:</span>
+                        <span className="font-medium">{result.data.document_number || '-'}</span>
+                        <span className="text-gray-500">VS:</span>
+                        <span className="font-medium">{result.data.variable_symbol || '-'}</span>
+                        <span className="text-gray-500">Dodavatel:</span>
+                        <span className="font-medium">{result.data.supplier?.name || '-'}</span>
+                        <span className="text-gray-500">IČO:</span>
+                        <span className="font-medium">{result.data.supplier?.ico || '-'}</span>
+                        <span className="text-gray-500">Bez DPH:</span>
+                        <span className="font-medium">{result.data.total_without_vat?.toLocaleString('cs-CZ')} Kč</span>
+                        <span className="text-gray-500">DPH:</span>
+                        <span className="font-medium">{result.data.total_vat?.toLocaleString('cs-CZ')} Kč</span>
+                        <span className="text-gray-500">Celkem:</span>
+                        <span className="font-bold text-lg">{result.data.total_with_vat?.toLocaleString('cs-CZ')} Kč</span>
+                      </div>
+                      {result.data.items?.length > 0 && (
+                        <div className="mt-2 pt-2 border-t">
+                          <p className="text-xs text-gray-500 mb-1">Položky ({result.data.items.length}):</p>
+                          {result.data.items.slice(0, 3).map((item: any, i: number) => (
+                            <p key={i} className="text-xs truncate">{item.description} - {item.total_price?.toLocaleString('cs-CZ')} Kč</p>
+                          ))}
+                          {result.data.items.length > 3 && (
+                            <p className="text-xs text-gray-400">...a dalších {result.data.items.length - 3}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-red-600 text-sm">{result.error}</p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }
