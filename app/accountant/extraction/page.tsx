@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import {
   Upload,
   FileText,
@@ -51,7 +51,6 @@ const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 
 export default function AccountantExtractionPage() {
-  const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [activeTab, setActiveTab] = useState('upload')
 
@@ -110,13 +109,13 @@ export default function AccountantExtractionPage() {
       const file = files[0]
       const error = validateFile(file)
       if (error) {
-        toast({ title: 'Chyba', description: error, variant: 'destructive' })
+        toast.error(error)
         return
       }
       setSelectedFile(file)
       setExtractionResult(null)
     }
-  }, [toast])
+  }, [])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -124,13 +123,13 @@ export default function AccountantExtractionPage() {
       const file = files[0]
       const error = validateFile(file)
       if (error) {
-        toast({ title: 'Chyba', description: error, variant: 'destructive' })
+        toast.error(error)
         return
       }
       setSelectedFile(file)
       setExtractionResult(null)
     }
-  }, [toast])
+  }, [])
 
   const clearSelectedFile = () => {
     setSelectedFile(null)
@@ -193,31 +192,20 @@ export default function AccountantExtractionPage() {
         }
         setHistory(prev => [newHistoryItem, ...prev])
 
-        toast({
-          title: 'Úspěch',
-          description: `Dokument ${result.data?.document_number || selectedFile.name} byl úspěšně vytěžen. (${result.processingTime}ms)`,
-        })
+        toast.success(`Dokument ${result.data?.document_number || selectedFile.name} byl úspěšně vytěžen. (${result.processingTime}ms)`)
       } else {
         setExtractionResult({
           success: false,
           error: result.message || 'Extrakce selhala'
         })
-        toast({
-          title: 'Chyba extrakce',
-          description: result.message || 'Nepodařilo se vytěžit data z dokumentu.',
-          variant: 'destructive'
-        })
+        toast.error(result.message || 'Nepodařilo se vytěžit data z dokumentu.')
       }
     } catch {
       setExtractionResult({
         success: false,
         error: 'Chyba připojení k serveru'
       })
-      toast({
-        title: 'Chyba',
-        description: 'Nepodařilo se připojit k serveru.',
-        variant: 'destructive'
-      })
+      toast.error('Nepodařilo se připojit k serveru.')
     } finally {
       setUploading(false)
     }
