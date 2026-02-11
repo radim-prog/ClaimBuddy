@@ -1,7 +1,6 @@
 // Šablony opakujících se úkolů pro účetní kancelář
 // Generuje měsíční/kvartální/roční úkoly na základě vlastností klienta
 
-import { MOCK_CONFIG } from '@/lib/mock-data'
 import type { Task, TaskStatus, BillingType } from '@/lib/mock-data'
 
 export type TemplateFrequency = 'monthly' | 'quarterly' | 'annual'
@@ -231,7 +230,8 @@ function getTaskPeriodLabel(year: number, month: number): string {
 export function generateTasksForCompany(
   company: CompanyForTemplates,
   year: number,
-  month: number // 1-indexed, the month IN which tasks are created
+  month: number, // 1-indexed, the month IN which tasks are created
+  createdBy: { id: string; name: string } = { id: 'system', name: 'Systém' }
 ): Task[] {
   const tasks: Task[] = []
   const periodLabel = getTaskPeriodLabel(year, month)
@@ -266,10 +266,10 @@ export function generateTasksForCompany(
       is_project: false,
       status: 'pending' as TaskStatus,
       task_type: 'base',
-      created_by: MOCK_CONFIG.CURRENT_USER_ID,
-      created_by_name: MOCK_CONFIG.CURRENT_USER_NAME,
-      assigned_to: MOCK_CONFIG.CURRENT_USER_ID,
-      assigned_to_name: MOCK_CONFIG.CURRENT_USER_NAME,
+      created_by: createdBy.id,
+      created_by_name: createdBy.name,
+      assigned_to: createdBy.id,
+      assigned_to_name: createdBy.name,
       is_waiting_for: false,
       due_date: dueDateStr,
       company_id: company.id,
@@ -293,10 +293,11 @@ export function generateTasksForCompany(
 export function generateAllTasks(
   year: number,
   month: number,
-  companies: CompanyForTemplates[]
+  companies: CompanyForTemplates[],
+  createdBy?: { id: string; name: string }
 ): Task[] {
   const activeCompanies = companies.filter(c => c.status === 'active')
-  return activeCompanies.flatMap(company => generateTasksForCompany(company, year, month))
+  return activeCompanies.flatMap(company => generateTasksForCompany(company, year, month, createdBy))
 }
 
 // Get task count preview per template for active companies

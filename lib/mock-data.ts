@@ -2,17 +2,7 @@
 // Data jsou v Supabase, zde zůstávají typy, konstanty a helper funkce
 
 
-// ============================================
-// KONFIGURACE (TODO: nahradit dynamickým user contextem)
-// ============================================
-
-export const MOCK_CONFIG = {
-  // Used only by task-templates.ts for default task creator
-  CURRENT_USER_ID: 'user-2-accountant',
-  CURRENT_USER_NAME: 'Radim Zajíček',
-}
-
-// mockUsers DELETED - all pages now fetch from /api/accountant/users
+// mockUsers + MOCK_CONFIG DELETED - all pages now fetch from /api/accountant/users
 
 // ============================================
 // TYPES
