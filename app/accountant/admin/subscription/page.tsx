@@ -109,12 +109,28 @@ export default function SubscriptionPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
   const [currentPlan] = useState<PlanTier>('professional') // Simulated current plan
 
-  const handleSelectPlan = (planId: PlanTier) => {
+  const handleSelectPlan = async (planId: PlanTier) => {
     if (planId === currentPlan) {
       toast.info('Toto je váš aktuální tarif.')
       return
     }
-    toast.success(`Tarif ${PLANS.find(p => p.id === planId)?.name} bude brzy k dispozici. Kontaktujte nás pro aktivaci.`)
+
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: planId, cycle: billingCycle }),
+      })
+      const data = await res.json()
+
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        toast.info(data.error || `Tarif ${PLANS.find(p => p.id === planId)?.name} bude brzy k dispozici. Kontaktujte nás pro aktivaci.`)
+      }
+    } catch {
+      toast.info(`Tarif ${PLANS.find(p => p.id === planId)?.name} bude brzy k dispozici. Kontaktujte nás pro aktivaci.`)
+    }
   }
 
   return (

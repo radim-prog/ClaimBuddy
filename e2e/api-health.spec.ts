@@ -1,6 +1,14 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('API Health Checks', () => {
+  test('health endpoint returns healthy', async ({ request }) => {
+    const response = await request.get('/api/health')
+    expect(response.status()).toBe(200)
+    const data = await response.json()
+    expect(data.status).toBe('healthy')
+    expect(data.checks.supabase.status).toBe('ok')
+  })
+
   test('auth/me returns 401 without cookie', async ({ request }) => {
     const response = await request.get('/api/auth/me')
     expect(response.status()).toBe(401)
