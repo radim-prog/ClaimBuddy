@@ -299,6 +299,12 @@ export default function AdminDashboardPage() {
                     <span className="text-sm">Export dat klienta</span>
                   </div>
                 </Link>
+                <Link href="/accountant/admin/subscription">
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 cursor-pointer transition-colors">
+                    <TrendingUp className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                    <span className="text-sm">Předplatné a tarify</span>
+                  </div>
+                </Link>
               </div>
             </div>
           </CardContent>
