@@ -357,25 +357,4 @@ export function escalateTask(task: Task, managerId: string, reason: string): Tas
   }
 }
 
-// ============================================
-// COMPANY HELPERS
-// ============================================
-
-export function getReliabilityLabel(score: 0 | 1 | 2 | 3): string {
-  switch (score) {
-    case 0: return 'Beznadějný'
-    case 1: return 'Problémový'
-    case 2: return 'Normální'
-    case 3: return 'Spolehlivý'
-  }
-}
-
-export function getReliabilityEmoji(score: 0 | 1 | 2 | 3): string {
-  switch (score) {
-    case 0: return '🔴'
-    case 1: return '🟠'
-    case 2: return '🟡'
-    case 3: return '🟢'
-  }
-}
 
