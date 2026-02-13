@@ -234,63 +234,8 @@ export const DOCUMENT_TYPES: DocumentType[] = [
   { id: '7', code: 'other', name: 'Ostatní', requires_approval: false, default_action: 'notify_only' },
 ]
 
-export const MOCK_TEAM_MEMBERS: TeamMember[] = [
-  { id: '1', name: 'Radim Zajíček', email: 'jana@example.com', role: 'admin', is_active: true, created_at: '2024-01-01' },
-  { id: '2', name: 'Petr Novák', email: 'petr@example.com', role: 'manager', supervisor_id: '1', is_active: true, created_at: '2024-02-01' },
-  { id: '3', name: 'Marie Účetní', email: 'marie@example.com', role: 'accountant', supervisor_id: '2', supervisors: ['2'], is_active: true, created_at: '2024-03-01' },
-  { id: '4', name: 'Eva Malá', email: 'eva@example.com', role: 'accountant', supervisor_id: '2', supervisors: ['2', '3'], is_active: true, created_at: '2024-04-01' },
-  { id: '5', name: 'Tomáš Velký', email: 'tomas@example.com', role: 'accountant', supervisor_id: '2', supervisors: ['2'], is_active: true, created_at: '2024-05-01' },
-]
-
-export const MOCK_SUBSTITUTION_RULES: SubstitutionRule[] = [
-  { id: '1', user_id: '3', substitute_id: '4', type: 'vacation', start_date: '2025-12-27', end_date: '2025-01-03', is_active: true, created_at: '2025-12-20', created_by: '1' },
-  { id: '2', user_id: '4', substitute_id: '5', type: 'permanent', is_active: true, created_at: '2025-01-01', created_by: '1' },
-]
-
-export const MOCK_NOTIFICATION_RULES: NotificationRule[] = [
-  {
-    id: '1',
-    event_id: '1',
-    event_code: 'task.created',
-    recipients: [
-      { type: 'role', value: 'manager' },
-      { type: 'assigned_accountant' },
-    ],
-    channels: ['in_app', 'email'],
-    is_active: true,
-    created_at: '2024-01-01',
-    created_by: '1',
-  },
-  {
-    id: '2',
-    event_id: '9',
-    event_code: 'document.uploaded',
-    recipients: [
-      { type: 'assigned_accountant' },
-      { type: 'supervisor' },
-    ],
-    channels: ['in_app', 'email'],
-    is_active: true,
-    created_at: '2024-01-01',
-    created_by: '1',
-  },
-  {
-    id: '3',
-    event_id: '11',
-    event_code: 'document.rejected',
-    recipients: [
-      { type: 'client_owner' },
-      { type: 'creator' },
-    ],
-    channels: ['in_app', 'email', 'sms'],
-    is_active: true,
-    created_at: '2024-01-01',
-    created_by: '1',
-  },
-]
-
-export const MOCK_CLIENT_WORKFLOW_RULES: ClientWorkflowRule[] = [
-  { id: '1', company_id: 'c1', company_name: 'TechStart s.r.o.', action: 'auto_approve', notify_on_upload: true, notify_on_approval: false, is_active: true, created_at: '2024-01-01', created_by: '1' },
-  { id: '2', company_id: 'c2', company_name: 'Horák s.r.o.', document_type_id: '4', action: 'require_manager_approval', approver_id: '2', notify_on_upload: true, notify_on_approval: true, is_active: true, created_at: '2024-01-01', created_by: '1' },
-  { id: '3', company_id: 'c3', company_name: 'ABC Company a.s.', action: 'require_accountant_approval', notify_on_upload: true, notify_on_approval: true, is_active: true, created_at: '2024-01-01', created_by: '1' },
-]
+// MOCK data removed - all admin pages now fetch from API routes:
+// /api/accountant/admin/team (users)
+// /api/accountant/admin/substitutions
+// /api/accountant/admin/notification-rules
+// /api/accountant/admin/workflow-rules

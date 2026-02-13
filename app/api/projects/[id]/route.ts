@@ -3,7 +3,10 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const userId = req.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = params
 
   const [projectRes, phasesRes, tasksRes] = await Promise.all([
@@ -22,11 +25,14 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const userId = req.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = params
   const body = await req.json()
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
-  const allowed = ['title', 'description', 'outcome', 'status', 'company_id', 'owner_id', 'due_date', 'estimated_hours', 'actual_hours', 'progress_percentage', 'tags', 'completed_at']
+  const allowed = ['title', 'description', 'outcome', 'status', 'company_id', 'owner_id', 'due_date', 'estimated_hours', 'actual_hours', 'progress_percentage', 'tags', 'completed_at', 'is_case', 'case_type_id', 'case_opposing_party', 'case_reference', 'hourly_rate']
   for (const key of allowed) {
     if (body[key] !== undefined) updates[key] = body[key]
   }
@@ -40,7 +46,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ project: data })
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
+  return PUT(req, context)
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const userId = req.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { id } = params
   const { error } = await supabaseAdmin.from('projects').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

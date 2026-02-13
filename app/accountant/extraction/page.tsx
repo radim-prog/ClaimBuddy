@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { useEffect } from 'react'
 import {
   Upload,
   FileText,
@@ -32,7 +33,8 @@ import {
   AlertCircle,
   History,
   FileUp,
-  Eye
+  Eye,
+  Building2,
 } from 'lucide-react'
 
 type ExtractionHistoryItem = {
@@ -71,6 +73,19 @@ export default function AccountantExtractionPage() {
   const [history, setHistory] = useState<ExtractionHistoryItem[]>([])
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<ExtractionHistoryItem | null>(null)
   const [historyFilter, setHistoryFilter] = useState<string>('all')
+  const [companies, setCompanies] = useState<Array<{ id: string; name: string }>>([])
+  const [assignCompanyId, setAssignCompanyId] = useState<string>('')
+
+  // Fetch companies for assignment dropdown
+  useEffect(() => {
+    fetch('/api/accountant/companies')
+      .then(r => r.json())
+      .then(data => {
+        const active = (data.companies || []).filter((c: any) => c.status !== 'inactive')
+        setCompanies(active.map((c: any) => ({ id: c.id, name: c.name })))
+      })
+      .catch(() => {})
+  }, [])
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -434,15 +449,56 @@ export default function AccountantExtractionPage() {
                         editable
                       />
                     </CardContent>
-                    <div className="border-t p-4 flex gap-2">
-                      <Button className="flex-1" variant="outline">
-                        <X className="w-4 h-4 mr-2" />
-                        Zahodit
-                      </Button>
-                      <Button className="flex-1 bg-green-600 hover:bg-green-700">
-                        <Check className="w-4 h-4 mr-2" />
-                        Schválit
-                      </Button>
+                    <div className="border-t p-4 space-y-3">
+                      {/* Assign to client */}
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <Select value={assignCompanyId} onValueChange={setAssignCompanyId}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Přiřadit ke klientovi..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Nepřiřazeno</SelectItem>
+                            {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button className="flex-1" variant="outline" onClick={() => {
+                          setExtractionResult(null)
+                          setSelectedFile(null)
+                          setAssignCompanyId('')
+                          toast.info('Vytěžená data zahozena')
+                        }}>
+                          <X className="w-4 h-4 mr-2" />
+                          Zahodit
+                        </Button>
+                        <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => {
+                          if (!assignCompanyId) {
+                            toast.warning('Vyberte klienta pro přiřazení dokumentu')
+                            return
+                          }
+                          const companyName = companies.find(c => c.id === assignCompanyId)?.name
+                          toast.success(`Dokument přiřazen ke klientovi ${companyName}`)
+                          setHistory(prev => [{
+                            id: crypto.randomUUID(),
+                            file_name: selectedFile?.name || 'dokument',
+                            file_type: selectedFile?.type?.includes('pdf') ? 'pdf' : 'image',
+                            document_type: extractionResult?.document_type || 'invoice',
+                            status: 'approved' as ExtractionStatus,
+                            extracted_data: extractionResult?.data,
+                            confidence_score: extractionResult?.confidence_score,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString(),
+                          }, ...prev])
+                          setExtractionResult(null)
+                          setSelectedFile(null)
+                          setAssignCompanyId('')
+                        }}>
+                          <Check className="w-4 h-4 mr-2" />
+                          Schválit
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 ) : (

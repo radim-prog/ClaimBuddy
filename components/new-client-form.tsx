@@ -181,7 +181,7 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
           email: formData.email || null,
           phone: formData.phone || null,
           bank_account: formData.bank_account || null,
-          assigned_accountant_id: formData.assigned_accountant_id || null,
+          assigned_accountant_id: formData.assigned_accountant_id === 'none' ? null : (formData.assigned_accountant_id || null),
           has_employees: formData.has_employees,
           // Include onboarding steps if provided
           onboarding_steps: onboardingSteps,
@@ -329,7 +329,7 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
                 <SelectValue placeholder="Vyberte účetního" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nepřiřazeno</SelectItem>
+                <SelectItem value="none">Nepřiřazeno</SelectItem>
                 {accountants.map((acc) => (
                   <SelectItem key={acc.id} value={acc.id}>
                     {acc.name}

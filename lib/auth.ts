@@ -9,7 +9,7 @@ import { getUserByLoginName } from '@/lib/user-store'
 // CONFIG
 // ============================================
 
-const AUTH_SECRET = process.env.AUTH_SECRET || '5ae35f505756d4e50f6e3e37b14ca985c92acaef936f26b708dc85b9e53d4f29'
+const AUTH_SECRET = process.env.AUTH_SECRET ?? ''
 const TOKEN_MAX_AGE = 7 * 24 * 60 * 60 // 7 days in seconds
 const COOKIE_NAME = 'auth_token'
 

@@ -9,6 +9,8 @@ import { ActivityFeed } from '@/components/accountant/activity-feed'
 import { GtdDashboardSection } from '@/components/gtd/dashboard-section'
 import { DailyProgressRing } from '@/components/gtd/progress-ring'
 import { GamificationStats } from '@/components/gtd/gamification-stats'
+import { TileContainer } from '@/components/tiles/tile-container'
+import type { TileDefinition } from '@/lib/types/layout'
 
 type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
 
@@ -16,6 +18,7 @@ type Company = {
   id: string
   name: string
   ico: string
+  status?: string
 }
 
 type MonthlyClosure = {
@@ -467,6 +470,14 @@ function StatusCell({
   )
 }
 
+const DASHBOARD_TILES: TileDefinition[] = [
+  { id: 'morning-overview', label: 'Ranní přehled', defaultVisible: true },
+  { id: 'master-matrix', label: 'Master Matice', defaultVisible: true },
+  { id: 'gtd-section', label: 'GTD Úkoly', defaultVisible: true },
+  { id: 'gamification', label: 'Gamifikace', defaultVisible: true },
+  { id: 'activity-feed', label: 'Poslední aktivita', defaultVisible: true },
+]
+
 export default function AccountantDashboard() {
   const [data, setData] = useState<MatrixData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -521,6 +532,263 @@ export default function AccountantDashboard() {
     })
   }, [data])
 
+  // Derived data - MUST be before conditional returns to keep hook order stable
+  const allCompanies = data?.companies ?? []
+  const closures = data?.closures ?? []
+  const allTasks = data?.tasks ?? []
+  const stats = data?.stats ?? { total: 0, missing: 0, uploaded: 0, approved: 0 }
+
+  // Exclude inactive clients from dashboard (they stay visible only in client profile)
+  const companies = useMemo(() => allCompanies.filter(c => c.status !== 'inactive'), [allCompanies])
+
+  // Filter companies based on selected filter
+  const filteredCompanies = useMemo(() => companies.filter(company => {
+    if (filter === 'all') return true
+    for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+      const status = getMonthStatus(closures, company.id, monthIndex, selectedYear)
+      if (filter === 'missing' && status === 'missing') return true
+      if (filter === 'uploaded' && status === 'uploaded') return true
+    }
+    return false
+  }), [companies, closures, filter, selectedYear])
+
+  const renderTile = useCallback((tileId: string) => {
+    switch (tileId) {
+      case 'morning-overview':
+        return (
+          <MorningOverview
+            companies={companies}
+            closures={closures}
+            tasks={allTasks || []}
+          />
+        )
+      case 'master-matrix':
+        return (
+          <>
+            {/* Header with year selector */}
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Master Matice {selectedYear}</h1>
+                <p className="mt-1 text-gray-600 dark:text-gray-400">
+                  Přehled všech klientů a stavu jejich měsíčních uzávěrek
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedYear(y => y - 1)}
+                  className="p-2 rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={selectedYear <= 2020}
+                >
+                  ←
+                </button>
+                <span className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-bold rounded-lg min-w-[80px] text-center">
+                  {selectedYear}
+                </span>
+                <button
+                  onClick={() => setSelectedYear(y => y + 1)}
+                  className="p-2 rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={selectedYear >= currentYear + 1}
+                >
+                  →
+                </button>
+              </div>
+            </div>
+
+            {/* Stats + Legend + Filter */}
+            <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setFilter(filter === 'missing' ? 'all' : 'missing')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${filter === 'missing' ? 'bg-red-100 ring-2 ring-red-400' : 'hover:bg-red-50 dark:bg-red-900/20'}`}
+                  >
+                    <div className="w-8 h-8 rounded bg-red-500 border-2 border-red-600 flex items-center justify-center">
+                      <span className="text-sm text-white font-bold">!</span>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Chybí podklady</div>
+                      <div className="text-lg font-bold text-red-700 dark:text-red-400">{stats.missing}</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setFilter(filter === 'uploaded' ? 'all' : 'uploaded')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${filter === 'uploaded' ? 'bg-yellow-100 ring-2 ring-yellow-400' : 'hover:bg-yellow-50 dark:bg-yellow-900/20'}`}
+                  >
+                    <div className="w-8 h-8 rounded bg-yellow-400 border-2 border-yellow-500 flex items-center justify-center">
+                      <span className="text-sm text-yellow-900 font-bold">⏳</span>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Čeká na schválení</div>
+                      <div className="text-lg font-bold text-yellow-700 dark:text-yellow-400">{stats.uploaded}</div>
+                    </div>
+                  </button>
+
+                  <div className="border-l pl-4 ml-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded bg-green-500"></span> OK
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded bg-gray-200"></span> Budoucí
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {stats.uploaded > 0 && (
+                    <button
+                      onClick={() => {
+                        if (!data) return
+                        const now = new Date()
+                        const currentPeriod = `${selectedYear}-${String(currentMonth + 1).padStart(2, '0')}`
+                        const updatedClosures = data.closures.map(c => {
+                          if (c.period !== currentPeriod) return c
+                          const needsApproval =
+                            c.bank_statement_status === 'uploaded' ||
+                            c.expense_documents_status === 'uploaded' ||
+                            c.income_invoices_status === 'uploaded'
+                          if (!needsApproval) return c
+                          return {
+                            ...c,
+                            bank_statement_status: c.bank_statement_status === 'uploaded' ? 'approved' as const : c.bank_statement_status,
+                            expense_documents_status: c.expense_documents_status === 'uploaded' ? 'approved' as const : c.expense_documents_status,
+                            income_invoices_status: c.income_invoices_status === 'uploaded' ? 'approved' as const : c.income_invoices_status,
+                            updated_by: userName || 'Účetní',
+                            updated_at: now.toISOString(),
+                          }
+                        })
+                        setData({ ...data, closures: updatedClosures })
+                      }}
+                      className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                    >
+                      Hromadně schválit aktuální měsíc
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      if (!data) return
+                      const header = ['Klient', 'IČO', ...months.map((m) => `${m} ${selectedYear}`)].join(';')
+                      const rows = filteredCompanies.map(company => {
+                        const statuses = months.map((_, i) => {
+                          const status = getMonthStatus(closures, company.id, i, selectedYear)
+                          return status === 'approved' ? 'OK' : status === 'uploaded' ? 'Čeká' : status === 'missing' ? 'Chybí' : '-'
+                        })
+                        return [company.name, company.ico, ...statuses].join(';')
+                      })
+                      const csv = '\uFEFF' + [header, ...rows].join('\n')
+                      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = `matice-${selectedYear}.csv`
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    }}
+                    className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+                  >
+                    Export CSV
+                  </button>
+
+                  {filter !== 'all' && (
+                    <>
+                      <span className="text-sm text-gray-600 dark:text-gray-400" aria-live="polite">
+                        Zobrazeno: {filteredCompanies.length} z {companies.length} klientů
+                      </span>
+                      <button
+                        onClick={() => setFilter('all')}
+                        className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                      >
+                        Zrušit filtr
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Master Matrix Table */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto -mx-4 sm:mx-0">
+              <table className="min-w-[700px] w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gradient-to-r from-purple-600 to-blue-600">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider sticky left-0 bg-purple-600 z-10">
+                      Klient
+                    </th>
+                    {months.map((month, index) => (
+                      <th
+                        key={index}
+                        className={`px-2 py-3 text-center text-xs font-medium uppercase tracking-wider ${
+                          index === currentMonth && selectedYear === currentYear
+                            ? 'bg-white/20 text-white font-bold ring-2 ring-white/50 rounded'
+                            : 'text-white'
+                        }`}
+                      >
+                        {month}
+                        {index === currentMonth && selectedYear === currentYear && (
+                          <div className="text-[10px] font-normal">●</div>
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {filteredCompanies.length === 0 ? (
+                    <tr>
+                      <td colSpan={13} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400" aria-live="polite">
+                        Žádní klienti neodpovídají filtru
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredCompanies.map((company, companyIndex) => (
+                      <tr key={company.id} className={companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}>
+                        <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white sticky left-0 z-10 ${companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
+                          <Link href={`/accountant/clients/${company.id}`} className="hover:text-purple-600 transition-colors">
+                            <div>
+                              <div className="font-semibold">{company.name}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">IČO: {company.ico}</div>
+                            </div>
+                          </Link>
+                        </td>
+                        {months.map((_, monthIndex) => (
+                          <StatusCell
+                            key={monthIndex}
+                            companyId={company.id}
+                            companyName={company.name}
+                            monthIndex={monthIndex}
+                            closures={closures}
+                            year={selectedYear}
+                            onCellClick={handleCellClick}
+                          />
+                        ))}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )
+      case 'gtd-section':
+        return <GtdDashboardSection />
+      case 'gamification':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <DailyProgressRing />
+            <GamificationStats />
+          </div>
+        )
+      case 'activity-feed':
+        return (
+          <div className="bg-white dark:bg-gray-800 border rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Poslední aktivita</h3>
+            <ActivityFeed limit={10} />
+          </div>
+        )
+      default:
+        return null
+    }
+  }, [companies, closures, allTasks, selectedYear, filter, filteredCompanies, stats, data, userName, handleCellClick])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -557,255 +825,15 @@ export default function AccountantDashboard() {
     )
   }
 
-  const { companies, closures, tasks: allTasks, stats } = data
-
-  // Filter companies based on selected filter
-  const filteredCompanies = companies.filter(company => {
-    if (filter === 'all') return true
-
-    // Check all months for this company in selected year
-    for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
-      const status = getMonthStatus(closures, company.id, monthIndex, selectedYear)
-      if (filter === 'missing' && status === 'missing') return true
-      if (filter === 'uploaded' && status === 'uploaded') return true
-    }
-    return false
-  })
-
   return (
     <div className="min-w-0 overflow-hidden">
-      {/* Morning Overview */}
-      <MorningOverview
-        companies={companies}
-        closures={closures}
-        tasks={allTasks || []}
+      <TileContainer
+        pageKey="accountant-dashboard"
+        definitions={DASHBOARD_TILES}
+        renderTile={renderTile}
       />
 
-      {/* Header with year selector */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Master Matice {selectedYear}</h1>
-          <p className="mt-1 text-gray-600 dark:text-gray-400">
-            Přehled všech klientů a stavu jejich měsíčních uzávěrek
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setSelectedYear(y => y - 1)}
-            className="p-2 rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={selectedYear <= 2020}
-          >
-            ←
-          </button>
-          <span className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-bold rounded-lg min-w-[80px] text-center">
-            {selectedYear}
-          </span>
-          <button
-            onClick={() => setSelectedYear(y => y + 1)}
-            className="p-2 rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={selectedYear >= currentYear + 1}
-          >
-            →
-          </button>
-        </div>
-      </div>
-
-      {/* Stats + Legend + Filter */}
-      <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          {/* Stats as clickable filters - pouze problémové položky */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setFilter(filter === 'missing' ? 'all' : 'missing')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${filter === 'missing' ? 'bg-red-100 ring-2 ring-red-400' : 'hover:bg-red-50 dark:bg-red-900/20'}`}
-            >
-              <div className="w-8 h-8 rounded bg-red-500 border-2 border-red-600 flex items-center justify-center">
-                <span className="text-sm text-white font-bold">!</span>
-              </div>
-              <div className="text-left">
-                <div className="text-xs text-gray-500 dark:text-gray-400">Chybí podklady</div>
-                <div className="text-lg font-bold text-red-700 dark:text-red-400">{stats.missing}</div>
-              </div>
-            </button>
-            <button
-              onClick={() => setFilter(filter === 'uploaded' ? 'all' : 'uploaded')}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${filter === 'uploaded' ? 'bg-yellow-100 ring-2 ring-yellow-400' : 'hover:bg-yellow-50 dark:bg-yellow-900/20'}`}
-            >
-              <div className="w-8 h-8 rounded bg-yellow-400 border-2 border-yellow-500 flex items-center justify-center">
-                <span className="text-sm text-yellow-900 font-bold">⏳</span>
-              </div>
-              <div className="text-left">
-                <div className="text-xs text-gray-500 dark:text-gray-400">Čeká na schválení</div>
-                <div className="text-lg font-bold text-yellow-700 dark:text-yellow-400">{stats.uploaded}</div>
-              </div>
-            </button>
-
-            {/* Legenda - pouze vizuální vysvětlení barev */}
-            <div className="border-l pl-4 ml-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded bg-green-500"></span> OK
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded bg-gray-200"></span> Budoucí
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Bulk approve button */}
-            {stats.uploaded > 0 && (
-              <button
-                onClick={() => {
-                  if (!data) return
-                  const now = new Date()
-                  const currentPeriod = `${selectedYear}-${String(currentMonth + 1).padStart(2, '0')}`
-                  const updatedClosures = data.closures.map(c => {
-                    if (c.period !== currentPeriod) return c
-                    const needsApproval =
-                      c.bank_statement_status === 'uploaded' ||
-                      c.expense_documents_status === 'uploaded' ||
-                      c.income_invoices_status === 'uploaded'
-                    if (!needsApproval) return c
-                    return {
-                      ...c,
-                      bank_statement_status: c.bank_statement_status === 'uploaded' ? 'approved' as const : c.bank_statement_status,
-                      expense_documents_status: c.expense_documents_status === 'uploaded' ? 'approved' as const : c.expense_documents_status,
-                      income_invoices_status: c.income_invoices_status === 'uploaded' ? 'approved' as const : c.income_invoices_status,
-                      updated_by: userName || 'Účetní',
-                      updated_at: now.toISOString(),
-                    }
-                  })
-                  setData({ ...data, closures: updatedClosures })
-                }}
-                className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-              >
-                Hromadně schválit aktuální měsíc
-              </button>
-            )}
-
-            {/* CSV Export */}
-            <button
-              onClick={() => {
-                if (!data) return
-                const header = ['Klient', 'IČO', ...months.map((m, i) => `${m} ${selectedYear}`)].join(';')
-                const rows = filteredCompanies.map(company => {
-                  const statuses = months.map((_, i) => {
-                    const status = getMonthStatus(closures, company.id, i, selectedYear)
-                    return status === 'approved' ? 'OK' : status === 'uploaded' ? 'Čeká' : status === 'missing' ? 'Chybí' : '-'
-                  })
-                  return [company.name, company.ico, ...statuses].join(';')
-                })
-                const csv = '\uFEFF' + [header, ...rows].join('\n')
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-                const url = URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url
-                a.download = `matice-${selectedYear}.csv`
-                a.click()
-                URL.revokeObjectURL(url)
-              }}
-              className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
-            >
-              Export CSV
-            </button>
-
-            {/* Filter indicator */}
-            {filter !== 'all' && (
-              <>
-                <span className="text-sm text-gray-600 dark:text-gray-400" aria-live="polite">
-                  Zobrazeno: {filteredCompanies.length} z {companies.length} klientů
-                </span>
-                <button
-                  onClick={() => setFilter('all')}
-                  className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1"
-                >
-                  Zrušit filtr
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Master Matrix Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto -mx-4 sm:mx-0">
-        <table className="min-w-[700px] w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gradient-to-r from-purple-600 to-blue-600">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider sticky left-0 bg-purple-600 z-10">
-                Klient
-              </th>
-              {months.map((month, index) => (
-                <th
-                  key={index}
-                  className={`px-2 py-3 text-center text-xs font-medium uppercase tracking-wider ${
-                    index === currentMonth && selectedYear === currentYear
-                      ? 'bg-white/20 text-white font-bold ring-2 ring-white/50 rounded'
-                      : 'text-white'
-                  }`}
-                >
-                  {month}
-                  {index === currentMonth && selectedYear === currentYear && (
-                    <div className="text-[10px] font-normal">●</div>
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {filteredCompanies.length === 0 ? (
-              <tr>
-                <td colSpan={13} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400" aria-live="polite">
-                  Žádní klienti neodpovídají filtru
-                </td>
-              </tr>
-            ) : (
-              filteredCompanies.map((company, companyIndex) => (
-                <tr key={company.id} className={companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}>
-                  <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white sticky left-0 z-10 ${companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
-                    <Link href={`/accountant/clients/${company.id}`} className="hover:text-purple-600 transition-colors">
-                      <div>
-                        <div className="font-semibold">{company.name}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">IČO: {company.ico}</div>
-                      </div>
-                    </Link>
-                  </td>
-                  {months.map((_, monthIndex) => (
-                    <StatusCell
-                      key={monthIndex}
-                      companyId={company.id}
-                      companyName={company.name}
-                      monthIndex={monthIndex}
-                      closures={closures}
-                      year={selectedYear}
-                      onCellClick={handleCellClick}
-                    />
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* GTD Dashboard Section */}
-      <div className="mt-6">
-        <GtdDashboardSection />
-      </div>
-
-      {/* Gamification: Progress Ring + Level/Streak */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <DailyProgressRing />
-        <GamificationStats />
-      </div>
-
-      {/* Activity Feed */}
-      <div className="mt-6 bg-white dark:bg-gray-800 border rounded-lg p-4">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Poslední aktivita</h3>
-        <ActivityFeed limit={10} />
-      </div>
-
-      {/* Closure Detail Modal */}
+      {/* Closure Detail Modal - always present */}
       <ClosureDetailModal
         open={closureModalOpen}
         onOpenChange={setClosureModalOpen}

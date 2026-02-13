@@ -18,7 +18,7 @@ export type Message = {
 // Ensure a company chat exists, return its ID
 async function ensureChat(companyId: string): Promise<string> {
   // Try to find existing company chat
-  const { data: existing } = await supabaseAdmin
+  const { data: existing, error: findError } = await supabaseAdmin
     .from('chats')
     .select('id')
     .eq('company_id', companyId)
@@ -26,6 +26,9 @@ async function ensureChat(companyId: string): Promise<string> {
     .single()
 
   if (existing) return existing.id
+  if (findError && findError.code !== 'PGRST116') {
+    throw new Error(`Failed to find chat: ${findError.message}`)
+  }
 
   // Create new chat
   const { data: created, error } = await supabaseAdmin
@@ -82,13 +85,16 @@ export async function addMessage(data: Omit<Message, 'id' | 'created_at'>): Prom
 
 export async function getMessagesByCompany(companyId: string, limit: number = 50): Promise<Message[]> {
   // Find chat for this company
-  const { data: chat } = await supabaseAdmin
+  const { data: chat, error: findError } = await supabaseAdmin
     .from('chats')
     .select('id')
     .eq('company_id', companyId)
     .eq('type', 'company_chat')
     .single()
 
+  if (findError && findError.code !== 'PGRST116') {
+    throw new Error(`Failed to find chat: ${findError.message}`)
+  }
   if (!chat) return []
 
   const { data, error } = await supabaseAdmin
@@ -113,13 +119,14 @@ export async function getMessagesByCompany(companyId: string, limit: number = 50
 }
 
 export async function getUnreadCountByCompany(companyId: string, forRole: 'client' | 'accountant'): Promise<number> {
-  const { data: chat } = await supabaseAdmin
+  const { data: chat, error: findError } = await supabaseAdmin
     .from('chats')
     .select('id')
     .eq('company_id', companyId)
     .eq('type', 'company_chat')
     .single()
 
+  if (findError && findError.code !== 'PGRST116') return 0
   if (!chat) return 0
 
   const otherSide = forRole === 'client' ? 'accountant' : 'client'
@@ -135,27 +142,30 @@ export async function getUnreadCountByCompany(companyId: string, forRole: 'clien
 }
 
 export async function markAsRead(messageId: string): Promise<void> {
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('chat_messages')
     .update({ read: true, read_at: new Date().toISOString() })
     .eq('id', messageId)
+  if (error) throw new Error(`Failed to mark message as read: ${error.message}`)
 }
 
 export async function markAllAsRead(companyId: string, forRole: 'client' | 'accountant'): Promise<void> {
-  const { data: chat } = await supabaseAdmin
+  const { data: chat, error: findError } = await supabaseAdmin
     .from('chats')
     .select('id')
     .eq('company_id', companyId)
     .eq('type', 'company_chat')
     .single()
 
+  if (findError && findError.code !== 'PGRST116') return
   if (!chat) return
 
   const otherSide = forRole === 'client' ? 'accountant' : 'client'
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('chat_messages')
     .update({ read: true, read_at: new Date().toISOString() })
     .eq('chat_id', chat.id)
     .eq('sender_type', otherSide)
     .eq('read', false)
+  if (error) throw new Error(`Failed to mark messages as read: ${error.message}`)
 }

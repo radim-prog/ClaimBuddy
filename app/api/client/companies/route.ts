@@ -1,10 +1,13 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAllCompanies } from '@/lib/company-store'
 import { getClosures } from '@/lib/closure-store-db'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const { searchParams } = new URL(request.url)
     const ownerId = searchParams.get('owner_id')
@@ -86,6 +89,7 @@ export async function GET(request: Request) {
       })),
       stats,
       current_period: currentPeriod,
+      user_id: userId,
       user_name: userName,
     })
   } catch (error) {

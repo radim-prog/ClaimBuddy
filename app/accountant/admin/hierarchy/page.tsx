@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -43,8 +43,6 @@ import {
   TeamMember,
   SubstitutionRule,
   UserRole,
-  MOCK_TEAM_MEMBERS,
-  MOCK_SUBSTITUTION_RULES,
 } from '@/lib/types/admin'
 
 const roleLabels: Record<UserRole, string> = {
@@ -158,9 +156,27 @@ function OrgNode({ member, members, level, onEdit }: OrgNodeProps) {
 }
 
 export default function HierarchyPage() {
-  const [members, setMembers] = useState<TeamMember[]>(MOCK_TEAM_MEMBERS)
-  const [substitutions, setSubstitutions] =
-    useState<SubstitutionRule[]>(MOCK_SUBSTITUTION_RULES)
+  const [members, setMembers] = useState<TeamMember[]>([])
+  const [substitutions, setSubstitutions] = useState<SubstitutionRule[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchData = useCallback(() => {
+    setLoading(true)
+    Promise.all([
+      fetch('/api/accountant/admin/team').then(r => r.json()),
+      fetch('/api/accountant/admin/substitutions').then(r => r.json()),
+    ])
+      .then(([teamData, subsData]) => {
+        setMembers(teamData.members || [])
+        setSubstitutions(subsData.rules || [])
+      })
+      .catch(err => console.error('Error loading hierarchy data:', err))
+      .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
@@ -191,9 +207,10 @@ export default function HierarchyPage() {
   const getMemberById = (id: string) => members.find((m) => m.id === id)
 
   const handleAddMember = () => {
-    const newId = (Math.max(...members.map((m) => parseInt(m.id))) + 1).toString()
+    // Note: Team members are managed through /accountant/settings/users
+    // This adds them to the local view for hierarchy display
     const member: TeamMember = {
-      id: newId,
+      id: crypto.randomUUID(),
       name: newMember.name,
       email: newMember.email,
       role: newMember.role,
@@ -207,22 +224,25 @@ export default function HierarchyPage() {
     setIsAddMemberOpen(false)
   }
 
-  const handleAddSubstitution = () => {
-    const newId = (
-      Math.max(...substitutions.map((s) => parseInt(s.id)), 0) + 1
-    ).toString()
-    const substitution: SubstitutionRule = {
-      id: newId,
-      user_id: newSubstitution.user_id,
-      substitute_id: newSubstitution.substitute_id,
-      type: newSubstitution.type,
-      start_date: newSubstitution.start_date || undefined,
-      end_date: newSubstitution.end_date || undefined,
-      is_active: true,
-      created_at: new Date().toISOString(),
-      created_by: '1',
+  const handleAddSubstitution = async () => {
+    try {
+      const response = await fetch('/api/accountant/admin/substitutions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: newSubstitution.user_id,
+          substitute_id: newSubstitution.substitute_id,
+          type: newSubstitution.type,
+          start_date: newSubstitution.start_date || null,
+          end_date: newSubstitution.end_date || null,
+        }),
+      })
+      if (response.ok) {
+        fetchData()
+      }
+    } catch (err) {
+      console.error('Error adding substitution:', err)
     }
-    setSubstitutions([...substitutions, substitution])
     setNewSubstitution({
       user_id: '',
       substitute_id: '',
@@ -233,8 +253,13 @@ export default function HierarchyPage() {
     setIsAddSubstitutionOpen(false)
   }
 
-  const handleDeleteSubstitution = (id: string) => {
-    setSubstitutions(substitutions.filter((s) => s.id !== id))
+  const handleDeleteSubstitution = async (id: string) => {
+    try {
+      await fetch(`/api/accountant/admin/substitutions?id=${id}`, { method: 'DELETE' })
+      setSubstitutions(substitutions.filter((s) => s.id !== id))
+    } catch (err) {
+      console.error('Error deleting substitution:', err)
+    }
   }
 
   const handleToggleMemberActive = () => {

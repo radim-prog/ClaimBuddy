@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -56,8 +56,6 @@ import {
   NotificationRecipientType,
   NotificationEventCategory,
   NOTIFICATION_EVENTS,
-  MOCK_NOTIFICATION_RULES,
-  MOCK_TEAM_MEMBERS,
 } from '@/lib/types/admin'
 
 const categoryLabels: Record<NotificationEventCategory, string> = {
@@ -113,7 +111,18 @@ const recipientTypeLabels: Record<NotificationRecipientType['type'], string> = {
 
 export default function NotificationsPage() {
   const [events, setEvents] = useState<NotificationEvent[]>(NOTIFICATION_EVENTS)
-  const [rules, setRules] = useState<NotificationRule[]>(MOCK_NOTIFICATION_RULES)
+  const [rules, setRules] = useState<NotificationRule[]>([])
+
+  const fetchRules = useCallback(() => {
+    fetch('/api/accountant/admin/notification-rules')
+      .then(r => r.json())
+      .then(data => setRules(data.rules || []))
+      .catch(err => console.error('Error loading notification rules:', err))
+  }, [])
+
+  useEffect(() => {
+    fetchRules()
+  }, [fetchRules])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<NotificationEventCategory | 'all'>('all')
   const [isAddRuleOpen, setIsAddRuleOpen] = useState(false)

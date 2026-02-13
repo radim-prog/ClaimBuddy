@@ -10,6 +10,17 @@ export default function GlobalError({
   reset: () => void
 }) {
   useEffect(() => {
+    fetch('/api/error-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+        digest: error.digest,
+        url: window.location.href,
+        source: 'global-error',
+      }),
+    }).catch(() => {})
     console.error('Global error:', error)
   }, [error])
 

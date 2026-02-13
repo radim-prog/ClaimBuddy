@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
@@ -108,7 +108,10 @@ function buildInvoicingPeriods(timeLogs: any[], invoices: any[]): { period: stri
   return periods
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     // Get period from query params
     const { searchParams } = new URL(request.url)

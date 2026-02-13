@@ -56,6 +56,7 @@ import {
   type InvoicingData,
 } from '@/lib/types/invoicing'
 import { toast } from 'sonner'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { ProfitabilityWidget } from '@/components/accountant/profitability-widget'
 
 type FilterStatus = 'all' | InvoiceStatus
@@ -114,6 +115,8 @@ function getUserStats(projects: BillableProject[]): UserStats[] {
 
 export default function InvoicingPage() {
   const router = useRouter()
+  const { userRole } = useAccountantUser()
+  const isAdmin = userRole === 'admin'
 
   // Period state (YYYY-MM format)
   const [currentPeriod, setCurrentPeriod] = useState('2025-11')
@@ -458,7 +461,7 @@ export default function InvoicingPage() {
         </div>
 
         {/* Period Selector + Summary Stats */}
-        <div className="grid gap-4 md:grid-cols-5 mb-6">
+        <div className={`grid gap-4 ${isAdmin ? 'md:grid-cols-5' : 'md:grid-cols-3'} mb-6`}>
           {/* Period Selector */}
           <Card className="md:col-span-1">
             <CardContent className="pt-6">
@@ -520,37 +523,41 @@ export default function InvoicingPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+          {isAdmin && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Zaplaceno</p>
+                    <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                      {formatCurrency(summary.paidAmount)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Zaplaceno</p>
-                  <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                    {formatCurrency(summary.paidAmount)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+          {isAdmin && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Nezaplaceno</p>
+                    <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                      {formatCurrency(summary.unpaidAmount)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Nezaplaceno</p>
-                  <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                    {formatCurrency(summary.unpaidAmount)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Rest of the page continues similarly... */}
@@ -602,8 +609,8 @@ export default function InvoicingPage() {
           </Card>
         )}
 
-        {/* User Statistics */}
-        {userStats.length > 0 && (
+        {/* User Statistics - admin only */}
+        {isAdmin && userStats.length > 0 && (
           <Card className="mb-6 bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-blue-900">
@@ -640,22 +647,22 @@ export default function InvoicingPage() {
           </Card>
         )}
 
-        {/* Filter Bar */}
+        {/* Filter Bar - compact */}
         <Card className="mb-6">
-          <CardContent className="pt-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <Search className="h-5 w-5 text-gray-400 flex-shrink-0" />
-              <Input
-                placeholder="Hledat podle klienta nebo projektu..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1"
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                <Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <Input
+                  placeholder="Hledat..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-9"
+                />
+              </div>
               <Select value={filterClient} onValueChange={setFilterClient}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Všichni klienti" />
+                <SelectTrigger className="w-[180px] h-9">
+                  <SelectValue placeholder="Klient" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Všichni klienti</SelectItem>
@@ -665,11 +672,11 @@ export default function InvoicingPage() {
                 </SelectContent>
               </Select>
               <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Všechny statusy" />
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Všechny statusy</SelectItem>
+                  <SelectItem value="all">Vše</SelectItem>
                   <SelectItem value="draft">Koncept</SelectItem>
                   <SelectItem value="sent">Odesláno</SelectItem>
                   <SelectItem value="paid">Zaplaceno</SelectItem>
@@ -815,7 +822,7 @@ export default function InvoicingPage() {
       </Dialog>
 
       <div className="mt-6">
-        <ProfitabilityWidget limit={20} />
+        {isAdmin && <ProfitabilityWidget limit={20} />}
       </div>
     </div>
   )

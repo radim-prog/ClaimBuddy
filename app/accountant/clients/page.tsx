@@ -27,8 +27,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 // Company data fetched from API (Supabase-backed)
-import { OnboardingSetupEditor } from '@/components/onboarding-setup-editor'
-import { OnboardingStep } from '@/lib/types/onboarding'
+import { NewClientForm } from '@/components/new-client-form'
 
 type Company = {
   id: string
@@ -69,11 +68,12 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
 }) {
   const isOnboarding = clientStatus === 'onboarding'
   const isInactive = clientStatus === 'inactive'
-  const borderColor = isInactive ? 'border-l-gray-400' :
+  const isFO = company.legal_form === 'OSVČ'
+  // Border color: red=inactive, purple=onboarding, blue/green by legal form, darker if VAT payer
+  const borderColor = isInactive ? 'border-l-red-500' :
                      isOnboarding ? 'border-l-purple-500' :
-                     fullStatus.status === 'missing' ? 'border-l-red-500' :
-                     fullStatus.status === 'uploaded' ? 'border-l-yellow-500' :
-                     'border-l-green-500'
+                     isFO ? (company.vat_payer ? 'border-l-emerald-700' : 'border-l-emerald-400') :
+                     (company.vat_payer ? 'border-l-blue-700' : 'border-l-blue-400')
 
   return (
     <div className="flex items-center gap-2">
@@ -188,8 +188,8 @@ function ClientsPageContent() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Onboarding editor modal
-  const [showOnboardingEditor, setShowOnboardingEditor] = useState(false)
+  // New client modal
+  const [showNewClient, setShowNewClient] = useState(false)
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -250,14 +250,6 @@ function ClientsPageContent() {
     return company?.status || 'active'
   }, [companies])
 
-  // Handler for onboarding setup confirmation
-  const handleOnboardingConfirm = useCallback((steps: OnboardingStep[]) => {
-    // TODO: V produkci by se zde vytvořil nový klient s onboardingem
-    console.log('Onboarding steps configured:', steps)
-    // Přesměrování na onboarding stránku
-    router.push('/accountant/onboarding')
-  }, [])
-
   // Dynamické aktuální období
   const currentPeriod = useMemo(() => {
     const now = new Date()
@@ -271,7 +263,8 @@ function ClientsPageContent() {
     return now.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' })
   }, [])
 
-  useEffect(() => {
+  const fetchCompanies = useCallback(() => {
+    setLoading(true)
     fetch('/api/accountant/matrix')
       .then(res => res.json())
       .then(data => {
@@ -284,6 +277,16 @@ function ClientsPageContent() {
         setLoading(false)
       })
   }, [])
+
+  useEffect(() => {
+    fetchCompanies()
+  }, [fetchCompanies])
+
+  // Handler for new client creation success
+  const handleNewClientSuccess = useCallback((companyId: string) => {
+    setShowNewClient(false)
+    fetchCompanies()
+  }, [fetchCompanies])
 
   // Memoized map of company statuses - calculated once for all companies
   // This avoids O(n²) complexity from calling getCompanyFullStatus for each company
@@ -455,6 +458,11 @@ function ClientsPageContent() {
         return true
       })
       .sort((a, b) => {
+        // Neaktivní klienti vždy na konci
+        const aInactive = (a as any).status === 'inactive' ? 1 : 0
+        const bInactive = (b as any).status === 'inactive' ? 1 : 0
+        if (aInactive !== bInactive) return aInactive - bInactive
+
         // Řadit podle skupiny (pokud existuje) nebo názvu firmy - vše v jedné abecedě
         const sortKeyA = a.group_name || a.name
         const sortKeyB = b.group_name || b.name
@@ -524,7 +532,7 @@ function ClientsPageContent() {
             </p>
           </div>
           <Button
-            onClick={() => setShowOnboardingEditor(true)}
+            onClick={() => setShowNewClient(true)}
             className="bg-purple-600 hover:bg-purple-700"
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -533,12 +541,11 @@ function ClientsPageContent() {
         </div>
       </div>
 
-      {/* Onboarding Setup Editor Modal */}
-      <OnboardingSetupEditor
-        open={showOnboardingEditor}
-        onOpenChange={setShowOnboardingEditor}
-        onConfirm={handleOnboardingConfirm}
-        title="Nastavení onboardingu pro nového klienta"
+      {/* New Client Form Modal */}
+      <NewClientForm
+        open={showNewClient}
+        onOpenChange={setShowNewClient}
+        onSuccess={handleNewClientSuccess}
       />
 
       {/* Search and Filters */}
@@ -565,6 +572,39 @@ function ClientsPageContent() {
                 <Badge className="ml-2 bg-white dark:bg-gray-800 text-purple-600">{activeFiltersCount}</Badge>
               )}
             </Button>
+          </div>
+
+          {/* Quick Filter Toggles */}
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
+            <span className="text-xs text-gray-500 mr-1">Zobrazit:</span>
+            <button
+              onClick={() => setFilterClientStatus(filterClientStatus === 'active' ? null : 'active')}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterClientStatus === 'active' ? 'bg-green-100 text-green-700 border-green-300' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-green-300'}`}
+            >
+              Aktivní
+            </button>
+            <button
+              onClick={() => setFilterVatPayer(filterVatPayer === true ? null : true)}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterVatPayer === true ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-blue-300'}`}
+            >
+              Plátci DPH
+            </button>
+            <button
+              onClick={() => {
+                if (filterClientStatus === null && filterVatPayer === null) {
+                  setFilterClientStatus('active')
+                } else {
+                  setFilterClientStatus(null)
+                  setFilterVatPayer(null)
+                }
+              }}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterClientStatus === null && filterVatPayer === null ? 'bg-purple-100 text-purple-700 border-purple-300' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
+            >
+              Všichni
+            </button>
+            <div className="ml-auto text-xs text-gray-500 dark:text-gray-400">
+              {filteredCompanies.length} z {companies.length}
+            </div>
           </div>
 
           {/* Filter Panel */}

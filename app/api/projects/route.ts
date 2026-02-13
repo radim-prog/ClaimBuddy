@@ -4,6 +4,9 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
+  const userId = req.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { searchParams } = new URL(req.url)
   const companyId = searchParams.get('company_id')
   const status = searchParams.get('status')
@@ -19,6 +22,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const userId = req.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const body = await req.json()
   const { title, description, outcome, company_id, owner_id, due_date, estimated_hours, tags, phases } = body
 

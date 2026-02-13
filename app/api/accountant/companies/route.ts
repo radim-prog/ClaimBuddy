@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllCompanies, createCompany, CreateCompanyInput } from '@/lib/company-store'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { DEFAULT_ONBOARDING_STEPS } from '@/lib/types/onboarding'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const companies = await getAllCompanies()
 
@@ -125,6 +130,26 @@ export async function POST(request: NextRequest) {
     }
 
     const company = await createCompany(companyData)
+
+    // Automatically create onboarding checklist for new company
+    const onboardingSteps = body.onboarding_steps || DEFAULT_ONBOARDING_STEPS.map((step, index) => ({
+      ...step,
+      completed: false,
+      order: index,
+    }))
+
+    await supabaseAdmin
+      .from('onboarding_checklists')
+      .insert({
+        company_id: company.id,
+        status: 'onboarding',
+        priority: 'medium',
+        steps: onboardingSteps,
+        notes: [],
+        assigned_to: userId,
+        is_new_company_setup: false,
+        is_restructuring: false,
+      })
 
     return NextResponse.json({
       success: true,

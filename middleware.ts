@@ -3,10 +3,48 @@ import type { NextRequest } from 'next/server'
 
 // Inline constants (can't import Node.js crypto modules in Edge Runtime)
 const COOKIE_NAME = 'auth_token'
-const AUTH_SECRET = process.env.AUTH_SECRET || '5ae35f505756d4e50f6e3e37b14ca985c92acaef936f26b708dc85b9e53d4f29'
+const AUTH_SECRET = process.env.AUTH_SECRET ?? ''
 
 const PUBLIC_PATHS = ['/auth/login', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook']
 const STATIC_PREFIXES = ['/_next', '/static', '/favicon.ico']
+
+// --- Rate Limiting (in-memory, sliding window) ---
+const RATE_LIMITS = {
+  login: { window: 60_000, max: 5 },   // 5 login attempts per minute
+  api:   { window: 60_000, max: 60 },   // 60 API calls per minute
+} as const
+
+const hits = new Map<string, number[]>()
+
+// Clean up old entries every 5 minutes
+let lastCleanup = Date.now()
+function cleanupHits() {
+  const now = Date.now()
+  if (now - lastCleanup < 300_000) return
+  lastCleanup = now
+  const cutoff = now - 120_000
+  for (const [key, timestamps] of hits) {
+    const filtered = timestamps.filter(t => t > cutoff)
+    if (filtered.length === 0) hits.delete(key)
+    else hits.set(key, filtered)
+  }
+}
+
+function isRateLimited(key: string, limit: { window: number; max: number }): boolean {
+  cleanupHits()
+  const now = Date.now()
+  const timestamps = hits.get(key) || []
+  const recent = timestamps.filter(t => now - t < limit.window)
+  recent.push(now)
+  hits.set(key, recent)
+  return recent.length > limit.max
+}
+
+function getClientIp(request: NextRequest): string {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || request.headers.get('x-real-ip')
+    || 'unknown'
+}
 
 // Token verification using Web Crypto API (Edge Runtime compatible)
 interface TokenPayload {
@@ -70,9 +108,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Allow public paths
+  // Allow public paths (but rate limit login)
   if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
+    if (pathname === '/api/auth/login' && request.method === 'POST') {
+      const ip = getClientIp(request)
+      if (isRateLimited(`login:${ip}`, RATE_LIMITS.login)) {
+        return NextResponse.json(
+          { error: 'Příliš mnoho pokusů o přihlášení. Zkuste to za minutu.' },
+          { status: 429, headers: { 'Retry-After': '60' } }
+        )
+      }
+    }
     return NextResponse.next()
+  }
+
+  // General API rate limit
+  if (pathname.startsWith('/api/')) {
+    const ip = getClientIp(request)
+    if (isRateLimited(`api:${ip}`, RATE_LIMITS.api)) {
+      return NextResponse.json(
+        { error: 'Příliš mnoho požadavků. Zkuste to později.' },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      )
+    }
   }
 
   // Check auth token

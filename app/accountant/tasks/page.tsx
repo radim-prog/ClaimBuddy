@@ -8,6 +8,16 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -38,6 +48,7 @@ import {
   ChevronUp,
   Coffee,
   FolderKanban,
+  Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -240,6 +251,41 @@ export default function TasksPage() {
   const [quickActionThreshold, setQuickActionThreshold] = useState<number>(2)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
+  const [showNewTask, setShowNewTask] = useState(false)
+  const [newTaskLoading, setNewTaskLoading] = useState(false)
+  const [newTaskForm, setNewTaskForm] = useState({ title: '', description: '', company_id: '', due_date: new Date().toISOString().split('T')[0], estimated_minutes: 30 })
+
+  const handleCreateTask = async () => {
+    if (!newTaskForm.title.trim()) { toast.error('Název úkolu je povinný'); return }
+    setNewTaskLoading(true)
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newTaskForm.title.trim(),
+          description: newTaskForm.description.trim() || undefined,
+          company_id: newTaskForm.company_id || undefined,
+          company_name: companies.find(c => c.id === newTaskForm.company_id)?.name || '',
+          due_date: newTaskForm.due_date,
+          estimated_minutes: newTaskForm.estimated_minutes,
+          status: 'pending',
+          is_project: false,
+          is_billable: false,
+        }),
+      })
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Chyba') }
+      const { task } = await res.json()
+      setTasks(prev => [task, ...prev])
+      setShowNewTask(false)
+      setNewTaskForm({ title: '', description: '', company_id: '', due_date: new Date().toISOString().split('T')[0], estimated_minutes: 30 })
+      toast.success('Úkol vytvořen')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Nepodařilo se vytvořit úkol')
+    } finally {
+      setNewTaskLoading(false)
+    }
+  }
 
   // Load saved preferences
   useEffect(() => {
@@ -734,7 +780,7 @@ export default function TasksPage() {
           </SelectContent>
         </Select>
         <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)} className="h-9 text-gray-600 dark:text-gray-400">Filtry{showFilters ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />}</Button>
-        <Button size="sm" className="h-9 bg-blue-600 hover:bg-blue-700"><Plus className="h-4 w-4 mr-1" />Nový úkol</Button>
+        <Button size="sm" className="h-9 bg-blue-600 hover:bg-blue-700" onClick={() => setShowNewTask(true)}><Plus className="h-4 w-4 mr-1" />Nový úkol</Button>
       </div>
 
       {/* Expandable Filters */}
@@ -812,6 +858,57 @@ export default function TasksPage() {
         </div>
         <div className="mt-2">{renderTaskContent()}</div>
       </div>
+
+      {/* New Task Dialog */}
+      <Dialog open={showNewTask} onOpenChange={setShowNewTask}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Plus className="h-5 w-5 text-blue-600" />Nový úkol</DialogTitle>
+            <DialogDescription>Vytvořte nový úkol. Bude přidán do Inboxu.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="task-title">Název *</Label>
+              <Input id="task-title" value={newTaskForm.title} onChange={e => setNewTaskForm(p => ({ ...p, title: e.target.value }))} placeholder="Co je potřeba udělat?" disabled={newTaskLoading} autoFocus />
+            </div>
+            <div>
+              <Label htmlFor="task-desc">Popis</Label>
+              <Textarea id="task-desc" value={newTaskForm.description} onChange={e => setNewTaskForm(p => ({ ...p, description: e.target.value }))} placeholder="Volitelný popis..." rows={2} disabled={newTaskLoading} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Klient</Label>
+                <Select value={newTaskForm.company_id} onValueChange={v => setNewTaskForm(p => ({ ...p, company_id: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Vyberte klienta" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Bez klienta</SelectItem>
+                    {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="task-due">Termín</Label>
+                <Input id="task-due" type="date" value={newTaskForm.due_date} onChange={e => setNewTaskForm(p => ({ ...p, due_date: e.target.value }))} disabled={newTaskLoading} />
+              </div>
+            </div>
+            <div>
+              <Label>Odhadovaný čas</Label>
+              <Select value={String(newTaskForm.estimated_minutes)} onValueChange={v => setNewTaskForm(p => ({ ...p, estimated_minutes: parseInt(v) }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {QUICK_ACTION_OPTIONS.map(opt => <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewTask(false)} disabled={newTaskLoading}>Zrušit</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleCreateTask} disabled={newTaskLoading}>
+              {newTaskLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Vytvářím...</> : 'Vytvořit úkol'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

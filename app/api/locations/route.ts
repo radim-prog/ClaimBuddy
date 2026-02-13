@@ -3,7 +3,10 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const userId = req.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { data, error } = await supabaseAdmin
     .from('locations')
     .select('*')
@@ -15,6 +18,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const userId = req.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const body = await req.json()
   if (!body.name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
 

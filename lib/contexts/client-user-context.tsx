@@ -25,6 +25,7 @@ type MonthClosure = {
 }
 
 type ClientUserContextType = {
+  userId: string
   userName: string
   userInitials: string
   companies: Company[]
@@ -37,6 +38,7 @@ type ClientUserContextType = {
 const ClientUserContext = createContext<ClientUserContextType | undefined>(undefined)
 
 export function ClientUserProvider({ children }: { children: ReactNode }) {
+  const [userId, setUserId] = useState('')
   const [userName, setUserName] = useState('Klient')
   const [userInitials, setUserInitials] = useState('K')
   const [companies, setCompanies] = useState<Company[]>([])
@@ -54,6 +56,7 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
 
       setCompanies(data.companies || [])
       setClosures(data.closures || [])
+      if (data.user_id) setUserId(data.user_id)
 
       // Demo user name
       if (data.user_name) {
@@ -78,6 +81,7 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo(() => ({
+    userId,
     userName,
     userInitials,
     companies,
@@ -85,7 +89,7 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
     loading,
     error,
     refetch: fetchData,
-  }), [userName, userInitials, companies, closures, loading, error])
+  }), [userId, userName, userInitials, companies, closures, loading, error])
 
   return (
     <ClientUserContext.Provider value={value}>

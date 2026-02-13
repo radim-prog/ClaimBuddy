@@ -6,6 +6,9 @@ import type { Invoice, InvoiceItem } from '@/lib/mock-data'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { searchParams } = new URL(request.url)
   const period = searchParams.get('period') // YYYY-MM
   const companyId = searchParams.get('company_id')

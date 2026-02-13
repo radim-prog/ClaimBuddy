@@ -49,6 +49,11 @@ export async function getActiveCompanies(): Promise<Company[]> {
   return (data ?? []) as Company[]
 }
 
+export async function getDemoCompanyIds(): Promise<string[]> {
+  const all = await getAllCompanies()
+  return all.filter(c => c.status === 'active').slice(0, 3).map(c => c.id)
+}
+
 export async function getCompanyById(id: string): Promise<Company | null> {
   const { data, error } = await supabaseAdmin
     .from('companies')

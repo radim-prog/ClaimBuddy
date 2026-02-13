@@ -160,12 +160,15 @@ export async function updateClosureFull(
   if (updates.updated_by) dbUpdates.updated_by = updates.updated_by
 
   // Get current to compute overall status
-  const { data: current } = await supabaseAdmin
+  const { data: current, error: fetchError } = await supabaseAdmin
     .from('monthly_closures')
     .select('*')
     .eq('id', closureId)
     .single()
 
+  if (fetchError && fetchError.code !== 'PGRST116') {
+    throw new Error(`Failed to fetch closure: ${fetchError.message}`)
+  }
   if (!current) return null
 
   const newBank = dbUpdates.bank_statement_status || current.bank_statement_status || 'missing'

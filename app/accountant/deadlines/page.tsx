@@ -7,6 +7,8 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Building2,
   Filter,
   X,
@@ -54,6 +56,7 @@ export default function DeadlinesPage() {
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all')
   const [completedMap, setCompletedMap] = useState<Record<string, { at: string; by: string }>>({})
+  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set())
 
   // Fetch companies
   useEffect(() => {
@@ -268,17 +271,29 @@ export default function DeadlinesPage() {
           <p>Žádné termíny pro tento měsíc</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {Object.entries(groupedByDate).map(([dateStr, items]) => {
             const dayStatus = getDayStatus(dateStr)
             const date = new Date(dateStr)
             const dayName = date.toLocaleDateString('cs-CZ', { weekday: 'long' })
             const dayNum = date.getDate()
+            const isCollapsed = collapsedDays.has(dateStr)
+            const dayCompleted = items.filter(d => d.completed).length
+            const dayTotal = items.length
+            const dayProgress = dayTotal > 0 ? Math.round((dayCompleted / dayTotal) * 100) : 0
 
             return (
               <div key={dateStr} className={`border rounded-lg ${dayStatus.border} overflow-hidden`}>
-                {/* Date header */}
-                <div className={`${dayStatus.bg} px-4 py-3 flex items-center justify-between`}>
+                {/* Date header - clickable to collapse */}
+                <button
+                  onClick={() => setCollapsedDays(prev => {
+                    const next = new Set(prev)
+                    if (next.has(dateStr)) next.delete(dateStr)
+                    else next.add(dateStr)
+                    return next
+                  })}
+                  className={`w-full ${dayStatus.bg} px-4 py-3 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity`}
+                >
                   <div className="flex items-center gap-3">
                     <div className="text-center min-w-[40px]">
                       <div className={`text-2xl font-bold ${dayStatus.color}`}>{dayNum}</div>
@@ -289,18 +304,30 @@ export default function DeadlinesPage() {
                         {dayStatus.label}
                       </Badge>
                     )}
+                    {/* Progress bar */}
+                    <div className="flex items-center gap-2 ml-2">
+                      <div className="w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${dayProgress === 100 ? 'bg-green-500' : dayProgress >= 50 ? 'bg-yellow-500' : 'bg-red-400'}`} style={{ width: `${dayProgress}%` }} />
+                      </div>
+                      <span className={`text-xs font-medium ${dayProgress === 100 ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {dayCompleted}/{dayTotal}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{items.length} termínů</span>
-                </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{items.length} termínů</span>
+                    {isCollapsed ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronUp className="h-4 w-4 text-gray-400" />}
+                  </div>
+                </button>
 
-                {/* Deadline items */}
-                <div className="divide-y">
+                {/* Deadline items - collapsible */}
+                {!isCollapsed && <div className="divide-y">
                   {items.map(deadline => {
                     const typeColor = getDeadlineTypeColor(deadline.type)
                     return (
                       <div
                         key={deadline.id}
-                        className={`px-4 py-3 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-colors ${
+                        className={`px-4 py-3 flex items-center gap-4 hover:bg-gray-50 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-colors ${
                           deadline.completed ? 'opacity-60' : ''
                         }`}
                       >
@@ -347,10 +374,22 @@ export default function DeadlinesPage() {
                       </div>
                     )
                   })}
-                </div>
+                </div>}
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Collapse/Expand all */}
+      {Object.keys(groupedByDate).length > 1 && (
+        <div className="flex justify-center gap-3 mt-4">
+          <Button variant="outline" size="sm" onClick={() => setCollapsedDays(new Set(Object.keys(groupedByDate)))}>
+            Sbalit vše
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setCollapsedDays(new Set())}>
+            Rozbalit vše
+          </Button>
         </div>
       )}
     </div>

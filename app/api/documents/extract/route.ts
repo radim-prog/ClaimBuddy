@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { extractInvoiceFromFile, ExtractedInvoice, isKimiAIAvailable } from '@/lib/kimi-ai'
 
 export const dynamic = 'force-dynamic'
@@ -12,7 +12,10 @@ const ALLOWED_MIME_TYPES = [
   'image/jpg',
 ]
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const startTime = Date.now()
 
   try {

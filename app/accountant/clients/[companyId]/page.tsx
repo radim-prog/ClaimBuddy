@@ -33,6 +33,7 @@ import {
   Sparkles,
   Receipt,
   BarChart3,
+  BookOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -58,6 +59,7 @@ import { CompanyReports } from '@/components/company/company-reports'
 import { AccountantTasksSection } from '@/components/accountant/tasks-section'
 import { AccountantDeadlineCalendar } from '@/components/accountant/deadline-calendar'
 import { OnboardingSection } from '@/components/onboarding-section'
+import { AnnualClosingSection } from '@/components/annual-closing-section'
 import { Employee } from '@/lib/types/employee'
 import { Asset } from '@/lib/types/asset'
 import { Insurance } from '@/lib/types/insurance'
@@ -342,12 +344,6 @@ export default function ClientDetailPage() {
               <Button variant="outline" size="sm">
                 <FileText className="h-4 w-4 mr-1" />
                 Vytěžování
-              </Button>
-            </Link>
-            <Link href={`/accountant/annual-closing?company=${companyId}`}>
-              <Button variant="outline" size="sm">
-                <Calendar className="h-4 w-4 mr-1" />
-                Roční uzávěrka
               </Button>
             </Link>
             <Button variant="outline" size="sm" onClick={() => setEditModalOpen(true)}>
@@ -1012,6 +1008,18 @@ export default function ClientDetailPage() {
             defaultOpen={false}
           />
         </div>
+
+        {/* ============================================ */}
+        {/* ROČNÍ UZÁVĚRKA */}
+        {/* ============================================ */}
+        <CollapsibleSection
+          id="annual-closing"
+          title="Roční uzávěrka"
+          icon={BookOpen}
+          defaultOpen={false}
+        >
+          <AnnualClosingSection companyId={companyId} companyName={company.name} />
+        </CollapsibleSection>
 
         {/* ============================================ */}
         {/* KALENDÁŘ TERMÍNŮ */}

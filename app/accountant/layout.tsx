@@ -17,7 +17,6 @@ import {
   UserPlus,
   Shield,
   CalendarCheck,
-  BookOpen,
   FileSearch,
   FolderKanban,
 } from 'lucide-react'
@@ -45,7 +44,6 @@ const navigation = [
   { name: 'Klienti', href: '/accountant/clients', icon: Users },
   { name: 'Onboarding', href: '/accountant/onboarding', icon: UserPlus },
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
-  { name: 'Roční uzávěrka', href: '/accountant/annual-closing', icon: BookOpen },
   { name: 'Vytěžování', href: '/accountant/extraction', icon: FileSearch },
   { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare, badge: 'dynamic' as const },
   { name: 'Projekty', href: '/accountant/projects', icon: FolderKanban },

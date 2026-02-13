@@ -9,6 +9,9 @@ const MODELS = [
 ]
 
 export async function POST(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   if (!isKimiAIAvailable()) {
     return NextResponse.json(
       { error: 'MOONSHOT_API_KEY is not configured' },

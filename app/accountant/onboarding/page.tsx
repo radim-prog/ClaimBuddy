@@ -44,7 +44,7 @@ export default function OnboardingPage() {
 
   const fetchData = () => {
     setLoading(true)
-    fetch('/api/accountant/companies')
+    fetch('/api/accountant/onboarding')
       .then(res => res.json())
       .then(data => {
         setAllCompanies(data.companies || [])
@@ -57,9 +57,9 @@ export default function OnboardingPage() {
     fetchData()
   }, [])
 
-  // Filter only onboarding clients
+  // Filter only onboarding clients (API already returns only companies with onboarding checklists)
   const onboardingClients = useMemo(() =>
-    allCompanies.filter(c => c.status === 'onboarding' && c.onboarding),
+    allCompanies.filter(c => c.onboarding && c.onboarding.status !== 'active'),
     [allCompanies]
   )
 

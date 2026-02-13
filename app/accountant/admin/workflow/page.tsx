@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -55,9 +55,8 @@ import {
   DocumentType,
   ClientWorkflowRule,
   DocumentWorkflowAction,
+  TeamMember,
   DOCUMENT_TYPES,
-  MOCK_CLIENT_WORKFLOW_RULES,
-  MOCK_TEAM_MEMBERS,
 } from '@/lib/types/admin'
 
 const actionLabels: Record<DocumentWorkflowAction, string> = {
@@ -85,10 +84,10 @@ const actionIcons: Record<DocumentWorkflowAction, typeof Check> = {
 }
 
 export default function WorkflowPage() {
-  const [documentTypes, setDocumentTypes] =
-    useState<DocumentType[]>(DOCUMENT_TYPES)
-  const [clientRules, setClientRules] =
-    useState<ClientWorkflowRule[]>(MOCK_CLIENT_WORKFLOW_RULES)
+  const [documentTypes, setDocumentTypes] = useState<DocumentType[]>(DOCUMENT_TYPES)
+  const [clientRules, setClientRules] = useState<ClientWorkflowRule[]>([])
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddRuleOpen, setIsAddRuleOpen] = useState(false)
   const [editingRule, setEditingRule] = useState<ClientWorkflowRule | null>(null)
@@ -104,20 +103,33 @@ export default function WorkflowPage() {
     notify_on_approval: true,
   })
 
-  // Mock companies for demo
-  const mockCompanies = [
-    { id: 'c1', name: 'TechStart s.r.o.' },
-    { id: 'c2', name: 'Horák s.r.o.' },
-    { id: 'c3', name: 'ABC Company a.s.' },
-    { id: 'c4', name: 'XYZ Trading s.r.o.' },
-    { id: 'c5', name: 'Nová Firma s.r.o.' },
-  ]
+  const fetchData = useCallback(() => {
+    Promise.all([
+      fetch('/api/accountant/admin/workflow-rules').then(r => r.json()),
+      fetch('/api/accountant/admin/team').then(r => r.json()),
+      fetch('/api/accountant/companies').then(r => r.json()),
+    ])
+      .then(([rulesData, teamData, companiesData]) => {
+        setClientRules(rulesData.rules || [])
+        setTeamMembers(teamData.members || [])
+        setCompanies((companiesData.companies || []).map((c: any) => ({ id: c.id, name: c.name })))
+      })
+      .catch(err => console.error('Error loading workflow data:', err))
+  }, [])
 
-  const managers = MOCK_TEAM_MEMBERS.filter(
-    (m) => m.role === 'manager' || m.role === 'admin'
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const managers = useMemo(() =>
+    teamMembers.filter(m => m.role === 'manager' || m.role === 'admin'),
+    [teamMembers]
   )
 
-  const accountants = MOCK_TEAM_MEMBERS.filter((m) => m.role === 'accountant')
+  const accountants = useMemo(() =>
+    teamMembers.filter(m => m.role === 'accountant'),
+    [teamMembers]
+  )
 
   const filteredRules = useMemo(() => {
     return clientRules.filter((rule) =>
@@ -132,7 +144,7 @@ export default function WorkflowPage() {
 
   const getApproverName = (id?: string) => {
     if (!id) return 'Automaticky'
-    const member = MOCK_TEAM_MEMBERS.find((m) => m.id === id)
+    const member = teamMembers.find((m) => m.id === id)
     return member?.name || id
   }
 
@@ -176,7 +188,7 @@ export default function WorkflowPage() {
   }
 
   const handleSelectCompany = (companyId: string) => {
-    const company = mockCompanies.find((c) => c.id === companyId)
+    const company = companies.find((c) => c.id === companyId)
     setNewRule({
       ...newRule,
       company_id: companyId,
@@ -483,7 +495,7 @@ export default function WorkflowPage() {
                   <SelectValue placeholder="Vyberte klienta" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockCompanies.map((company) => (
+                  {companies.map((company) => (
                     <SelectItem key={company.id} value={company.id}>
                       {company.name}
                     </SelectItem>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import {
   CheckCircle2,
   Circle,
@@ -48,6 +49,7 @@ export function OnboardingSection({
   onboarding,
   onOnboardingChange,
 }: OnboardingSectionProps) {
+  const { userId, userName } = useAccountantUser()
   const [showCompleted, setShowCompleted] = useState(false)
   const [newNote, setNewNote] = useState('')
   const [stepNotes, setStepNotes] = useState<Record<string, string>>({})
@@ -77,7 +79,7 @@ export function OnboardingSection({
           ...step,
           completed,
           completed_at: completed ? new Date().toISOString() : undefined,
-          completed_by: completed ? 'accountant-1' : undefined,
+          completed_by: completed ? userId : undefined,
         }
       }
       return step
@@ -126,8 +128,8 @@ export function OnboardingSection({
       id: `note-${Date.now()}`,
       content: newNote,
       created_at: new Date().toISOString(),
-      created_by: 'accountant-1',
-      created_by_name: 'Účetní',
+      created_by: userId,
+      created_by_name: userName || 'Účetní',
     }
 
     onOnboardingChange({

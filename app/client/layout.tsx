@@ -11,6 +11,8 @@ import {
   User,
   BarChart3,
   ScanSearch,
+  FileText,
+  Receipt,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -28,6 +30,8 @@ import { ClientUserProvider, useClientUser } from '@/lib/contexts/client-user-co
 const navigation = [
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard },
   { name: 'Nahrát doklady', href: '/client/upload', icon: Upload },
+  { name: 'Dokumenty', href: '/client/documents', icon: FileText },
+  { name: 'Faktury', href: '/client/invoices', icon: Receipt },
   { name: 'Zprávy', href: '/client/messages', icon: MessageCircle },
   { name: 'Vytěžování', href: '/client/extraction', icon: ScanSearch },
   { name: 'Reporty', href: '/client/reports', icon: BarChart3 },
@@ -101,8 +105,14 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                 <DropdownMenuLabel>Můj účet</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/client/company" className="cursor-pointer">
+                  <Link href="/client/profile" className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
+                    Můj profil
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/client/company" className="cursor-pointer">
+                    <Building2 className="mr-2 h-4 w-4" />
                     Moje firma
                   </Link>
                 </DropdownMenuItem>
@@ -137,6 +147,12 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>{userName}</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/client/profile" className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  Můj profil
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/client/company" className="cursor-pointer">
                   <Building2 className="mr-2 h-4 w-4" />

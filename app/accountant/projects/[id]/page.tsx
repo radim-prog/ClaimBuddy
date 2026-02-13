@@ -6,6 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { CaseToggle } from '@/components/case/case-toggle'
+import { CaseTimeline } from '@/components/case/case-timeline'
+import { CaseDocuments } from '@/components/case/case-documents'
+import { CaseBudgetCard } from '@/components/case/case-budget-card'
 import {
   ArrowLeft,
   Calendar,
@@ -19,6 +24,7 @@ import {
   Plus,
   Star,
   AlertCircle,
+  Briefcase,
 } from 'lucide-react'
 
 type Project = {
@@ -33,6 +39,12 @@ type Project = {
   actual_hours: number
   progress_percentage: number
   created_at: string
+  is_case?: boolean
+  case_number?: string
+  case_type_id?: string
+  case_opposing_party?: string
+  case_reference?: string
+  hourly_rate?: number
 }
 
 type Phase = {
@@ -208,7 +220,68 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         </CardContent>
       </Card>
 
-      {/* Kanban Board - Phases as columns */}
+      {/* Case Toggle */}
+      <CaseToggle
+        projectId={params.id}
+        project={project}
+        onUpdate={(updated) => setProject(prev => prev ? { ...prev, ...updated } : prev)}
+      />
+
+      {/* Content - Tabs if case, otherwise just phases */}
+      {project.is_case ? (
+        <Tabs defaultValue="phases" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="phases">
+              <ListTodo className="h-4 w-4 mr-1" /> Fáze
+            </TabsTrigger>
+            <TabsTrigger value="timeline">
+              <Calendar className="h-4 w-4 mr-1" /> Timeline
+            </TabsTrigger>
+            <TabsTrigger value="documents">
+              <Briefcase className="h-4 w-4 mr-1" /> Dokumenty
+            </TabsTrigger>
+            <TabsTrigger value="budget">
+              <Target className="h-4 w-4 mr-1" /> Rozpočet
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="phases">
+            <PhasesAndTasks phases={phases} tasks={tasks} getTasksForPhase={getTasksForPhase} unassignedTasks={unassignedTasks} toggleNextAction={toggleNextAction} router={router} />
+          </TabsContent>
+          <TabsContent value="timeline">
+            <CaseTimeline projectId={params.id} />
+          </TabsContent>
+          <TabsContent value="documents">
+            <CaseDocuments projectId={params.id} />
+          </TabsContent>
+          <TabsContent value="budget">
+            <CaseBudgetCard projectId={params.id} />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <PhasesAndTasks phases={phases} tasks={tasks} getTasksForPhase={getTasksForPhase} unassignedTasks={unassignedTasks} toggleNextAction={toggleNextAction} router={router} />
+      )}
+    </div>
+  )
+}
+
+function PhasesAndTasks({
+  phases,
+  tasks,
+  getTasksForPhase,
+  unassignedTasks,
+  toggleNextAction,
+  router,
+}: {
+  phases: Phase[]
+  tasks: TaskItem[]
+  getTasksForPhase: (phaseId: string) => TaskItem[]
+  unassignedTasks: TaskItem[]
+  toggleNextAction: (taskId: string, current: boolean) => void
+  router: ReturnType<typeof useRouter>
+}) {
+  return (
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           <ListTodo className="h-5 w-5" />
@@ -233,7 +306,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                       </Badge>
                     </div>
                     {phaseTasks.length > 0 && (
-                      <Progress value={phaseTasks.length > 0 ? (completed / phaseTasks.length) * 100 : 0} className="h-1.5" />
+                      <Progress value={(completed / phaseTasks.length) * 100} className="h-1.5" />
                     )}
                   </CardHeader>
                   <CardContent className="space-y-2">
@@ -288,7 +361,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         </Card>
       )}
 
-      {/* Unassigned tasks */}
       {unassignedTasks.length > 0 && (
         <Card>
           <CardHeader className="py-3">

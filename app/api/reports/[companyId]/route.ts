@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
@@ -41,9 +41,12 @@ async function buildReportFromTransactions(companyId: string, period: string) {
 }
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { companyId: string } }
 ) {
+  const userId = request.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const { companyId } = params
     const { searchParams } = new URL(request.url)

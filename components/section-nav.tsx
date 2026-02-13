@@ -12,6 +12,7 @@ import {
   MessageCircle,
   ClipboardList,
   BarChart3,
+  BookOpen,
   LucideIcon
 } from 'lucide-react'
 
@@ -111,6 +112,7 @@ export const clientDetailNavItems: NavItem[] = [
   { id: 'employees', label: 'Zaměstnanci', icon: Users },
   { id: 'assets', label: 'Majetek', icon: Car },
   { id: 'insurance', label: 'Pojištění', icon: Shield },
+  { id: 'annual-closing', label: 'Roční uzávěrka', icon: BookOpen },
   { id: 'deadlines', label: 'Termíny', icon: CalendarDays },
   { id: 'reports', label: 'Reporty', icon: BarChart3 },
 ]
