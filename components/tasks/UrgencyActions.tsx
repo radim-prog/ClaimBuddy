@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Task, urgeTask, escalateTask, shouldEscalate, needsUrgency, URGENCY_CONFIG } from '@/lib/mock-data'
+import type { Task } from '@/lib/types/tasks'
+import { urgeTask, escalateTask, shouldEscalate, needsUrgency, URGENCY_CONFIG } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,

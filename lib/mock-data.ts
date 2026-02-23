@@ -1,6 +1,10 @@
 // Mock data a typy pro UcetniWebApp
 // Data jsou v Supabase, zde zůstávají typy, konstanty a helper funkce
 
+// Import Task type for use in functions below, re-export for backward compatibility
+import type { Task, TaskStatus, TaskType, BillingType, GTDEnergyLevel, GTDContext } from '@/lib/types/tasks'
+export type { Task, TaskStatus, TaskType, BillingType, GTDContext }
+export type EnergyLevel = GTDEnergyLevel
 
 // mockUsers + MOCK_CONFIG DELETED - all pages now fetch from /api/accountant/users
 
@@ -8,23 +12,6 @@
 // TYPES
 // ============================================
 
-export type TaskStatus =
-  | 'pending'
-  | 'clarifying'
-  | 'accepted'
-  | 'in_progress'
-  | 'waiting_for'
-  | 'waiting_client'
-  | 'awaiting_approval'
-  | 'completed'
-  | 'invoiced'
-  | 'cancelled'
-  | 'someday_maybe'
-
-export type TaskType = 'base' | 'bonus'
-export type BillingType = 'tariff' | 'extra' | 'free'
-export type GTDContext = '@email' | '@telefon' | '@pocitac' | '@kancelar' | '@meeting' | '@anywhere'
-export type EnergyLevel = 'high' | 'medium' | 'low'
 export type ActivityType = 'task' | 'general' | 'admin' | 'meeting' | 'call' | 'email'
 
 export interface TimeLog {
@@ -42,118 +29,7 @@ export interface TimeLog {
   created_at: string
 }
 
-// ============================================
-// TASK
-// ============================================
-
-export interface Task {
-  id: string
-  title: string
-  description: string
-
-  // Hierarchie
-  project_id?: string
-  project_name?: string
-  phase_id?: string
-  phase_name?: string
-  position_in_phase?: number
-
-  // Závislosti
-  depends_on_task_ids?: string[]
-  is_blocked?: boolean
-
-  // GTD
-  is_next_action?: boolean
-
-  // Legacy
-  is_project: boolean
-  project_outcome?: string
-  parent_project_id?: string
-
-  // Workflow
-  status: TaskStatus
-  priority?: string
-
-  // Gamification
-  task_type?: TaskType
-  points_value?: number
-  claimed_by?: string
-  claimed_by_name?: string
-  claimed_at?: string
-
-  // Assignment
-  created_by: string
-  created_by_name: string
-  assigned_to?: string
-  assigned_to_name?: string
-
-  // Waiting
-  is_waiting_for: boolean
-  waiting_for_who?: string
-  waiting_for_what?: string
-
-  // Deadline
-  due_date: string
-  due_time?: string
-
-  // Client
-  company_id: string
-  company_name: string
-
-  // GTD context
-  location_id?: string
-  gtd_context?: GTDContext[]
-  gtd_energy_level?: EnergyLevel
-  gtd_is_quick_action?: boolean
-
-  // Time tracking
-  estimated_minutes?: number
-  estimate_locked?: boolean
-  actual_minutes?: number
-
-  // Billing
-  is_billable: boolean
-  hourly_rate?: number
-  billing_type?: BillingType
-  invoiced?: boolean
-  invoiced_at?: string
-  invoice_id?: string
-
-  // Metadata
-  tags?: string[]
-  progress_percentage?: number
-
-  // R-Tasks Scoring
-  score_money?: 0 | 1 | 2 | 3
-  score_fire?: 0 | 1 | 2 | 3
-  score_time?: 0 | 1 | 2 | 3
-  score_distance?: 0 | 1 | 2
-  score_personal?: 0 | 1
-  total_score?: number
-
-  // Approval
-  approved_by?: string
-  approved_by_name?: string
-  approved_at?: string
-  rejected_by?: string
-  rejected_by_name?: string
-  rejected_at?: string
-  rejection_comment?: string
-  rejection_count?: number
-
-  // Urgency & Escalation
-  urgency_count?: number
-  last_urged_at?: string
-  escalated_to?: string
-  escalated_at?: string
-  escalation_reason?: string
-  auto_notifications_sent?: number
-
-  // Timestamps
-  created_at: string
-  updated_at: string
-  completed_at?: string
-}
+// Task interface is re-exported from @/lib/types/tasks (see top of file)
 
 // ============================================
 // INVOICE

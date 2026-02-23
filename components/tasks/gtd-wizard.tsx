@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Zap, Users, Target, ListTodo } from 'lucide-react'
-import { BillingType } from '@/lib/mock-data'
+import type { BillingType } from '@/lib/types/tasks'
 
 // GTD contexts
 const GTD_CONTEXTS = [
@@ -808,7 +808,7 @@ export function GTDWizard({
       case 4:
         return data.contexts.length > 0 && !!data.energyLevel
       case 5:
-        return !data.isBillable || (!!data.hourlyRate && data.hourlyRate > 0)
+        return !data.isBillable || data.billingType !== 'extra' || (!!data.hourlyRate && data.hourlyRate > 0)
       case 6:
         return data.subtasks.length > 0 && data.subtasks.every(st => st.text.trim().length > 0)
       default:

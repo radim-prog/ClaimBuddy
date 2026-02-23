@@ -1,6 +1,7 @@
 'use client'
 
-import { Task, getEscalationLevel, URGENCY_CONFIG } from '@/lib/mock-data'
+import type { Task } from '@/lib/types/tasks'
+import { getEscalationLevel, URGENCY_CONFIG } from '@/lib/mock-data'
 import { Badge } from '@/components/ui/badge'
 import { Bell, AlertTriangle, ArrowUpCircle } from 'lucide-react'
 

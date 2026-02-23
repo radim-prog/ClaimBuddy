@@ -1,7 +1,7 @@
 // Šablony opakujících se úkolů pro účetní kancelář
 // Generuje měsíční/kvartální/roční úkoly na základě vlastností klienta
 
-import type { Task, TaskStatus, BillingType } from '@/lib/mock-data'
+import type { Task, TaskStatus, BillingType } from '@/lib/types/tasks'
 
 export type TemplateFrequency = 'monthly' | 'quarterly' | 'annual'
 

@@ -66,12 +66,15 @@ import {
   Lightbulb,
   AlertTriangle,
   ArrowRight,
+  Paperclip,
+  X,
 } from 'lucide-react'
 import { GTDWizard } from '@/components/tasks/gtd-wizard'
+import { DocumentPicker } from '@/components/documents/document-picker'
 import { TimeTracker, TimeTrackingEntry } from '@/components/tasks/time-tracker'
 import { UrgencyBadge } from '@/components/tasks/UrgencyBadge'
 import { UrgencyActions, ManagerActions } from '@/components/tasks/UrgencyActions'
-import { Task } from '@/lib/mock-data'
+import type { Task } from '@/lib/types/tasks'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -237,10 +240,50 @@ export default function TaskDetailPage() {
   const [timelineExpanded, setTimelineExpanded] = useState(true)
   const [timeEntries, setTimeEntries] = useState<TimeTrackingEntry[]>([])
   const [apiUsers, setApiUsers] = useState<{ id: string; name: string; role: string }[]>([])
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [editingDesc, setEditingDesc] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDesc, setEditDesc] = useState('')
+  const [linkedDocs, setLinkedDocs] = useState<Array<{
+    id: string; document_id: string; link_type: string;
+    document: { id: string; file_name: string; type: string; status: string; supplier_name?: string; total_with_vat?: number; period: string }
+  }>>([])
+  const [showDocPicker, setShowDocPicker] = useState(false)
 
-  // Type-safe task updater (task is Task | null but handlers only run when task exists)
+  // Persist task changes to API (debounced)
+  const persistTaskUpdate = async (changes: Record<string, any>) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(changes),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        toast.error(data.error || 'Nepodařilo se uložit změny')
+      }
+    } catch {
+      toast.error('Chyba při ukládání')
+    }
+  }
+
+  // Type-safe task updater - updates local state AND persists to API
   const updateTask = (updater: (prev: Task) => Task) => {
-    setTask(prev => prev ? updater(prev) : null)
+    setTask(prev => {
+      if (!prev) return null
+      const updated = updater(prev)
+      // Compute diff and persist only changed fields
+      const changes: Record<string, any> = {}
+      for (const key of Object.keys(updated) as (keyof Task)[]) {
+        if (updated[key] !== prev[key] && key !== 'id' && key !== 'created_at' && key !== 'created_by' && key !== 'created_by_name') {
+          changes[key] = updated[key]
+        }
+      }
+      if (Object.keys(changes).length > 0) {
+        persistTaskUpdate(changes)
+      }
+      return updated
+    })
   }
 
   // Current user from auth context
@@ -294,6 +337,45 @@ export default function TaskDetailPage() {
       .then(data => setApiUsers((data.users || []).map((u: any) => ({ id: u.id, name: u.name || u.full_name, role: u.role }))))
       .catch(() => {})
   }, [])
+
+  // Fetch linked documents
+  const fetchLinkedDocs = () => {
+    fetch(`/api/tasks/${taskId}/documents`)
+      .then(r => r.json())
+      .then(data => setLinkedDocs(Array.isArray(data) ? data : []))
+      .catch(() => setLinkedDocs([]))
+  }
+  useEffect(() => { fetchLinkedDocs() }, [taskId])
+
+  const handleAttachDocs = async (docIds: string[]) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/documents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ document_ids: docIds, link_type: 'reference' }),
+      })
+      if (res.ok) {
+        toast.success(`Pripojeno ${docIds.length} dokumentu`)
+        fetchLinkedDocs()
+      } else {
+        toast.error('Chyba pri pripojovani')
+      }
+    } catch { toast.error('Chyba pri pripojovani') }
+  }
+
+  const handleDetachDoc = async (documentId: string) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/documents?document_id=${documentId}`, {
+        method: 'DELETE',
+      })
+      if (res.ok) {
+        toast.success('Dokument odpojen')
+        fetchLinkedDocs()
+      } else {
+        toast.error('Chyba pri odpojovani')
+      }
+    } catch { toast.error('Chyba pri odpojovani') }
+  }
 
   // Loading state
   if (loading) {
@@ -742,7 +824,30 @@ export default function TaskDetailPage() {
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{task.title}</h1>
+              {editingTitle ? (
+                <Input
+                  value={editTitle}
+                  onChange={e => setEditTitle(e.target.value)}
+                  onBlur={() => {
+                    if (editTitle.trim() && editTitle !== task.title) {
+                      updateTask(prev => ({ ...prev, title: editTitle.trim() }))
+                      toast.success('Název uložen')
+                    }
+                    setEditingTitle(false)
+                  }}
+                  onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditingTitle(false) }}
+                  className="text-3xl font-bold h-auto py-1"
+                  autoFocus
+                />
+              ) : (
+                <h1
+                  className="text-3xl font-bold text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -mx-1"
+                  onClick={() => { setEditTitle(task.title); setEditingTitle(true) }}
+                  title="Klikni pro úpravu"
+                >
+                  {task.title}
+                </h1>
+              )}
               {/* FÁZE 4: Task Type Badge (BASE/BONUS) */}
               {task.task_type === 'bonus' && (
                 <Badge className="bg-amber-500 text-white font-semibold shadow-sm">
@@ -772,7 +877,7 @@ export default function TaskDetailPage() {
               </div>
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                {new Date(task.due_date).toLocaleDateString('cs-CZ')}
+                {task.due_date ? new Date(task.due_date).toLocaleDateString('cs-CZ') : '—'}
                 {task.due_time && ` ${task.due_time}`}
               </div>
               {task.assigned_to_name && (
@@ -831,14 +936,100 @@ export default function TaskDetailPage() {
           {/* Description */}
           <Card>
             <CardHeader>
-              <CardTitle>Popis úkolu</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                Popis úkolu
+                {!editingDesc && (
+                  <Button variant="ghost" size="sm" onClick={() => { setEditDesc(task.description || ''); setEditingDesc(true) }}>
+                    <Edit2 className="h-3 w-3 mr-1" /> Upravit
+                  </Button>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
-                {task.description || 'Žádný popis.'}
-              </p>
+              {editingDesc ? (
+                <div className="space-y-2">
+                  <Textarea
+                    value={editDesc}
+                    onChange={e => setEditDesc(e.target.value)}
+                    rows={4}
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => {
+                      if (editDesc !== (task.description || '')) {
+                        updateTask(prev => ({ ...prev, description: editDesc.trim() }))
+                        toast.success('Popis uložen')
+                      }
+                      setEditingDesc(false)
+                    }}>Uložit</Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditingDesc(false)}>Zrušit</Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded p-1 -m-1"
+                   onClick={() => { setEditDesc(task.description || ''); setEditingDesc(true) }}>
+                  {task.description || 'Klikni pro přidání popisu...'}
+                </p>
+              )}
             </CardContent>
           </Card>
+
+          {/* Linked Documents */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Dokumenty ({linkedDocs.length})
+                </div>
+                {task.company_id && (
+                  <Button variant="outline" size="sm" onClick={() => setShowDocPicker(true)}>
+                    <Paperclip className="h-3 w-3 mr-1" /> Pripojit
+                  </Button>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {linkedDocs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {task.company_id ? 'Zadne pripojene dokumenty. Kliknete na Pripojit.' : 'Pro pripojeni dokumentu je nutny klient.'}
+                </p>
+              ) : (
+                <div className="divide-y">
+                  {linkedDocs.map(link => (
+                    <div key={link.id} className="flex items-center gap-3 py-2">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{link.document.file_name}</div>
+                        <div className="text-xs text-muted-foreground flex gap-2">
+                          <span>{link.document.period}</span>
+                          {link.document.supplier_name && <span>{link.document.supplier_name}</span>}
+                          {link.document.total_with_vat != null && <span>{link.document.total_with_vat.toLocaleString('cs-CZ')} Kc</span>}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] shrink-0">
+                        {link.document.type === 'bank_statement' ? 'Vypis' : link.document.type === 'expense_invoice' ? 'Naklad' : link.document.type === 'income_invoice' ? 'Prijem' : link.document.type}
+                      </Badge>
+                      <Button variant="ghost" size="sm" onClick={() => handleDetachDoc(link.document_id)} className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600">
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Document Picker Dialog */}
+          {task.company_id && (
+            <DocumentPicker
+              companyId={task.company_id}
+              open={showDocPicker}
+              onOpenChange={setShowDocPicker}
+              onSelect={handleAttachDocs}
+              excludeIds={linkedDocs.map(l => l.document_id)}
+            />
+          )}
 
           {/* Waiting For Info */}
           {task.is_waiting_for && (

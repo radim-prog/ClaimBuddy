@@ -17,12 +17,18 @@ export type TaskStatus =
   | 'in_progress'
   | 'waiting_for'
   | 'waiting_client'
+  | 'awaiting_approval'
   | 'completed'
   | 'cancelled'
   | 'someday_maybe'
   | 'invoiced';
 
 export type GTDEnergyLevel = 'high' | 'medium' | 'low';
+/** Alias for GTDEnergyLevel (used in some legacy imports) */
+export type EnergyLevel = GTDEnergyLevel;
+
+export type TaskType = 'base' | 'bonus';
+export type BillingType = 'tariff' | 'extra' | 'free';
 
 // R-Tasks Scoring System types
 export type ScoreMoney = 0 | 1 | 2 | 3;      // 0=<5k, 1=5k+, 2=15k+, 3=50k+ Kč
@@ -37,11 +43,14 @@ export type GTDContext =
   | '@telefon'
   | '@email'
   | '@počítač'
+  | '@pocitac'
   | '@kancelář'
+  | '@kancelar'
   | '@venku'
   | '@internet'
   | '@meeting'
-  | '@home';
+  | '@home'
+  | '@anywhere';
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid';
 
@@ -73,8 +82,32 @@ export interface Task {
   project_outcome?: string;
   parent_project_id?: string;
 
+  // Hierarchie (project/phase grouping)
+  project_id?: string;
+  project_name?: string;
+  phase_id?: string;
+  phase_name?: string;
+  position_in_phase?: number;
+
+  // Závislosti
+  depends_on_task_ids?: string[];
+  is_blocked?: boolean;
+
+  // GTD next action flag
+  is_next_action?: boolean;
+
   // Workflow
   status: TaskStatus;
+
+  // Priority (string label, derived or manual)
+  priority?: string;
+
+  // Gamification
+  task_type?: TaskType;
+  points_value?: number;
+  claimed_by?: string;
+  claimed_by_name?: string;
+  claimed_at?: string;
 
   // R-Tasks Scoring System (0-12 total)
   // Quick actions (<30 min) don't require scores
@@ -83,6 +116,7 @@ export interface Task {
   score_time?: ScoreTime;
   score_distance?: ScoreDistance;
   score_personal?: ScorePersonal;
+  total_score?: number;
 
   // Assignování & Delegování
   created_by: string;
@@ -100,7 +134,7 @@ export interface Task {
   last_reminded_at?: string;
 
   // Acceptance
-  accepted: boolean;
+  accepted?: boolean;
   accepted_at?: string;
 
   // Deadline
@@ -114,28 +148,54 @@ export interface Task {
   document_id?: string;
   onboarding_client_id?: string;
 
+  // GTD location
+  location_id?: string;
+
   // TIME TRACKING
   estimated_minutes?: number; // Odhad od zadavatele
-  actual_minutes: number; // Skutečný čas od realizátora
+  estimate_locked?: boolean;
+  actual_minutes?: number; // Skutečný čas od realizátora
   time_tracking_started_at?: string; // Kdy začal pracovat
 
   // FAKTURACE
   is_billable: boolean; // Je to fakturovatelné klientovi?
   hourly_rate?: number; // Hodinová sazba (Kč/hod)
-  billable_hours: number; // Vyfakturovatelné hodiny
-  invoiced_amount: number; // Již vyfakturováno
+  billing_type?: BillingType;
+  billable_hours?: number; // Vyfakturovatelné hodiny
+  invoiced?: boolean;
+  invoiced_at?: string;
+  invoice_id?: string;
+  invoiced_amount?: number; // Již vyfakturováno
   last_invoiced_at?: string; // Kdy naposledy fakturováno
   invoice_period?: string; // Fakturační období (2025-12)
 
   // GTD Specific
   gtd_context?: string[]; // Multiple contexts possible
   gtd_energy_level?: GTDEnergyLevel;
-  gtd_is_quick_action: boolean; // < 2 min! (ne 5)
+  gtd_is_quick_action?: boolean; // < 2 min! (ne 5)
 
   // Metadata
   tags?: string[];
-  progress_percentage: number; // 0-100
+  progress_percentage?: number; // 0-100
   task_data?: Record<string, any>; // Flexible JSON data
+
+  // Approval workflow
+  approved_by?: string;
+  approved_by_name?: string;
+  approved_at?: string;
+  rejected_by?: string;
+  rejected_by_name?: string;
+  rejected_at?: string;
+  rejection_comment?: string;
+  rejection_count?: number;
+
+  // Urgency & Escalation
+  urgency_count?: number;
+  last_urged_at?: string;
+  escalated_to?: string;
+  escalated_at?: string;
+  escalation_reason?: string;
+  auto_notifications_sent?: number;
 
   // Timestamps
   created_at: string;
@@ -556,6 +616,7 @@ export const TASK_STATUSES: TaskStatus[] = [
   'in_progress',
   'waiting_for',
   'waiting_client',
+  'awaiting_approval',
   'completed',
   'cancelled',
   'someday_maybe',
@@ -592,6 +653,7 @@ export const TASK_STATUS_COLORS: Record<TaskStatus, string> = {
   in_progress: 'blue',
   waiting_for: 'orange',
   waiting_client: 'orange',
+  awaiting_approval: 'indigo',
   completed: 'green',
   cancelled: 'red',
   someday_maybe: 'purple',

@@ -68,3 +68,8 @@
   -webkit-text-fill-color: #e5e7eb !important;
   transition: background-color 5000s ease-in-out 0s;
 }
+
+.text-display {
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}

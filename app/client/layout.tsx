@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
@@ -15,6 +16,7 @@ import {
   Receipt,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Logo } from '@/components/ui/logo'
 import { ThemeToggle } from '@/components/theme-toggle'
 import {
   DropdownMenu,
@@ -26,6 +28,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { logout } from '@/app/auth/login/actions'
 import { ClientUserProvider, useClientUser } from '@/lib/contexts/client-user-context'
+import { NotificationModal } from '@/components/client/notification-modal'
+import { NotificationBanner } from '@/components/client/notification-banner'
+import { ImpersonationBanner } from '@/components/client/impersonation-banner'
 
 const navigation = [
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard },
@@ -36,11 +41,13 @@ const navigation = [
   { name: 'Vytěžování', href: '/client/extraction', icon: ScanSearch },
   { name: 'Reporty', href: '/client/reports', icon: BarChart3 },
   { name: 'Moje firma', href: '/client/company', icon: Building2 },
+  { name: 'Můj profil', href: '/client/profile', icon: User },
 ]
 
 function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { userName, userInitials } = useClientUser()
+  const [notificationsDismissed, setNotificationsDismissed] = useState(false)
 
   const handleLogout = async () => {
     await logout()
@@ -48,12 +55,18 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Impersonation banner for accountants viewing as client */}
+      <ImpersonationBanner />
+      {/* Notification popup on login */}
+      <NotificationModal onDismissed={() => setNotificationsDismissed(true)} />
+      {/* Persistent banner after dismissal */}
+      <NotificationBanner dismissed={notificationsDismissed} />
       {/* Sidebar - Desktop */}
       <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
-        <div className="flex flex-col flex-grow bg-blue-600 overflow-y-auto">
+        <div className="flex flex-col flex-grow bg-purple-700 overflow-y-auto">
           {/* Logo */}
           <div className="flex items-center h-16 flex-shrink-0 px-4">
-            <h1 className="text-2xl font-bold text-white">Účetní OS</h1>
+            <Logo size="md" showText={true} />
           </div>
 
           {/* Navigation */}
@@ -68,8 +81,8 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                   className={`
                     group flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors
                     ${isActive
-                      ? 'bg-blue-500 text-white'
-                      : 'text-white/80 hover:bg-blue-500/50 hover:text-white'
+                      ? 'bg-purple-500 text-white'
+                      : 'text-white/80 hover:bg-purple-500/50 hover:text-white'
                     }
                   `}
                 >
@@ -82,16 +95,16 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
           {/* Theme Toggle */}
           <div className="px-2 pb-2">
-            <ThemeToggle variant="full" className="text-white/80 hover:text-white hover:bg-blue-500/50" />
+            <ThemeToggle variant="full" className="text-white/80 hover:text-white hover:bg-purple-500/50" />
           </div>
 
           {/* User section */}
           <div className="flex-shrink-0 flex border-t border-white/10 p-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center w-full group hover:bg-blue-500/50 rounded-lg p-2 transition-colors">
+                <button className="flex items-center w-full group hover:bg-purple-500/50 rounded-lg p-2 transition-colors">
                   <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-white text-blue-600 font-bold">
+                    <AvatarFallback className="bg-white text-purple-700 font-bold">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
@@ -132,13 +145,13 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Mobile header */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between bg-blue-600 px-4 py-3">
-          <h1 className="text-xl font-bold text-white">Účetní OS</h1>
+        <div className="flex items-center justify-between bg-purple-700 px-4 py-3">
+          <Logo size="sm" showText={true} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 text-white/90 hover:text-white">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-white text-blue-600 font-bold text-xs">
+                  <AvatarFallback className="bg-white text-purple-700 font-bold text-xs">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
@@ -192,7 +205,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                 className={`
                   flex flex-col items-center py-2 px-3 min-w-0 flex-1
                   ${isActive
-                    ? 'text-blue-600 dark:text-blue-400'
+                    ? 'text-purple-600 dark:text-purple-400'
                     : 'text-gray-500 dark:text-gray-400'
                   }
                 `}

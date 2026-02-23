@@ -23,7 +23,7 @@ import { Employee } from '@/lib/types/employee'
 import { Asset } from '@/lib/types/asset'
 import { Insurance } from '@/lib/types/insurance'
 import { ClientOnboarding } from '@/lib/types/onboarding'
-import { Task } from '@/lib/mock-data'
+import type { Task } from '@/lib/types/tasks'
 
 // ============================================
 // TYPES (shared across sub-pages)
