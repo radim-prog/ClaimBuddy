@@ -7,12 +7,76 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { useSettings, AlertSettings } from '@/lib/contexts/settings-context'
-import { Check, RotateCcw } from 'lucide-react'
+import { Check, RotateCcw, Calendar, Banknote } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function AccountantSettingsPage() {
   const { settings, updateSettings, resetSettings, isLoaded } = useSettings()
   const [localSettings, setLocalSettings] = useState<AlertSettings>(settings)
   const [saved, setSaved] = useState(false)
+  const [deadlineDay, setDeadlineDay] = useState(15)
+  const [deadlineSaving, setDeadlineSaving] = useState(false)
+  const [hourlyRate, setHourlyRate] = useState(700)
+  const [kmRate, setKmRate] = useState(4.5)
+  const [wastedTimeRate, setWastedTimeRate] = useState(350)
+  const [ratesSaving, setRatesSaving] = useState(false)
+
+  // Fetch global settings from DB
+  useEffect(() => {
+    fetch('/api/accountant/settings')
+      .then(r => r.json())
+      .then(data => {
+        if (data.settings?.deadline_day) setDeadlineDay(Number(data.settings.deadline_day))
+        if (data.settings?.default_hourly_rate) setHourlyRate(Number(data.settings.default_hourly_rate))
+        if (data.settings?.default_km_rate) setKmRate(Number(data.settings.default_km_rate))
+        if (data.settings?.default_wasted_time_rate) setWastedTimeRate(Number(data.settings.default_wasted_time_rate))
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleRatesSave = async () => {
+    setRatesSaving(true)
+    try {
+      const res = await fetch('/api/accountant/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          default_hourly_rate: hourlyRate,
+          default_km_rate: kmRate,
+          default_wasted_time_rate: wastedTimeRate,
+        }),
+      })
+      if (res.ok) {
+        toast.success('Sazby uloženy')
+      } else {
+        toast.error('Chyba při ukládání')
+      }
+    } catch {
+      toast.error('Chyba při ukládání')
+    } finally {
+      setRatesSaving(false)
+    }
+  }
+
+  const handleDeadlineDaySave = async () => {
+    setDeadlineSaving(true)
+    try {
+      const res = await fetch('/api/accountant/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deadline_day: deadlineDay }),
+      })
+      if (res.ok) {
+        toast.success('Deadline den uložen')
+      } else {
+        toast.error('Chyba při ukládání')
+      }
+    } catch {
+      toast.error('Chyba při ukládání')
+    } finally {
+      setDeadlineSaving(false)
+    }
+  }
 
   // Sync local state with context when loaded
   useEffect(() => {
@@ -43,6 +107,104 @@ export default function AccountantSettingsPage() {
 
   return (
     <div className="grid gap-6">
+      {/* Globální deadline */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Deadline podkladů
+          </CardTitle>
+          <CardDescription>
+            Den v měsíci do kdy musí klienti dodat podklady pro uzávěrku
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-end gap-4">
+            <div className="space-y-2 flex-1 max-w-xs">
+              <Label htmlFor="deadlineDay">Den v měsíci (1-28)</Label>
+              <Input
+                id="deadlineDay"
+                type="number"
+                min="1"
+                max="28"
+                value={deadlineDay}
+                onChange={(e) => setDeadlineDay(Math.min(28, Math.max(1, parseInt(e.target.value) || 1)))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Např. 15 = klienti musí dodat podklady do 15. dne následujícího měsíce
+              </p>
+            </div>
+            <Button onClick={handleDeadlineDaySave} disabled={deadlineSaving}>
+              {deadlineSaving ? 'Ukládám...' : 'Uložit'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Výchozí sazby */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Banknote className="h-5 w-5" />
+            Výchozí sazby
+          </CardTitle>
+          <CardDescription>
+            Výchozí hodinové sazby a sazby za km pro kalkulace prepaid projektů
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="hourlyRate">Hodinová sazba (Kč/hod)</Label>
+              <Input
+                id="hourlyRate"
+                type="number"
+                min="0"
+                step="50"
+                value={hourlyRate}
+                onChange={(e) => setHourlyRate(Number(e.target.value) || 0)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Výchozí sazba za hodinu práce
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="kmRate">Sazba za km (Kč/km)</Label>
+              <Input
+                id="kmRate"
+                type="number"
+                min="0"
+                step="0.5"
+                value={kmRate}
+                onChange={(e) => setKmRate(Number(e.target.value) || 0)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Náhrada za 1 km jízdy (tam i zpět)
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wastedTimeRate">Promeškaný čas (Kč/hod)</Label>
+              <Input
+                id="wastedTimeRate"
+                type="number"
+                min="0"
+                step="50"
+                value={wastedTimeRate}
+                onChange={(e) => setWastedTimeRate(Number(e.target.value) || 0)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Snížená sazba za čas strávený cestou
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end mt-4">
+            <Button onClick={handleRatesSave} disabled={ratesSaving}>
+              {ratesSaving ? 'Ukládám...' : 'Uložit sazby'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Notifikace */}
       <Card>
         <CardHeader>
@@ -335,7 +497,7 @@ export default function AccountantSettingsPage() {
         </Button>
         <Button
           onClick={handleSave}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
+          className=""
         >
           {saved ? (
             <>

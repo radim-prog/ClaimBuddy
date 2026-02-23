@@ -354,9 +354,9 @@ export default function SubscriptionPage() {
               <Mail className="h-4 w-4" />
               info@ucetnios.cz
             </Button>
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2" disabled>
               <Phone className="h-4 w-4" />
-              +420 777 123 456
+              Nezadáno
             </Button>
           </div>
         </CardContent>

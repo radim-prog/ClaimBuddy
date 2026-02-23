@@ -30,7 +30,7 @@ export default function PricingSettingsPage() {
   if (!settings) {
     return (
       <div className="text-center py-12">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
         <p className="mt-4 text-gray-600 dark:text-gray-300">Načítám nastavení...</p>
       </div>
     )
@@ -180,7 +180,7 @@ export default function PricingSettingsPage() {
                 variant={settings.travel.type === 'fixed' ? 'default' : 'outline'}
                 onClick={() => updateTravel('type', 'fixed')}
                 size="sm"
-                className={settings.travel.type === 'fixed' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+                className={settings.travel.type === 'fixed' ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}
               >
                 Fixní sazba
               </Button>
@@ -188,7 +188,7 @@ export default function PricingSettingsPage() {
                 variant={settings.travel.type === 'per-km' ? 'default' : 'outline'}
                 onClick={() => updateTravel('type', 'per-km')}
                 size="sm"
-                className={settings.travel.type === 'per-km' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+                className={settings.travel.type === 'per-km' ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}
               >
                 Na kilometry
               </Button>
@@ -196,7 +196,7 @@ export default function PricingSettingsPage() {
                 variant={settings.travel.type === 'both' ? 'default' : 'outline'}
                 onClick={() => updateTravel('type', 'both')}
                 size="sm"
-                className={settings.travel.type === 'both' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+                className={settings.travel.type === 'both' ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}
               >
                 Obojí
               </Button>

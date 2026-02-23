@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { DollarSign, Settings as SettingsIcon, Users as UsersIcon, Building2, Repeat, MapPin } from 'lucide-react'
+import { DollarSign, Settings as SettingsIcon, Users as UsersIcon, Building2, Repeat, MapPin, HardDrive } from 'lucide-react'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 export default function SettingsLayout({
@@ -47,6 +47,12 @@ export default function SettingsLayout({
       show: true
     },
     {
+      name: 'Google Drive',
+      href: '/accountant/settings/drive',
+      icon: HardDrive,
+      show: isAdmin
+    },
+    {
       name: 'Správa uživatelů',
       href: '/accountant/settings/users',
       icon: UsersIcon,
@@ -74,7 +80,7 @@ export default function SettingsLayout({
               href={tab.href}
               className={`px-4 py-2 font-medium border-b-2 transition-colors ${
                 isActive
-                  ? 'border-blue-600 text-blue-600'
+                  ? 'border-purple-600 text-purple-600'
                   : 'border-transparent text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white'
               }`}
             >

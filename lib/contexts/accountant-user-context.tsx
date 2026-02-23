@@ -42,8 +42,8 @@ export function AccountantUserProvider({ children }: { children: ReactNode }) {
           .slice(0, 2)
           .toUpperCase()
         setUserInitials(initials)
-      } catch {
-        // ignore fetch errors
+      } catch (err) {
+        console.error('Failed to fetch accountant user:', err)
       } finally {
         setLoading(false)
       }

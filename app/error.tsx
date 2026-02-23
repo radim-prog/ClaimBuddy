@@ -34,7 +34,7 @@ export default function Error({
         )}
         <Button
           onClick={() => reset()}
-          className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+          className="gap-2"
         >
           <RefreshCw className="h-4 w-4" />
           Zkusit znovu

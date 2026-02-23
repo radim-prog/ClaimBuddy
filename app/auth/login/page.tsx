@@ -38,11 +38,11 @@ export default function LoginPage() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1 text-center">
-        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-purple-600">
+        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-purple-600">
           <Lock className="h-6 w-6 text-white" />
         </div>
-        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          Účetní portál
+        <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
+          Přihlášení
         </CardTitle>
         <CardDescription>
           Zadejte své přihlašovací údaje
@@ -82,7 +82,7 @@ export default function LoginPage() {
           </div>
           <Button
             type="submit"
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold"
+            className="w-full font-semibold"
             disabled={loading}
           >
             {loading ? (

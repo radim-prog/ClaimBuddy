@@ -237,7 +237,7 @@ export default function UserManagementPage() {
       case 'admin':
         return <Badge className="bg-purple-600 text-white"><Shield className="h-3 w-3 mr-1" />Admin</Badge>
       case 'accountant':
-        return <Badge className="bg-blue-600 text-white"><User className="h-3 w-3 mr-1" />Účetní</Badge>
+        return <Badge className="bg-purple-600 text-white"><User className="h-3 w-3 mr-1" />Účetní</Badge>
       case 'assistant':
         return <Badge className="bg-gray-600 text-white"><User className="h-3 w-3 mr-1" />Asistent</Badge>
       case 'client':
@@ -259,13 +259,13 @@ export default function UserManagementPage() {
     <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
       {PERMISSION_GROUPS.map((group) => (
         <div key={group}>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{group}</p>
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{group}</p>
           <div className="space-y-2">
             {PERMISSION_DEFINITIONS.filter(p => p.group === group).map((perm) => (
               <div key={perm.key} className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">{perm.label}</p>
-                  <p className="text-xs text-gray-500">{perm.description}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{perm.description}</p>
                 </div>
                 <Switch
                   checked={permissions[perm.key]}
@@ -285,7 +285,7 @@ export default function UserManagementPage() {
   if (loading) {
     return (
       <div className="text-center py-12">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
         <p className="mt-4 text-gray-600 dark:text-gray-300">Načítám uživatele...</p>
       </div>
     )
@@ -302,7 +302,7 @@ export default function UserManagementPage() {
         {/* CREATE DIALOG */}
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button className="">
               <UserPlus className="h-4 w-4 mr-2" />
               Přidat uživatele
             </Button>
@@ -380,7 +380,7 @@ export default function UserManagementPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>Zrušit</Button>
-              <Button onClick={handleCreateUser} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button onClick={handleCreateUser} disabled={saving} className="">
                 {saving ? 'Vytvářím...' : 'Vytvořit uživatele'}
               </Button>
             </DialogFooter>
@@ -423,7 +423,7 @@ export default function UserManagementPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-red-600 hover:bg-red-50"
+                    className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                     onClick={() => {
                       setSelectedUser(user)
                       setDeleteDialogOpen(true)
@@ -528,7 +528,7 @@ export default function UserManagementPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Zrušit</Button>
-            <Button onClick={handleUpdateUser} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button onClick={handleUpdateUser} disabled={saving} className="">
               {saving ? 'Ukládám...' : 'Uložit změny'}
             </Button>
           </DialogFooter>
@@ -572,7 +572,7 @@ export default function UserManagementPage() {
             </div>
           </div>
           <div className="flex items-start gap-2">
-            <User className="h-4 w-4 mt-0.5 text-blue-600" />
+            <User className="h-4 w-4 mt-0.5 text-purple-600" />
             <div>
               <p className="font-semibold">Účetní</p>
               <p className="text-gray-700 dark:text-gray-300">Standardní přístup k účetnictví a klientům</p>

@@ -1,16 +1,15 @@
 'use client'
 
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { ClosureDetailModal } from '@/components/closure-detail-modal'
-import { MorningOverview } from '@/components/accountant/morning-overview'
 import { ActivityFeed } from '@/components/accountant/activity-feed'
-import { GtdDashboardSection } from '@/components/gtd/dashboard-section'
-import { DailyProgressRing } from '@/components/gtd/progress-ring'
-import { GamificationStats } from '@/components/gtd/gamification-stats'
 import { TileContainer } from '@/components/tiles/tile-container'
 import type { TileDefinition } from '@/lib/types/layout'
+import { useSettings } from '@/lib/contexts/settings-context'
+import { AttentionCard } from '@/components/accountant/attention-card'
+import { CheckCircle2, Circle, Clock, ArrowRight } from 'lucide-react'
 
 type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
 
@@ -19,6 +18,7 @@ type Company = {
   name: string
   ico: string
   status?: string
+  monthly_reporting?: boolean
 }
 
 type MonthlyClosure = {
@@ -55,9 +55,39 @@ type MatrixData = {
   }
 }
 
+type TimeSummary = {
+  total_minutes: number
+  billable_minutes: number
+  in_tariff_minutes: number
+  billable_amount: number
+  entry_count: number
+  by_company: Array<{
+    company_id: string
+    company_name: string
+    total_minutes: number
+    billable_minutes: number
+    billable_amount: number
+  }>
+}
+
+type GtdTask = {
+  id: string
+  title: string
+  status: string
+  due_date?: string | null
+  company_id?: string | null
+  company_name?: string | null
+  score_priority?: string | null
+}
+
 const months = [
   'Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čer',
   'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro'
+]
+
+const monthsShort = [
+  'Le', 'Ún', 'Bř', 'Du', 'Kv', 'Čn',
+  'Čc', 'Sr', 'Zá', 'Ří', 'Li', 'Pr'
 ]
 
 const currentMonth = new Date().getMonth() // 0-indexed
@@ -87,16 +117,14 @@ const statusColors: Record<StatusType, { bg: string; text: string; border: strin
   }
 }
 
-function getMonthStatus(closures: MonthlyClosure[], companyId: string, monthIndex: number, year: number): StatusType {
+function getMonthStatus(closureMap: Map<string, MonthlyClosure>, companyId: string, monthIndex: number, year: number): StatusType {
   // Zkontrolovat, jestli je měsíc v budoucnosti
   if (year > currentYear || (year === currentYear && monthIndex > currentMonth)) {
     return 'future'
   }
 
   const period = `${year}-${String(monthIndex + 1).padStart(2, '0')}`
-  const closure = closures.find(
-    c => c.company_id === companyId && c.period === period
-  )
+  const closure = closureMap.get(`${companyId}:${period}`)
 
   if (!closure) return 'missing'
 
@@ -121,7 +149,7 @@ function getMonthStatus(closures: MonthlyClosure[], companyId: string, monthInde
 }
 
 // Generate deadline alerts from closures
-function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
+function generateDeadlines(closures: MonthlyClosure[], companies: Company[], deadlineDay = 15) {
   const deadlines: Array<{
     id: string
     title: string
@@ -148,8 +176,8 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
     // Parse period (e.g., "2025-01")
     const [year, month] = closure.period.split('-').map(Number)
 
-    // Deadline is typically 15th of the following month
-    const deadline = new Date(year, month, 15) // month is already 1-indexed in Date constructor
+    // Deadline is the configured day of the following month
+    const deadline = new Date(year, month, deadlineDay) // month is already 1-indexed in Date constructor
     const daysUntil = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
     // Check if any documents are missing
@@ -228,18 +256,6 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         completed: false
       })
 
-      // Mock attachments for uploaded documents
-      const attachments: Array<{ name: string; url: string }> = []
-      if (closure.bank_statement_status === 'uploaded') {
-        attachments.push({ name: `vypis_${months[month - 1]}_2025.pdf`, url: '#' })
-      }
-      if (closure.expense_documents_status === 'uploaded') {
-        attachments.push({ name: `naklady_${months[month - 1]}_2025.zip`, url: '#' })
-      }
-      if (closure.income_invoices_status === 'uploaded') {
-        attachments.push({ name: `prijmy_${months[month - 1]}_2025.pdf`, url: '#' })
-      }
-
       deadlines.push({
         id: `${closure.id}-approval`,
         title: `Uzávěrka ${months[month - 1]} - čeká na schválení`,
@@ -251,7 +267,7 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
         description: `Klient ${company.name} nahrál všechny dokumenty pro uzávěrku za ${months[month - 1]} ${year}. Je třeba zkontrolovat a schválit.`,
         checklist,
         assignedTo: 'Účetní',
-        attachments
+        attachments: []
       })
     }
   })
@@ -265,7 +281,7 @@ function generateDeadlines(closures: MonthlyClosure[], companies: Company[]) {
 }
 
 // Generate deadline tasks for dashboard widget
-function generateDeadlineTasks(closures: MonthlyClosure[], companies: Company[]) {
+function generateDeadlineTasks(closures: MonthlyClosure[], companies: Company[], deadlineDay = 15) {
   const tasks: Array<{
     id: string
     title: string
@@ -287,7 +303,7 @@ function generateDeadlineTasks(closures: MonthlyClosure[], companies: Company[])
     if (!company) return
 
     const [year, month] = closure.period.split('-').map(Number)
-    const deadline = new Date(year, month, 15)
+    const deadline = new Date(year, month, deadlineDay)
     const daysUntil = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
     const hasMissing =
@@ -343,18 +359,18 @@ function generateDeadlineTasks(closures: MonthlyClosure[], companies: Company[])
   return tasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
 }
 
-function StatusCell({
+const StatusCell = React.memo(function StatusCell({
   companyId,
   companyName,
   monthIndex,
-  closures,
+  closureMap,
   year,
   onCellClick,
 }: {
   companyId: string
   companyName: string
   monthIndex: number
-  closures: MonthlyClosure[]
+  closureMap: Map<string, MonthlyClosure>
   year: number
   onCellClick: (closure: MonthlyClosure, companyName: string) => void
 }) {
@@ -371,13 +387,11 @@ function StatusCell({
     setIsHovered(true)
   }
 
-  const status = getMonthStatus(closures, companyId, monthIndex, year)
+  const status = getMonthStatus(closureMap, companyId, monthIndex, year)
   const colors = statusColors[status]
   const period = `${year}-${String(monthIndex + 1).padStart(2, '0')}`
 
-  const closure = closures.find(
-    c => c.company_id === companyId && c.period === period
-  )
+  const closure = closureMap.get(`${companyId}:${period}`)
 
   // Get individual statuses for the 3 indicators
   const bankStatus = closure?.bank_statement_status || 'missing'
@@ -403,12 +417,12 @@ function StatusCell({
       {status === 'future' ? (
         <div
           className={`
-            w-14 h-14 mx-auto rounded-lg border-2
+            w-10 h-10 sm:w-14 sm:h-14 mx-auto rounded-lg border-2
             ${colors.bg} ${colors.border}
             flex items-center justify-center
           `}
         >
-          <span className={`text-xl ${colors.text}`}>—</span>
+          <span className={`text-base sm:text-xl ${colors.text}`}>—</span>
         </div>
       ) : (
         <div
@@ -418,20 +432,20 @@ function StatusCell({
           onClick={() => closure && onCellClick(closure, companyName)}
           onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && closure) { e.preventDefault(); onCellClick(closure, companyName) } }}
           className={`
-            w-14 h-14 mx-auto rounded-lg border-2 transition-all cursor-pointer
+            w-10 h-10 sm:w-14 sm:h-14 mx-auto rounded-lg border-2 transition-all cursor-pointer
             ${colors.bg} ${colors.border}
             hover:scale-110 hover:shadow-lg
             focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1
-            flex flex-col items-center justify-center gap-1
+            flex flex-col items-center justify-center gap-0.5 sm:gap-1
           `}
         >
-          <span className={`text-lg font-bold ${colors.text}`}>
+          <span className={`text-sm sm:text-lg font-bold ${colors.text}`}>
             {status === 'approved' ? '✓' : status === 'uploaded' ? '⏳' : '!'}
           </span>
           <div className="flex gap-0.5">
-            <div className={`w-2 h-2 rounded-full ${getIndicatorColor(bankStatus)} border border-white/50`} title="Výpis"></div>
-            <div className={`w-2 h-2 rounded-full ${getIndicatorColor(expenseStatus)} border border-white/50`} title="Náklady"></div>
-            <div className={`w-2 h-2 rounded-full ${getIndicatorColor(incomeStatus)} border border-white/50`} title="Příjmy"></div>
+            <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${getIndicatorColor(bankStatus)} border border-white/50`} title="Výpis"></div>
+            <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${getIndicatorColor(expenseStatus)} border border-white/50`} title="Náklady"></div>
+            <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${getIndicatorColor(incomeStatus)} border border-white/50`} title="Příjmy"></div>
           </div>
         </div>
       )}
@@ -468,13 +482,13 @@ function StatusCell({
       )}
     </td>
   )
-}
+})
 
 const DASHBOARD_TILES: TileDefinition[] = [
-  { id: 'morning-overview', label: 'Ranní přehled', defaultVisible: true },
+  { id: 'today-tasks', label: 'Dnešní úkoly', defaultVisible: true },
+  { id: 'attention-summary', label: 'Vyžaduje pozornost', defaultVisible: true },
+  { id: 'my-time', label: 'Můj čas tento měsíc', defaultVisible: true },
   { id: 'master-matrix', label: 'Master Matice', defaultVisible: true },
-  { id: 'gtd-section', label: 'GTD Úkoly', defaultVisible: true },
-  { id: 'gamification', label: 'Gamifikace', defaultVisible: true },
   { id: 'activity-feed', label: 'Poslední aktivita', defaultVisible: true },
 ]
 
@@ -487,7 +501,10 @@ export default function AccountantDashboard() {
   const [closureModalOpen, setClosureModalOpen] = useState(false)
   const [selectedClosure, setSelectedClosure] = useState<MonthlyClosure | null>(null)
   const [selectedCompanyName, setSelectedCompanyName] = useState('')
+  const [todayTasks, setTodayTasks] = useState<GtdTask[]>([])
+  const [timeSummary, setTimeSummary] = useState<TimeSummary | null>(null)
   const { userName } = useAccountantUser()
+  const { settings } = useSettings()
 
   useEffect(() => {
     async function fetchData() {
@@ -508,11 +525,29 @@ export default function AccountantDashboard() {
     fetchData()
   }, [])
 
+  // Fetch today's tasks
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0]
+    fetch(`/api/tasks?status=inbox,next_action,waiting_for&due_date_to=${today}&sort_by=due_date&sort_order=asc&page_size=20`)
+      .then(r => r.ok ? r.json() : null)
+      .then(json => { if (json?.tasks) setTodayTasks(json.tasks) })
+      .catch(() => {})
+  }, [])
+
+  // Fetch time summary for current month
+  useEffect(() => {
+    const period = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
+    fetch(`/api/time-entries/summary?period=${period}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(json => { if (json) setTimeSummary(json) })
+      .catch(() => {})
+  }, [])
+
   // Generate deadline tasks - MUST be before conditional returns (Rules of Hooks)
   const deadlineTasks = useMemo(() => {
     if (!data) return []
-    return generateDeadlineTasks(data.closures, data.companies)
-  }, [data])
+    return generateDeadlineTasks(data.closures, data.companies, settings.closureDeadlineDay)
+  }, [data, settings.closureDeadlineDay])
 
   const handleCellClick = useCallback((closure: MonthlyClosure, companyName: string) => {
     setSelectedClosure(closure)
@@ -535,40 +570,180 @@ export default function AccountantDashboard() {
   // Derived data - MUST be before conditional returns to keep hook order stable
   const allCompanies = data?.companies ?? []
   const closures = data?.closures ?? []
-  const allTasks = data?.tasks ?? []
+  const closureMap = useMemo(() => {
+    const map = new Map<string, MonthlyClosure>()
+    for (const c of closures) {
+      map.set(`${c.company_id}:${c.period}`, c)
+    }
+    return map
+  }, [closures])
   const stats = data?.stats ?? { total: 0, missing: 0, uploaded: 0, approved: 0 }
 
-  // Exclude inactive clients from dashboard (they stay visible only in client profile)
-  const companies = useMemo(() => allCompanies.filter(c => c.status !== 'inactive'), [allCompanies])
+  // Exclude inactive clients and those without monthly reporting from dashboard matrix
+  const companies = useMemo(() => allCompanies.filter(c => c.status !== 'inactive' && c.monthly_reporting !== false), [allCompanies])
 
   // Filter companies based on selected filter
   const filteredCompanies = useMemo(() => companies.filter(company => {
     if (filter === 'all') return true
     for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
-      const status = getMonthStatus(closures, company.id, monthIndex, selectedYear)
+      const status = getMonthStatus(closureMap, company.id, monthIndex, selectedYear)
       if (filter === 'missing' && status === 'missing') return true
       if (filter === 'uploaded' && status === 'uploaded') return true
     }
     return false
-  }), [companies, closures, filter, selectedYear])
+  }), [companies, closureMap, filter, selectedYear])
+
+  const formatMinutes = useCallback((mins: number): string => {
+    const h = Math.floor(mins / 60)
+    const m = mins % 60
+    if (h === 0) return `${m} min`
+    if (m === 0) return `${h} hod`
+    return `${h}h ${m}m`
+  }, [])
 
   const renderTile = useCallback((tileId: string) => {
     switch (tileId) {
-      case 'morning-overview':
+      case 'today-tasks': {
+        const overdue = todayTasks.filter(t => {
+          if (!t.due_date) return false
+          return t.due_date < new Date().toISOString().split('T')[0]
+        })
+        const dueToday = todayTasks.filter(t => {
+          if (!t.due_date) return false
+          return t.due_date === new Date().toISOString().split('T')[0]
+        })
+        const upcoming = todayTasks.filter(t => !t.due_date)
+
         return (
-          <MorningOverview
-            companies={companies}
-            closures={closures}
-            tasks={allTasks || []}
-          />
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                <Clock className="h-4 w-4 text-purple-500" />
+                Dnešní úkoly
+                {todayTasks.length > 0 && (
+                  <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs px-2 py-0.5 rounded-full">
+                    {todayTasks.length}
+                  </span>
+                )}
+              </h3>
+              <Link href="/accountant/tasks" className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 flex items-center gap-1">
+                Všechny úkoly <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+
+            {todayTasks.length === 0 ? (
+              <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
+                Žádné úkoly na dnes
+              </p>
+            ) : (
+              <div className="space-y-1">
+                {overdue.length > 0 && (
+                  <div className="text-xs font-medium text-red-600 dark:text-red-400 mb-1 mt-1">Po termínu ({overdue.length})</div>
+                )}
+                {overdue.map(task => (
+                  <Link key={task.id} href={`/accountant/tasks`} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-red-50 dark:hover:bg-red-900/10 group text-sm">
+                    <Circle className="h-4 w-4 text-red-400 shrink-0" />
+                    <span className="truncate text-gray-900 dark:text-white">{task.title}</span>
+                    {task.company_name && <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{task.company_name}</span>}
+                  </Link>
+                ))}
+
+                {dueToday.length > 0 && (
+                  <div className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-1 mt-2">Dnes ({dueToday.length})</div>
+                )}
+                {dueToday.map(task => (
+                  <Link key={task.id} href={`/accountant/tasks`} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-orange-50 dark:hover:bg-orange-900/10 group text-sm">
+                    <Circle className="h-4 w-4 text-orange-400 shrink-0" />
+                    <span className="truncate text-gray-900 dark:text-white">{task.title}</span>
+                    {task.company_name && <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{task.company_name}</span>}
+                  </Link>
+                ))}
+
+                {upcoming.length > 0 && overdue.length === 0 && dueToday.length === 0 && (
+                  <>
+                    {upcoming.slice(0, 5).map(task => (
+                      <Link key={task.id} href={`/accountant/tasks`} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 group text-sm">
+                        <Circle className="h-4 w-4 text-gray-300 dark:text-gray-600 shrink-0" />
+                        <span className="truncate text-gray-900 dark:text-white">{task.title}</span>
+                        {task.company_name && <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{task.company_name}</span>}
+                      </Link>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         )
+      }
+
+      case 'my-time': {
+        const monthName = new Date().toLocaleDateString('cs-CZ', { month: 'long' })
+        return (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                Můj čas – {monthName}
+              </h3>
+              <Link href="/accountant/invoicing" className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 flex items-center gap-1">
+                Fakturace <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+
+            {!timeSummary || timeSummary.entry_count === 0 ? (
+              <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
+                Žádné záznamy za {monthName}
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatMinutes(timeSummary.total_minutes)}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">celkem</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{Math.round(timeSummary.billable_amount).toLocaleString('cs-CZ')} Kč</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">k fakturaci</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-600 dark:text-gray-300">{timeSummary.entry_count}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">záznamů</div>
+                  </div>
+                </div>
+
+                {timeSummary.by_company.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Top klienti</div>
+                    {timeSummary.by_company.slice(0, 5).map(c => (
+                      <div key={c.company_id} className="flex items-center justify-between text-sm py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <Link href={`/accountant/clients/${c.company_id}`} className="text-gray-900 dark:text-white hover:text-purple-600 truncate">
+                          {c.company_name}
+                        </Link>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-gray-500 dark:text-gray-400 text-xs">{formatMinutes(c.total_minutes)}</span>
+                          {c.billable_amount > 0 && (
+                            <span className="text-purple-600 dark:text-purple-400 text-xs font-medium">{Math.round(c.billable_amount).toLocaleString('cs-CZ')} Kč</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )
+      }
+
+      case 'attention-summary':
+        return <AttentionCard />
       case 'master-matrix':
         return (
           <>
             {/* Header with year selector */}
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Master Matice {selectedYear}</h1>
+                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-gray-900 dark:text-white">Master Matice {selectedYear}</h1>
                 <p className="mt-1 text-gray-600 dark:text-gray-400">
                   Přehled všech klientů a stavu jejich měsíčních uzávěrek
                 </p>
@@ -576,17 +751,17 @@ export default function AccountantDashboard() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setSelectedYear(y => y - 1)}
-                  className="p-2 rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 rounded-xl bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={selectedYear <= 2020}
                 >
                   ←
                 </button>
-                <span className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-bold rounded-lg min-w-[80px] text-center">
+                <span className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-bold rounded-xl min-w-[80px] text-center">
                   {selectedYear}
                 </span>
                 <button
                   onClick={() => setSelectedYear(y => y + 1)}
-                  className="p-2 rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 rounded-xl bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={selectedYear >= currentYear + 1}
                 >
                   →
@@ -595,35 +770,35 @@ export default function AccountantDashboard() {
             </div>
 
             {/* Stats + Legend + Filter */}
-            <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div className="flex items-center gap-4">
+            <div className="mb-6 bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-xl shadow-sm">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                   <button
                     onClick={() => setFilter(filter === 'missing' ? 'all' : 'missing')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${filter === 'missing' ? 'bg-red-100 ring-2 ring-red-400' : 'hover:bg-red-50 dark:bg-red-900/20'}`}
+                    className={`flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg transition-colors ${filter === 'missing' ? 'bg-red-100 ring-2 ring-red-400' : 'hover:bg-red-50 dark:bg-red-900/20'}`}
                   >
-                    <div className="w-8 h-8 rounded bg-red-500 border-2 border-red-600 flex items-center justify-center">
-                      <span className="text-sm text-white font-bold">!</span>
+                    <div className="w-8 h-8 rounded bg-red-500 border-2 border-red-600 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm text-white font-bold">{stats.missing}</span>
                     </div>
-                    <div className="text-left">
+                    <div className="text-left hidden sm:block">
                       <div className="text-xs text-gray-500 dark:text-gray-400">Chybí podklady</div>
                       <div className="text-lg font-bold text-red-700 dark:text-red-400">{stats.missing}</div>
                     </div>
                   </button>
                   <button
                     onClick={() => setFilter(filter === 'uploaded' ? 'all' : 'uploaded')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${filter === 'uploaded' ? 'bg-yellow-100 ring-2 ring-yellow-400' : 'hover:bg-yellow-50 dark:bg-yellow-900/20'}`}
+                    className={`flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg transition-colors ${filter === 'uploaded' ? 'bg-yellow-100 ring-2 ring-yellow-400' : 'hover:bg-yellow-50 dark:bg-yellow-900/20'}`}
                   >
-                    <div className="w-8 h-8 rounded bg-yellow-400 border-2 border-yellow-500 flex items-center justify-center">
-                      <span className="text-sm text-yellow-900 font-bold">⏳</span>
+                    <div className="w-8 h-8 rounded bg-yellow-400 border-2 border-yellow-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm text-yellow-900 font-bold">{stats.uploaded}</span>
                     </div>
-                    <div className="text-left">
+                    <div className="text-left hidden sm:block">
                       <div className="text-xs text-gray-500 dark:text-gray-400">Čeká na schválení</div>
                       <div className="text-lg font-bold text-yellow-700 dark:text-yellow-400">{stats.uploaded}</div>
                     </div>
                   </button>
 
-                  <div className="border-l pl-4 ml-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="border-l pl-3 ml-1 hidden sm:flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                     <span className="flex items-center gap-1">
                       <span className="w-3 h-3 rounded bg-green-500"></span> OK
                     </span>
@@ -658,7 +833,7 @@ export default function AccountantDashboard() {
                         })
                         setData({ ...data, closures: updatedClosures })
                       }}
-                      className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                      className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all duration-200"
                     >
                       Hromadně schválit aktuální měsíc
                     </button>
@@ -670,7 +845,7 @@ export default function AccountantDashboard() {
                       const header = ['Klient', 'IČO', ...months.map((m) => `${m} ${selectedYear}`)].join(';')
                       const rows = filteredCompanies.map(company => {
                         const statuses = months.map((_, i) => {
-                          const status = getMonthStatus(closures, company.id, i, selectedYear)
+                          const status = getMonthStatus(closureMap, company.id, i, selectedYear)
                           return status === 'approved' ? 'OK' : status === 'uploaded' ? 'Čeká' : status === 'missing' ? 'Chybí' : '-'
                         })
                         return [company.name, company.ico, ...statuses].join(';')
@@ -684,7 +859,7 @@ export default function AccountantDashboard() {
                       a.click()
                       URL.revokeObjectURL(url)
                     }}
-                    className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl transition-all duration-200"
                   >
                     Export CSV
                   </button>
@@ -707,25 +882,26 @@ export default function AccountantDashboard() {
             </div>
 
             {/* Master Matrix Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto -mx-4 sm:mx-0">
-              <table className="min-w-[700px] w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-x-auto">
+              <table className="w-full divide-y divide-gray-200 dark:divide-gray-700" style={{ minWidth: '600px' }}>
                 <thead className="bg-gradient-to-r from-purple-600 to-blue-600">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider sticky left-0 bg-purple-600 z-10">
+                    <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider sticky left-0 bg-purple-600 z-10 max-w-[100px] sm:max-w-none">
                       Klient
                     </th>
                     {months.map((month, index) => (
                       <th
                         key={index}
-                        className={`px-2 py-3 text-center text-xs font-medium uppercase tracking-wider ${
+                        className={`px-1 sm:px-2 py-3 text-center text-xs font-medium uppercase tracking-wider ${
                           index === currentMonth && selectedYear === currentYear
                             ? 'bg-white/20 text-white font-bold ring-2 ring-white/50 rounded'
                             : 'text-white'
                         }`}
                       >
-                        {month}
+                        <span className="hidden sm:inline">{month}</span>
+                        <span className="sm:hidden">{monthsShort[index]}</span>
                         {index === currentMonth && selectedYear === currentYear && (
-                          <div className="text-[10px] font-normal">●</div>
+                          <div className="text-xs font-normal">●</div>
                         )}
                       </th>
                     ))}
@@ -741,11 +917,11 @@ export default function AccountantDashboard() {
                   ) : (
                     filteredCompanies.map((company, companyIndex) => (
                       <tr key={company.id} className={companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}>
-                        <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white sticky left-0 z-10 ${companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
+                        <td className={`px-2 sm:px-4 py-2 sm:py-3 text-sm font-medium text-gray-900 dark:text-white sticky left-0 z-10 max-w-[100px] sm:max-w-none ${companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
                           <Link href={`/accountant/clients/${company.id}`} className="hover:text-purple-600 transition-colors">
                             <div>
-                              <div className="font-semibold">{company.name}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">IČO: {company.ico}</div>
+                              <div className="font-semibold truncate">{company.name}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">IČO: {company.ico}</div>
                             </div>
                           </Link>
                         </td>
@@ -755,7 +931,7 @@ export default function AccountantDashboard() {
                             companyId={company.id}
                             companyName={company.name}
                             monthIndex={monthIndex}
-                            closures={closures}
+                            closureMap={closureMap}
                             year={selectedYear}
                             onCellClick={handleCellClick}
                           />
@@ -768,18 +944,9 @@ export default function AccountantDashboard() {
             </div>
           </>
         )
-      case 'gtd-section':
-        return <GtdDashboardSection />
-      case 'gamification':
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <DailyProgressRing />
-            <GamificationStats />
-          </div>
-        )
       case 'activity-feed':
         return (
-          <div className="bg-white dark:bg-gray-800 border rounded-lg p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Poslední aktivita</h3>
             <ActivityFeed limit={10} />
           </div>
@@ -787,7 +954,7 @@ export default function AccountantDashboard() {
       default:
         return null
     }
-  }, [companies, closures, allTasks, selectedYear, filter, filteredCompanies, stats, data, userName, handleCellClick])
+  }, [companies, closures, selectedYear, filter, filteredCompanies, stats, data, userName, handleCellClick, todayTasks, timeSummary, formatMinutes])
 
   if (loading) {
     return (

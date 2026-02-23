@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useEffect, useState, useMemo, useCallback } from 'react'
+import { useDebounce } from '@/lib/hooks/use-debounce'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -24,10 +25,19 @@ import {
   Layers,
   List,
   Mail,
+  Power,
+  PowerOff,
+  Loader2,
+  Tag,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
+import { Bell } from 'lucide-react'
 // Company data fetched from API (Supabase-backed)
 import { NewClientForm } from '@/components/new-client-form'
+import { useAttention } from '@/lib/contexts/attention-context'
 
 type Company = {
   id: string
@@ -44,6 +54,7 @@ type Company = {
   zip: string
   health_insurance_company: string | null
   has_employees: boolean
+  monthly_reporting?: boolean
   employee_count: number
   data_box: { id: string } | null
   status?: string
@@ -59,12 +70,13 @@ type MonthlyClosure = {
 }
 
 // Extracted company row component with checkbox
-function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelect }: {
+function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelect, attentionCount }: {
   company: Company
   fullStatus: { status: 'ok' | 'missing' | 'uploaded'; missingDocs: number; uploadedDocs: number }
   clientStatus: string
   selected: boolean
   onToggleSelect: (id: string, e: React.MouseEvent) => void
+  attentionCount: number
 }) {
   const isOnboarding = clientStatus === 'onboarding'
   const isInactive = clientStatus === 'inactive'
@@ -88,7 +100,7 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
         {selected && <CheckSquare className="h-5 w-5 p-0.5" />}
       </button>
       <Link href={`/accountant/clients/${company.id}`} className="flex-1">
-        <Card className={`hover:shadow-md transition-all cursor-pointer border-l-4 ${borderColor} ${isInactive ? 'opacity-60' : ''}`}>
+        <Card className={`hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer border-l-4 rounded-xl ${borderColor} ${isInactive ? 'opacity-60' : ''}`}>
           <CardContent className="py-3 px-4">
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 items-start sm:items-center">
               {/* Název */}
@@ -107,25 +119,25 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
               {/* Právní forma + badges */}
               <div className="col-span-1 sm:col-span-3 flex items-center gap-1.5 flex-wrap mt-1 sm:mt-0">
                 {company.legal_form === 'OSVČ' ? (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 border-orange-200">
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700">
                     FO
                   </Badge>
                 ) : company.legal_form === 's.r.o.' ? (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-200">
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700">
                     s.r.o.
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-gray-500 dark:text-gray-400">
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 text-gray-500 dark:text-gray-400">
                     {company.legal_form}
                   </Badge>
                 )}
                 {isInactive && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-red-600 border-red-300 bg-red-50 dark:bg-red-900/20">
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 text-red-600 border-red-300 bg-red-50 dark:bg-red-900/20">
                     Neaktivní
                   </Badge>
                 )}
                 {isOnboarding && (
-                  <Badge className="bg-purple-500 text-white hover:bg-purple-500 text-[10px] px-1.5 py-0">
+                  <Badge className="bg-purple-500 text-white hover:bg-purple-500 text-xs px-1.5 py-0">
                     ONB
                   </Badge>
                 )}
@@ -138,7 +150,7 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
                     DPH {company.vat_period === 'monthly' ? 'M' : 'Q'}
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-gray-400">ne-DPH</Badge>
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 text-gray-400">ne-DPH</Badge>
                 )}
                 {company.has_employees && (
                   <Badge variant="outline" className="text-gray-600 dark:text-gray-300 text-xs px-1.5">
@@ -146,10 +158,21 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
                     {company.employee_count}
                   </Badge>
                 )}
+                {company.monthly_reporting === false && (
+                  <Badge variant="outline" className="text-xs px-1.5 py-0 text-gray-400 dark:text-gray-500 border-dashed">
+                    bez rep.
+                  </Badge>
+                )}
               </div>
 
               {/* Stav */}
-              <div className="col-span-2 text-right">
+              <div className="col-span-2 text-right flex items-center justify-end gap-2">
+                {attentionCount > 0 && !isInactive && (
+                  <span className="inline-flex items-center gap-0.5 text-xs">
+                    <Bell className="h-3 w-3 text-red-500" />
+                    <span className="font-medium text-red-600 dark:text-red-400">{attentionCount}</span>
+                  </span>
+                )}
                 {isInactive ? (
                   <span className="inline-flex items-center gap-1 text-gray-400 text-sm">
                     <XCircle className="h-4 w-4" />
@@ -183,10 +206,12 @@ function ClientsPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
+  const { getCompanyAttention } = useAttention()
   const [companies, setCompanies] = useState<Company[]>([])
   const [closures, setClosures] = useState<MonthlyClosure[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const debouncedSearch = useDebounce(searchQuery, 300)
 
   // New client modal
   const [showNewClient, setShowNewClient] = useState(false)
@@ -196,6 +221,7 @@ function ClientsPageContent() {
 
   // Group view
   const [groupView, setGroupView] = useState(false)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
 
   // Filtry
   const [showFilters, setShowFilters] = useState(false)
@@ -204,6 +230,7 @@ function ClientsPageContent() {
   const [filterVatPayer, setFilterVatPayer] = useState<boolean | null>(null)
   const [filterVatPeriod, setFilterVatPeriod] = useState<string | null>(null)
   const [filterHasEmployees, setFilterHasEmployees] = useState<boolean | null>(null)
+  const [filterMonthlyReporting, setFilterMonthlyReporting] = useState<boolean | null>(null)
   const [filterClientStatus, setFilterClientStatus] = useState<string | null>('active')
 
   // Read status filter from URL params
@@ -303,69 +330,43 @@ function ClientsPageContent() {
       uploadedDocs: number
     }>()
 
-    // Group closures by company_id first for O(n) access
-    const closuresByCompany = new Map<string, MonthlyClosure[]>()
+    // Current period string for filtering
+    const currentPeriodStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
+
+    // Group CURRENT MONTH closures by company_id for status display
+    const closuresByCompany = new Map<string, MonthlyClosure>()
     closures.forEach(closure => {
-      const [year, month] = closure.period.split('-').map(Number)
-      // Only include current and past months
-      if (year < currentYear || (year === currentYear && month <= currentMonth)) {
-        const existing = closuresByCompany.get(closure.company_id) || []
-        existing.push(closure)
-        closuresByCompany.set(closure.company_id, existing)
+      if (closure.period === currentPeriodStr) {
+        closuresByCompany.set(closure.company_id, closure)
       }
     })
 
-    // Calculate status for each company
+    // Calculate status for each company based on CURRENT MONTH only
     companies.forEach(company => {
-      const companyClosures = closuresByCompany.get(company.id) || []
+      const closure = closuresByCompany.get(company.id)
 
-      let missingMonths = 0
-      let uploadedMonths = 0
       let missingDocs = 0
       let uploadedDocs = 0
 
-      companyClosures.forEach(closure => {
-        const hasMissing =
-          closure.bank_statement_status === 'missing' ||
-          closure.expense_documents_status === 'missing' ||
-          closure.income_invoices_status === 'missing'
+      if (closure) {
+        if (closure.bank_statement_status === 'missing') missingDocs++
+        if (closure.expense_documents_status === 'missing') missingDocs++
+        if (closure.income_invoices_status === 'missing') missingDocs++
 
-        const hasUploaded =
-          closure.bank_statement_status === 'uploaded' ||
-          closure.expense_documents_status === 'uploaded' ||
-          closure.income_invoices_status === 'uploaded'
-
-        const allApproved =
-          closure.bank_statement_status === 'approved' &&
-          closure.expense_documents_status === 'approved' &&
-          closure.income_invoices_status === 'approved'
-
-        if (hasMissing) {
-          missingMonths++
-          if (closure.bank_statement_status === 'missing') missingDocs++
-          if (closure.expense_documents_status === 'missing') missingDocs++
-          if (closure.income_invoices_status === 'missing') missingDocs++
-        }
-
-        // Count uploaded documents (waiting for approval)
         if (closure.bank_statement_status === 'uploaded') uploadedDocs++
         if (closure.expense_documents_status === 'uploaded') uploadedDocs++
         if (closure.income_invoices_status === 'uploaded') uploadedDocs++
-
-        if (hasUploaded && !allApproved && !hasMissing) {
-          uploadedMonths++
-        }
-      })
+      }
 
       // Determine overall status
       let status: 'ok' | 'missing' | 'uploaded' = 'ok'
-      if (missingMonths > 0) status = 'missing'
-      else if (uploadedMonths > 0) status = 'uploaded'
+      if (missingDocs > 0) status = 'missing'
+      else if (uploadedDocs > 0) status = 'uploaded'
 
       statusMap.set(company.id, {
         status,
-        missingMonths,
-        uploadedMonths,
+        missingMonths: missingDocs > 0 ? 1 : 0,
+        uploadedMonths: uploadedDocs > 0 ? 1 : 0,
         missingDocs,
         uploadedDocs,
       })
@@ -402,6 +403,7 @@ function ClientsPageContent() {
     filterVatPayer,
     filterVatPeriod,
     filterHasEmployees,
+    filterMonthlyReporting,
     filterStatus,
     filterClientStatus === 'active' ? null : filterClientStatus, // 'active' je default, nepočítat jako filtr
   ].filter(f => f !== null).length
@@ -412,6 +414,7 @@ function ClientsPageContent() {
     setFilterVatPayer(null)
     setFilterVatPeriod(null)
     setFilterHasEmployees(null)
+    setFilterMonthlyReporting(null)
     // Clear URL status param
     if (filterStatus) {
       setStatusFilter(null)
@@ -425,8 +428,8 @@ function ClientsPageContent() {
     return companies
       .filter(company => {
         // Text search - hledá i ve skupině
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase()
+        if (debouncedSearch) {
+          const query = debouncedSearch.toLowerCase()
           if (!company.name.toLowerCase().includes(query) &&
               !company.ico.includes(query) &&
               !(company.dic || '').toLowerCase().includes(query) &&
@@ -441,6 +444,7 @@ function ClientsPageContent() {
         if (filterVatPayer !== null && company.vat_payer !== filterVatPayer) return false
         if (filterVatPeriod && company.vat_period !== filterVatPeriod) return false
         if (filterHasEmployees !== null && company.has_employees !== filterHasEmployees) return false
+        if (filterMonthlyReporting !== null && (company.monthly_reporting !== false) !== filterMonthlyReporting) return false
 
         if (filterStatus) {
           const status = getCompanyFullStatus(company.id).status
@@ -474,7 +478,7 @@ function ClientsPageContent() {
         // V rámci stejné skupiny řadit podle názvu firmy
         return a.name.localeCompare(b.name, 'cs')
       })
-  }, [companies, searchQuery, filterGroup, filterLegalForm, filterVatPayer, filterVatPeriod, filterHasEmployees, filterStatus, filterClientStatus, getCompanyFullStatus, getClientStatus])
+  }, [companies, debouncedSearch, filterGroup, filterLegalForm, filterVatPayer, filterVatPeriod, filterHasEmployees, filterMonthlyReporting, filterStatus, filterClientStatus, getCompanyFullStatus, getClientStatus])
 
   // Selection helpers
   const toggleSelection = useCallback((id: string, e: React.MouseEvent) => {
@@ -495,6 +499,62 @@ function ClientsPageContent() {
   const deselectAll = useCallback(() => {
     setSelectedIds(new Set())
   }, [])
+
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [showGroupAssign, setShowGroupAssign] = useState(false)
+  const [bulkGroupName, setBulkGroupName] = useState('')
+
+  const bulkUpdateStatus = useCallback(async (newStatus: string) => {
+    if (!confirm(`Opravdu chcete změnit stav ${selectedIds.size} klientů na "${newStatus === 'active' ? 'Aktivní' : newStatus === 'inactive' ? 'Neaktivní' : 'Onboarding'}"?`)) return
+    setBulkLoading(true)
+    let success = 0
+    let failed = 0
+    for (const id of selectedIds) {
+      try {
+        const res = await fetch(`/api/accountant/companies/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus }),
+        })
+        if (res.ok) success++
+        else failed++
+      } catch { failed++ }
+    }
+    setBulkLoading(false)
+    if (success > 0) {
+      toast.success(`${success} klientů změněno na "${newStatus === 'active' ? 'Aktivní' : newStatus === 'inactive' ? 'Neaktivní' : 'Onboarding'}"`)
+      setSelectedIds(new Set())
+      fetchCompanies()
+    }
+    if (failed > 0) toast.error(`${failed} klientů se nepodařilo změnit`)
+  }, [selectedIds, fetchCompanies])
+
+  const bulkAssignGroup = useCallback(async () => {
+    if (!bulkGroupName.trim() && !confirm('Chcete odstranit skupinu u vybraných klientů?')) return
+    setBulkLoading(true)
+    let success = 0
+    let failed = 0
+    for (const id of selectedIds) {
+      try {
+        const res = await fetch(`/api/accountant/companies/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ group_name: bulkGroupName.trim() || null }),
+        })
+        if (res.ok) success++
+        else failed++
+      } catch { failed++ }
+    }
+    setBulkLoading(false)
+    if (success > 0) {
+      toast.success(`Skupina "${bulkGroupName.trim() || '(žádná)'}" přiřazena ${success} klientům`)
+      setSelectedIds(new Set())
+      setBulkGroupName('')
+      setShowGroupAssign(false)
+      fetchCompanies()
+    }
+    if (failed > 0) toast.error(`${failed} klientů se nepodařilo změnit`)
+  }, [selectedIds, bulkGroupName, fetchCompanies])
 
   // Grouped companies
   const groupedCompanies = useMemo(() => {
@@ -526,16 +586,17 @@ function ClientsPageContent() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Klienti</h1>
-            <p className="mt-1 text-gray-600 dark:text-gray-400">
-              {companies.filter((c: any) => (c.status || 'active') === 'active').length} aktivních z {companies.length} klientů • Stav za {currentMonthName}
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight">Klienti</h1>
+            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+              {companies.filter((c: any) => (c.status || 'active') === 'active').length} aktivních z {companies.length} • {currentMonthName}
             </p>
           </div>
           <Button
             onClick={() => setShowNewClient(true)}
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-purple-600 hover:bg-purple-700 rounded-xl"
+            size="sm"
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-1.5 h-4 w-4" />
             Nový klient
           </Button>
         </div>
@@ -549,45 +610,54 @@ function ClientsPageContent() {
       />
 
       {/* Search and Filters */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 flex-1">
-              <Search className="h-5 w-5 text-gray-400" />
+      <Card className="mb-5 rounded-xl shadow-sm">
+        <CardContent className="pt-4 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-1 relative">
+              <Search className="h-4 w-4 text-gray-400 absolute left-3" />
               <Input
                 placeholder="Hledat podle názvu, IČ nebo DIČ..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1"
+                className="flex-1 pl-9 h-9 rounded-xl"
               />
             </div>
             <Button
               variant={showFilters ? 'default' : 'outline'}
               onClick={() => setShowFilters(!showFilters)}
-              className={showFilters ? 'bg-purple-600 hover:bg-purple-700' : ''}
+              className={`rounded-xl ${showFilters ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+              size="sm"
             >
-              <Filter className="h-4 w-4 mr-2" />
+              <Filter className="h-3.5 w-3.5 mr-1.5" />
               Filtry
               {activeFiltersCount > 0 && (
-                <Badge className="ml-2 bg-white dark:bg-gray-800 text-purple-600">{activeFiltersCount}</Badge>
+                <Badge className="ml-1.5 bg-white dark:bg-gray-800 text-purple-600 text-[10px] px-1.5">{activeFiltersCount}</Badge>
               )}
             </Button>
           </div>
 
           {/* Quick Filter Toggles */}
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
-            <span className="text-xs text-gray-500 mr-1">Zobrazit:</span>
+          <div className="flex items-center gap-1.5 mt-3 flex-wrap">
             <button
               onClick={() => setFilterClientStatus(filterClientStatus === 'active' ? null : 'active')}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterClientStatus === 'active' ? 'bg-green-100 text-green-700 border-green-300' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-green-300'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${filterClientStatus === 'active' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 shadow-sm ring-1 ring-green-200 dark:ring-green-800' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
             >
               Aktivní
+              <span className="ml-1 opacity-60">{companies.filter((c: any) => (c.status || 'active') === 'active').length}</span>
+            </button>
+            <button
+              onClick={() => setClientStatusFilter(filterClientStatus === 'onboarding' ? 'active' : 'onboarding')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${filterClientStatus === 'onboarding' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 shadow-sm ring-1 ring-purple-200 dark:ring-purple-800' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+            >
+              Onboarding
+              <span className="ml-1 opacity-60">{companies.filter((c: any) => (c.status) === 'onboarding').length}</span>
             </button>
             <button
               onClick={() => setFilterVatPayer(filterVatPayer === true ? null : true)}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterVatPayer === true ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-blue-300'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${filterVatPayer === true ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 shadow-sm ring-1 ring-blue-200 dark:ring-blue-800' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
             >
               Plátci DPH
+              <span className="ml-1 opacity-60">{companies.filter(c => c.vat_payer).length}</span>
             </button>
             <button
               onClick={() => {
@@ -598,12 +668,13 @@ function ClientsPageContent() {
                   setFilterVatPayer(null)
                 }
               }}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterClientStatus === null && filterVatPayer === null ? 'bg-purple-100 text-purple-700 border-purple-300' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${filterClientStatus === null && filterVatPayer === null ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
             >
-              Všichni
+              Vše
+              <span className="ml-1 opacity-60">{companies.length}</span>
             </button>
-            <div className="ml-auto text-xs text-gray-500 dark:text-gray-400">
-              {filteredCompanies.length} z {companies.length}
+            <div className="ml-auto text-xs text-gray-400 dark:text-gray-500">
+              {filteredCompanies.length}
             </div>
           </div>
 
@@ -618,7 +689,7 @@ function ClientsPageContent() {
                     <select
                       value={filterGroup || ''}
                       onChange={(e) => setFilterGroup(e.target.value || null)}
-                      className="px-3 py-2 border rounded-lg text-sm"
+                      className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm bg-background dark:bg-gray-800 dark:text-gray-200"
                     >
                       <option value="">Všechny skupiny</option>
                       {uniqueGroups.map(group => (
@@ -634,7 +705,7 @@ function ClientsPageContent() {
                   <select
                     value={filterLegalForm || ''}
                     onChange={(e) => setFilterLegalForm(e.target.value || null)}
-                    className="px-3 py-2 border rounded-lg text-sm"
+                    className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm bg-background dark:bg-gray-800 dark:text-gray-200"
                   >
                     <option value="">Všechny</option>
                     {uniqueLegalForms.map(form => (
@@ -649,7 +720,7 @@ function ClientsPageContent() {
                   <select
                     value={filterVatPayer === null ? '' : filterVatPayer ? 'yes' : 'no'}
                     onChange={(e) => setFilterVatPayer(e.target.value === '' ? null : e.target.value === 'yes')}
-                    className="px-3 py-2 border rounded-lg text-sm"
+                    className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm bg-background dark:bg-gray-800 dark:text-gray-200"
                   >
                     <option value="">Všichni</option>
                     <option value="yes">Plátci DPH</option>
@@ -663,7 +734,7 @@ function ClientsPageContent() {
                   <select
                     value={filterVatPeriod || ''}
                     onChange={(e) => setFilterVatPeriod(e.target.value || null)}
-                    className="px-3 py-2 border rounded-lg text-sm"
+                    className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm bg-background dark:bg-gray-800 dark:text-gray-200"
                   >
                     <option value="">Všechny</option>
                     <option value="monthly">Měsíční</option>
@@ -677,11 +748,25 @@ function ClientsPageContent() {
                   <select
                     value={filterHasEmployees === null ? '' : filterHasEmployees ? 'yes' : 'no'}
                     onChange={(e) => setFilterHasEmployees(e.target.value === '' ? null : e.target.value === 'yes')}
-                    className="px-3 py-2 border rounded-lg text-sm"
+                    className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm bg-background dark:bg-gray-800 dark:text-gray-200"
                   >
                     <option value="">Všichni</option>
                     <option value="yes">Se zaměstnanci</option>
                     <option value="no">Bez zaměstnanců</option>
+                  </select>
+                </div>
+
+                {/* Monthly Reporting */}
+                <div>
+                  <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Měs. reporting</label>
+                  <select
+                    value={filterMonthlyReporting === null ? '' : filterMonthlyReporting ? 'yes' : 'no'}
+                    onChange={(e) => setFilterMonthlyReporting(e.target.value === '' ? null : e.target.value === 'yes')}
+                    className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm bg-background dark:bg-gray-800 dark:text-gray-200"
+                  >
+                    <option value="">Všichni</option>
+                    <option value="yes">S reportingem</option>
+                    <option value="no">Bez reportingu</option>
                   </select>
                 </div>
 
@@ -691,7 +776,7 @@ function ClientsPageContent() {
                   <select
                     value={filterClientStatus || ''}
                     onChange={(e) => setClientStatusFilter(e.target.value || null)}
-                    className="px-3 py-2 border rounded-lg text-sm"
+                    className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm bg-background dark:bg-gray-800 dark:text-gray-200"
                   >
                     <option value="">Všichni klienti</option>
                     <option value="active">Aktivní</option>
@@ -706,7 +791,7 @@ function ClientsPageContent() {
                   <select
                     value={filterStatus || ''}
                     onChange={(e) => setStatusFilter(e.target.value || null)}
-                    className="px-3 py-2 border rounded-lg text-sm"
+                    className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm bg-background dark:bg-gray-800 dark:text-gray-200"
                   >
                     <option value="">Všechny stavy</option>
                     <option value="missing">Chybí podklady</option>
@@ -732,22 +817,66 @@ function ClientsPageContent() {
 
       {/* Bulk action toolbar */}
       {selectedIds.size > 0 && (
-        <div className="mb-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
-              Vybráno: {selectedIds.size} firem
-            </span>
-            <Button variant="ghost" size="sm" onClick={deselectAll} className="text-purple-600">
-              <X className="h-4 w-4 mr-1" /> Zrušit výběr
-            </Button>
+        <div className="mb-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                Vybráno: {selectedIds.size} firem
+              </span>
+              <Button variant="ghost" size="sm" onClick={deselectAll} className="text-purple-600">
+                <X className="h-4 w-4 mr-1" /> Zrušit výběr
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={bulkLoading}
+                onClick={() => bulkUpdateStatus('active')}
+                className="text-green-700 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/20"
+              >
+                {bulkLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Power className="h-4 w-4 mr-1" />}
+                Aktivovat
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={bulkLoading}
+                onClick={() => bulkUpdateStatus('inactive')}
+                className="text-red-700 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20"
+              >
+                {bulkLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <PowerOff className="h-4 w-4 mr-1" />}
+                Deaktivovat
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={bulkLoading}
+                onClick={() => setShowGroupAssign(!showGroupAssign)}
+                className="text-purple-700 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-700 dark:hover:bg-purple-900/20"
+              >
+                <Tag className="h-4 w-4 mr-1" />
+                Přiřadit skupinu
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Hromadná upomínka - TODO: implementovat později
-            <Button variant="outline" size="sm" onClick={() => toast.info('Hromadná upomínka - připravujeme')}>
-              <Mail className="h-4 w-4 mr-1" /> Hromadná upomínka
-            </Button>
-            */}
-          </div>
+          {showGroupAssign && (
+            <div className="mt-3 pt-3 border-t border-purple-200 dark:border-purple-700 flex items-center gap-3">
+              <Input
+                value={bulkGroupName}
+                onChange={(e) => setBulkGroupName(e.target.value)}
+                placeholder="Název skupiny (prázdné = odebrat skupinu)"
+                className="max-w-xs"
+              />
+              <Button size="sm" disabled={bulkLoading} onClick={bulkAssignGroup} className="bg-purple-600 hover:bg-purple-700 text-white">
+                {bulkLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+                Uložit skupinu
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => { setShowGroupAssign(false); setBulkGroupName('') }}>
+                Zrušit
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -787,7 +916,7 @@ function ClientsPageContent() {
       </div>
 
       {/* Clients list */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {filteredCompanies.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
@@ -807,27 +936,64 @@ function ClientsPageContent() {
           </Card>
         ) : groupView && groupedCompanies ? (
           // === GROUP VIEW ===
-          groupedCompanies.map(([groupName, groupCompanies]) => (
-            <div key={groupName} className="space-y-2">
-              <div className="flex items-center gap-2 px-1">
-                <Layers className="h-4 w-4 text-purple-500" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">{groupName}</h3>
-                <Badge variant="outline" className="text-xs">{groupCompanies.length}</Badge>
+          <>
+            {groupedCompanies.length > 1 && (
+              <div className="flex items-center gap-2 mb-2">
+                <button
+                  onClick={() => setCollapsedGroups(new Set())}
+                  className="text-xs text-purple-600 hover:underline"
+                >
+                  Rozbalit vše
+                </button>
+                <span className="text-gray-300 dark:text-gray-600">|</span>
+                <button
+                  onClick={() => setCollapsedGroups(new Set(groupedCompanies.map(([name]) => name)))}
+                  className="text-xs text-purple-600 hover:underline"
+                >
+                  Sbalit vše
+                </button>
               </div>
-              <div className="space-y-1 pl-2 border-l-2 border-purple-200 dark:border-purple-800">
-                {groupCompanies.map(company => (
-                  <CompanyRow
-                    key={company.id}
-                    company={company}
-                    fullStatus={getCompanyFullStatus(company.id)}
-                    clientStatus={(company as any).status || getClientStatus(company.id)}
-                    selected={selectedIds.has(company.id)}
-                    onToggleSelect={toggleSelection}
-                  />
-                ))}
-              </div>
-            </div>
-          ))
+            )}
+            {groupedCompanies.map(([groupName, groupCompanies]) => {
+              const isCollapsed = collapsedGroups.has(groupName)
+              return (
+                <div key={groupName} className="space-y-2">
+                  <button
+                    onClick={() => setCollapsedGroups(prev => {
+                      const next = new Set(prev)
+                      if (next.has(groupName)) next.delete(groupName)
+                      else next.add(groupName)
+                      return next
+                    })}
+                    className="flex items-center gap-2 px-1 w-full text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg py-1.5 transition-colors group"
+                  >
+                    {isCollapsed
+                      ? <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                      : <ChevronDown className="h-4 w-4 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                    }
+                    <Layers className="h-4 w-4 text-purple-500" />
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{groupName}</h3>
+                    <Badge variant="outline" className="text-xs">{groupCompanies.length}</Badge>
+                  </button>
+                  {!isCollapsed && (
+                    <div className="space-y-1 pl-2 border-l-2 border-purple-200 dark:border-purple-800">
+                      {groupCompanies.map(company => (
+                        <CompanyRow
+                          key={company.id}
+                          company={company}
+                          fullStatus={getCompanyFullStatus(company.id)}
+                          clientStatus={(company as any).status || getClientStatus(company.id)}
+                          selected={selectedIds.has(company.id)}
+                          onToggleSelect={toggleSelection}
+                          attentionCount={getCompanyAttention(company.id).total}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </>
         ) : (
           // === LIST VIEW ===
           filteredCompanies.map(company => (
@@ -838,6 +1004,7 @@ function ClientsPageContent() {
               clientStatus={(company as any).status || getClientStatus(company.id)}
               selected={selectedIds.has(company.id)}
               onToggleSelect={toggleSelection}
+              attentionCount={getCompanyAttention(company.id).total}
             />
           ))
         )}

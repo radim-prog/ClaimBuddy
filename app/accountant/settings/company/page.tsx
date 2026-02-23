@@ -184,7 +184,7 @@ export default function CompanySettingsPage() {
 
       {/* Uložit změny */}
       <div className="flex justify-end">
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white">Uložit změny</Button>
+        <Button>Uložit změny</Button>
       </div>
     </div>
   )

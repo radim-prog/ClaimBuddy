@@ -90,6 +90,7 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
   const [report, setReport] = useState<ReportData | null>(null)
   const [bankReport, setBankReport] = useState<BankStatementReport | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
 
   useEffect(() => {
@@ -98,6 +99,7 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
 
   const loadReports = async () => {
     setLoading(true)
+    setError(null)
     try {
       // Load main report
       const reportRes = await fetch(`/api/reports/${companyId}?period=${period}`)
@@ -114,6 +116,7 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
       }
     } catch (err) {
       console.error('Failed to load reports:', err)
+      setError('Nepodařilo se načíst reporty. Zkontrolujte připojení.')
     } finally {
       setLoading(false)
     }
@@ -127,15 +130,15 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
     })
   }
 
-  const getMatchRate = () => {
-    if (!report) return 0
-    if (report.expenses.total === 0) return 100
+  const getMatchRate = (): number | null => {
+    if (!report) return null
+    if (report.expenses.total === 0) return null
     return Math.round((report.expenses.matched / report.expenses.total) * 100)
   }
 
-  const getBankMatchRate = () => {
-    if (!bankReport) return 0
-    if (bankReport.total_transactions === 0) return 100
+  const getBankMatchRate = (): number | null => {
+    if (!bankReport) return null
+    if (bankReport.total_transactions === 0) return null
     return Math.round((bankReport.matched_transactions / bankReport.total_transactions) * 100)
   }
 
@@ -182,6 +185,21 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
     )
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <AlertCircle className="h-10 w-10 text-red-400 mb-3" />
+        <p className="text-gray-600 mb-4">{error}</p>
+        <button
+          onClick={loadReports}
+          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+        >
+          Zkusit znovu
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header with Period Selector */}
@@ -216,7 +234,7 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="icon" title="Exportovat report">
+          <Button variant="outline" size="icon" title="Připravujeme" disabled className="opacity-50 cursor-not-allowed">
             <Download className="h-4 w-4" />
           </Button>
         </div>
@@ -297,15 +315,15 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
           </CardHeader>
           <CardContent>
             <div className="text-lg md:text-xl font-bold">
-              {report ? `${getMatchRate()}%` : '-'}
+              {getMatchRate() !== null ? `${getMatchRate()}%` : '—'}
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
               <div
                 className={`h-2 rounded-full transition-all duration-500 ${
-                  getMatchRate() >= 80 ? 'bg-green-500' :
-                  getMatchRate() >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                  (getMatchRate() ?? 0) >= 80 ? 'bg-green-500' :
+                  (getMatchRate() ?? 0) >= 50 ? 'bg-yellow-500' : 'bg-red-500'
                 }`}
-                style={{ width: `${getMatchRate()}%` }}
+                style={{ width: `${getMatchRate() ?? 0}%` }}
               />
             </div>
           </CardContent>
@@ -320,7 +338,7 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
           </CardHeader>
           <CardContent>
             <div className="text-lg md:text-xl font-bold">
-              {bankReport ? `${getBankMatchRate()}%` : '-'}
+              {getBankMatchRate() !== null ? `${getBankMatchRate()}%` : '—'}
             </div>
             <p className="text-xs text-gray-500 mt-1">
               {bankReport ? `${bankReport.matched_transactions}/${bankReport.total_transactions} transakcí` : ''}

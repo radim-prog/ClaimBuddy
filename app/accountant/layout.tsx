@@ -6,19 +6,16 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   Users,
-  CheckSquare,
+  Briefcase,
   Settings,
   LogOut,
-  Menu,
   X,
   User,
-  DollarSign,
+  Receipt,
   Sparkles,
-  UserPlus,
   Shield,
   CalendarCheck,
-  FileSearch,
-  FolderKanban,
+  MoreHorizontal,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -35,19 +32,21 @@ import { Button } from '@/components/ui/button'
 import { logout } from '@/app/auth/login/actions'
 import { SettingsProvider } from '@/lib/contexts/settings-context'
 import { AccountantUserProvider, useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { AttentionProvider, useAttention } from '@/lib/contexts/attention-context'
 import { QuickAddButton } from '@/components/gtd/quick-add-button'
 import { useInboxCount } from '@/components/gtd/use-inbox-count'
 import { KeyboardShortcuts } from '@/components/keyboard-shortcuts'
+import { WelcomeModal } from '@/components/accountant/welcome-modal'
+import { TutorialPanel } from '@/components/accountant/tutorial-panel'
+import { BookOpen } from 'lucide-react'
+import { Logo } from '@/components/ui/logo'
 
 const navigation = [
-  { name: 'Dashboard', href: '/accountant/dashboard', icon: LayoutDashboard },
-  { name: 'Klienti', href: '/accountant/clients', icon: Users },
-  { name: 'Onboarding', href: '/accountant/onboarding', icon: UserPlus },
+  { name: 'Přehled', href: '/accountant/dashboard', icon: LayoutDashboard },
+  { name: 'Klienti', href: '/accountant/clients', icon: Users, badge: 'attention' as const },
+  { name: 'Práce', href: '/accountant/tasks', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/tasks', '/accountant/projects'] },
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
-  { name: 'Vytěžování', href: '/accountant/extraction', icon: FileSearch },
-  { name: 'Úkoly', href: '/accountant/tasks', icon: CheckSquare, badge: 'dynamic' as const },
-  { name: 'Projekty', href: '/accountant/projects', icon: FolderKanban },
-  { name: 'Fakturace', href: '/accountant/invoicing', icon: DollarSign },
+  { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt },
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings },
 ]
 
@@ -65,7 +64,9 @@ export default function AccountantLayout({
   return (
     <AccountantUserProvider>
       <SettingsProvider>
-        <AccountantLayoutInner>{children}</AccountantLayoutInner>
+        <AttentionProvider>
+          <AccountantLayoutInner>{children}</AccountantLayoutInner>
+        </AttentionProvider>
       </SettingsProvider>
     </AccountantUserProvider>
   )
@@ -74,8 +75,10 @@ export default function AccountantLayout({
 function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(false)
   const { userName, userInitials, userRole, permissions } = useAccountantUser()
   const inboxCount = useInboxCount()
+  const { totals: attentionTotals } = useAttention()
 
   const showAdmin = userRole === 'admin' || permissions?.admin_access === true
 
@@ -90,46 +93,53 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
-        <div className="flex flex-col flex-grow bg-purple-700 overflow-y-auto">
+        <div className="flex flex-col flex-grow bg-gradient-to-b from-purple-700 via-purple-800 to-purple-900 overflow-y-auto">
           {/* Logo */}
-          <div className="flex items-center h-16 flex-shrink-0 px-4 bg-white dark:bg-gray-800/10">
-            <h1 className="text-2xl font-bold text-purple-700 dark:text-white">Účetní OS</h1>
+          <div className="flex items-center h-14 flex-shrink-0 px-5 border-b border-white/10">
+            <Logo size="md" />
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-2 py-4 space-y-1">
+          <nav className="flex-1 px-3 py-4 space-y-0.5">
             {navigation.map((item) => {
-              const isActive = pathname === item.href
+              const isActive = item.activeMatch
+                ? item.activeMatch.some(p => pathname.startsWith(p))
+                : pathname === item.href || pathname.startsWith(item.href + '/')
               const Icon = item.icon
               return (
                 <Link
                   key={item.name}
                   href={item.href}
                   className={`
-                    group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors
+                    group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
                     ${isActive
-                      ? 'bg-purple-500 text-white'
-                      : 'text-white/80 hover:bg-purple-600 hover:text-white'
+                      ? 'bg-white/15 text-white shadow-sm backdrop-blur-sm'
+                      : 'text-white/70 hover:bg-white/10 hover:text-white'
                     }
                   `}
                 >
                   <span className="flex items-center">
-                    <Icon className={`mr-3 h-5 w-5 flex-shrink-0`} />
+                    <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${isActive ? 'text-white' : 'text-white/60 group-hover:text-white/90'}`} />
                     {item.name}
                   </span>
                   {item.badge === 'dynamic' && inboxCount > 0 && (
-                    <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold bg-yellow-400 text-gray-900 rounded-full min-w-[1.25rem]">
+                    <span className="ml-auto inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-yellow-400 text-gray-900 rounded-full min-w-[1.25rem]">
                       {inboxCount}
+                    </span>
+                  )}
+                  {item.badge === 'attention' && attentionTotals.total > 0 && (
+                    <span className="ml-auto inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">
+                      {attentionTotals.total}
                     </span>
                   )}
                 </Link>
               )
             })}
 
-            {/* ADMIN SECTION - visible only to admin/users with admin_access */}
+            {/* ADMIN SECTION */}
             {showAdmin && (
-              <div className="pt-4 mt-4 border-t border-white/20">
-                <p className="px-2 text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
+              <div className="pt-3 mt-3 border-t border-white/10">
+                <p className="px-3 text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1.5">
                   Administrace
                 </p>
                 {adminNavigation.map((item) => {
@@ -140,17 +150,15 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                       key={item.name}
                       href={item.href}
                       className={`
-                        group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors
+                        group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
                         ${isActive
-                          ? 'bg-gradient-to-r from-purple-400/30 to-indigo-400/30 text-white border border-purple-300/50'
-                          : 'text-white/80 hover:bg-gradient-to-r hover:from-purple-400/20 hover:to-indigo-400/20 hover:text-white border border-transparent'
+                          ? 'bg-white/15 text-white shadow-sm'
+                          : 'text-white/70 hover:bg-white/10 hover:text-white'
                         }
                       `}
                     >
-                      <span className="flex items-center">
-                        <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
-                        {item.name}
-                      </span>
+                      <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${isActive ? 'text-white' : 'text-white/60'}`} />
+                      {item.name}
                     </Link>
                   )
                 })}
@@ -159,9 +167,9 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
 
             {/* DEMO FEATURES SECTION */}
             {demoFeatures.length > 0 && (
-              <div className="pt-4 mt-4 border-t border-white/20">
-                <p className="px-2 text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">
-                  Nové Funkce (Demo)
+              <div className="pt-3 mt-3 border-t border-white/10">
+                <p className="px-3 text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1.5">
+                  Nové Funkce
                 </p>
                 {demoFeatures.map((item) => {
                   const isActive = pathname === item.href
@@ -171,18 +179,18 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                       key={item.name}
                       href={item.href}
                       className={`
-                        group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md transition-colors
+                        group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
                         ${isActive
-                          ? 'bg-gradient-to-r from-yellow-400/30 to-orange-400/30 text-white border border-yellow-400/50'
-                          : 'text-white/80 hover:bg-gradient-to-r hover:from-yellow-400/20 hover:to-orange-400/20 hover:text-white border border-transparent'
+                          ? 'bg-white/15 text-white shadow-sm'
+                          : 'text-white/70 hover:bg-white/10 hover:text-white'
                         }
                       `}
                     >
                       <span className="flex items-center">
-                        <Icon className={`mr-3 h-5 w-5 flex-shrink-0`} />
+                        <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0`} />
                         {item.name}
                       </span>
-                      <span className="px-2 py-0.5 text-xs font-bold bg-yellow-400 text-gray-900 dark:text-white rounded">
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-yellow-400 text-gray-900 rounded-full">
                         {item.badge}
                       </span>
                     </Link>
@@ -191,25 +199,32 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
               </div>
             )}
 
-            {/* Theme Toggle */}
-            <div className="pt-4 mt-4 border-t border-white/20">
-              <ThemeToggle variant="full" className="text-white/80 hover:text-white hover:bg-purple-600" />
+            {/* Tools */}
+            <div className="pt-3 mt-3 border-t border-white/10 space-y-0.5">
+              <button
+                onClick={() => setShowTutorial(true)}
+                className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl text-white/50 hover:bg-white/10 hover:text-white/80 transition-all duration-200"
+              >
+                <BookOpen className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
+                Průvodce
+              </button>
+              <ThemeToggle variant="full" className="text-white/50 hover:text-white/80 hover:bg-white/10 rounded-xl" />
             </div>
           </nav>
 
           {/* User section */}
-          <div className="flex-shrink-0 flex border-t border-white/10 p-4">
+          <div className="flex-shrink-0 flex border-t border-white/10 p-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center w-full group hover:bg-purple-600/50 dark:hover:bg-gray-800/10 rounded-lg p-2 transition-colors">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-white dark:bg-gray-800 text-purple-600 font-bold">
+                <button className="flex items-center w-full group hover:bg-white/10 rounded-xl p-2 transition-all duration-200">
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="bg-white/20 text-white text-sm font-semibold">
                       {userInitials || '..'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="ml-3 text-left">
-                    <p className="text-sm font-medium text-white">{userName || 'Načítání...'}</p>
-                    <p className="text-xs text-white/70">{roleLabel}</p>
+                    <p className="text-sm font-medium text-white/90">{userName || 'Načítání...'}</p>
+                    <p className="text-[11px] text-white/50">{roleLabel}</p>
                   </div>
                 </button>
               </DropdownMenuTrigger>
@@ -242,112 +257,158 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Mobile header */}
+      {/* Mobile header - minimal */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between bg-purple-700 px-4 py-3">
-          <h1 className="text-xl font-bold text-white">Účetní OS</h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-white hover:bg-purple-600/50 dark:hover:bg-gray-800/10"
-          >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
+        <div className="flex items-center justify-between bg-gradient-to-r from-purple-700 to-purple-800 px-4 py-3">
+          <Logo size="sm" />
+          <div className="flex items-center gap-2">
+            <ThemeToggle variant="icon" className="text-white/70 hover:text-white hover:bg-white/10 rounded-lg" />
+          </div>
         </div>
+      </div>
 
-        {/* Mobile menu */}
-        {mobileMenuOpen && (
-          <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 shadow-lg">
-            <nav className="px-2 py-2 space-y-1">
-              {navigation.map((item) => {
-                const isActive = pathname === item.href
-                const Icon = item.icon
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`
-                      group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
-                      ${isActive
-                        ? 'bg-purple-600 text-white'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }
-                    `}
-                  >
-                    <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
-                    {item.name}
-                  </Link>
-                )
-              })}
+      {/* Mobile bottom navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 safe-area-bottom">
+        <nav className="flex items-center justify-around px-1 py-1">
+          {navigation.slice(0, 4).map((item) => {
+            const isActive = item.activeMatch
+              ? item.activeMatch.some(p => pathname.startsWith(p))
+              : pathname === item.href || pathname.startsWith(item.href + '/')
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex flex-col items-center justify-center py-2 px-3 rounded-xl transition-all duration-200 relative ${
+                  isActive
+                    ? 'text-purple-600 dark:text-purple-400'
+                    : 'text-gray-400 dark:text-gray-500 active:text-purple-500'
+                }`}
+              >
+                <div className="relative">
+                  <Icon className="h-5 w-5" />
+                  {item.badge === 'dynamic' && inboxCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-yellow-400 text-gray-900 rounded-full">
+                      {inboxCount}
+                    </span>
+                  )}
+                  {item.badge === 'attention' && attentionTotals.total > 0 && (
+                    <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                      {attentionTotals.total}
+                    </span>
+                  )}
+                </div>
+                <span className={`text-[10px] mt-0.5 ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.name}</span>
+              </Link>
+            )
+          })}
+          {/* Více button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className={`flex flex-col items-center justify-center py-2 px-3 rounded-xl transition-all duration-200 ${
+              mobileMenuOpen
+                ? 'text-purple-600 dark:text-purple-400'
+                : 'text-gray-400 dark:text-gray-500 active:text-purple-500'
+            }`}
+          >
+            <MoreHorizontal className="h-5 w-5" />
+            <span className={`text-[10px] mt-0.5 ${mobileMenuOpen ? 'font-semibold' : 'font-medium'}`}>Více</span>
+          </button>
+        </nav>
+      </div>
 
-              {/* Admin section - mobile */}
+      {/* Mobile "Více" sheet */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-40" onClick={() => setMobileMenuOpen(false)}>
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+          <div
+            className="absolute bottom-[68px] left-0 right-0 bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl border-t border-gray-200 dark:border-gray-800 animate-in slide-in-from-bottom duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-12 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mt-3 mb-2" />
+            <div className="px-4 pb-4 space-y-1">
+              {/* Fakturace */}
+              <Link
+                href="/accountant/invoicing"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+                  pathname.startsWith('/accountant/invoicing')
+                    ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                    : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
+                }`}
+              >
+                <Receipt className="h-5 w-5" />
+                <span className="text-sm font-medium">Fakturace</span>
+              </Link>
+
+              {/* Nastavení */}
+              <Link
+                href="/accountant/settings"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+                  pathname.startsWith('/accountant/settings')
+                    ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                    : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
+                }`}
+              >
+                <Settings className="h-5 w-5" />
+                <span className="text-sm font-medium">Nastavení</span>
+              </Link>
+
+              {/* Admin */}
               {showAdmin && (
-                <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
-                  <p className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Administrace
-                  </p>
-                  {adminNavigation.map((item) => {
-                    const isActive = pathname.startsWith(item.href)
-                    const Icon = item.icon
-                    return (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={`
-                          group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
-                          ${isActive
-                            ? 'bg-purple-600 text-white'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-                          }
-                        `}
-                      >
-                        <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
-                        {item.name}
-                      </Link>
-                    )
-                  })}
-                </div>
-              )}
-            </nav>
-
-            {/* Mobile user section */}
-            <div className="border-t dark:border-gray-700 px-4 py-3">
-              <div className="flex items-center mb-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-purple-600 text-white font-bold">
-                    {userInitials || '..'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{userName || 'Načítání...'}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{roleLabel}</p>
-                </div>
-              </div>
-              <div className="space-y-1">
                 <Link
-                  href="/accountant/profile"
+                  href="/accountant/admin"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+                    pathname.startsWith('/accountant/admin')
+                      ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                      : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
+                  }`}
                 >
-                  <User className="mr-2 h-4 w-4" />
-                  Profil
+                  <Shield className="h-5 w-5" />
+                  <span className="text-sm font-medium">Administrace</span>
                 </Link>
-                <ThemeToggle variant="full" className="px-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" />
+              )}
+
+              {/* Profil */}
+              <Link
+                href="/accountant/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800 transition-all duration-200"
+              >
+                <User className="h-5 w-5" />
+                <span className="text-sm font-medium">Profil</span>
+              </Link>
+
+              {/* Divider */}
+              <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+
+              {/* User info + logout */}
+              <div className="flex items-center justify-between px-3 py-2">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-purple-600 text-white text-xs font-bold">
+                      {userInitials || '..'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{userName || 'Načítání...'}</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400">{roleLabel}</p>
+                  </div>
+                </div>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Odhlásit se
+                  <LogOut className="h-4 w-4" />
+                  Odhlásit
                 </button>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Main content */}
       <div className="md:pl-64 flex flex-col min-h-screen">
@@ -355,11 +416,29 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           <GlobalDeadlineAlert />
         )}
 
-        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
+        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-24 md:pb-6">
           {children}
         </main>
         <QuickAddButton />
         <KeyboardShortcuts />
+        <WelcomeModal />
+
+        {/* Tutorial Dialog */}
+        {showTutorial && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowTutorial(false)}>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Průvodce aplikací</h2>
+                <button onClick={() => setShowTutorial(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="p-4">
+                <TutorialPanel />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
