@@ -95,7 +95,7 @@ export function AssetsSection({ companyId, assets, onAssetsChange, defaultOpen =
   const inactiveAssets = assets.filter((a) => a.status !== 'active')
 
   // Spočítat celkovou hodnotu
-  const totalValue = activeAssets.reduce((sum, a) => sum + (a.current_value || a.acquisition_price), 0)
+  const totalValue = activeAssets.reduce((sum, a) => sum + (a.current_value || a.acquisition_price || 0), 0)
 
   const renderAssetDetails = (asset: Asset) => {
     return (
@@ -114,14 +114,18 @@ export function AssetsSection({ companyId, assets, onAssetsChange, defaultOpen =
                 <span className="font-medium">{formatCurrency(asset.current_value)}</span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Způsob pořízení:</span>
-              <span>{ACQUISITION_METHOD_LABELS[asset.acquisition_method]}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Odpisová skupina:</span>
-              <span>{DEPRECIATION_GROUP_LABELS[asset.depreciation_group]}</span>
-            </div>
+            {asset.acquisition_method && (
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Způsob pořízení:</span>
+                <span>{ACQUISITION_METHOD_LABELS[asset.acquisition_method] || asset.acquisition_method}</span>
+              </div>
+            )}
+            {asset.depreciation_group && (
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Odpisová skupina:</span>
+                <span>{DEPRECIATION_GROUP_LABELS[asset.depreciation_group] || asset.depreciation_group}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -132,20 +136,22 @@ export function AssetsSection({ companyId, assets, onAssetsChange, defaultOpen =
             <div className="text-sm space-y-1">
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-gray-400">SPZ:</span>
-                <span className="font-mono">{asset.vehicle_details.license_plate}</span>
+                <span className="font-mono">{asset.vehicle_details.license_plate || (asset.vehicle_details as any).spz || '—'}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Značka/Model:</span>
-                <span>{asset.vehicle_details.brand} {asset.vehicle_details.model}</span>
-              </div>
+              {(asset.vehicle_details.brand || asset.vehicle_details.model) && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Značka/Model:</span>
+                  <span>{[asset.vehicle_details.brand, asset.vehicle_details.model].filter(Boolean).join(' ')}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-gray-400">Rok:</span>
                 <span>{asset.vehicle_details.year}</span>
               </div>
-              {asset.vehicle_details.fuel_type && (
+              {(asset.vehicle_details.fuel_type || (asset.vehicle_details as any).fuel) && (
                 <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-gray-400">Palivo:</span>
-                  <span>{FUEL_TYPE_LABELS[asset.vehicle_details.fuel_type]}</span>
+                  <span>{FUEL_TYPE_LABELS[asset.vehicle_details.fuel_type || (asset.vehicle_details as any).fuel] || asset.vehicle_details.fuel_type || (asset.vehicle_details as any).fuel || '—'}</span>
                 </div>
               )}
               {asset.vehicle_details.mileage && (
@@ -335,8 +341,8 @@ export function AssetsSection({ companyId, assets, onAssetsChange, defaultOpen =
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${CATEGORY_COLORS[asset.category]}`}>
-              {CATEGORY_ICONS[asset.category]}
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${CATEGORY_COLORS[asset.category] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
+              {CATEGORY_ICONS[asset.category] ?? <Box className="h-5 w-5" />}
             </div>
             <div>
               <div className="font-medium text-gray-900 dark:text-white">
@@ -348,7 +354,7 @@ export function AssetsSection({ companyId, assets, onAssetsChange, defaultOpen =
                 )}
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                {ASSET_CATEGORY_LABELS[asset.category]} • Pořízeno {formatDate(asset.acquisition_date)}
+                {ASSET_CATEGORY_LABELS[asset.category] || asset.category || 'Majetek'} • Pořízeno {asset.acquisition_date ? formatDate(asset.acquisition_date) : '—'}
               </div>
             </div>
           </div>
@@ -455,7 +461,7 @@ export function AssetsSection({ companyId, assets, onAssetsChange, defaultOpen =
         <CardContent>
           {assets.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <Car className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+            <Car className="h-12 w-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
             <p className="mb-2">Zatím žádný evidovaný majetek</p>
             <p className="text-sm text-gray-400">
               Automobily, nemovitosti, stroje, vybavení a další dlouhodobý majetek

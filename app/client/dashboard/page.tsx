@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { generateDeadlinesForCompany } from '@/lib/statutory-deadlines'
-// User data from auth context
+import { TaxImpactSummary } from '@/components/client/tax-impact-summary'
 
 const monthNames = [
   'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
@@ -292,6 +292,9 @@ export default function ClientDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Tax Impact Card */}
+      {selectedCompany && <TaxImpactSummary companyId={selectedCompany.id} />}
 
       {/* Two column layout: Messages + Deadlines */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

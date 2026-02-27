@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllCompanies } from '@/lib/company-store'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getClosures } from '@/lib/closure-store-db'
 
 export const dynamic = 'force-dynamic'
@@ -8,27 +8,47 @@ export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const userName = request.headers.get('x-user-name') || 'Klient'
+  const impersonateCompany = request.headers.get('x-impersonate-company')
+
   try {
-    const { searchParams } = new URL(request.url)
-    const ownerId = searchParams.get('owner_id')
-    const demo = searchParams.get('demo')
+    let companies: any[] = []
 
-    const allCompanies = await getAllCompanies()
+    if (impersonateCompany) {
+      // Impersonation mode - load specific company
+      const { data, error } = await supabaseAdmin
+        .from('companies')
+        .select('id, name, ico, dic, legal_form, vat_payer, has_employees, status, address')
+        .eq('id', impersonateCompany)
+        .is('deleted_at', null)
+        .single()
 
-    let companies: typeof allCompanies
-    if (ownerId) {
-      companies = allCompanies.filter(c => c.owner_id === ownerId && c.status === 'active')
-    } else if (demo === 'true') {
-      companies = allCompanies.filter(c => c.status === 'active').slice(0, 3)
+      if (error || !data) {
+        return NextResponse.json({ error: 'Company not found' }, { status: 404 })
+      }
+      companies = [data]
     } else {
-      companies = allCompanies.filter(c => c.status === 'active').slice(0, 3)
+      // Real client - load by owner_id
+      const { data, error } = await supabaseAdmin
+        .from('companies')
+        .select('id, name, ico, dic, legal_form, vat_payer, has_employees, status, address')
+        .eq('owner_id', userId)
+        .is('deleted_at', null)
+        .eq('status', 'active')
+        .order('name')
+
+      if (error) {
+        return NextResponse.json({ error: 'Failed to fetch companies' }, { status: 500 })
+      }
+      companies = data ?? []
     }
 
+    // Load closures for these companies
+    const companyIds = new Set(companies.map(c => c.id))
     const now = new Date()
     const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
     const currentYear = now.getFullYear()
 
-    const companyIds = new Set(companies.map(c => c.id))
     const allClosures = await getClosures()
 
     const currentClosures = allClosures.filter(c =>
@@ -70,14 +90,6 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const stats = {
-      total_companies: companies.length,
-      companies_with_missing_docs: enrichedCompanies.filter(c => c.currentMonthStatus.missing_count > 0).length,
-      total_missing_docs: enrichedCompanies.reduce((sum, c) => sum + c.currentMonthStatus.missing_count, 0),
-    }
-
-    const userName = request.headers.get('x-user-name') || 'Klient'
-
     return NextResponse.json({
       companies: enrichedCompanies,
       closures: yearClosures.map(c => ({
@@ -87,7 +99,6 @@ export async function GET(request: NextRequest) {
         expense_documents_status: c.expense_documents_status,
         income_invoices_status: c.income_invoices_status,
       })),
-      stats,
       current_period: currentPeriod,
       user_id: userId,
       user_name: userName,

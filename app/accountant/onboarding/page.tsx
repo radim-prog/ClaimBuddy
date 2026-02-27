@@ -191,7 +191,7 @@ export default function OnboardingPage() {
                   <select
                     value={filterPriority || ''}
                     onChange={(e) => setFilterPriority(e.target.value || null)}
-                    className="px-3 py-2 border rounded-lg text-sm"
+                    className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm bg-background dark:bg-gray-800 dark:text-gray-200"
                   >
                     <option value="">Všechny</option>
                     <option value="high">Vysoká</option>
@@ -204,7 +204,7 @@ export default function OnboardingPage() {
                   <select
                     value={filterStalled === null ? '' : filterStalled ? 'stalled' : 'active'}
                     onChange={(e) => setFilterStalled(e.target.value === '' ? null : e.target.value === 'stalled')}
-                    className="px-3 py-2 border rounded-lg text-sm"
+                    className="px-3 py-2 border dark:border-gray-600 rounded-lg text-sm bg-background dark:bg-gray-800 dark:text-gray-200"
                   >
                     <option value="">Všechny</option>
                     <option value="stalled">Zaseklé (7+ dní)</option>
@@ -270,8 +270,8 @@ export default function OnboardingPage() {
               <Link key={client.id} href={`/accountant/clients/${client.id}`}>
                 <Card className={`hover:shadow-md transition-all cursor-pointer border-l-4 ${borderColor}`}>
                   <CardContent className="py-3 px-4">
-                    <div className="grid grid-cols-12 gap-4 items-center">
-                      <div className="col-span-4 min-w-0">
+                    <div className="flex flex-col sm:grid sm:grid-cols-12 gap-2 sm:gap-4 sm:items-center">
+                      <div className="sm:col-span-4 min-w-0">
                         <h3 className="font-semibold text-gray-900 dark:text-white truncate flex items-center gap-2">
                           {client.name}
                           {stalled && (
@@ -282,9 +282,9 @@ export default function OnboardingPage() {
                           {client.ico && `IČO: ${client.ico}`}
                         </div>
                       </div>
-                      <div className="col-span-3">
+                      <div className="sm:col-span-3">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                             <div
                               className={`h-2 rounded-full ${stalled ? 'bg-red-500' : 'bg-purple-600'}`}
                               style={{ width: `${progress}%` }}
@@ -296,7 +296,7 @@ export default function OnboardingPage() {
                           {completedRequired}/{requiredSteps} kroků
                         </div>
                       </div>
-                      <div className="col-span-3 flex items-center gap-2">
+                      <div className="sm:col-span-3 flex items-center gap-2 flex-wrap">
                         <Badge
                           variant="outline"
                           className={`text-xs ${priorityConfig.bgColor} ${priorityConfig.color} ${priorityConfig.borderColor}`}
@@ -304,17 +304,21 @@ export default function OnboardingPage() {
                           {priorityConfig.label}
                         </Badge>
                         {onboarding.is_new_company_setup && (
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300">
+                          <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700">
                             Nová
                           </Badge>
                         )}
                         {onboarding.previous_accountant && (
-                          <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-300">
+                          <Badge variant="outline" className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-700">
                             Převzetí
                           </Badge>
                         )}
+                        <div className={`sm:hidden text-sm flex items-center gap-1 ml-auto ${stalled ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+                          <Clock className="h-3.5 w-3.5" />
+                          {getDaysAgo(onboarding.last_activity_at)}
+                        </div>
                       </div>
-                      <div className="col-span-2 text-right">
+                      <div className="hidden sm:block sm:col-span-2 text-right">
                         <div className={`text-sm flex items-center justify-end gap-1 ${stalled ? 'text-red-600 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
                           <Clock className="h-3.5 w-3.5" />
                           {getDaysAgo(onboarding.last_activity_at)}

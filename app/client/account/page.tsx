@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { User, Lock, Save, Building2, FileText, ArrowDownLeft, ArrowUpRight, RefreshCw } from 'lucide-react'
+import { User, Lock, Save, Building2, FileText, ArrowDownLeft, ArrowUpRight, RefreshCw, Bell, MessageCircle, Mail, Loader2 } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 
-type Tab = 'profile' | 'company' | 'invoices'
+type Tab = 'profile' | 'company' | 'invoices' | 'notifications'
 
 interface Invoice {
   id: string
@@ -52,6 +53,7 @@ export default function AccountPage() {
     { id: 'profile', label: 'Profil', icon: User },
     { id: 'company', label: 'Firma', icon: Building2 },
     { id: 'invoices', label: 'Faktury', icon: FileText },
+    { id: 'notifications', label: 'Upozornění', icon: Bell },
   ]
 
   return (
@@ -87,6 +89,7 @@ export default function AccountPage() {
       {activeTab === 'profile' && <ProfileTab />}
       {activeTab === 'company' && <CompanyTab />}
       {activeTab === 'invoices' && <InvoicesTab />}
+      {activeTab === 'notifications' && <NotificationsTab />}
     </div>
   )
 }
@@ -442,6 +445,188 @@ function InvoicesTab() {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+interface NotificationPrefs {
+  email: boolean
+  telegram: boolean
+  types: {
+    missing_document_tax_impact: boolean
+    invoice_due_reminder: boolean
+    monthly_summary: boolean
+  }
+}
+
+function NotificationsTab() {
+  const [prefs, setPrefs] = useState<NotificationPrefs>({
+    email: true,
+    telegram: false,
+    types: {
+      missing_document_tax_impact: true,
+      invoice_due_reminder: true,
+      monthly_summary: true,
+    },
+  })
+  const [telegramChatId, setTelegramChatId] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/client/notification-preferences')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.preferences) setPrefs(data.preferences)
+        if (data?.telegram_chat_id) setTelegramChatId(data.telegram_chat_id)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/client/notification-preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          preferences: prefs,
+          telegram_chat_id: telegramChatId || null,
+        }),
+      })
+      if (res.ok) {
+        toast.success('Nastavení uloženo')
+      } else {
+        throw new Error()
+      }
+    } catch {
+      toast.error('Uložení selhalo')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const updateType = (key: keyof NotificationPrefs['types'], value: boolean) => {
+    setPrefs(p => ({ ...p, types: { ...p.types, [key]: value } }))
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      {/* Channels */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Bell className="h-5 w-5" />
+            Kanály upozornění
+          </CardTitle>
+          <CardDescription>Zvolte jakými kanály chcete dostávat upozornění</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Mail className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="font-medium text-sm">Email</p>
+                <p className="text-xs text-muted-foreground">Upozornění na váš email</p>
+              </div>
+            </div>
+            <Switch
+              checked={prefs.email}
+              onCheckedChange={(checked) => setPrefs(p => ({ ...p, email: checked }))}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <MessageCircle className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="font-medium text-sm">Telegram</p>
+                <p className="text-xs text-muted-foreground">Upozornění přes Telegram bota</p>
+              </div>
+            </div>
+            <Switch
+              checked={prefs.telegram}
+              onCheckedChange={(checked) => setPrefs(p => ({ ...p, telegram: checked }))}
+            />
+          </div>
+
+          {prefs.telegram && (
+            <div className="ml-8 space-y-2">
+              <Label className="text-xs">Telegram Chat ID</Label>
+              <Input
+                value={telegramChatId}
+                onChange={e => setTelegramChatId(e.target.value)}
+                placeholder="Např. 123456789"
+              />
+              <p className="text-xs text-muted-foreground">
+                Napište /start botovi @UcetniWebAppBot a pošlete příkaz /id pro zjištění vašeho Chat ID
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Notification types */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Typy upozornění</CardTitle>
+          <CardDescription>Zvolte o čem chcete být informováni</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-sm">Chybějící doklady + daňový dopad</p>
+              <p className="text-xs text-muted-foreground">
+                Upozornění na nespárované výdaje a kolik vás stojí na dani
+              </p>
+            </div>
+            <Switch
+              checked={prefs.types.missing_document_tax_impact}
+              onCheckedChange={(v) => updateType('missing_document_tax_impact', v)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-sm">Splatnost faktur</p>
+              <p className="text-xs text-muted-foreground">
+                Připomínka 3 dny před splatností vydané faktury
+              </p>
+            </div>
+            <Switch
+              checked={prefs.types.invoice_due_reminder}
+              onCheckedChange={(v) => updateType('invoice_due_reminder', v)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-sm">Měsíční přehled</p>
+              <p className="text-xs text-muted-foreground">
+                Souhrn příjmů, výdajů a daňového dopadu za měsíc
+              </p>
+            </div>
+            <Switch
+              checked={prefs.types.monthly_summary}
+              onCheckedChange={(v) => updateType('monthly_summary', v)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Button onClick={handleSave} disabled={saving} className="w-full">
+        <Save className="mr-2 h-4 w-4" />
+        {saving ? 'Ukládám...' : 'Uložit nastavení'}
+      </Button>
     </div>
   )
 }

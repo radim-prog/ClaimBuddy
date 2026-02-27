@@ -4,15 +4,16 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   CheckCircle,
-  BookOpen,
   Clock,
   Trash2,
-  Zap,
-  FolderKanban,
-  Users,
-  Calendar,
+  Archive,
   ArrowLeft,
   PartyPopper,
+  Users,
+  CalendarDays,
+  ChevronDown,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -28,57 +29,91 @@ type Task = {
   title: string
   description?: string
   company_name?: string
+  due_date?: string
+  estimated_minutes?: number
 }
 
-type ClarifyStep = 'actionable' | 'two_minute' | 'is_project' | 'delegate' | 'deadline' | 'scoring' | 'done'
+type Priority = 'high' | 'medium' | 'low'
+
+const PRIORITY_SCORES: Record<Priority, { total_score: number; score_fire: number; score_money: number; score_time: number; score_distance: number; score_personal: number }> = {
+  high: { total_score: 10, score_fire: 3, score_money: 2, score_time: 2, score_distance: 2, score_personal: 1 },
+  medium: { total_score: 7, score_fire: 2, score_money: 1, score_time: 2, score_distance: 1, score_personal: 1 },
+  low: { total_score: 3, score_fire: 1, score_money: 0, score_time: 1, score_distance: 1, score_personal: 0 },
+}
+
+const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; bgColor: string }> = {
+  high: { label: 'Vysoká', color: 'text-red-700 dark:text-red-400', bgColor: 'bg-red-100 dark:bg-red-900/30 border-red-300' },
+  medium: { label: 'Střední', color: 'text-yellow-700 dark:text-yellow-400', bgColor: 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300' },
+  low: { label: 'Nízká', color: 'text-green-700 dark:text-green-400', bgColor: 'bg-green-100 dark:bg-green-900/30 border-green-300' },
+}
+
+function getDefaultDeadline(): string {
+  const d = new Date()
+  d.setDate(d.getDate() + 7)
+  return d.toISOString().split('T')[0]
+}
 
 export default function ClarifyPage() {
   const router = useRouter()
   const [tasks, setTasks] = useState<Task[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [step, setStep] = useState<ClarifyStep>('actionable')
   const [loading, setLoading] = useState(true)
   const [allDone, setAllDone] = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  // Collected data for current task
+  // "Udělám" expanded state
+  const [showDetails, setShowDetails] = useState(false)
+  const [dueDate, setDueDate] = useState(getDefaultDeadline())
+  const [priority, setPriority] = useState<Priority>('medium')
+  const [showDelegate, setShowDelegate] = useState(false)
   const [assignedTo, setAssignedTo] = useState<string | null>(null)
-  const [dueDate, setDueDate] = useState('')
-  const [timerActive, setTimerActive] = useState(false)
-  const [timerSeconds, setTimerSeconds] = useState(120)
+  const [showScoring, setShowScoring] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
-  // Users for delegate step
+  // Users for delegation
   const [users, setUsers] = useState<{ id: string; full_name: string }[]>([])
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/tasks?status=pending&page_size=100').then(r => r.json()),
+      fetch('/api/tasks?status=pending,clarifying&page_size=100').then(r => r.json()),
       fetch('/api/accountant/users').then(r => r.json()),
     ]).then(([tasksData, usersData]) => {
-      setTasks(tasksData.tasks || [])
+      const loadedTasks = tasksData.tasks || []
+      setTasks(loadedTasks)
       setUsers(usersData.users || [])
-      if (!tasksData.tasks?.length) setAllDone(true)
+      if (!loadedTasks.length) {
+        setAllDone(true)
+      } else if (loadedTasks[0]?.due_date) {
+        setDueDate(loadedTasks[0].due_date)
+      }
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
 
-  // 2-minute timer
-  useEffect(() => {
-    if (!timerActive || timerSeconds <= 0) return
-    const interval = setInterval(() => {
-      setTimerSeconds(s => {
-        if (s <= 1) {
-          setTimerActive(false)
-          return 0
-        }
-        return s - 1
-      })
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [timerActive, timerSeconds])
-
   const currentTask = tasks[currentIndex]
   const totalTasks = tasks.length
   const processedCount = currentIndex
+
+  const resetStateForTask = (task?: Task) => {
+    setShowDetails(false)
+    setDueDate(task?.due_date || getDefaultDeadline())
+    setPriority('medium')
+    setShowDelegate(false)
+    setAssignedTo(null)
+    setShowScoring(false)
+    setConfirmDelete(false)
+  }
+
+  const nextTask = () => {
+    if (currentIndex + 1 >= totalTasks) {
+      setAllDone(true)
+      fireInboxClearedConfetti()
+    } else {
+      const nextIdx = currentIndex + 1
+      resetStateForTask(tasks[nextIdx])
+      setCurrentIndex(nextIdx)
+    }
+  }
 
   const updateTask = async (taskId: string, updates: Record<string, unknown>) => {
     await fetch(`/api/tasks/${taskId}`, {
@@ -92,84 +127,56 @@ export default function ClarifyPage() {
     await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
   }
 
-  const nextTask = () => {
-    setStep('actionable')
-    setAssignedTo(null)
-    setDueDate('')
-    setTimerActive(false)
-    setTimerSeconds(120)
-
-    if (currentIndex + 1 >= totalTasks) {
-      setAllDone(true)
-      fireInboxClearedConfetti()
-    } else {
-      setCurrentIndex(currentIndex + 1)
-    }
-  }
-
-  const handleActionable = async (actionable: string) => {
-    if (!currentTask) return
-
-    switch (actionable) {
-      case 'yes':
-        setStep('two_minute')
-        break
-      case 'reference':
-        await updateTask(currentTask.id, { status: 'cancelled', tags: ['reference'] })
-        toast.success('Uloženo jako Reference')
-        nextTask()
-        break
-      case 'someday':
-        await updateTask(currentTask.id, { status: 'someday_maybe' })
-        toast.success('Přesunuto do Někdy/Možná')
-        nextTask()
-        break
-      case 'delete':
-        await deleteTask(currentTask.id)
-        toast.success('Smazáno')
-        nextTask()
-        break
-    }
-  }
-
-  const handleTwoMinute = (quick: boolean) => {
-    if (quick) {
-      setTimerActive(true)
-      setTimerSeconds(120)
-    } else {
-      setStep('is_project')
-    }
-  }
-
-  const handleTimerComplete = async () => {
-    if (!currentTask) return
-    await updateTask(currentTask.id, {
-      status: 'completed',
-      gtd_is_quick_action: true,
-    })
-    fireTaskConfetti()
-    toast.success('Hotovo!')
+  // Action handlers
+  const handlePostpone = async () => {
+    if (!currentTask || saving) return
+    setSaving(true)
+    await updateTask(currentTask.id, { status: 'someday_maybe' })
+    toast.success('Odloženo na později')
+    setSaving(false)
     nextTask()
   }
 
-  const handleIsProject = (isProject: boolean) => {
-    if (isProject) {
-      router.push(`/accountant/projects/new?from_task=${currentTask?.id}`)
-    } else {
-      setStep('delegate')
-    }
+  const handleArchive = async () => {
+    if (!currentTask || saving) return
+    setSaving(true)
+    await updateTask(currentTask.id, { status: 'cancelled', tags: ['reference'] })
+    toast.success('Archivováno jako reference')
+    setSaving(false)
+    nextTask()
   }
 
-  const handleDelegate = (delegate: boolean) => {
-    if (!delegate) {
-      setStep('deadline')
-    } else {
-      // Show user selection - handled in render
-    }
+  const handleDeleteClick = () => {
+    setConfirmDelete(true)
   }
 
-  const handleDeadline = () => {
-    setStep('scoring')
+  const handleDeleteConfirm = async () => {
+    if (!currentTask || saving) return
+    setSaving(true)
+    setConfirmDelete(false)
+    await deleteTask(currentTask.id)
+    toast.success('Smazáno')
+    setSaving(false)
+    nextTask()
+  }
+
+  const handleAcceptQuick = async () => {
+    if (!currentTask || saving) return
+    setSaving(true)
+    const scores = PRIORITY_SCORES[priority]
+    const isDelegated = !!assignedTo
+    await updateTask(currentTask.id, {
+      status: isDelegated ? 'waiting_for' : 'accepted',
+      is_waiting_for: isDelegated,
+      waiting_for_who: isDelegated ? assignedTo : null,
+      ...scores,
+      due_date: dueDate || null,
+      assigned_to: assignedTo,
+    })
+    fireTaskConfetti()
+    toast.success(isDelegated ? 'Úkol delegován' : 'Úkol přijat')
+    setSaving(false)
+    nextTask()
   }
 
   const handleScoringComplete = async (result: {
@@ -181,16 +188,27 @@ export default function ClarifyPage() {
     total_score: number
     priority: string
   }) => {
-    if (!currentTask) return
+    if (!currentTask || saving) return
+    setSaving(true)
+    const isDelegated = !!assignedTo
+    const { priority: _p, ...scores } = result
     await updateTask(currentTask.id, {
-      status: 'accepted',
-      ...result,
-      assigned_to: assignedTo,
+      status: isDelegated ? 'waiting_for' : 'accepted',
+      is_waiting_for: isDelegated,
+      waiting_for_who: isDelegated ? assignedTo : null,
+      ...scores,
       due_date: dueDate || null,
+      assigned_to: assignedTo,
     })
     fireTaskConfetti()
     toast.success(`Úkol ohodnocen: ${result.total_score}/12`)
+    setSaving(false)
     nextTask()
+  }
+
+  const handleGoBack = () => {
+    router.push('/accountant/tasks')
+    router.refresh()
   }
 
   if (loading) {
@@ -207,9 +225,9 @@ export default function ClarifyPage() {
         <PartyPopper className="h-16 w-16 mx-auto text-purple-600" />
         <h2 className="text-2xl font-bold">Inbox je prázdný!</h2>
         <p className="text-muted-foreground">
-          Zpracoval jsi {processedCount} {processedCount === 1 ? 'úkol' : processedCount < 5 ? 'úkoly' : 'úkolů'}.
+          Zpracováno {processedCount} {processedCount === 1 ? 'úkol' : processedCount < 5 ? 'úkoly' : 'úkolů'}.
         </p>
-        <Button onClick={() => router.push('/accountant/tasks')}>
+        <Button onClick={handleGoBack}>
           Zpět na úkoly
         </Button>
       </div>
@@ -220,11 +238,31 @@ export default function ClarifyPage() {
 
   const progressPercent = totalTasks > 0 ? (processedCount / totalTasks) * 100 : 0
 
+  // Scoring wizard mode
+  if (showScoring) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" onClick={() => setShowScoring(false)}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Zpět
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Detailní hodnocení
+          </span>
+        </div>
+        <ScoringWizard
+          onComplete={handleScoringComplete}
+          onCancel={() => setShowScoring(false)}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => router.push('/accountant/tasks')}>
+        <Button variant="ghost" onClick={handleGoBack}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Úkoly
         </Button>
         <span className="text-sm text-muted-foreground">
@@ -240,150 +278,210 @@ export default function ClarifyPage() {
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <Badge variant="outline" className="text-xs">Inbox</Badge>
-            {currentTask.company_name && (
-              <span className="text-xs text-muted-foreground">{currentTask.company_name}</span>
-            )}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {currentTask.estimated_minutes && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {currentTask.estimated_minutes >= 60 ? `${Math.round(currentTask.estimated_minutes / 60)} hod` : `${currentTask.estimated_minutes} min`}
+                </span>
+              )}
+              {currentTask.company_name && <span>{currentTask.company_name}</span>}
+            </div>
           </div>
           <CardTitle className="text-xl">{currentTask.title}</CardTitle>
         </CardHeader>
-        {currentTask.description && (
-          <CardContent className="pt-0">
-            <p className="text-sm text-muted-foreground">{currentTask.description}</p>
+        {(currentTask.description || currentTask.due_date) && (
+          <CardContent className="pt-0 space-y-1">
+            {currentTask.description && <p className="text-sm text-muted-foreground">{currentTask.description}</p>}
+            {currentTask.due_date && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <CalendarDays className="h-3 w-3" />
+                Termín: {new Date(currentTask.due_date).toLocaleDateString('cs-CZ')}
+              </p>
+            )}
           </CardContent>
         )}
       </Card>
 
-      {/* Steps */}
-      {step === 'actionable' && (
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-center">Je to actionable? Můžeš s tím něco udělat?</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => handleActionable('yes')} className="p-4 rounded-lg border-2 border-green-200 hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all text-center">
-              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
-              <span className="font-medium">Ano</span>
-            </button>
-            <button onClick={() => handleActionable('reference')} className="p-4 rounded-lg border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-center">
-              <BookOpen className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-              <span className="font-medium">Reference</span>
-            </button>
-            <button onClick={() => handleActionable('someday')} className="p-4 rounded-lg border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all text-center">
-              <Clock className="h-8 w-8 mx-auto mb-2 text-purple-600" />
-              <span className="font-medium">Někdy/Možná</span>
-            </button>
-            <button onClick={() => handleActionable('delete')} className="p-4 rounded-lg border-2 border-red-200 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-center">
-              <Trash2 className="h-8 w-8 mx-auto mb-2 text-red-600" />
-              <span className="font-medium">Smazat</span>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Action question */}
+      <h3 className="text-lg font-semibold text-center">Co s tímto úkolem?</h3>
 
-      {step === 'two_minute' && !timerActive && (
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-center">Zabere to méně než 2 minuty?</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => handleTwoMinute(true)} className="p-4 rounded-lg border-2 border-green-200 hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all text-center">
-              <Zap className="h-8 w-8 mx-auto mb-2 text-green-600" />
-              <span className="font-medium">Ano – udělám hned</span>
-            </button>
-            <button onClick={() => handleTwoMinute(false)} className="p-4 rounded-lg border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-center">
-              <Clock className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-              <span className="font-medium">Ne – zabere to víc</span>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 4 action buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          disabled={saving}
+          className={`p-4 rounded-xl border-2 transition-all text-center ${
+            showDetails
+              ? 'border-green-500 bg-green-50 dark:bg-green-900/20 ring-2 ring-green-200'
+              : 'border-green-200 dark:border-green-700 hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
+          }`}
+        >
+          <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
+          <span className="font-medium block">Udělám</span>
+          <span className="text-xs text-muted-foreground">Přijmu a nastavím detaily</span>
+        </button>
 
-      {step === 'two_minute' && timerActive && (
-        <div className="space-y-4 text-center">
-          <h3 className="text-lg font-semibold">Udělej to HNED!</h3>
-          <div className="text-6xl font-mono font-bold text-purple-600">
-            {Math.floor(timerSeconds / 60)}:{String(timerSeconds % 60).padStart(2, '0')}
-          </div>
-          <Progress value={((120 - timerSeconds) / 120) * 100} className="h-3" />
-          <div className="flex gap-3 justify-center">
-            <Button onClick={handleTimerComplete} className="bg-green-600 hover:bg-green-700">
-              <CheckCircle className="h-4 w-4 mr-1" /> Hotovo!
-            </Button>
-            <Button variant="outline" onClick={() => { setTimerActive(false); setStep('is_project') }}>
-              Přeskočit
-            </Button>
-          </div>
-        </div>
-      )}
+        <button
+          onClick={handlePostpone}
+          disabled={saving}
+          className="p-4 rounded-xl border-2 border-purple-200 dark:border-purple-700 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all text-center"
+        >
+          <Clock className="h-8 w-8 mx-auto mb-2 text-purple-600" />
+          <span className="font-medium block">Odložit</span>
+          <span className="text-xs text-muted-foreground">Vrátím se k tomu později</span>
+        </button>
 
-      {step === 'is_project' && (
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-center">Je to projekt (více kroků)?</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => handleIsProject(true)} className="p-4 rounded-lg border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all text-center">
-              <FolderKanban className="h-8 w-8 mx-auto mb-2 text-purple-600" />
-              <span className="font-medium">Ano – vytvořit projekt</span>
-            </button>
-            <button onClick={() => handleIsProject(false)} className="p-4 rounded-lg border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-center">
-              <CheckCircle className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-              <span className="font-medium">Ne – jeden úkol</span>
-            </button>
-          </div>
-        </div>
-      )}
+        <button
+          onClick={handleArchive}
+          disabled={saving}
+          className="p-4 rounded-xl border-2 border-blue-200 dark:border-blue-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-center"
+        >
+          <Archive className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+          <span className="font-medium block">Archivovat</span>
+          <span className="text-xs text-muted-foreground">Uložit jako referenci</span>
+        </button>
 
-      {step === 'delegate' && (
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-center">Můžeš to delegovat?</h3>
-          {!assignedTo ? (
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => handleDelegate(false)} className="p-4 rounded-lg border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-center">
-                <CheckCircle className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-                <span className="font-medium">Ne, udělám sám</span>
-              </button>
-              <button onClick={() => setAssignedTo('selecting')} className="p-4 rounded-lg border-2 border-orange-200 hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all text-center">
-                <Users className="h-8 w-8 mx-auto mb-2 text-orange-600" />
-                <span className="font-medium">Ano – vybrat komu</span>
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground text-center">Vyber komu delegovat:</p>
-              <div className="grid gap-2">
-                {users.map(user => (
-                  <button
-                    key={user.id}
-                    onClick={() => { setAssignedTo(user.id); setStep('deadline') }}
-                    className="p-3 rounded-lg border hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all text-left"
-                  >
-                    {user.full_name}
-                  </button>
-                ))}
+        <button
+          onClick={handleDeleteClick}
+          disabled={saving}
+          className="p-4 rounded-xl border-2 border-red-200 dark:border-red-700 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-center"
+        >
+          <Trash2 className="h-8 w-8 mx-auto mb-2 text-red-600" />
+          <span className="font-medium block">Smazat</span>
+          <span className="text-xs text-muted-foreground">Trvale odstranit</span>
+        </button>
+      </div>
+
+      {/* Delete confirmation */}
+      {confirmDelete && (
+        <Card className="border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/20 animate-in slide-in-from-top-2 duration-200">
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-800 dark:text-red-300">Opravdu smazat tento úkol?</p>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">Tato akce je nevratná.</p>
+                <div className="flex gap-2 mt-3">
+                  <Button size="sm" variant="destructive" onClick={handleDeleteConfirm} disabled={saving}>
+                    {saving ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Trash2 className="h-3 w-3 mr-1" />}
+                    Ano, smazat
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>
+                    Zrušit
+                  </Button>
+                </div>
               </div>
-              <Button variant="ghost" onClick={() => setAssignedTo(null)}>Zpět</Button>
             </div>
-          )}
-        </div>
+          </CardContent>
+        </Card>
       )}
 
-      {step === 'deadline' && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-center">Kdy to má být hotové?</h3>
-          <div className="max-w-xs mx-auto space-y-3">
-            <Input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="text-center"
-            />
-            <Button onClick={handleDeadline} className="w-full">
-              {dueDate ? 'Pokračovat' : 'Bez deadlinu'}
-            </Button>
-          </div>
-        </div>
+      {/* Inline details when "Udělám" is selected */}
+      {showDetails && (
+        <Card className="border-green-200 dark:border-green-800 animate-in slide-in-from-top-2 duration-200">
+          <CardContent className="pt-6 space-y-5">
+            {/* Deadline */}
+            <div>
+              <label className="text-sm font-medium flex items-center gap-2 mb-2">
+                <CalendarDays className="h-4 w-4 text-gray-500" />
+                Termín dokončení
+              </label>
+              <Input
+                type="date"
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+                className="max-w-xs"
+              />
+            </div>
+
+            {/* Priority - 3 buttons */}
+            <div>
+              <label className="text-sm font-medium block mb-2">Priorita</label>
+              <div className="flex gap-2">
+                {(['high', 'medium', 'low'] as Priority[]).map(p => {
+                  const config = PRIORITY_CONFIG[p]
+                  const isSelected = priority === p
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => setPriority(p)}
+                      className={`flex-1 py-2.5 px-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                        isSelected
+                          ? `${config.bgColor} ${config.color} ring-2 ring-offset-1`
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 text-gray-600 dark:text-gray-400'
+                      }`}
+                      style={isSelected ? { '--tw-ring-color': 'currentColor', '--tw-ring-opacity': '0.3' } as React.CSSProperties : undefined}
+                    >
+                      {config.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Delegate toggle */}
+            <div>
+              <button
+                onClick={() => setShowDelegate(!showDelegate)}
+                className="text-sm font-medium flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-purple-600 transition-colors"
+              >
+                <Users className="h-4 w-4" />
+                Delegovat na kolegu
+                <ChevronDown className={`h-4 w-4 transition-transform ${showDelegate ? 'rotate-180' : ''}`} />
+              </button>
+              {showDelegate && (
+                <div className="mt-2 grid gap-1.5 pl-6">
+                  <button
+                    onClick={() => setAssignedTo(null)}
+                    className={`text-left py-1.5 px-3 rounded-lg text-sm transition-colors ${
+                      !assignedTo ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    Udělám sám
+                  </button>
+                  {users.map(user => (
+                    <button
+                      key={user.id}
+                      onClick={() => setAssignedTo(user.id)}
+                      className={`text-left py-1.5 px-3 rounded-lg text-sm transition-colors ${
+                        assignedTo === user.id ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      {user.full_name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-3 pt-2 border-t">
+              <Button
+                onClick={handleAcceptQuick}
+                disabled={saving}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                Potvrdit a pokračovat
+              </Button>
+              <button
+                onClick={() => setShowScoring(true)}
+                className="text-xs text-muted-foreground hover:text-purple-600 underline underline-offset-2 transition-colors whitespace-nowrap"
+              >
+                Detailní hodnocení
+              </button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {step === 'scoring' && (
-        <ScoringWizard
-          onComplete={handleScoringComplete}
-          onCancel={() => setStep('deadline')}
-        />
+      {/* Saving indicator */}
+      {saving && (
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Ukládám...
+        </div>
       )}
     </div>
   )

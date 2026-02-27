@@ -50,7 +50,7 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch('/api/client/companies?demo=true')
+      const response = await fetch('/api/client/companies')
       if (!response.ok) throw new Error('Failed to fetch companies')
       const data = await response.json()
 
@@ -58,7 +58,6 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
       setClosures(data.closures || [])
       if (data.user_id) setUserId(data.user_id)
 
-      // Demo user name
       if (data.user_name) {
         setUserName(data.user_name)
         const initials = data.user_name

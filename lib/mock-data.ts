@@ -53,7 +53,7 @@ export interface InvoiceItem {
 export interface Invoice {
   id: string
   type: InvoiceType
-  company_id: string
+  company_id: string | null
   company_name: string
   invoice_number: string
   variable_symbol: string
@@ -74,6 +74,11 @@ export interface Invoice {
   paid_at?: string
   task_ids: string[]
   pohoda_id?: string
+  number_series_id?: string
+  constant_symbol?: string
+  specific_symbol?: string
+  notes?: string
+  footer_text?: string
   created_at: string
   created_by: string
   updated_at: string

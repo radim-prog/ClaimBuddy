@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
 
     const message = await addMessage({
       company_id,
+      sender_id: userId,
       content: content.trim(),
       sender_type,
       sender_name,

@@ -1,21 +1,19 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import {
   Calendar,
   Clock,
   AlertTriangle,
   CheckCircle,
-  FileText,
-  Building2,
   Receipt,
   Wallet,
-  Shield,
-  Plus,
+  Building2,
+  FileText,
+  Loader2,
 } from 'lucide-react'
-import { format, isToday, isTomorrow, isPast, addDays, differenceInDays, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns'
+import { format, isToday, isTomorrow, isPast, differenceInDays, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns'
 import { cs } from 'date-fns/locale'
 
 interface Deadline {
@@ -23,128 +21,125 @@ interface Deadline {
   title: string
   date: string
   type: 'dph' | 'dan' | 'pojisteni' | 'mzdy' | 'uzaverka' | 'ostatni'
-  companyId?: string
-  companyName?: string
   description?: string
   completed?: boolean
 }
 
 interface AccountantDeadlineCalendarProps {
-  companyId?: string
+  companyId: string
   companyName?: string
-  showAllClients?: boolean
+  vatPeriod?: string | null // 'monthly' | 'quarterly' | null
+  hasEmployees?: boolean
+  entityType?: string | null // 'sro' | 'osvc' | 'as'
 }
 
-// Generate mock deadlines based on company
-const generateDeadlines = (companyId?: string): Deadline[] => {
+/**
+ * Generate statutory deadlines based on company parameters.
+ * Uses real Czech tax law deadlines - no mock data.
+ */
+function generateStatutoryDeadlines(
+  vatPeriod: string | null | undefined,
+  hasEmployees: boolean,
+  entityType: string | null | undefined,
+): Deadline[] {
   const now = new Date()
-  const currentMonth = now.getMonth()
-  const currentYear = now.getFullYear()
+  const year = now.getFullYear()
+  const deadlines: Deadline[] = []
 
-  const baseDeadlines: Deadline[] = [
-    // DPH deadlines
-    {
-      id: 'dph-1',
-      title: 'DPH přiznání',
-      date: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-25`,
-      type: 'dph',
-      companyId: 'company-1',
-      companyName: 'ABC s.r.o.',
-      description: 'Měsíční DPH přiznání za předchozí měsíc',
-    },
-    {
-      id: 'dph-2',
-      title: 'DPH přiznání',
-      date: `${currentYear}-${String((currentMonth + 2) % 12 || 12).padStart(2, '0')}-25`,
-      type: 'dph',
-      companyId: 'company-4',
-      companyName: 'GHI Trading',
-      description: 'Měsíční DPH přiznání',
-    },
-    // Salary deadlines
-    {
-      id: 'mzdy-1',
-      title: 'Odvod mezd',
-      date: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-20`,
-      type: 'mzdy',
-      companyId: 'company-1',
-      companyName: 'ABC s.r.o.',
-      description: 'Odvody sociální a zdravotní pojištění',
-      completed: isPast(new Date(`${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-20`)),
-    },
-    {
-      id: 'mzdy-2',
-      title: 'Mzdy zaměstnanců',
-      date: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`,
-      type: 'mzdy',
-      companyId: 'company-3',
-      companyName: 'DEF s.r.o.',
-      description: 'Výplatní termín zaměstnanců',
-      completed: true,
-    },
-    // Insurance
-    {
-      id: 'poj-1',
-      title: 'Platba pojištění',
-      date: format(addDays(now, 15), 'yyyy-MM-dd'),
-      type: 'pojisteni',
-      companyId: 'company-1',
-      companyName: 'ABC s.r.o.',
-      description: 'Roční pojištění odpovědnosti',
-    },
-    // Monthly closures
-    {
-      id: 'uzav-1',
-      title: 'Měsíční uzávěrka',
-      date: format(addDays(now, 5), 'yyyy-MM-dd'),
-      type: 'uzaverka',
-      companyId: 'company-1',
-      companyName: 'ABC s.r.o.',
-      description: 'Uzávěrka za předchozí měsíc',
-    },
-    {
-      id: 'uzav-2',
-      title: 'Měsíční uzávěrka',
-      date: format(addDays(now, 7), 'yyyy-MM-dd'),
-      type: 'uzaverka',
-      companyId: 'company-4',
-      companyName: 'GHI Trading',
-      description: 'Uzávěrka za předchozí měsíc',
-    },
-    // Tax deadlines
-    {
-      id: 'dan-1',
-      title: 'Záloha daň z příjmů',
-      date: format(addDays(now, 30), 'yyyy-MM-dd'),
-      type: 'dan',
-      companyId: 'company-7',
-      companyName: 'PQR Development',
-      description: 'Čtvrtletní záloha na daň',
-    },
-    // Other
-    {
-      id: 'ost-1',
-      title: 'STK vozidla',
-      date: format(addDays(now, 45), 'yyyy-MM-dd'),
-      type: 'ostatni',
-      companyId: 'company-1',
-      companyName: 'ABC s.r.o.',
-      description: 'Technická kontrola služebního vozidla',
-    },
-  ]
+  // Generate deadlines for current month and next 2 months
+  for (let offset = 0; offset < 3; offset++) {
+    const m = now.getMonth() + offset
+    const monthDate = new Date(year, m, 1)
+    const monthStr = format(monthDate, 'yyyy-MM')
+    const monthLabel = format(monthDate, 'LLLL yyyy', { locale: cs })
 
-  // Filter by company if specified
-  if (companyId) {
-    return baseDeadlines.filter(d => d.companyId === companyId)
+    // DPH - 25th of month following the tax period
+    if (vatPeriod === 'monthly') {
+      deadlines.push({
+        id: `dph-${monthStr}`,
+        title: `DPH přiznání za ${format(new Date(year, m - 1, 1), 'LLLL', { locale: cs })}`,
+        date: format(new Date(year, m, 25), 'yyyy-MM-dd'),
+        type: 'dph',
+        description: 'Měsíční přiznání k DPH (§101a ZDPH)',
+      })
+    } else if (vatPeriod === 'quarterly' && (m % 3 === 0)) {
+      deadlines.push({
+        id: `dph-q-${monthStr}`,
+        title: `DPH přiznání za Q${Math.ceil(m / 3)}`,
+        date: format(new Date(year, m, 25), 'yyyy-MM-dd'),
+        type: 'dph',
+        description: 'Čtvrtletní přiznání k DPH (§101a ZDPH)',
+      })
+    }
+
+    // Kontrolní hlášení (monthly for s.r.o./a.s., quarterly for OSVČ)
+    if (vatPeriod) {
+      if (entityType === 'osvc') {
+        if (m % 3 === 0) {
+          deadlines.push({
+            id: `kh-${monthStr}`,
+            title: `Kontrolní hlášení za Q${Math.ceil(m / 3)}`,
+            date: format(new Date(year, m, 25), 'yyyy-MM-dd'),
+            type: 'dph',
+            description: 'Kontrolní hlášení OSVČ (§101c ZDPH)',
+          })
+        }
+      } else {
+        deadlines.push({
+          id: `kh-${monthStr}`,
+          title: `Kontrolní hlášení za ${format(new Date(year, m - 1, 1), 'LLLL', { locale: cs })}`,
+          date: format(new Date(year, m, 25), 'yyyy-MM-dd'),
+          type: 'dph',
+          description: 'Kontrolní hlášení PO (§101c ZDPH)',
+        })
+      }
+    }
+
+    // Mzdy - 20th for social/health insurance, payroll by 10th
+    if (hasEmployees) {
+      deadlines.push({
+        id: `mzdy-sp-${monthStr}`,
+        title: `Odvod SP a ZP za ${format(new Date(year, m - 1, 1), 'LLLL', { locale: cs })}`,
+        date: format(new Date(year, m, 20), 'yyyy-MM-dd'),
+        type: 'mzdy',
+        description: 'Sociální + zdravotní pojištění zaměstnanců',
+      })
+    }
+
+    // Měsíční uzávěrka podkladů - 15th (configurable deadline)
+    deadlines.push({
+      id: `uzav-${monthStr}`,
+      title: `Podklady za ${format(new Date(year, m - 1, 1), 'LLLL', { locale: cs })}`,
+      date: format(new Date(year, m, 15), 'yyyy-MM-dd'),
+      type: 'uzaverka',
+      description: 'Termín dodání podkladů pro měsíční zpracování',
+    })
   }
 
-  return baseDeadlines
+  // Quarterly income tax advances (15th of month after quarter end)
+  const quarterMonths = [3, 6, 9, 12] // March, June, September, December
+  for (const qm of quarterMonths) {
+    const advanceDate = new Date(year, qm, 15) // 15th of April, July, October, January
+    if (differenceInDays(advanceDate, now) > -30 && differenceInDays(advanceDate, now) < 90) {
+      deadlines.push({
+        id: `dan-q-${qm}`,
+        title: `Záloha daň z příjmů Q${qm / 3}`,
+        date: format(advanceDate, 'yyyy-MM-dd'),
+        type: 'dan',
+        description: entityType === 'osvc'
+          ? 'Čtvrtletní záloha DPFO (§38a ZDP)'
+          : 'Čtvrtletní záloha DPPO (§38a ZDP)',
+      })
+    }
+  }
+
+  return deadlines
 }
 
 const typeIcons: Record<string, typeof Calendar> = {
   dph: Receipt,
   dan: Wallet,
-  pojisteni: Shield,
+  pojisteni: Building2,
   mzdy: Building2,
   uzaverka: FileText,
   ostatni: Calendar,
@@ -171,15 +166,16 @@ const typeLabels: Record<string, string> = {
 export function AccountantDeadlineCalendar({
   companyId,
   companyName,
-  showAllClients = false,
+  vatPeriod,
+  hasEmployees = false,
+  entityType,
 }: AccountantDeadlineCalendarProps) {
   const deadlines = useMemo(() => {
-    return generateDeadlines(companyId)
+    return generateStatutoryDeadlines(vatPeriod, hasEmployees, entityType)
       .filter(d => !d.completed)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-  }, [companyId])
+  }, [vatPeriod, hasEmployees, entityType])
 
-  // Group deadlines by time period
   const groupedDeadlines = useMemo(() => {
     const today = new Date()
     const overdue: Deadline[] = []
@@ -233,7 +229,7 @@ export function AccountantDeadlineCalendar({
     return (
       <div
         key={deadline.id}
-        className="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-colors"
+        className="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 transition-colors"
       >
         <div className={`p-2 rounded-lg ${typeColors[deadline.type]}`}>
           <Icon className="h-4 w-4" />
@@ -245,18 +241,13 @@ export function AccountantDeadlineCalendar({
               {typeLabels[deadline.type]}
             </Badge>
           </div>
-          {showAllClients && deadline.companyName && (
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-              {deadline.companyName}
-            </p>
-          )}
           {deadline.description && (
             <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
               {deadline.description}
             </p>
           )}
         </div>
-        <div className={`text-sm font-medium ${getDateColor(deadline.date)}`}>
+        <div className={`text-sm font-medium whitespace-nowrap ${getDateColor(deadline.date)}`}>
           {formatDeadlineDate(deadline.date)}
         </div>
       </div>
@@ -287,8 +278,8 @@ export function AccountantDeadlineCalendar({
         <CheckCircle className="h-12 w-12 mx-auto mb-2 text-green-300" />
         <p className="mb-2">Žádné nadcházející termíny</p>
         <p className="text-sm text-gray-400">
-          {companyId
-            ? 'Pro tohoto klienta nejsou naplánované žádné termíny'
+          {!vatPeriod && !hasEmployees
+            ? 'Firma není plátce DPH a nemá zaměstnance'
             : 'Všechny termíny jsou splněny'
           }
         </p>
@@ -348,14 +339,6 @@ export function AccountantDeadlineCalendar({
           groupedDeadlines.later,
           <Calendar className="h-4 w-4 text-gray-400" />
         )}
-      </div>
-
-      {/* Add deadline button */}
-      <div className="pt-4 border-t dark:border-gray-700">
-        <Button variant="outline" className="w-full">
-          <Plus className="h-4 w-4 mr-2" />
-          Přidat termín
-        </Button>
       </div>
     </div>
   )

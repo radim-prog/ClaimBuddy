@@ -182,7 +182,7 @@ export default function LocationsSettingsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                     onClick={() => handleDelete(loc.id, loc.name)}
                   >
                     <Trash2 className="h-4 w-4" />

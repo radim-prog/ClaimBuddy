@@ -80,7 +80,7 @@ const STATUS_ICONS: Record<InsuranceStatus, React.ReactNode> = {
 
 const STATUS_COLORS: Record<InsuranceStatus, string> = {
   active: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
-  pending: 'bg-yellow-100 text-yellow-700 dark:text-yellow-400',
+  pending: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
   expired: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
   cancelled: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
 }
@@ -147,11 +147,12 @@ export function InsuranceSection({
     (sum, i) => sum + (i.tax_deductible_amount || 0),
     0
   )
-  const totalAnnualPremium = activeInsurances.reduce((sum, i) => sum + i.annual_premium, 0)
+  const totalAnnualPremium = activeInsurances.reduce((sum, i) => sum + (i.annual_premium ?? i.premium_amount ?? 0), 0)
 
   // Zjistit blížící se výročí (do 30 dnů)
   const today = new Date()
   const upcomingAnniversaries = activeInsurances.filter((i) => {
+    if (!i.anniversary_date) return false
     const anniversary = new Date(i.anniversary_date)
     const daysUntil = Math.ceil((anniversary.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
     return daysUntil >= 0 && daysUntil <= 30
@@ -186,16 +187,16 @@ export function InsuranceSection({
     const linkedEmployee = employees.find((e) => e.id === insurance.linked_employee_id)
 
     // Zjistit, zda je výročí blízko
-    const anniversary = new Date(insurance.anniversary_date)
-    const daysUntilAnniversary = Math.ceil(
-      (anniversary.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-    )
+    const anniversary = insurance.anniversary_date ? new Date(insurance.anniversary_date) : null
+    const daysUntilAnniversary = anniversary
+      ? Math.ceil((anniversary.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      : -1
     const isAnniversarySoon = daysUntilAnniversary >= 0 && daysUntilAnniversary <= 30
 
     return (
       <div
         key={insurance.id}
-        className={`border rounded-lg overflow-hidden ${isAnniversarySoon ? 'border-orange-300 bg-orange-50' : ''}`}
+        className={`border rounded-lg overflow-hidden ${isAnniversarySoon ? 'border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20' : ''}`}
       >
         <div
           className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 flex items-center justify-between"
@@ -203,7 +204,7 @@ export function InsuranceSection({
         >
           <div className="flex items-center gap-3">
             <div className={`p-2 rounded-lg ${getCategoryGroupColor(insurance.category)}`}>
-              {CATEGORY_ICONS[insurance.category]}
+              {CATEGORY_ICONS[insurance.category] ?? <Shield className="h-4 w-4" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -236,9 +237,9 @@ export function InsuranceSection({
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="font-semibold">{formatCurrency(insurance.annual_premium)}/rok</div>
+              <div className="font-semibold">{formatCurrency(insurance.annual_premium ?? insurance.premium_amount ?? 0)}/rok</div>
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                {formatCurrency(insurance.premium_amount)} {PAYMENT_FREQUENCY_LABELS[insurance.payment_frequency].toLowerCase()}
+                {formatCurrency(insurance.premium_amount ?? 0)} {(PAYMENT_FREQUENCY_LABELS[insurance.payment_frequency] || insurance.payment_frequency || '').toLowerCase()}
               </div>
             </div>
             {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -250,7 +251,7 @@ export function InsuranceSection({
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <div>
                 <div className="text-gray-500 dark:text-gray-400">Kategorie</div>
-                <div className="font-medium">{INSURANCE_CATEGORY_LABELS[insurance.category]}</div>
+                <div className="font-medium">{INSURANCE_CATEGORY_LABELS[insurance.category] || insurance.category || '—'}</div>
               </div>
               <div>
                 <div className="text-gray-500 dark:text-gray-400">Předmět pojištění</div>
@@ -276,12 +277,12 @@ export function InsuranceSection({
               )}
               <div>
                 <div className="text-gray-500 dark:text-gray-400">Datum účinnosti</div>
-                <div className="font-medium">{formatDate(insurance.effective_date)}</div>
+                <div className="font-medium">{insurance.effective_date ? formatDate(insurance.effective_date) : '—'}</div>
               </div>
               <div>
                 <div className="text-gray-500 dark:text-gray-400">Výroční datum</div>
                 <div className={`font-medium ${isAnniversarySoon ? 'text-orange-600 dark:text-orange-400' : ''}`}>
-                  {formatDate(insurance.anniversary_date)}
+                  {insurance.anniversary_date ? formatDate(insurance.anniversary_date) : '—'}
                 </div>
               </div>
               {insurance.expiry_date && (
@@ -395,12 +396,12 @@ export function InsuranceSection({
           <CardContent>
             {/* Upozornění na blížící se výročí */}
           {upcomingAnniversaries.length > 0 && (
-            <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 rounded-lg">
-              <div className="flex items-center gap-2 text-orange-700 font-medium">
+            <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+              <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 font-medium">
                 <AlertTriangle className="h-4 w-4" />
                 Blížící se výročí ({upcomingAnniversaries.length})
               </div>
-              <div className="text-sm text-orange-600 mt-1">
+              <div className="text-sm text-orange-600 dark:text-orange-400 mt-1">
                 {upcomingAnniversaries.map((i) => i.name).join(', ')}
               </div>
             </div>
@@ -408,9 +409,9 @@ export function InsuranceSection({
 
           {/* Souhrn daňových odpočtů */}
           {taxDeductibleInsurances.length > 0 && (
-            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 rounded-lg">
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-green-700 font-medium">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-300 font-medium">
                   <Wallet className="h-4 w-4" />
                   Daňově odečitatelné produkty ({taxDeductibleInsurances.length})
                 </div>

@@ -147,12 +147,18 @@ export async function GET(request: NextRequest) {
     }
 
     if (filters.search) {
-      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
+      // Sanitize search to prevent PostgREST filter injection
+      const sanitized = filters.search.replace(/[%_.,()\\]/g, '')
+      if (sanitized) {
+        query = query.or(`title.ilike.%${sanitized}%,description.ilike.%${sanitized}%`)
+      }
     }
 
-    // Apply sorting
+    // Apply sorting with whitelist validation
+    const allowedSortColumns = ['created_at', 'updated_at', 'due_date', 'title', 'status', 'priority', 'energy_level', 'estimated_minutes']
+    const safeSortBy = allowedSortColumns.includes(sortBy) ? sortBy : 'created_at'
     const ascending = sortOrder === 'asc'
-    query = query.order(sortBy, { ascending })
+    query = query.order(safeSortBy, { ascending })
 
     // Apply pagination
     const from = (page - 1) * pageSize
@@ -212,11 +218,19 @@ export async function POST(request: NextRequest) {
     // Quick actions (<30 min) don't require R-Tasks scores
     const isQuickAction = body.gtd_is_quick_action || (body.estimated_minutes && body.estimated_minutes <= 30)
 
-    const taskData = {
-      ...body,
+    // Allowlisted fields for creation (prevents mass assignment)
+    const ALLOWED_CREATE_FIELDS = [
+      'title', 'description', 'is_project', 'project_outcome', 'parent_project_id',
+      'assigned_to', 'assigned_to_name', 'due_date', 'due_time',
+      'company_id', 'company_name', 'monthly_closure_id', 'document_id', 'onboarding_client_id',
+      'estimated_minutes', 'is_billable', 'hourly_rate',
+      'gtd_context', 'gtd_energy_level', 'tags', 'task_data',
+      'project_id', 'phase_id', 'location_id', 'position_in_phase', 'is_next_action',
+    ] as const
+
+    const taskData: Record<string, any> = {
       created_by: userId,
       created_by_name: body.created_by_name || request.headers.get('x-user-name') || '',
-      // Set defaults if not provided
       status: body.status || 'pending',
       is_project: body.is_project || false,
       is_billable: body.is_billable || false,
@@ -225,14 +239,22 @@ export async function POST(request: NextRequest) {
       actual_minutes: 0,
       billable_hours: 0,
       invoiced_amount: 0,
-      // R-Tasks default scores (only for non-quick actions)
-      ...(isQuickAction ? {} : {
-        score_money: body.score_money ?? 1,
-        score_fire: body.score_fire ?? 1,
-        score_time: body.score_time ?? 1,
-        score_distance: body.score_distance ?? 2,
-        score_personal: body.score_personal ?? 0,
-      }),
+    }
+
+    // Copy only allowed fields from body
+    for (const key of ALLOWED_CREATE_FIELDS) {
+      if (body[key] !== undefined) {
+        taskData[key] = body[key]
+      }
+    }
+
+    // R-Tasks default scores (only for non-quick actions)
+    if (!isQuickAction) {
+      taskData.score_money = body.score_money ?? 1
+      taskData.score_fire = body.score_fire ?? 1
+      taskData.score_time = body.score_time ?? 1
+      taskData.score_distance = body.score_distance ?? 2
+      taskData.score_personal = body.score_personal ?? 0
     }
 
     // Create task

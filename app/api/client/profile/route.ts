@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getUserById, updateUser } from '@/lib/user-store'
 import { hashPassword, verifyPassword } from '@/lib/auth'
 
@@ -7,6 +8,24 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const impersonateCompany = request.headers.get('x-impersonate-company')
+
+  // Impersonation mode - return company info as read-only
+  if (impersonateCompany) {
+    const { data: company } = await supabaseAdmin
+      .from('companies')
+      .select('name, ico, dic, email, phone')
+      .eq('id', impersonateCompany)
+      .single()
+
+    return NextResponse.json({
+      name: company?.name || 'Klient',
+      email: company?.email || '',
+      login_name: '(zobrazení jako klient)',
+      read_only: true,
+    })
+  }
 
   const user = await getUserById(userId)
   if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -22,6 +41,11 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const impersonateCompany = request.headers.get('x-impersonate-company')
+  if (impersonateCompany) {
+    return NextResponse.json({ error: 'Nelze upravovat profil v režimu zobrazení klienta' }, { status: 403 })
+  }
 
   try {
     const body = await request.json()

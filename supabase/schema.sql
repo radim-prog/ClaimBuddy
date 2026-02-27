@@ -176,6 +176,14 @@ CREATE TABLE public.invoices (
   total_vat NUMERIC(10, 2) NOT NULL,
   total_with_vat NUMERIC(10, 2) NOT NULL,
 
+  -- Invoicing metadata
+  period TEXT, -- 'YYYY-MM', derived from issue_date
+  sent_at TIMESTAMPTZ,
+  tax_date DATE, -- DUZP (datum uskutecneni zdanitelneho plneni)
+  task_ids JSONB DEFAULT '[]'::jsonb, -- linked time entries/tasks
+  company_name TEXT, -- denormalized for listing
+  hourly_rate NUMERIC(10, 2),
+
   -- Payment
   payment_status TEXT DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'paid', 'overdue', 'partial')),
   paid_at TIMESTAMPTZ,
@@ -199,6 +207,7 @@ CREATE TABLE public.invoices (
 CREATE INDEX idx_invoices_company_type ON public.invoices(company_id, type) WHERE deleted_at IS NULL;
 CREATE INDEX idx_invoices_payment_status ON public.invoices(payment_status) WHERE deleted_at IS NULL;
 CREATE INDEX idx_invoices_issue_date ON public.invoices(issue_date) WHERE deleted_at IS NULL;
+CREATE INDEX idx_invoices_period ON public.invoices(period) WHERE deleted_at IS NULL;
 
 -- ============================================
 -- TASKS TABLE

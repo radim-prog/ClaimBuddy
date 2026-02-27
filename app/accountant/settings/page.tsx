@@ -106,22 +106,19 @@ export default function AccountantSettingsPage() {
   }
 
   return (
-    <div className="grid gap-6">
-      {/* Globální deadline */}
+    <div className="space-y-4">
+      {/* Deadline + Sazby */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Deadline podkladů
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Deadline a sazby
           </CardTitle>
-          <CardDescription>
-            Den v měsíci do kdy musí klienti dodat podklady pro uzávěrku
-          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-end gap-4">
-            <div className="space-y-2 flex-1 max-w-xs">
-              <Label htmlFor="deadlineDay">Den v měsíci (1-28)</Label>
+        <CardContent className="space-y-4">
+          <div className="flex items-end gap-3">
+            <div className="space-y-1.5 flex-1 max-w-[200px]">
+              <Label htmlFor="deadlineDay" className="text-xs">Deadline podkladů (den v měsíci)</Label>
               <Input
                 id="deadlineDay"
                 type="number"
@@ -129,97 +126,47 @@ export default function AccountantSettingsPage() {
                 max="28"
                 value={deadlineDay}
                 onChange={(e) => setDeadlineDay(Math.min(28, Math.max(1, parseInt(e.target.value) || 1)))}
+                className="h-8"
               />
-              <p className="text-xs text-muted-foreground">
-                Např. 15 = klienti musí dodat podklady do 15. dne následujícího měsíce
-              </p>
             </div>
-            <Button onClick={handleDeadlineDaySave} disabled={deadlineSaving}>
+            <Button size="sm" onClick={handleDeadlineDaySave} disabled={deadlineSaving}>
               {deadlineSaving ? 'Ukládám...' : 'Uložit'}
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Výchozí sazby */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Banknote className="h-5 w-5" />
-            Výchozí sazby
-          </CardTitle>
-          <CardDescription>
-            Výchozí hodinové sazby a sazby za km pro kalkulace prepaid projektů
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="hourlyRate">Hodinová sazba (Kč/hod)</Label>
-              <Input
-                id="hourlyRate"
-                type="number"
-                min="0"
-                step="50"
-                value={hourlyRate}
-                onChange={(e) => setHourlyRate(Number(e.target.value) || 0)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Výchozí sazba za hodinu práce
-              </p>
+          <div className="border-t pt-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="hourlyRate" className="text-xs">Kč/hod</Label>
+                <Input id="hourlyRate" type="number" min="0" step="50" value={hourlyRate} onChange={(e) => setHourlyRate(Number(e.target.value) || 0)} className="h-8" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="kmRate" className="text-xs">Kč/km</Label>
+                <Input id="kmRate" type="number" min="0" step="0.5" value={kmRate} onChange={(e) => setKmRate(Number(e.target.value) || 0)} className="h-8" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="wastedTimeRate" className="text-xs">Kč/hod cesta</Label>
+                <Input id="wastedTimeRate" type="number" min="0" step="50" value={wastedTimeRate} onChange={(e) => setWastedTimeRate(Number(e.target.value) || 0)} className="h-8" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="kmRate">Sazba za km (Kč/km)</Label>
-              <Input
-                id="kmRate"
-                type="number"
-                min="0"
-                step="0.5"
-                value={kmRate}
-                onChange={(e) => setKmRate(Number(e.target.value) || 0)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Náhrada za 1 km jízdy (tam i zpět)
-              </p>
+            <div className="flex justify-end mt-3">
+              <Button size="sm" onClick={handleRatesSave} disabled={ratesSaving}>
+                {ratesSaving ? 'Ukládám...' : 'Uložit sazby'}
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="wastedTimeRate">Promeškaný čas (Kč/hod)</Label>
-              <Input
-                id="wastedTimeRate"
-                type="number"
-                min="0"
-                step="50"
-                value={wastedTimeRate}
-                onChange={(e) => setWastedTimeRate(Number(e.target.value) || 0)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Snížená sazba za čas strávený cestou
-              </p>
-            </div>
-          </div>
-          <div className="flex justify-end mt-4">
-            <Button onClick={handleRatesSave} disabled={ratesSaving}>
-              {ratesSaving ? 'Ukládám...' : 'Uložit sazby'}
-            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Notifikace */}
       <Card>
-        <CardHeader>
-          <CardTitle>Notifikace</CardTitle>
-          <CardDescription>
-            Nastavte jak chcete dostávat upozornění
-          </CardDescription>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Notifikace</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Email notifikace</Label>
-              <p className="text-sm text-muted-foreground">
-                Dostávejte emailové upozornění o nových dokumentech
-              </p>
+            <div>
+              <Label className="text-sm">Email notifikace</Label>
+              <p className="text-xs text-muted-foreground">Upozornění o nových dokumentech</p>
             </div>
             <Switch
               checked={localSettings.emailNotifications}
@@ -227,11 +174,9 @@ export default function AccountantSettingsPage() {
             />
           </div>
           <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>SMS notifikace</Label>
-              <p className="text-sm text-muted-foreground">
-                Dostávejte SMS upozornění o urgentních záležitostech
-              </p>
+            <div>
+              <Label className="text-sm">SMS notifikace</Label>
+              <p className="text-xs text-muted-foreground">SMS o urgentních záležitostech</p>
             </div>
             <Switch
               checked={localSettings.smsNotifications}
@@ -241,107 +186,38 @@ export default function AccountantSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Prahy pro upozornění - Dokumenty */}
+      {/* Prahy upozornění */}
       <Card>
-        <CardHeader>
-          <CardTitle>Prahy upozornění - Dokumenty</CardTitle>
-          <CardDescription>
-            Nastavte kdy se zobrazí upozornění na chybějící dokumenty a blížící se deadliny
-          </CardDescription>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Prahy upozornění</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="documentCriticalDays">
-                Kritický stav (dní před deadlinem)
-              </Label>
-              <Input
-                id="documentCriticalDays"
-                type="number"
-                min="0"
-                max="30"
-                value={localSettings.documentCriticalDays}
-                onChange={(e) => handleChange('documentCriticalDays', parseInt(e.target.value) || 0)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Červené upozornění když zbývá méně dní do deadlinu
-              </p>
+        <CardContent className="space-y-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dokumenty</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="documentCriticalDays" className="text-xs">Kritický (dní)</Label>
+              <Input id="documentCriticalDays" type="number" min="0" max="30" value={localSettings.documentCriticalDays} onChange={(e) => handleChange('documentCriticalDays', parseInt(e.target.value) || 0)} className="h-8" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="documentUrgentDays">
-                Urgentní stav (dní před deadlinem)
-              </Label>
-              <Input
-                id="documentUrgentDays"
-                type="number"
-                min="0"
-                max="30"
-                value={localSettings.documentUrgentDays}
-                onChange={(e) => handleChange('documentUrgentDays', parseInt(e.target.value) || 0)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Oranžové upozornění když zbývá méně dní do deadlinu
-              </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="documentUrgentDays" className="text-xs">Urgentní (dní)</Label>
+              <Input id="documentUrgentDays" type="number" min="0" max="30" value={localSettings.documentUrgentDays} onChange={(e) => handleChange('documentUrgentDays', parseInt(e.target.value) || 0)} className="h-8" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="closureDeadlineDay" className="text-xs">Deadline uzávěrky (den)</Label>
+              <Input id="closureDeadlineDay" type="number" min="1" max="28" value={localSettings.closureDeadlineDay} onChange={(e) => handleChange('closureDeadlineDay', parseInt(e.target.value) || 10)} className="h-8" />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="closureDeadlineDay">Deadline uzávěrky (den v měsíci)</Label>
-            <Input
-              id="closureDeadlineDay"
-              type="number"
-              min="1"
-              max="28"
-              value={localSettings.closureDeadlineDay}
-              onChange={(e) => handleChange('closureDeadlineDay', parseInt(e.target.value) || 10)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Den v následujícím měsíci kdy musí být uzávěrka hotová (např. 10 = 10. den)
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Prahy pro upozornění - Úkoly */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Prahy upozornění - Úkoly</CardTitle>
-          <CardDescription>
-            Nastavte kdy se zobrazí upozornění na úkoly po termínu
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="taskOverdueCriticalDays">
-                Kritický stav (dní po termínu)
-              </Label>
-              <Input
-                id="taskOverdueCriticalDays"
-                type="number"
-                min="0"
-                max="30"
-                value={localSettings.taskOverdueCriticalDays}
-                onChange={(e) => handleChange('taskOverdueCriticalDays', parseInt(e.target.value) || 0)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Červené upozornění po tolika dnech po termínu (0 = ihned)
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="taskOverdueUrgentDays">
-                Urgentní stav (dní před termínem)
-              </Label>
-              <Input
-                id="taskOverdueUrgentDays"
-                type="number"
-                min="0"
-                max="30"
-                value={localSettings.taskOverdueUrgentDays}
-                onChange={(e) => handleChange('taskOverdueUrgentDays', parseInt(e.target.value) || 0)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Oranžové upozornění když zbývá méně dní do termínu
-              </p>
+          <div className="border-t pt-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Úkoly</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="taskOverdueCriticalDays" className="text-xs">Kritický (dní po termínu)</Label>
+                <Input id="taskOverdueCriticalDays" type="number" min="0" max="30" value={localSettings.taskOverdueCriticalDays} onChange={(e) => handleChange('taskOverdueCriticalDays', parseInt(e.target.value) || 0)} className="h-8" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="taskOverdueUrgentDays" className="text-xs">Urgentní (dní před termínem)</Label>
+                <Input id="taskOverdueUrgentDays" type="number" min="0" max="30" value={localSettings.taskOverdueUrgentDays} onChange={(e) => handleChange('taskOverdueUrgentDays', parseInt(e.target.value) || 0)} className="h-8" />
+              </div>
             </div>
           </div>
         </CardContent>
@@ -349,159 +225,76 @@ export default function AccountantSettingsPage() {
 
       {/* Onboarding */}
       <Card>
-        <CardHeader>
-          <CardTitle>Onboarding klientů</CardTitle>
-          <CardDescription>
-            Nastavení procesu onboardingu nových klientů
-          </CardDescription>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Onboarding klientů</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="onboardingStalledDays">Dní bez aktivity = zaseklý</Label>
-              <Input
-                id="onboardingStalledDays"
-                type="number"
-                min="1"
-                max="60"
-                value={localSettings.onboardingStalledDays}
-                onChange={(e) => handleChange('onboardingStalledDays', parseInt(e.target.value) || 7)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Klienti bez aktivity po tento počet dní budou označeni jako "zaseklí"
-              </p>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="onboardingStalledDays" className="text-xs">Dní bez aktivity = zaseklý</Label>
+              <Input id="onboardingStalledDays" type="number" min="1" max="60" value={localSettings.onboardingStalledDays} onChange={(e) => handleChange('onboardingStalledDays', parseInt(e.target.value) || 7)} className="h-8" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="onboardingLowProgressPercent">Práh nízkého postupu (%)</Label>
-              <Input
-                id="onboardingLowProgressPercent"
-                type="number"
-                min="10"
-                max="90"
-                value={localSettings.onboardingLowProgressPercent}
-                onChange={(e) => handleChange('onboardingLowProgressPercent', parseInt(e.target.value) || 50)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Klienti s postupem pod tuto hranici budou označeni žlutě
-              </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="onboardingLowProgressPercent" className="text-xs">Práh nízkého postupu (%)</Label>
+              <Input id="onboardingLowProgressPercent" type="number" min="10" max="90" value={localSettings.onboardingLowProgressPercent} onChange={(e) => handleChange('onboardingLowProgressPercent', parseInt(e.target.value) || 50)} className="h-8" />
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Upozornění na zaseklé klienty</Label>
-              <p className="text-sm text-muted-foreground">
-                Zobrazovat upozornění na klienty bez aktivity
-              </p>
-            </div>
-            <Switch
-              checked={localSettings.onboardingShowStalled}
-              onCheckedChange={(checked) => handleChange('onboardingShowStalled', checked)}
-            />
+            <Label className="text-sm">Upozornění na zaseklé klienty</Label>
+            <Switch checked={localSettings.onboardingShowStalled} onCheckedChange={(checked) => handleChange('onboardingShowStalled', checked)} />
           </div>
           <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Email při zaseknutí klienta</Label>
-              <p className="text-sm text-muted-foreground">
-                Posílat emailové upozornění když klient dosáhne limitu dní bez aktivity
-              </p>
-            </div>
-            <Switch
-              checked={localSettings.onboardingEmailOnStalled}
-              onCheckedChange={(checked) => handleChange('onboardingEmailOnStalled', checked)}
-            />
+            <Label className="text-sm">Email při zaseknutí klienta</Label>
+            <Switch checked={localSettings.onboardingEmailOnStalled} onCheckedChange={(checked) => handleChange('onboardingEmailOnStalled', checked)} />
           </div>
         </CardContent>
       </Card>
 
-      {/* Výchozí nastavení */}
+      {/* Výchozí + Automatizace */}
       <Card>
-        <CardHeader>
-          <CardTitle>Výchozí nastavení</CardTitle>
-          <CardDescription>
-            Nastavte výchozí hodnoty pro nové klienty
-          </CardDescription>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Výchozí nastavení a automatizace</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="defaultVatRate">Výchozí sazba DPH (%)</Label>
-              <Input
-                id="defaultVatRate"
-                type="number"
-                min="0"
-                max="100"
-                value={localSettings.defaultVatRate}
-                onChange={(e) => handleChange('defaultVatRate', parseInt(e.target.value) || 21)}
-              />
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="defaultVatRate" className="text-xs">Výchozí DPH (%)</Label>
+              <Input id="defaultVatRate" type="number" min="0" max="100" value={localSettings.defaultVatRate} onChange={(e) => handleChange('defaultVatRate', parseInt(e.target.value) || 21)} className="h-8" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="reminderDays">Počet dní před urgováním</Label>
-              <Input
-                id="reminderDays"
-                type="number"
-                min="1"
-                max="30"
-                value={localSettings.reminderDays}
-                onChange={(e) => handleChange('reminderDays', parseInt(e.target.value) || 7)}
-              />
+            <div className="space-y-1.5">
+              <Label htmlFor="reminderDays" className="text-xs">Dní před urgováním</Label>
+              <Input id="reminderDays" type="number" min="1" max="30" value={localSettings.reminderDays} onChange={(e) => handleChange('reminderDays', parseInt(e.target.value) || 7)} className="h-8" />
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Automatizace */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Automatizace</CardTitle>
-          <CardDescription>
-            Automatické připomínky a upozornění
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Automatické připomínky klientům</Label>
-              <p className="text-sm text-muted-foreground">
-                Posílat klientům automatické připomínky před deadlinem
-              </p>
+          <div className="border-t pt-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm">Automatické připomínky klientům</Label>
+                <p className="text-xs text-muted-foreground">Před deadlinem</p>
+              </div>
+              <Switch checked={localSettings.autoReminders} onCheckedChange={(checked) => handleChange('autoReminders', checked)} />
             </div>
-            <Switch
-              checked={localSettings.autoReminders}
-              onCheckedChange={(checked) => handleChange('autoReminders', checked)}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Automatické schvalování dokumentů</Label>
-              <p className="text-sm text-muted-foreground">
-                Automaticky schválit dokumenty které prošly kontrolou AI
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm">Automatické schvalování AI</Label>
+                <p className="text-xs text-muted-foreground">Dokumenty po kontrole AI</p>
+              </div>
+              <Switch checked={localSettings.autoApproveAI} onCheckedChange={(checked) => handleChange('autoApproveAI', checked)} />
             </div>
-            <Switch
-              checked={localSettings.autoApproveAI}
-              onCheckedChange={(checked) => handleChange('autoApproveAI', checked)}
-            />
           </div>
         </CardContent>
       </Card>
 
       {/* Akce */}
       <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={handleReset}
-          className="text-gray-600 dark:text-gray-400"
-        >
-          <RotateCcw className="mr-2 h-4 w-4" />
+        <Button variant="outline" size="sm" onClick={handleReset} className="text-gray-600 dark:text-gray-400">
+          <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
           Obnovit výchozí
         </Button>
-        <Button
-          onClick={handleSave}
-          className=""
-        >
+        <Button size="sm" onClick={handleSave}>
           {saved ? (
             <>
-              <Check className="mr-2 h-4 w-4" />
+              <Check className="mr-1.5 h-3.5 w-3.5" />
               Uloženo
             </>
           ) : (

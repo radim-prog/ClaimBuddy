@@ -3,9 +3,12 @@ import type { NextRequest } from 'next/server'
 
 // Inline constants (can't import Node.js crypto modules in Edge Runtime)
 const COOKIE_NAME = 'auth_token'
-const AUTH_SECRET = process.env.AUTH_SECRET ?? ''
+const AUTH_SECRET = process.env.AUTH_SECRET
+if (!AUTH_SECRET) {
+  throw new Error('AUTH_SECRET environment variable is required and must not be empty')
+}
 
-const PUBLIC_PATHS = ['/auth/login', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook']
+const PUBLIC_PATHS = ['/auth/login', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/cron/drive-sync']
 const STATIC_PREFIXES = ['/_next', '/static', '/favicon.ico']
 
 // --- Rate Limiting (in-memory, sliding window) ---
@@ -82,7 +85,16 @@ async function verifyToken(token: string): Promise<TokenPayload | null> {
     const sigBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(json))
     const expectedSig = base64UrlEncode(sigBuffer)
 
-    if (signature !== expectedSig) return null
+    // Constant-time comparison (Edge Runtime - no crypto.timingSafeEqual)
+    if (signature.length !== expectedSig.length) return null
+    const encoder2 = new TextEncoder()
+    const a = encoder2.encode(signature)
+    const b = encoder2.encode(expectedSig)
+    let diff = 0
+    for (let i = 0; i < a.length; i++) {
+      diff |= a[i] ^ b[i]
+    }
+    if (diff !== 0) return null
 
     // Decode payload
     const decoded = atob(json.replace(/-/g, '+').replace(/_/g, '/'))
@@ -159,12 +171,16 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith('/client') || pathname.startsWith('/api/client')) {
-    if (user.role !== 'client' && user.role !== 'admin') {
+    const impersonateCompany = request.cookies.get('impersonate_company')?.value
+    const isImpersonating = impersonateCompany && ['accountant', 'admin', 'assistant'].includes(user.role)
+
+    if (!isImpersonating && user.role !== 'client' && user.role !== 'admin') {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
       return NextResponse.redirect(new URL('/accountant/dashboard', request.url))
     }
+
   }
 
   // Root redirect
@@ -178,6 +194,12 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-user-id', user.id)
   requestHeaders.set('x-user-name', user.name)
   requestHeaders.set('x-user-role', user.role)
+
+  // Forward impersonation context if active
+  const impersonateCookie = request.cookies.get('impersonate_company')?.value
+  if (impersonateCookie && ['accountant', 'admin', 'assistant'].includes(user.role)) {
+    requestHeaders.set('x-impersonate-company', impersonateCookie)
+  }
 
   return NextResponse.next({
     request: { headers: requestHeaders },

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -8,121 +8,52 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   AlertTriangle,
   Download,
   FileJson,
   FileSpreadsheet,
   FileText,
   Building2,
-  Shield,
   Lock,
   Eye,
   Clock,
   CheckCircle2,
-  XCircle,
   Search,
   AlertCircle,
   User,
   History,
+  Loader2,
 } from 'lucide-react'
 
-// Mock clients for export
-const mockClients = [
-  { id: 'company-11', name: 'Horák s.r.o.', ico: '12345678', documentsCount: 234, closuresCount: 12 },
-  { id: 'company-12', name: 'TechStart s.r.o.', ico: '23456789', documentsCount: 156, closuresCount: 8 },
-  { id: 'company-13', name: 'ABC Company a.s.', ico: '34567890', documentsCount: 423, closuresCount: 24 },
-  { id: 'company-14', name: 'XYZ Trading s.r.o.', ico: '45678901', documentsCount: 89, closuresCount: 6 },
-  { id: 'company-15', name: 'Kovo Praha s.r.o.', ico: '56789012', documentsCount: 312, closuresCount: 18 },
-  { id: 'company-16', name: 'Green Energy a.s.', ico: '67890123', documentsCount: 178, closuresCount: 10 },
-]
+type CompanyItem = {
+  id: string
+  name: string
+  ico: string
+  status: string
+}
 
-// Mock export history
-const mockExportHistory = [
-  {
-    id: 'export-1',
-    client_name: 'Horák s.r.o.',
-    client_id: 'company-11',
-    exported_by: 'Radim Zajíček',
-    exported_at: '2025-12-23T09:45:00Z',
-    format: 'json',
-    data_types: ['company', 'closures', 'documents'],
-    file_size: '2.4 MB',
-    status: 'completed',
-    reason: 'Archivace dat před migrací',
-  },
-  {
-    id: 'export-2',
-    client_name: 'ABC Company a.s.',
-    client_id: 'company-13',
-    exported_by: 'Radim',
-    exported_at: '2025-12-22T14:30:00Z',
-    format: 'xlsx',
-    data_types: ['company', 'closures'],
-    file_size: '1.8 MB',
-    status: 'completed',
-    reason: 'Požadavek klienta na data',
-  },
-  {
-    id: 'export-3',
-    client_name: 'TechStart s.r.o.',
-    client_id: 'company-12',
-    exported_by: 'Radim Zajíček',
-    exported_at: '2025-12-20T10:15:00Z',
-    format: 'csv',
-    data_types: ['closures'],
-    file_size: '0.5 MB',
-    status: 'completed',
-    reason: 'Audit',
-  },
-]
+type ExportHistoryEntry = {
+  id: string
+  user_name?: string
+  action: string
+  table_name: string
+  created_at: string
+  new_values?: Record<string, any> | null
+}
 
-// Data types for export
 const dataTypes = [
-  {
-    id: 'company',
-    label: 'Základní údaje firmy',
-    description: 'Název, IČO, DIČ, adresa, kontakty',
-    icon: Building2,
-    sensitive: false,
-  },
-  {
-    id: 'closures',
-    label: 'Měsíční uzávěrky',
-    description: 'Všechny uzávěrky včetně poznámek a schválení',
-    icon: FileText,
-    sensitive: true,
-  },
-  {
-    id: 'documents',
-    label: 'Dokumenty',
-    description: 'Nahraté soubory a jejich metadata',
-    icon: FileSpreadsheet,
-    sensitive: true,
-  },
-  {
-    id: 'messages',
-    label: 'Zprávy a komunikace',
-    description: 'Historie komunikace s klientem',
-    icon: FileText,
-    sensitive: true,
-  },
-  {
-    id: 'tasks',
-    label: 'Úkoly',
-    description: 'Úkoly spojené s klientem',
-    icon: CheckCircle2,
-    sensitive: false,
-  },
+  { id: 'company', label: 'Základní údaje firmy', description: 'Název, IČO, DIČ, adresa, kontakty', icon: Building2, sensitive: false },
+  { id: 'closures', label: 'Měsíční uzávěrky', description: 'Všechny uzávěrky včetně poznámek a schválení', icon: FileText, sensitive: true },
+  { id: 'documents', label: 'Dokumenty', description: 'Nahraté soubory a jejich metadata', icon: FileSpreadsheet, sensitive: true },
+  { id: 'messages', label: 'Zprávy a komunikace', description: 'Historie komunikace s klientem', icon: FileText, sensitive: true },
+  { id: 'tasks', label: 'Úkoly', description: 'Úkoly spojené s klientem', icon: CheckCircle2, sensitive: false },
 ]
 
 export default function ExportPage() {
+  const [clients, setClients] = useState<CompanyItem[]>([])
+  const [exportHistory, setExportHistory] = useState<ExportHistoryEntry[]>([])
+  const [loadingClients, setLoadingClients] = useState(true)
+
   const [selectedClient, setSelectedClient] = useState<string>('')
   const [selectedDataTypes, setSelectedDataTypes] = useState<string[]>(['company'])
   const [exportFormat, setExportFormat] = useState<string>('json')
@@ -132,16 +63,41 @@ export default function ExportPage() {
   const [isExporting, setIsExporting] = useState(false)
   const [exportSuccess, setExportSuccess] = useState(false)
 
-  const filteredClients = useMemo(() => {
-    if (!searchQuery) return mockClients
-    const query = searchQuery.toLowerCase()
-    return mockClients.filter(c =>
-      c.name.toLowerCase().includes(query) ||
-      c.ico.includes(query)
-    )
-  }, [searchQuery])
+  // Fetch real companies and export history
+  useEffect(() => {
+    async function load() {
+      try {
+        const [companiesRes, historyRes] = await Promise.all([
+          fetch('/api/accountant/admin/companies'),
+          fetch('/api/accountant/admin/audit-logs?action=EXPORT&limit=10'),
+        ])
+        if (companiesRes.ok) {
+          const data = await companiesRes.json()
+          setClients(data.companies ?? [])
+        }
+        if (historyRes.ok) {
+          const data = await historyRes.json()
+          setExportHistory(data.logs ?? [])
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoadingClients(false)
+      }
+    }
+    load()
+  }, [])
 
-  const selectedClientData = mockClients.find(c => c.id === selectedClient)
+  const filteredClients = useMemo(() => {
+    if (!searchQuery) return clients
+    const query = searchQuery.toLowerCase()
+    return clients.filter(c =>
+      c.name.toLowerCase().includes(query) ||
+      c.ico?.includes(query)
+    )
+  }, [searchQuery, clients])
+
+  const selectedClientData = clients.find(c => c.id === selectedClient)
 
   const handleDataTypeToggle = (typeId: string) => {
     setSelectedDataTypes(prev =>
@@ -157,12 +113,11 @@ export default function ExportPage() {
     }
 
     setIsExporting(true)
-    // Simulate export
+    // Simulate export (real export would generate file server-side)
     await new Promise(resolve => setTimeout(resolve, 2000))
     setIsExporting(false)
     setExportSuccess(true)
 
-    // Reset after showing success
     setTimeout(() => {
       setExportSuccess(false)
       setSelectedClient('')
@@ -175,42 +130,34 @@ export default function ExportPage() {
   const formatDateTime = (timestamp: string) => {
     const date = new Date(timestamp)
     return date.toLocaleString('cs-CZ', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     })
   }
 
-  const getFormatIcon = (format: string) => {
-    switch (format) {
-      case 'json': return FileJson
-      case 'xlsx': return FileSpreadsheet
-      case 'csv': return FileText
-      default: return FileText
-    }
-  }
+  const canExport = selectedClient && selectedDataTypes.length > 0 && exportReason.length >= 10 && confirmExport
 
-  const canExport = selectedClient &&
-    selectedDataTypes.length > 0 &&
-    exportReason.length >= 10 &&
-    confirmExport
+  if (loadingClients) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
       {/* Security Warning */}
-      <Card className="bg-gradient-to-r from-red-50 to-orange-50 border-red-200">
+      <Card className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border-red-200 dark:border-red-800">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-bold text-red-900 mb-2">Bezpečnostní upozornění - Export citlivých dat</h4>
-              <div className="text-sm text-red-800 space-y-2">
+              <h4 className="font-bold text-red-900 dark:text-red-200 mb-2">Bezpečnostní upozornění - Export citlivých dat</h4>
+              <div className="text-sm text-red-800 dark:text-red-300 space-y-2">
                 <p>
                   <strong>Export dat klienta je citlivá operace.</strong> Všechny exporty jsou logovány a můžou být předmětem auditu.
                 </p>
-                <ul className="list-disc ml-4 space-y-1 text-red-700">
+                <ul className="list-disc ml-4 space-y-1 text-red-700 dark:text-red-400">
                   <li>Export je povolen pouze pro administrátory</li>
                   <li>Každý export je zaznamenán včetně IP adresy a důvodu</li>
                   <li>Exportovaná data obsahují citlivé informace klientů</li>
@@ -231,12 +178,12 @@ export default function ExportPage() {
               <Download className="h-5 w-5" />
               Export dat klienta
             </CardTitle>
-            <CardDescription>Vyberte klienta a data k exportu</CardDescription>
+            <CardDescription>Vyberte klienta a data k exportu ({clients.length} klientů)</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {exportSuccess ? (
               <div className="py-12 text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 className="h-8 w-8 text-green-600" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Export dokončen</h3>
@@ -257,14 +204,14 @@ export default function ExportPage() {
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                    {filteredClients.map((client) => (
+                    {filteredClients.slice(0, 20).map((client) => (
                       <div
                         key={client.id}
                         onClick={() => setSelectedClient(client.id)}
                         className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                           selectedClient === client.id
-                            ? 'bg-blue-50 border-blue-300'
-                            : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700'
+                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
+                            : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -272,12 +219,17 @@ export default function ExportPage() {
                             selectedClient === client.id ? 'text-blue-600' : 'text-gray-400'
                           }`} />
                           <div>
-                            <p className="font-medium text-sm">{client.name}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">IČO: {client.ico}</p>
+                            <p className="font-medium text-sm text-gray-900 dark:text-white">{client.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">IČO: {client.ico || '-'}</p>
                           </div>
                         </div>
                       </div>
                     ))}
+                    {filteredClients.length > 20 && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 col-span-2 text-center py-2">
+                        Zobrazeno 20 z {filteredClients.length} klientů. Upřesněte vyhledávání.
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -294,7 +246,7 @@ export default function ExportPage() {
                               key={type.id}
                               className={`p-3 rounded-lg border ${
                                 selectedDataTypes.includes(type.id)
-                                  ? 'bg-blue-50 border-blue-300'
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
                                   : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
                               }`}
                             >
@@ -311,7 +263,7 @@ export default function ExportPage() {
                                       {type.label}
                                     </Label>
                                     {type.sensitive && (
-                                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300 text-xs">
+                                      <Badge variant="outline" className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700 text-xs">
                                         <Lock className="h-3 w-3 mr-1" />
                                         Citlivé
                                       </Badge>
@@ -342,14 +294,14 @@ export default function ExportPage() {
                               onClick={() => setExportFormat(format.id)}
                               className={`flex-1 p-3 rounded-lg border cursor-pointer transition-colors text-center ${
                                 exportFormat === format.id
-                                  ? 'bg-blue-50 border-blue-300'
-                                  : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700'
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
+                                  : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
                               }`}
                             >
                               <Icon className={`h-6 w-6 mx-auto mb-1 ${
                                 exportFormat === format.id ? 'text-blue-600' : 'text-gray-400'
                               }`} />
-                              <p className="font-medium text-sm">{format.label}</p>
+                              <p className="font-medium text-sm text-gray-900 dark:text-white">{format.label}</p>
                               <p className="text-xs text-gray-500 dark:text-gray-400">{format.desc}</p>
                             </div>
                           )
@@ -372,14 +324,14 @@ export default function ExportPage() {
                     </div>
 
                     {/* Confirmation */}
-                    <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                    <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                       <div className="flex items-start gap-3">
                         <Checkbox
                           id="confirm"
                           checked={confirmExport}
                           onCheckedChange={(checked) => setConfirmExport(checked as boolean)}
                         />
-                        <Label htmlFor="confirm" className="text-sm text-red-800 cursor-pointer">
+                        <Label htmlFor="confirm" className="text-sm text-red-800 dark:text-red-300 cursor-pointer">
                           <strong>Potvrzuji</strong>, že mám oprávnění k exportu těchto dat a jsem si vědom/a,
                           že tato akce bude zalogována včetně mého jména, IP adresy a důvodu.
                           Beru na vědomí, že neoprávněný export je porušením bezpečnostních pravidel.
@@ -428,8 +380,8 @@ export default function ExportPage() {
                 <div className="space-y-3">
                   <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Klient</p>
-                    <p className="font-medium">{selectedClientData?.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">IČO: {selectedClientData?.ico}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{selectedClientData?.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">IČO: {selectedClientData?.ico || '-'}</p>
                   </div>
 
                   <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -448,11 +400,11 @@ export default function ExportPage() {
 
                   <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Formát</p>
-                    <p className="font-medium uppercase">{exportFormat}</p>
+                    <p className="font-medium uppercase text-gray-900 dark:text-white">{exportFormat}</p>
                   </div>
 
-                  <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <div className="flex items-center gap-2 text-yellow-700 text-sm">
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                    <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300 text-sm">
                       <AlertCircle className="h-4 w-4" />
                       <span>Export bude zalogován</span>
                     </div>
@@ -462,7 +414,7 @@ export default function ExportPage() {
             </Card>
           )}
 
-          {/* Export History */}
+          {/* Export History from audit_log */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
@@ -472,30 +424,26 @@ export default function ExportPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {mockExportHistory.map((exp) => {
-                  const FormatIcon = getFormatIcon(exp.format)
-                  return (
+                {exportHistory.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                    Zatím žádné exporty
+                  </p>
+                ) : (
+                  exportHistory.map((exp) => (
                     <div key={exp.id} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
-                          <p className="font-medium text-sm">{exp.client_name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(exp.exported_at)}</p>
+                          <p className="font-medium text-sm text-gray-900 dark:text-white">{exp.table_name || 'Export'}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(exp.created_at)}</p>
                         </div>
-                        <Badge variant="outline" className="text-xs">
-                          <FormatIcon className="h-3 w-3 mr-1" />
-                          {exp.format.toUpperCase()}
-                        </Badge>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                         <User className="h-3 w-3" />
-                        <span>{exp.exported_by}</span>
-                        <span className="text-gray-400">|</span>
-                        <span>{exp.file_size}</span>
+                        <span>{exp.user_name || 'Systém'}</span>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 italic">"{exp.reason}"</p>
                     </div>
-                  )
-                })}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>

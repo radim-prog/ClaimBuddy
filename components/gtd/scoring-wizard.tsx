@@ -72,19 +72,19 @@ const questions = [
     icon: MapPin,
     iconColor: 'text-purple-600',
     options: [
-      { value: 0, label: 'Musím někam jet', emoji: '🚗' },
-      { value: 1, label: 'Lokálně v kanceláři', emoji: '🏢' },
-      { value: 2, label: 'U počítače, bez cestování', emoji: '💻' },
+      { value: 0, label: 'Musím cestovat (nad 10 km)', emoji: '🚗' },
+      { value: 1, label: 'Blízko, do 10 km od kanceláře', emoji: '🏢' },
+      { value: 2, label: 'U počítače, žádné cestování', emoji: '💻' },
     ],
   },
   {
     key: 'score_personal',
-    title: 'Jak se u toho cítím?',
+    title: 'Důležitost a motivace',
     icon: Heart,
     iconColor: 'text-pink-600',
     options: [
-      { value: 0, label: 'Nechce se mi, otravné', emoji: '😩' },
-      { value: 1, label: 'OK, normální práce', emoji: '👍' },
+      { value: 0, label: 'Nízká důležitost, není to nutné', emoji: '😩' },
+      { value: 1, label: 'Důležité nebo mě to baví', emoji: '👍' },
     ],
   },
 ] as const
@@ -179,7 +179,7 @@ export function ScoringWizard({ onComplete, onCancel }: ScoringWizardProps) {
           </CardContent>
         </Card>
 
-        <Button onClick={handleConfirm} className="w-full" size="lg">
+        <Button onClick={handleConfirm} className="w-full bg-purple-600 hover:bg-purple-700 text-white" size="lg">
           <CheckCircle className="h-5 w-5 mr-2" />
           Potvrdit hodnocení
         </Button>

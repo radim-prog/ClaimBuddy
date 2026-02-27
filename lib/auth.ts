@@ -9,7 +9,10 @@ import { getUserByLoginName } from '@/lib/user-store'
 // CONFIG
 // ============================================
 
-const AUTH_SECRET = process.env.AUTH_SECRET ?? ''
+if (!process.env.AUTH_SECRET) {
+  throw new Error('AUTH_SECRET environment variable is required and must not be empty')
+}
+const AUTH_SECRET: string = process.env.AUTH_SECRET
 const TOKEN_MAX_AGE = 7 * 24 * 60 * 60 // 7 days in seconds
 const COOKIE_NAME = 'auth_token'
 
@@ -84,7 +87,9 @@ export function verifyToken(token: string): TokenPayload | null {
       .createHmac('sha256', AUTH_SECRET)
       .update(json)
       .digest('base64url')
-    if (signature !== expectedSig) return null
+    const sigBuf = Buffer.from(signature, 'base64url')
+    const expectedBuf = Buffer.from(expectedSig, 'base64url')
+    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) return null
 
     const payload: TokenPayload = JSON.parse(
       Buffer.from(json, 'base64url').toString()

@@ -29,7 +29,7 @@ export function CollapsibleSection({
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
   return (
-    <Card id={id} className={`scroll-mt-4 ${className}`}>
+    <Card id={id} className={`scroll-mt-4 rounded-xl shadow-sm ${className}`}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <button

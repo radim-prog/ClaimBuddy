@@ -31,7 +31,7 @@ export function TileWrapper({ id, children, editMode }: TileWrapperProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group ${editMode ? 'ring-1 ring-dashed ring-gray-300 dark:ring-gray-600 rounded-lg' : ''}`}
+      className={`relative group ${editMode ? 'ring-1 ring-dashed ring-gray-300 dark:ring-gray-600 rounded-xl' : ''}`}
     >
       {editMode && (
         <button

@@ -2,15 +2,27 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CaseToggle } from '@/components/case/case-toggle'
 import { CaseTimeline } from '@/components/case/case-timeline'
 import { CaseDocuments } from '@/components/case/case-documents'
 import { CaseBudgetCard } from '@/components/case/case-budget-card'
+import { DocumentLinksPanel } from '@/components/documents/document-links-panel'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import {
   ArrowLeft,
   Calendar,
@@ -25,6 +37,7 @@ import {
   Star,
   AlertCircle,
   Briefcase,
+  TrendingUp,
 } from 'lucide-react'
 
 type Project = {
@@ -45,6 +58,53 @@ type Project = {
   case_opposing_party?: string
   case_reference?: string
   hourly_rate?: number
+  // R-Tasks scoring
+  score_money?: number
+  score_fire?: number
+  score_time?: number
+  score_distance?: number
+  score_personal?: number
+}
+
+// R-Tasks Scoring Configuration
+const SCORE_OPTIONS = {
+  money: [
+    { value: 0, label: '0 - <5k Kč', color: 'text-red-600' },
+    { value: 1, label: '1 - 5k+ Kč', color: 'text-purple-600' },
+    { value: 2, label: '2 - 15k+ Kč', color: 'text-blue-600' },
+    { value: 3, label: '3 - 50k+ Kč', color: 'text-green-600' },
+  ],
+  fire: [
+    { value: 0, label: '0 - Easy', color: 'text-green-600' },
+    { value: 1, label: '1 - Normal', color: 'text-blue-600' },
+    { value: 2, label: '2 - High', color: 'text-purple-600' },
+    { value: 3, label: '3 - Critical', color: 'text-red-600' },
+  ],
+  time: [
+    { value: 0, label: '0 - den+', color: 'text-red-600' },
+    { value: 1, label: '1 - 2-4h', color: 'text-purple-600' },
+    { value: 2, label: '2 - <1h', color: 'text-blue-600' },
+    { value: 3, label: '3 - <30min', color: 'text-green-600' },
+  ],
+  distance: [
+    { value: 0, label: '0 - Daleko', color: 'text-red-600' },
+    { value: 1, label: '1 - Lokálně', color: 'text-blue-600' },
+    { value: 2, label: '2 - PC', color: 'text-green-600' },
+  ],
+  personal: [
+    { value: 0, label: '0 - Poor', color: 'text-red-600' },
+    { value: 1, label: '1 - Good', color: 'text-green-600' },
+  ],
+}
+
+const calculateProjectTotalScore = (p: Project): number => {
+  return (p.score_money || 0) + (p.score_fire || 0) + (p.score_time || 0) + (p.score_distance || 0) + (p.score_personal || 0)
+}
+
+const getScorePriority = (score: number): { label: string; emoji: string; color: string } => {
+  if (score >= 9) return { label: 'Vysoká', emoji: '🔥', color: 'text-white bg-red-500' }
+  if (score >= 6) return { label: 'Střední', emoji: '⚠️', color: 'text-white bg-orange-500' }
+  return { label: 'Nízká', emoji: '☑️', color: 'text-white bg-green-600' }
 }
 
 type Phase = {
@@ -97,6 +157,23 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       })
       .catch(() => { setError('Nepodařilo se načíst projekt'); setLoading(false) })
   }, [params.id])
+
+  const updateProjectScore = async (field: string, value: number) => {
+    const prevValue = project?.[field as keyof Project]
+    setProject(prev => prev ? { ...prev, [field]: value } : prev)
+    try {
+      const res = await fetch(`/api/projects/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+      })
+      if (!res.ok) throw new Error('Failed to save')
+      toast.success('Score aktualizováno')
+    } catch {
+      setProject(prev => prev ? { ...prev, [field]: prevValue } : prev)
+      toast.error('Nepodařilo se uložit score')
+    }
+  }
 
   const toggleNextAction = async (taskId: string, current: boolean) => {
     // Unset previous next action
@@ -220,6 +297,165 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         </CardContent>
       </Card>
 
+      {/* R-Tasks Score Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              R-Tasks Score
+            </div>
+            <Badge className={cn("text-lg px-3 py-1", getScorePriority(calculateProjectTotalScore(project)).color)}>
+              {getScorePriority(calculateProjectTotalScore(project)).emoji} {calculateProjectTotalScore(project)}/12
+            </Badge>
+          </CardTitle>
+          <CardDescription>
+            Priorita: {getScorePriority(calculateProjectTotalScore(project)).label}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Money Value */}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <span>💰</span> Money Value
+            </Label>
+            <Select
+              value={project.score_money?.toString() || '0'}
+              onValueChange={(v) => updateProjectScore('score_money', parseInt(v))}
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SCORE_OPTIONS.money.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value.toString()}>
+                    <span className={opt.color}>{opt.label}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Fire Fire (Urgency) */}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <span>🔥</span> Fire Fire (Urgence)
+            </Label>
+            <Select
+              value={project.score_fire?.toString() || '0'}
+              onValueChange={(v) => updateProjectScore('score_fire', parseInt(v))}
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SCORE_OPTIONS.fire.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value.toString()}>
+                    <span className={opt.color}>{opt.label}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Time Value */}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <span>⏱️</span> Time Value
+            </Label>
+            <Select
+              value={project.score_time?.toString() || '0'}
+              onValueChange={(v) => updateProjectScore('score_time', parseInt(v))}
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SCORE_OPTIONS.time.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value.toString()}>
+                    <span className={opt.color}>{opt.label}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Distance Value */}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <span>📍</span> Distance Value
+            </Label>
+            <Select
+              value={project.score_distance?.toString() || '0'}
+              onValueChange={(v) => updateProjectScore('score_distance', parseInt(v))}
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SCORE_OPTIONS.distance.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value.toString()}>
+                    <span className={opt.color}>{opt.label}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Personal Rating */}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+              <span>❤️</span> Personal Rating
+            </Label>
+            <Select
+              value={project.score_personal?.toString() || '0'}
+              onValueChange={(v) => updateProjectScore('score_personal', parseInt(v))}
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SCORE_OPTIONS.personal.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value.toString()}>
+                    <span className={opt.color}>{opt.label}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Score breakdown */}
+          <Separator className="my-2" />
+          <div className="text-xs text-muted-foreground space-y-1">
+            <div className="flex justify-between">
+              <span>💰 Money:</span>
+              <span className="font-semibold">{project.score_money || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>🔥 Fire:</span>
+              <span className="font-semibold">{project.score_fire || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>⏱️ Time:</span>
+              <span className="font-semibold">{project.score_time || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>📍 Distance:</span>
+              <span className="font-semibold">{project.score_distance || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>❤️ Personal:</span>
+              <span className="font-semibold">{project.score_personal || 0}</span>
+            </div>
+            <Separator className="my-1" />
+            <div className="flex justify-between text-sm font-bold">
+              <span>Total:</span>
+              <span>{calculateProjectTotalScore(project)}/12</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Case Toggle */}
       <CaseToggle
         projectId={params.id}
@@ -253,6 +489,16 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           </TabsContent>
           <TabsContent value="documents">
             <CaseDocuments projectId={params.id} />
+            {project.company_id && (
+              <div className="mt-6">
+                <DocumentLinksPanel
+                  entityType="project"
+                  entityId={params.id}
+                  companyId={project.company_id}
+                  allowEdit
+                />
+              </div>
+            )}
           </TabsContent>
           <TabsContent value="budget">
             <CaseBudgetCard projectId={params.id} />

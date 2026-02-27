@@ -106,7 +106,7 @@ export function SectionNav({ items, activeSection }: SectionNavProps) {
 // Pre-defined nav items for client detail page
 export const clientDetailNavItems: NavItem[] = [
   { id: 'info', label: 'Info o firmě', icon: Building2 },
-  { id: 'closures', label: 'Uzávěrky', icon: Calendar },
+  { id: 'documents', label: 'Doklady', icon: FileText },
   { id: 'tasks', label: 'Úkoly', icon: ClipboardList },
   { id: 'messages', label: 'Zprávy', icon: MessageCircle },
   { id: 'employees', label: 'Zaměstnanci', icon: Users },

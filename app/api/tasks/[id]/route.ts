@@ -128,10 +128,27 @@ export async function PATCH(
       return NextResponse.json({ error: fetchError.message }, { status: 500 })
     }
 
-    // Handle special case: status change to completed
-    const updateData: Record<string, any> = {
-      ...body,
-      updated_at: new Date().toISOString(),
+    // Allowlisted fields for update (prevents mass assignment)
+    const ALLOWED_UPDATE_FIELDS = [
+      'title', 'description', 'status',
+      'score_money', 'score_fire', 'score_time', 'score_distance', 'score_personal',
+      'assigned_to', 'assigned_to_name',
+      'delegated_from', 'delegated_to', 'delegation_reason',
+      'is_waiting_for', 'waiting_for_who', 'waiting_for_what',
+      'accepted', 'accepted_at',
+      'due_date', 'due_time', 'estimated_minutes',
+      'is_billable', 'hourly_rate',
+      'gtd_context', 'gtd_energy_level', 'gtd_is_quick_action',
+      'tags', 'progress_percentage', 'task_data',
+      'project_id', 'phase_id', 'location_id', 'position_in_phase', 'is_next_action',
+      'company_id', 'company_name',
+    ]
+
+    const updateData: Record<string, any> = { updated_at: new Date().toISOString() }
+    for (const key of ALLOWED_UPDATE_FIELDS) {
+      if (body[key as keyof typeof body] !== undefined) {
+        updateData[key] = body[key as keyof typeof body]
+      }
     }
     if (body.status === 'completed' && !existingTask.completed_at) {
       updateData.completed_at = new Date().toISOString()

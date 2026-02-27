@@ -17,9 +17,13 @@ import {
   Clock,
   PauseCircle,
   AlertCircle,
+  ArrowUpDown,
 } from 'lucide-react'
+import { WorkTabBar } from '@/components/work-tab-bar'
 
 type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'review' | 'completed' | 'cancelled'
+type ScorePriority = 'high' | 'medium' | 'low'
+type SortBy = 'score' | 'deadline' | 'status' | 'name'
 
 type Project = {
   id: string
@@ -37,9 +41,15 @@ type Project = {
   created_at: string
   updated_at: string
   completed_at?: string
+  // R-Tasks scoring
+  score_money?: number
+  score_fire?: number
+  score_time?: number
+  score_distance?: number
+  score_personal?: number
 }
 
-// Status configuration - simplified
+// Status configuration
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; borderColor: string; textColor: string; bgColor: string }> = {
   planning: { label: 'Plánování', borderColor: 'border-l-blue-500', textColor: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-50' },
   active: { label: 'Aktivní', borderColor: 'border-l-green-500', textColor: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-900/20' },
@@ -48,6 +58,31 @@ const STATUS_CONFIG: Record<ProjectStatus, { label: string; borderColor: string;
   completed: { label: 'Dokončeno', borderColor: 'border-l-gray-400', textColor: 'text-gray-500 dark:text-gray-400', bgColor: 'bg-gray-50 dark:bg-gray-800/50' },
   cancelled: { label: 'Zrušeno', borderColor: 'border-l-red-500', textColor: 'text-red-500', bgColor: 'bg-red-50 dark:bg-red-900/20' },
 }
+
+// R-Tasks scoring helpers
+const calculateProjectScore = (p: Project): number => {
+  return (p.score_money || 0) + (p.score_fire || 0) + (p.score_time || 0) + (p.score_distance || 0) + (p.score_personal || 0)
+}
+
+const getScorePriority = (p: Project): ScorePriority => {
+  const score = calculateProjectScore(p)
+  if (score >= 9) return 'high'
+  if (score >= 6) return 'medium'
+  return 'low'
+}
+
+const priorityConfig: Record<ScorePriority, { bg: string; text: string; label: string }> = {
+  high: { bg: 'bg-red-100', text: 'text-red-700 dark:text-red-400', label: 'Vysoká' },
+  medium: { bg: 'bg-yellow-100', text: 'text-yellow-700 dark:text-yellow-400', label: 'Střední' },
+  low: { bg: 'bg-green-100', text: 'text-green-700 dark:text-green-400', label: 'Nízká' },
+}
+
+const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+  { value: 'score', label: 'Priorita (skóre)' },
+  { value: 'deadline', label: 'Termín' },
+  { value: 'status', label: 'Stav' },
+  { value: 'name', label: 'Název' },
+]
 
 function getDaysUntilDeadline(dateString: string): number {
   const today = new Date()
@@ -72,6 +107,7 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [filterStatus, setFilterStatus] = useState<ProjectStatus | 'all'>('all')
+  const [sortBy, setSortBy] = useState<SortBy>('score')
 
   useEffect(() => {
     fetch('/api/projects')
@@ -81,7 +117,7 @@ export default function ProjectsPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Filter projects
+  // Filter and sort projects
   const filteredProjects = useMemo(() => {
     let filtered = [...projects]
 
@@ -98,26 +134,31 @@ export default function ProjectsPage() {
       filtered = filtered.filter(p => p.status === filterStatus)
     }
 
-    // Sort: active first, then by deadline
+    // Sort
     filtered.sort((a, b) => {
-      const statusOrder: Record<ProjectStatus, number> = {
-        active: 0,
-        review: 1,
-        on_hold: 2,
-        planning: 3,
-        completed: 4,
-        cancelled: 5,
+      switch (sortBy) {
+        case 'score':
+          return calculateProjectScore(b) - calculateProjectScore(a)
+        case 'deadline': {
+          const aDate = a.due_date ? new Date(a.due_date).getTime() : Infinity
+          const bDate = b.due_date ? new Date(b.due_date).getTime() : Infinity
+          return aDate - bDate
+        }
+        case 'status': {
+          const statusOrder: Record<ProjectStatus, number> = {
+            active: 0, review: 1, on_hold: 2, planning: 3, completed: 4, cancelled: 5,
+          }
+          return statusOrder[a.status] - statusOrder[b.status]
+        }
+        case 'name':
+          return a.title.localeCompare(b.title, 'cs')
+        default:
+          return 0
       }
-      if (statusOrder[a.status] !== statusOrder[b.status]) {
-        return statusOrder[a.status] - statusOrder[b.status]
-      }
-      const aDate = a.due_date ? new Date(a.due_date).getTime() : Infinity
-      const bDate = b.due_date ? new Date(b.due_date).getTime() : Infinity
-      return aDate - bDate
     })
 
     return filtered
-  }, [projects, searchQuery, filterStatus])
+  }, [projects, searchQuery, filterStatus, sortBy])
 
   const activeFiltersCount = filterStatus !== 'all' ? 1 : 0
 
@@ -139,6 +180,8 @@ export default function ProjectsPage() {
 
   return (
     <div className="max-w-7xl">
+      <WorkTabBar />
+
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between">
@@ -165,12 +208,27 @@ export default function ProjectsPage() {
             <div className="flex items-center gap-2 flex-1">
               <Search className="h-5 w-5 text-gray-400" />
               <Input
-                placeholder="Hledat podle názvu projektu nebo klienta..."
+                placeholder="Hledat podle názvu projektu..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1"
               />
             </div>
+
+            {/* Sort dropdown */}
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4 text-gray-400" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortBy)}
+                className="px-3 py-2 border rounded-lg text-sm bg-white dark:bg-gray-800"
+              >
+                {SORT_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
             <Button
               variant={showFilters ? 'default' : 'outline'}
               onClick={() => setShowFilters(!showFilters)}
@@ -253,6 +311,9 @@ export default function ProjectsPage() {
             const isOverdue = daysUntil !== null && daysUntil < 0
             const isUrgent = daysUntil !== null && daysUntil >= 0 && daysUntil <= 3
             const progress = project.progress_percentage || 0
+            const score = calculateProjectScore(project)
+            const priority = getScorePriority(project)
+            const pConfig = priorityConfig[priority]
 
             return (
               <Link key={project.id} href={`/accountant/projects/${project.id}`}>
@@ -261,13 +322,23 @@ export default function ProjectsPage() {
                     <div className="grid grid-cols-12 gap-4 items-center">
 
                       {/* Project name */}
-                      <div className="col-span-5 min-w-0">
+                      <div className="col-span-4 min-w-0">
                         <h3 className="font-semibold text-gray-900 dark:text-white truncate">
                           {project.title}
                         </h3>
                         {project.outcome && (
                           <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{project.outcome}</p>
                         )}
+                      </div>
+
+                      {/* Score badge */}
+                      <div className="col-span-1">
+                        <Badge
+                          className={`${pConfig.bg} ${pConfig.text} text-xs py-0 h-5 px-2 font-medium`}
+                          title={`R-Tasks skóre: ${score}/12`}
+                        >
+                          {score} • {pConfig.label}
+                        </Badge>
                       </div>
 
                       {/* Status */}

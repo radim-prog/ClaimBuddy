@@ -9,7 +9,6 @@ import {
   Briefcase,
   Settings,
   LogOut,
-  X,
   User,
   Receipt,
   Sparkles,
@@ -37,17 +36,18 @@ import { QuickAddButton } from '@/components/gtd/quick-add-button'
 import { useInboxCount } from '@/components/gtd/use-inbox-count'
 import { KeyboardShortcuts } from '@/components/keyboard-shortcuts'
 import { WelcomeModal } from '@/components/accountant/welcome-modal'
-import { TutorialPanel } from '@/components/accountant/tutorial-panel'
+import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
+import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-context'
 import { BookOpen } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 
 const navigation = [
-  { name: 'Přehled', href: '/accountant/dashboard', icon: LayoutDashboard },
-  { name: 'Klienti', href: '/accountant/clients', icon: Users, badge: 'attention' as const },
+  { name: 'Přehled', href: '/accountant/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
+  { name: 'Klienti', href: '/accountant/clients', icon: Users, badge: 'attention' as const, tourId: 'nav-clients' },
   { name: 'Práce', href: '/accountant/tasks', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/tasks', '/accountant/projects'] },
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
-  { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt },
-  { name: 'Nastavení', href: '/accountant/settings', icon: Settings },
+  { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices'], tourId: 'nav-invoicing' },
+  { name: 'Nastavení', href: '/accountant/settings', icon: Settings, tourId: 'nav-settings' },
 ]
 
 const adminNavigation = [
@@ -65,7 +65,9 @@ export default function AccountantLayout({
     <AccountantUserProvider>
       <SettingsProvider>
         <AttentionProvider>
-          <AccountantLayoutInner>{children}</AccountantLayoutInner>
+          <TutorialProvider>
+            <AccountantLayoutInner>{children}</AccountantLayoutInner>
+          </TutorialProvider>
         </AttentionProvider>
       </SettingsProvider>
     </AccountantUserProvider>
@@ -75,8 +77,8 @@ export default function AccountantLayout({
 function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [showTutorial, setShowTutorial] = useState(false)
   const { userName, userInitials, userRole, permissions } = useAccountantUser()
+  const { startTour } = useTutorialContext()
   const inboxCount = useInboxCount()
   const { totals: attentionTotals } = useAttention()
 
@@ -110,6 +112,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.name}
                   href={item.href}
+                  data-tour={item.tourId}
                   className={`
                     group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
                     ${isActive
@@ -202,7 +205,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
             {/* Tools */}
             <div className="pt-3 mt-3 border-t border-white/10 space-y-0.5">
               <button
-                onClick={() => setShowTutorial(true)}
+                onClick={() => startTour()}
                 className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl text-white/50 hover:bg-white/10 hover:text-white/80 transition-all duration-200"
               >
                 <BookOpen className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
@@ -423,22 +426,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
         <KeyboardShortcuts />
         <WelcomeModal />
 
-        {/* Tutorial Dialog */}
-        {showTutorial && (
-          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowTutorial(false)}>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Průvodce aplikací</h2>
-                <button onClick={() => setShowTutorial(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="p-4">
-                <TutorialPanel />
-              </div>
-            </div>
-          </div>
-        )}
+        <TutorialOverlay />
       </div>
     </div>
   )

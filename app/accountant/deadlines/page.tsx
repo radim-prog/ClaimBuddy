@@ -45,6 +45,9 @@ const monthNamesFull = [
   'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'
 ]
 
+const quarterNames = ['Q1: Leden – Březen', 'Q2: Duben – Červen', 'Q3: Červenec – Září', 'Q4: Říjen – Prosinec']
+const quarterMonths: [number, number, number][] = [[1,2,3], [4,5,6], [7,8,9], [10,11,12]]
+
 export default function DeadlinesPage() {
   const { userName } = useAccountantUser()
   const [companies, setCompanies] = useState<Company[]>([])
@@ -53,6 +56,8 @@ export default function DeadlinesPage() {
   const now = new Date()
   const [selectedYear, setSelectedYear] = useState(now.getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1) // 1-indexed
+  const [viewMode, setViewMode] = useState<'monthly' | 'quarterly'>('quarterly')
+  const [selectedQuarter, setSelectedQuarter] = useState(Math.ceil((now.getMonth() + 1) / 3)) // 1-4
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all')
   const [completedMap, setCompletedMap] = useState<Record<string, { at: string; by: string }>>({})
@@ -77,7 +82,26 @@ export default function DeadlinesPage() {
   // Generate deadlines
   const deadlines = useMemo(() => {
     if (companies.length === 0) return []
-    return generateAllDeadlines(companies as any, selectedYear, selectedMonth)
+
+    let raw: GeneratedDeadline[] = []
+    if (viewMode === 'quarterly') {
+      const months = quarterMonths[selectedQuarter - 1]
+      for (const m of months) {
+        raw.push(...generateAllDeadlines(companies as any, selectedYear, m))
+      }
+    } else {
+      raw = generateAllDeadlines(companies as any, selectedYear, selectedMonth)
+    }
+
+    // Deduplicate by id (quarterly + annual templates can overlap)
+    const seen = new Set<string>()
+    const unique = raw.filter(d => {
+      if (seen.has(d.id)) return false
+      seen.add(d.id)
+      return true
+    })
+
+    return unique
       .map(d => ({
         ...d,
         completed: !!completedMap[d.id],
@@ -85,11 +109,10 @@ export default function DeadlinesPage() {
         completed_by: completedMap[d.id]?.by,
       }))
       .sort((a, b) => {
-        // Sort by date, then by type
         if (a.due_date !== b.due_date) return a.due_date.localeCompare(b.due_date)
         return a.type.localeCompare(b.type)
       })
-  }, [companies, selectedYear, selectedMonth, completedMap])
+  }, [companies, selectedYear, selectedMonth, selectedQuarter, viewMode, completedMap])
 
   // Apply filters
   const filteredDeadlines = useMemo(() => {
@@ -155,6 +178,45 @@ export default function DeadlinesPage() {
     }
   }
 
+  // Navigate quarters
+  const goToPrevQuarter = () => {
+    if (selectedQuarter === 1) {
+      setSelectedQuarter(4)
+      setSelectedYear(y => y - 1)
+    } else {
+      setSelectedQuarter(q => q - 1)
+    }
+  }
+
+  const goToNextQuarter = () => {
+    if (selectedQuarter === 4) {
+      setSelectedQuarter(1)
+      setSelectedYear(y => y + 1)
+    } else {
+      setSelectedQuarter(q => q + 1)
+    }
+  }
+
+  // Switch view mode
+  const switchViewMode = (mode: 'monthly' | 'quarterly') => {
+    if (mode === 'quarterly' && viewMode === 'monthly') {
+      setSelectedQuarter(Math.ceil(selectedMonth / 3))
+    } else if (mode === 'monthly' && viewMode === 'quarterly') {
+      setSelectedMonth(quarterMonths[selectedQuarter - 1][0])
+    }
+    setViewMode(mode)
+    setCollapsedDays(new Set())
+  }
+
+  // Default collapse all days in quarterly view (many days)
+  const dateKeys = Object.keys(groupedByDate)
+  const dateKeysStr = dateKeys.join(',')
+  useEffect(() => {
+    if (viewMode === 'quarterly' && dateKeys.length > 0) {
+      setCollapsedDays(new Set(dateKeys))
+    }
+  }, [dateKeysStr, viewMode]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const today = now.toISOString().split('T')[0]
 
   // Day status styling
@@ -190,35 +252,65 @@ export default function DeadlinesPage() {
         </p>
       </div>
 
-      {/* Month navigation + Stats */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={goToPrevMonth}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-bold rounded-lg min-w-[180px] text-center">
-            {monthNamesFull[selectedMonth - 1]} {selectedYear}
-          </span>
-          <Button variant="outline" size="sm" onClick={goToNextMonth}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+      {/* View mode toggle + Navigation + Stats */}
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1 mr-2">
+              <button
+                onClick={() => switchViewMode('quarterly')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  viewMode === 'quarterly'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                Kvartál
+              </button>
+              <button
+                onClick={() => switchViewMode('monthly')}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  viewMode === 'monthly'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                Měsíc
+              </button>
+            </div>
 
-        <div className="flex items-center gap-4 text-sm">
-          <span className="text-gray-500 dark:text-gray-400">
-            Celkem: <span className="font-bold text-gray-900 dark:text-white">{stats.total}</span>
-          </span>
-          <span className="text-green-600 dark:text-green-400">
-            Splněno: <span className="font-bold">{stats.completed}</span>
-          </span>
-          <span className="text-red-600 dark:text-red-400">
-            Zbývá: <span className="font-bold">{stats.pending}</span>
-          </span>
+            {/* Period navigation */}
+            <Button variant="outline" size="sm" onClick={viewMode === 'quarterly' ? goToPrevQuarter : goToPrevMonth}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-bold rounded-xl min-w-[180px] sm:min-w-[220px] text-center text-sm sm:text-base">
+              {viewMode === 'quarterly'
+                ? `${quarterNames[selectedQuarter - 1]} ${selectedYear}`
+                : `${monthNamesFull[selectedMonth - 1]} ${selectedYear}`
+              }
+            </span>
+            <Button variant="outline" size="sm" onClick={viewMode === 'quarterly' ? goToNextQuarter : goToNextMonth}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-4 text-sm">
+            <span className="text-gray-500 dark:text-gray-400">
+              Celkem: <span className="font-bold text-gray-900 dark:text-white">{stats.total}</span>
+            </span>
+            <span className="text-green-600 dark:text-green-400">
+              Splněno: <span className="font-bold">{stats.completed}</span>
+            </span>
+            <span className="text-red-600 dark:text-red-400">
+              Zbývá: <span className="font-bold">{stats.pending}</span>
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border">
+      <div className="flex flex-wrap gap-3 mb-6 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-gray-400" />
           <span className="text-sm text-gray-500 dark:text-gray-400">Filtr:</span>
@@ -268,7 +360,7 @@ export default function DeadlinesPage() {
       {Object.keys(groupedByDate).length === 0 ? (
         <div className="text-center py-16 text-gray-500 dark:text-gray-400">
           <CalendarCheck className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-          <p>Žádné termíny pro tento měsíc</p>
+          <p>Žádné termíny pro {viewMode === 'quarterly' ? 'tento kvartál' : 'tento měsíc'}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -283,7 +375,7 @@ export default function DeadlinesPage() {
             const dayProgress = dayTotal > 0 ? Math.round((dayCompleted / dayTotal) * 100) : 0
 
             return (
-              <div key={dateStr} className={`border rounded-lg ${dayStatus.border} overflow-hidden`}>
+              <div key={dateStr} className={`border rounded-xl ${dayStatus.border} overflow-hidden transition-all duration-200 hover:shadow-sm`}>
                 {/* Date header - clickable to collapse */}
                 <button
                   onClick={() => setCollapsedDays(prev => {
@@ -297,7 +389,9 @@ export default function DeadlinesPage() {
                   <div className="flex items-center gap-3">
                     <div className="text-center min-w-[40px]">
                       <div className={`text-2xl font-bold ${dayStatus.color}`}>{dayNum}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">{dayName}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                        {viewMode === 'quarterly' ? `${monthNamesFull[date.getMonth()].slice(0,3)}` : dayName}
+                      </div>
                     </div>
                     {dayStatus.label && (
                       <Badge variant="outline" className={`${dayStatus.color} border-current`}>

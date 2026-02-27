@@ -19,9 +19,14 @@ export interface Company {
   invoice_stats: { total: number; issued: number; received: number }
   total_revenue: number
   has_employees: boolean
+  monthly_reporting: boolean
   group_name: string | null
   owner_id: string | null
   assigned_accountant_id: string | null
+  notification_preferences: {
+    channels: { in_app: boolean; email: boolean; sms: boolean; whatsapp: boolean }
+    types: { deadline_reminder: boolean; unpaid_invoice: boolean; missing_documents: boolean }
+  } | null
   created_at: string
   updated_at: string
 }

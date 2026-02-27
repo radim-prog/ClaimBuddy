@@ -107,7 +107,7 @@ export function ExtractedDataDisplay({
     <Card className="border-dashed">
       <CardContent className="p-4 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-medium text-gray-900">Vytěžená data</h3>
+          <h3 className="font-medium text-gray-900 dark:text-white">Vytěžená data</h3>
           {confidenceScore !== undefined && (
             <ConfidenceBadge score={Math.round(confidenceScore)} size="sm" />
           )}
@@ -121,7 +121,7 @@ export function ExtractedDataDisplay({
 
             return (
               <div key={field.key} className="space-y-1">
-                <Label className="text-xs text-gray-600 flex items-center gap-2">
+                <Label className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
                   {field.label}
                   {corrected && (
                     <span className="text-amber-600 text-xs">
@@ -134,15 +134,15 @@ export function ExtractedDataDisplay({
                     type={field.type === 'date' ? 'date' : 'text'}
                     value={value}
                     onChange={(e) => onFieldChange?.(field.key, e.target.value)}
-                    className={corrected ? 'border-amber-400 bg-amber-50' : ''}
+                    className={corrected ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' : ''}
                   />
                 ) : (
                   <div className={`
-                    px-3 py-2 rounded-md bg-gray-50 text-sm
-                    ${corrected ? 'bg-amber-50 text-amber-900' : 'text-gray-900'}
+                    px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-800 text-sm
+                    ${corrected ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200' : 'text-gray-900 dark:text-gray-100'}
                   `}>
-                    {formatDisplayValue(field, value) || 
-                      <span className="text-gray-400 italic">Neuvedeno</span>
+                    {formatDisplayValue(field, value) ||
+                      <span className="text-gray-400 dark:text-gray-500 italic">Neuvedeno</span>
                     }
                   </div>
                 )}

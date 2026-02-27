@@ -33,17 +33,17 @@ export default function AccountantLandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-100">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-100 dark:from-gray-950 dark:via-gray-900 dark:to-purple-950">
       <div className="container mx-auto px-4 py-8 lg:py-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
 
           {/* Levá strana - Marketing */}
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl lg:text-5xl font-bold text-purple-900 mb-4">
+              <h1 className="text-4xl lg:text-5xl font-bold text-purple-900 dark:text-purple-100 mb-4">
                 Účetní OS
               </h1>
-              <p className="text-xl text-purple-700">
+              <p className="text-xl text-purple-700 dark:text-purple-300">
                 Portál pro účetní
               </p>
             </div>
@@ -56,7 +56,7 @@ export default function AccountantLandingPage() {
 
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                   <LayoutDashboard className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
@@ -66,7 +66,7 @@ export default function AccountantLandingPage() {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                   <Users className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
@@ -76,7 +76,7 @@ export default function AccountantLandingPage() {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                   <Clock className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
@@ -89,10 +89,10 @@ export default function AccountantLandingPage() {
 
           {/* Pravá strana - Login */}
           <div>
-            <Card className="border-2 border-purple-200 shadow-xl">
+            <Card className="border-2 border-purple-200 dark:border-purple-800 shadow-xl">
               <CardContent className="p-8">
                 <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-purple-900">Přihlášení</h2>
+                  <h2 className="text-2xl font-bold text-purple-900 dark:text-purple-100">Přihlášení</h2>
                   <p className="text-gray-600 dark:text-gray-300 mt-1">Vstupte do svého účtu</p>
                 </div>
 
@@ -142,7 +142,7 @@ export default function AccountantLandingPage() {
                     Účty vytváří administrátor systému.
                   </p>
                   <Link href="/accountant/dashboard">
-                    <Button variant="outline" className="w-full border-purple-300 text-purple-600 hover:bg-purple-50">
+                    <Button variant="outline" className="w-full border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30">
                       Demo přístup (bez přihlášení)
                     </Button>
                   </Link>

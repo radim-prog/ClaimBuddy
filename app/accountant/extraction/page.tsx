@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import {
   DocumentTypeSelector,
   ExtractedDataDisplay,
   ConfidenceBadge,
   ExtractionDocumentType,
-  ExtractionStatus
+  ExtractionStatus,
+  mapKimiToExtractedData
 } from '@/components/extraction'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,6 +24,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { useEffect } from 'react'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import {
   Upload,
   FileText,
@@ -53,6 +55,8 @@ const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 
 export default function AccountantExtractionPage() {
+  const { userId } = useAccountantUser()
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [activeTab, setActiveTab] = useState('upload')
 
@@ -68,6 +72,8 @@ export default function AccountantExtractionPage() {
     confidence_score?: number
     document_type?: ExtractionDocumentType
     error?: string
+    corrections?: any[]
+    roundResults?: any[]
   } | null>(null)
 
   const [history, setHistory] = useState<ExtractionHistoryItem[]>([])
@@ -76,16 +82,24 @@ export default function AccountantExtractionPage() {
   const [companies, setCompanies] = useState<Array<{ id: string; name: string }>>([])
   const [assignCompanyId, setAssignCompanyId] = useState<string>('')
 
-  // Fetch companies for assignment dropdown
+  // Fetch companies and read ?company= param from URL
   useEffect(() => {
-    fetch('/api/accountant/companies')
+    if (!userId) return
+    // Read company from URL query param
+    const params = new URLSearchParams(window.location.search)
+    const companyFromUrl = params.get('company')
+    if (companyFromUrl) setAssignCompanyId(companyFromUrl)
+
+    fetch('/api/accountant/companies', {
+      headers: { 'x-user-id': userId }
+    })
       .then(r => r.json())
       .then(data => {
         const active = (data.companies || []).filter((c: any) => c.status !== 'inactive')
         setCompanies(active.map((c: any) => ({ id: c.id, name: c.name })))
       })
       .catch(() => {})
-  }, [])
+  }, [userId])
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -178,6 +192,7 @@ export default function AccountantExtractionPage() {
 
       const response = await fetch('/api/documents/extract', {
         method: 'POST',
+        headers: userId ? { 'x-user-id': userId } : {},
         body: formData
       })
 
@@ -187,11 +202,15 @@ export default function AccountantExtractionPage() {
       const result = await response.json()
 
       if (result.success) {
+        // Map Kimi ExtractedInvoice (nested) to frontend ExtractedData (flat)
+        const mappedData = mapKimiToExtractedData(result.data)
         setExtractionResult({
           success: true,
-          data: result.data,
+          data: mappedData,
           confidence_score: result.data?.confidence_score,
-          document_type: documentType
+          document_type: documentType,
+          corrections: result.data?.corrections,
+          roundResults: result.data?.roundResults,
         })
 
         const newHistoryItem: ExtractionHistoryItem = {
@@ -270,13 +289,28 @@ export default function AccountantExtractionPage() {
     return <Image className="w-10 h-10 text-blue-500" />
   }
 
+  const selectedCompanyName = useMemo(() => {
+    if (!assignCompanyId) return null
+    return companies.find(c => c.id === assignCompanyId)?.name || null
+  }, [assignCompanyId, companies])
+
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      <div className="border-b bg-white p-4">
-        <h1 className="text-2xl font-bold">Vytěžování dokumentů</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Nahrání a automatické zpracování faktur a účtenek pomocí Kimi AI
-        </p>
+    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+      <div className="border-b bg-white dark:bg-gray-800 dark:border-gray-700 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold dark:text-white">Vytěžování dokumentů</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Nahrání a automatické zpracování faktur a účtenek pomocí Kimi AI
+            </p>
+          </div>
+          {selectedCompanyName && (
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              <Building2 className="h-4 w-4 mr-1.5" />
+              {selectedCompanyName}
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 p-4 overflow-auto">
@@ -335,13 +369,13 @@ export default function AccountantExtractionPage() {
                           onChange={handleFileSelect}
                           className="hidden"
                         />
-                        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
                           <FileUp className="w-8 h-8 text-gray-400" />
                         </div>
-                        <p className="text-lg font-medium text-gray-700 mb-2">
+                        <p className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
                           Přetáhněte soubor sem
                         </p>
-                        <p className="text-sm text-gray-500 mb-4">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                           nebo klikněte pro výběr
                         </p>
                         <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
@@ -361,7 +395,7 @@ export default function AccountantExtractionPage() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                           {getFileIcon(selectedFile)}
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{selectedFile.name}</p>
@@ -440,6 +474,11 @@ export default function AccountantExtractionPage() {
                             score={Math.round(extractionResult.confidence_score)}
                           />
                         )}
+                        {extractionResult.corrections && extractionResult.corrections.length > 0 && (
+                          <Badge variant="outline" className="text-amber-600 border-amber-300">
+                            {extractionResult.corrections.length} korekcí (3 kola)
+                          </Badge>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent className="flex-1 overflow-auto p-4">
@@ -453,12 +492,12 @@ export default function AccountantExtractionPage() {
                       {/* Assign to client */}
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <Select value={assignCompanyId} onValueChange={setAssignCompanyId}>
+                        <Select value={assignCompanyId || 'none'} onValueChange={v => setAssignCompanyId(v === 'none' ? '' : v)}>
                           <SelectTrigger className="flex-1">
                             <SelectValue placeholder="Přiřadit ke klientovi..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Nepřiřazeno</SelectItem>
+                            <SelectItem value="none">Nepřiřazeno</SelectItem>
                             {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                           </SelectContent>
                         </Select>
@@ -473,27 +512,46 @@ export default function AccountantExtractionPage() {
                           <X className="w-4 h-4 mr-2" />
                           Zahodit
                         </Button>
-                        <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => {
+                        <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={async () => {
                           if (!assignCompanyId) {
                             toast.warning('Vyberte klienta pro přiřazení dokumentu')
                             return
                           }
-                          const companyName = companies.find(c => c.id === assignCompanyId)?.name
-                          toast.success(`Dokument přiřazen ke klientovi ${companyName}`)
-                          setHistory(prev => [{
-                            id: crypto.randomUUID(),
-                            file_name: selectedFile?.name || 'dokument',
-                            file_type: selectedFile?.type?.includes('pdf') ? 'pdf' : 'image',
-                            document_type: extractionResult?.document_type || 'invoice',
-                            status: 'approved' as ExtractionStatus,
-                            extracted_data: extractionResult?.data,
-                            confidence_score: extractionResult?.confidence_score,
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString(),
-                          }, ...prev])
-                          setExtractionResult(null)
-                          setSelectedFile(null)
-                          setAssignCompanyId('')
+                          try {
+                            const res = await fetch('/api/accountant/extraction/approve', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                ...(userId ? { 'x-user-id': userId } : {}),
+                              },
+                              body: JSON.stringify({
+                                company_id: assignCompanyId,
+                                action: 'approve',
+                                extracted_data: extractionResult?.data,
+                                file_name: selectedFile?.name || 'dokument',
+                                document_type: extractionResult?.document_type || 'invoice',
+                              }),
+                            })
+                            if (!res.ok) throw new Error('Approve failed')
+                            const companyName = companies.find(c => c.id === assignCompanyId)?.name
+                            toast.success(`Dokument schválen a přiřazen ke klientovi ${companyName}`)
+                            setHistory(prev => [{
+                              id: crypto.randomUUID(),
+                              file_name: selectedFile?.name || 'dokument',
+                              file_type: selectedFile?.type?.includes('pdf') ? 'pdf' : 'image',
+                              document_type: extractionResult?.document_type || 'invoice',
+                              status: 'approved' as ExtractionStatus,
+                              extracted_data: extractionResult?.data,
+                              confidence_score: extractionResult?.confidence_score,
+                              created_at: new Date().toISOString(),
+                              updated_at: new Date().toISOString(),
+                            }, ...prev])
+                            setExtractionResult(null)
+                            setSelectedFile(null)
+                            setAssignCompanyId('')
+                          } catch {
+                            toast.error('Chyba při schvalování dokumentu')
+                          }
                         }}>
                           <Check className="w-4 h-4 mr-2" />
                           Schválit
@@ -549,8 +607,8 @@ export default function AccountantExtractionPage() {
                           <button
                             key={item.id}
                             onClick={() => handleViewHistoryItem(item)}
-                            className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
-                              selectedHistoryItem?.id === item.id ? 'bg-blue-50' : ''
+                            className={`w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                              selectedHistoryItem?.id === item.id ? 'bg-blue-50 dark:bg-blue-900/30' : ''
                             }`}
                           >
                             <div className="flex items-start gap-3">
@@ -609,7 +667,7 @@ export default function AccountantExtractionPage() {
             </div>
           </TabsContent>
           <TabsContent value="compare">
-            <CompareTab />
+            <CompareTab userId={userId} />
           </TabsContent>
         </Tabs>
       </div>
@@ -618,7 +676,7 @@ export default function AccountantExtractionPage() {
 }
 
 // A/B comparison tab component
-function CompareTab() {
+function CompareTab({ userId }: { userId: string | null }) {
   const [comparing, setComparing] = useState(false)
   const [compareFile, setCompareFile] = useState<File | null>(null)
   const [compareResult, setCompareResult] = useState<{
@@ -643,7 +701,7 @@ function CompareTab() {
     try {
       const formData = new FormData()
       formData.append('file', compareFile)
-      const res = await fetch('/api/documents/compare', { method: 'POST', body: formData })
+      const res = await fetch('/api/documents/compare', { method: 'POST', headers: userId ? { 'x-user-id': userId } : {}, body: formData })
       const data = await res.json()
       if (data.error) {
         toast.error(data.error)

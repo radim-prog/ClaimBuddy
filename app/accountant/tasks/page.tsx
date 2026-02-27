@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { fireTaskConfetti } from '@/components/gtd/confetti'
+import { DailyProgressRing } from '@/components/gtd/progress-ring'
+import { GamificationStats } from '@/components/gtd/gamification-stats'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -49,6 +51,8 @@ import {
   Coffee,
   FolderKanban,
   Loader2,
+  Inbox,
+  Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -68,6 +72,8 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { WorkTabBar } from '@/components/work-tab-bar'
+import { CompanyCombobox } from '@/components/ui/company-combobox'
 import type { TaskStatus } from '@/lib/types/tasks'
 
 // Task type for this page (subset of full Task type)
@@ -192,13 +198,13 @@ function DraggableKanbanCard({ task, isOverdue, isUrgent, getDaysUntilDue, onCom
 
   const getCardClassName = () => {
     if (overdue) return 'border-l-4 border-l-red-500 bg-red-50 dark:bg-red-900/20'
-    if (urgent) return 'border-l-4 border-l-amber-500 bg-amber-50'
+    if (urgent) return 'border-l-4 border-l-amber-500 bg-amber-50 dark:bg-amber-900/20'
     return ''
   }
 
   return (
     <div ref={setNodeRef} style={style}>
-      <Card className={`hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${getCardClassName()} ${isDragging ? 'shadow-lg ring-2 ring-blue-400' : ''}`}>
+      <Card className={`hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-grab active:cursor-grabbing rounded-xl ${getCardClassName()} ${isDragging ? 'shadow-xl ring-2 ring-purple-400' : ''}`}>
         <CardContent className="p-3">
           <div className="flex items-start gap-2">
             <div {...attributes} {...listeners} className="mt-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
@@ -220,7 +226,7 @@ function DraggableKanbanCard({ task, isOverdue, isUrgent, getDaysUntilDue, onCom
                   <Play className="h-3.5 w-3.5" />
                 </Button>
                 {task.status !== 'completed' && (
-                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-green-600 hover:bg-green-50" onClick={(e) => onComplete(task.id, e)} title="Dokončit">
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20" onClick={(e) => onComplete(task.id, e)} title="Dokončit">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                   </Button>
                 )}
@@ -253,32 +259,40 @@ export default function TasksPage() {
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
   const [showNewTask, setShowNewTask] = useState(false)
   const [newTaskLoading, setNewTaskLoading] = useState(false)
-  const [newTaskForm, setNewTaskForm] = useState({ title: '', description: '', company_id: '', due_date: new Date().toISOString().split('T')[0], estimated_minutes: 30 })
+  const [newTaskForm, setNewTaskForm] = useState({ title: '', description: '', company_id: '', due_date: new Date().toISOString().split('T')[0], estimated_minutes: 30, priority: 'medium' as 'high' | 'medium' | 'low' })
+
+  const PRIORITY_SCORES: Record<'high' | 'medium' | 'low', { score_fire: number; score_money: number; score_time: number; score_distance: number; score_personal: number }> = {
+    high: { score_fire: 3, score_money: 2, score_time: 2, score_distance: 2, score_personal: 1 },
+    medium: { score_fire: 2, score_money: 1, score_time: 2, score_distance: 1, score_personal: 1 },
+    low: { score_fire: 1, score_money: 0, score_time: 1, score_distance: 1, score_personal: 0 },
+  }
 
   const handleCreateTask = async () => {
     if (!newTaskForm.title.trim()) { toast.error('Název úkolu je povinný'); return }
     setNewTaskLoading(true)
     try {
+      const scores = PRIORITY_SCORES[newTaskForm.priority]
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: newTaskForm.title.trim(),
           description: newTaskForm.description.trim() || undefined,
-          company_id: newTaskForm.company_id || undefined,
-          company_name: companies.find(c => c.id === newTaskForm.company_id)?.name || '',
+          company_id: newTaskForm.company_id && newTaskForm.company_id !== 'all' ? newTaskForm.company_id : undefined,
+          company_name: newTaskForm.company_id && newTaskForm.company_id !== 'all' ? (companies.find(c => c.id === newTaskForm.company_id)?.name || '') : '',
           due_date: newTaskForm.due_date,
           estimated_minutes: newTaskForm.estimated_minutes,
-          status: 'pending',
+          status: 'accepted',
           is_project: false,
           is_billable: false,
+          ...scores,
         }),
       })
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Chyba') }
       const { task } = await res.json()
       setTasks(prev => [task, ...prev])
       setShowNewTask(false)
-      setNewTaskForm({ title: '', description: '', company_id: '', due_date: new Date().toISOString().split('T')[0], estimated_minutes: 30 })
+      setNewTaskForm({ title: '', description: '', company_id: '', due_date: new Date().toISOString().split('T')[0], estimated_minutes: 30, priority: 'medium' })
       toast.success('Úkol vytvořen')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Nepodařilo se vytvořit úkol')
@@ -429,9 +443,7 @@ export default function TasksPage() {
       if (selectedCategories.has('archive') && isArchived) return true
       if (selectedCategories.has('waiting') && isWaiting) return true
       if (selectedCategories.has('someday') && isSomeday) return true
-      if (selectedCategories.has('active') && isActive) {
-        return !isQuickAction(t) || isOverdue(t.due_date)
-      }
+      if (selectedCategories.has('active') && isActive) return true
       return false
     })
   }
@@ -623,11 +635,11 @@ export default function TasksPage() {
     return (
       <div className={`flex items-center gap-3 py-2.5 px-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50 transition-colors ${getRowClassName()}`}>
         {task.status !== 'completed' ? (
-          <button onClick={(e) => handleCompleteTask(task.id, e)} className="w-5 h-5 rounded-full border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 flex items-center justify-center transition-colors flex-shrink-0">
+          <button onClick={(e) => handleCompleteTask(task.id, e)} className="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600 hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center justify-center transition-colors flex-shrink-0">
             <CheckCircle2 className="h-3 w-3 text-transparent hover:text-green-500" />
           </button>
         ) : (
-          <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+          <div className="w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
             <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" />
           </div>
         )}
@@ -635,9 +647,12 @@ export default function TasksPage() {
           <Link href={`/accountant/tasks/${task.id}`} className="block">
             <span className="flex items-center gap-2">
               <span className={`font-medium text-gray-900 dark:text-white truncate ${task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>{task.title}</span>
+              {(task.status === 'pending' || task.status === 'clarifying') && <Badge variant="outline" className="bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-xs py-0 h-5 flex-shrink-0"><Inbox className="h-3 w-3 mr-0.5" />Inbox</Badge>}
+              {(task.status === 'waiting_for' || task.status === 'waiting_client') && <Badge variant="outline" className="bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs py-0 h-5 flex-shrink-0"><Users className="h-3 w-3 mr-0.5" />{task.status === 'waiting_client' ? 'Čeká klient' : 'Delegováno'}</Badge>}
+              {task.status === 'in_progress' && <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs py-0 h-5 flex-shrink-0"><Play className="h-3 w-3 mr-0.5" />Probíhá</Badge>}
               {task.is_next_action && <Badge className="bg-blue-500 text-white text-xs py-0 h-5 flex-shrink-0"><Zap className="h-3 w-3 mr-0.5" />Next</Badge>}
-              {isQuickAction(task) && !task.is_next_action && <Badge variant="outline" className="bg-purple-50 text-purple-700 text-xs py-0 h-5 flex-shrink-0"><Zap className="h-3 w-3 mr-0.5" />{quickActionThreshold >= 60 ? `${quickActionThreshold / 60}h` : `${quickActionThreshold}min`}</Badge>}
-              {task.is_project && <Badge variant="outline" className="bg-indigo-50 text-indigo-700 text-xs py-0 h-5 flex-shrink-0"><FolderKanban className="h-3 w-3 mr-0.5" />Projekt</Badge>}
+              {isQuickAction(task) && !task.is_next_action && <Badge variant="outline" className="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs py-0 h-5 flex-shrink-0"><Zap className="h-3 w-3 mr-0.5" />{quickActionThreshold >= 60 ? `${quickActionThreshold / 60}h` : `${quickActionThreshold}min`}</Badge>}
+              {task.is_project && <Badge variant="outline" className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs py-0 h-5 flex-shrink-0"><FolderKanban className="h-3 w-3 mr-0.5" />Projekt</Badge>}
             </span>
           </Link>
           {showClient && <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5"><span>{task.company_name}</span></div>}
@@ -647,7 +662,7 @@ export default function TasksPage() {
         </div>
         <Badge className={`${priorityStyle.bg} ${priorityStyle.text} text-xs py-0 h-5 px-2 justify-center flex-shrink-0 font-medium`} title={`R-Tasks skóre: ${taskScore}/12`}>{taskScore} • {priorityStyle.label}</Badge>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <Button size="sm" variant="ghost" className={`h-7 w-7 p-0 ${isTimerActive ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : 'text-blue-600 hover:bg-blue-50'}`} onClick={(e) => handleStartTimer(task.id, e)} title={isTimerActive ? 'Časovač běží' : 'Spustit časovač'}>
+          <Button size="sm" variant="ghost" className={`h-7 w-7 p-0 ${isTimerActive ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`} onClick={(e) => handleStartTimer(task.id, e)} title={isTimerActive ? 'Časovač běží' : 'Spustit časovač'}>
             {isTimerActive ? <Timer className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </Button>
         </div>
@@ -665,17 +680,17 @@ export default function TasksPage() {
 
     const getCardClassName = () => {
       if (overdue) return 'border-l-4 border-l-red-500 bg-red-50 dark:bg-red-900/20'
-      if (urgent) return 'border-l-4 border-l-amber-500 bg-amber-50'
+      if (urgent) return 'border-l-4 border-l-amber-500 bg-amber-50 dark:bg-amber-900/20'
       return ''
     }
 
     return (
-      <Card className={`hover:shadow-md transition-shadow ${getCardClassName()}`}>
+      <Card className={`hover:shadow-md transition-all duration-200 rounded-xl ${getCardClassName()}`}>
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex items-center gap-2">
-              {isQuickAction(task) && <Badge variant="outline" className="bg-purple-50 text-purple-700 text-xs"><Zap className="h-3 w-3 mr-1" />{quickActionThreshold >= 60 ? `${quickActionThreshold / 60} hod` : `${quickActionThreshold} min`}</Badge>}
-              {task.is_project && <Badge variant="outline" className="bg-indigo-50 text-indigo-700 text-xs"><FolderKanban className="h-3 w-3 mr-1" />Projekt</Badge>}
+              {isQuickAction(task) && <Badge variant="outline" className="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs"><Zap className="h-3 w-3 mr-1" />{quickActionThreshold >= 60 ? `${quickActionThreshold / 60} hod` : `${quickActionThreshold} min`}</Badge>}
+              {task.is_project && <Badge variant="outline" className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs"><FolderKanban className="h-3 w-3 mr-1" />Projekt</Badge>}
             </div>
             <Badge className={`${priorityStyle.bg} ${priorityStyle.text} text-xs font-medium`} title={`R-Tasks skóre: ${taskScore}/12`}>{taskScore} • {priorityStyle.label}</Badge>
           </div>
@@ -683,7 +698,7 @@ export default function TasksPage() {
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 mb-2"><Building2 className="h-4 w-4 flex-shrink-0" /><span className="truncate">{task.company_name}</span></div>
           <div className="flex items-center gap-2 text-sm mb-3"><Calendar className="h-4 w-4 text-gray-400" /><span className={overdue ? 'text-red-600 font-semibold' : urgent ? 'text-orange-600 font-semibold' : 'text-gray-600 dark:text-gray-400'}>{getDeadlineText(task.due_date, task.due_time)}</span></div>
           <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-            <Button size="sm" variant="ghost" className={`flex-1 ${isTimerActive ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : 'text-blue-600 hover:bg-blue-50'}`} onClick={(e) => handleStartTimer(task.id, e)}>{isTimerActive ? <Timer className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}{isTimerActive ? 'Běží' : 'Začít'}</Button>
+            <Button size="sm" variant="ghost" className={`flex-1 ${isTimerActive ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`} onClick={(e) => handleStartTimer(task.id, e)}>{isTimerActive ? <Timer className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}{isTimerActive ? 'Běží' : 'Začít'}</Button>
             {task.status !== 'completed' && <Button size="sm" variant="ghost" className="flex-1 text-green-600 hover:bg-green-50 dark:bg-green-900/20" onClick={(e) => handleCompleteTask(task.id, e)}><CheckCircle2 className="h-4 w-4 mr-1" />Hotovo</Button>}
           </div>
         </CardContent>
@@ -732,7 +747,7 @@ export default function TasksPage() {
           {kanbanColumns.map(column => {
             const columnTasks = getTasksForColumn(column.id)
             return (
-              <div key={column.id} className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 min-h-[300px]">
+              <div key={column.id} className="bg-gray-100 dark:bg-gray-700 rounded-xl p-3 min-h-[300px]">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-sm text-gray-900 dark:text-white">{column.emoji} {column.title}</h3>
                   <Badge variant="secondary" className="h-5 px-1.5">{columnTasks.length}</Badge>
@@ -748,7 +763,7 @@ export default function TasksPage() {
           })}
         </div>
         <DragOverlay>
-          {activeTask && <Card className="shadow-xl ring-2 ring-blue-400 w-56"><CardContent className="p-3"><h4 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2">{activeTask.title}</h4><p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{activeTask.company_name}</p></CardContent></Card>}
+          {activeTask && <Card className="shadow-xl ring-2 ring-purple-400 w-56 rounded-xl"><CardContent className="p-3"><h4 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2">{activeTask.title}</h4><p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{activeTask.company_name}</p></CardContent></Card>}
         </DragOverlay>
       </DndContext>
     )
@@ -756,36 +771,52 @@ export default function TasksPage() {
 
   return (
     <div className="max-w-7xl">
-      {/* Zpracovat inbox button */}
-      <div className="mb-4">
-        <Link href="/accountant/tasks/clarify">
-          <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-            <Zap className="h-4 w-4 mr-2" />
-            Zpracovat inbox
-          </Button>
-        </Link>
+      <WorkTabBar />
+
+      {/* Gamifikace - progress ring + stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <DailyProgressRing />
+        <GamificationStats />
       </div>
 
+      {/* Zpracovat inbox button */}
+      {(() => {
+        const inboxCount = tasks.filter(t => t.status === 'pending' || t.status === 'clarifying').length
+        return inboxCount > 0 ? (
+          <div className="mb-4">
+            <Link href="/accountant/tasks/clarify">
+              <Button className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl">
+                <Zap className="h-4 w-4 mr-2" />
+                Zpracovat inbox
+                <Badge className="ml-2 bg-white/20 text-white border-0 text-xs">{inboxCount}</Badge>
+              </Button>
+            </Link>
+          </div>
+        ) : null
+      })()}
+
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-2 mb-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input placeholder="Hledat úkoly..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 h-9" />
+          <Input placeholder="Hledat úkoly..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 h-9 rounded-xl" />
         </div>
-        <Select value={filterClient} onValueChange={setFilterClient}>
-          <SelectTrigger className="w-[180px] h-9"><Building2 className="h-4 w-4 mr-2 text-gray-400" /><SelectValue placeholder="Všichni klienti" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Všichni klienti</SelectItem>
-            {companies.map(company => <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)} className="h-9 text-gray-600 dark:text-gray-400">Filtry{showFilters ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />}</Button>
-        <Button size="sm" className="h-9 bg-blue-600 hover:bg-blue-700" onClick={() => setShowNewTask(true)}><Plus className="h-4 w-4 mr-1" />Nový úkol</Button>
+        <CompanyCombobox
+          companies={companies}
+          value={filterClient}
+          onValueChange={setFilterClient}
+          placeholder="Všichni klienti"
+          allowNone
+          noneLabel="Všichni klienti"
+          triggerClassName="w-[200px] h-9 rounded-xl"
+        />
+        <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)} className="h-9 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-700">Filtry{showFilters ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />}</Button>
+        <Button size="sm" className="h-9 rounded-xl bg-purple-600 hover:bg-purple-700" onClick={() => setShowNewTask(true)}><Plus className="h-4 w-4 mr-1" />Nový úkol</Button>
       </div>
 
       {/* Expandable Filters */}
       {showFilters && (
-        <Card className="mb-4"><CardContent className="py-3 px-4">
+        <Card className="mb-4 rounded-xl shadow-sm"><CardContent className="py-3 px-4">
           <div className="flex flex-wrap items-center gap-3">
             <Select value={filterPriority} onValueChange={(v) => setFilterPriority(v as ScorePriority | 'all')}>
               <SelectTrigger className="w-[160px] h-8"><SelectValue placeholder="Priorita" /></SelectTrigger>
@@ -836,24 +867,24 @@ export default function TasksPage() {
               const Icon = category.icon
               const isSelected = selectedCategories.has(category.id)
               return (
-                <button key={category.id} onClick={() => toggleCategory(category.id)} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${isSelected ? `${category.bgColor} border-2` : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300'}`}>
-                  {isSelected ? <CheckCircle2 className={`h-4 w-4 ${category.color}`} /> : <Circle className="h-4 w-4 text-gray-300" />}
+                <button key={category.id} onClick={() => toggleCategory(category.id)} className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-200 ${isSelected ? `${category.bgColor} shadow-sm ring-1 ring-inset` : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`} style={isSelected ? { '--tw-ring-color': 'currentColor', '--tw-ring-opacity': '0.2' } as React.CSSProperties : undefined}>
+                  {isSelected ? <CheckCircle2 className={`h-4 w-4 ${category.color}`} /> : <Circle className="h-4 w-4 text-gray-300 dark:text-gray-500" />}
                   <Icon className={`h-4 w-4 ${isSelected ? category.color : 'text-gray-400'}`} />
-                  <span className={`text-sm font-medium ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{category.label}</span>
-                  <Badge variant="secondary" className={`h-5 px-1.5 text-xs ${isSelected ? 'bg-white dark:bg-gray-800/80 text-gray-900 dark:text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}>{categoryCounts[category.id]}</Badge>
+                  <span className={`text-xs font-medium ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>{category.label}</span>
+                  <span className={`text-[10px] font-medium ${isSelected ? 'opacity-70' : 'opacity-50'}`}>{categoryCounts[category.id]}</span>
                 </button>
               )
             })}
-            <div className="flex items-center gap-1 ml-2 border-l pl-2">
-              <Button variant="ghost" size="sm" onClick={selectOnlyActive} className="h-7 px-2 text-xs text-gray-600 dark:text-gray-300">Aktivní</Button>
-              <Button variant="ghost" size="sm" onClick={selectAllWithoutArchive} className="h-7 px-2 text-xs text-gray-600 dark:text-gray-300">Bez archivu</Button>
-              <Button variant="ghost" size="sm" onClick={selectAll} className="h-7 px-2 text-xs text-gray-600 dark:text-gray-300">Vše</Button>
+            <div className="flex items-center gap-1 ml-2 border-l border-gray-200 dark:border-gray-700 pl-2">
+              <Button variant="ghost" size="sm" onClick={selectOnlyActive} className="h-7 px-2 text-xs rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Aktivní</Button>
+              <Button variant="ghost" size="sm" onClick={selectAllWithoutArchive} className="h-7 px-2 text-xs rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Bez archivu</Button>
+              <Button variant="ghost" size="sm" onClick={selectAll} className="h-7 px-2 text-xs rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Vše</Button>
             </div>
           </div>
-          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-            <Button variant="ghost" size="sm" onClick={() => setViewMode('list')} className={`h-7 px-2 ${viewMode === 'list' ? 'bg-white dark:bg-gray-800 shadow text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}><List className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="sm" onClick={() => setViewMode('cards')} className={`h-7 px-2 ${viewMode === 'cards' ? 'bg-white dark:bg-gray-800 shadow text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}><LayoutGrid className="h-4 w-4" /></Button>
-            {!(selectedCategories.size === 1 && selectedCategories.has('archive')) && <Button variant="ghost" size="sm" onClick={() => setViewMode('kanban')} className={`h-7 px-2 ${viewMode === 'kanban' ? 'bg-white dark:bg-gray-800 shadow text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}><Columns3 className="h-4 w-4" /></Button>}
+          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+            <Button variant="ghost" size="sm" onClick={() => setViewMode('list')} className={`h-7 px-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}><List className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="sm" onClick={() => setViewMode('cards')} className={`h-7 px-2 rounded-lg transition-all duration-200 ${viewMode === 'cards' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}><LayoutGrid className="h-4 w-4" /></Button>
+            {!(selectedCategories.size === 1 && selectedCategories.has('archive')) && <Button variant="ghost" size="sm" onClick={() => setViewMode('kanban')} className={`h-7 px-2 rounded-lg transition-all duration-200 ${viewMode === 'kanban' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}><Columns3 className="h-4 w-4" /></Button>}
           </div>
         </div>
         <div className="mt-2">{renderTaskContent()}</div>
@@ -863,8 +894,8 @@ export default function TasksPage() {
       <Dialog open={showNewTask} onOpenChange={setShowNewTask}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Plus className="h-5 w-5 text-blue-600" />Nový úkol</DialogTitle>
-            <DialogDescription>Vytvořte nový úkol. Bude přidán do Inboxu.</DialogDescription>
+            <DialogTitle className="flex items-center gap-2"><Plus className="h-5 w-5 text-purple-600" />Nový úkol</DialogTitle>
+            <DialogDescription>Vytvořte nový úkol. Bude rovnou připraven k práci.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
@@ -878,16 +909,18 @@ export default function TasksPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Klient</Label>
-                <Select value={newTaskForm.company_id} onValueChange={v => setNewTaskForm(p => ({ ...p, company_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Vyberte klienta" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Bez klienta</SelectItem>
-                    {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <CompanyCombobox
+                  companies={companies}
+                  value={newTaskForm.company_id}
+                  onValueChange={v => setNewTaskForm(p => ({ ...p, company_id: v }))}
+                  placeholder="Vyberte klienta"
+                  allowNone
+                  noneLabel="Bez klienta"
+                  triggerClassName="w-full"
+                />
               </div>
               <div>
-                <Label htmlFor="task-due">Termín</Label>
+                <Label htmlFor="task-due">Termín dokončení</Label>
                 <Input id="task-due" type="date" value={newTaskForm.due_date} onChange={e => setNewTaskForm(p => ({ ...p, due_date: e.target.value }))} disabled={newTaskLoading} />
               </div>
             </div>
@@ -900,10 +933,31 @@ export default function TasksPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Priorita</Label>
+              <div className="flex gap-2 mt-1">
+                {([['high', 'Vysoká', 'bg-red-100 text-red-700 border-red-300'], ['medium', 'Střední', 'bg-yellow-100 text-yellow-700 border-yellow-300'], ['low', 'Nízká', 'bg-green-100 text-green-700 border-green-300']] as const).map(([val, label, colors]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setNewTaskForm(p => ({ ...p, priority: val }))}
+                    className={`flex-1 py-2 px-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                      newTaskForm.priority === val
+                        ? `${colors} ring-2 ring-offset-1`
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 text-gray-500 dark:text-gray-400'
+                    }`}
+                    style={newTaskForm.priority === val ? { '--tw-ring-color': 'currentColor', '--tw-ring-opacity': '0.3' } as React.CSSProperties : undefined}
+                    disabled={newTaskLoading}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNewTask(false)} disabled={newTaskLoading}>Zrušit</Button>
-            <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleCreateTask} disabled={newTaskLoading}>
+            <Button className="bg-purple-600 hover:bg-purple-700 rounded-xl" onClick={handleCreateTask} disabled={newTaskLoading}>
               {newTaskLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Vytvářím...</> : 'Vytvořit úkol'}
             </Button>
           </DialogFooter>

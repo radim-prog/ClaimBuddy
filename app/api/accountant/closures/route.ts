@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getClosures, updateClosureFull } from '@/lib/closure-store-db'
+import { getClosures, updateClosureFull, upsertClosureField } from '@/lib/closure-store-db'
+import type { StatusField, StatusValue } from '@/lib/closure-store-db'
 import { addActivity } from '@/lib/activity-store-db'
 
 export const dynamic = 'force-dynamic'
@@ -64,6 +65,36 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ closure: updated })
   } catch (error) {
     console.error('Closure update error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  try {
+    const body = await request.json()
+    const { company_id, period, field, value } = body
+
+    if (!company_id || !period || !field || !value) {
+      return NextResponse.json({ error: 'company_id, period, field, value required' }, { status: 400 })
+    }
+
+    const validFields: StatusField[] = ['bank_statement_status', 'expense_documents_status', 'income_invoices_status']
+    const validValues: StatusValue[] = ['missing', 'uploaded', 'approved', 'skipped']
+
+    if (!validFields.includes(field)) {
+      return NextResponse.json({ error: 'Invalid field' }, { status: 400 })
+    }
+    if (!validValues.includes(value)) {
+      return NextResponse.json({ error: 'Invalid value' }, { status: 400 })
+    }
+
+    const closure = await upsertClosureField(company_id, period, field, value, userId)
+    return NextResponse.json({ closure })
+  } catch (error) {
+    console.error('Closure PATCH error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -7,6 +7,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 export type Message = {
   id: string
   company_id: string
+  sender_id: string
   sender_type: 'client' | 'accountant'
   sender_name: string
   content: string
@@ -52,6 +53,7 @@ export async function addMessage(data: Omit<Message, 'id' | 'created_at'>): Prom
     .from('chat_messages')
     .insert({
       chat_id: chatId,
+      sender_id: data.sender_id,
       sender_name: data.sender_name,
       sender_type: data.sender_type,
       text: data.content,
@@ -75,6 +77,7 @@ export async function addMessage(data: Omit<Message, 'id' | 'created_at'>): Prom
   return {
     id: row.id,
     company_id: data.company_id,
+    sender_id: row.sender_id,
     sender_type: row.sender_type,
     sender_name: row.sender_name,
     content: row.text,
@@ -109,6 +112,7 @@ export async function getMessagesByCompany(companyId: string, limit: number = 50
   return (data ?? []).map(row => ({
     id: row.id,
     company_id: companyId,
+    sender_id: row.sender_id,
     sender_type: row.sender_type as 'client' | 'accountant',
     sender_name: row.sender_name,
     content: row.text,

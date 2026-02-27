@@ -158,7 +158,7 @@ export function ActivityFeed({ companyId, limit = 15 }: ActivityFeedProps) {
     <div className="space-y-1">
       {items.map(item => {
         const Icon = activityIcons[item.type] || Activity
-        const typeColor = getActivityTypeColor(item.type)
+        const typeColor = getActivityTypeColor(item.type) || { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-600 dark:text-gray-300' }
 
         return (
           <div

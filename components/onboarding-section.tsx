@@ -221,7 +221,7 @@ export function OnboardingSection({
         key={step.id}
         className={`border rounded-lg transition-all ${
           step.completed
-            ? 'bg-green-50 dark:bg-green-900/20 border-green-200'
+            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
             : step.required
             ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-300'
             : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:border-gray-300'
@@ -238,13 +238,13 @@ export function OnboardingSection({
               <div className="flex items-center gap-2">
                 <span
                   className={`font-medium ${
-                    step.completed ? 'text-green-700 line-through' : 'text-gray-900 dark:text-white'
+                    step.completed ? 'text-green-700 dark:text-green-400 line-through' : 'text-gray-900 dark:text-white'
                   }`}
                 >
                   {step.label}
                 </span>
                 {step.required && !step.completed && (
-                  <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                  <Badge variant="outline" className="text-xs bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700">
                     Povinné
                   </Badge>
                 )}
@@ -281,7 +281,7 @@ export function OnboardingSection({
 
         {/* Expanded section with notes */}
         {isExpanded && (
-          <div className="px-3 pb-3 pt-0 border-t bg-gray-50/50">
+          <div className="px-3 pb-3 pt-0 border-t dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
             <div className="pt-3 space-y-2">
               {step.notes && (
                 <div className="text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 p-2 rounded border">
@@ -336,9 +336,9 @@ export function OnboardingSection({
     >
       {/* Status Header */}
       <div className={`rounded-lg p-4 mb-4 ${
-        isStalled ? 'bg-red-50 dark:bg-red-900/20 border border-red-200' :
-        onboarding.status === 'active' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200' :
-        'bg-gradient-to-r from-blue-50 to-purple-50 border border-purple-200'
+        isStalled ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' :
+        onboarding.status === 'active' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' :
+        'bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-purple-200 dark:border-purple-800'
       }`}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
@@ -383,7 +383,7 @@ export function OnboardingSection({
               <span className="text-gray-600 dark:text-gray-400">Pokrok</span>
               <span className="font-medium text-purple-700">{progress}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all ${
                   isStalled ? 'bg-red-500' : 'bg-gradient-to-r from-blue-600 to-purple-600'
@@ -400,19 +400,19 @@ export function OnboardingSection({
         {/* Special tags */}
         <div className="flex flex-wrap gap-2">
           {onboarding.is_new_company_setup && (
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
               <Building2 className="h-3 w-3 mr-1" />
               Nová firma
             </Badge>
           )}
           {onboarding.is_restructuring && (
-            <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
+            <Badge variant="outline" className="bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700">
               <ArrowRightLeft className="h-3 w-3 mr-1" />
               Restrukturalizace
             </Badge>
           )}
           {onboarding.previous_accountant && (
-            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+            <Badge variant="outline" className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700">
               Převzetí od: {onboarding.previous_accountant}
             </Badge>
           )}
@@ -426,7 +426,7 @@ export function OnboardingSection({
 
         {/* Last activity warning */}
         {isStalled && onboarding.status !== 'active' && (
-          <div className="mt-3 p-2 bg-red-100 rounded text-sm text-red-700 flex items-center gap-2">
+          <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/30 rounded text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
             <Clock className="h-4 w-4" />
             Poslední aktivita: {formatDaysAgo(onboarding.last_activity_at)} - kontaktujte klienta!
           </div>

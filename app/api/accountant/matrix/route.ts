@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
       employee_count: 0,
       data_box: null,
       status: c.status || 'active',
+      monthly_reporting: c.monthly_reporting ?? true,
       onboarding: null,
     }))
 
@@ -48,15 +49,23 @@ export async function GET(request: NextRequest) {
       return false
     })
 
+    // Only count stats for companies with monthly reporting (exclude inactive + non-reporting)
+    const reportingCompanyIds = new Set(
+      allCompanies
+        .filter(c => c.status !== 'inactive' && c.monthly_reporting !== false)
+        .map(c => c.id)
+    )
+    const reportingClosures = currentAndPastClosures.filter(c => reportingCompanyIds.has(c.company_id))
+
     // Calculate stats
     const stats = {
-      total: currentAndPastClosures.length,
-      missing: currentAndPastClosures.filter(c =>
+      total: reportingClosures.length,
+      missing: reportingClosures.filter(c =>
         c.bank_statement_status === 'missing' ||
         c.expense_documents_status === 'missing' ||
         c.income_invoices_status === 'missing'
       ).length,
-      uploaded: currentAndPastClosures.filter(c =>
+      uploaded: reportingClosures.filter(c =>
         (c.bank_statement_status === 'uploaded' ||
         c.expense_documents_status === 'uploaded' ||
         c.income_invoices_status === 'uploaded') &&
@@ -64,7 +73,7 @@ export async function GET(request: NextRequest) {
         c.expense_documents_status !== 'missing' &&
         c.income_invoices_status !== 'missing'
       ).length,
-      approved: currentAndPastClosures.filter(c =>
+      approved: reportingClosures.filter(c =>
         c.bank_statement_status === 'approved' &&
         c.expense_documents_status === 'approved' &&
         c.income_invoices_status === 'approved'

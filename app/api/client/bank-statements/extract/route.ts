@@ -1,0 +1,166 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { extractBankStatement } from '@/lib/kimi-ai'
+import { autoMatchTransaction, calculateTaxImpact } from '@/lib/bank-matching'
+
+export const dynamic = 'force-dynamic'
+
+export async function POST(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  try {
+    const formData = await request.formData()
+    const file = formData.get('file') as File | null
+    const companyId = formData.get('companyId') as string | null
+
+    if (!file || !companyId) {
+      return NextResponse.json({ error: 'Missing file or companyId' }, { status: 400 })
+    }
+
+    // Get company info for tax calculations
+    const { data: company } = await supabaseAdmin
+      .from('companies')
+      .select('legal_form, vat_payer')
+      .eq('id', companyId)
+      .single()
+
+    if (!company) {
+      return NextResponse.json({ error: 'Company not found' }, { status: 404 })
+    }
+
+    // Extract bank statement via Kimi AI
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const result = await extractBankStatement(buffer, file.name, file.type)
+
+    // Save document reference
+    const { data: docRecord } = await supabaseAdmin
+      .from('documents')
+      .insert({
+        company_id: companyId,
+        file_name: file.name,
+        type: 'bank_statement',
+        document_type: 'bank_statement',
+        status: 'uploaded',
+        period: result.period_from?.substring(0, 7) || new Date().toISOString().substring(0, 7),
+        created_by: userId,
+      })
+      .select('id')
+      .single()
+
+    // Fetch existing documents and invoices for matching
+    const [{ data: documents }, { data: invoices }] = await Promise.all([
+      supabaseAdmin
+        .from('documents')
+        .select('id, ocr_data, supplier_name, supplier_ico')
+        .eq('company_id', companyId)
+        .neq('type', 'bank_statement')
+        .is('deleted_at', null)
+        .limit(500),
+      supabaseAdmin
+        .from('invoices')
+        .select('id, variable_symbol, total_with_vat, issue_date, partner')
+        .eq('company_id', companyId)
+        .is('deleted_at', null)
+        .limit(500),
+    ])
+
+    // Map documents to matchable format
+    const matchableDocs = (documents || []).map(d => ({
+      id: d.id,
+      variable_symbol: d.ocr_data?.variable_symbol || null,
+      total_with_vat: d.ocr_data?.total_amount || d.ocr_data?.total_with_vat || null,
+      date_issued: d.ocr_data?.date_issued || null,
+      supplier_name: d.supplier_name || d.ocr_data?.supplier_name || null,
+      supplier_ico: d.supplier_ico || d.ocr_data?.supplier_ico || null,
+    }))
+
+    const matchableInvs = (invoices || []).map(i => ({
+      id: i.id,
+      variable_symbol: i.variable_symbol,
+      total_with_vat: i.total_with_vat,
+      issue_date: i.issue_date,
+      partner: i.partner,
+    }))
+
+    // Insert transactions with auto-matching
+    const transactions = result.transactions.map(tx => {
+      const match = autoMatchTransaction(
+        {
+          id: '',
+          amount: tx.amount,
+          variable_symbol: tx.variable_symbol,
+          counterparty_name: tx.counterparty_name,
+          counterparty_account: tx.counterparty_account,
+          transaction_date: tx.date,
+          description: tx.description,
+        },
+        matchableDocs,
+        matchableInvs
+      )
+
+      const taxImpact = !match && tx.amount < 0
+        ? calculateTaxImpact(tx.amount, company.legal_form, company.vat_payer)
+        : { tax: 0, vat: 0 }
+
+      return {
+        company_id: companyId,
+        bank_statement_document_id: docRecord?.id || null,
+        transaction_date: tx.date,
+        amount: tx.amount,
+        currency: tx.currency,
+        variable_symbol: tx.variable_symbol,
+        constant_symbol: tx.constant_symbol,
+        counterparty_account: tx.counterparty_account,
+        counterparty_name: tx.counterparty_name,
+        description: tx.description,
+        matched_document_id: match?.document_id || null,
+        matched_invoice_id: match?.invoice_id || null,
+        match_confidence: match?.confidence || null,
+        match_method: match?.method || null,
+        tax_impact: taxImpact.tax,
+        vat_impact: taxImpact.vat,
+        period: tx.date?.substring(0, 7) || null,
+      }
+    })
+
+    let inserted = 0
+    if (transactions.length > 0) {
+      const { data, error } = await supabaseAdmin
+        .from('bank_transactions')
+        .insert(transactions)
+        .select('id')
+
+      if (error) {
+        console.error('[BankStatement] Insert error:', error)
+        return NextResponse.json({ error: 'Failed to save transactions' }, { status: 500 })
+      }
+      inserted = data?.length || 0
+    }
+
+    const matched = transactions.filter(t => t.matched_document_id || t.matched_invoice_id).length
+    const totalTaxImpact = transactions.reduce((s, t) => s + (t.tax_impact || 0), 0)
+    const totalVatImpact = transactions.reduce((s, t) => s + (t.vat_impact || 0), 0)
+
+    return NextResponse.json({
+      success: true,
+      statement: {
+        account_number: result.account_number,
+        period_from: result.period_from,
+        period_to: result.period_to,
+        transaction_count: result.transactions.length,
+      },
+      inserted,
+      matched,
+      unmatched: inserted - matched,
+      tax_impact: totalTaxImpact,
+      vat_impact: totalVatImpact,
+    })
+  } catch (error) {
+    console.error('[BankStatement] Extract error:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to process bank statement' },
+      { status: 500 }
+    )
+  }
+}

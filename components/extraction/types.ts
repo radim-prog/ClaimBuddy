@@ -170,6 +170,35 @@ export interface ExtractionFilters {
   source?: ExtractionSource[]
 }
 
+// Map Kimi AI ExtractedInvoice (nested) → frontend ExtractedData (flat)
+// Used by both accountant and client extraction pages
+export function mapKimiToExtractedData(raw: any): InvoiceExtractedData {
+  return {
+    document_type: 'invoice',
+    document_number: raw.document_number || undefined,
+    variable_symbol: raw.variable_symbol || undefined,
+    constant_symbol: raw.constant_symbol || undefined,
+    date_issued: raw.date_issued || undefined,
+    date_due: raw.date_due || undefined,
+    date_tax: raw.date_tax || undefined,
+    supplier_name: raw.supplier?.name || raw.supplier_name || undefined,
+    supplier_ico: raw.supplier?.ico || raw.supplier_ico || undefined,
+    supplier_dic: raw.supplier?.dic || raw.supplier_dic || undefined,
+    description: raw.description || undefined,
+    total_amount: raw.total_with_vat ?? raw.total_amount ?? undefined,
+    total_without_vat: raw.total_without_vat ?? undefined,
+    total_vat: raw.total_vat ?? undefined,
+    currency: raw.currency || undefined,
+    items: Array.isArray(raw.items) ? raw.items.map((item: any) => ({
+      description: item.description || '',
+      quantity: Number(item.quantity) || 1,
+      unit_price: Number(item.unit_price) || 0,
+      total_price: Number(item.total_price) || 0,
+      vat_rate: item.vat_rate === 'none' ? 0 : item.vat_rate === 'low' ? 12 : item.vat_rate === 'high' ? 21 : Number(item.vat_rate) || 21,
+    })) : undefined,
+  }
+}
+
 // Stats for dashboard
 export interface ExtractionStats {
   total: number

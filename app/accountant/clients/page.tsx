@@ -17,14 +17,10 @@ import {
   Users,
   X,
   Plus,
-  Sparkles,
-  UserCheck,
   XCircle,
   CheckSquare,
-  Square,
   Layers,
   List,
-  Mail,
   Power,
   PowerOff,
   Loader2,
@@ -38,6 +34,7 @@ import { Bell } from 'lucide-react'
 // Company data fetched from API (Supabase-backed)
 import { NewClientForm } from '@/components/new-client-form'
 import { useAttention } from '@/lib/contexts/attention-context'
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 
 type Company = {
   id: string
@@ -70,25 +67,37 @@ type MonthlyClosure = {
 }
 
 // Extracted company row component with checkbox
-function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelect, attentionCount }: {
+// Reusable tooltip wrapper
+function Tip({ children, text }: { children: React.ReactNode; text: string }) {
+  return (
+    <Tooltip delayDuration={200}>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="top" className="text-xs max-w-[200px]">
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelect, attentionCount, isFirst }: {
   company: Company
   fullStatus: { status: 'ok' | 'missing' | 'uploaded'; missingDocs: number; uploadedDocs: number }
   clientStatus: string
   selected: boolean
   onToggleSelect: (id: string, e: React.MouseEvent) => void
   attentionCount: number
+  isFirst?: boolean
 }) {
   const isOnboarding = clientStatus === 'onboarding'
   const isInactive = clientStatus === 'inactive'
   const isFO = company.legal_form === 'OSVČ'
-  // Border color: red=inactive, purple=onboarding, blue/green by legal form, darker if VAT payer
   const borderColor = isInactive ? 'border-l-red-500' :
                      isOnboarding ? 'border-l-purple-500' :
                      isFO ? (company.vat_payer ? 'border-l-emerald-700' : 'border-l-emerald-400') :
                      (company.vat_payer ? 'border-l-blue-700' : 'border-l-blue-400')
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" data-tour={isFirst ? 'client-row' : undefined}>
       <button
         onClick={(e) => onToggleSelect(company.id, e)}
         className={`flex-shrink-0 w-5 h-5 rounded border transition-colors ${
@@ -116,82 +125,109 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
                 </div>
               </div>
 
-              {/* Právní forma + badges */}
+              {/* Právní forma + stav klienta */}
               <div className="col-span-1 sm:col-span-3 flex items-center gap-1.5 flex-wrap mt-1 sm:mt-0">
-                {company.legal_form === 'OSVČ' ? (
-                  <Badge variant="outline" className="text-xs px-1.5 py-0 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700">
-                    FO
-                  </Badge>
-                ) : company.legal_form === 's.r.o.' ? (
-                  <Badge variant="outline" className="text-xs px-1.5 py-0 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700">
-                    s.r.o.
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-xs px-1.5 py-0 text-gray-500 dark:text-gray-400">
-                    {company.legal_form}
-                  </Badge>
-                )}
+                <Tip text={isFO ? 'Fyzická osoba — OSVČ' : company.legal_form === 's.r.o.' ? 'Společnost s ručením omezeným' : company.legal_form}>
+                  <span>
+                    {isFO ? (
+                      <Badge variant="outline" className="text-xs px-1.5 py-0 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700">
+                        OSVČ
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs px-1.5 py-0 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700">
+                        {company.legal_form}
+                      </Badge>
+                    )}
+                  </span>
+                </Tip>
                 {isInactive && (
-                  <Badge variant="outline" className="text-xs px-1.5 py-0 text-red-600 border-red-300 bg-red-50 dark:bg-red-900/20">
-                    Neaktivní
-                  </Badge>
+                  <Tip text="Klient je neaktivní — neúčtuje se">
+                    <span>
+                      <Badge variant="outline" className="text-xs px-1.5 py-0 text-red-600 border-red-300 bg-red-50 dark:bg-red-900/20">
+                        Neaktivní
+                      </Badge>
+                    </span>
+                  </Tip>
                 )}
                 {isOnboarding && (
-                  <Badge className="bg-purple-500 text-white hover:bg-purple-500 text-xs px-1.5 py-0">
-                    ONB
-                  </Badge>
+                  <Tip text="Klient v procesu onboardingu">
+                    <span>
+                      <Badge className="bg-purple-500 text-white hover:bg-purple-500 text-xs px-1.5 py-0">
+                        Onboarding
+                      </Badge>
+                    </span>
+                  </Tip>
                 )}
               </div>
 
               {/* DPH + zaměstnanci */}
               <div className="col-span-1 sm:col-span-3 flex items-center gap-1.5 mt-1 sm:mt-0">
                 {company.vat_payer ? (
-                  <Badge className="bg-blue-500 text-white hover:bg-blue-500 text-xs font-bold px-2">
-                    DPH {company.vat_period === 'monthly' ? 'M' : 'Q'}
-                  </Badge>
+                  <Tip text={`Plátce DPH — ${company.vat_period === 'monthly' ? 'měsíční' : 'čtvrtletní'} přiznání`}>
+                    <span>
+                      <Badge className="bg-blue-500 text-white hover:bg-blue-500 text-xs font-bold px-2">
+                        DPH {company.vat_period === 'monthly' ? 'měs.' : 'čtvrt.'}
+                      </Badge>
+                    </span>
+                  </Tip>
                 ) : (
-                  <Badge variant="outline" className="text-xs px-1.5 py-0 text-gray-400">ne-DPH</Badge>
+                  <Tip text="Neplátce DPH">
+                    <span>
+                      <Badge variant="outline" className="text-xs px-1.5 py-0 text-gray-400">
+                        neplátce
+                      </Badge>
+                    </span>
+                  </Tip>
                 )}
                 {company.has_employees && (
-                  <Badge variant="outline" className="text-gray-600 dark:text-gray-300 text-xs px-1.5">
-                    <Users className="h-3 w-3 mr-0.5" />
-                    {company.employee_count}
-                  </Badge>
-                )}
-                {company.monthly_reporting === false && (
-                  <Badge variant="outline" className="text-xs px-1.5 py-0 text-gray-400 dark:text-gray-500 border-dashed">
-                    bez rep.
-                  </Badge>
+                  <Tip text={`Počet zaměstnanců: ${company.employee_count}`}>
+                    <span>
+                      <Badge variant="outline" className="text-gray-600 dark:text-gray-300 text-xs px-1.5">
+                        <Users className="h-3 w-3 mr-0.5" />
+                        {company.employee_count}
+                      </Badge>
+                    </span>
+                  </Tip>
                 )}
               </div>
 
               {/* Stav */}
               <div className="col-span-2 text-right flex items-center justify-end gap-2">
                 {attentionCount > 0 && !isInactive && (
-                  <span className="inline-flex items-center gap-0.5 text-xs">
-                    <Bell className="h-3 w-3 text-red-500" />
-                    <span className="font-medium text-red-600 dark:text-red-400">{attentionCount}</span>
-                  </span>
+                  <Tip text={`${attentionCount} položek vyžaduje vaši pozornost`}>
+                    <span className="inline-flex items-center gap-1 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full">
+                      <Bell className="h-3 w-3" />
+                      <span className="font-semibold">{attentionCount}</span>
+                    </span>
+                  </Tip>
                 )}
                 {isInactive ? (
-                  <span className="inline-flex items-center gap-1 text-gray-400 text-sm">
-                    <XCircle className="h-4 w-4" />
-                  </span>
+                  <Tip text="Neaktivní klient">
+                    <span className="inline-flex items-center gap-1 text-gray-400 text-sm">
+                      <XCircle className="h-4 w-4" />
+                    </span>
+                  </Tip>
                 ) : fullStatus.status === 'ok' ? (
-                  <span className="inline-flex items-center gap-1 text-green-600 text-sm font-medium">
-                    <CheckCircle className="h-4 w-4" />
-                    OK
-                  </span>
+                  <Tip text="Všechny doklady v pořádku">
+                    <span className="inline-flex items-center gap-1 text-green-600 text-sm font-medium">
+                      <CheckCircle className="h-4 w-4" />
+                      OK
+                    </span>
+                  </Tip>
                 ) : fullStatus.status === 'missing' ? (
-                  <span className="inline-flex items-center gap-1 text-red-600 text-sm font-medium">
-                    <AlertCircle className="h-4 w-4" />
-                    {fullStatus.missingDocs}
-                  </span>
+                  <Tip text={`Chybí ${fullStatus.missingDocs} ${fullStatus.missingDocs === 1 ? 'doklad' : fullStatus.missingDocs < 5 ? 'doklady' : 'dokladů'} za tento měsíc`}>
+                    <span className="inline-flex items-center gap-1 text-red-600 text-sm font-medium">
+                      <AlertCircle className="h-4 w-4" />
+                      {fullStatus.missingDocs}
+                    </span>
+                  </Tip>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-yellow-600 text-sm font-medium">
-                    <Clock className="h-4 w-4" />
-                    {fullStatus.uploadedDocs}
-                  </span>
+                  <Tip text={`${fullStatus.uploadedDocs} ${fullStatus.uploadedDocs === 1 ? 'doklad čeká' : fullStatus.uploadedDocs < 5 ? 'doklady čekají' : 'dokladů čeká'} na schválení`}>
+                    <span className="inline-flex items-center gap-1 text-yellow-600 text-sm font-medium">
+                      <Clock className="h-4 w-4" />
+                      {fullStatus.uploadedDocs}
+                    </span>
+                  </Tip>
                 )}
               </div>
             </div>
@@ -581,6 +617,7 @@ function ClientsPageContent() {
   }
 
   return (
+    <TooltipProvider>
     <div className="max-w-7xl">
       {/* Header */}
       <div className="mb-6">
@@ -996,7 +1033,7 @@ function ClientsPageContent() {
           </>
         ) : (
           // === LIST VIEW ===
-          filteredCompanies.map(company => (
+          filteredCompanies.map((company, idx) => (
             <CompanyRow
               key={company.id}
               company={company}
@@ -1005,11 +1042,13 @@ function ClientsPageContent() {
               selected={selectedIds.has(company.id)}
               onToggleSelect={toggleSelection}
               attentionCount={getCompanyAttention(company.id).total}
+              isFirst={idx === 0}
             />
           ))
         )}
       </div>
     </div>
+    </TooltipProvider>
   )
 }
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { DollarSign, Settings as SettingsIcon, Users as UsersIcon, Building2, Repeat, MapPin, HardDrive } from 'lucide-react'
+import { DollarSign, Settings as SettingsIcon, Users as UsersIcon, Building2, Repeat, MapPin, HardDrive, Receipt } from 'lucide-react'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 export default function SettingsLayout({
@@ -26,6 +26,12 @@ export default function SettingsLayout({
       name: 'Firma',
       href: '/accountant/settings/company',
       icon: Building2,
+      show: true
+    },
+    {
+      name: 'Fakturace',
+      href: '/accountant/settings/invoicing',
+      icon: Receipt,
       show: true
     },
     {
@@ -61,16 +67,13 @@ export default function SettingsLayout({
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h1 className="text-3xl font-bold">Nastavení</h1>
-        <p className="text-muted-foreground">
-          Spravujte své předvolby a nastavení účtu
-        </p>
+        <h1 className="text-xl font-bold">Nastavení</h1>
       </div>
 
-      {/* Unified Tab Navigation */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+      {/* Tab Navigation */}
+      <div className="flex gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-700 pb-px">
         {tabs.filter(tab => tab.show).map((tab) => {
           const isActive = pathname === tab.href
           const Icon = tab.icon
@@ -78,14 +81,14 @@ export default function SettingsLayout({
             <Link
               key={tab.href}
               href={tab.href}
-              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+              className={`px-3 py-1.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 isActive
                   ? 'border-purple-600 text-purple-600'
-                  : 'border-transparent text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:text-white'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
+              <div className="flex items-center gap-1.5">
+                <Icon className="h-3.5 w-3.5" />
                 {tab.name}
               </div>
             </Link>
@@ -94,7 +97,9 @@ export default function SettingsLayout({
       </div>
 
       {/* Page Content */}
-      {children}
+      <div className="max-w-3xl">
+        {children}
+      </div>
     </div>
   )
 }

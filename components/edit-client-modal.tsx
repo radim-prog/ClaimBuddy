@@ -36,11 +36,13 @@ type Company = {
   bank_account?: string | null
   health_insurance_company: string | null
   has_employees: boolean
+  monthly_reporting?: boolean
   employee_count: number
   data_box: { id: string; login?: string } | null
   phone?: string
   email?: string
   status?: string
+  accounting_start_date?: string | null
 }
 
 type EditClientModalProps = {
@@ -62,14 +64,20 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
   const handleSave = async () => {
     setSaving(true)
     try {
-      // V produkci: await fetch(`/api/accountant/companies/${company.id}`, { method: 'PATCH', body: JSON.stringify(formData) })
-      // Pro demo simulujeme úspěšné uložení
-      await new Promise(resolve => setTimeout(resolve, 500))
+      const res = await fetch(`/api/accountant/companies/${company.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': 'accountant-1' },
+        body: JSON.stringify(formData),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Chyba při ukládání')
+      }
       onSave(formData)
       toast.success('Údaje klienta byly uloženy')
       onOpenChange(false)
     } catch (error) {
-      toast.error('Chyba při ukládání')
+      toast.error(error instanceof Error ? error.message : 'Chyba při ukládání')
     } finally {
       setSaving(false)
     }
@@ -197,6 +205,23 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
             </div>
           </div>
 
+          {/* Účetní datum zahájení */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Datum zahájení spolupráce</h3>
+            <div>
+              <Label htmlFor="accounting_start_date">Od kdy vedeme účetnictví</Label>
+              <Input
+                id="accounting_start_date"
+                type="date"
+                value={formData.accounting_start_date || ''}
+                onChange={(e) => setFormData({ ...formData, accounting_start_date: e.target.value || null })}
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Měsíce před tímto datem se nebudou hlásit jako chybějící doklady
+              </p>
+            </div>
+          </div>
+
           {/* DPH */}
           <div className="space-y-4">
             <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">DPH</h3>
@@ -234,6 +259,32 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
                   </Select>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Měsíční reporting */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Měsíční reporting</h3>
+            <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div>
+                <Label className="text-sm font-medium">Zobrazovat v měsíční matici podkladů</Label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Neplátci DPH (FO) typicky nepotřebují měsíční reporting
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, monthly_reporting: !formData.monthly_reporting })}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  formData.monthly_reporting !== false
+                    ? 'bg-purple-600'
+                    : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <span className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+                  formData.monthly_reporting !== false ? 'translate-x-6' : 'translate-x-1'
+                }`} />
+              </button>
             </div>
           </div>
 

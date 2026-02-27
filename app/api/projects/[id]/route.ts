@@ -32,7 +32,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const body = await req.json()
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
-  const allowed = ['title', 'description', 'outcome', 'status', 'company_id', 'owner_id', 'due_date', 'estimated_hours', 'actual_hours', 'progress_percentage', 'tags', 'completed_at', 'is_case', 'case_type_id', 'case_opposing_party', 'case_reference', 'hourly_rate']
+  const allowed = ['title', 'description', 'outcome', 'status', 'company_id', 'owner_id', 'due_date', 'estimated_hours', 'actual_hours', 'progress_percentage', 'tags', 'completed_at', 'is_case', 'case_type_id', 'case_opposing_party', 'case_reference', 'hourly_rate', 'score_money', 'score_fire', 'score_time', 'score_distance', 'score_personal']
   for (const key of allowed) {
     if (body[key] !== undefined) updates[key] = body[key]
   }
@@ -52,10 +52,17 @@ export async function PATCH(req: NextRequest, context: { params: { id: string } 
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const userId = req.headers.get('x-user-id')
+  const userRole = req.headers.get('x-user-role')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (userRole !== 'admin' && userRole !== 'accountant') {
+    return NextResponse.json({ error: 'Forbidden: only admin or accountant can delete projects' }, { status: 403 })
+  }
 
   const { id } = params
-  const { error } = await supabaseAdmin.from('projects').delete().eq('id', id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const { error } = await supabaseAdmin
+    .from('projects')
+    .update({ status: 'deleted', updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   return NextResponse.json({ ok: true })
 }

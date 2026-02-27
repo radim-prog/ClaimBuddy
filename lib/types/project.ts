@@ -31,6 +31,12 @@ export interface Project {
   case_opposing_party?: string
   case_reference?: string
   hourly_rate?: number
+  // R-Tasks scoring
+  score_money?: 0 | 1 | 2 | 3
+  score_fire?: 0 | 1 | 2 | 3
+  score_time?: 0 | 1 | 2 | 3
+  score_distance?: 0 | 1 | 2
+  score_personal?: 0 | 1
 }
 
 export interface ProjectPhase {
@@ -65,6 +71,11 @@ export interface CreateProjectInput {
   case_opposing_party?: string
   case_reference?: string
   hourly_rate?: number
+  score_money?: 0 | 1 | 2 | 3
+  score_fire?: 0 | 1 | 2 | 3
+  score_time?: 0 | 1 | 2 | 3
+  score_distance?: 0 | 1 | 2
+  score_personal?: 0 | 1
 }
 
 export interface UpdateProjectInput {
@@ -85,6 +96,11 @@ export interface UpdateProjectInput {
   case_opposing_party?: string
   case_reference?: string
   hourly_rate?: number
+  score_money?: 0 | 1 | 2 | 3
+  score_fire?: 0 | 1 | 2 | 3
+  score_time?: 0 | 1 | 2 | 3
+  score_distance?: 0 | 1 | 2
+  score_personal?: 0 | 1
 }
 
 export interface CreatePhaseInput {

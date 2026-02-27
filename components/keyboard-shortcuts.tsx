@@ -82,7 +82,7 @@ export function KeyboardShortcuts() {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold text-gray-900 dark:text-white">Klávesové zkratky</h3>
-          <button onClick={() => setShowHelp(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+          <button onClick={() => setShowHelp(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl">&times;</button>
         </div>
         <div className="space-y-3">
           <div className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Navigace (g + klávesa)</div>

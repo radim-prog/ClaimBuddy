@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -13,7 +13,7 @@ import {
   MoreVertical,
   Pin,
   Trash2,
-  Reply
+  Loader2,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { format, isToday, isYesterday } from 'date-fns'
 import { cs } from 'date-fns/locale'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 interface Message {
   id: string
@@ -42,98 +43,76 @@ interface AccountantMessagesSectionProps {
   clientName?: string
 }
 
-// Mock messages for demo
-const mockMessages: Message[] = [
-  {
-    id: 'msg-1',
-    company_id: 'company-11',
-    sender_type: 'accountant',
-    sender_name: 'Marie Účetní',
-    content: 'Dobrý den, potřebovala bych od vás výpis z banky za prosinec. Můžete mi ho prosím nahrát?',
-    created_at: '2025-12-20T09:30:00Z',
-    read_at: '2025-12-20T10:15:00Z',
-  },
-  {
-    id: 'msg-2',
-    company_id: 'company-11',
-    sender_type: 'client',
-    sender_name: 'Jan Horák',
-    content: 'Dobrý den, výpis jsem právě nahrál do systému. Ještě tam najdete i dvě faktury od dodavatelů.',
-    created_at: '2025-12-20T11:45:00Z',
-    read_at: '2025-12-20T12:00:00Z',
-  },
-  {
-    id: 'msg-3',
-    company_id: 'company-11',
-    sender_type: 'accountant',
-    sender_name: 'Marie Účetní',
-    content: 'Děkuji, dokumenty jsem přijala. Uzávěrku za prosinec budu mít hotovou do konce týdne.',
-    created_at: '2025-12-20T14:20:00Z',
-    read_at: '2025-12-20T15:00:00Z',
-  },
-  {
-    id: 'msg-4',
-    company_id: 'company-11',
-    sender_type: 'accountant',
-    sender_name: 'Marie Účetní',
-    content: 'Ještě upozornění - termín pro podání přiznání k DPH je 25.1. Připravím ho příští týden.',
-    created_at: '2025-12-22T08:00:00Z',
-    pinned: true,
-  },
-  {
-    id: 'msg-5',
-    company_id: 'company-11',
-    sender_type: 'client',
-    sender_name: 'Jan Horák',
-    content: 'Dobře, děkuji za info. Kdybyste ještě něco potřebovala, dejte vědět.',
-    created_at: '2025-12-22T10:30:00Z',
-  },
-]
-
 export function AccountantMessagesSection({ companyId, companyName, clientName }: AccountantMessagesSectionProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [loading, setLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const prevMessageCountRef = useRef<number>(0)
   const initialLoadRef = useRef<boolean>(true)
+  const { userName } = useAccountantUser()
 
+  const fetchMessages = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/accountant/companies/${companyId}/messages`)
+      if (!res.ok) return
+      const data = await res.json()
+      setMessages(data.messages ?? [])
+    } catch {
+      // silently fail on polling
+    } finally {
+      setLoading(false)
+    }
+  }, [companyId])
+
+  // Initial fetch + polling every 30s
   useEffect(() => {
-    // Load mock messages
-    const companyMessages = mockMessages.filter(m => m.company_id === companyId)
-    setMessages(companyMessages)
-    prevMessageCountRef.current = companyMessages.length
-    initialLoadRef.current = false
+    setLoading(true)
+    fetchMessages()
+    const interval = setInterval(fetchMessages, 30_000)
+    return () => clearInterval(interval)
+  }, [fetchMessages])
+
+  // Mark client messages as read when opening
+  useEffect(() => {
+    fetch(`/api/accountant/companies/${companyId}/messages`, { method: 'PATCH' }).catch(() => {})
   }, [companyId])
 
   useEffect(() => {
-    // Scroll to bottom only when a new message is actually added (not on re-render)
     if (!initialLoadRef.current && messages.length > prevMessageCountRef.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+    if (initialLoadRef.current && messages.length > 0) {
+      initialLoadRef.current = false
+      // Scroll to bottom on initial load
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 100)
     }
     prevMessageCountRef.current = messages.length
   }, [messages])
 
   const handleSend = async () => {
-    if (!newMessage.trim()) return
+    if (!newMessage.trim() || sending) return
 
     setSending(true)
-
-    // Simulate sending message
-    const message: Message = {
-      id: `msg-${Date.now()}`,
-      company_id: companyId,
-      sender_type: 'accountant',
-      sender_name: 'Marie Účetní', // TODO: Get from auth
-      content: newMessage.trim(),
-      created_at: new Date().toISOString(),
+    try {
+      const res = await fetch(`/api/accountant/companies/${companyId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: newMessage.trim(),
+          sender_name: userName || 'Účetní',
+        }),
+      })
+      if (!res.ok) throw new Error('Failed to send')
+      const data = await res.json()
+      setMessages(prev => [...prev, data.message])
+      setNewMessage('')
+    } catch {
+      // TODO: toast error
+    } finally {
+      setSending(false)
     }
-
-    setMessages(prev => [...prev, message])
-    setNewMessage('')
-    setSending(false)
-
-    // TODO: Actually send to API
   }
 
   const handlePin = (messageId: string) => {
@@ -163,6 +142,14 @@ export function AccountantMessagesSection({ companyId, companyName, clientName }
 
   const pinnedMessages = messages.filter(m => m.pinned)
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       {/* Unread indicator */}
@@ -184,7 +171,7 @@ export function AccountantMessagesSection({ companyId, companyName, clientName }
           </div>
           {pinnedMessages.map(msg => (
             <div key={msg.id} className="text-sm text-amber-700 pl-6">
-              • {msg.content.substring(0, 100)}{msg.content.length > 100 ? '...' : ''}
+              {msg.content.substring(0, 100)}{msg.content.length > 100 ? '...' : ''}
             </div>
           ))}
         </div>
@@ -337,7 +324,7 @@ export function AccountantMessagesSection({ companyId, companyName, clientName }
               disabled={!newMessage.trim() || sending}
               className="h-8 w-8 bg-purple-600 hover:bg-purple-700"
             >
-              <Send className="h-4 w-4" />
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
         </div>

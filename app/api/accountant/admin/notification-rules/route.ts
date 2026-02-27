@@ -79,13 +79,17 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { id, ...updates } = body
+    const { id } = body
 
     if (!id) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 })
     }
 
-    updates.updated_at = new Date().toISOString()
+    const ALLOWED_FIELDS = ['event_id', 'event_code', 'recipients', 'channels', 'is_active']
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+    for (const key of ALLOWED_FIELDS) {
+      if (body[key] !== undefined) updates[key] = body[key]
+    }
 
     const { data, error } = await supabaseAdmin
       .from('notification_rules')

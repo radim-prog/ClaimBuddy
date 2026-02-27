@@ -5,6 +5,10 @@ const nextConfig = {
   },
   // Pro Railway deployment
   output: 'standalone',
+  experimental: {
+    // External packages that should not be bundled (WASM modules etc.)
+    serverComponentsExternalPackages: ['@react-pdf/renderer', 'exceljs'],
+  },
 }
 
 module.exports = nextConfig

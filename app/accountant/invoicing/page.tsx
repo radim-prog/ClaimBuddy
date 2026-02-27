@@ -44,6 +44,7 @@ import {
   Printer,
   ArrowRight,
   Loader2,
+  Plus,
 } from 'lucide-react'
 import {
   type Invoice,
@@ -118,8 +119,9 @@ export default function InvoicingPage() {
   const { userRole } = useAccountantUser()
   const isAdmin = userRole === 'admin'
 
-  // Period state (YYYY-MM format)
-  const [currentPeriod, setCurrentPeriod] = useState('2025-11')
+  // Period state (YYYY-MM format) - default to current month
+  const now = new Date()
+  const [currentPeriod, setCurrentPeriod] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
 
   // Data state
   const [invoicingData, setInvoicingData] = useState<InvoicingData>({ periods: [] })
@@ -132,11 +134,28 @@ export default function InvoicingPage() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [showOnlyPending, setShowOnlyPending] = useState(true)
 
+  // Time entries summary per company
+  const [timeSummary, setTimeSummary] = useState<{
+    total_minutes: number
+    billable_minutes: number
+    billable_amount: number
+    entry_count: number
+    by_company: Array<{
+      company_id: string
+      company_name: string
+      total_minutes: number
+      billable_minutes: number
+      in_tariff_minutes: number
+      billable_amount: number
+      entry_count: number
+    }>
+  } | null>(null)
+  const [timeLoading, setTimeLoading] = useState(false)
+
   // Expandable card state
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
 
   // Invoice state
-  // TODO: Fetch invoices from Supabase API
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
 
@@ -170,10 +189,28 @@ export default function InvoicingPage() {
     fetchData()
   }, [])
 
-  // TODO: Fetch billable tasks from Supabase API
+  // Fetch time entries summary when period changes
+  useEffect(() => {
+    setTimeLoading(true)
+    fetch(`/api/time-entries/summary?period=${currentPeriod}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(json => { if (json) setTimeSummary(json) })
+      .catch(() => {})
+      .finally(() => setTimeLoading(false))
+  }, [currentPeriod])
+
+  // Fetch invoices when period changes
+  useEffect(() => {
+    fetch(`/api/accountant/invoices?period=${currentPeriod}`)
+      .then(r => r.ok ? r.json() : { invoices: [] })
+      .then(json => setInvoices(json.invoices || []))
+      .catch(() => setInvoices([]))
+  }, [currentPeriod])
+
+  // Billable extra tasks (secondary concern, not yet connected)
   const billableTasksByCompany = useMemo(() => {
     return {} as Record<string, { company: any, tasks: any[], totalHours: number, totalAmount: number }>
-  }, [invoices])
+  }, [])
 
   // Handler: Open invoice preview modal
   const handleGenerateInvoice = (project: BillableProject) => {
@@ -202,9 +239,62 @@ export default function InvoicingPage() {
   const handleConfirmInvoice = async () => {
     if (!previewInvoice) return
     setGeneratingInvoice(true)
-    // TODO: Create invoice via Supabase API
-    toast.info('Fakturace zatím není napojena na API')
-    handleClosePreview()
+
+    try {
+      const project = projects.find(p => p.id === previewInvoice.projectId)
+      if (!project) throw new Error('Project not found')
+
+      const totalWithoutVat = previewInvoice.totalAmount
+      const totalVat = Math.round(totalWithoutVat * (previewInvoice.vatRate / 100))
+      const totalWithVat = totalWithoutVat + totalVat
+
+      const today = new Date()
+      const dueDate = new Date(today)
+      dueDate.setDate(dueDate.getDate() + 14)
+
+      const invoiceData = {
+        company_id: project.clientId,
+        company_name: project.clientName,
+        type: 'income',
+        period: currentPeriod,
+        issue_date: today.toISOString().split('T')[0],
+        due_date: dueDate.toISOString().split('T')[0],
+        tax_date: today.toISOString().split('T')[0],
+        items: [{
+          description: previewInvoice.projectTitle,
+          quantity: previewInvoice.totalHours,
+          unit: 'hod',
+          unit_price: previewInvoice.hourlyRate,
+          vat_rate: previewInvoice.vatRate,
+          total_without_vat: totalWithoutVat,
+          total_with_vat: totalWithVat,
+        }],
+        total_without_vat: totalWithoutVat,
+        total_vat: totalVat,
+        total_with_vat: totalWithVat,
+        hourly_rate: previewInvoice.hourlyRate,
+      }
+
+      const response = await fetch('/api/accountant/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(invoiceData),
+      })
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err.error || 'Failed to create invoice')
+      }
+
+      const { invoice } = await response.json()
+      setInvoices(prev => [invoice, ...prev])
+      toast.success(`Faktura ${invoice.invoice_number} vytvořena`)
+    } catch (err) {
+      console.error('Error creating invoice:', err)
+      toast.error('Chyba při vytváření faktury')
+    } finally {
+      handleClosePreview()
+    }
   }
 
   // Handler: Navigate to time entry task detail
@@ -214,35 +304,48 @@ export default function InvoicingPage() {
     })
   }
 
-  // Handler: Create invoice from selected tasks
+  // Handler: Create invoice from selected tasks (billable extra tasks section)
   const handleCreateInvoice = (_companyId: string, _taskIds: string[]) => {
-    // TODO: Create invoice via Supabase API
-    toast.info('Fakturace zatím není napojena na API')
+    // Billable tasks section is not yet populated — this will work once
+    // billableTasksByCompany is connected to the tasks API
+    toast.info('Tato funkce bude dostupná po napojení extra úkolů')
   }
 
   // Handler: Mark invoice as sent
-  const handleMarkAsSent = (invoiceId: string) => {
-    setInvoices(prev => prev.map(inv =>
-      inv.id === invoiceId
-        ? { ...inv, status: 'sent' as InvoiceStatus, updated_at: new Date().toISOString() }
-        : inv
-    ))
-    toast.success('Faktura označena jako odeslaná')
+  const handleMarkAsSent = async (invoiceId: string) => {
+    try {
+      const response = await fetch(`/api/accountant/invoices/${invoiceId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sent_at: new Date().toISOString() }),
+      })
+      if (!response.ok) throw new Error('Failed to update')
+      const { invoice } = await response.json()
+      setInvoices(prev => prev.map(inv => inv.id === invoiceId ? invoice : inv))
+      toast.success('Faktura označena jako odeslaná')
+    } catch {
+      toast.error('Chyba při aktualizaci faktury')
+    }
   }
 
   // Handler: Mark invoice as paid
-  const handleMarkAsPaid = (invoiceId: string) => {
-    setInvoices(prev => prev.map(inv =>
-      inv.id === invoiceId
-        ? {
-            ...inv,
-            status: 'paid' as InvoiceStatus,
-            paid_at: new Date().toISOString().split('T')[0],
-            updated_at: new Date().toISOString()
-          }
-        : inv
-    ))
-    toast.success('Faktura označena jako zaplacená')
+  const handleMarkAsPaid = async (invoiceId: string) => {
+    try {
+      const response = await fetch(`/api/accountant/invoices/${invoiceId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          payment_status: 'paid',
+          paid_at: new Date().toISOString(),
+        }),
+      })
+      if (!response.ok) throw new Error('Failed to update')
+      const { invoice } = await response.json()
+      setInvoices(prev => prev.map(inv => inv.id === invoiceId ? invoice : inv))
+      toast.success('Faktura označena jako zaplacená')
+    } catch {
+      toast.error('Chyba při aktualizaci faktury')
+    }
   }
 
   // Get data for current period
@@ -439,6 +542,22 @@ export default function InvoicingPage() {
           <div className="flex gap-2">
             <Button
               size="lg"
+              variant="outline"
+              onClick={() => router.push('/accountant/invoices')}
+            >
+              <Eye className="mr-2 h-5 w-5" />
+              Vystavené faktury
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => router.push('/accountant/invoices/new')}
+            >
+              <Plus className="mr-2 h-5 w-5" />
+              Nová faktura
+            </Button>
+            <Button
+              size="lg"
               variant={showOnlyPending ? 'default' : 'outline'}
               className={showOnlyPending ? 'bg-orange-600 hover:bg-orange-700' : ''}
               onClick={() => setShowOnlyPending(!showOnlyPending)}
@@ -496,7 +615,7 @@ export default function InvoicingPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
+                <div className="p-2 bg-blue-100 rounded-xl">
                   <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
@@ -510,7 +629,7 @@ export default function InvoicingPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
+                <div className="p-2 bg-purple-100 rounded-xl">
                   <DollarSign className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
@@ -527,7 +646,7 @@ export default function InvoicingPage() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
+                  <div className="p-2 bg-green-100 rounded-xl">
                     <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
@@ -545,7 +664,7 @@ export default function InvoicingPage() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-100 rounded-lg">
+                  <div className="p-2 bg-orange-100 rounded-xl">
                     <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div>
@@ -559,6 +678,96 @@ export default function InvoicingPage() {
             </Card>
           )}
         </div>
+
+        {/* Time Entries per Company */}
+        {timeSummary && timeSummary.by_company.length > 0 && (
+          <Card className="mb-6 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/10 dark:to-blue-900/10 border-purple-200 dark:border-purple-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-purple-900 dark:text-purple-200">
+                <Clock className="h-5 w-5" />
+                Odpracovaný čas – {formatPeriod(currentPeriod)}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {Math.floor(timeSummary.total_minutes / 60)}h {timeSummary.total_minutes % 60}m
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">celkem odpracováno</div>
+                </div>
+                <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    {Math.round(timeSummary.billable_amount).toLocaleString('cs-CZ')} Kč
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">k fakturaci</div>
+                </div>
+                <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                  <div className="text-2xl font-bold text-gray-600 dark:text-gray-300">
+                    {timeSummary.by_company.length}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">klientů</div>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-purple-200 dark:border-purple-700">
+                      <th className="text-left py-2 px-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Klient</th>
+                      <th className="text-right py-2 px-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Celkem</th>
+                      <th className="text-right py-2 px-3 text-xs font-semibold text-gray-600 dark:text-gray-400">K fakturaci</th>
+                      <th className="text-right py-2 px-3 text-xs font-semibold text-gray-600 dark:text-gray-400">V tarifu</th>
+                      <th className="text-right py-2 px-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Částka</th>
+                      <th className="text-right py-2 px-3 text-xs font-semibold text-gray-600 dark:text-gray-400">Záznamů</th>
+                      <th className="py-2 px-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {timeSummary.by_company.map(c => (
+                      <tr key={c.company_id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-white/50 dark:hover:bg-gray-800/50">
+                        <td className="py-2.5 px-3">
+                          <a href={`/accountant/clients/${c.company_id}`} className="font-medium text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400">
+                            {c.company_name}
+                          </a>
+                        </td>
+                        <td className="text-right py-2.5 px-3 text-sm text-gray-700 dark:text-gray-300">
+                          {Math.floor(c.total_minutes / 60)}h {c.total_minutes % 60}m
+                        </td>
+                        <td className="text-right py-2.5 px-3 text-sm font-medium text-green-700 dark:text-green-400">
+                          {Math.floor(c.billable_minutes / 60)}h {c.billable_minutes % 60}m
+                        </td>
+                        <td className="text-right py-2.5 px-3 text-sm text-gray-500 dark:text-gray-400">
+                          {c.in_tariff_minutes > 0 ? `${Math.floor(c.in_tariff_minutes / 60)}h ${c.in_tariff_minutes % 60}m` : '–'}
+                        </td>
+                        <td className="text-right py-2.5 px-3 text-sm font-bold text-purple-700 dark:text-purple-400">
+                          {c.billable_amount > 0 ? `${Math.round(c.billable_amount).toLocaleString('cs-CZ')} Kč` : '–'}
+                        </td>
+                        <td className="text-right py-2.5 px-3 text-sm text-gray-500 dark:text-gray-400">
+                          {c.entry_count}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <a href={`/accountant/clients/${c.company_id}`} className="text-purple-600 hover:text-purple-700 dark:text-purple-400">
+                            <ArrowRight className="h-4 w-4" />
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {timeLoading && (
+          <Card className="mb-6">
+            <CardContent className="py-8 text-center">
+              <Loader2 className="mx-auto h-8 w-8 text-purple-600 animate-spin" />
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Načítání time entries...</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Rest of the page continues similarly... */}
         {Object.keys(billableTasksByCompany).length > 0 && (
@@ -574,7 +783,7 @@ export default function InvoicingPage() {
                 {Object.entries(billableTasksByCompany).map(([companyId, data]) => (
                   <div
                     key={companyId}
-                    className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-amber-200"
+                    className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border-amber-200"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -770,9 +979,9 @@ export default function InvoicingPage() {
                     )}
                   </Button>
                   {isExpanded && (
-                    <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                       {project.timeEntries.map((entry, index) => (
-                        <div key={index} className="bg-white rounded-lg p-3 border">
+                        <div key={index} className="bg-white rounded-xl p-3 shadow-sm">
                           <div className="flex justify-between">
                             <div>
                               <span className="text-xs text-gray-500">{entry.date}</span>
@@ -804,7 +1013,7 @@ export default function InvoicingPage() {
           </DialogHeader>
           {previewInvoice && (
             <div className="space-y-4">
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-xl p-4">
                 <p><strong>Odběratel:</strong> {previewInvoice.clientName}</p>
                 <p><strong>Projekt:</strong> {previewInvoice.projectTitle}</p>
                 <p><strong>Celkem hodin:</strong> {previewInvoice.totalHours.toFixed(1)}h</p>

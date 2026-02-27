@@ -55,16 +55,16 @@ const TYPE_COLORS: Record<AnniversaryType, string> = {
   insurance_payment: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
   vehicle_stk: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
   vehicle_insurance: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
-  employee_contract: 'bg-cyan-100 text-cyan-700',
+  employee_contract: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300',
   employee_medical: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
-  tax_deadline: 'bg-yellow-100 text-yellow-700 dark:text-yellow-400',
+  tax_deadline: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
   other: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
 }
 
 const STATUS_COLORS = {
   overdue: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300',
   due_soon: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300',
-  upcoming: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+  upcoming: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700',
   future: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300',
 }
 

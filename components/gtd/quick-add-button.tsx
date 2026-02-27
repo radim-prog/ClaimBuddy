@@ -67,6 +67,7 @@ export function QuickAddButton() {
       <button
         onClick={handleOpen}
         title="Nový úkol (Ctrl+N)"
+        data-tour="quick-add"
         className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-purple-600 hover:bg-purple-700 text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center group"
       >
         <Plus className="h-7 w-7 group-hover:rotate-90 transition-transform" />

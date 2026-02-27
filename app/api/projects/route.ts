@@ -26,13 +26,21 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { title, description, outcome, company_id, owner_id, due_date, estimated_hours, tags, phases } = body
+  const { title, description, outcome, company_id, owner_id, due_date, estimated_hours, tags, phases,
+    score_money, score_fire, score_time, score_distance, score_personal } = body
 
   if (!title) return NextResponse.json({ error: 'Title is required' }, { status: 400 })
 
   const { data: project, error } = await supabaseAdmin
     .from('projects')
-    .insert({ title, description, outcome, company_id, owner_id, due_date, estimated_hours, tags })
+    .insert({
+      title, description, outcome, company_id, owner_id, due_date, estimated_hours, tags,
+      score_money: score_money ?? 1,
+      score_fire: score_fire ?? 1,
+      score_time: score_time ?? 1,
+      score_distance: score_distance ?? 2,
+      score_personal: score_personal ?? 0,
+    })
     .select()
     .single()
 

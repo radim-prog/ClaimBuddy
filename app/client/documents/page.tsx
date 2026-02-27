@@ -24,6 +24,7 @@ import {
   Download,
   Eye,
   ChevronRight,
+  Plus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useClientUser } from '@/lib/contexts/client-user-context'
@@ -35,50 +36,71 @@ import {
   ExtractionStatus,
 } from '@/components/extraction'
 import { DocumentComments } from '@/components/documents/document-comments'
+import { BankStatementUpload } from '@/components/client/bank-statement-upload'
+import { TransactionList, type BankTransaction } from '@/components/client/transaction-list'
+import { TransactionMatchDialog } from '@/components/client/transaction-match-dialog'
+import { TaxImpactSummary } from '@/components/client/tax-impact-summary'
+import { ClientInvoiceForm } from '@/components/client/invoice-form'
 import { toast } from 'sonner'
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
-type Tab = 'upload' | 'list'
+type Tab = 'upload' | 'list' | 'bank' | 'invoices'
 
 export default function DocumentsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('upload')
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-32"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>}>
+      <DocumentsPageInner />
+    </Suspense>
+  )
+}
+
+function DocumentsPageInner() {
+  const searchParams = useSearchParams()
+  const initialTab = (searchParams.get('tab') as Tab) || 'upload'
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab)
+
+  const tabs: { id: Tab; label: string; icon: typeof Camera }[] = [
+    { id: 'upload', label: 'Nahrát', icon: Camera },
+    { id: 'list', label: 'Přehled', icon: FileText },
+    { id: 'bank', label: 'Banka', icon: Landmark },
+    { id: 'invoices', label: 'Faktury', icon: Receipt },
+  ]
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Doklady</h1>
-        <p className="text-muted-foreground">Nahrajte nové doklady nebo prohlížejte existující</p>
+        <p className="text-muted-foreground">Nahrajte doklady, spravujte výpisy a vystavujte faktury</p>
       </div>
 
       {/* Tab navigation */}
-      <div className="flex gap-1 bg-muted p-1 rounded-lg">
-        <button
-          onClick={() => setActiveTab('upload')}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors flex-1 justify-center',
-            activeTab === 'upload'
-              ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
-              : 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
-          )}
-        >
-          <Camera className="h-4 w-4" />
-          Nahrát
-        </button>
-        <button
-          onClick={() => setActiveTab('list')}
-          className={cn(
-            'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors flex-1 justify-center',
-            activeTab === 'list'
-              ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
-              : 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
-          )}
-        >
-          <FileText className="h-4 w-4" />
-          Přehled
-        </button>
+      <div className="flex gap-1 bg-muted p-1 rounded-lg overflow-x-auto">
+        {tabs.map(tab => {
+          const Icon = tab.icon
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors flex-1 justify-center whitespace-nowrap',
+                activeTab === tab.id
+                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.label}</span>
+            </button>
+          )
+        })}
       </div>
 
       {activeTab === 'upload' && <UploadTab />}
       {activeTab === 'list' && <DocumentListTab />}
+      {activeTab === 'bank' && <BankTab />}
+      {activeTab === 'invoices' && <InvoicesTab />}
     </div>
   )
 }
@@ -776,6 +798,280 @@ function DocumentListTab() {
           })}
         </div>
       )}
+    </div>
+  )
+}
+
+// ===== BANK TAB =====
+
+function BankTab() {
+  const { companies, loading: companiesLoading } = useClientUser()
+  const [selectedCompany, setSelectedCompany] = useState<string>('')
+  const [transactions, setTransactions] = useState<BankTransaction[]>([])
+  const [loading, setLoading] = useState(false)
+  const [matchingTx, setMatchingTx] = useState<BankTransaction | null>(null)
+  const [filter, setFilter] = useState<'all' | 'unmatched' | 'matched'>('all')
+  const [autoMatching, setAutoMatching] = useState(false)
+
+  useEffect(() => {
+    if (companies.length === 1 && !selectedCompany) {
+      setSelectedCompany(companies[0].id)
+    }
+  }, [companies, selectedCompany])
+
+  const fetchTransactions = useCallback(async () => {
+    if (!selectedCompany) return
+    setLoading(true)
+    try {
+      const matchedParam = filter === 'unmatched' ? '&matched=false' : filter === 'matched' ? '&matched=true' : ''
+      const res = await fetch(`/api/client/bank-transactions?company_id=${selectedCompany}${matchedParam}`)
+      if (res.ok) {
+        const data = await res.json()
+        setTransactions(data.transactions || [])
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [selectedCompany, filter])
+
+  useEffect(() => { fetchTransactions() }, [fetchTransactions])
+
+  const handleMatch = async (transactionId: string, documentId: string | null, invoiceId: string | null) => {
+    try {
+      const res = await fetch(`/api/client/bank-transactions/${transactionId}/match`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          matched_document_id: documentId,
+          matched_invoice_id: invoiceId,
+        }),
+      })
+      if (res.ok) {
+        toast.success(documentId || invoiceId ? 'Doklad přiřazen' : 'Přiřazení zrušeno')
+        fetchTransactions()
+      }
+    } catch {
+      toast.error('Přiřazení selhalo')
+    }
+    setMatchingTx(null)
+  }
+
+  const handleCategoryChange = async (transactionId: string, category: string) => {
+    try {
+      await fetch(`/api/client/bank-transactions/${transactionId}/match`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category }),
+      })
+      setTransactions(prev => prev.map(t => t.id === transactionId ? { ...t, category } : t))
+    } catch {
+      toast.error('Změna kategorie selhala')
+    }
+  }
+
+  const handleAutoMatch = async () => {
+    if (!selectedCompany) return
+    setAutoMatching(true)
+    try {
+      const res = await fetch('/api/client/bank-transactions/auto-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: selectedCompany }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        toast.success(`Spárováno ${data.matched} transakcí`)
+        fetchTransactions()
+      }
+    } catch {
+      toast.error('Auto-párování selhalo')
+    } finally {
+      setAutoMatching(false)
+    }
+  }
+
+  if (companiesLoading) {
+    return <div className="flex items-center justify-center h-32"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
+  }
+
+  return (
+    <div className="space-y-4">
+      {companies.length > 1 && (
+        <Card>
+          <CardContent className="p-4">
+            <Label className="mb-2 block">Firma</Label>
+            <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+              <SelectTrigger><SelectValue placeholder="Vyberte firmu..." /></SelectTrigger>
+              <SelectContent>
+                {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedCompany && <TaxImpactSummary companyId={selectedCompany} />}
+
+      {selectedCompany && (
+        <BankStatementUpload companyId={selectedCompany} onUploadComplete={() => fetchTransactions()} />
+      )}
+
+      {transactions.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {(['all', 'unmatched', 'matched'] as const).map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={cn(
+                'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                filter === f ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              )}
+            >
+              {f === 'all' ? 'Vše' : f === 'unmatched' ? 'Nespárované' : 'Spárované'}
+            </button>
+          ))}
+          <Button variant="outline" size="sm" className="ml-auto" onClick={handleAutoMatch} disabled={autoMatching}>
+            {autoMatching ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+            Auto-párování
+          </Button>
+        </div>
+      )}
+
+      <TransactionList
+        transactions={transactions}
+        loading={loading}
+        onMatchClick={setMatchingTx}
+        onCategoryChange={handleCategoryChange}
+      />
+
+      {matchingTx && selectedCompany && (
+        <TransactionMatchDialog
+          transaction={matchingTx}
+          companyId={selectedCompany}
+          onMatch={handleMatch}
+          onClose={() => setMatchingTx(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+// ===== INVOICES TAB =====
+
+function InvoicesTab() {
+  const { companies, loading: companiesLoading } = useClientUser()
+  const [selectedCompany, setSelectedCompany] = useState<string>('')
+  const [showForm, setShowForm] = useState(false)
+
+  useEffect(() => {
+    if (companies.length === 1 && !selectedCompany) {
+      setSelectedCompany(companies[0].id)
+    }
+  }, [companies, selectedCompany])
+
+  if (companiesLoading) {
+    return <div className="flex items-center justify-center h-32"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
+  }
+
+  return (
+    <div className="space-y-4">
+      {companies.length > 1 && (
+        <Card>
+          <CardContent className="p-4">
+            <Label className="mb-2 block">Firma</Label>
+            <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+              <SelectTrigger><SelectValue placeholder="Vyberte firmu..." /></SelectTrigger>
+              <SelectContent>
+                {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedCompany && !showForm && (
+        <Button className="w-full h-12 text-lg gap-2" onClick={() => setShowForm(true)}>
+          <Plus className="w-5 h-5" />
+          Vystavit novou fakturu
+        </Button>
+      )}
+
+      {showForm && selectedCompany && (
+        <ClientInvoiceForm
+          companyId={selectedCompany}
+          onClose={() => setShowForm(false)}
+          onCreated={() => { setShowForm(false); toast.success('Faktura vytvořena') }}
+        />
+      )}
+
+      {selectedCompany && <ClientInvoiceListView companyId={selectedCompany} />}
+    </div>
+  )
+}
+
+function ClientInvoiceListView({ companyId }: { companyId: string }) {
+  const [invoices, setInvoices] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch('/api/client/invoices')
+      .then(r => r.ok ? r.json() : { invoices: [] })
+      .then(data => setInvoices(data.invoices || []))
+      .finally(() => setLoading(false))
+  }, [companyId])
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-32"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
+  }
+
+  if (invoices.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <Receipt className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
+          <p className="text-muted-foreground">Zatím nemáte žádné vydané faktury</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {invoices.map((inv: any) => (
+        <Card key={inv.id}>
+          <CardContent className="py-3 px-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-50 dark:bg-green-950/30 rounded-lg shrink-0">
+                <Receipt className="h-4 w-4 text-green-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {inv.invoice_number} — {inv.partner?.name || inv.partner_name || 'Neuvedeno'}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{new Date(inv.issue_date).toLocaleDateString('cs-CZ')}</span>
+                  {inv.due_date && (
+                    <><span>·</span><span>Spl. {new Date(inv.due_date).toLocaleDateString('cs-CZ')}</span></>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-sm font-semibold text-green-600">
+                  {(inv.total_with_vat || inv.amount || 0).toLocaleString('cs-CZ')} Kč
+                </span>
+                <Badge className={
+                  inv.status === 'paid' ? 'bg-green-100 text-green-800' :
+                  inv.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                  'bg-gray-100 text-gray-800'
+                }>
+                  {inv.status === 'paid' ? 'Zaplaceno' : inv.status === 'sent' ? 'Odesláno' : 'Koncept'}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   )
 }

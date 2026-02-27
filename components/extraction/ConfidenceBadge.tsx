@@ -15,9 +15,9 @@ export function ConfidenceBadge({
   size = 'md' 
 }: ConfidenceBadgeProps) {
   const getColor = (s: number) => {
-    if (s >= 90) return 'bg-green-100 text-green-800 border-green-200'
-    if (s >= 70) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-    return 'bg-red-100 text-red-800 border-red-200'
+    if (s >= 90) return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-700'
+    if (s >= 70) return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700'
+    return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700'
   }
 
   const getIcon = (s: number) => {

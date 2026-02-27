@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Building2, Loader2, AlertCircle, Check } from 'lucide-react'
+import { Building2, Loader2, AlertCircle, Check, Search } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface Accountant {
   id: string
@@ -70,6 +71,7 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
 
   const [accountants, setAccountants] = useState<Accountant[]>([])
   const [loading, setLoading] = useState(false)
+  const [aresLoading, setAresLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [createdCompanyId, setCreatedCompanyId] = useState<string | null>(null)
@@ -130,6 +132,39 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
       // Auto-fill DIC if empty and we have 8 digits
       dic: prev.dic || (digitsOnly.length === 8 ? `CZ${digitsOnly}` : prev.dic),
     }))
+  }
+
+  const handleAresLookup = async () => {
+    if (formData.ico.length !== 8) {
+      setError('Zadejte 8místné IČO pro vyhledání v ARES')
+      return
+    }
+    setAresLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/ares?ico=${formData.ico}`)
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Firma nenalezena')
+        return
+      }
+      const company = data.company
+      setFormData(prev => ({
+        ...prev,
+        name: company.name || prev.name,
+        dic: company.dic || prev.dic,
+        legal_form: company.legal_form || prev.legal_form,
+        vat_payer: company.vat_payer ?? prev.vat_payer,
+        street: company.address?.street || prev.street,
+        city: company.address?.city || prev.city,
+        zip: company.address?.zip || prev.zip,
+      }))
+      toast.success('Data načtena z ARES')
+    } catch {
+      setError('Nepodařilo se spojit s ARES')
+    } finally {
+      setAresLoading(false)
+    }
   }
 
   const validateForm = (): boolean => {
@@ -217,7 +252,7 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-md">
           <div className="flex flex-col items-center py-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
               <Check className="h-8 w-8 text-green-600" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -237,7 +272,7 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto dark:bg-gray-900">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-purple-600" />
@@ -249,13 +284,13 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
         </DialogHeader>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4 py-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
           {/* Company name */}
           <div className="col-span-2">
             <Label htmlFor="name" className="text-red-600">*</Label>
@@ -273,14 +308,29 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
           <div>
             <Label htmlFor="ico" className="text-red-600">*</Label>
             <Label htmlFor="ico" className="ml-1">IČO</Label>
-            <Input
-              id="ico"
-              value={formData.ico}
-              onChange={(e) => handleIcoChange(e.target.value)}
-              placeholder="12345678"
-              maxLength={8}
-              disabled={loading}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="ico"
+                value={formData.ico}
+                onChange={(e) => handleIcoChange(e.target.value)}
+                placeholder="12345678"
+                maxLength={8}
+                disabled={loading}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAresLookup}
+                disabled={loading || aresLoading || formData.ico.length !== 8}
+                className="shrink-0 h-10 px-3"
+                title="Načíst data z ARES"
+              >
+                {aresLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                <span className="ml-1 hidden sm:inline">ARES</span>
+              </Button>
+            </div>
           </div>
 
           {/* DIČ */}
@@ -340,7 +390,7 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
           </div>
 
           {/* VAT payer checkbox */}
-          <div className="col-span-2 flex items-center gap-4">
+          <div className="col-span-2 flex flex-wrap items-center gap-3 sm:gap-4">
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="vat_payer"
@@ -359,14 +409,14 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
             {formData.vat_payer && (
               <div className="flex items-center gap-2">
                 <Label className="text-red-600">*</Label>
-                <Label>Periodicita:</Label>
+                <Label className="hidden sm:inline">Periodicita:</Label>
                 <Select
                   value={formData.vat_period}
                   onValueChange={(value) => handleInputChange('vat_period', value)}
                   disabled={loading}
                 >
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Vyberte" />
+                  <SelectTrigger className="w-36 sm:w-40">
+                    <SelectValue placeholder="Periodicita" />
                   </SelectTrigger>
                   <SelectContent>
                     {VAT_PERIODS.map((period) => (
@@ -379,7 +429,7 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
               </div>
             )}
 
-            <div className="flex items-center space-x-2 ml-auto">
+            <div className="flex items-center space-x-2 sm:ml-auto">
               <Checkbox
                 id="has_employees"
                 checked={formData.has_employees}
@@ -397,8 +447,8 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
             <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
               Adresa
             </h4>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2">
                 <Label htmlFor="street">Ulice a č.p.</Label>
                 <Input
                   id="street"
@@ -418,7 +468,7 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
                   disabled={loading}
                 />
               </div>
-              <div className="col-span-3">
+              <div className="sm:col-span-3">
                 <Label htmlFor="city">Město</Label>
                 <Input
                   id="city"
@@ -436,7 +486,7 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
             <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
               Kontaktní údaje
             </h4>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="email">Email</Label>
                 <Input

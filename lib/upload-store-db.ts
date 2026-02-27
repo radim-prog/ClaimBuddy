@@ -16,7 +16,9 @@ export type UploadRecord = {
   file_name: string
   file_size: number
   uploaded_at: string
-  uploaded_by: string
+  uploaded_by: string | null
+  storage_path: string | null
+  mime_type: string | null
 }
 
 // Map document_type to closure status field
@@ -41,6 +43,8 @@ export async function addUpload(data: Omit<UploadRecord, 'id' | 'uploaded_at'>):
       uploaded_by: data.uploaded_by,
       uploaded_at: new Date().toISOString(),
       upload_source: 'web',
+      storage_path: data.storage_path || null,
+      mime_type: data.mime_type || null,
     })
     .select('*')
     .single()
@@ -56,7 +60,7 @@ export async function addUpload(data: Omit<UploadRecord, 'id' | 'uploaded_at'>):
         data.period,
         closureField,
         'uploaded',
-        data.uploaded_by
+        data.uploaded_by || 'system'
       )
     } catch (e) {
       // Non-critical - closure update can fail if no closure exists
@@ -72,7 +76,7 @@ export async function addUpload(data: Omit<UploadRecord, 'id' | 'uploaded_at'>):
       company_name: '',
       title: 'Dokument nahrán klientem',
       description: `${data.file_name} (${data.document_type}) za období ${data.period}`,
-      created_by: data.uploaded_by,
+      created_by: data.uploaded_by || 'system',
     })
   } catch (e) {
     console.warn('Failed to add activity:', e)
@@ -87,6 +91,8 @@ export async function addUpload(data: Omit<UploadRecord, 'id' | 'uploaded_at'>):
     file_size: row.file_size_bytes || data.file_size,
     uploaded_at: row.uploaded_at || row.created_at,
     uploaded_by: data.uploaded_by,
+    storage_path: row.storage_path || null,
+    mime_type: row.mime_type || null,
   }
 }
 
@@ -112,6 +118,8 @@ export async function getUploadsByCompany(companyId: string, period?: string): P
     file_size: row.file_size_bytes || 0,
     uploaded_at: row.uploaded_at || row.created_at,
     uploaded_by: row.uploaded_by || '',
+    storage_path: row.storage_path || null,
+    mime_type: row.mime_type || null,
   }))
 }
 

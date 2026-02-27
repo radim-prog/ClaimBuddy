@@ -104,16 +104,20 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Check if any snoozed tasks have expired
+  // Periodically check if any snoozed tasks have expired
   useEffect(() => {
-    const now = new Date()
-    const expiredSnoozes = Object.entries(snoozedTasks).filter(([_, until]) => now >= until)
-    if (expiredSnoozes.length > 0) {
-      const newSnoozed = { ...snoozedTasks }
-      expiredSnoozes.forEach(([id]) => delete newSnoozed[id])
-      setSnoozedTasks(newSnoozed)
-    }
-  }, [snoozedTasks])
+    const interval = setInterval(() => {
+      setSnoozedTasks(prev => {
+        const now = new Date()
+        const expiredKeys = Object.entries(prev).filter(([_, until]) => now >= until).map(([id]) => id)
+        if (expiredKeys.length === 0) return prev // no state change, no re-render
+        const next = { ...prev }
+        expiredKeys.forEach(id => delete next[id])
+        return next
+      })
+    }, 30_000) // check every 30 seconds
+    return () => clearInterval(interval)
+  }, [])
 
   // Helper to check if a task is snoozed
   const isTaskSnoozed = (taskId: string) => {
@@ -411,7 +415,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                           <span className="text-sm text-purple-600">{item.companyName}</span>
                         )}
                         {notes[item.id] && !isTaskExpanded && (
-                          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded">
+                          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded">
                             📝 {notes[item.id]}
                           </div>
                         )}
@@ -460,7 +464,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
 
                 {/* Expanded task details */}
                 {isTaskExpanded && (
-                  <div className="border-t bg-gray-50/50 p-4 space-y-4" onClick={e => e.stopPropagation()}>
+                  <div className="border-t dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 p-4 space-y-4" onClick={e => e.stopPropagation()}>
                     {/* Description */}
                     {item.description && (
                       <div>
@@ -507,8 +511,8 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                               key={checkItem.id}
                               className={`flex items-center gap-2 p-2 rounded ${
                                 checkItem.completed
-                                  ? 'bg-green-50 text-green-700 dark:text-green-400'
-                                  : 'bg-red-50 text-red-700 dark:text-red-400'
+                                  ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                                  : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
                               }`}
                             >
                               {checkItem.completed ? (
@@ -540,7 +544,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                             <a
                               key={idx}
                               href={att.url}
-                              className="flex items-center gap-1 text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded hover:bg-purple-100"
+                              className="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded hover:bg-purple-100 dark:hover:bg-purple-800/30"
                             >
                               <FileText className="h-3 w-3" />
                               {att.name}
@@ -552,7 +556,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
 
                     {/* Notes */}
                     {notes[item.id] && (
-                      <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-sm text-yellow-800">
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-sm text-yellow-800 dark:text-yellow-300">
                         📝 {notes[item.id]}
                       </div>
                     )}
@@ -577,7 +581,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-blue-600 border-blue-300 hover:bg-blue-50 dark:bg-blue-900/20"
+                          className="text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                           onClick={() => setShowSnoozeMenuForTask(
                             showSnoozeMenuForTask === item.id ? null : item.id
                           )}
@@ -618,7 +622,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                               Opakovat každých
                             </div>
                             <button
-                              className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 rounded ${
+                              className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded ${
                                 recurringReminders[item.id] === 2 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'
                               }`}
                               onClick={() => handleSetRecurringReminder(item.id, 2)}
@@ -626,7 +630,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                               2 hodiny
                             </button>
                             <button
-                              className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 rounded ${
+                              className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded ${
                                 recurringReminders[item.id] === 4 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'
                               }`}
                               onClick={() => handleSetRecurringReminder(item.id, 4)}
@@ -634,7 +638,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                               4 hodiny
                             </button>
                             <button
-                              className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 rounded ${
+                              className={`w-full text-left px-3 py-1.5 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded ${
                                 recurringReminders[item.id] === 24 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'
                               }`}
                               onClick={() => handleSetRecurringReminder(item.id, 24)}
@@ -645,7 +649,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                               <>
                                 <div className="border-t my-1"></div>
                                 <button
-                                  className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded"
+                                  className="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                                   onClick={() => {
                                     setRecurringReminders(prev => {
                                       const next = { ...prev }
@@ -666,7 +670,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-orange-600 border-orange-300 hover:bg-orange-50 dark:bg-orange-900/20"
+                        className="text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/30"
                         onClick={() => handleSendReminder(item)}
                       >
                         <Mail className="h-3.5 w-3.5 mr-1" />
@@ -677,7 +681,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-indigo-600 border-indigo-300 hover:bg-indigo-50"
+                          className="text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
                           onClick={() => handleDelegateToClient(item)}
                         >
                           <Users className="h-3.5 w-3.5 mr-1" />
@@ -695,7 +699,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                       {/* Complete button - shows confirm */}
                       {showCompleteConfirm === item.id ? (
                         <div className="flex-1 flex flex-col gap-2 bg-green-50 dark:bg-green-900/20 p-2 rounded border border-green-200">
-                          <div className="text-xs text-green-700 font-medium">
+                          <div className="text-xs text-green-700 dark:text-green-300 font-medium">
                             Opravdu označit jako hotové?
                           </div>
                           <Textarea
@@ -859,7 +863,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
 
       {/* Expanded dropdown */}
       {expanded && (
-        <div className="absolute left-0 right-0 top-full bg-gray-50 dark:bg-gray-800/50 border-b shadow-xl z-40 max-h-[70vh] overflow-y-auto">
+        <div className="absolute left-0 right-0 top-full bg-gray-50 dark:bg-gray-900 border-b shadow-xl z-40 max-h-[70vh] overflow-y-auto">
           <div className="max-w-7xl mx-auto p-4">
             {/* Toolbar with filters and history */}
             <div className="mb-4 pb-4 border-b flex flex-wrap items-center justify-between gap-3">
@@ -939,7 +943,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="text-orange-600 border-orange-300 hover:bg-orange-50 dark:bg-orange-900/20"
+                  className="text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/30"
                   onClick={handleSendAllReminders}
                 >
                   <Send className="h-3.5 w-3.5 mr-1" />
@@ -963,8 +967,8 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
 
             {/* History panel */}
             {showHistory && completedHistory.length > 0 && (
-              <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                <div className="font-medium text-green-800 mb-3 flex items-center gap-2">
+              <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="font-medium text-green-800 dark:text-green-300 mb-3 flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4" />
                   Dokončené úkoly dnes
                 </div>
@@ -976,9 +980,9 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
                       return completed.toDateString() === today.toDateString()
                     })
                     .map(item => (
-                      <div key={item.id} className="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded border border-green-100">
+                      <div key={item.id} className="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded border border-green-100 dark:border-green-800">
                         <div>
-                          <span className="text-sm font-medium text-gray-800">{item.title}</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{item.title}</span>
                           {item.companyName && (
                             <span className="text-sm text-purple-600 ml-2">({item.companyName})</span>
                           )}

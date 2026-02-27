@@ -40,7 +40,7 @@ export function TileSettingsPanel({
       <PopoverContent className="w-72" align="end">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold">Sekce dashboardu</h4>
+            <h4 className="text-sm font-semibold">Sekce stránky</h4>
             <Button variant="ghost" size="sm" onClick={onReset} title="Obnovit výchozí">
               <RotateCcw className="h-3 w-3 mr-1" />
               Reset

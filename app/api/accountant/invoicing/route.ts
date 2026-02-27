@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getInvoiceStatus } from '@/lib/invoice-utils'
 
 export const dynamic = 'force-dynamic'
-
-// Helper to get invoice status from invoice record
-function getInvoiceStatus(invoice: any): 'draft' | 'sent' | 'paid' {
-  if (invoice.paid_at) return 'paid'
-  if (invoice.sent_at) return 'sent'
-  return 'draft'
-}
 
 // Transform time_logs to time entries format
 function transformTimeEntries(timeLogs: any[]): any[] {

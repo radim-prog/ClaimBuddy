@@ -89,13 +89,20 @@ export async function getClosuresByCompany(companyId: string): Promise<ClosureRe
   return getClosures({ companyId })
 }
 
-type StatusField = 'bank_statement_status' | 'expense_documents_status' | 'income_invoices_status'
-type StatusValue = 'missing' | 'uploaded' | 'approved'
+export type StatusField = 'bank_statement_status' | 'expense_documents_status' | 'income_invoices_status'
+export type StatusValue = 'missing' | 'uploaded' | 'approved' | 'skipped'
 
 // Map old field names to DB column names
 function mapFieldToColumn(field: StatusField): string {
   if (field === 'expense_documents_status') return 'expense_invoices_status'
   return field
+}
+
+function computeOverallStatus(bank: string, expense: string, income: string): string {
+  const vals = [bank, expense, income]
+  const allDone = vals.every(v => v === 'approved' || v === 'skipped')
+  const anyMissing = vals.some(v => v === 'missing')
+  return allDone ? 'closed' : anyMissing ? 'open' : 'in_progress'
 }
 
 export async function updateClosureStatus(
@@ -117,15 +124,10 @@ export async function updateClosureStatus(
   }
 
   // Compute new overall status
-  const newValues = {
-    bank_statement_status: field === 'bank_statement_status' ? value : current.bank_statement_status,
-    expense_documents_status: field === 'expense_documents_status' ? value : current.expense_documents_status,
-    income_invoices_status: field === 'income_invoices_status' ? value : current.income_invoices_status,
-  }
-
-  const allApproved = Object.values(newValues).every(v => v === 'approved')
-  const anyMissing = Object.values(newValues).some(v => v === 'missing')
-  updates.status = allApproved ? 'closed' : anyMissing ? 'open' : 'in_progress'
+  const newBank = field === 'bank_statement_status' ? value : current.bank_statement_status
+  const newExpense = field === 'expense_documents_status' ? value : current.expense_documents_status
+  const newIncome = field === 'income_invoices_status' ? value : current.income_invoices_status
+  updates.status = computeOverallStatus(newBank, newExpense, newIncome)
 
   const { data, error } = await supabaseAdmin
     .from('monthly_closures')
@@ -174,10 +176,7 @@ export async function updateClosureFull(
   const newBank = dbUpdates.bank_statement_status || current.bank_statement_status || 'missing'
   const newExpense = dbUpdates.expense_invoices_status || current.expense_invoices_status || 'missing'
   const newIncome = dbUpdates.income_invoices_status || current.income_invoices_status || 'missing'
-
-  const allApproved = newBank === 'approved' && newExpense === 'approved' && newIncome === 'approved'
-  const anyMissing = newBank === 'missing' || newExpense === 'missing' || newIncome === 'missing'
-  dbUpdates.status = allApproved ? 'closed' : anyMissing ? 'open' : 'in_progress'
+  dbUpdates.status = computeOverallStatus(newBank, newExpense, newIncome)
 
   const { data, error } = await supabaseAdmin
     .from('monthly_closures')
@@ -188,4 +187,40 @@ export async function updateClosureFull(
 
   if (error) throw new Error(`Failed to update closure: ${error.message}`)
   return mapRow(data)
+}
+
+export async function upsertClosureField(
+  companyId: string,
+  period: string,
+  field: StatusField,
+  value: StatusValue,
+  updatedBy: string
+): Promise<ClosureRecord> {
+  const existing = await getClosure(companyId, period)
+
+  if (existing) {
+    return (await updateClosureStatus(companyId, period, field, value, updatedBy))!
+  }
+
+  // Create new closure with the specified field
+  const dbField = mapFieldToColumn(field)
+  const insert: Record<string, any> = {
+    company_id: companyId,
+    period,
+    status: 'open',
+    bank_statement_status: 'missing',
+    expense_invoices_status: 'missing',
+    income_invoices_status: 'missing',
+    [dbField]: value,
+    updated_by: updatedBy,
+  }
+
+  const { data: row, error: insertError } = await supabaseAdmin
+    .from('monthly_closures')
+    .insert(insert)
+    .select('*')
+    .single()
+
+  if (insertError) throw new Error(`Failed to create closure: ${insertError.message}`)
+  return mapRow(row)
 }

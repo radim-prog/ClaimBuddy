@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -12,6 +12,10 @@ import {
   Pencil,
   Eye,
   Users,
+  FolderOpen,
+  Clock,
+  Briefcase,
+  LayoutGrid,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -114,6 +118,7 @@ export function useCompany() {
 export default function ClientDetailLayout({ children }: { children: ReactNode }) {
   const params = useParams()
   const router = useRouter()
+  const pathname = usePathname()
   const companyId = params.companyId as string
 
   const [company, setCompany] = useState<Company | null>(null)
@@ -225,49 +230,88 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
     >
       <div className="max-w-5xl mx-auto space-y-4">
         {/* Navigation */}
-        <div className="flex items-center justify-between gap-2">
-          <Link href="/accountant/clients">
-            <Button variant="ghost" size="sm" className="rounded-xl text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-              <ArrowLeft className="mr-1.5 h-4 w-4" />
-              <span className="hidden sm:inline">Zpet na seznam klientu</span>
-              <span className="sm:hidden">Zpet</span>
-            </Button>
-          </Link>
-          <div className="flex gap-1.5 sm:gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-xl border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-700 dark:text-amber-400 transition-colors"
-              onClick={async () => {
-                await fetch('/api/auth/impersonate', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ companyId })
-                })
-                router.push('/client/dashboard')
-              }}
-            >
-              <Users className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Pohled klienta</span>
-            </Button>
-            <Link href={`/accountant/extraction?company=${companyId}`}>
-              <Button variant="outline" size="sm" className="rounded-xl border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 transition-colors">
-                <FileText className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">Vytezovani</span>
-              </Button>
-            </Link>
-            <Button variant="outline" size="sm" className="rounded-xl border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 transition-colors" onClick={() => setEditModalOpen(true)}>
-              <Pencil className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Upravit</span>
-            </Button>
-            <Link href={`/accountant/clients/${companyId}/timeline`}>
-              <Button variant="outline" size="sm" className="rounded-xl border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 transition-colors">
-                <Eye className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">Casova osa</span>
-              </Button>
-            </Link>
-          </div>
-        </div>
+        {(() => {
+          const basePath = `/accountant/clients/${companyId}`
+          const isOnHub = pathname === basePath || pathname === `${basePath}/`
+          const backHref = isOnHub ? '/accountant/clients' : basePath
+          const backLabel = isOnHub ? 'Seznam klientu' : company.name
+
+          const tabs = [
+            { href: basePath, label: 'Prehled', icon: LayoutGrid, match: (p: string) => p === basePath || p === `${basePath}/` },
+            { href: `${basePath}/documents`, label: 'Doklady', icon: FileText, match: (p: string) => p.includes('/documents') },
+            { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files') },
+            { href: `${basePath}/work`, label: 'Prace', icon: Clock, match: (p: string) => p.includes('/work') },
+            { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile') },
+            { href: `${basePath}/timeline`, label: 'Osa', icon: Eye, match: (p: string) => p.includes('/timeline') },
+          ]
+
+          return (
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <Link href={backHref}>
+                  <Button variant="ghost" size="sm" className="rounded-xl text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <ArrowLeft className="mr-1.5 h-4 w-4" />
+                    <span className="hidden sm:inline">{backLabel}</span>
+                    <span className="sm:hidden">Zpet</span>
+                  </Button>
+                </Link>
+                <div className="flex gap-1.5 sm:gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-700 dark:text-amber-400 transition-colors"
+                    onClick={async () => {
+                      await fetch('/api/auth/impersonate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ companyId })
+                      })
+                      router.push('/client/dashboard')
+                    }}
+                  >
+                    <Users className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Pohled klienta</span>
+                  </Button>
+                  <Link href={`/accountant/extraction?company=${companyId}`}>
+                    <Button variant="outline" size="sm" className="rounded-xl border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 transition-colors">
+                      <FileText className="h-4 w-4 sm:mr-1" />
+                      <span className="hidden sm:inline">Vytezovani</span>
+                    </Button>
+                  </Link>
+                  <Button variant="outline" size="sm" className="rounded-xl border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 transition-colors" onClick={() => setEditModalOpen(true)}>
+                    <Pencil className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Upravit</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Sub-page tabs */}
+              {!isOnHub && (
+                <div className="flex gap-1 overflow-x-auto pb-0.5 -mx-1 px-1" data-tour="client-tabs">
+                  {tabs.map(tab => {
+                    const active = tab.match(pathname)
+                    return (
+                      <Link key={tab.href} href={tab.href}>
+                        <Button
+                          variant={active ? 'default' : 'ghost'}
+                          size="sm"
+                          className={`rounded-xl shrink-0 text-xs h-8 ${
+                            active
+                              ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm'
+                              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }`}
+                        >
+                          <tab.icon className="h-3.5 w-3.5 mr-1" />
+                          {tab.label}
+                        </Button>
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </>
+          )
+        })()}
 
         {/* Compact Company Header */}
         <Card className="rounded-xl shadow-sm border-0 bg-gradient-to-r from-white via-white to-purple-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-purple-900/10 overflow-hidden">

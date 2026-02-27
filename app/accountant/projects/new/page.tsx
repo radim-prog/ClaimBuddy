@@ -9,8 +9,24 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { ScoringWizard } from '@/components/gtd/scoring-wizard'
 
 type Phase = { title: string; description: string }
+type ScoreResult = {
+  score_money: number
+  score_fire: number
+  score_time: number
+  score_distance: number
+  score_personal: number
+  total_score: number
+  priority: 'high' | 'medium' | 'low'
+}
+
+const priorityConfig = {
+  high: { label: 'Vysoká', color: 'bg-red-100 text-red-700' },
+  medium: { label: 'Střední', color: 'bg-yellow-100 text-yellow-700' },
+  low: { label: 'Nízká', color: 'bg-green-100 text-green-700' },
+}
 
 export default function NewProjectPage() {
   return (
@@ -44,6 +60,9 @@ function NewProjectContent() {
   const [dueDate, setDueDate] = useState('')
   const [estimatedHours, setEstimatedHours] = useState('')
 
+  // Step 4 - R-Tasks Scoring
+  const [scores, setScores] = useState<ScoreResult | null>(null)
+
   // Load companies + prefill from task
   useEffect(() => {
     fetch('/api/accountant/companies')
@@ -75,6 +94,11 @@ function NewProjectContent() {
     setPhases(next)
   }
 
+  const handleScoringComplete = (result: ScoreResult) => {
+    setScores(result)
+    setStep(5) // Auto-advance to summary
+  }
+
   const handleSubmit = async () => {
     setSubmitting(true)
     try {
@@ -90,6 +114,11 @@ function NewProjectContent() {
           due_date: dueDate || undefined,
           estimated_hours: estimatedHours ? Number(estimatedHours) : undefined,
           phases: validPhases.map(p => ({ title: p.title, description: p.description || undefined })),
+          score_money: scores?.score_money,
+          score_fire: scores?.score_fire,
+          score_time: scores?.score_time,
+          score_distance: scores?.score_distance,
+          score_personal: scores?.score_personal,
         }),
       })
       if (!res.ok) throw new Error()
@@ -109,6 +138,8 @@ function NewProjectContent() {
     return true
   }
 
+  const totalSteps = 5
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -116,7 +147,7 @@ function NewProjectContent() {
           <ArrowLeft className="h-4 w-4 mr-1" /> Zpět
         </Button>
         <div className="flex gap-2">
-          {[1, 2, 3, 4].map(s => (
+          {[1, 2, 3, 4, 5].map(s => (
             <div
               key={s}
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
@@ -150,7 +181,7 @@ function NewProjectContent() {
             <div>
               <label className="text-sm font-medium">Firma</label>
               <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="w-full rounded-md border border-input dark:border-gray-600 bg-background dark:bg-gray-800 dark:text-gray-200 px-3 py-2 text-sm"
                 value={companyId}
                 onChange={e => setCompanyId(e.target.value)}
               >
@@ -236,7 +267,43 @@ function NewProjectContent() {
       {step === 4 && (
         <Card>
           <CardHeader>
-            <CardTitle>4. Rekapitulace</CardTitle>
+            <CardTitle>4. Priorita (R-Tasks)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {scores ? (
+              <div className="text-center space-y-4">
+                <div className="text-4xl font-bold">{scores.total_score} / 12</div>
+                <Badge className={`text-lg px-4 py-1 ${priorityConfig[scores.priority].color}`}>
+                  Priorita: {priorityConfig[scores.priority].label}
+                </Badge>
+                <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground pt-4">
+                  <div className="text-center"><span className="text-lg">💰</span><div className="font-medium">{scores.score_money}</div></div>
+                  <div className="text-center"><span className="text-lg">🔥</span><div className="font-medium">{scores.score_fire}</div></div>
+                  <div className="text-center"><span className="text-lg">⏰</span><div className="font-medium">{scores.score_time}</div></div>
+                  <div className="text-center"><span className="text-lg">📍</span><div className="font-medium">{scores.score_distance}</div></div>
+                  <div className="text-center"><span className="text-lg">❤️</span><div className="font-medium">{scores.score_personal}</div></div>
+                </div>
+                <Button variant="outline" onClick={() => setScores(null)} className="mt-4">
+                  Změnit hodnocení
+                </Button>
+              </div>
+            ) : (
+              <ScoringWizard
+                onComplete={handleScoringComplete}
+                onCancel={() => {
+                  // Skip scoring - use defaults
+                  setStep(5)
+                }}
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 5 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>5. Rekapitulace</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -271,6 +338,16 @@ function NewProjectContent() {
                 <p>{estimatedHours} hodin</p>
               </div>
             )}
+            {scores && (
+              <div>
+                <span className="text-sm text-muted-foreground">Priorita:</span>
+                <div className="mt-1">
+                  <Badge className={`${priorityConfig[scores.priority].color} text-sm`}>
+                    {scores.total_score}/12 • {priorityConfig[scores.priority].label}
+                  </Badge>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -280,9 +357,9 @@ function NewProjectContent() {
         <Button variant="outline" onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Zpět
         </Button>
-        {step < 4 ? (
+        {step < totalSteps ? (
           <Button onClick={() => setStep(step + 1)} disabled={!canNext()}>
-            Další <ArrowRight className="h-4 w-4 ml-1" />
+            {step === 4 && !scores ? 'Přeskočit' : 'Další'} <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         ) : (
           <Button onClick={handleSubmit} disabled={submitting} className="bg-green-600 hover:bg-green-700">
