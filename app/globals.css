@@ -69,6 +69,16 @@
   transition: background-color 5000s ease-in-out 0s;
 }
 
+/* Blue theme for client section — overrides shadcn purple primary */
+.client-theme {
+  --primary: 217 91% 60%;
+  --ring: 217 91% 60%;
+}
+.dark .client-theme {
+  --primary: 217 91% 60%;
+  --ring: 217 91% 60%;
+}
+
 .text-display {
   font-weight: 800;
   letter-spacing: -0.025em;

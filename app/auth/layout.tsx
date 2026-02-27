@@ -7,14 +7,14 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex client-theme">
       {/* Left: Form */}
       <div className="flex-1 flex items-center justify-center p-6 bg-white dark:bg-gray-950">
         {children}
       </div>
 
       {/* Right: Brand panel (hidden on mobile) */}
-      <div className="hidden lg:flex lg:flex-1 bg-gradient-to-br from-purple-700 via-purple-800 to-purple-900 text-white p-12 flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:flex-1 bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 text-white p-12 flex-col justify-between relative overflow-hidden">
         {/* Decorative circles */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
@@ -26,7 +26,7 @@ export default function AuthLayout({
           <h2 className="text-3xl font-extrabold tracking-tight mb-4">
             Workflow pro účetní kancelář
           </h2>
-          <p className="text-purple-200 text-lg leading-relaxed">
+          <p className="text-blue-200 text-lg leading-relaxed">
             120 firem na jedné obrazovce. Víte přesně, co chybí, kdo nereaguje a co hoří.
           </p>
         </div>
@@ -41,16 +41,16 @@ export default function AuthLayout({
             { icon: TrendingUp, label: 'Reporty', desc: 'Přehledy a statistiky' },
           ].map((item) => (
             <div key={item.label} className="flex items-start gap-3 bg-white/10 rounded-xl p-3 backdrop-blur-sm">
-              <item.icon className="h-5 w-5 text-purple-300 mt-0.5 shrink-0" />
+              <item.icon className="h-5 w-5 text-blue-300 mt-0.5 shrink-0" />
               <div>
                 <div className="font-semibold text-sm">{item.label}</div>
-                <div className="text-purple-300 text-xs">{item.desc}</div>
+                <div className="text-blue-300 text-xs">{item.desc}</div>
               </div>
             </div>
           ))}
         </div>
 
-        <p className="relative z-10 text-purple-300 text-sm">
+        <p className="relative z-10 text-blue-300 text-sm">
           app.zajcon.cz
         </p>
       </div>

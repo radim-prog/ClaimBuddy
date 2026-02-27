@@ -53,7 +53,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       <NotificationBanner dismissed={notificationsDismissed} />
       {/* Sidebar - Desktop */}
       <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
-        <div className="flex flex-col flex-grow bg-purple-700 overflow-y-auto">
+        <div className="flex flex-col flex-grow bg-blue-700 overflow-y-auto">
           {/* Logo */}
           <div className="flex items-center h-16 flex-shrink-0 px-4">
             <Logo size="md" showText={true} />
@@ -71,8 +71,8 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                   className={`
                     group flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors
                     ${isActive
-                      ? 'bg-purple-500 text-white'
-                      : 'text-white/80 hover:bg-purple-500/50 hover:text-white'
+                      ? 'bg-blue-500 text-white'
+                      : 'text-white/80 hover:bg-blue-500/50 hover:text-white'
                     }
                   `}
                 >
@@ -85,16 +85,16 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
           {/* Theme Toggle */}
           <div className="px-2 pb-2">
-            <ThemeToggle variant="full" className="text-white/80 hover:text-white hover:bg-purple-500/50" />
+            <ThemeToggle variant="full" className="text-white/80 hover:text-white hover:bg-blue-500/50" />
           </div>
 
           {/* User section */}
           <div className="flex-shrink-0 flex border-t border-white/10 p-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center w-full group hover:bg-purple-500/50 rounded-lg p-2 transition-colors">
+                <button className="flex items-center w-full group hover:bg-blue-500/50 rounded-lg p-2 transition-colors">
                   <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-white text-purple-700 font-bold">
+                    <AvatarFallback className="bg-white text-blue-700 font-bold">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
@@ -129,13 +129,13 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Mobile header */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between bg-purple-700 px-4 py-3">
+        <div className="flex items-center justify-between bg-blue-700 px-4 py-3">
           <Logo size="sm" showText={true} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 text-white/90 hover:text-white">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-white text-purple-700 font-bold text-xs">
+                  <AvatarFallback className="bg-white text-blue-700 font-bold text-xs">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
@@ -183,7 +183,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                 className={`
                   flex flex-col items-center py-2 px-3 min-w-0 flex-1
                   ${isActive
-                    ? 'text-purple-600 dark:text-purple-400'
+                    ? 'text-blue-600 dark:text-blue-400'
                     : 'text-gray-500 dark:text-gray-400'
                   }
                 `}
@@ -205,8 +205,10 @@ export default function ClientLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClientUserProvider>
-      <ClientLayoutInner>{children}</ClientLayoutInner>
-    </ClientUserProvider>
+    <div className="client-theme">
+      <ClientUserProvider>
+        <ClientLayoutInner>{children}</ClientLayoutInner>
+      </ClientUserProvider>
+    </div>
   )
 }
