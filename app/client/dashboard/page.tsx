@@ -1,17 +1,17 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Upload,
+  Camera,
   AlertCircle,
   CheckCircle2,
   Clock,
   MessageCircle,
   CalendarDays,
-  Phone,
   Mail,
   ChevronRight,
+  FileText,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -45,6 +45,15 @@ function getMonthDotColor(closure: { bank_statement_status: ClosureStatus; expen
 export default function ClientDashboard() {
   const { userName, companies, closures, loading, error } = useClientUser()
   const [selectedCompanyIndex, setSelectedCompanyIndex] = useState(0)
+  const [draftCount, setDraftCount] = useState(0)
+
+  // Fetch draft count
+  useEffect(() => {
+    fetch('/api/client/drafts')
+      .then(r => r.json())
+      .then(data => setDraftCount(data.count || 0))
+      .catch(() => {})
+  }, [])
 
   const now = new Date()
   const currentMonth = now.getMonth() // 0-indexed
@@ -147,6 +156,33 @@ export default function ClientDashboard() {
         </div>
       )}
 
+      {/* CTA: Upload document */}
+      <Button asChild size="lg" className="w-full h-14 text-lg gap-3">
+        <Link href="/client/documents">
+          <Camera className="h-6 w-6" />
+          Nahrát doklad
+        </Link>
+      </Button>
+
+      {/* Draft badge */}
+      {draftCount > 0 && (
+        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+          <CardContent className="py-3 px-4">
+            <Link href="/client/documents" className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-1.5 bg-amber-100 dark:bg-amber-900/50 rounded-full">
+                  <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <span className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                  {draftCount} {draftCount === 1 ? 'nepotvrzený doklad' : draftCount < 5 ? 'nepotvrzené doklady' : 'nepotvrzených dokladů'}
+                </span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Current Month Card - Adaptive */}
       {currentStatus === 'action' && (
         <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
@@ -168,8 +204,8 @@ export default function ClientDashboard() {
                   ))}
                 </ul>
                 <Button asChild className="mt-4 bg-red-600 hover:bg-red-700">
-                  <Link href={`/client/upload?company=${selectedCompany?.id}&period=${currentPeriod}`}>
-                    <Upload className="mr-2 h-4 w-4" />
+                  <Link href="/client/documents">
+                    <Camera className="mr-2 h-4 w-4" />
                     Nahrát doklady
                   </Link>
                 </Button>

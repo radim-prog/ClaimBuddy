@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getDemoCompanyIds } from '@/lib/company-store'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,8 +7,23 @@ export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const impersonateCompany = request.headers.get('x-impersonate-company')
+
   try {
-    const companyIds = await getDemoCompanyIds()
+    let companyIds: string[] = []
+
+    if (impersonateCompany) {
+      companyIds = [impersonateCompany]
+    } else {
+      // Real client - find their companies
+      const { data: companies } = await supabaseAdmin
+        .from('companies')
+        .select('id')
+        .eq('owner_id', userId)
+        .is('deleted_at', null)
+
+      companyIds = (companies ?? []).map(c => c.id)
+    }
 
     if (companyIds.length === 0) {
       return NextResponse.json({ documents: [], count: 0 })
@@ -17,7 +31,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabaseAdmin
       .from('documents')
-      .select('*')
+      .select('id, company_id, period, type, file_name, file_size_bytes, status, ocr_status, uploaded_at, created_at, storage_path')
       .in('company_id', companyIds)
       .is('deleted_at', null)
       .order('uploaded_at', { ascending: false })
@@ -33,7 +47,9 @@ export async function GET(request: NextRequest) {
       file_name: d.file_name,
       file_size_bytes: d.file_size_bytes || 0,
       status: d.status,
+      ocr_status: d.ocr_status || null,
       uploaded_at: d.uploaded_at || d.created_at,
+      storage_path: d.storage_path || null,
     }))
 
     return NextResponse.json({ documents, count: documents.length })

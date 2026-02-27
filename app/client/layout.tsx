@@ -5,15 +5,10 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
-  Upload,
-  MessageCircle,
-  Building2,
+  MessageSquare,
   LogOut,
-  User,
-  BarChart3,
-  ScanSearch,
+  UserCircle,
   FileText,
-  Receipt,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Logo } from '@/components/ui/logo'
@@ -34,14 +29,9 @@ import { ImpersonationBanner } from '@/components/client/impersonation-banner'
 
 const navigation = [
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard },
-  { name: 'Nahrát doklady', href: '/client/upload', icon: Upload },
-  { name: 'Dokumenty', href: '/client/documents', icon: FileText },
-  { name: 'Faktury', href: '/client/invoices', icon: Receipt },
-  { name: 'Zprávy', href: '/client/messages', icon: MessageCircle },
-  { name: 'Vytěžování', href: '/client/extraction', icon: ScanSearch },
-  { name: 'Reporty', href: '/client/reports', icon: BarChart3 },
-  { name: 'Moje firma', href: '/client/company', icon: Building2 },
-  { name: 'Můj profil', href: '/client/profile', icon: User },
+  { name: 'Doklady', href: '/client/documents', icon: FileText },
+  { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
+  { name: 'Účet', href: '/client/account', icon: UserCircle },
 ]
 
 function ClientLayoutInner({ children }: { children: React.ReactNode }) {
@@ -118,15 +108,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                 <DropdownMenuLabel>Můj účet</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/client/profile" className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    Můj profil
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/client/company" className="cursor-pointer">
-                    <Building2 className="mr-2 h-4 w-4" />
-                    Moje firma
+                  <Link href="/client/account" className="cursor-pointer">
+                    <UserCircle className="mr-2 h-4 w-4" />
+                    Nastavení účtu
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -161,15 +145,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               <DropdownMenuLabel>{userName}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/client/profile" className="cursor-pointer">
-                  <User className="mr-2 h-4 w-4" />
-                  Můj profil
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/client/company" className="cursor-pointer">
-                  <Building2 className="mr-2 h-4 w-4" />
-                  Moje firma
+                <Link href="/client/account" className="cursor-pointer">
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  Nastavení účtu
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
