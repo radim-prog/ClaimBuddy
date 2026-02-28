@@ -17,7 +17,7 @@ export async function PATCH(
     // Verify ownership
     const { data: doc } = await supabaseAdmin
       .from('documents')
-      .select('id, submitted_by, company_id')
+      .select('id, uploaded_by, company_id')
       .eq('id', id)
       .single()
 
@@ -33,7 +33,7 @@ export async function PATCH(
       .eq('owner_id', userId)
       .single()
 
-    if (!company && doc.submitted_by !== userId) {
+    if (!company && doc.uploaded_by !== userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -46,13 +46,8 @@ export async function PATCH(
       updates.supplier_ico = body.extracted_data?.supplier_ico || null
     }
 
-    if (body.notes !== undefined) {
-      updates.notes = body.notes
-    }
-
     if (body.status === 'submitted') {
       updates.ocr_status = 'submitted'
-      updates.submitted_at = new Date().toISOString()
     }
 
     const { error } = await supabaseAdmin

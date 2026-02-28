@@ -40,10 +40,9 @@ export async function POST(request: NextRequest) {
         company_id: companyId,
         file_name: file.name,
         type: 'bank_statement',
-        document_type: 'bank_statement',
         status: 'uploaded',
         period: result.period_from?.substring(0, 7) || new Date().toISOString().substring(0, 7),
-        created_by: userId,
+        uploaded_by: userId,
       })
       .select('id')
       .single()

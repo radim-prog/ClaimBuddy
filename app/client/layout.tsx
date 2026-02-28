@@ -56,7 +56,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col flex-grow bg-blue-700 overflow-y-auto">
           {/* Logo */}
           <div className="flex items-center h-16 flex-shrink-0 px-4">
-            <Logo size="md" showText={true} />
+            <Logo size="md" showText={true} variant="blue" />
           </div>
 
           {/* Navigation */}
@@ -130,7 +130,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile header */}
       <div className="md:hidden">
         <div className="flex items-center justify-between bg-blue-700 px-4 py-3">
-          <Logo size="sm" showText={true} />
+          <Logo size="sm" showText={true} variant="blue" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 text-white/90 hover:text-white">

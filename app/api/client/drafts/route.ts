@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       company_id,
       file_name: file_name || 'document',
       type: document_type || 'invoice',
-      document_type: document_type || 'invoice',
+      // Note: 'type' is the actual DB column, not 'document_type'
       period,
       status: 'uploaded',
       ocr_status: 'draft',
@@ -31,8 +31,7 @@ export async function POST(request: NextRequest) {
       ocr_processed: true,
       supplier_name: extracted_data?.supplier_name || null,
       supplier_ico: extracted_data?.supplier_ico || null,
-      submitted_by: userId,
-      created_by: userId,
+      uploaded_by: userId,
     }
 
     const { data, error } = await supabaseAdmin
@@ -73,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabaseAdmin
       .from('documents')
-      .select('id, company_id, file_name, document_type, ocr_status, ocr_data, supplier_name, created_at')
+      .select('id, company_id, file_name, type, ocr_status, ocr_data, supplier_name, created_at')
       .in('company_id', companyIds)
       .eq('ocr_status', 'draft')
       .is('deleted_at', null)

@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       const record: Record<string, unknown> = {
         company_id: sub.company_id,
         file_name: sub.file_name || 'document',
-        document_type: sub.document_type || 'invoice',
+        type: sub.document_type || 'invoice',
         ocr_data: sub.extracted_data || null,
         ocr_status: 'submitted',
         ocr_processed: true,
@@ -36,10 +36,8 @@ export async function POST(request: NextRequest) {
         supplier_ico: sub.extracted_data?.supplier_ico || sub.extracted_data?.supplier?.ico || null,
         supplier_dic: sub.extracted_data?.supplier_dic || sub.extracted_data?.supplier?.dic || null,
         confidence_score: sub.extracted_data?.confidence_score || null,
-        submitted_by: userId,
-        submitted_at: new Date().toISOString(),
-        notes: sub.notes || null,
-        created_by: userId,
+        uploaded_by: userId,
+        uploaded_at: new Date().toISOString(),
       }
 
       const { data, error } = await supabaseAdmin
@@ -71,8 +69,8 @@ export async function GET(request: NextRequest) {
   try {
     const { data, error } = await supabaseAdmin
       .from('documents')
-      .select('id, company_id, file_name, document_type, ocr_status, supplier_name, confidence_score, submitted_at, created_at')
-      .eq('submitted_by', userId)
+      .select('id, company_id, file_name, type, ocr_status, supplier_name, confidence_score, uploaded_at, created_at')
+      .eq('uploaded_by', userId)
       .order('created_at', { ascending: false })
       .limit(100)
 

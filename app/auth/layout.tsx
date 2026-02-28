@@ -21,7 +21,7 @@ export default function AuthLayout({
 
         <div className="relative z-10">
           <div className="mb-8">
-            <Logo size="lg" />
+            <Logo size="lg" variant="blue" />
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight mb-4">
             Workflow pro účetní kancelář
