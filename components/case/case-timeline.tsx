@@ -11,13 +11,15 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   StickyNote, FileText, Mail, Phone, Users, Clock,
   RefreshCw, CheckCircle, Send, Building, User, Settings,
-  Plus,
+  Plus, Eye, EyeOff,
 } from 'lucide-react'
 import { CaseTimelineEntry, CaseEventType, CASE_EVENT_TYPES } from '@/lib/types/project'
 import { toast } from 'sonner'
 
 interface CaseTimelineProps {
   projectId: string
+  readOnly?: boolean
+  apiBasePath?: string  // Override for client-side API, e.g. '/api/client/cases'
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -30,7 +32,7 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-export function CaseTimeline({ projectId }: CaseTimelineProps) {
+export function CaseTimeline({ projectId, readOnly = false, apiBasePath }: CaseTimelineProps) {
   const [entries, setEntries] = useState<CaseTimelineEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -40,12 +42,15 @@ export function CaseTimeline({ projectId }: CaseTimelineProps) {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    fetch(`/api/projects/${projectId}/timeline`)
+    const url = apiBasePath
+      ? `${apiBasePath}/${projectId}/timeline`
+      : `/api/projects/${projectId}/timeline`
+    fetch(url)
       .then(r => r.json())
       .then(data => setEntries(data.entries || []))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [projectId])
+  }, [projectId, apiBasePath])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -77,6 +82,24 @@ export function CaseTimeline({ projectId }: CaseTimelineProps) {
     }
   }
 
+  const toggleClientVisible = async (entryId: string, currentVisible: boolean) => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/timeline/${entryId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_visible: !currentVisible }),
+      })
+      if (res.ok) {
+        setEntries(prev => prev.map(e =>
+          e.id === entryId ? { ...e, client_visible: !currentVisible } : e
+        ))
+        toast.success(!currentVisible ? 'Záznam zviditelněn pro klienta' : 'Záznam skryt pro klienta')
+      }
+    } catch {
+      toast.error('Chyba při změně viditelnosti')
+    }
+  }
+
   const getEventIcon = (type: CaseEventType) => {
     const def = CASE_EVENT_TYPES.find(e => e.value === type)
     const Icon = def ? iconMap[def.icon] : StickyNote
@@ -102,10 +125,12 @@ export function CaseTimeline({ projectId }: CaseTimelineProps) {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-base">
           <span>Časová osa spisu</span>
-          <Button variant="outline" size="sm" onClick={() => setShowForm(!showForm)}>
-            <Plus className="h-4 w-4 mr-1" />
-            {showForm ? 'Zrušit' : 'Přidat záznam'}
-          </Button>
+          {!readOnly && (
+            <Button variant="outline" size="sm" onClick={() => setShowForm(!showForm)}>
+              <Plus className="h-4 w-4 mr-1" />
+              {showForm ? 'Zrušit' : 'Přidat záznam'}
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -177,6 +202,17 @@ export function CaseTimeline({ projectId }: CaseTimelineProps) {
                       <span className="text-xs text-muted-foreground">
                         {formatDate(entry.event_date)}
                       </span>
+                      {!readOnly && (
+                        <button
+                          onClick={() => toggleClientVisible(entry.id, entry.client_visible !== false)}
+                          className={`ml-auto p-1 rounded hover:bg-muted transition-colors ${
+                            entry.client_visible !== false ? 'text-blue-500' : 'text-muted-foreground'
+                          }`}
+                          title={entry.client_visible !== false ? 'Viditelné pro klienta — klikni pro skrytí' : 'Skryté pro klienta — klikni pro zviditelnění'}
+                        >
+                          {entry.client_visible !== false ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                        </button>
+                      )}
                     </div>
                     <h4 className="font-medium text-sm">{entry.title}</h4>
                     {entry.description && (

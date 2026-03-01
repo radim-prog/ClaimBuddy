@@ -11,16 +11,19 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import {
   FileText, File, FileSpreadsheet, FileImage,
-  Plus, ExternalLink, Calendar,
+  Plus, ExternalLink, Calendar, Eye, EyeOff, History,
 } from 'lucide-react'
 import { CaseDocument, CaseDocumentCategory, CASE_DOCUMENT_CATEGORIES } from '@/lib/types/project'
+import { DocumentVersionHistory } from '@/components/case/document-version-history'
 import { toast } from 'sonner'
 
 interface CaseDocumentsProps {
   projectId: string
+  readOnly?: boolean
+  apiBasePath?: string
 }
 
-export function CaseDocuments({ projectId }: CaseDocumentsProps) {
+export function CaseDocuments({ projectId, readOnly = false, apiBasePath }: CaseDocumentsProps) {
   const [documents, setDocuments] = useState<CaseDocument[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -29,14 +32,18 @@ export function CaseDocuments({ projectId }: CaseDocumentsProps) {
   const [category, setCategory] = useState<CaseDocumentCategory>('other')
   const [description, setDescription] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [versionDocId, setVersionDocId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch(`/api/projects/${projectId}/documents`)
+    const url = apiBasePath
+      ? `${apiBasePath}/${projectId}/documents`
+      : `/api/projects/${projectId}/documents`
+    fetch(url)
       .then(r => r.json())
       .then(data => setDocuments(data.documents || []))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [projectId])
+  }, [projectId, apiBasePath])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,6 +75,24 @@ export function CaseDocuments({ projectId }: CaseDocumentsProps) {
       toast.error('Chyba při ukládání')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const toggleClientVisible = async (docId: string, currentVisible: boolean) => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/documents/${docId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_visible: !currentVisible }),
+      })
+      if (res.ok) {
+        setDocuments(prev => prev.map(d =>
+          d.id === docId ? { ...d, client_visible: !currentVisible } : d
+        ))
+        toast.success(!currentVisible ? 'Dokument zviditelněn pro klienta' : 'Dokument skryt pro klienta')
+      }
+    } catch {
+      toast.error('Chyba při změně viditelnosti')
     }
   }
 
@@ -111,12 +136,14 @@ export function CaseDocuments({ projectId }: CaseDocumentsProps) {
         <CardTitle className="flex items-center justify-between text-base">
           <span>Dokumenty spisu</span>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Přidat dokument
-              </Button>
-            </DialogTrigger>
+            {!readOnly && (
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Přidat dokument
+                </Button>
+              </DialogTrigger>
+            )}
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Nový dokument</DialogTitle>
@@ -200,6 +227,18 @@ export function CaseDocuments({ projectId }: CaseDocumentsProps) {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-medium text-sm truncate">{doc.name}</h4>
                       {getCategoryBadge(doc.category)}
+                      {doc.version > 1 && (
+                        <Badge variant="outline" className="text-xs">v{doc.version}</Badge>
+                      )}
+                      {!readOnly && (
+                        <button
+                          onClick={() => setVersionDocId(doc.id)}
+                          className="p-0.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                          title="Historie verzí"
+                        >
+                          <History className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                     {doc.description && (
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
@@ -215,19 +254,52 @@ export function CaseDocuments({ projectId }: CaseDocumentsProps) {
                       {doc.file_size_bytes && <span>{formatFileSize(doc.file_size_bytes)}</span>}
                     </div>
                   </div>
-                  {doc.file_url && (
-                    <Button variant="ghost" size="sm" asChild className="shrink-0">
-                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {!readOnly && (
+                      <button
+                        onClick={() => toggleClientVisible(doc.id, doc.client_visible !== false)}
+                        className={`p-1.5 rounded hover:bg-muted transition-colors ${
+                          doc.client_visible !== false ? 'text-blue-500' : 'text-muted-foreground'
+                        }`}
+                        title={doc.client_visible !== false ? 'Viditelné pro klienta' : 'Skryté pro klienta'}
+                      >
+                        {doc.client_visible !== false ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                      </button>
+                    )}
+                    {doc.file_url && (
+                      <Button variant="ghost" size="sm" asChild>
+                        <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))
             )}
           </div>
         </ScrollArea>
       </CardContent>
+
+      {/* Version History Dialog */}
+      {versionDocId && (
+        <DocumentVersionHistory
+          projectId={projectId}
+          documentId={versionDocId}
+          open={!!versionDocId}
+          onOpenChange={(open) => !open && setVersionDocId(null)}
+          onVersionAdded={() => {
+            // Refresh documents list
+            const url = apiBasePath
+              ? `${apiBasePath}/${projectId}/documents`
+              : `/api/projects/${projectId}/documents`
+            fetch(url)
+              .then(r => r.json())
+              .then(data => setDocuments(data.documents || []))
+              .catch(() => {})
+          }}
+        />
+      )}
     </Card>
   )
 }

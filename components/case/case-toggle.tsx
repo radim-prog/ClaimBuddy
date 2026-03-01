@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Briefcase } from 'lucide-react'
+import { Briefcase, Eye } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { CaseType } from '@/lib/types/project'
 import { toast } from 'sonner'
 
@@ -22,6 +23,8 @@ interface CaseToggleProps {
     case_opposing_party?: string
     case_reference?: string
     hourly_rate?: number
+    client_visible?: boolean
+    client_visible_tabs?: string[]
   }
   onUpdate: (updated: Record<string, unknown>) => void
 }
@@ -33,6 +36,8 @@ export function CaseToggle({ projectId, project, onUpdate }: CaseToggleProps) {
   const [reference, setReference] = useState(project.case_reference || '')
   const [hourlyRate, setHourlyRate] = useState(project.hourly_rate || 1500)
   const [caseTypes, setCaseTypes] = useState<CaseType[]>([])
+  const [clientVisible, setClientVisible] = useState(project.client_visible || false)
+  const [clientVisibleTabs, setClientVisibleTabs] = useState<string[]>(project.client_visible_tabs || ['timeline', 'documents'])
   const [loading, setLoading] = useState(false)
   const [showDisableConfirm, setShowDisableConfirm] = useState(false)
   const [showForm, setShowForm] = useState(project.is_case || false)
@@ -88,6 +93,8 @@ export function CaseToggle({ projectId, project, onUpdate }: CaseToggleProps) {
           case_opposing_party: opposingParty || null,
           case_reference: reference || null,
           hourly_rate: hourlyRate,
+          client_visible: clientVisible,
+          client_visible_tabs: clientVisibleTabs,
         }),
       })
       if (res.ok) {
@@ -175,6 +182,48 @@ export function CaseToggle({ projectId, project, onUpdate }: CaseToggleProps) {
                   value={hourlyRate}
                   onChange={(e) => setHourlyRate(Number(e.target.value))}
                 />
+              </div>
+
+              {/* Client Visibility Section */}
+              <div className="space-y-3 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
+                      Viditelnost pro klienta
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {clientVisible ? 'Klient vidí tento spis ve svém portálu' : 'Spis je skrytý pro klienta'}
+                    </p>
+                  </div>
+                  <Switch checked={clientVisible} onCheckedChange={setClientVisible} />
+                </div>
+
+                {clientVisible && (
+                  <div className="space-y-2 pl-6">
+                    <Label className="text-xs text-muted-foreground">Viditelné záložky:</Label>
+                    {[
+                      { value: 'timeline', label: 'Časová osa' },
+                      { value: 'documents', label: 'Dokumenty' },
+                      { value: 'budget', label: 'Rozpočet' },
+                    ].map(tab => (
+                      <div key={tab.value} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`tab-${tab.value}`}
+                          checked={clientVisibleTabs.includes(tab.value)}
+                          onCheckedChange={(checked) => {
+                            setClientVisibleTabs(prev =>
+                              checked
+                                ? [...prev, tab.value]
+                                : prev.filter(t => t !== tab.value)
+                            )
+                          }}
+                        />
+                        <label htmlFor={`tab-${tab.value}`} className="text-sm">{tab.label}</label>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <Button onClick={handleSave} disabled={loading} className="w-full">

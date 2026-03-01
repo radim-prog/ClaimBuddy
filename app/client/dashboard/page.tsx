@@ -12,6 +12,7 @@ import {
   Mail,
   ChevronRight,
   FileText,
+  Briefcase,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -46,12 +47,26 @@ export default function ClientDashboard() {
   const { userName, companies, closures, loading, error } = useClientUser()
   const [selectedCompanyIndex, setSelectedCompanyIndex] = useState(0)
   const [draftCount, setDraftCount] = useState(0)
+  const [casesCount, setCasesCount] = useState(0)
+  const [lastCaseActivity, setLastCaseActivity] = useState<string | null>(null)
 
-  // Fetch draft count
+  // Fetch draft count + cases
   useEffect(() => {
     fetch('/api/client/drafts')
       .then(r => r.json())
       .then(data => setDraftCount(data.count || 0))
+      .catch(() => {})
+
+    fetch('/api/client/cases')
+      .then(r => r.json())
+      .then(data => {
+        const cases = data.cases || []
+        const activeCases = cases.filter((c: { status: string }) => c.status !== 'completed' && c.status !== 'cancelled')
+        setCasesCount(activeCases.length)
+        if (cases.length > 0) {
+          setLastCaseActivity(cases[0].updated_at)
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -292,6 +307,33 @@ export default function ClientDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Cases Widget - only if client has visible cases */}
+      {casesCount > 0 && (
+        <Card className="border-purple-200 dark:border-purple-800">
+          <CardContent className="py-4 px-5">
+            <Link href="/client/cases" className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-full">
+                  <Briefcase className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-gray-900 dark:text-white">
+                    Vaše spisy
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {casesCount} {casesCount === 1 ? 'aktivní spis' : casesCount < 5 ? 'aktivní spisy' : 'aktivních spisů'}
+                    {lastCaseActivity && (
+                      <> &middot; Poslední aktivita {new Date(lastCaseActivity).toLocaleDateString('cs-CZ')}</>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tax Impact Card */}
       {selectedCompany && <TaxImpactSummary companyId={selectedCompany.id} />}

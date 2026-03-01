@@ -31,6 +31,9 @@ export interface Project {
   case_opposing_party?: string
   case_reference?: string
   hourly_rate?: number
+  // Client visibility
+  client_visible?: boolean
+  client_visible_tabs?: string[]
   // R-Tasks scoring
   score_money?: 0 | 1 | 2 | 3
   score_fire?: 0 | 1 | 2 | 3
@@ -96,6 +99,8 @@ export interface UpdateProjectInput {
   case_opposing_party?: string
   case_reference?: string
   hourly_rate?: number
+  client_visible?: boolean
+  client_visible_tabs?: string[]
   score_money?: 0 | 1 | 2 | 3
   score_fire?: 0 | 1 | 2 | 3
   score_time?: 0 | 1 | 2 | 3
@@ -174,6 +179,7 @@ export interface CaseTimelineEntry {
   task_id?: string
   document_url?: string
   metadata?: Record<string, unknown>
+  client_visible?: boolean
   created_at: string
 }
 
@@ -199,6 +205,11 @@ export interface CaseDocument {
   description?: string
   uploaded_by?: string
   uploaded_by_name?: string
+  client_visible?: boolean
+  // Versioning
+  parent_document_id?: string
+  is_current_version?: boolean
+  change_summary?: string
   created_at: string
 }
 
@@ -230,9 +241,99 @@ export const CASE_DOCUMENT_CATEGORIES: { value: CaseDocumentCategory; label: str
   { value: 'contract', label: 'Smlouva', color: 'bg-purple-100 text-purple-800' },
   { value: 'invoice', label: 'Faktura', color: 'bg-green-100 text-green-800' },
   { value: 'correspondence', label: 'Korespondence', color: 'bg-blue-100 text-blue-800' },
-  { value: 'state_document', label: '\u00da\u0159edn\u00ed dokument', color: 'bg-red-100 text-red-800' },
-  { value: 'tax_return', label: 'Da\u0148ov\u00e9 p\u0159izn\u00e1n\u00ed', color: 'bg-orange-100 text-orange-800' },
-  { value: 'financial_report', label: 'V\u00fdkaz', color: 'bg-teal-100 text-teal-800' },
-  { value: 'evidence', label: 'D\u016fkaz', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'other', label: 'Ostatn\u00ed', color: 'bg-gray-100 text-gray-800' },
+  { value: 'state_document', label: 'Úřední dokument', color: 'bg-red-100 text-red-800' },
+  { value: 'tax_return', label: 'Daňové přiznání', color: 'bg-orange-100 text-orange-800' },
+  { value: 'financial_report', label: 'Výkaz', color: 'bg-teal-100 text-teal-800' },
+  { value: 'evidence', label: 'Důkaz', color: 'bg-yellow-100 text-yellow-800' },
+  { value: 'other', label: 'Ostatní', color: 'bg-gray-100 text-gray-800' },
 ]
+
+// ============================================
+// CAPACITY PLANNING TYPES
+// ============================================
+
+export interface CapacityOverride {
+  id: string
+  user_id: string
+  date_from: string
+  date_to: string
+  daily_hours: number
+  reason?: string
+  created_at: string
+  created_by?: string
+}
+
+export interface UserCapacity {
+  user_id: string
+  user_name: string
+  weekly_hours_capacity: number
+  work_schedule: Record<string, number>
+  overrides: CapacityOverride[]
+}
+
+export interface WorkloadSummary {
+  user_id: string
+  user_name: string
+  available_hours: number
+  assigned_estimated_hours: number
+  actual_hours: number
+  utilization_pct: number
+  variance_pct: number
+}
+
+// ============================================
+// CASE EMAIL TYPES
+// ============================================
+
+export interface CaseEmailInbox {
+  id: string
+  email_address: string
+  display_name?: string
+  provider: string
+  is_active: boolean
+  config?: Record<string, unknown>
+  created_at: string
+}
+
+export interface CaseEmail {
+  id: string
+  inbox_id?: string
+  external_message_id?: string
+  from_address: string
+  from_name?: string
+  to_address?: string
+  subject: string
+  body_text?: string
+  body_html?: string
+  received_at: string
+  has_attachments: boolean
+  attachments?: Array<{ filename: string; mime_type: string; size: number }>
+  project_id?: string
+  company_id?: string
+  assigned_at?: string
+  assigned_by?: string
+  status: 'unassigned' | 'assigned' | 'ignored' | 'auto_assigned'
+  created_at: string
+}
+
+export interface CaseEmailRule {
+  id: string
+  rule_type: 'sender' | 'subject' | 'domain'
+  match_value: string
+  target_project_id?: string
+  target_company_id?: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface CaseDocumentChange {
+  id: string
+  document_id: string
+  changed_by: string
+  changed_by_name: string
+  change_type: 'created' | 'replaced' | 'metadata_changed' | 'visibility_changed'
+  old_values?: Record<string, unknown>
+  new_values?: Record<string, unknown>
+  change_summary?: string
+  created_at: string
+}

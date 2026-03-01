@@ -14,6 +14,7 @@ import {
   Bell,
   GitBranch,
   Clock,
+  BarChart3,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -52,6 +53,11 @@ const adminNavItems = [
     href: '/accountant/admin/time-reports',
     label: 'Čas',
     icon: Clock,
+  },
+  {
+    href: '/accountant/admin/capacity',
+    label: 'Kapacity',
+    icon: BarChart3,
   },
   {
     href: '/accountant/admin/export',

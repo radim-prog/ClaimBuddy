@@ -32,7 +32,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const body = await req.json()
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
-  const allowed = ['title', 'description', 'outcome', 'status', 'company_id', 'owner_id', 'due_date', 'estimated_hours', 'actual_hours', 'progress_percentage', 'tags', 'completed_at', 'is_case', 'case_type_id', 'case_opposing_party', 'case_reference', 'hourly_rate', 'score_money', 'score_fire', 'score_time', 'score_distance', 'score_personal']
+  const allowed = ['title', 'description', 'outcome', 'status', 'company_id', 'owner_id', 'due_date', 'estimated_hours', 'actual_hours', 'progress_percentage', 'tags', 'completed_at', 'is_case', 'case_type_id', 'case_opposing_party', 'case_reference', 'hourly_rate', 'client_visible', 'client_visible_tabs', 'score_money', 'score_fire', 'score_time', 'score_distance', 'score_personal']
   for (const key of allowed) {
     if (body[key] !== undefined) updates[key] = body[key]
   }

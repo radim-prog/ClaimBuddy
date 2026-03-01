@@ -13,11 +13,20 @@ export async function GET(
   try {
     const { id: projectId } = await params
 
-    const { data, error } = await supabaseAdmin
+    const { searchParams } = new URL(request.url)
+    const showAll = searchParams.get('all') === 'true'
+
+    let query = supabaseAdmin
       .from('case_documents')
       .select('*')
       .eq('project_id', projectId)
-      .order('created_at', { ascending: false })
+
+    // By default show only current versions
+    if (!showAll) {
+      query = query.neq('is_current_version', false)
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching documents:', error)
