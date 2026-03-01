@@ -24,21 +24,28 @@ export async function GET(
 
     if (!project) return NextResponse.json({ error: 'Case not found' }, { status: 404 })
 
+    // Verify company ownership FIRST (before tab access check)
+    const impersonateCompany = request.headers.get('x-impersonate-company')
+    if (impersonateCompany) {
+      if (project.company_id !== impersonateCompany) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    } else {
+      const { data: company } = await supabaseAdmin
+        .from('companies')
+        .select('id')
+        .eq('id', project.company_id)
+        .eq('owner_id', userId)
+        .is('deleted_at', null)
+        .single()
+      if (!company) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     // Check tab access
-    const tabs = (project.client_visible_tabs as string[]) || ['timeline', 'documents']
+    const tabs = Array.isArray(project.client_visible_tabs) ? (project.client_visible_tabs as string[]) : ['timeline', 'documents']
     if (!tabs.includes('timeline')) {
       return NextResponse.json({ error: 'Timeline not available' }, { status: 403 })
     }
-
-    // Verify company ownership
-    const { data: company } = await supabaseAdmin
-      .from('companies')
-      .select('id')
-      .eq('id', project.company_id)
-      .eq('owner_id', userId)
-      .single()
-
-    if (!company) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     // Fetch only client-visible entries
     const { data, error } = await supabaseAdmin

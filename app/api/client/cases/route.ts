@@ -5,21 +5,26 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   const userId = request.headers.get('x-user-id')
-  const userRole = request.headers.get('x-user-role')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    // Get companies assigned to this client
-    const { data: companies } = await supabaseAdmin
-      .from('companies')
-      .select('id')
-      .eq('owner_id', userId)
+    const impersonateCompany = request.headers.get('x-impersonate-company')
+    let companyIds: string[]
 
-    if (!companies || companies.length === 0) {
-      return NextResponse.json({ cases: [] })
+    if (impersonateCompany) {
+      companyIds = [impersonateCompany]
+    } else {
+      const { data: companies } = await supabaseAdmin
+        .from('companies')
+        .select('id')
+        .eq('owner_id', userId)
+        .is('deleted_at', null)
+      companyIds = (companies ?? []).map(c => c.id)
     }
 
-    const companyIds = companies.map(c => c.id)
+    if (companyIds.length === 0) {
+      return NextResponse.json({ cases: [] })
+    }
 
     // Get visible cases for these companies
     const { data, error } = await supabaseAdmin

@@ -51,7 +51,9 @@ export async function PATCH(
         old_values: { client_visible: !body.client_visible },
         new_values: { client_visible: body.client_visible },
         change_summary: body.client_visible ? 'Made visible to client' : 'Hidden from client',
-      }).then(() => {})  // fire and forget
+      }).then(({ error: auditErr }) => {
+        if (auditErr) console.error('Audit log failed:', auditErr)
+      })
     }
 
     return NextResponse.json({ document: data })

@@ -94,6 +94,8 @@ export function CaseTimeline({ projectId, readOnly = false, apiBasePath }: CaseT
           e.id === entryId ? { ...e, client_visible: !currentVisible } : e
         ))
         toast.success(!currentVisible ? 'Záznam zviditelněn pro klienta' : 'Záznam skryt pro klienta')
+      } else {
+        toast.error('Chyba při změně viditelnosti')
       }
     } catch {
       toast.error('Chyba při změně viditelnosti')
@@ -204,13 +206,13 @@ export function CaseTimeline({ projectId, readOnly = false, apiBasePath }: CaseT
                       </span>
                       {!readOnly && (
                         <button
-                          onClick={() => toggleClientVisible(entry.id, entry.client_visible !== false)}
+                          onClick={() => toggleClientVisible(entry.id, entry.client_visible === true)}
                           className={`ml-auto p-1 rounded hover:bg-muted transition-colors ${
-                            entry.client_visible !== false ? 'text-blue-500' : 'text-muted-foreground'
+                            entry.client_visible === true ? 'text-blue-500' : 'text-muted-foreground'
                           }`}
-                          title={entry.client_visible !== false ? 'Viditelné pro klienta — klikni pro skrytí' : 'Skryté pro klienta — klikni pro zviditelnění'}
+                          title={entry.client_visible === true ? 'Viditelné pro klienta — klikni pro skrytí' : 'Skryté pro klienta — klikni pro zviditelnění'}
                         >
-                          {entry.client_visible !== false ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                          {entry.client_visible === true ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                         </button>
                       )}
                     </div>

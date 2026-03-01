@@ -24,21 +24,28 @@ export async function GET(
 
     if (!project) return NextResponse.json({ error: 'Case not found' }, { status: 404 })
 
+    // Verify company ownership FIRST (before tab access check)
+    const impersonateCompany = request.headers.get('x-impersonate-company')
+    if (impersonateCompany) {
+      if (project.company_id !== impersonateCompany) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    } else {
+      const { data: company } = await supabaseAdmin
+        .from('companies')
+        .select('id')
+        .eq('id', project.company_id)
+        .eq('owner_id', userId)
+        .is('deleted_at', null)
+        .single()
+      if (!company) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     // Check tab access
-    const tabs = (project.client_visible_tabs as string[]) || ['timeline', 'documents']
+    const tabs = Array.isArray(project.client_visible_tabs) ? (project.client_visible_tabs as string[]) : ['timeline', 'documents']
     if (!tabs.includes('documents')) {
       return NextResponse.json({ error: 'Documents not available' }, { status: 403 })
     }
-
-    // Verify company ownership
-    const { data: company } = await supabaseAdmin
-      .from('companies')
-      .select('id')
-      .eq('id', project.company_id)
-      .eq('owner_id', userId)
-      .single()
-
-    if (!company) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     // Fetch only client-visible, current-version documents
     const { data, error } = await supabaseAdmin
@@ -46,7 +53,7 @@ export async function GET(
       .select('id, name, file_url, file_type, file_size_bytes, category, version, description, uploaded_by_name, created_at')
       .eq('project_id', id)
       .eq('client_visible', true)
-      .neq('is_current_version', false)
+      .eq('is_current_version', true)
       .order('created_at', { ascending: false })
 
     if (error) {

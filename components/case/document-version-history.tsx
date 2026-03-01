@@ -18,9 +18,10 @@ interface DocumentVersionHistoryProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onVersionAdded: () => void
+  readOnly?: boolean
 }
 
-export function DocumentVersionHistory({ projectId, documentId, open, onOpenChange, onVersionAdded }: DocumentVersionHistoryProps) {
+export function DocumentVersionHistory({ projectId, documentId, open, onOpenChange, onVersionAdded, readOnly = false }: DocumentVersionHistoryProps) {
   const [versions, setVersions] = useState<CaseDocument[]>([])
   const [loading, setLoading] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
@@ -84,7 +85,7 @@ export function DocumentVersionHistory({ projectId, documentId, open, onOpenChan
           <ScrollArea className="max-h-[60vh]">
             <div className="space-y-3">
               {/* Upload new version */}
-              {!showUpload ? (
+              {!readOnly && (!showUpload ? (
                 <Button variant="outline" size="sm" className="w-full" onClick={() => setShowUpload(true)}>
                   <Upload className="h-4 w-4 mr-1" /> Nahrát novou verzi
                 </Button>
@@ -110,7 +111,7 @@ export function DocumentVersionHistory({ projectId, documentId, open, onOpenChan
                     </div>
                   </CardContent>
                 </Card>
-              )}
+              ))}
 
               {/* Version list */}
               {versions.map((v, i) => (

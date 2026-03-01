@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Briefcase, ArrowLeft, Calendar, ChevronRight } from 'lucide-react'
+import { Briefcase, ArrowLeft, Calendar, ChevronRight, AlertCircle } from 'lucide-react'
 
 type ClientCase = {
   id: string
@@ -29,12 +29,13 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 export default function ClientCasesPage() {
   const [cases, setCases] = useState<ClientCase[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     fetch('/api/client/cases')
       .then(r => r.json())
       .then(data => setCases(data.cases || []))
-      .catch(() => {})
+      .catch(() => setError('Nepodařilo se načíst spisy. Zkuste to znovu.'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -60,7 +61,14 @@ export default function ClientCasesPage() {
         </h1>
       </div>
 
-      {cases.length === 0 ? (
+      {error ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertCircle className="h-12 w-12 mx-auto text-red-400 mb-4" />
+            <p className="text-muted-foreground">{error}</p>
+          </CardContent>
+        </Card>
+      ) : cases.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />

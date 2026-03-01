@@ -64,14 +64,17 @@ export function CaseToggle({ projectId, project, onUpdate }: CaseToggleProps) {
       const res = await fetch(`/api/projects/${projectId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_case: false }),
+        body: JSON.stringify({ is_case: false, client_visible: false }),
       })
       if (res.ok) {
         const data = await res.json()
         setIsCase(false)
         setShowForm(false)
+        setClientVisible(false)
         onUpdate(data.project || data)
         toast.success('Spisový režim vypnut')
+      } else {
+        toast.error('Chyba při vypínání spisu')
       }
     } catch {
       toast.error('Chyba při vypínání spisu')
@@ -101,6 +104,8 @@ export function CaseToggle({ projectId, project, onUpdate }: CaseToggleProps) {
         const data = await res.json()
         onUpdate(data.project || data)
         toast.success('Nastavení spisu uloženo')
+      } else {
+        toast.error('Chyba při ukládání nastavení')
       }
     } catch {
       toast.error('Chyba při ukládání')

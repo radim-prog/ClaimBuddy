@@ -26,16 +26,23 @@ export async function GET(
       return NextResponse.json({ error: 'Case not found' }, { status: 404 })
     }
 
-    // Verify this client owns the company
-    const { data: company } = await supabaseAdmin
-      .from('companies')
-      .select('id')
-      .eq('id', project.company_id)
-      .eq('owner_id', userId)
-      .single()
-
-    if (!company) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Verify company ownership (support impersonation)
+    const impersonateCompany = request.headers.get('x-impersonate-company')
+    if (impersonateCompany) {
+      if (project.company_id !== impersonateCompany) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    } else {
+      const { data: company } = await supabaseAdmin
+        .from('companies')
+        .select('id')
+        .eq('id', project.company_id)
+        .eq('owner_id', userId)
+        .is('deleted_at', null)
+        .single()
+      if (!company) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
     }
 
     // Get case type name

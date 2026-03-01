@@ -90,6 +90,8 @@ export function CaseDocuments({ projectId, readOnly = false, apiBasePath }: Case
           d.id === docId ? { ...d, client_visible: !currentVisible } : d
         ))
         toast.success(!currentVisible ? 'Dokument zviditelněn pro klienta' : 'Dokument skryt pro klienta')
+      } else {
+        toast.error('Chyba při změně viditelnosti')
       }
     } catch {
       toast.error('Chyba při změně viditelnosti')
@@ -257,13 +259,13 @@ export function CaseDocuments({ projectId, readOnly = false, apiBasePath }: Case
                   <div className="flex items-center gap-1 shrink-0">
                     {!readOnly && (
                       <button
-                        onClick={() => toggleClientVisible(doc.id, doc.client_visible !== false)}
+                        onClick={() => toggleClientVisible(doc.id, doc.client_visible === true)}
                         className={`p-1.5 rounded hover:bg-muted transition-colors ${
-                          doc.client_visible !== false ? 'text-blue-500' : 'text-muted-foreground'
+                          doc.client_visible === true ? 'text-blue-500' : 'text-muted-foreground'
                         }`}
-                        title={doc.client_visible !== false ? 'Viditelné pro klienta' : 'Skryté pro klienta'}
+                        title={doc.client_visible === true ? 'Viditelné pro klienta' : 'Skryté pro klienta'}
                       >
-                        {doc.client_visible !== false ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        {doc.client_visible === true ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                       </button>
                     )}
                     {doc.file_url && (

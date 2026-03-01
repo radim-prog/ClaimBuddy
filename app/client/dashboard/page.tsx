@@ -63,8 +63,12 @@ export default function ClientDashboard() {
         const cases = data.cases || []
         const activeCases = cases.filter((c: { status: string }) => c.status !== 'completed' && c.status !== 'cancelled')
         setCasesCount(activeCases.length)
-        if (cases.length > 0) {
-          setLastCaseActivity(cases[0].updated_at)
+        if (activeCases.length > 0) {
+          // Use most recent activity from active cases, not all cases
+          const sorted = [...activeCases].sort((a: { updated_at: string }, b: { updated_at: string }) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+          )
+          setLastCaseActivity(sorted[0].updated_at)
         }
       })
       .catch(() => {})

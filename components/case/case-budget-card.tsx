@@ -9,19 +9,24 @@ import { CaseBudgetData } from '@/lib/types/project'
 
 interface CaseBudgetCardProps {
   projectId: string
+  readOnly?: boolean
+  apiBasePath?: string
 }
 
-export function CaseBudgetCard({ projectId }: CaseBudgetCardProps) {
+export function CaseBudgetCard({ projectId, readOnly = false, apiBasePath }: CaseBudgetCardProps) {
   const [budget, setBudget] = useState<CaseBudgetData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`/api/projects/${projectId}/budget`)
+    const url = apiBasePath
+      ? `${apiBasePath}/${projectId}/budget`
+      : `/api/projects/${projectId}/budget`
+    fetch(url)
       .then(r => r.json())
       .then(data => setBudget(data))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [projectId])
+  }, [projectId, apiBasePath])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('cs-CZ', {
@@ -64,27 +69,33 @@ export function CaseBudgetCard({ projectId }: CaseBudgetCardProps) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-base">
-          <span>Rozpočet spisu</span>
-          <Badge variant="outline">{formatCurrency(budget.hourly_rate)}/h</Badge>
+          <span>{readOnly ? 'Přehled fakturace' : 'Rozpočet spisu'}</span>
+          {!readOnly && budget.hourly_rate > 0 && (
+            <Badge variant="outline">{formatCurrency(budget.hourly_rate)}/h</Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 bg-muted/50 rounded-lg">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Clock className="h-4 w-4" />
-              <span className="text-xs">Odpracováno</span>
-            </div>
-            <p className="text-lg font-semibold">{formatHours(budget.total_hours)}</p>
-          </div>
+        <div className={`grid ${readOnly ? 'grid-cols-2' : 'grid-cols-2'} gap-3`}>
+          {!readOnly && (
+            <>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <Clock className="h-4 w-4" />
+                  <span className="text-xs">Odpracováno</span>
+                </div>
+                <p className="text-lg font-semibold">{formatHours(budget.total_hours)}</p>
+              </div>
 
-          <div className="p-3 bg-muted/50 rounded-lg">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <TrendingUp className="h-4 w-4" />
-              <span className="text-xs">Fakturovatelné</span>
-            </div>
-            <p className="text-lg font-semibold">{formatHours(budget.total_billable_hours)}</p>
-          </div>
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="text-xs">Fakturovatelné</span>
+                </div>
+                <p className="text-lg font-semibold">{formatHours(budget.total_billable_hours)}</p>
+              </div>
+            </>
+          )}
 
           <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg">
             <div className="flex items-center gap-2 text-green-600 mb-1">

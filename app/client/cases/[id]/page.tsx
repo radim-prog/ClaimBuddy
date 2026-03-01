@@ -76,7 +76,7 @@ export default function ClientCaseDetailPage({ params }: { params: { id: string 
   }
 
   const statusCfg = STATUS_LABELS[caseData.status] || STATUS_LABELS.active
-  const visibleTabs = caseData.client_visible_tabs || ['timeline', 'documents']
+  const visibleTabs = Array.isArray(caseData.client_visible_tabs) ? caseData.client_visible_tabs : ['timeline', 'documents']
   const defaultTab = visibleTabs[0] || 'timeline'
 
   return (
@@ -143,7 +143,7 @@ export default function ClientCaseDetailPage({ params }: { params: { id: string 
           )}
           {visibleTabs.includes('budget') && (
             <TabsContent value="budget">
-              <CaseBudgetCard projectId={params.id} />
+              <CaseBudgetCard projectId={params.id} readOnly apiBasePath="/api/client/cases" />
             </TabsContent>
           )}
         </Tabs>
