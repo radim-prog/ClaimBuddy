@@ -31,5 +31,5 @@ export async function login(formData: FormData) {
 
 export async function logout() {
   cookies().delete(COOKIE_NAME)
-  redirect('/auth/login')
+  redirect('/')
 }

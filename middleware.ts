@@ -8,7 +8,8 @@ if (!AUTH_SECRET) {
   throw new Error('AUTH_SECRET environment variable is required and must not be empty')
 }
 
-const PUBLIC_PATHS = ['/auth/login', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/cron/drive-sync']
+const PUBLIC_EXACT = ['/', '/ucetni']  // Exact match only (startsWith '/' would match everything)
+const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/cron/drive-sync']
 const STATIC_PREFIXES = ['/_next', '/static', '/favicon.ico']
 
 // --- Rate Limiting (in-memory, sliding window) ---
@@ -120,6 +121,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Landing pages (/ and /ucetni): logged-in users → redirect to dashboard
+  if (PUBLIC_EXACT.includes(pathname)) {
+    const token = request.cookies.get(COOKIE_NAME)?.value
+    if (token) {
+      const user = await verifyToken(token)
+      if (user) {
+        const dest = user.role === 'client' ? '/client/dashboard' : '/accountant/dashboard'
+        return NextResponse.redirect(new URL(dest, request.url))
+      }
+    }
+    return NextResponse.next()
+  }
+
   // Allow public paths (but rate limit login)
   if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
     if (pathname === '/api/auth/login' && request.method === 'POST') {
@@ -183,12 +197,6 @@ export async function middleware(request: NextRequest) {
 
   }
 
-  // Root redirect
-  if (pathname === '/') {
-    const dest = user.role === 'client' ? '/client/dashboard' : '/accountant/dashboard'
-    return NextResponse.redirect(new URL(dest, request.url))
-  }
-
   // Add user info to headers
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-user-id', user.id)
@@ -210,7 +218,11 @@ function handleUnauthenticated(request: NextRequest, pathname: string): NextResp
   if (pathname.startsWith('/api/')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  return NextResponse.redirect(new URL('/auth/login', request.url))
+  // Smart redirect: accountant paths → /ucetni, everything else → / (client landing)
+  const dest = pathname.startsWith('/accountant') || pathname.startsWith('/api/accountant')
+    ? '/ucetni'
+    : '/'
+  return NextResponse.redirect(new URL(dest, request.url))
 }
 
 export const config = {

@@ -26,8 +26,7 @@ export default function ClientLandingPage() {
         toast.error('Chyba přihlášení', { description: result.error })
         setLoading(false)
       }
-    } catch (error) {
-      toast.error('Něco se pokazilo')
+    } catch {
       setLoading(false)
     }
   }
@@ -138,14 +137,9 @@ export default function ClientLandingPage() {
                 </form>
 
                 <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-3">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
                     Nemáte účet? Kontaktujte svého účetního.
                   </p>
-                  <Link href="/client/dashboard">
-                    <Button variant="outline" className="w-full border-blue-300 text-blue-600 hover:bg-blue-50">
-                      Demo přístup (bez přihlášení)
-                    </Button>
-                  </Link>
                 </div>
               </CardContent>
             </Card>

@@ -26,8 +26,7 @@ export default function AccountantLandingPage() {
         toast.error('Chyba přihlášení', { description: result.error })
         setLoading(false)
       }
-    } catch (error) {
-      toast.error('Něco se pokazilo')
+    } catch {
       setLoading(false)
     }
   }
@@ -138,14 +137,9 @@ export default function AccountantLandingPage() {
                 </form>
 
                 <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-3">
-                    Účty vytváří administrátor systému.
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                    Přihlaste se jménem a heslem od administrátora.
                   </p>
-                  <Link href="/accountant/dashboard">
-                    <Button variant="outline" className="w-full border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30">
-                      Demo přístup (bez přihlášení)
-                    </Button>
-                  </Link>
                 </div>
               </CardContent>
             </Card>
