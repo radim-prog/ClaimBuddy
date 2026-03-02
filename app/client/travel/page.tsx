@@ -193,7 +193,7 @@ function TravelPageInner() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0 overflow-hidden">
       <div className="flex items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">Kniha jizd</h1>
@@ -324,7 +324,7 @@ function TravelPageInner() {
                     <Card className="rounded-xl border-orange-200 dark:border-orange-800">
                       <CardContent className="p-4">
                         <h3 className="font-semibold mb-3">Zaznamenat tankovani</h3>
-                        <form onSubmit={handleCreateFuelLog} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <form onSubmit={handleCreateFuelLog} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div>
                             <Label className="text-xs">Vozidlo *</Label>
                             <select name="vehicle_id" required className="w-full rounded-md border px-3 py-2 text-sm bg-white dark:bg-gray-800">

@@ -166,8 +166,8 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main content */}
-      <div className="md:pl-64 flex flex-col min-h-screen">
-        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-20 md:pb-6">
+      <div className="md:pl-64 flex flex-col min-h-screen overflow-hidden">
+        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-20 md:pb-6 min-w-0">
           {children}
         </main>
       </div>

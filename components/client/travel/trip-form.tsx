@@ -125,9 +125,9 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
   const effectiveKm = form.is_round_trip && form.distance_km ? Number(form.distance_km) * 2 : Number(form.distance_km) || 0
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5 min-w-0">
       {/* Date & Time */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
           <Label>Datum *</Label>
           <Input type="date" value={form.trip_date} onChange={e => setForm(f => ({ ...f, trip_date: e.target.value }))} required />
@@ -174,7 +174,7 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
 
       {/* Origin & Destination */}
       <div className="space-y-3">
-        <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-2 items-end">
           <div>
             <Label>Odkud *</Label>
             <PlaceAutocomplete value={form.origin} onChange={v => setForm(f => ({ ...f, origin: v }))} places={places} placeholder="Odkud..." />
