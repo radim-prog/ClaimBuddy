@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { FUEL_TYPE_LABELS } from '@/lib/types/asset'
 import type { TravelVehicle, FuelType } from '@/lib/types/travel'
-import { Loader2 } from 'lucide-react'
+import { DEFAULT_RATES } from '@/lib/types/travel'
+import { Loader2, Info } from 'lucide-react'
 
 interface VehicleFormProps {
   vehicle?: TravelVehicle
@@ -114,7 +115,11 @@ export function VehicleForm({ vehicle, onSubmit, onCancel }: VehicleFormProps) {
         </div>
         <div>
           <Label>Sazba (Kc/km)</Label>
-          <Input type="number" step="0.01" value={form.rate_per_km} onChange={e => setForm(f => ({ ...f, rate_per_km: e.target.value }))} placeholder="5.90" />
+          <Input type="number" step="0.01" value={form.rate_per_km} onChange={e => setForm(f => ({ ...f, rate_per_km: e.target.value }))} placeholder={DEFAULT_RATES.car.toString()} />
+          <div className="flex items-start gap-1.5 mt-1 text-xs text-muted-foreground">
+            <Info className="h-3 w-3 mt-0.5 shrink-0" />
+            <span>Zakonna sazba 2026: {DEFAULT_RATES.car} Kc/km (auto), {DEFAULT_RATES.motorcycle} Kc/km (moto)</span>
+          </div>
         </div>
       </div>
 

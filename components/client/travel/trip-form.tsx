@@ -9,9 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent } from '@/components/ui/card'
 import { PlaceAutocomplete } from './place-autocomplete'
-import { Loader2, ArrowRight, RotateCcw, Calculator } from 'lucide-react'
+import { Loader2, ArrowRight, RotateCcw, Calculator, Info } from 'lucide-react'
 import type { TravelVehicle, TravelDriver, TravelPlace, TravelTrip, TripType } from '@/lib/types/travel'
-import { TRIP_TYPE_LABELS, PURPOSE_SUGGESTIONS } from '@/lib/types/travel'
+import { TRIP_TYPE_LABELS, PURPOSE_SUGGESTIONS, DEFAULT_RATES } from '@/lib/types/travel'
 
 interface TripFormProps {
   trip?: TravelTrip
@@ -43,9 +43,6 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
     is_round_trip: trip?.is_round_trip || false,
     odometer_start: trip?.odometer_start?.toString() || '',
     odometer_end: trip?.odometer_end?.toString() || '',
-    rate_per_km: trip?.rate_per_km?.toString() || '',
-    reimbursement: trip?.reimbursement?.toString() || '',
-    manual_override: trip?.manual_override || false,
     notes: trip?.notes || '',
   })
 
@@ -55,33 +52,33 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
     [vehicles, form.vehicle_id]
   )
 
+  // Rate from vehicle settings (not editable per trip)
+  const ratePerKm = selectedVehicle?.rate_per_km ?? DEFAULT_RATES.car
+
   useEffect(() => {
     if (selectedVehicle && !trip) {
       setForm(f => ({
         ...f,
         odometer_start: selectedVehicle.current_odometer?.toString() || f.odometer_start,
-        rate_per_km: selectedVehicle.rate_per_km?.toString() || f.rate_per_km,
       }))
     }
   }, [selectedVehicle, trip])
 
   // Auto-calculate odometer end
   useEffect(() => {
-    if (form.odometer_start && form.distance_km && !form.manual_override) {
+    if (form.odometer_start && form.distance_km) {
       const effectiveKm = form.is_round_trip ? Number(form.distance_km) * 2 : Number(form.distance_km)
       const newEnd = Number(form.odometer_start) + effectiveKm
       setForm(f => ({ ...f, odometer_end: Math.round(newEnd).toString() }))
     }
-  }, [form.odometer_start, form.distance_km, form.is_round_trip, form.manual_override])
+  }, [form.odometer_start, form.distance_km, form.is_round_trip])
 
-  // Auto-calculate reimbursement
-  useEffect(() => {
-    if (form.distance_km && form.rate_per_km && !form.manual_override) {
-      const effectiveKm = form.is_round_trip ? Number(form.distance_km) * 2 : Number(form.distance_km)
-      const reimb = effectiveKm * Number(form.rate_per_km)
-      setForm(f => ({ ...f, reimbursement: reimb.toFixed(2) }))
-    }
-  }, [form.distance_km, form.rate_per_km, form.is_round_trip, form.manual_override])
+  // Auto-calculated reimbursement (read-only, based on vehicle rate)
+  const reimbursement = useMemo(() => {
+    if (!form.distance_km) return 0
+    const effectiveKm = form.is_round_trip ? Number(form.distance_km) * 2 : Number(form.distance_km)
+    return effectiveKm * ratePerKm
+  }, [form.distance_km, form.is_round_trip, ratePerKm])
 
   // Calculate fuel consumption
   const fuelConsumed = useMemo(() => {
@@ -112,9 +109,9 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
         odometer_end: form.odometer_end ? Number(form.odometer_end) : null,
         is_round_trip: form.is_round_trip,
         fuel_consumed: fuelConsumed ? Math.round(fuelConsumed * 100) / 100 : null,
-        rate_per_km: form.rate_per_km ? Number(form.rate_per_km) : null,
-        reimbursement: form.reimbursement ? Number(form.reimbursement) : null,
-        manual_override: form.manual_override,
+        rate_per_km: ratePerKm,
+        reimbursement: reimbursement ? Math.round(reimbursement * 100) / 100 : null,
+        manual_override: false,
         notes: form.notes || null,
       })
     } finally {
@@ -250,43 +247,43 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
         <div>
           <Label>Tachometr start</Label>
           <Input type="number" value={form.odometer_start}
-            onChange={e => setForm(f => ({ ...f, odometer_start: e.target.value, manual_override: true }))} />
+            onChange={e => setForm(f => ({ ...f, odometer_start: e.target.value }))} />
         </div>
         <div>
           <Label>Tachometr konec</Label>
           <Input type="number" value={form.odometer_end}
-            onChange={e => setForm(f => ({ ...f, odometer_end: e.target.value, manual_override: true }))} />
+            onChange={e => setForm(f => ({ ...f, odometer_end: e.target.value }))} />
         </div>
       </div>
 
-      {/* Reimbursement summary */}
-      <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-        <CardContent className="p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Calculator className="h-4 w-4 text-blue-600" />
-            <span className="font-medium text-sm">Nahrada</span>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Sazba (Kc/km)</Label>
-              <Input type="number" step="0.01" value={form.rate_per_km}
-                onChange={e => setForm(f => ({ ...f, rate_per_km: e.target.value, manual_override: true }))}
-                className="bg-white dark:bg-gray-800" />
+      {/* Reimbursement summary (read-only, calculated from vehicle settings) */}
+      {effectiveKm > 0 && (
+        <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Calculator className="h-4 w-4 text-blue-600" />
+              <span className="font-medium text-sm">Nahrada</span>
             </div>
-            <div>
-              <Label className="text-xs">Celkem (Kc)</Label>
-              <Input type="number" step="0.01" value={form.reimbursement}
-                onChange={e => setForm(f => ({ ...f, reimbursement: e.target.value, manual_override: true }))}
-                className="bg-white dark:bg-gray-800 font-semibold" />
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                {effectiveKm} km × {ratePerKm.toFixed(2)} Kc/km
+              </span>
+              <span className="font-bold text-lg text-blue-700 dark:text-blue-400">
+                {reimbursement.toFixed(2)} Kc
+              </span>
             </div>
-          </div>
-          {fuelConsumed && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Odhadovana spotreba: {fuelConsumed.toFixed(1)} l
-            </p>
-          )}
-        </CardContent>
-      </Card>
+            {fuelConsumed && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Odhadovana spotreba: {fuelConsumed.toFixed(1)} l
+              </p>
+            )}
+            <div className="flex items-start gap-1.5 mt-2 text-xs text-muted-foreground">
+              <Info className="h-3 w-3 mt-0.5 shrink-0" />
+              <span>Sazba {ratePerKm.toFixed(2)} Kc/km je nastavena u vozidla{selectedVehicle ? ` (${selectedVehicle.license_plate})` : ''}. Zmenit lze v nastaveni vozidla.</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Notes */}
       <div>
