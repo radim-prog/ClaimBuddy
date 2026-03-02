@@ -9,6 +9,7 @@ import {
   LogOut,
   UserCircle,
   FileText,
+  Car,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Logo } from '@/components/ui/logo'
@@ -30,6 +31,7 @@ import { ImpersonationBanner } from '@/components/client/impersonation-banner'
 const navigation = [
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard },
   { name: 'Doklady', href: '/client/documents', icon: FileText },
+  { name: 'Cesťák', href: '/client/travel', icon: Car },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
   { name: 'Účet', href: '/client/account', icon: UserCircle },
 ]
@@ -173,7 +175,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom tab bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50">
         <nav className="flex justify-around">
-          {navigation.slice(0, 4).map((item) => {
+          {navigation.slice(0, 5).map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
             const Icon = item.icon
             return (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Building2,
   MapPin,
@@ -8,6 +8,7 @@ import {
   Mail,
   User,
   Inbox,
+  Car,
   Eye,
   EyeOff,
   Copy,
@@ -59,6 +60,7 @@ const FIRMA_TILES: TileDefinition[] = [
   { id: 'employees', label: 'Zam\u011bstnanci', defaultVisible: true },
   { id: 'assets', label: 'Majetek', defaultVisible: true },
   { id: 'insurance', label: 'Poji\u0161t\u011bn\u00ed', defaultVisible: true },
+  { id: 'travel-diary', label: 'Kniha j\u00edzd', defaultVisible: true },
   { id: 'deadlines', label: 'Term\u00edny a v\u00fdro\u010d\u00ed', defaultVisible: true },
   { id: 'annual-closing', label: 'Ro\u010dn\u00ed uz\u00e1v\u011brka', defaultVisible: true },
   { id: 'notifications', label: 'Notifikace klienta', defaultVisible: true },
@@ -238,6 +240,12 @@ export default function ProfilePage() {
                 </div>
               </CollapsibleSection>
             )
+          case 'travel-diary':
+            return (
+              <CollapsibleSection id="travel-diary" title="Kniha jízd" icon={Car} defaultOpen={false}>
+                <TravelDiaryTile companyId={companyId} />
+              </CollapsibleSection>
+            )
           case 'activity':
             return (
               <CollapsibleSection id="activity" title="Historie aktivit" icon={Clock} defaultOpen={false}>
@@ -249,5 +257,56 @@ export default function ProfilePage() {
         }
       }}
     />
+  )
+}
+
+function TravelDiaryTile({ companyId }: { companyId: string }) {
+  const [stats, setStats] = useState<{ total_trips: number; total_km: number; vehicles: number; last_trip?: string } | null>(null)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [statsRes, vehiclesRes, tripsRes] = await Promise.all([
+          fetch(`/api/accountant/companies/${companyId}/travel/stats?year=${new Date().getFullYear()}`),
+          fetch(`/api/accountant/companies/${companyId}/travel/vehicles`),
+          fetch(`/api/accountant/companies/${companyId}/travel/trips?limit=1`),
+        ])
+        const [statsData, vehiclesData, tripsData] = await Promise.all([statsRes.json(), vehiclesRes.json(), tripsRes.json()])
+        setStats({
+          total_trips: statsData.stats?.total_trips || 0,
+          total_km: statsData.stats?.total_km || 0,
+          vehicles: (vehiclesData.vehicles || []).length,
+          last_trip: (tripsData.trips || [])[0]?.trip_date,
+        })
+      } catch {}
+    }
+    load()
+  }, [companyId])
+
+  if (!stats) return <p className="text-sm text-muted-foreground py-2">Nacitani...</p>
+
+  const basePath = `/accountant/clients/${companyId}`
+
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-3 gap-3 text-sm">
+        <div>
+          <div className="text-xs text-muted-foreground">Vozidla</div>
+          <div className="font-semibold">{stats.vehicles}</div>
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground">Km letos</div>
+          <div className="font-semibold">{stats.total_km.toLocaleString('cs')}</div>
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground">Jizdy letos</div>
+          <div className="font-semibold">{stats.total_trips}</div>
+        </div>
+      </div>
+      {stats.last_trip && (
+        <p className="text-xs text-muted-foreground">Posledni jizda: {new Date(stats.last_trip).toLocaleDateString('cs')}</p>
+      )}
+      <a href={`${basePath}/travel`} className="text-xs text-purple-600 hover:underline">Zobrazit vse →</a>
+    </div>
   )
 }

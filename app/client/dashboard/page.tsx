@@ -13,6 +13,7 @@ import {
   ChevronRight,
   FileText,
   Briefcase,
+  Car,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -338,6 +339,24 @@ export default function ClientDashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* Travel Quick Action */}
+      <Card className="border-blue-200 dark:border-blue-800">
+        <CardContent className="py-4 px-5">
+          <Link href="/client/travel/new" className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-full">
+                <Car className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm text-gray-900 dark:text-white">Kniha jízd</p>
+                <p className="text-xs text-muted-foreground">Zapsat novou jízdu</p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* Tax Impact Card */}
       {selectedCompany && <TaxImpactSummary companyId={selectedCompany.id} />}

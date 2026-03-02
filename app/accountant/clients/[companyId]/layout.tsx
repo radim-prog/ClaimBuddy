@@ -16,6 +16,7 @@ import {
   Clock,
   Briefcase,
   LayoutGrid,
+  Car,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -241,6 +242,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
             { href: `${basePath}/documents`, label: 'Doklady', icon: FileText, match: (p: string) => p.includes('/documents') },
             { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files') },
             { href: `${basePath}/work`, label: 'Prace', icon: Clock, match: (p: string) => p.includes('/work') },
+            { href: `${basePath}/travel`, label: 'Jizdy', icon: Car, match: (p: string) => p.includes('/travel') },
             { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile') },
             { href: `${basePath}/timeline`, label: 'Osa', icon: Eye, match: (p: string) => p.includes('/timeline') },
           ]
