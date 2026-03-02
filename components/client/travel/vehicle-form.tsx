@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { FUEL_TYPE_LABELS } from '@/lib/types/asset'
-import type { TravelVehicle, FuelType } from '@/lib/types/travel'
-import { DEFAULT_RATES } from '@/lib/types/travel'
+import type { TravelVehicle, FuelType, VehicleCategory } from '@/lib/types/travel'
+import { VEHICLE_CATEGORY_LABELS, BASIC_RATES_PER_KM, DECREE_FUEL_PRICES } from '@/lib/types/travel'
 import { Loader2, Info } from 'lucide-react'
 
 interface VehicleFormProps {
@@ -31,9 +31,13 @@ export function VehicleForm({ vehicle, onSubmit, onCancel }: VehicleFormProps) {
     tank_capacity: vehicle?.tank_capacity?.toString() || '',
     current_fuel_level: vehicle?.current_fuel_level?.toString() || '',
     current_odometer: vehicle?.current_odometer?.toString() || '0',
-    rate_per_km: vehicle?.rate_per_km?.toString() || '5.90',
+    vehicle_category: vehicle?.vehicle_category || 'car' as VehicleCategory,
     is_company_car: vehicle?.is_company_car ?? true,
   })
+
+  const basicRate = BASIC_RATES_PER_KM[form.vehicle_category] || BASIC_RATES_PER_KM.car
+  const fuelKey = form.fuel_type === 'hybrid' ? 'petrol' : form.fuel_type
+  const fuelPrice = DECREE_FUEL_PRICES[fuelKey]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,7 +55,8 @@ export function VehicleForm({ vehicle, onSubmit, onCancel }: VehicleFormProps) {
         tank_capacity: form.tank_capacity ? Number(form.tank_capacity) : null,
         current_fuel_level: form.current_fuel_level ? Number(form.current_fuel_level) : null,
         current_odometer: Number(form.current_odometer) || 0,
-        rate_per_km: Number(form.rate_per_km) || 5.90,
+        vehicle_category: form.vehicle_category,
+        rate_per_km: basicRate, // auto-set from law based on category
         is_company_car: form.is_company_car,
       })
     } finally {
@@ -71,6 +76,28 @@ export function VehicleForm({ vehicle, onSubmit, onCancel }: VehicleFormProps) {
           <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Skoda Octavia" />
         </div>
         <div>
+          <Label>Typ vozidla</Label>
+          <Select value={form.vehicle_category} onValueChange={v => setForm(f => ({ ...f, vehicle_category: v as VehicleCategory }))}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(VEHICLE_CATEGORY_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Typ paliva</Label>
+          <Select value={form.fuel_type} onValueChange={v => setForm(f => ({ ...f, fuel_type: v as FuelType }))}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(FUEL_TYPE_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
           <Label>Znacka</Label>
           <Input value={form.brand} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} placeholder="Skoda" />
         </div>
@@ -87,19 +114,13 @@ export function VehicleForm({ vehicle, onSubmit, onCancel }: VehicleFormProps) {
           <Input value={form.vin} onChange={e => setForm(f => ({ ...f, vin: e.target.value }))} placeholder="TMBJG..." />
         </div>
         <div>
-          <Label>Typ paliva</Label>
-          <Select value={form.fuel_type} onValueChange={v => setForm(f => ({ ...f, fuel_type: v as FuelType }))}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {Object.entries(FUEL_TYPE_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label>Spotreba z technickeho prukazu (l/100km) *</Label>
+          <Input type="number" step="0.1" value={form.fuel_consumption} onChange={e => setForm(f => ({ ...f, fuel_consumption: e.target.value }))} placeholder="6.5" />
+          <p className="text-xs text-muted-foreground mt-1">Kombinovany provoz dle norem EU (z TP)</p>
         </div>
         <div>
-          <Label>Spotreba (l/100km)</Label>
-          <Input type="number" step="0.1" value={form.fuel_consumption} onChange={e => setForm(f => ({ ...f, fuel_consumption: e.target.value }))} placeholder="6.5" />
+          <Label>Stav tachometru (km)</Label>
+          <Input type="number" value={form.current_odometer} onChange={e => setForm(f => ({ ...f, current_odometer: e.target.value }))} placeholder="50000" />
         </div>
         <div>
           <Label>Objem nadrze (l)</Label>
@@ -109,23 +130,30 @@ export function VehicleForm({ vehicle, onSubmit, onCancel }: VehicleFormProps) {
           <Label>Aktualni stav nadrze (l)</Label>
           <Input type="number" step="0.1" value={form.current_fuel_level} onChange={e => setForm(f => ({ ...f, current_fuel_level: e.target.value }))} />
         </div>
-        <div>
-          <Label>Stav tachometru (km)</Label>
-          <Input type="number" value={form.current_odometer} onChange={e => setForm(f => ({ ...f, current_odometer: e.target.value }))} placeholder="50000" />
-        </div>
-        <div>
-          <Label>Sazba (Kc/km)</Label>
-          <Input type="number" step="0.01" value={form.rate_per_km} onChange={e => setForm(f => ({ ...f, rate_per_km: e.target.value }))} placeholder={DEFAULT_RATES.car.toString()} />
-          <div className="flex items-start gap-1.5 mt-1 text-xs text-muted-foreground">
-            <Info className="h-3 w-3 mt-0.5 shrink-0" />
-            <span>Zakonna sazba 2026: {DEFAULT_RATES.car} Kc/km (auto), {DEFAULT_RATES.motorcycle} Kc/km (moto)</span>
-          </div>
-        </div>
       </div>
 
       <div className="flex items-center gap-2">
         <Switch checked={form.is_company_car} onCheckedChange={v => setForm(f => ({ ...f, is_company_car: v }))} />
         <Label>Firemni vozidlo</Label>
+      </div>
+
+      {/* Legal rates info (read-only) */}
+      <div className="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-3 text-xs text-muted-foreground space-y-1">
+        <div className="flex items-center gap-1.5 font-medium text-foreground mb-1">
+          <Info className="h-3.5 w-3.5" />
+          Zakonne sazby 2026 (vyhl. 573/2025 Sb.)
+        </div>
+        <p>Zakladni nahrada: <strong>{basicRate} Kc/km</strong> ({VEHICLE_CATEGORY_LABELS[form.vehicle_category]})</p>
+        {fuelPrice && (
+          <p>Prumerna cena PHM: <strong>{fuelPrice.price} {fuelPrice.unit}</strong> ({fuelPrice.label})</p>
+        )}
+        {form.fuel_consumption && (
+          <p>
+            Nahrada na 1 km: {basicRate} + {Number(form.fuel_consumption) / 100 * (fuelPrice?.price || 0) > 0
+              ? `${(Number(form.fuel_consumption) / 100 * (fuelPrice?.price || 0)).toFixed(2)}`
+              : '?'} = <strong>{(basicRate + Number(form.fuel_consumption) / 100 * (fuelPrice?.price || 0)).toFixed(2)} Kc/km</strong>
+          </p>
+        )}
       </div>
 
       <div className="flex gap-2 justify-end">

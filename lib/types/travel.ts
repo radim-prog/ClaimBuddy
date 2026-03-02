@@ -1,12 +1,20 @@
 // Travel diary (Kniha jízd) types
+// Based on Czech legislation: zákoník práce § 157, vyhláška 573/2025 Sb.
 
 export type FuelType = 'petrol' | 'diesel' | 'electric' | 'hybrid' | 'lpg' | 'cng'
 export type TripType = 'business' | 'private' | 'commute'
+export type VehicleCategory = 'car' | 'motorcycle' | 'truck'
 
 export const TRIP_TYPE_LABELS: Record<TripType, string> = {
   business: 'Služební',
   private: 'Soukromá',
   commute: 'Dojíždění',
+}
+
+export const VEHICLE_CATEGORY_LABELS: Record<VehicleCategory, string> = {
+  car: 'Osobní automobil',
+  motorcycle: 'Motocykl / tříkolka',
+  truck: 'Nákladní / autobus / traktor',
 }
 
 export const PURPOSE_SUGGESTIONS = [
@@ -22,11 +30,84 @@ export const PURPOSE_SUGGESTIONS = [
   'Kontrola na pobočce',
 ]
 
-// Default rates for 2026 (Czech legislation)
+// ============================================================
+// Legal rates for 2026 (vyhláška 573/2025 Sb.)
+// These are NOT user-editable — set by Czech law
+// ============================================================
+
+// Základní náhrada za 1 km jízdy (§ 157 odst. 4 ZP)
+export const BASIC_RATES_PER_KM: Record<VehicleCategory, number> = {
+  car: 5.90,         // osobní automobil
+  motorcycle: 1.60,  // jednostopé a tříkolové vozidlo
+  truck: 11.80,      // nákladní auto, autobus, traktor (2× car)
+}
+
+// Příplatek za přívěs: +15% k základní sazbě
+export const TRAILER_SURCHARGE = 0.15
+
+// Průměrné ceny PHM (pokud zaměstnanec neprokáže dokladem)
+export const DECREE_FUEL_PRICES: Record<string, { price: number; unit: string; label: string }> = {
+  petrol: { price: 34.70, unit: 'Kč/l', label: 'Benzin 95' },
+  petrol_98: { price: 39.00, unit: 'Kč/l', label: 'Benzin 98' },
+  diesel: { price: 34.10, unit: 'Kč/l', label: 'Nafta' },
+  electric: { price: 7.20, unit: 'Kč/kWh', label: 'Elektřina' },
+  lpg: { price: 14.60, unit: 'Kč/l', label: 'LPG' },
+  cng: { price: 30.00, unit: 'Kč/kg', label: 'CNG' },
+}
+
+// Paušální náhrada za dopravu (§ 24 odst. 2 písm. k) ZDP)
+export const MONTHLY_LUMP_SUM = {
+  full: 5000,   // výhradně podnikání
+  partial: 4000, // i soukromé užití
+}
+
+// Backwards compat alias (used in some components)
 export const DEFAULT_RATES = {
-  car: 5.90,       // Kč/km osobní auto
-  motorcycle: 1.50, // Kč/km jednostopé
-  monthly_lump: 5000, // paušál Kč/měsíc
+  car: BASIC_RATES_PER_KM.car,
+  motorcycle: BASIC_RATES_PER_KM.motorcycle,
+  monthly_lump: MONTHLY_LUMP_SUM.full,
+}
+
+/**
+ * Calculate total reimbursement for a trip (dvousložková náhrada)
+ * 1. Základní náhrada = km × zákonná sazba
+ * 2. Náhrada za PHM = km × spotřeba / 100 × cena PHM
+ */
+export function calculateReimbursement(params: {
+  distanceKm: number
+  vehicleCategory: VehicleCategory
+  fuelConsumptionPer100km: number | null
+  fuelType: FuelType
+  actualFuelPrice?: number | null  // from receipt, if available
+  hasTrailer?: boolean
+}): {
+  basicRate: number
+  basicReimbursement: number
+  fuelPriceUsed: number
+  fuelReimbursement: number
+  totalReimbursement: number
+} {
+  const { distanceKm, vehicleCategory, fuelConsumptionPer100km, fuelType, actualFuelPrice, hasTrailer } = params
+
+  // Component 1: basic rate
+  let basicRate = BASIC_RATES_PER_KM[vehicleCategory] || BASIC_RATES_PER_KM.car
+  if (hasTrailer) basicRate *= (1 + TRAILER_SURCHARGE)
+  const basicReimbursement = distanceKm * basicRate
+
+  // Component 2: fuel reimbursement
+  const fuelKey = fuelType === 'hybrid' ? 'petrol' : fuelType
+  const decreeFuelPrice = DECREE_FUEL_PRICES[fuelKey]?.price || DECREE_FUEL_PRICES.petrol.price
+  const fuelPriceUsed = actualFuelPrice || decreeFuelPrice
+  const consumption = fuelConsumptionPer100km || 0
+  const fuelReimbursement = distanceKm * consumption / 100 * fuelPriceUsed
+
+  return {
+    basicRate: Math.round(basicRate * 100) / 100,
+    basicReimbursement: Math.round(basicReimbursement * 100) / 100,
+    fuelPriceUsed: Math.round(fuelPriceUsed * 100) / 100,
+    fuelReimbursement: Math.round(fuelReimbursement * 100) / 100,
+    totalReimbursement: Math.round((basicReimbursement + fuelReimbursement) * 100) / 100,
+  }
 }
 
 export type TravelVehicle = {
@@ -39,11 +120,12 @@ export type TravelVehicle = {
   year: number | null
   vin: string | null
   fuel_type: FuelType
-  fuel_consumption: number | null
+  fuel_consumption: number | null  // l/100km from technical certificate
   tank_capacity: number | null
   current_fuel_level: number | null
   current_odometer: number
-  rate_per_km: number
+  vehicle_category: VehicleCategory
+  rate_per_km: number  // legacy, kept for backwards compat
   is_company_car: boolean
   is_active: boolean
   created_at: string
@@ -92,8 +174,10 @@ export type TravelTrip = {
   is_round_trip: boolean
   fuel_consumed: number | null
   fuel_cost: number | null
-  rate_per_km: number | null
-  reimbursement: number | null
+  rate_per_km: number | null       // legacy basic rate snapshot
+  basic_rate_per_km: number | null  // zákonná sazba at time of trip
+  fuel_price_per_unit: number | null // fuel price used (decree or actual)
+  reimbursement: number | null      // total (basic + fuel)
   manual_override: boolean
   document_ids: string[] | null
   notes: string | null
@@ -102,6 +186,9 @@ export type TravelTrip = {
   // Joined fields (optional)
   vehicle_name?: string
   vehicle_license_plate?: string
+  vehicle_category?: VehicleCategory
+  vehicle_fuel_type?: FuelType
+  vehicle_fuel_consumption?: number | null
   driver_name?: string
 }
 

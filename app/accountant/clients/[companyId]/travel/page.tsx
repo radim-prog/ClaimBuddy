@@ -25,7 +25,7 @@ import { CollapsibleSection } from '@/components/collapsible-section'
 import { FuelGauge } from '@/components/client/travel/fuel-gauge'
 import { TravelStatsCards } from '@/components/client/travel/travel-stats'
 import { FUEL_TYPE_LABELS } from '@/lib/types/asset'
-import { TRIP_TYPE_LABELS, type TravelTrip, type TravelVehicle, type TravelStats, type TripType } from '@/lib/types/travel'
+import { TRIP_TYPE_LABELS, BASIC_RATES_PER_KM, type TravelTrip, type TravelVehicle, type TravelStats, type TripType } from '@/lib/types/travel'
 import { toast } from 'sonner'
 
 const tripTypeColors: Record<TripType, string> = {
@@ -243,7 +243,8 @@ export default function AccountantTravelPage() {
               <div><span className="text-muted-foreground">Ucel:</span> {selectedTrip.purpose}</div>
               <div><span className="text-muted-foreground">Vzdalenost:</span> {selectedTrip.distance_km} km {selectedTrip.is_round_trip && '(zpet)'}</div>
               <div><span className="text-muted-foreground">Tachometr:</span> {selectedTrip.odometer_start || '-'} → {selectedTrip.odometer_end || '-'}</div>
-              <div><span className="text-muted-foreground">Sazba:</span> {selectedTrip.rate_per_km} Kc/km</div>
+              <div><span className="text-muted-foreground">Zakl. sazba:</span> {selectedTrip.basic_rate_per_km || selectedTrip.rate_per_km || '-'} Kc/km</div>
+              {selectedTrip.fuel_price_per_unit && <div><span className="text-muted-foreground">Cena PHM:</span> {selectedTrip.fuel_price_per_unit} Kc/l</div>}
               <div><span className="text-muted-foreground">Nahrada:</span> <strong className="text-green-600">{selectedTrip.reimbursement?.toLocaleString('cs')} Kc</strong></div>
               {selectedTrip.manual_override && <Badge variant="outline" className="text-xs">Rucne upraveno</Badge>}
               {selectedTrip.notes && <div className="col-span-full"><span className="text-muted-foreground">Poznamka:</span> {selectedTrip.notes}</div>}
@@ -270,7 +271,7 @@ export default function AccountantTravelPage() {
                     <div>Spotreba: {v.fuel_consumption || '-'} l/100km</div>
                     <div>Palivo: {FUEL_TYPE_LABELS[v.fuel_type] || v.fuel_type}</div>
                     <div className="flex items-center gap-1"><Gauge className="h-3 w-3" /> {v.current_odometer.toLocaleString('cs')} km</div>
-                    <div>Sazba: {v.rate_per_km} Kc/km</div>
+                    <div>Sazba: {BASIC_RATES_PER_KM[v.vehicle_category || 'car']} Kc/km</div>
                   </div>
                   {v.tank_capacity && (
                     <div className="mt-2">

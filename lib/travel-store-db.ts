@@ -27,6 +27,7 @@ function mapVehicle(row: any): TravelVehicle {
     tank_capacity: row.tank_capacity ? Number(row.tank_capacity) : null,
     current_fuel_level: row.current_fuel_level ? Number(row.current_fuel_level) : null,
     current_odometer: row.current_odometer || 0,
+    vehicle_category: row.vehicle_category || 'car',
     rate_per_km: Number(row.rate_per_km) || 5.90,
     is_company_car: row.is_company_car ?? true,
     is_active: row.is_active ?? true,
@@ -236,6 +237,8 @@ function mapTrip(row: any): TravelTrip {
     fuel_consumed: row.fuel_consumed ? Number(row.fuel_consumed) : null,
     fuel_cost: row.fuel_cost ? Number(row.fuel_cost) : null,
     rate_per_km: row.rate_per_km ? Number(row.rate_per_km) : null,
+    basic_rate_per_km: row.basic_rate_per_km ? Number(row.basic_rate_per_km) : null,
+    fuel_price_per_unit: row.fuel_price_per_unit ? Number(row.fuel_price_per_unit) : null,
     reimbursement: row.reimbursement ? Number(row.reimbursement) : null,
     manual_override: row.manual_override ?? false,
     document_ids: row.document_ids,
@@ -244,6 +247,9 @@ function mapTrip(row: any): TravelTrip {
     updated_at: row.updated_at,
     vehicle_name: row.travel_vehicles?.name,
     vehicle_license_plate: row.travel_vehicles?.license_plate,
+    vehicle_category: row.travel_vehicles?.vehicle_category,
+    vehicle_fuel_type: row.travel_vehicles?.fuel_type,
+    vehicle_fuel_consumption: row.travel_vehicles?.fuel_consumption ? Number(row.travel_vehicles.fuel_consumption) : null,
     driver_name: row.travel_drivers?.name,
   }
 }
@@ -257,7 +263,7 @@ export async function getTrips(filters: {
 }): Promise<TravelTrip[]> {
   let query = supabaseAdmin
     .from('travel_trips')
-    .select('*, travel_vehicles(name, license_plate), travel_drivers(name)')
+    .select('*, travel_vehicles(name, license_plate, vehicle_category, fuel_type, fuel_consumption), travel_drivers(name)')
     .eq('company_id', filters.companyId)
 
   if (filters.month) {
@@ -282,7 +288,7 @@ export async function getTrips(filters: {
 export async function getTrip(id: string, companyId: string): Promise<TravelTrip | null> {
   const { data, error } = await supabaseAdmin
     .from('travel_trips')
-    .select('*, travel_vehicles(name, license_plate), travel_drivers(name)')
+    .select('*, travel_vehicles(name, license_plate, vehicle_category, fuel_type, fuel_consumption), travel_drivers(name)')
     .eq('id', id)
     .eq('company_id', companyId)
     .single()
@@ -291,12 +297,12 @@ export async function getTrip(id: string, companyId: string): Promise<TravelTrip
   return mapTrip(data)
 }
 
-export async function createTrip(trip: Omit<TravelTrip, 'id' | 'created_at' | 'updated_at' | 'vehicle_name' | 'vehicle_license_plate' | 'driver_name'>): Promise<TravelTrip> {
-  const { vehicle_name: _vn, vehicle_license_plate: _vl, driver_name: _dn, ...insertData } = trip as any
+export async function createTrip(trip: Omit<TravelTrip, 'id' | 'created_at' | 'updated_at' | 'vehicle_name' | 'vehicle_license_plate' | 'vehicle_category' | 'vehicle_fuel_type' | 'vehicle_fuel_consumption' | 'driver_name'>): Promise<TravelTrip> {
+  const { vehicle_name: _vn, vehicle_license_plate: _vl, vehicle_category: _vc, vehicle_fuel_type: _vft, vehicle_fuel_consumption: _vfc, driver_name: _dn, ...insertData } = trip as any
   const { data, error } = await supabaseAdmin
     .from('travel_trips')
     .insert(insertData)
-    .select('*, travel_vehicles(name, license_plate), travel_drivers(name)')
+    .select('*, travel_vehicles(name, license_plate, vehicle_category, fuel_type, fuel_consumption), travel_drivers(name)')
     .single()
 
   if (error) throw new Error(`Failed to create trip: ${error.message}`)
@@ -337,7 +343,7 @@ export async function updateTrip(id: string, companyId: string, updates: Partial
     .update({ ...safeUpdates, updated_at: new Date().toISOString() })
     .eq('id', id)
     .eq('company_id', companyId)
-    .select('*, travel_vehicles(name, license_plate), travel_drivers(name)')
+    .select('*, travel_vehicles(name, license_plate, vehicle_category, fuel_type, fuel_consumption), travel_drivers(name)')
     .single()
 
   if (error) throw new Error(`Failed to update trip: ${error.message}`)

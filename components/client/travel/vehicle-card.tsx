@@ -7,6 +7,7 @@ import { Car, Pencil, Trash2, Fuel, Gauge } from 'lucide-react'
 import { FuelGauge } from './fuel-gauge'
 import { FUEL_TYPE_LABELS } from '@/lib/types/asset'
 import type { TravelVehicle } from '@/lib/types/travel'
+import { BASIC_RATES_PER_KM, DECREE_FUEL_PRICES, VEHICLE_CATEGORY_LABELS } from '@/lib/types/travel'
 
 interface VehicleCardProps {
   vehicle: TravelVehicle
@@ -51,7 +52,7 @@ export function VehicleCard({ vehicle, onEdit, onDelete }: VehicleCardProps) {
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-muted-foreground">Sazba:</span>
-            <span className="font-medium">{vehicle.rate_per_km} Kc/km</span>
+            <span className="font-medium">{BASIC_RATES_PER_KM[vehicle.vehicle_category || 'car']} Kc/km</span>
           </div>
         </div>
 

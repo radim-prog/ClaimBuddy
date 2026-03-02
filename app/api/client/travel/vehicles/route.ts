@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
       tank_capacity: body.tank_capacity ?? null,
       current_fuel_level: body.current_fuel_level ?? null,
       current_odometer: body.current_odometer || 0,
+      vehicle_category: body.vehicle_category || 'car',
       rate_per_km: body.rate_per_km ?? 5.90,
       is_company_car: body.is_company_car ?? true,
       is_active: true,

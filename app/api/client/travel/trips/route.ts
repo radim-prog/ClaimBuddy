@@ -71,6 +71,8 @@ export async function POST(request: NextRequest) {
       fuel_consumed: body.fuel_consumed ?? null,
       fuel_cost: body.fuel_cost ?? null,
       rate_per_km: body.rate_per_km ?? null,
+      basic_rate_per_km: body.basic_rate_per_km ?? null,
+      fuel_price_per_unit: body.fuel_price_per_unit ?? null,
       reimbursement: body.reimbursement ?? null,
       manual_override: body.manual_override || false,
       document_ids: body.document_ids || null,

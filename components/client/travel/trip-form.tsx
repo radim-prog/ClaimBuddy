@@ -9,9 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent } from '@/components/ui/card'
 import { PlaceAutocomplete } from './place-autocomplete'
-import { Loader2, ArrowRight, RotateCcw, Calculator, Info } from 'lucide-react'
+import { Loader2, ArrowRight, RotateCcw, Calculator, Info, Scale } from 'lucide-react'
 import type { TravelVehicle, TravelDriver, TravelPlace, TravelTrip, TripType } from '@/lib/types/travel'
-import { TRIP_TYPE_LABELS, PURPOSE_SUGGESTIONS, DEFAULT_RATES } from '@/lib/types/travel'
+import {
+  TRIP_TYPE_LABELS,
+  PURPOSE_SUGGESTIONS,
+  BASIC_RATES_PER_KM,
+  DECREE_FUEL_PRICES,
+  VEHICLE_CATEGORY_LABELS,
+  calculateReimbursement,
+} from '@/lib/types/travel'
 
 interface TripFormProps {
   trip?: TravelTrip
@@ -43,6 +50,8 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
     is_round_trip: trip?.is_round_trip || false,
     odometer_start: trip?.odometer_start?.toString() || '',
     odometer_end: trip?.odometer_end?.toString() || '',
+    use_actual_fuel_price: false,
+    actual_fuel_price: '',
     notes: trip?.notes || '',
   })
 
@@ -51,9 +60,6 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
     vehicles.find(v => v.id === form.vehicle_id),
     [vehicles, form.vehicle_id]
   )
-
-  // Rate from vehicle settings (not editable per trip)
-  const ratePerKm = selectedVehicle?.rate_per_km ?? DEFAULT_RATES.car
 
   useEffect(() => {
     if (selectedVehicle && !trip) {
@@ -73,19 +79,31 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
     }
   }, [form.odometer_start, form.distance_km, form.is_round_trip])
 
-  // Auto-calculated reimbursement (read-only, based on vehicle rate)
-  const reimbursement = useMemo(() => {
-    if (!form.distance_km) return 0
-    const effectiveKm = form.is_round_trip ? Number(form.distance_km) * 2 : Number(form.distance_km)
-    return effectiveKm * ratePerKm
-  }, [form.distance_km, form.is_round_trip, ratePerKm])
+  const effectiveKm = form.is_round_trip && form.distance_km ? Number(form.distance_km) * 2 : Number(form.distance_km) || 0
+
+  // Two-component reimbursement calculation (§ 157 ZP)
+  const reimbursementCalc = useMemo(() => {
+    if (!effectiveKm) return null
+    const vehicleCategory = selectedVehicle?.vehicle_category || 'car'
+    const fuelType = selectedVehicle?.fuel_type || 'petrol'
+    const fuelConsumption = selectedVehicle?.fuel_consumption || null
+
+    return calculateReimbursement({
+      distanceKm: effectiveKm,
+      vehicleCategory,
+      fuelConsumptionPer100km: fuelConsumption,
+      fuelType,
+      actualFuelPrice: form.use_actual_fuel_price && form.actual_fuel_price
+        ? Number(form.actual_fuel_price)
+        : null,
+    })
+  }, [effectiveKm, selectedVehicle, form.use_actual_fuel_price, form.actual_fuel_price])
 
   // Calculate fuel consumption
   const fuelConsumed = useMemo(() => {
-    if (!selectedVehicle?.fuel_consumption || !form.distance_km) return null
-    const effectiveKm = form.is_round_trip ? Number(form.distance_km) * 2 : Number(form.distance_km)
+    if (!selectedVehicle?.fuel_consumption || !effectiveKm) return null
     return (effectiveKm * selectedVehicle.fuel_consumption / 100)
-  }, [selectedVehicle, form.distance_km, form.is_round_trip])
+  }, [selectedVehicle, effectiveKm])
 
   const [showSuggestions, setShowSuggestions] = useState(false)
 
@@ -93,7 +111,9 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
     e.preventDefault()
     setLoading(true)
     try {
-      const effectiveKm = form.is_round_trip ? Number(form.distance_km) * 2 : Number(form.distance_km)
+      const vehicleCategory = selectedVehicle?.vehicle_category || 'car'
+      const basicRate = BASIC_RATES_PER_KM[vehicleCategory]
+
       await onSubmit({
         trip_date: form.trip_date,
         departure_time: form.departure_time || null,
@@ -109,8 +129,10 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
         odometer_end: form.odometer_end ? Number(form.odometer_end) : null,
         is_round_trip: form.is_round_trip,
         fuel_consumed: fuelConsumed ? Math.round(fuelConsumed * 100) / 100 : null,
-        rate_per_km: ratePerKm,
-        reimbursement: reimbursement ? Math.round(reimbursement * 100) / 100 : null,
+        basic_rate_per_km: basicRate,
+        rate_per_km: basicRate, // legacy compat
+        fuel_price_per_unit: reimbursementCalc?.fuelPriceUsed || null,
+        reimbursement: reimbursementCalc?.totalReimbursement || null,
         manual_override: false,
         notes: form.notes || null,
       })
@@ -119,7 +141,9 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
     }
   }
 
-  const effectiveKm = form.is_round_trip && form.distance_km ? Number(form.distance_km) * 2 : Number(form.distance_km) || 0
+  // Fuel price info for display
+  const fuelKey = selectedVehicle?.fuel_type === 'hybrid' ? 'petrol' : (selectedVehicle?.fuel_type || 'petrol')
+  const decreeFuelInfo = DECREE_FUEL_PRICES[fuelKey] || DECREE_FUEL_PRICES.petrol
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 min-w-0">
@@ -176,7 +200,7 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
             <Label>Odkud *</Label>
             <PlaceAutocomplete value={form.origin} onChange={v => setForm(f => ({ ...f, origin: v }))} places={places} placeholder="Odkud..." />
           </div>
-          <ArrowRight className="h-5 w-5 text-muted-foreground mb-2" />
+          <ArrowRight className="h-5 w-5 text-muted-foreground mb-2 hidden sm:block" />
           <div>
             <Label>Kam *</Label>
             <PlaceAutocomplete value={form.destination} onChange={v => setForm(f => ({ ...f, destination: v }))} places={places} placeholder="Kam..." />
@@ -256,30 +280,74 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
         </div>
       </div>
 
-      {/* Reimbursement summary (read-only, calculated from vehicle settings) */}
-      {effectiveKm > 0 && (
+      {/* Reimbursement calculation (read-only, based on Czech law) */}
+      {reimbursementCalc && effectiveKm > 0 && (
         <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
           <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Calculator className="h-4 w-4 text-blue-600" />
-              <span className="font-medium text-sm">Nahrada</span>
+            <div className="flex items-center gap-2 mb-3">
+              <Scale className="h-4 w-4 text-blue-600" />
+              <span className="font-medium text-sm">Cestovni nahrada (§ 157 ZP)</span>
             </div>
-            <div className="flex items-center justify-between text-sm">
+
+            {/* Component 1: Basic rate */}
+            <div className="flex items-center justify-between text-sm mb-1">
               <span className="text-muted-foreground">
-                {effectiveKm} km × {ratePerKm.toFixed(2)} Kc/km
+                Zakladni nahrada: {effectiveKm} km × {reimbursementCalc.basicRate.toFixed(2)} Kc
               </span>
-              <span className="font-bold text-lg text-blue-700 dark:text-blue-400">
-                {reimbursement.toFixed(2)} Kc
-              </span>
+              <span className="font-medium">{reimbursementCalc.basicReimbursement.toFixed(2)} Kc</span>
             </div>
-            {fuelConsumed && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Odhadovana spotreba: {fuelConsumed.toFixed(1)} l
+
+            {/* Component 2: Fuel reimbursement */}
+            {selectedVehicle?.fuel_consumption ? (
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="text-muted-foreground">
+                  PHM: {effectiveKm} km × {selectedVehicle.fuel_consumption}/100 l × {reimbursementCalc.fuelPriceUsed.toFixed(2)} Kc
+                </span>
+                <span className="font-medium">{reimbursementCalc.fuelReimbursement.toFixed(2)} Kc</span>
+              </div>
+            ) : (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">
+                Doplnte spotrebu v nastaveni vozidla pro vypocet nahrady za PHM
               </p>
             )}
+
+            {/* Total */}
+            <div className="flex items-center justify-between text-sm pt-2 border-t border-blue-200 dark:border-blue-700 mt-2">
+              <span className="font-semibold">Celkem</span>
+              <span className="font-bold text-lg text-blue-700 dark:text-blue-400">
+                {reimbursementCalc.totalReimbursement.toFixed(2)} Kc
+              </span>
+            </div>
+
+            {/* Fuel price toggle */}
+            <div className="mt-3 pt-2 border-t border-blue-200 dark:border-blue-700">
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={form.use_actual_fuel_price}
+                  onCheckedChange={v => setForm(f => ({ ...f, use_actual_fuel_price: v }))}
+                />
+                <Label className="text-xs">Cena PHM z dokladu (misto vyhlasky)</Label>
+              </div>
+              {form.use_actual_fuel_price && (
+                <div className="mt-2">
+                  <Input
+                    type="number" step="0.01"
+                    value={form.actual_fuel_price}
+                    onChange={e => setForm(f => ({ ...f, actual_fuel_price: e.target.value }))}
+                    placeholder={`Vyhlaška: ${decreeFuelInfo.price} ${decreeFuelInfo.unit}`}
+                    className="bg-white dark:bg-gray-800"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Legal reference */}
             <div className="flex items-start gap-1.5 mt-2 text-xs text-muted-foreground">
               <Info className="h-3 w-3 mt-0.5 shrink-0" />
-              <span>Sazba {ratePerKm.toFixed(2)} Kc/km je nastavena u vozidla{selectedVehicle ? ` (${selectedVehicle.license_plate})` : ''}. Zmenit lze v nastaveni vozidla.</span>
+              <span>
+                Sazby dle vyhl. 573/2025 Sb. Zakladni: {BASIC_RATES_PER_KM[selectedVehicle?.vehicle_category || 'car']} Kc/km.
+                {' '}PHM ({decreeFuelInfo.label}): {decreeFuelInfo.price} {decreeFuelInfo.unit}.
+              </span>
             </div>
           </CardContent>
         </Card>
