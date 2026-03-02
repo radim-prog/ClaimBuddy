@@ -23,14 +23,19 @@ export function TutorialOverlay() {
   const [showIntro, setShowIntro] = useState(false)
   const [animating, setAnimating] = useState(false)
   const rafRef = useRef<number>(0)
+  const hasShownIntroRef = useRef(false)
   const totalSteps = TUTORIAL_STEPS.length
 
-  // Show intro when tour starts
+  // Show intro when tour starts (only once per tour session)
   useEffect(() => {
-    if (isActive && currentStepIndex === 0 && !showIntro && !showComplete) {
+    if (isActive && currentStepIndex === 0 && !hasShownIntroRef.current) {
+      hasShownIntroRef.current = true
       setShowIntro(true)
     }
-  }, [isActive, currentStepIndex, showIntro, showComplete])
+    if (!isActive) {
+      hasShownIntroRef.current = false
+    }
+  }, [isActive, currentStepIndex])
 
   // Find and track target element position
   const updateRect = useCallback(() => {

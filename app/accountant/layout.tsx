@@ -384,6 +384,15 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 <span className="text-sm font-medium">Profil</span>
               </Link>
 
+              {/* Průvodce */}
+              <button
+                onClick={() => { setMobileMenuOpen(false); startTour(); }}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800 transition-all duration-200"
+              >
+                <BookOpen className="h-5 w-5" />
+                <span className="text-sm font-medium">Průvodce</span>
+              </button>
+
               {/* Divider */}
               <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
 
