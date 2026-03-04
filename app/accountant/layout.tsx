@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import React from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -16,10 +17,17 @@ import {
   CalendarCheck,
   MoreHorizontal,
   ChevronRight,
+  ChevronLeft,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
 import { ThemeToggle } from '@/components/theme-toggle'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,6 +90,19 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const { startTour } = useTutorialContext()
   const inboxCount = useInboxCount()
   const { totals: attentionTotals } = useAttention()
+  const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('accountant-sidebar-collapsed')
+    if (saved === 'true') setCollapsed(true)
+  }, [])
+
+  const toggleSidebar = () => {
+    setCollapsed(prev => {
+      localStorage.setItem('accountant-sidebar-collapsed', String(!prev))
+      return !prev
+    })
+  }
 
   const showAdmin = userRole === 'admin' || permissions?.admin_access === true
 
@@ -95,7 +116,16 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col z-30">
+      <aside className={`hidden md:fixed md:inset-y-0 md:flex md:flex-col z-30 transition-all duration-300 ease-in-out ${collapsed ? 'md:w-[72px]' : 'md:w-64'}`}>
+        {/* Floating toggle button on edge */}
+        <button
+          onClick={toggleSidebar}
+          className="absolute top-[76px] -right-3 w-6 h-6 rounded-full bg-background border border-border/50 shadow-soft flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-soft-md hover:scale-110 transition-all duration-200 z-50"
+          title={collapsed ? 'Rozbalit menu' : 'Zmenšit menu'}
+        >
+          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+        </button>
+
         <div className="flex flex-col flex-grow sidebar-purple shadow-sidebar overflow-y-auto custom-scrollbar">
           {/* Subtle texture overlay */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -103,156 +133,240 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           />
 
           {/* Logo */}
-          <div className="relative flex items-center h-16 flex-shrink-0 px-5 border-b border-white/[0.06]">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-400 to-violet-500 flex items-center justify-center shadow-soft-sm">
+          <div className={`relative flex items-center h-16 flex-shrink-0 border-b border-white/[0.06] transition-all duration-300 ${collapsed ? 'justify-center px-3' : 'px-5'}`}>
+            <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-400 to-violet-500 flex items-center justify-center shadow-soft-sm flex-shrink-0">
                 <span className="text-sm font-bold text-white font-display">U</span>
               </div>
-              <div>
-                <h1 className="text-base font-semibold text-white/95 font-display tracking-tight">Účetní OS</h1>
-                <p className="text-[10px] text-white/40 font-medium">Portál pro účetní</p>
-              </div>
+              {!collapsed && (
+                <div className="overflow-hidden">
+                  <h1 className="text-base font-semibold text-white/95 font-display tracking-tight whitespace-nowrap">Účetní OS</h1>
+                  <p className="text-[10px] text-white/40 font-medium whitespace-nowrap">Portál pro účetní</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="relative flex-1 px-3 py-4 space-y-0.5">
-            {navigation.map((item) => {
-              const isActive = item.activeMatch
-                ? item.activeMatch.some(p => pathname.startsWith(p))
-                : pathname === item.href || pathname.startsWith(item.href + '/')
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  data-tour={item.tourId}
-                  className={`
-                    group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
-                    ${isActive
-                      ? 'bg-white/[0.08] text-white nav-active-indicator'
-                      : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
+          <TooltipProvider delayDuration={0}>
+            <nav className="relative flex-1 px-3 py-4 space-y-0.5">
+              {navigation.map((item) => {
+                const isActive = item.activeMatch
+                  ? item.activeMatch.some(p => pathname.startsWith(p))
+                  : pathname === item.href || pathname.startsWith(item.href + '/')
+                const Icon = item.icon
+                const linkEl = (
+                  <Link
+                    href={item.href}
+                    data-tour={item.tourId}
+                    className={`
+                      group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
+                      ${isActive
+                        ? 'bg-white/[0.08] text-white nav-active-indicator'
+                        : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
+                      }
+                    `}
+                  >
+                    <span className={`flex items-center ${collapsed ? 'relative' : ''}`}>
+                      <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-violet-300' : 'text-white/40 group-hover:text-white/65'}`} />
+                      {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+                      {/* Badges on icon when collapsed */}
+                      {collapsed && item.badge === 'dynamic' && inboxCount > 0 && (
+                        <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-violet-400 text-white rounded-full">
+                          {inboxCount}
+                        </span>
+                      )}
+                      {collapsed && item.badge === 'attention' && attentionTotals.total > 0 && (
+                        <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                          {attentionTotals.total}
+                        </span>
+                      )}
+                    </span>
+                    {!collapsed && (
+                      <span className="flex items-center gap-1.5">
+                        {item.badge === 'dynamic' && inboxCount > 0 && (
+                          <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-violet-400 text-white rounded-full min-w-[1.25rem]">
+                            {inboxCount}
+                          </span>
+                        )}
+                        {item.badge === 'attention' && attentionTotals.total > 0 && (
+                          <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">
+                            {attentionTotals.total}
+                          </span>
+                        )}
+                        {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
+                      </span>
+                    )}
+                  </Link>
+                )
+
+                if (collapsed) {
+                  return (
+                    <Tooltip key={item.name}>
+                      <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
+                      <TooltipContent side="right" className="font-medium">
+                        {item.name}
+                        {item.badge === 'dynamic' && inboxCount > 0 && ` (${inboxCount})`}
+                        {item.badge === 'attention' && attentionTotals.total > 0 && ` (${attentionTotals.total})`}
+                      </TooltipContent>
+                    </Tooltip>
+                  )
+                }
+
+                return <React.Fragment key={item.name}>{linkEl}</React.Fragment>
+              })}
+
+              {/* ADMIN SECTION */}
+              {showAdmin && (
+                <div className={`pt-3 mt-3 border-t border-white/[0.06] ${collapsed ? '' : ''}`}>
+                  {!collapsed && (
+                    <p className="px-3 text-[10px] font-semibold text-violet-300/60 uppercase tracking-widest mb-1.5">
+                      Administrace
+                    </p>
+                  )}
+                  {adminNavigation.map((item) => {
+                    const isActive = pathname.startsWith(item.href)
+                    const Icon = item.icon
+                    const adminLink = (
+                      <Link
+                        href={item.href}
+                        className={`
+                          group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
+                          ${isActive
+                            ? 'bg-white/[0.08] text-white nav-active-indicator'
+                            : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
+                          }
+                        `}
+                      >
+                        <span className="flex items-center">
+                          <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 ${isActive ? 'text-violet-300' : 'text-white/40'}`} />
+                          {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+                        </span>
+                        {!collapsed && isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
+                      </Link>
+                    )
+
+                    if (collapsed) {
+                      return (
+                        <Tooltip key={item.name}>
+                          <TooltipTrigger asChild>{adminLink}</TooltipTrigger>
+                          <TooltipContent side="right" className="font-medium">
+                            {item.name}
+                          </TooltipContent>
+                        </Tooltip>
+                      )
                     }
-                  `}
-                >
-                  <span className="flex items-center">
-                    <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-violet-300' : 'text-white/40 group-hover:text-white/65'}`} />
-                    {item.name}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    {item.badge === 'dynamic' && inboxCount > 0 && (
-                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-violet-400 text-white rounded-full min-w-[1.25rem]">
-                        {inboxCount}
-                      </span>
-                    )}
-                    {item.badge === 'attention' && attentionTotals.total > 0 && (
-                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">
-                        {attentionTotals.total}
-                      </span>
-                    )}
-                    {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
-                  </span>
-                </Link>
-              )
-            })}
 
-            {/* ADMIN SECTION */}
-            {showAdmin && (
-              <div className="pt-3 mt-3 border-t border-white/[0.06]">
-                <p className="px-3 text-[10px] font-semibold text-violet-300/60 uppercase tracking-widest mb-1.5">
-                  Administrace
-                </p>
-                {adminNavigation.map((item) => {
-                  const isActive = pathname.startsWith(item.href)
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={`
-                        group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
-                        ${isActive
-                          ? 'bg-white/[0.08] text-white nav-active-indicator'
-                          : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
-                        }
-                      `}
-                    >
-                      <span className="flex items-center">
-                        <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${isActive ? 'text-violet-300' : 'text-white/40'}`} />
-                        {item.name}
-                      </span>
-                      {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
-                    </Link>
-                  )
-                })}
+                    return <React.Fragment key={item.name}>{adminLink}</React.Fragment>
+                  })}
+                </div>
+              )}
+
+              {/* DEMO FEATURES SECTION */}
+              {demoFeatures.length > 0 && (
+                <div className="pt-3 mt-3 border-t border-white/[0.06]">
+                  {!collapsed && (
+                    <p className="px-3 text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1.5">
+                      Nové Funkce
+                    </p>
+                  )}
+                  {demoFeatures.map((item) => {
+                    const isActive = pathname === item.href
+                    const Icon = item.icon
+                    const demoLink = (
+                      <Link
+                        href={item.href}
+                        className={`
+                          group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
+                          ${isActive
+                            ? 'bg-white/[0.08] text-white'
+                            : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
+                          }
+                        `}
+                      >
+                        <span className="flex items-center">
+                          <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0`} />
+                          {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+                        </span>
+                        {!collapsed && (
+                          <span className="px-1.5 py-0.5 text-[10px] font-bold bg-violet-400 text-white rounded-full">
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    )
+
+                    if (collapsed) {
+                      return (
+                        <Tooltip key={item.name}>
+                          <TooltipTrigger asChild>{demoLink}</TooltipTrigger>
+                          <TooltipContent side="right" className="font-medium">
+                            {item.name}
+                          </TooltipContent>
+                        </Tooltip>
+                      )
+                    }
+
+                    return <React.Fragment key={item.name}>{demoLink}</React.Fragment>
+                  })}
+                </div>
+              )}
+
+              {/* Tools */}
+              <div className="pt-3 mt-3 border-t border-white/[0.06] space-y-0.5">
+                {collapsed ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => startTour()}
+                        className="w-full group flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200"
+                      >
+                        <BookOpen className="h-[18px] w-[18px] flex-shrink-0" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="font-medium">Průvodce</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <button
+                    onClick={() => startTour()}
+                    className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200"
+                  >
+                    <BookOpen className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
+                    Průvodce
+                  </button>
+                )}
+                <div className={`${collapsed ? 'flex justify-center' : ''}`}>
+                  <ThemeToggle
+                    variant={collapsed ? 'icon' : 'full'}
+                    className="text-white/40 hover:text-white/70 hover:bg-white/[0.05] rounded-xl"
+                  />
+                </div>
               </div>
-            )}
-
-            {/* DEMO FEATURES SECTION */}
-            {demoFeatures.length > 0 && (
-              <div className="pt-3 mt-3 border-t border-white/[0.06]">
-                <p className="px-3 text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1.5">
-                  Nové Funkce
-                </p>
-                {demoFeatures.map((item) => {
-                  const isActive = pathname === item.href
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={`
-                        group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
-                        ${isActive
-                          ? 'bg-white/[0.08] text-white'
-                          : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
-                        }
-                      `}
-                    >
-                      <span className="flex items-center">
-                        <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0`} />
-                        {item.name}
-                      </span>
-                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-violet-400 text-white rounded-full">
-                        {item.badge}
-                      </span>
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* Tools */}
-            <div className="pt-3 mt-3 border-t border-white/[0.06] space-y-0.5">
-              <button
-                onClick={() => startTour()}
-                className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200"
-              >
-                <BookOpen className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
-                Průvodce
-              </button>
-              <ThemeToggle variant="full" className="text-white/40 hover:text-white/70 hover:bg-white/[0.05] rounded-xl" />
-            </div>
-          </nav>
+            </nav>
+          </TooltipProvider>
 
           {/* User section */}
-          <div className="relative flex-shrink-0 flex border-t border-white/[0.06] p-3">
+          <div className="relative flex-shrink-0 border-t border-white/[0.06] p-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center w-full group hover:bg-white/[0.05] rounded-xl p-2 transition-all duration-200">
-                  <Avatar className="h-9 w-9">
+                <button className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full group hover:bg-white/[0.05] rounded-xl p-2 transition-all duration-200`}>
+                  <Avatar className="h-9 w-9 flex-shrink-0">
                     <AvatarFallback className="bg-white/10 text-white/80 text-sm font-semibold">
                       {userInitials || '..'}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="ml-3 text-left">
-                    <p className="text-sm font-medium text-white/90">{userName || 'Načítání...'}</p>
-                    <p className="text-[11px] text-white/40">{roleLabel}</p>
-                  </div>
-                  {userRole === 'admin' && (
-                    <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-violet-400/20 text-violet-300 rounded-md border border-violet-400/20">
-                      ADMIN
-                    </span>
+                  {!collapsed && (
+                    <>
+                      <div className="ml-3 text-left overflow-hidden">
+                        <p className="text-sm font-medium text-white/90 truncate">{userName || 'Načítání...'}</p>
+                        <p className="text-[11px] text-white/40">{roleLabel}</p>
+                      </div>
+                      {userRole === 'admin' && (
+                        <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-violet-400/20 text-violet-300 rounded-md border border-violet-400/20">
+                          ADMIN
+                        </span>
+                      )}
+                    </>
                   )}
                 </button>
               </DropdownMenuTrigger>
@@ -447,7 +561,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main content */}
-      <div className="md:pl-64 flex flex-col min-h-screen">
+      <div className={`flex flex-col min-h-screen transition-all duration-300 ease-in-out ${collapsed ? 'md:pl-[72px]' : 'md:pl-64'}`}>
         {!pathname.startsWith('/accountant/admin') && !pathname.startsWith('/accountant/settings') && (
           <GlobalDeadlineAlert />
         )}

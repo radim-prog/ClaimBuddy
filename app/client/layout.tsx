@@ -1,7 +1,8 @@
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
@@ -11,10 +12,16 @@ import {
   FileText,
   Car,
   ChevronRight,
+  ChevronLeft,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Logo } from '@/components/ui/logo'
 import { ThemeToggle } from '@/components/theme-toggle'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +48,19 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { userName, userInitials } = useClientUser()
   const [notificationsDismissed, setNotificationsDismissed] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('client-sidebar-collapsed')
+    if (saved === 'true') setCollapsed(true)
+  }, [])
+
+  const toggleSidebar = () => {
+    setCollapsed(prev => {
+      localStorage.setItem('client-sidebar-collapsed', String(!prev))
+      return !prev
+    })
+  }
 
   const handleLogout = async () => {
     await logout()
@@ -53,7 +73,16 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       <NotificationBanner dismissed={notificationsDismissed} />
 
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col z-30">
+      <aside className={`hidden md:fixed md:inset-y-0 md:flex md:flex-col z-30 transition-all duration-300 ease-in-out ${collapsed ? 'md:w-[72px]' : 'md:w-64'}`}>
+        {/* Floating toggle button on edge */}
+        <button
+          onClick={toggleSidebar}
+          className="absolute top-[76px] -right-3 w-6 h-6 rounded-full bg-background border border-border/50 shadow-soft flex items-center justify-center text-muted-foreground hover:text-foreground hover:shadow-soft-md hover:scale-110 transition-all duration-200 z-50"
+          title={collapsed ? 'Rozbalit menu' : 'Zmenšit menu'}
+        >
+          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+        </button>
+
         <div className="flex flex-col flex-grow sidebar-blue shadow-sidebar overflow-y-auto custom-scrollbar">
           {/* Subtle texture overlay */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -61,64 +90,85 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           />
 
           {/* Logo */}
-          <div className="relative flex items-center h-16 flex-shrink-0 px-5 border-b border-white/[0.06]">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center shadow-soft-sm">
+          <div className={`relative flex items-center h-16 flex-shrink-0 border-b border-white/[0.06] transition-all duration-300 ${collapsed ? 'justify-center px-3' : 'px-5'}`}>
+            <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center shadow-soft-sm flex-shrink-0">
                 <span className="text-sm font-bold text-white font-display">U</span>
               </div>
-              <div>
-                <h1 className="text-base font-semibold text-white/95 font-display tracking-tight">Účetní OS</h1>
-                <p className="text-[10px] text-white/40 font-medium">Klientský portál</p>
-              </div>
+              {!collapsed && (
+                <div className="overflow-hidden">
+                  <h1 className="text-base font-semibold text-white/95 font-display tracking-tight whitespace-nowrap">Účetní OS</h1>
+                  <p className="text-[10px] text-white/40 font-medium whitespace-nowrap">Klientský portál</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="relative flex-1 px-3 py-4 space-y-0.5">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`
-                    group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
-                    ${isActive
-                      ? 'bg-white/[0.08] text-white nav-active-indicator'
-                      : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
-                    }
-                  `}
-                >
-                  <span className="flex items-center">
-                    <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-blue-400' : 'text-white/40 group-hover:text-white/65'}`} />
-                    {item.name}
-                  </span>
-                  {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
-                </Link>
-              )
-            })}
-          </nav>
+          <TooltipProvider delayDuration={0}>
+            <nav className="relative flex-1 px-3 py-4 space-y-0.5">
+              {navigation.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                const Icon = item.icon
+                const linkEl = (
+                  <Link
+                    href={item.href}
+                    className={`
+                      group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
+                      ${isActive
+                        ? 'bg-white/[0.08] text-white nav-active-indicator'
+                        : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
+                      }
+                    `}
+                  >
+                    <span className="flex items-center">
+                      <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-blue-400' : 'text-white/40 group-hover:text-white/65'}`} />
+                      {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+                    </span>
+                    {!collapsed && isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
+                  </Link>
+                )
+
+                if (collapsed) {
+                  return (
+                    <Tooltip key={item.name}>
+                      <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
+                      <TooltipContent side="right" className="font-medium">
+                        {item.name}
+                      </TooltipContent>
+                    </Tooltip>
+                  )
+                }
+
+                return <React.Fragment key={item.name}>{linkEl}</React.Fragment>
+              })}
+            </nav>
+          </TooltipProvider>
 
           {/* Theme Toggle */}
-          <div className="relative px-3 pb-2">
-            <ThemeToggle variant="full" className="text-white/40 hover:text-white/70 hover:bg-white/[0.05] rounded-xl" />
+          <div className={`relative px-3 pb-2 ${collapsed ? 'flex justify-center' : ''}`}>
+            <ThemeToggle
+              variant={collapsed ? 'icon' : 'full'}
+              className="text-white/40 hover:text-white/70 hover:bg-white/[0.05] rounded-xl"
+            />
           </div>
 
           {/* User section */}
-          <div className="relative flex-shrink-0 flex border-t border-white/[0.06] p-3">
+          <div className="relative flex-shrink-0 border-t border-white/[0.06] p-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center w-full group hover:bg-white/[0.05] rounded-xl p-2 transition-all duration-200">
-                  <Avatar className="h-9 w-9">
+                <button className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full group hover:bg-white/[0.05] rounded-xl p-2 transition-all duration-200`}>
+                  <Avatar className="h-9 w-9 flex-shrink-0">
                     <AvatarFallback className="bg-white/10 text-white/80 text-sm font-semibold">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="ml-3 text-left">
-                    <p className="text-sm font-medium text-white/90">{userName}</p>
-                    <p className="text-[11px] text-white/40">Klient</p>
-                  </div>
+                  {!collapsed && (
+                    <div className="ml-3 text-left overflow-hidden">
+                      <p className="text-sm font-medium text-white/90 truncate">{userName}</p>
+                      <p className="text-[11px] text-white/40">Klient</p>
+                    </div>
+                  )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -186,7 +236,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main content */}
-      <div className="md:pl-64 flex flex-col min-h-screen overflow-hidden">
+      <div className={`flex flex-col min-h-screen overflow-hidden transition-all duration-300 ease-in-out ${collapsed ? 'md:pl-[72px]' : 'md:pl-64'}`}>
         <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-20 md:pb-6 min-w-0 page-enter">
           {children}
         </main>
