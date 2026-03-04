@@ -39,6 +39,7 @@ type TaskFromAPI = {
   priority?: string
   progress_percentage?: number
   completed_at?: string
+  updated_at?: string
 }
 
 type ProjectFromAPI = {
