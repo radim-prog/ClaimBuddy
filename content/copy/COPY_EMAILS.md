@@ -1,4 +1,4 @@
-# Email Templates - ClaimBuddy
+# Email Templates - Pojistná Pomoc
 
 ## Email Strategy Overview
 
@@ -18,14 +18,14 @@
 
 ## 1. Welcome Email - Potvrzení registrace
 
-**Subject:** "Vítejte v ClaimBuddy, {Jméno}! 👋"
+**Subject:** "Vítejte v Pojistná Pomoc, {Jméno}! 👋"
 
 **Body:**
 
 ```
 Ahoj {Jméno},
 
-Děkujeme, že jste se zaregistrovali do ClaimBuddy!
+Děkujeme, že jste se zaregistrovali do Pojistná Pomoc!
 
 Jsme rádi, že nám svěřujete vyřízení pojistné události. Rozumíme, že je to stresující situace, a proto jsme tu pro vás – abychom vám vzali starosti ze hřbet a vyjednali maximální pojistné plnění.
 
@@ -48,16 +48,16 @@ Odpovíte na tento email nebo zavolejte: +420 XXX XXX XXX
 (Po-Pá 9:00-18:00)
 
 Jsme tady pro vás,
-Tým ClaimBuddy
+Tým Pojistná Pomoc
 
 ---
 
-P.S. Prosím zkontrolujte spam folder pro další emaily od nás (info@claimbuddy.cz). Přidejte nás do kontaktů, ať nic nezmeškáte.
+P.S. Prosím zkontrolujte spam folder pro další emaily od nás (info@pu.zajcon.cz). Přidejte nás do kontaktů, ať nic nezmeškáte.
 
-ClaimBuddy s.r.o.
+Pojistná Pomoc s.r.o.
 [Adresa]
 IČO: XXXXXXXX
-www.claimbuddy.cz
+www.pu.zajcon.cz
 ```
 
 **Design notes:**
@@ -124,17 +124,17 @@ Zbývající {50%} zaplatíte až po úspěšném vyřízení.
 ❓ MÁTE DOTAZ?
 
 Váš case manager {Jméno}:
-📧 Email: {email@claimbuddy.cz}
+📧 Email: {email@pu.zajcon.cz}
 📞 Telefon: +420 XXX XXX XXX
 
 Nebo odpovězte na tento email.
 
 Makáme na tom! 💪
-Tým ClaimBuddy
+Tým Pojistná Pomoc
 
 ---
 
-ClaimBuddy s.r.o. | www.claimbuddy.cz
+Pojistná Pomoc s.r.o. | www.pu.zajcon.cz
 ```
 
 **Design notes:**
@@ -204,7 +204,7 @@ P.S. Live status sledujte v aplikaci: [Link]
 
 ---
 
-ClaimBuddy s.r.o. | www.claimbuddy.cz
+Pojistná Pomoc s.r.o. | www.pu.zajcon.cz
 Odpovědět na tento email | Zavolat: +420 XXX XXX XXX
 ```
 
@@ -260,7 +260,7 @@ Děkujeme za spolupráci!
 
 ---
 
-ClaimBuddy s.r.o. | www.claimbuddy.cz
+Pojistná Pomoc s.r.o. | www.pu.zajcon.cz
 ```
 
 **Design notes:**
@@ -329,7 +329,7 @@ Jsme na tom!
 
 ---
 
-ClaimBuddy s.r.o. | www.claimbuddy.cz
+Pojistná Pomoc s.r.o. | www.pu.zajcon.cz
 Odpovědět | Zavolat: +420 XXX XXX XXX
 ```
 
@@ -392,13 +392,13 @@ Pokud jste byli spokojeni s našimi službami, budeme rádi za:
 🎁 Doporučení přátelům (oba dostanete -10% slevu): [Referral link]
 
 Děkujeme za důvěru!
-Tým ClaimBuddy
+Tým Pojistná Pomoc
 
 ---
 
 P.S. Pokud budete mít v budoucnu další pojistnou událost, jsme tu pro vás. Věrní klienti mají -10% slevu.
 
-ClaimBuddy s.r.o. | www.claimbuddy.cz
+Pojistná Pomoc s.r.o. | www.pu.zajcon.cz
 ```
 
 **Design notes:**
@@ -435,7 +435,7 @@ Náš poplatek: {990 Kč}
 
 Všechny dokumenty najdete v aplikaci:
 → Finální rozhodnutí pojišťovny
-→ Faktura od ClaimBuddy
+→ Faktura od Pojistná Pomoc
 → Kompletní komunikace
 → Podklady k případu
 
@@ -472,14 +472,14 @@ Pošlete jim svůj referral link a oba dostanete -10% slevu:
 Byli jsme rádi, že jsme vám pomohli. Pokud budete mít v budoucnu jakýkoliv problém s pojistkami, jsme tu pro vás.
 
 S pozdravem,
-Tým ClaimBuddy
+Tým Pojistná Pomoc
 
 ---
 
 P.S. Jako věrný klient máte -10% slevu na další případ. Kod: LOYAL10
 
-ClaimBuddy s.r.o. | www.claimbuddy.cz
-www.claimbuddy.cz | info@claimbuddy.cz
+Pojistná Pomoc s.r.o. | www.pu.zajcon.cz
+www.pu.zajcon.cz | info@pu.zajcon.cz
 ```
 
 ---
@@ -517,13 +517,13 @@ Co bychom mohli zlepšit?
 Za váš čas vám pošleme voucher na kávu do oblíbené kavárny (100 Kč).
 
 Děkujeme!
-Tým ClaimBuddy
+Tým Pojistná Pomoc
 
 ---
 
 P.S. Pokud jste super spokojeni, budeme rádi za veřejnou recenzi na Google: [Link]
 
-ClaimBuddy s.r.o. | www.claimbuddy.cz
+Pojistná Pomoc s.r.o. | www.pu.zajcon.cz
 ```
 
 **Variant - Pro nespokojené (klikli 1-2 stars):**
@@ -571,11 +571,11 @@ Nebo si prostě přečtěte náš blog o pojistkách zdarma:
 [Link na blog]
 
 Hezký den!
-Tým ClaimBuddy
+Tým Pojistná Pomoc
 
 ---
 
-ClaimBuddy s.r.o. | www.claimbuddy.cz
+Pojistná Pomoc s.r.o. | www.pu.zajcon.cz
 Odhlásit | Upravit preference
 ```
 
@@ -594,7 +594,7 @@ Je to chvíle, co jsme se slyšeli!
 
 Doufáme, že jste neměli žádné další pojistné události (to je dobře! 🙂).
 
-💡 VÍTE, ŽE CLAIMBUDDY MŮŽE POMOCI I S:
+💡 VÍTE, ŽE POJISTNÁ POMOC MŮŽE POMOCI I S:
 
 → Revizí pojistné smlouvy
 → Konzultací před uzavřením nové pojistky
@@ -618,11 +618,11 @@ Oba dostanete -10% slevu:
 {Referral link}
 
 Hezký den a snad žádné pojistné události! 🙂
-Tým ClaimBuddy
+Tým Pojistná Pomoc
 
 ---
 
-ClaimBuddy s.r.o. | www.claimbuddy.cz
+Pojistná Pomoc s.r.o. | www.pu.zajcon.cz
 Odhlásit z newsletteru
 ```
 
@@ -655,7 +655,7 @@ Odhlásit z newsletteru
 ## Email Design Guidelines
 
 **Header:**
-- Logo ClaimBuddy
+- Logo Pojistná Pomoc
 - Recipient name (personalizace)
 - Case ID (pokud relevantní)
 

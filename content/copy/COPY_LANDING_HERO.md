@@ -7,7 +7,7 @@
 "Pojišťovna vám nedala, co vám patří? Pomůžeme to změnit."
 
 **Subheadline:**
-"ClaimBuddy vyřídí vaši pojistnou událost od A do Z. Bez starostí, bez papírování, bez odmítnutí. Získáte až o 23% více, než kdybyste jednali sami."
+"Pojistná Pomoc vyřídí vaši pojistnou událost od A do Z. Bez starostí, bez papírování, bez odmítnutí. Získáte až o 23% více, než kdybyste jednali sami."
 
 ---
 
@@ -92,13 +92,13 @@ klientů          průměrně           odpovědi          klientů
 - Teplé barvy (modrá + oranžová brand colors)
 
 ### Možnost 2: Dashboard preview
-- Screenshot aplikace ClaimBuddy
+- Screenshot aplikace Pojistná Pomoc
 - Ukazující "Vaše pojistka: Schváleno 45,000 Kč"
 - Dashboard s progress barem "100% Vyřízeno"
 
 ### Možnost 3: Before/After comparison
-- **Bez ClaimBuddy:** "Pojišťovna nabídla: 12,000 Kč"
-- **S ClaimBuddy:** "Vyjednali jsme: 34,000 Kč"
+- **Bez Pojistná Pomoc:** "Pojišťovna nabídla: 12,000 Kč"
+- **S Pojistná Pomoc:** "Vyjednali jsme: 34,000 Kč"
 - Visual difference s checkmarkem u vyšší částky
 
 ---
@@ -150,7 +150,7 @@ klientů          průměrně           odpovědi          klientů
 ## SEO Meta Data
 
 **Title tag (max 60 znaků):**
-"ClaimBuddy - Vyřídíme vaši pojistnou událost | +23% víc"
+"Pojistná Pomoc - Vyřídíme vaši pojistnou událost | +23% víc"
 
 **Meta description (max 160 znaků):**
 "Profesionální asistence při pojistných událostech. Vyjednáme maximální plnění za fixní cenu. 500+ spokojených klientů. Začněte zdarma!"

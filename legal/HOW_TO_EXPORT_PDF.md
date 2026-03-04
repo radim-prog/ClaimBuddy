@@ -21,7 +21,7 @@ brew install --cask mactex
 
 ### Export jednoho souboru
 ```bash
-cd /Users/Radim/Projects/claimbuddy/legal/
+cd <project-root>/legal/
 
 # Základní PDF
 pandoc TERMS_AND_CONDITIONS.md -o TERMS_AND_CONDITIONS.pdf
@@ -167,7 +167,7 @@ async function convertToPDF(mdFile, pdfFile) {
     <body>
       ${html}
       <footer style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 9pt; color: #666;">
-        <p>ClaimBuddy s.r.o. | IČO: [doplnit] | www.claimbuddy.cz</p>
+        <p>Pojistná Pomoc s.r.o. | IČO: [doplnit] | www.pu.zajcon.cz</p>
         <p>Vytištěno: ${new Date().toLocaleDateString('cs-CZ')}</p>
       </footer>
     </body>
@@ -223,7 +223,7 @@ const files = [
 
 ### Spuštění
 ```bash
-cd /Users/Radim/Projects/claimbuddy/legal/
+cd <project-root>/legal/
 node generate-pdf.js
 ```
 
@@ -254,7 +254,7 @@ node generate-pdf.js
   "markdown-pdf.margin.left": "2cm",
   "markdown-pdf.margin.right": "2cm",
   "markdown-pdf.styles": [
-    "/Users/Radim/Projects/claimbuddy/legal/custom.css"
+    "<project-root>/legal/custom.css"
   ]
 }
 ```
@@ -306,7 +306,7 @@ pandoc TERMS_AND_CONDITIONS.md \
   -V lang=cs
 
 # 2. Nahrát na server
-# www.claimbuddy.cz/documents/obchodni-podminky.pdf
+# www.pu.zajcon.cz/documents/obchodni-podminky.pdf
 ```
 
 ### Pro tisk a podpis:

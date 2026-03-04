@@ -10,7 +10,7 @@
 **Key:** Google AI API Key (Gemini)
 **Value:** `AIzaSyBqBcc2Wc9-dTv1bFLBIpMJUVCG-B_ZfP4`
 **Lokace:**
-- `/Users/Radim/Projects/claimbuddy/.env.local:18`
+- `<project-root>/.env.local:18`
 - `/Users/Radim/Desktop/claude-start.command:16`
 
 **Exposure:**

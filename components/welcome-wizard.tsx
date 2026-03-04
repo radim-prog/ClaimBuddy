@@ -16,9 +16,9 @@ const SLIDES = [
     icon: FileText,
     iconColor: 'text-blue-600',
     iconBg: 'bg-blue-100',
-    title: 'Vítejte v ClaimBuddy',
+    title: 'Vítejte v Pojistná Pomoc',
     description:
-      'ClaimBuddy je váš osobní asistent pro vyřizování pojistných událostí. Pomůžeme vám dostat maximum z vaší pojistky.',
+      'Pojistná Pomoc je váš osobní asistent pro vyřizování pojistných událostí. Pomůžeme vám dostat maximum z vaší pojistky.',
     features: [
       'Komunikace s pojišťovnou v vašem jméně',
       'Příprava všech potřebných dokumentů',

@@ -10,7 +10,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <span className="text-xl font-bold">CB</span>
             </div>
-            <span className="text-xl font-bold">ClaimBuddy</span>
+            <span className="text-xl font-bold">Pojistná Pomoc</span>
           </Link>
           <nav className="flex gap-6 text-sm">
             <Link href="/legal/terms" className="hover:text-primary">

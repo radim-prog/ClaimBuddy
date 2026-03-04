@@ -9,14 +9,14 @@
 
 ### Poskytovatel služby:
 
-**ClaimBuddy s.r.o.**
+**Pojistná Pomoc s.r.o.**
 IČO: [doplnit]
 DIČ: [doplnit]
 Sídlo: [doplnit]
 Zapsaná u Krajského soudu v [doplnit], spisová značka [doplnit]
 
 **Kontakt:**
-Email: info@claimbuddy.cz
+Email: info@pu.zajcon.cz
 Telefon: [doplnit]
 
 **Jednající:** [jméno jednatele]
@@ -317,9 +317,9 @@ Poskytovatel neodpovídá za zpoždění nebo nesplnění způsobené:
 ## Článek VI - Ochrana osobních údajů (GDPR)
 
 ### 6.1 Správce údajů
-Správcem osobních údajů je **ClaimBuddy s.r.o.**
+Správcem osobních údajů je **Pojistná Pomoc s.r.o.**
 
-Kontakt: gdpr@claimbuddy.cz
+Kontakt: gdpr@pu.zajcon.cz
 
 ### 6.2 Rozsah zpracování
 Poskytovatel bude zpracovávat tyto údaje Klienta:
@@ -359,7 +359,7 @@ Klient má právo:
 4. **Odvolání souhlasu:** Odvolat souhlas se zpracováním zdravotních údajů (kdykoliv)
 5. **Stížnost:** Podat stížnost u ÚOOÚ (uoou.cz)
 
-**Uplatnění práv:** gdpr@claimbuddy.cz
+**Uplatnění práv:** gdpr@pu.zajcon.cz
 
 Více v **Zásadách ochrany osobních údajů** a **Formuláři souhlasu GDPR**.
 
@@ -378,7 +378,7 @@ Smlouva trvá:
 
 ### 7.3 Ukončení Klientem
 Klient může ukončit **kdykoliv** písemným oznámením na:
-- Email: info@claimbuddy.cz
+- Email: info@pu.zajcon.cz
 - Poštou: [adresa sídla]
 
 **Účinnost:** Od doručení oznámení
@@ -415,7 +415,7 @@ Smlouva **automaticky zaniká** pokud:
 Obě strany se zavazují **pokusit se vyřešit spor dohodou** před zahájením soudního řízení.
 
 **Postup:**
-1. Písemná reklamace na: reklamace@claimbuddy.cz
+1. Písemná reklamace na: reklamace@pu.zajcon.cz
 2. Poskytovatel odpoví do **30 dnů**
 3. Pokud není shoda → mimosoudní řešení
 
@@ -450,8 +450,8 @@ Strany souhlasí s **elektronickou komunikací** (email, SMS).
 Důležité dokumenty budou zaslány i **poštou** (na vyžádání).
 
 ### 9.4 Obchodní podmínky
-Tato smlouva je uzavřena v souladu s **Obchodními podmínkami** ClaimBuddy, které jsou dostupné na:
-**www.claimbuddy.cz/obchodni-podminky**
+Tato smlouva je uzavřena v souladu s **Obchodními podmínkami** Pojistná Pomoc, které jsou dostupné na:
+**www.pu.zajcon.cz/obchodni-podminky**
 
 Klient prohlašuje, že se s nimi seznámil.
 
@@ -472,7 +472,7 @@ Tato smlouva je vyhotovena ve **2 (dvou) exemplářích**, každá strana obdrž
 
 ### Poskytovatel:
 
-**ClaimBuddy s.r.o.**
+**Pojistná Pomoc s.r.o.**
 
 **Jméno jednatele:** ______________________________________
 
@@ -512,7 +512,7 @@ Tato smlouva je vyhotovena ve **2 (dvou) exemplářích**, každá strana obdrž
 
 **Klient potvrzuje, že obdržel:**
 - [ ] Tuto smlouvu (2 exempláře, 1 si ponechal)
-- [ ] Obchodní podmínky ClaimBuddy
+- [ ] Obchodní podmínky Pojistná Pomoc
 - [ ] Zásady ochrany osobních údajů (Privacy Policy)
 - [ ] Formulář souhlasu GDPR (pokud relevantní)
 
@@ -549,4 +549,4 @@ Příklad: SMV-2026-00123
 ---
 
 *Tento vzor smlouvy je v souladu s občanským zákoníkem (zákon č. 89/2012 Sb.) a nařízením GDPR (EU) 2016/679.*
-*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [doplnit]*
+*Verze 1.0 | Pojistná Pomoc s.r.o. | IČO: [doplnit]*

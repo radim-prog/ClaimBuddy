@@ -1,4 +1,4 @@
-# UX Copy & Microcopy - ClaimBuddy
+# UX Copy & Microcopy - Pojistná Pomoc
 
 ## UX Copy Philosophy
 
@@ -80,7 +80,7 @@
 
     [Zkusit znovu]
 
-    Pokud problém přetrvává, napište nám: info@claimbuddy.cz"
+    Pokud problém přetrvává, napište nám: info@pu.zajcon.cz"
 ```
 
 **Network error:**
@@ -382,7 +382,7 @@ Body:
 
 Co už nebudete dostávat:
 • Týdenní tipy o pojistkách
-• Info o novinkách ClaimBuddy
+• Info o novinkách Pojistná Pomoc
 • Speciální nabídky
 
 Důležité: Update emails o vašem případu BUDETE DOSTÁVAT i nadále.
@@ -662,7 +662,7 @@ Nahrávání... ████████░░ 80%
 ## Email Subject Lines (transactional)
 
 **Potvrzení registrace:**
-"Vítejte v ClaimBuddy, {Jméno}! 👋"
+"Vítejte v Pojistná Pomoc, {Jméno}! 👋"
 
 **Případ přijat:**
 "Váš případ #{ID} je u nás ✅"
@@ -798,7 +798,7 @@ Nahrávání... ████████░░ 80%
 obdrželi jsme Vaši žádost o vyřízení pojistné události evidence č. CB-2024-00542. Příslušný pracovník se s Vámi obratem spojí za účelem projednání dalších náležitostí.
 
 S pozdravem,
-ClaimBuddy s.r.o."
+Pojistná Pomoc s.r.o."
 
 ### ❌ Příliš casual (AVOID)
 
@@ -818,7 +818,7 @@ Mezitím můžete sledovat průběh v aplikaci.
 
 Máte otázku? Odpovězte na tento email.
 
-Tým ClaimBuddy"
+Tým Pojistná Pomoc"
 
 ---
 
@@ -845,4 +845,4 @@ Tým ClaimBuddy"
 
 ---
 
-This comprehensive UX copy guide ensures consistent, friendly, and helpful communication across all touchpoints in the ClaimBuddy app!
+This comprehensive UX copy guide ensures consistent, friendly, and helpful communication across all touchpoints in the Pojistná Pomoc app!

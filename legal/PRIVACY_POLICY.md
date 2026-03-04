@@ -8,10 +8,10 @@
 ## 1. Kdo jsme a jak nás kontaktovat
 
 ### 1.1 Správce osobních údajů
-**ClaimBuddy s.r.o.**
+**Pojistná Pomoc s.r.o.**
 IČO: [IČO bude doplněno před launch]
 Sídlo: [Adresa sídla bude doplněna před launch]
-Email: gdpr@claimbuddy.cz
+Email: gdpr@pu.zajcon.cz
 Telefon: [Kontaktní telefon bude doplněn před launch]
 
 ### 1.2 Co děláme
@@ -167,7 +167,7 @@ Poskytujeme asistenční služby při řešení pojistných událostí. Pomáhá
 - Data jsou **bezpečně smazána** (shred, secure delete)
 - Nebo **anonymizována** (pro statistiky)
 
-**Můžete požádat o výmaz dříve** - email na: gdpr@claimbuddy.cz
+**Můžete požádat o výmaz dříve** - email na: gdpr@pu.zajcon.cz
 
 ---
 
@@ -257,13 +257,13 @@ Poskytujeme asistenční služby při řešení pojistných událostí. Pomáhá
 
 ### 6.1 Právo na přístup (čl. 15 GDPR)
 **Co:** Získat kopii všech dat, která o Vás zpracováváme
-**Jak:** Email na gdpr@claimbuddy.cz
+**Jak:** Email na gdpr@pu.zajcon.cz
 **Lhůta:** Do **30 dnů** od žádosti
 **Zdarma:** První žádost zdarma, další mohou být zpoplatněny (administrativní náklady)
 
 ### 6.2 Právo na opravu (čl. 16 GDPR)
 **Co:** Opravit nepřesné nebo neúplné údaje
-**Jak:** Email na gdpr@claimbuddy.cz nebo přímo v aplikaci
+**Jak:** Email na gdpr@pu.zajcon.cz nebo přímo v aplikaci
 **Lhůta:** Okamžitě
 
 ### 6.3 Právo na výmaz (čl. 17 GDPR - "právo být zapomenut")
@@ -284,17 +284,17 @@ Poskytujeme asistenční služby při řešení pojistných událostí. Pomáhá
 
 ### 6.5 Právo na přenositelnost (čl. 20 GDPR)
 **Co:** Získat data ve strojově čitelném formátu (JSON, CSV)
-**Jak:** Email na gdpr@claimbuddy.cz
+**Jak:** Email na gdpr@pu.zajcon.cz
 **Poskytujeme:** Do 30 dnů
 
 ### 6.6 Právo odvolat souhlas (čl. 7 odst. 3 GDPR)
 **Co:** Zrušit souhlas se zpracováním zdravotních údajů
-**Jak:** Email na gdpr@claimbuddy.cz nebo klik v aplikaci
+**Jak:** Email na gdpr@pu.zajcon.cz nebo klik v aplikaci
 **Důsledek:** Nemůžeme pokračovat v případech vyžadujících lékařské dokumenty
 
 ### 6.7 Právo vznést námitku (čl. 21 GDPR)
 **Co:** Nesouhlasit se zpracováním (např. marketing)
-**Jak:** Email na gdpr@claimbuddy.cz nebo odkaz v emailu
+**Jak:** Email na gdpr@pu.zajcon.cz nebo odkaz v emailu
 
 ### 6.8 Právo podat stížnost (čl. 77 GDPR)
 **Kam:** Úřad pro ochranu osobních údajů (ÚOOÚ)
@@ -338,7 +338,7 @@ Viz samostatný dokument: **Cookie Policy**
 - **Analytické cookies:** Google Analytics (můžete odmítnout)
 - **Marketingové cookies:** Facebook Pixel (můžete odmítnout)
 
-**Nastavení:** [www.claimbuddy.cz/cookies]
+**Nastavení:** [www.pu.zajcon.cz/cookies]
 
 ---
 
@@ -355,7 +355,7 @@ Viz samostatný dokument: **Cookie Policy**
 
 ### 9.2 Jak se odhlásit
 - **Link v každém emailu** ("Odhlásit odběr")
-- Email na: gdpr@claimbuddy.cz
+- Email na: gdpr@pu.zajcon.cz
 - V nastavení účtu
 
 **Okamžitý efekt** - během 24 hodin nebudete dostávat marketing.
@@ -374,7 +374,7 @@ Viz samostatný dokument: **Cookie Policy**
 ## 10. Děti (osoby mladší 18 let)
 
 ### 10.1 Věková hranice
-ClaimBuddy je určeno pro osoby **18 let a starší**.
+Pojistná Pomoc je určeno pro osoby **18 let a starší**.
 
 ### 10.2 Pokud je klient mladší 18 let
 - Smlouvu musí podepsat **zákonný zástupce** (rodič/opatrovník)
@@ -407,12 +407,12 @@ Pokud zjistíme, že jsme získali data dítěte bez souhlasu rodiče:
 ## 12. Kontakt
 
 ### 12.1 Obecné dotazy k GDPR
-**Email:** gdpr@claimbuddy.cz
+**Email:** gdpr@pu.zajcon.cz
 **Telefon:** [Kontaktní telefon bude doplněn před launch]
 **Odpovídáme:** Do 5 pracovních dnů
 
 ### 12.2 Uplatnění práv
-**Žádosti zasílejte na:** gdpr@claimbuddy.cz
+**Žádosti zasílejte na:** gdpr@pu.zajcon.cz
 
 **Uveďte:**
 - Vaše jméno a email (ověření identity)
@@ -424,7 +424,7 @@ Pokud zjistíme, že jsme získali data dítěte bez souhlasu rodiče:
 - Pokud nemáte účet: Kopie OP (anonymizujte foto a podpis)
 
 ### 12.3 Stížnosti
-**Email:** reklamace@claimbuddy.cz
+**Email:** reklamace@pu.zajcon.cz
 **Více:** Viz Reklamační řád
 
 ---
@@ -439,12 +439,12 @@ Tyto Zásady jsou v souladu s:
 ---
 
 **Máte otázky k GDPR?**
-Napište nám: gdpr@claimbuddy.cz
+Napište nám: gdpr@pu.zajcon.cz
 
 **Stažení PDF:**
-[www.claimbuddy.cz/dokumenty/ochrana-osobnich-udaju.pdf]
+[www.pu.zajcon.cz/dokumenty/ochrana-osobnich-udaju.pdf]
 
 ---
 
 *Tyto Zásady ochrany osobních údajů jsou účinné od 1. ledna 2026.*
-*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [IČO bude doplněno před launch]*
+*Verze 1.0 | Pojistná Pomoc s.r.o. | IČO: [IČO bude doplněno před launch]*

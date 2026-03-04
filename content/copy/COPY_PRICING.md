@@ -326,7 +326,7 @@ Při registraci zadejte kód nebo se prokažte.
 
 **Ano, je to 100% legální.**
 
-ClaimBuddy poskytuje **asistenční službu**, nikoliv zprostředkování pojištění. Neprodáváme pojistky, nebereme provize od pojišťoven.
+Pojistná Pomoc poskytuje **asistenční službu**, nikoliv zprostředkování pojištění. Neprodáváme pojistky, nebereme provize od pojišťoven.
 
 **Jsme na VAŠÍ straně, ne na straně pojišťovny.**
 
@@ -351,7 +351,7 @@ Podobné služby fungují v USA (Lemonade claim assist), UK (claims management c
 
 **Konkrétní příklady:**
 
-| Typ události | Původní nabídka | Po ClaimBuddy | Náš poplatek | Zisk klienta |
+| Typ události | Původní nabídka | Po Pojistná Pomoc | Náš poplatek | Zisk klienta |
 |--------------|----------------|---------------|--------------|--------------|
 | Auto havárie | 18,000 Kč | 26,000 Kč | 990 Kč | +7,010 Kč |
 | Zatečení bytu | 45,000 Kč | 67,000 Kč | 3,300 Kč (15%) | +18,700 Kč |
@@ -422,4 +422,4 @@ Můžete kdykoli zrušit spolupráci. Pokud jste zaplatili aktivační poplatek 
 - Prioritní podpora 24/7
 - Vlastní dashboard pro HR oddělení
 
-**Kontakt:** enterprise@claimbuddy.cz
+**Kontakt:** enterprise@pu.zajcon.cz

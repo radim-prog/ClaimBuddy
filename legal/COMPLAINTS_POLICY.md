@@ -8,10 +8,10 @@
 ## 1. Úvodní ustanovení
 
 ### 1.1 Kdo jsme
-**ClaimBuddy s.r.o.**
+**Pojistná Pomoc s.r.o.**
 IČO: [doplnit]
 Sídlo: [doplnit]
-Email: reklamace@claimbuddy.cz
+Email: reklamace@pu.zajcon.cz
 Telefon: [doplnit]
 
 ### 1.2 K čemu slouží tento dokument
@@ -57,7 +57,7 @@ Tento Reklamační řád upravuje:
 ### 2.2 Co NELZE reklamovat
 
 **Rozhodnutí pojišťovny:**
-- ❌ Zamítnutí pojistné události (rozhoduje pojišťovna, ne ClaimBuddy)
+- ❌ Zamítnutí pojistné události (rozhoduje pojišťovna, ne Pojistná Pomoc)
 - ❌ Nízká výše plnění (určuje pojišťovna dle podmínek)
 - ❌ Délka vyřizování ze strany pojišťovny (mimo naši kontrolu)
 
@@ -82,7 +82,7 @@ Tento Reklamační řád upravuje:
 ### 3.1 Způsoby podání
 
 #### A) Emailem (NEJRYCHLEJŠÍ)
-**Email:** reklamace@claimbuddy.cz
+**Email:** reklamace@pu.zajcon.cz
 
 **Předmět:** Reklamace - [Vaše jméno] - [Číslo smlouvy]
 
@@ -107,7 +107,7 @@ Tento Reklamační řád upravuje:
 
 #### C) Poštou
 **Adresa:**
-ClaimBuddy s.r.o.
+Pojistná Pomoc s.r.o.
 [adresa sídla]
 [PSČ, město]
 
@@ -240,7 +240,7 @@ ClaimBuddy s.r.o.
 - Reklamace je neopodstatněná (nesouhlasíme s tvrzením)
 
 **Příklad:**
-> "Vaše reklamace byla po prošetření zamítnuta. Pojišťovna rozhodla o zamítnutí nároku na základě své vnitřní směrnice, ClaimBuddy má možnost pouze doporučovat a reklamovat, nemůže ovlivnit finální rozhodnutí pojišťovny."
+> "Vaše reklamace byla po prošetření zamítnuta. Pojišťovna rozhodla o zamítnutí nároku na základě své vnitřní směrnice, Pojistná Pomoc má možnost pouze doporučovat a reklamovat, nemůže ovlivnit finální rozhodnutí pojišťovny."
 
 **Vaše práva:**
 - Můžete požádat o **přezkoumání** (do 14 dnů)
@@ -252,7 +252,7 @@ ClaimBuddy s.r.o.
 
 ### 5.1 Kdy máte nárok na náhradu
 
-**Pokud ClaimBuddy:**
+**Pokud Pojistná Pomoc:**
 - Způsobilo **konkrétní škodu** svým jednáním
 - Porušilo **smlouvu** (nesplnilo slib)
 - Jednalo **hrubě nedbalostně** nebo **úmyslně**
@@ -293,7 +293,7 @@ ClaimBuddy s.r.o.
 
 **Pokud:**
 - Nejste spokojeni s výsledkem reklamace
-- ClaimBuddy reklamaci zamítlo
+- Pojistná Pomoc reklamaci zamítlo
 - Chcete nezávislé posouzení
 
 **Výhody:**
@@ -367,10 +367,10 @@ ClaimBuddy s.r.o.
 
 **Pro spotřebitele:**
 - Soud dle **Vašeho bydliště** (na Vaši volbu)
-- Nebo soud dle sídla ClaimBuddy
+- Nebo soud dle sídla Pojistná Pomoc
 
 **Pro podnikatele:**
-- Soud dle sídla ClaimBuddy
+- Soud dle sídla Pojistná Pomoc
 
 ### 7.3 Rozhodné právo
 
@@ -436,18 +436,18 @@ ClaimBuddy s.r.o.
 ## 9. Kontaktní informace
 
 ### 9.1 Reklamace a stížnosti
-**Email:** reklamace@claimbuddy.cz
+**Email:** reklamace@pu.zajcon.cz
 **Telefon:** [doplnit]
 **Pracovní doba:** Po-Pá 9:00-17:00
 
 ### 9.2 GDPR dotazy
-**Email:** gdpr@claimbuddy.cz
+**Email:** gdpr@pu.zajcon.cz
 
 ### 9.3 Obecné dotazy
-**Email:** info@claimbuddy.cz
+**Email:** info@pu.zajcon.cz
 
 ### 9.4 Poštovní adresa
-ClaimBuddy s.r.o.
+Pojistná Pomoc s.r.o.
 [adresa sídla]
 [PSČ, město]
 
@@ -459,22 +459,22 @@ ClaimBuddy s.r.o.
 Tento Reklamační řád je účinný od **1. ledna 2026**.
 
 ### 10.2 Změny
-ClaimBuddy může tento řád změnit s **30denním** předstihem.
+Pojistná Pomoc může tento řád změnit s **30denním** předstihem.
 
 O změně budete informováni emailem.
 
 ### 10.3 Dostupnost
 Reklamační řád je dostupný:
-- Na webu: www.claimbuddy.cz/reklamacni-rad
-- V PDF: www.claimbuddy.cz/dokumenty/reklamacni-rad.pdf
+- Na webu: www.pu.zajcon.cz/reklamacni-rad
+- V PDF: www.pu.zajcon.cz/dokumenty/reklamacni-rad.pdf
 - Na vyžádání poštou (zdarma)
 
 ---
 
 **Máte otázky?**
-Kontaktujte nás: reklamace@claimbuddy.cz
+Kontaktujte nás: reklamace@pu.zajcon.cz
 
 ---
 
 *Tento Reklamační řád je v souladu se zákonem č. 634/1992 Sb. (ochrana spotřebitele) a občanským zákoníkem č. 89/2012 Sb.*
-*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [doplnit]*
+*Verze 1.0 | Pojistná Pomoc s.r.o. | IČO: [doplnit]*

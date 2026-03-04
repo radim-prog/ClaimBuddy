@@ -1,4 +1,4 @@
-# Onboarding Flow Copy - ClaimBuddy
+# Onboarding Flow Copy - Pojistná Pomoc
 
 ## Onboarding Strategy
 
@@ -292,7 +292,7 @@ Plná moc nám umožňuje:
 │                                  │
 │ Já, {Jméno z kroku 4},          │
 │ tímto zmocňuji společnost       │
-│ ClaimBuddy s.r.o....            │
+│ Pojistná Pomoc s.r.o....            │
 │                                  │
 │ [Preview prvních 10 řádků]      │
 │                                  │
@@ -309,7 +309,7 @@ Plná moc nám umožňuje:
 ☐ Souhlasím se zpracováním osobních údajů dle GDPR *
    [Link: Zásady ochrany osobních údajů]
 
-☐ Souhlasím s obchodními podmínkami ClaimBuddy *
+☐ Souhlasím s obchodními podmínkami Pojistná Pomoc *
    [Link: Obchodní podmínky]
 ```
 
@@ -412,7 +412,7 @@ Nahrát další fotky nebo dokumenty
 │ Oba dostanete -10% slevu na další     │
 │ případ. Váš referral link:             │
 │                                         │
-│ [claimbuddy.cz/r/XXXXX] [Kopírovat]   │
+│ [pu.zajcon.cz/r/XXXXX] [Kopírovat]   │
 └─────────────────────────────────────────┘
 ```
 
@@ -522,7 +522,7 @@ Dokončit registraci trvá jen chvíli a během 24 hodin vám pošleme cenovou n
 
 Potřebujete pomoc? Odpovězte na tento email nebo zavolejte: +420 XXX XXX XXX
 
-Tým ClaimBuddy
+Tým Pojistná Pomoc
 ```
 
 ---
@@ -605,7 +605,7 @@ Overall completion rate target: >65%
 Subject: "✓ Váš případ #{ID} je přijat"
 
 **SMS confirmation:**
-"ClaimBuddy: Váš případ #CB-542 je přijat. Ozveme se do 24h. Sledujte průběh: [link]"
+"Pojistná Pomoc: Váš případ #CB-542 je přijat. Ozveme se do 24h. Sledujte průběh: [link]"
 
 ### Within 24 hours
 

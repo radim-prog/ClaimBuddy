@@ -75,7 +75,7 @@ export default function CaseUpdatedEmail({
           <Text style={footer}>
             S přáním hezkého dne,
             <br />
-            Tým ClaimBuddy
+            Tým Pojistná Pomoc
           </Text>
         </Container>
       </Body>

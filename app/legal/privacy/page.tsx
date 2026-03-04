@@ -15,6 +15,6 @@ export default async function PrivacyPage() {
 }
 
 export const metadata = {
-  title: 'Zásady ochrany osobních údajů | ClaimBuddy',
-  description: 'Zásady ochrany osobních údajů služby ClaimBuddy',
+  title: 'Zásady ochrany osobních údajů | Pojistná Pomoc',
+  description: 'Zásady ochrany osobních údajů služby Pojistná Pomoc',
 };

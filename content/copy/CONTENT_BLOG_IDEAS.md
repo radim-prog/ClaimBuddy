@@ -1,4 +1,4 @@
-# Blog Content Ideas - ClaimBuddy
+# Blog Content Ideas - Pojistná Pomoc
 
 ## Content Strategy Overview
 
@@ -40,7 +40,7 @@
 
 **Word count:** 2,500-3,000 slov
 **Content type:** Ultimate Guide
-**CTA:** "Nechcete se tím zdržovat? ClaimBuddy to vyřídí za vás."
+**CTA:** "Nechcete se tím zdržovat? Pojistná Pomoc to vyřídí za vás."
 
 **Featured snippets opportunity:**
 - "Co je pojistná událost?"
@@ -166,7 +166,7 @@
 
 **Word count:** 2,200 slov
 **Content type:** How-to Guide + Templates
-**CTA:** "Nechte odvolání na odborníky. ClaimBuddy má úspěšnost 64%."
+**CTA:** "Nechte odvolání na odborníky. Pojistná Pomoc má úspěšnost 64%."
 
 **Downloads:**
 - Šablona odvolacího dopisu
@@ -404,37 +404,37 @@ Kalkulačka havarijního pojištění (lead magnet)
 
 ---
 
-### 10. "Success Stories: 5 případů, kde ClaimBuddy vyjednal o 20k+ víc"
+### 10. "Success Stories: 5 případů, kde Pojistná Pomoc vyjednal o 20k+ víc"
 
-**Target keyword:** "zkušenosti s ClaimBuddy", "ClaimBuddy recenze" (branded)
+**Target keyword:** "zkušenosti s Pojistná Pomoc", "Pojistná Pomoc recenze" (branded)
 **Search volume:** Low (ale důležité pro trust)
 **Difficulty:** N/A
 
 **Outline:**
 - **Case Study 1: Auto havárie - Martin, Praha**
   - Původní nabídka: 18,000 Kč
-  - Po ClaimBuddy: 34,500 Kč
+  - Po Pojistná Pomoc: 34,500 Kč
   - Co jsme udělali jinak: Vlastní znalecký posudek + srovnání tržních cen
   - Čistý zisk klienta: +14,025 Kč (po našem poplatku)
 
 - **Case Study 2: Zatečení bytu - Petra, Brno**
   - Původní nabídka: 45,000 Kč (s odpočty za opotřebení)
-  - Po ClaimBuddy: 67,000 Kč
+  - Po Pojistná Pomoc: 67,000 Kč
   - Co jsme udělali: Argumentovali jsme, že opotřebení nesmí být u náhlé události
 
 - **Case Study 3: Zdravotní úraz - Jan, Ostrava**
   - Původní: Odmítnuto (pojišťovna tvrdila že není kryté)
-  - Po ClaimBuddy: 40,000 Kč schváleno
+  - Po Pojistná Pomoc: 40,000 Kč schváleno
   - Co jsme udělali: Právní analýza smlouvy + odvolání
 
 - **Case Study 4: Odcizení kola - Lucie, České Budějovice**
   - Původní nabídka: 8,000 Kč (odpočet za opotřebení 60%)
-  - Po ClaimBuddy: 14,000 Kč
+  - Po Pojistná Pomoc: 14,000 Kč
   - Co jsme udělali: Prokázali jsme aktuální tržní hodnotu podobných kol
 
 - **Case Study 5: Nehodové pojištění - Tomáš, Liberec**
   - Původní: Pojišťovna viníka nabídla 22,000 Kč
-  - Po ClaimBuddy: 41,000 Kč (včetně náhrady ušlého času, půjčovny auta)
+  - Po Pojistná Pomoc: 41,000 Kč (včetně náhrady ušlého času, půjčovny auta)
   - Co jsme udělali: Vyžádali jsme všechny možné nároky, ne jen opravu
 
 **Word count:** 2,500 slov
@@ -462,7 +462,7 @@ Kalkulačka havarijního pojištění (lead magnet)
 
 ### 13. "Top 5 pojišťoven v ČR (2025): Hodnocení podle rychlosti vyřízení"
 - Data-driven srovnání
-- ClaimBuddy zkušenosti
+- Pojistná Pomoc zkušenosti
 - Která pojišťovna je nejrychlejší/nejpomalejší
 
 ### 14. "Pojistná historie: Proč vám minulé události ovlivňují cenu"

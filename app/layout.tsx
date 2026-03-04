@@ -7,7 +7,7 @@ import { CookieConsentBanner } from '@/components/cookie-consent-banner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'ClaimBuddy - Vyřídíme vaši pojistnou událost',
+  title: 'Pojistná Pomoc - Vyřídíme vaši pojistnou událost',
   description: 'První Notion-only verze pro příjem a zpracování klientských případů.',
 };
 

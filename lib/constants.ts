@@ -119,7 +119,7 @@ export const AI_CONFIG = {
   TEMPERATURE: 0.7,
 };
 
-export const SUPPORT_EMAIL = 'podpora@claimbuddy.cz';
+export const SUPPORT_EMAIL = 'podpora@pu.zajcon.cz';
 export const SUPPORT_PHONE = '+420 123 456 789';
 
 export const ITEMS_PER_PAGE = 10;

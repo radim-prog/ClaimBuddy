@@ -124,7 +124,7 @@ export default function PricingPage() {
                 <p className="text-xs font-semibold">Příklad:</p>
                 <p className="mt-2 text-sm">
                   Původní nabídka: 25,000 Kč<br/>
-                  Po ClaimBuddy: 38,000 Kč<br/>
+                  Po Pojistná Pomoc: 38,000 Kč<br/>
                   Rozdíl: 13,000 Kč<br/>
                   <span className="font-semibold">Náš poplatek (20%): 2,600 Kč</span><br/>
                   <span className="font-semibold text-primary">Váš čistý zisk: +10,400 Kč</span>
@@ -152,7 +152,7 @@ export default function PricingPage() {
                 <p className="text-xs font-semibold">Příklad:</p>
                 <p className="mt-2 text-sm">
                   Původní nabídka: 120,000 Kč<br/>
-                  Po ClaimBuddy: 165,000 Kč<br/>
+                  Po Pojistná Pomoc: 165,000 Kč<br/>
                   Rozdíl: 45,000 Kč<br/>
                   <span className="font-semibold">Náš poplatek (15%): 6,750 Kč</span><br/>
                   <span className="font-semibold text-primary">Váš čistý zisk: +38,250 Kč</span>

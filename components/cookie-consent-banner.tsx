@@ -53,7 +53,7 @@ export function CookieConsentBanner() {
         location="bottom"
         buttonText="Přijmout vše"
         declineButtonText="Odmítnout vše"
-        cookieName="claimbuddy-cookie-consent"
+        cookieName="pojistna-pomoc-cookie-consent"
         style={{
           background: 'rgba(255, 255, 255, 0.98)',
           color: '#1f2937',

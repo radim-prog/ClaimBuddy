@@ -15,6 +15,6 @@ export default async function TermsPage() {
 }
 
 export const metadata = {
-  title: 'Obchodní podmínky | ClaimBuddy',
-  description: 'Obchodní podmínky používání služby ClaimBuddy',
+  title: 'Obchodní podmínky | Pojistná Pomoc',
+  description: 'Obchodní podmínky používání služby Pojistná Pomoc',
 };

@@ -15,6 +15,6 @@ export default async function CookiesPage() {
 }
 
 export const metadata = {
-  title: 'Zásady používání cookies | ClaimBuddy',
-  description: 'Zásady používání cookies na webu ClaimBuddy',
+  title: 'Zásady používání cookies | Pojistná Pomoc',
+  description: 'Zásady používání cookies na webu Pojistná Pomoc',
 };

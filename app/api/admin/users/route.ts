@@ -1,21 +1,27 @@
-import { errorResponse } from '@/lib/api-helpers';
+import { NextRequest } from 'next/server';
+import { requireAdminRequest } from '@/lib/admin-auth';
+import { errorResponse, successResponse } from '@/lib/api-helpers';
+import { listNotionCasesForAdmin } from '@/lib/notion';
 
-export async function GET() {
-  return errorResponse('Endpoint disabled in Notion mode', 501);
-}
+export async function GET(request: NextRequest) {
+  const unauthorized = requireAdminRequest(request);
+  if (unauthorized) return unauthorized;
 
-export async function POST() {
-  return errorResponse('Endpoint disabled in Notion mode', 501);
-}
+  try {
+    const items = (await listNotionCasesForAdmin(500)) as any[];
+    const counters = new Map<string, { id: string; name: string; caseCount: number }>();
 
-export async function PATCH() {
-  return errorResponse('Endpoint disabled in Notion mode', 501);
-}
+    for (const item of items) {
+      const name = (item.assignee || '').trim();
+      if (!name) continue;
 
-export async function PUT() {
-  return errorResponse('Endpoint disabled in Notion mode', 501);
-}
+      const existing = counters.get(name) || { id: name.toLowerCase().replace(/\s+/g, '-'), name, caseCount: 0 };
+      existing.caseCount += 1;
+      counters.set(name, existing);
+    }
 
-export async function DELETE() {
-  return errorResponse('Endpoint disabled in Notion mode', 501);
+    return successResponse({ users: Array.from(counters.values()).sort((a, b) => b.caseCount - a.caseCount) });
+  } catch (error: any) {
+    return errorResponse(error.message || 'Failed to load users', 500);
+  }
 }

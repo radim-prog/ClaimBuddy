@@ -1,4 +1,4 @@
-# ClaimBuddy - Kompletní Copywriting Package
+# Pojistná Pomoc - Kompletní Copywriting Package
 
 **Vytvořeno:** 1. listopadu 2024
 **Senior Copywriter & Content Strategist**
@@ -82,7 +82,7 @@
 
 **Obsahuje:**
 - Founding story (personal story Patrika)
-- Mise & vize ClaimBuddy
+- Mise & vize Pojistná Pomoc
 - 5 core values (transparentnost, efektivita, fair pricing, educace, empatie)
 - Team profiles (founders + case managers)
 - Naše čísla (500+ klientů, 23% navýšení, 4.8/5)
@@ -100,7 +100,7 @@
 **FAQ - 45+ otázek**
 
 **Obsahuje 6 kategorií:**
-1. 🏢 O ClaimBuddy (7 otázek)
+1. 🏢 O Pojistná Pomoc (7 otázek)
 2. 💰 Ceny a platby (6 otázek)
 3. 📋 Proces a průběh (6 otázek)
 4. ⚖️ Právní otázky (4 otázky)
@@ -110,7 +110,7 @@
 8. ❓ Ostatní (11 otázek)
 
 **Nejčastější otázky:**
-- "Potřebuji advokáta nebo stačí ClaimBuddy?"
+- "Potřebuji advokáta nebo stačí Pojistná Pomoc?"
 - "Kolik to stojí?"
 - "Jak dlouho trvá vyřízení?"
 - "Co když pojišťovna odmítne?"
@@ -358,13 +358,13 @@ My je k tomu donutíme."
 
 ## 🎨 Tone of Voice - Shrnutí
 
-**ClaimBuddy píše jako:**
+**Pojistná Pomoc píše jako:**
 - Přátelský expert (ne formální, ne příliš casual)
 - Empatický průvodce (rozumíme stresu)
 - Transparentní partner (žádné skrývání)
 - Proaktivní helper (vysvětlujeme proč)
 
-**ClaimBuddy NENÍ:**
+**Pojistná Pomoc NENÍ:**
 - Formální korporát ("Vážený pane...")
 - Příliš casual startup ("Yo bro!")
 - Agresivní predátor ("Pojišťovny jsou zlé!")
@@ -426,13 +426,13 @@ My je k tomu donutíme."
 
 Pro dotazy k copywritingu:
 - Email: radim@wikiporadce.cz
-- Všechny materiály v: `/Users/Radim/Projects/claimbuddy/content/copy/`
+- Všechny materiály v: `<project-root>/content/copy/`
 
 ---
 
 **Status:** ✅ **HOTOVO - Připraveno k implementaci**
 
-Všech 10 souborů je kompletních, review-ready a připravených pro okamžité použití v projektu ClaimBuddy.
+Všech 10 souborů je kompletních, review-ready a připravených pro okamžité použití v projektu Pojistná Pomoc.
 
 **Celkový rozsah:** ~35,000 slov profesionálního copywritingu pokrývajícího web, aplikaci, email marketing, social media a UX.
 

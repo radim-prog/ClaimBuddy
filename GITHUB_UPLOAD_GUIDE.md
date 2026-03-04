@@ -1,4 +1,4 @@
-# 📤 Jak nahrát ClaimBuddy na GitHub - Krok za krokem
+# 📤 Jak nahrát Pojistná Pomoc na GitHub - Krok za krokem
 
 **Čas:** 10 minut
 **Obtížnost:** Snadné
@@ -13,7 +13,7 @@ GitHub je jako **"Google Drive pro kód"**:
 - ✅ Collaboration (více lidí může na projektu pracovat)
 - ✅ Vercel se připojí a automaticky deployuje při každé změně
 
-**ClaimBuddy je připravený k nahrání - stačí pár kliků!**
+**Pojistná Pomoc je připravený k nahrání - stačí pár kliků!**
 
 ---
 
@@ -25,7 +25,7 @@ https://github.com
 ```
 
 ### 1.2 Klikni "Sign up"
-- **Username:** Něco profesionálního (např. `radim-prog`, `claimbuddy-dev`)
+- **Username:** Něco profesionálního (např. `radim-prog`, `pojistna-pomoc-dev`)
 - **Email:** Tvůj hlavní email
 - **Password:** Silné heslo (doporučuji uložit do 1Password/LastPass)
 
@@ -58,7 +58,7 @@ https://github.com
 - Možná tě požádá o heslo - zadej ho
 
 ### 2.5 Nastav token
-- **Note:** `ClaimBuddy Deployment Token`
+- **Note:** `Pojistná Pomoc Deployment Token`
 - **Expiration:** `No expiration` (nebo 90 days pokud preferuješ)
 - **Select scopes:** Zaškrtni:
   - ✅ `repo` (celá sekce)
@@ -84,7 +84,7 @@ https://github.com
 - Nebo klikni na `+` vpravo nahoře → **"New repository"**
 
 ### 3.2 Vyplň detaily
-- **Repository name:** `claimbuddy`
+- **Repository name:** `pojistna-pomoc`
 - **Description:** `🏥 AI-powered insurance claims assistant for Czech Republic`
 - **Visibility:**
   - **Private** (doporučuji na začátek - jen ty to vidíš)
@@ -116,7 +116,7 @@ https://github.com
 
 #### 4.2 Jdi do projektu
 ```bash
-cd /Users/Radim/Projects/claimbuddy
+cd <project-root>
 ```
 
 #### 4.3 Zkontroluj git status
@@ -129,12 +129,12 @@ Měl bys vidět: `On branch main` a nějaké commity.
 Zkopíruj svůj **GitHub username** a **nový token** (z kroku 2.7):
 
 ```bash
-git remote add origin https://[TOKEN]@github.com/[USERNAME]/claimbuddy.git
+git remote add origin https://[TOKEN]@github.com/[USERNAME]/pojistna-pomoc.git
 ```
 
 **Příklad** (doplň své hodnoty):
 ```bash
-git remote add origin https://ghp_xxxYOURTOKENxxx@github.com/radim-prog/claimbuddy.git
+git remote add origin https://ghp_xxxYOURTOKENxxx@github.com/radim-prog/pojistna-pomoc.git
 ```
 
 #### 4.5 Push na GitHub
@@ -147,7 +147,7 @@ Měl bys vidět:
 Enumerating objects: 150, done.
 Counting objects: 100% (150/150), done.
 ...
-To https://github.com/radim-prog/claimbuddy.git
+To https://github.com/radim-prog/pojistna-pomoc.git
  * [new branch]      main -> main
 ```
 
@@ -168,12 +168,12 @@ https://desktop.github.com/
 
 #### 4.3 Add existing repository
 - File → Add Local Repository
-- Choose: `/Users/Radim/Projects/claimbuddy`
+- Choose: `<project-root>`
 - Klikni "Add repository"
 
 #### 4.4 Publish repository
 - Klikni na "Publish repository" nahoře
-- **Name:** claimbuddy
+- **Name:** pojistna-pomoc
 - **Description:** AI-powered insurance claims assistant
 - Vyber Private nebo Public
 - Klikni "Publish repository"
@@ -186,7 +186,7 @@ https://desktop.github.com/
 
 ### 5.1 Jdi na GitHub
 ```
-https://github.com/[USERNAME]/claimbuddy
+https://github.com/[USERNAME]/pojistna-pomoc
 ```
 
 ### 5.2 Měl bys vidět:
@@ -214,7 +214,7 @@ https://github.com/[USERNAME]/claimbuddy
 - Token: uložený v textovém souboru
 
 ### ✅ Repository vytvořen
-- URL: `https://github.com/[username]/claimbuddy`
+- URL: `https://github.com/[username]/pojistna-pomoc`
 - Visibility: Private nebo Public
 
 ### ✅ Kód nahrán
@@ -230,7 +230,7 @@ https://github.com/[USERNAME]/claimbuddy
 Pošli mi **URL tvého GitHub repository**:
 
 ```
-https://github.com/radim-prog/claimbuddy
+https://github.com/radim-prog/pojistna-pomoc
 ```
 
 (Nahraď `radim-prog` svým username)

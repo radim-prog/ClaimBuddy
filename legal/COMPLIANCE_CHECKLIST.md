@@ -1,4 +1,4 @@
-# Compliance Checklist pro ClaimBuddy
+# Compliance Checklist pro Pojistná Pomoc
 
 **Verze:** 1.0
 **Účinnost od:** 1. ledna 2026
@@ -7,7 +7,7 @@
 
 ## O tomto dokumentu
 
-Tento checklist obsahuje **všechny právní a compliance požadavky** které MUSÍ být splněny před spuštěním ClaimBuddy.
+Tento checklist obsahuje **všechny právní a compliance požadavky** které MUSÍ být splněny před spuštěním Pojistná Pomoc.
 
 **Struktura:**
 - ❗ **KRITICKÉ** - MUSÍ být před launchem (může vést k pokutám/zákazu provozu)
@@ -61,7 +61,7 @@ Tento checklist obsahuje **všechny právní a compliance požadavky** které MU
 
 ### 💡 DOPORUČENÉ
 
-- [ ] **Ochranná známka "ClaimBuddy"**
+- [ ] **Ochranná známka "Pojistná Pomoc"**
   - Podání na: [Úřad průmyslového vlastnictví, upv.gov.cz]
   - **Termín:** 12-18 měsíců do rozhodnutí
   - **Náklady:** 2 900 Kč (1 třída), + 1 000 Kč za další třídu
@@ -76,12 +76,12 @@ Tento checklist obsahuje **všechny právní a compliance požadavky** které MU
 ### ❗ KRITICKÉ (před launchem)
 
 - [ ] **Jmenování správce osobních údajů**
-  - = ClaimBuddy s.r.o.
-  - Kontakt: gdpr@claimbuddy.cz
+  - = Pojistná Pomoc s.r.o.
+  - Kontakt: gdpr@pu.zajcon.cz
 
 - [ ] **Zásady ochrany osobních údajů** (Privacy Policy)
   - ✅ Vytvořeno: `/legal/PRIVACY_POLICY.md`
-  - [ ] Publikováno na webu: www.claimbuddy.cz/ochrana-osobnich-udaju
+  - [ ] Publikováno na webu: www.pu.zajcon.cz/ochrana-osobnich-udaju
   - [ ] Link v patičce webu
 
 - [ ] **Formulář souhlasu se zpracováním citlivých údajů**
@@ -110,8 +110,8 @@ Tento checklist obsahuje **všechny právní a compliance požadavky** které MU
   - [ ] Šifrované zálohy
 
 - [ ] **Proces pro uplatnění práv subjektů** (přístup, výmaz, oprava)
-  - [ ] Formulář na webu: www.claimbuddy.cz/gdpr-zadost
-  - [ ] Email: gdpr@claimbuddy.cz (automatická odpověď do 24h)
+  - [ ] Formulář na webu: www.pu.zajcon.cz/gdpr-zadost
+  - [ ] Email: gdpr@pu.zajcon.cz (automatická odpověď do 24h)
   - [ ] Interní SOP (Standard Operating Procedure) pro vyřízení žádostí
   - **Lhůta:** 30 dnů od obdržení žádosti
 
@@ -127,7 +127,7 @@ Tento checklist obsahuje **všechny právní a compliance požadavky** které MU
 ### ⚠️ DŮLEŽITÉ (do 3 měsíců)
 
 - [ ] **Jmenování DPO (Data Protection Officer)**
-  - **NENÍ povinné** pro ClaimBuddy (není veřejný orgán ani rozsáhlé zpracování citlivých dat)
+  - **NENÍ povinné** pro Pojistná Pomoc (není veřejný orgán ani rozsáhlé zpracování citlivých dat)
   - **Doporučeno:** Externe DPO na konzultační bázi
   - **Poskytovatelé:** [seznam na uoou.cz]
   - **Náklady:** 5 000-15 000 Kč/měsíc (dle rozsahu)
@@ -162,14 +162,14 @@ Tento checklist obsahuje **všechny právní a compliance požadavky** které MU
 
 - [ ] **Obchodní podmínky**
   - ✅ Vytvořeno: `/legal/TERMS_AND_CONDITIONS.md`
-  - [ ] Publikováno na webu: www.claimbuddy.cz/obchodni-podminky
+  - [ ] Publikováno na webu: www.pu.zajcon.cz/obchodni-podminky
   - [ ] Checkbox při registraci: "Souhlasím s Obchodními podmínkami"
   - [ ] Verzování (při změně podmínek notifikovat klienty)
 
 - [ ] **Reklamační řád**
   - ✅ Vytvořeno: `/legal/COMPLAINTS_POLICY.md`
   - [ ] Publikováno na webu
-  - [ ] Email: reklamace@claimbuddy.cz (funkční, sledovaný)
+  - [ ] Email: reklamace@pu.zajcon.cz (funkční, sledovaný)
 
 - [ ] **Disclaimer na každé stránce**
   - ✅ Texty připraveny: `/legal/WEBSITE_DISCLAIMER.md`
@@ -178,10 +178,10 @@ Tento checklist obsahuje **všechny právní a compliance požadavky** které MU
   - [ ] V pricing sekci: "Negarantujeme výsledek"
 
 - [ ] **Kontaktní údaje v patičce**
-  - Název: ClaimBuddy s.r.o.
+  - Název: Pojistná Pomoc s.r.o.
   - IČO: [doplnit]
   - Sídlo: [adresa]
-  - Email: info@claimbuddy.cz
+  - Email: info@pu.zajcon.cz
   - Telefon: [doplnit]
   - Odkaz na obchodní podmínky, GDPR, cookies
 
@@ -463,16 +463,16 @@ Tento checklist obsahuje **všechny právní a compliance požadavky** které MU
 
 ### ❗ KRITICKÉ (od prvního klienta)
 
-- [ ] **Funkční email: info@claimbuddy.cz**
+- [ ] **Funkční email: info@pu.zajcon.cz**
   - Odpověď do 24 hodin (pracovní den)
   - Auto-reply: "Děkujeme za email, odpovíme do 24 hodin"
 
-- [ ] **Funkční email: reklamace@claimbuddy.cz**
+- [ ] **Funkční email: reklamace@pu.zajcon.cz**
   - Sledován denně
   - Odpověď do 5 pracovních dnů
   - Eskalace pro urgentní případy
 
-- [ ] **Funkční email: gdpr@claimbuddy.cz**
+- [ ] **Funkční email: gdpr@pu.zajcon.cz**
   - GDPR žádosti (přístup, výmaz, oprava)
   - Odpověď do 30 dnů (zákonná lhůta)
 
@@ -490,7 +490,7 @@ Tento checklist obsahuje **všechny právní a compliance požadavky** které MU
 - [ ] **Znalostní báze (FAQ)**
   - Nejčastější dotazy
   - Návody (jak nahrát dokumenty, jak sledovat stav případu)
-  - **Umístění:** www.claimbuddy.cz/faq
+  - **Umístění:** www.pu.zajcon.cz/faq
 
 - [ ] **Live chat**
   - Intercom, Tawk.to (má free tier)
@@ -673,9 +673,9 @@ Tento checklist obsahuje **všechny právní a compliance požadavky** které MU
 - [ ] Fakturační systém (Fakturoid)
 
 **Support:**
-- [ ] info@claimbuddy.cz funkční
-- [ ] reklamace@claimbuddy.cz funkční
-- [ ] gdpr@claimbuddy.cz funkční
+- [ ] info@pu.zajcon.cz funkční
+- [ ] reklamace@pu.zajcon.cz funkční
+- [ ] gdpr@pu.zajcon.cz funkční
 - [ ] Telefon funkční (záznamník)
 
 **Tech:**
@@ -768,11 +768,11 @@ Kontaktujte právníka specializujícího se na:
 Tento checklist je informativní a nenahrazuje právní poradenství.
 Pro konkrétní situaci konzultujte s advokátem.
 
-ClaimBuddy s.r.o. neručí za úplnost nebo aktuálnost tohoto dokumentu.
+Pojistná Pomoc s.r.o. neručí za úplnost nebo aktuálnost tohoto dokumentu.
 
 **Poslední update:** 1. ledna 2026
 **Autor:** [Radim / Claude Code]
 
 ---
 
-*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [doplnit]*
+*Verze 1.0 | Pojistná Pomoc s.r.o. | IČO: [doplnit]*

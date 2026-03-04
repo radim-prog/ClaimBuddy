@@ -47,7 +47,7 @@ export default function NewCasePage() {
   return (
     <main className="container max-w-3xl py-12">
       <h1 className="text-3xl font-bold">Nahlásit pojistnou událost</h1>
-      <p className="mt-3 text-gray-600">Tato verze ukládá případ přímo do Notion databáze týmu ClaimBuddy.</p>
+      <p className="mt-3 text-gray-600">Tato verze ukládá případ přímo do Notion databáze týmu Pojistná Pomoc.</p>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-4 rounded-xl border bg-white p-6">
         <input required name="fullName" placeholder="Jméno a příjmení" className="w-full rounded border p-3" />

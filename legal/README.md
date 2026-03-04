@@ -1,4 +1,4 @@
-# Právní dokumentace ClaimBuddy
+# Právní dokumentace Pojistná Pomoc
 
 **Vytvořeno:** 1. listopadu 2025
 **Autor:** Claude Code (Anthropic)
@@ -8,7 +8,7 @@
 
 ## Obsah této složky
 
-Tato složka obsahuje **kompletní sadu právních dokumentů** pro spuštění služby ClaimBuddy - asistence při pojistných událostech.
+Tato složka obsahuje **kompletní sadu právních dokumentů** pro spuštění služby Pojistná Pomoc - asistence při pojistných událostech.
 
 ### Dokumenty vytvořené:
 
@@ -61,7 +61,7 @@ Tato složka obsahuje **kompletní sadu právních dokumentů** pro spuštění 
 **Obsahuje:**
 - Rozsah služeb (co děláme, co NE)
 - Cenová politika (success fee 15-20% vs. fixed fee 490-1990 Kč)
-- Povinnosti klienta a ClaimBuddy
+- Povinnosti klienta a Pojistná Pomoc
 - Omezení odpovědnosti
 - Ukončení smlouvy
 - GDPR základy
@@ -72,7 +72,7 @@ Tato složka obsahuje **kompletní sadu právních dokumentů** pro spuštění 
 - ❌ Negarantujeme výsledek (rozhoduje pojišťovna)
 
 **Použití:**
-- Link v patičce: `www.claimbuddy.cz/obchodni-podminky`
+- Link v patičce: `www.pu.zajcon.cz/obchodni-podminky`
 - Checkbox při registraci: "Souhlasím s Obchodními podmínkami"
 
 ---
@@ -87,7 +87,7 @@ Tato složka obsahuje **kompletní sadu právních dokumentů** pro spuštění 
 - Jak dlouho je uchováváme (3 roky)
 - Komu je předáváme (pojišťovny, IT poskytovatelé)
 - Vaše práva (přístup, výmaz, oprava, odvolání)
-- Kontakt: gdpr@claimbuddy.cz
+- Kontakt: gdpr@pu.zajcon.cz
 
 **Speciální focus:**
 - Zdravotní údaje (Article 9 GDPR) - vyžaduje explicitní souhlas
@@ -95,7 +95,7 @@ Tato složka obsahuje **kompletní sadu právních dokumentů** pro spuštění 
 - Předání do USA (Google, Facebook) - Adequacy Decision
 
 **Použití:**
-- Link v patičce: `www.claimbuddy.cz/ochrana-osobnich-udaju`
+- Link v patičce: `www.pu.zajcon.cz/ochrana-osobnich-udaju`
 - PDF ke stažení
 - Odkaz z cookie banneru
 
@@ -181,7 +181,7 @@ Tato složka obsahuje **kompletní sadu právních dokumentů** pro spuštění 
 - Soudní řešení (jako ultima ratio)
 
 **Kontakty:**
-- Email: **reklamace@claimbuddy.cz**
+- Email: **reklamace@pu.zajcon.cz**
 - Odpověď do 5 pracovních dnů
 - Vyřízení do 30 dnů
 
@@ -211,7 +211,7 @@ Tato složka obsahuje **kompletní sadu právních dokumentů** pro spuštění 
   - Tlačítko "Přijmout vše"
   - Tlačítko "Odmítnout vše" (stejně viditelné!)
   - Tlačítko "Nastavení" (granulární volba)
-- **Cookie policy page:** `www.claimbuddy.cz/cookies`
+- **Cookie policy page:** `www.pu.zajcon.cz/cookies`
 - **Ikona v patičce** pro změnu nastavení kdykoliv
 
 **Compliance:**
@@ -337,7 +337,7 @@ V dokumentech najdete `[doplnit]` - vyplňte:
 **Automatizace:**
 ```bash
 # Najít všechny [doplnit] v souborech
-grep -r "\[doplnit\]" /Users/Radim/Projects/claimbuddy/legal/
+grep -r "\[doplnit\]" <project-root>/legal/
 
 # Nahradit pomocí sed nebo ručně
 sed -i '' 's/\[doplnit IČO\]/12345678/g' *.md
@@ -347,11 +347,11 @@ sed -i '' 's/\[doplnit IČO\]/12345678/g' *.md
 
 **Struktura URL:**
 ```
-www.claimbuddy.cz/obchodni-podminky
-www.claimbuddy.cz/ochrana-osobnich-udaju
-www.claimbuddy.cz/cookies
-www.claimbuddy.cz/reklamacni-rad
-www.claimbuddy.cz/gdpr-souhlas
+www.pu.zajcon.cz/obchodni-podminky
+www.pu.zajcon.cz/ochrana-osobnich-udaju
+www.pu.zajcon.cz/cookies
+www.pu.zajcon.cz/reklamacni-rad
+www.pu.zajcon.cz/gdpr-souhlas
 ```
 
 **Formáty:**
@@ -359,8 +359,8 @@ www.claimbuddy.cz/gdpr-souhlas
 - PDF (download) - generovat z HTML (Puppeteer, wkhtmltopdf)
 
 **SEO:**
-- Meta title: "Obchodní podmínky | ClaimBuddy"
-- Meta description: "Přečtěte si obchodní podmínky služby ClaimBuddy..."
+- Meta title: "Obchodní podmínky | Pojistná Pomoc"
+- Meta description: "Přečtěte si obchodní podmínky služby Pojistná Pomoc..."
 - Canonical URL
 
 ### 4. Implementace features
@@ -368,7 +368,7 @@ www.claimbuddy.cz/gdpr-souhlas
 **GDPR:**
 - [ ] Cookie consent banner (OneTrust, Cookiebot, custom)
 - [ ] GDPR consent form pro health data (modal před uploadem)
-- [ ] Proces pro GDPR žádosti (email gdpr@claimbuddy.cz → ticket)
+- [ ] Proces pro GDPR žádosti (email gdpr@pu.zajcon.cz → ticket)
 - [ ] Databáze pro uložení souhlasů (timestamp, IP, user agent)
 
 **Smlouvy:**
@@ -377,9 +377,9 @@ www.claimbuddy.cz/gdpr-souhlas
 - [ ] Archivace podepsaných smluv (AWS S3, šifrovaně)
 
 **Emails:**
-- [ ] Nastavit info@claimbuddy.cz
-- [ ] Nastavit reklamace@claimbuddy.cz
-- [ ] Nastavit gdpr@claimbuddy.cz
+- [ ] Nastavit info@pu.zajcon.cz
+- [ ] Nastavit reklamace@pu.zajcon.cz
+- [ ] Nastavit gdpr@pu.zajcon.cz
 - [ ] Auto-reply (potvrzení přijetí do 24h)
 - [ ] Templates pro emaily (welcome, rejected, success)
 
@@ -500,23 +500,23 @@ Kombinace těchto dvou pokryje 90% potřeb.
 
 ## Kontakt
 
-**Projekt:** ClaimBuddy
+**Projekt:** Pojistná Pomoc
 **Kontakt:** radim@wikiporadce.cz
-**Složka:** `/Users/Radim/Projects/claimbuddy/legal/`
+**Složka:** `<project-root>/legal/`
 
 **Pro dotazy:**
 - Technické: Claude Code (tento AI asistent)
 - Právní: Konzultujte s advokátem
-- GDPR: gdpr@claimbuddy.cz (po spuštění)
+- GDPR: gdpr@pu.zajcon.cz (po spuštění)
 
 ---
 
 ## Licence
 
-Tyto dokumenty jsou vytvořeny pro interní použití ClaimBuddy s.r.o.
+Tyto dokumenty jsou vytvořeny pro interní použití Pojistná Pomoc s.r.o.
 
 **Použití:**
-- ✅ Můžete používat pro ClaimBuddy
+- ✅ Můžete používat pro Pojistná Pomoc
 - ✅ Můžete upravovat dle potřeb
 - ❌ Neprodávejte jako šablony třetím stranám
 - ❌ Negarantujeme právní správnost (konzultujte s advokátem)
@@ -528,5 +528,5 @@ Tyto dokumenty jsou vytvořeny pro interní použití ClaimBuddy s.r.o.
 
 ---
 
-*Držím palce s ClaimBuddy! 🚀*
+*Držím palce s Pojistná Pomoc! 🚀*
 *- Claude*

@@ -65,22 +65,22 @@ Všechno by mělo fungovat bez 401 errors.
 
 Všechny tyto soubory nyní obsahují Authorization header:
 
-1. `/Users/Radim/Projects/claimbuddy/components/cases/case-messages.tsx`
+1. `<project-root>/components/cases/case-messages.tsx`
    - POST /api/cases/[id]/messages
 
-2. `/Users/Radim/Projects/claimbuddy/components/cases/case-ai-assistant.tsx`
+2. `<project-root>/components/cases/case-ai-assistant.tsx`
    - POST /api/ai/chat
 
-3. `/Users/Radim/Projects/claimbuddy/components/cases/case-documents.tsx`
+3. `<project-root>/components/cases/case-documents.tsx`
    - POST /api/upload
 
-4. `/Users/Radim/Projects/claimbuddy/app/(dashboard)/cases/new/page.tsx`
+4. `<project-root>/app/(dashboard)/cases/new/page.tsx`
    - POST /api/upload (file upload)
    - POST /api/cases (create case)
 
 ## Utility Helper
 
-Nový soubor `/Users/Radim/Projects/claimbuddy/lib/api-client.ts` obsahuje:
+Nový soubor `<project-root>/lib/api-client.ts` obsahuje:
 
 - `authenticatedFetch()` - Fetch wrapper s auto token
 - `apiRequest()` - JSON API helper s auto token + error handling

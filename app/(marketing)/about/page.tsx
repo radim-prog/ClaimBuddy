@@ -9,7 +9,7 @@ export default function AboutPage() {
           Jsme na vaší straně. Ne na straně pojišťovny.
         </h1>
         <p className="mt-6 text-lg text-gray-600">
-          ClaimBuddy vznikl z osobní zkušenosti. Když jsem musel vyřídit pojistnou událost, bylo to jako navigovat bludiště
+          Pojistná Pomoc vznikl z osobní zkušenosti. Když jsem musel vyřídit pojistnou událost, bylo to jako navigovat bludiště
           plné papírů, odmítnutí a nízkých nabídek. Pomyslel jsem si: Musí to jít líp. A tak jsme to vytvořili.
         </p>
       </div>
@@ -18,7 +18,7 @@ export default function AboutPage() {
       <div className="mt-16">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Proč ClaimBuddy vznikl</CardTitle>
+            <CardTitle className="text-2xl">Proč Pojistná Pomoc vznikl</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="prose prose-gray max-w-none">
@@ -50,9 +50,9 @@ export default function AboutPage() {
                 který bojuje za ně?
               </p>
 
-              <p className="mt-4">A tak vznikl ClaimBuddy.</p>
+              <p className="mt-4">A tak vznikl Pojistná Pomoc.</p>
 
-              <p className="mt-6 text-sm italic">– Patrik, zakladatel ClaimBuddy</p>
+              <p className="mt-6 text-sm italic">– Patrik, zakladatel Pojistná Pomoc</p>
             </div>
           </CardContent>
         </Card>

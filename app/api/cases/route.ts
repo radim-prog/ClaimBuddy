@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createNotionCase, listNotionCases } from '@/lib/notion';
 import { errorResponse, successResponse } from '@/lib/api-helpers';
+import { notifyCaseCreated } from '@/lib/notifications';
 
 const publicCaseSchema = z.object({
   fullName: z.string().min(2),
@@ -33,6 +34,11 @@ export async function POST(request: NextRequest) {
     }
 
     const created = await createNotionCase(validation.data);
+    void notifyCaseCreated({
+      email: validation.data.email,
+      fullName: validation.data.fullName,
+      caseNumber: created.caseNumber,
+    }).catch(() => undefined);
     return successResponse({ id: created.id, caseNumber: created.caseNumber, notionUrl: created.url }, 201);
   } catch (error: any) {
     return errorResponse(error.message || 'Failed to create case', 500);

@@ -1,21 +1,16 @@
-import { errorResponse } from '@/lib/api-helpers';
+import { NextRequest } from 'next/server';
+import { errorResponse, successResponse } from '@/lib/api-helpers';
+import { requireAdminRequest } from '@/lib/admin-auth';
+import { getNotionCaseById } from '@/lib/notion';
 
-export async function GET() {
-  return errorResponse('Endpoint disabled in Notion mode', 501);
-}
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  const unauthorized = requireAdminRequest(request);
+  if (unauthorized) return unauthorized;
 
-export async function POST() {
-  return errorResponse('Endpoint disabled in Notion mode', 501);
-}
-
-export async function PATCH() {
-  return errorResponse('Endpoint disabled in Notion mode', 501);
-}
-
-export async function PUT() {
-  return errorResponse('Endpoint disabled in Notion mode', 501);
-}
-
-export async function DELETE() {
-  return errorResponse('Endpoint disabled in Notion mode', 501);
+  try {
+    const item = await getNotionCaseById(params.id);
+    return successResponse({ case: item });
+  } catch (error: any) {
+    return errorResponse(error.message || 'Failed to load case', 500);
+  }
 }

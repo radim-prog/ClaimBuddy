@@ -19,14 +19,14 @@
 **Velikost:** Obvykle pár KB (nejsou škodlivé)
 
 ### 1.2 Jak fungují
-1. Navštívíte web ClaimBuddy
+1. Navštívíte web Pojistná Pomoc
 2. Server pošle cookie do Vašeho prohlížeče
 3. Prohlížeč cookie uloží
 4. Při další návštěvě prohlížeč cookie odešle zpět serveru
 5. Server Vás "pozná" (například Vás automaticky přihlásí)
 
 ### 1.3 Kdo cookies používá
-- **ClaimBuddy** (first-party cookies)
+- **Pojistná Pomoc** (first-party cookies)
 - **Třetí strany** (Google Analytics, Facebook Pixel) - third-party cookies
 
 ---
@@ -51,7 +51,7 @@
 
 **Právní základ:** Čl. 6 odst. 1 písm. f) GDPR (oprávněný zájem na funkčnosti služby)
 
-**Dodavatel:** ClaimBuddy s.r.o. (first-party)
+**Dodavatel:** Pojistná Pomoc s.r.o. (first-party)
 
 ---
 
@@ -256,7 +256,7 @@
 
 **Kdykoliv můžete změnit:**
 - Klikněte na ikonu cookies v patičce webu
-- Nebo navštivte: www.claimbuddy.cz/nastaveni-cookies
+- Nebo navštivte: www.pu.zajcon.cz/nastaveni-cookies
 - Upravte preference
 - Uložte
 
@@ -309,7 +309,7 @@
 
 **Kdykoliv můžete:**
 - Odvolat souhlas s analytickými nebo marketingovými cookies
-- Změnit nastavení na: www.claimbuddy.cz/nastaveni-cookies
+- Změnit nastavení na: www.pu.zajcon.cz/nastaveni-cookies
 - Nebo vymazat cookies v prohlížeči
 
 **Účinkuje okamžitě** (pro budoucnost, minulá data zůstávají).
@@ -323,7 +323,7 @@
 - Typ zařízení a prohlížeče
 
 **Jak získat:**
-- Email na: gdpr@claimbuddy.cz
+- Email na: gdpr@pu.zajcon.cz
 - Pošleme export do 30 dnů
 
 ### 4.3 Právo na výmaz
@@ -333,7 +333,7 @@
 - Může trvat až 90 dnů (dle retention policy poskytovatelů)
 
 **Jak požádat:**
-- Email na: gdpr@claimbuddy.cz
+- Email na: gdpr@pu.zajcon.cz
 
 ### 4.4 Právo na námitku
 
@@ -375,7 +375,7 @@ Telefon: +420 234 665 111
 
 ## 6. Cookies a mobilní aplikace
 
-### 6.1 ClaimBuddy iOS/Android aplikace
+### 6.1 Pojistná Pomoc iOS/Android aplikace
 
 **Nepoužíváme cookies v aplikaci** (aplikace nepotřebují browser cookies).
 
@@ -432,11 +432,11 @@ Tyto zásady můžeme změnit pokud:
 ## 8. Kontakt
 
 ### 8.1 Dotazy k cookies
-**Email:** gdpr@claimbuddy.cz
+**Email:** gdpr@pu.zajcon.cz
 **Telefon:** [Kontaktní telefon bude doplněn před launch]
 
 ### 8.2 GDPR žádosti
-**Email:** gdpr@claimbuddy.cz
+**Email:** gdpr@pu.zajcon.cz
 
 **Můžete požádat o:**
 - Přístup k datům z cookies
@@ -475,11 +475,11 @@ Tyto zásady můžeme změnit pokud:
 
 **Nezbytné:**
 ```
-session_id | Přihlášení | Session | ClaimBuddy
-csrf_token | Bezpečnost | 1 hodina | ClaimBuddy
-cookie_consent | Souhlas s cookies | 1 rok | ClaimBuddy
-language | Jazyk | 1 rok | ClaimBuddy
-cart_id | Košík | 7 dnů | ClaimBuddy
+session_id | Přihlášení | Session | Pojistná Pomoc
+csrf_token | Bezpečnost | 1 hodina | Pojistná Pomoc
+cookie_consent | Souhlas s cookies | 1 rok | Pojistná Pomoc
+language | Jazyk | 1 rok | Pojistná Pomoc
+cart_id | Košík | 7 dnů | Pojistná Pomoc
 ```
 
 **Analytické:**
@@ -554,12 +554,12 @@ li_sugr | LinkedIn | 3 měsíce | LinkedIn
 ---
 
 **Máte otázky k cookies?**
-Napište nám: gdpr@claimbuddy.cz
+Napište nám: gdpr@pu.zajcon.cz
 
 **Nastavení cookies:**
-[www.claimbuddy.cz/nastaveni-cookies]
+[www.pu.zajcon.cz/nastaveni-cookies]
 
 ---
 
 *Tyto Zásady používání cookies jsou v souladu s nařízením GDPR (EU) 2016/679 a zákonem č. 127/2005 Sb. (o elektronických komunikacích).*
-*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [IČO bude doplněno před launch]*
+*Verze 1.0 | Pojistná Pomoc s.r.o. | IČO: [IČO bude doplněno před launch]*

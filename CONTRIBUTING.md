@@ -13,8 +13,8 @@
 1. Fork the repository
 2. Clone your fork:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/claimbuddy.git
-   cd claimbuddy
+   git clone https://github.com/YOUR_USERNAME/pojistna-pomoc.git
+   cd pojistna-pomoc
    ```
 
 3. Install dependencies:

@@ -1,4 +1,4 @@
-# Obchodní podmínky ClaimBuddy
+# Obchodní podmínky Pojistná Pomoc
 
 **Účinnost od:** 1. ledna 2026
 **Verze:** 1.0
@@ -8,27 +8,27 @@
 ## 1. Úvodní ustanovení
 
 ### 1.1 Poskytovatel služby
-**ClaimBuddy s.r.o.**
+**Pojistná Pomoc s.r.o.**
 IČO: [IČO bude doplněno před launch]
 Sídlo: [Adresa sídla bude doplněna před launch]
 Zapsaná u Krajského soudu v [Město bude doplněno před launch], spisová značka [Spisová značka bude doplněna před launch]
-Email: info@claimbuddy.cz
+Email: info@pu.zajcon.cz
 Telefon: [Kontaktní telefon bude doplněn před launch]
 
-### 1.2 Co je ClaimBuddy?
-ClaimBuddy poskytuje **asistenční služby** při řešení pojistných událostí. Pomáháme klientům:
+### 1.2 Co je Pojistná Pomoc?
+Pojistná Pomoc poskytuje **asistenční služby** při řešení pojistných událostí. Pomáháme klientům:
 - Správně vyplnit formuláře a hlášení pojistné události
 - Zdokumentovat škodu (fotografie, výpisy, lékařské zprávy)
 - Komunikovat s pojišťovnou
 - Sledovat průběh řešení
 - Poradit s reklamací či odvoláním
 
-**DŮLEŽITÉ: ClaimBuddy NENÍ:**
+**DŮLEŽITÉ: Pojistná Pomoc NENÍ:**
 - Pojišťovací zprostředkovatel (nemáme licenci ČNB)
 - Advokátní kancelář (neposkytujeme právní zastoupení)
 - Pojišťovna (nerozhodujeme o výši plnění)
 
-**Konečné rozhodnutí** o uznání nebo zamítnutí pojistné události a o výši plnění **vždy dělá pojišťovna**, ne ClaimBuddy.
+**Konečné rozhodnutí** o uznání nebo zamítnutí pojistné události a o výši plnění **vždy dělá pojišťovna**, ne Pojistná Pomoc.
 
 ---
 
@@ -139,24 +139,24 @@ Klient nesmí:
 
 ---
 
-## 5. Povinnosti ClaimBuddy
+## 5. Povinnosti Pojistná Pomoc
 
 ### 5.1 Profesionální péče
-ClaimBuddy se zavazuje:
+Pojistná Pomoc se zavazuje:
 - Jednat s odbornou péčí
 - Respektovat pokyny klienta
 - Informovat o postupu vyřizování
 - Chránit zájmy klienta v mezích zákona
 
 ### 5.2 Transparentnost
-ClaimBuddy bude:
+Pojistná Pomoc bude:
 - Průběžně informovat o stavu případu
 - Vysvětlovat rozhodnutí pojišťovny
 - Konzultovat klíčové kroky s klientem
 - Poskytovat přístup k dokumentaci
 
 ### 5.3 GDPR compliance
-ClaimBuddy garantuje:
+Pojistná Pomoc garantuje:
 - Bezpečné zpracování osobních údajů
 - Šifrování zdravotních dat
 - Přístup pouze oprávněným osobám
@@ -167,7 +167,7 @@ ClaimBuddy garantuje:
 ## 6. Omezení odpovědnosti
 
 ### 6.1 Rozhodnutí pojišťovny
-ClaimBuddy **NERUČÍ** za:
+Pojistná Pomoc **NERUČÍ** za:
 - Výsledek řízení (uznání/zamítnutí)
 - Výši vyplaceného plnění
 - Délku vyřizování ze strany pojišťovny
@@ -176,21 +176,21 @@ ClaimBuddy **NERUČÍ** za:
 **Pojišťovna** má finální slovo o tom, zda nárok uzná a kolik vyplatí.
 
 ### 6.2 Třetí strany
-ClaimBuddy není zodpovědný za:
+Pojistná Pomoc není zodpovědný za:
 - Jednání pojišťovny (průtahy, chyby)
 - Kvalitu lékařských zpráv od lékařů
 - Dostupnost svědků nebo důkazů
 - Technické problémy na straně pojišťovny
 
 ### 6.3 Vyšší moc
-ClaimBuddy neodpovídá za škody způsobené:
+Pojistná Pomoc neodpovídá za škody způsobené:
 - Živelními pohromami
 - Výpadky internetu/elektřiny
 - Změnou legislativy
 - Epidemií nebo válečným stavem
 
 ### 6.4 Maximální výše náhrady
-V případě prokázaného zavinění ze strany ClaimBuddy je **maximální výše náhrady škody omezena na výši zaplacené odměny** (success fee nebo fixed fee).
+V případě prokázaného zavinění ze strany Pojistná Pomoc je **maximální výše náhrady škody omezena na výši zaplacené odměny** (success fee nebo fixed fee).
 
 ---
 
@@ -207,14 +207,14 @@ Smlouva trvá:
 - Do ukončení některou ze stran
 
 ### 7.3 Ukončení klientem
-Klient může ukončit kdykoliv písemně na: info@claimbuddy.cz
+Klient může ukončit kdykoliv písemně na: info@pu.zajcon.cz
 
 **Důsledky:**
 - **Success Fee:** Žádná odměna pokud pojišťovna ještě nevyplatila
 - **Fixed Fee:** Odměna je nevratná (již byla poskytnuta služba)
 
-### 7.4 Ukončení ClaimBuddy
-ClaimBuddy může ukončit pokud:
+### 7.4 Ukončení Pojistná Pomoc
+Pojistná Pomoc může ukončit pokud:
 - Klient porušuje povinnosti (nepravdivé info, nespolupráce)
 - Klient manipuluje s fakty
 - Případ je mimo naše kompetence (nutný advokát)
@@ -229,9 +229,9 @@ ClaimBuddy může ukončit pokud:
 ## 8. Ochrana osobních údajů (GDPR)
 
 ### 8.1 Správce údajů
-Správcem osobních údajů je **ClaimBuddy s.r.o.**
+Správcem osobních údajů je **Pojistná Pomoc s.r.o.**
 
-Kontakt pro GDPR: gdpr@claimbuddy.cz
+Kontakt pro GDPR: gdpr@pu.zajcon.cz
 
 ### 8.2 Jaké údaje zpracováváme
 - Jméno, příjmení, datum narození
@@ -261,7 +261,7 @@ Více v **Zásadách ochrany osobních údajů**.
 ## 9. Reklamace
 
 ### 9.1 Jak reklamovat
-Email: reklamace@claimbuddy.cz
+Email: reklamace@pu.zajcon.cz
 Telefon: [Kontaktní telefon bude doplněn před launch]
 Poštou: [Adresa sídla bude doplněna před launch]
 
@@ -285,7 +285,7 @@ Spotřebitel má právo na mimosoudní řešení sporu přes:
 ### 10.3 Soudní řešení
 Pokud se nedohodneme:
 - **Rozhodné právo:** Česká republika
-- **Příslušný soud:** Podle sídla ClaimBuddy nebo bydliště spotřebitele (dle volby spotřebitele)
+- **Příslušný soud:** Podle sídla Pojistná Pomoc nebo bydliště spotřebitele (dle volby spotřebitele)
 
 ---
 
@@ -297,7 +297,7 @@ Souhlasíte s elektronickou komunikací (email, SMS, WhatsApp).
 Důležité dokumenty zasíláme i poštou (na žádost).
 
 ### 11.2 Změny podmínek
-ClaimBuddy může změnit tyto podmínky s 30denním předstihem.
+Pojistná Pomoc může změnit tyto podmínky s 30denním předstihem.
 
 O změně Vás informujeme emailem.
 
@@ -313,7 +313,7 @@ Tyto podmínky jsou v češtině. V případě překladu má přednost česká v
 
 ## 12. Souhlas s podmínkami
 
-**Používáním služeb ClaimBuddy potvrzujete, že:**
+**Používáním služeb Pojistná Pomoc potvrzujete, že:**
 - Jste si přečetli tyto Obchodní podmínky
 - Rozumíte jim a souhlasíte s nimi
 - Jste starší 18 let nebo máte souhlas zákonného zástupce
@@ -322,12 +322,12 @@ Tyto podmínky jsou v češtině. V případě překladu má přednost česká v
 ---
 
 **Máte otázky?**
-Kontaktujte nás: info@claimbuddy.cz
+Kontaktujte nás: info@pu.zajcon.cz
 
 **Stažení PDF:**
-[www.claimbuddy.cz/dokumenty/obchodni-podminky.pdf]
+[www.pu.zajcon.cz/dokumenty/obchodni-podminky.pdf]
 
 ---
 
 *Tyto Obchodní podmínky jsou účinné od 1. ledna 2026.*
-*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [IČO bude doplněno před launch]*
+*Verze 1.0 | Pojistná Pomoc s.r.o. | IČO: [IČO bude doplněno před launch]*

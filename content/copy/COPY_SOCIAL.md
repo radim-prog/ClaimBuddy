@@ -1,4 +1,4 @@
-# Social Media Posts - ClaimBuddy
+# Social Media Posts - Pojistná Pomoc
 
 ## Social Media Strategy
 
@@ -39,7 +39,7 @@ Vyřizovali jste někdy pojistnou událost? Pak tohle znáte...
 
 Co kdyby to šlo jinak?
 
-ClaimBuddy vyřídí pojistnou událost za vás. Bez stresu, bez papírování, bez nízkých nabídek.
+Pojistná Pomoc vyřídí pojistnou událost za vás. Bez stresu, bez papírování, bez nízkých nabídek.
 
 ✅ Průměrně získáte o 23% více
 ✅ Vyřídíme za 14 dní
@@ -48,13 +48,13 @@ ClaimBuddy vyřídí pojistnou událost za vás. Bez stresu, bez papírování, 
 Máte pojistnou událost? Pošlete nám ji.
 → [Link]
 
-#pojistka #pojistnaUdalost #pomoc #claimbuddy #pojisteni
+#pojistka #pojistnaUdalost #pomoc #pojistnaPomoc #pojisteni
 ```
 
 **Vizuál:**
 Carousel (4 slides):
 1. Frustrovaný člověk s papíry (pain point)
-2. ClaimBuddy logo + "My to vyřídíme za vás"
+2. Pojistná Pomoc logo + "My to vyřídíme za vás"
 3. Statistika "O 23% více průměrně"
 4. CTA "Začněte hned" + QR code
 
@@ -71,7 +71,7 @@ Carousel (4 slides):
 
 ```
 "Pojišťovna mi nabídla 18 tisíc za havarované auto.
-ClaimBuddy vyjednal 34 tisíc.
+Pojistná Pomoc vyjednal 34 tisíc.
 
 Zaplatil jsem jim 990 korun a získal 14 tisíc navíc.
 Best investment ever."
@@ -82,14 +82,14 @@ Best investment ever."
 
 Máte pojistnou událost? Pošlete nám ji → [Link]
 
-#pribehy #uspech #claimbuddy #pojistka
+#pribehy #uspech #pojistnaPomoc #pojistka
 ```
 
 **Vizuál:**
 Video testimonial (30-60 sec):
 - Martin mluví do kamery
 - Overlay textu s čísly (18k → 34k)
-- Logo ClaimBuddy na konci
+- Logo Pojistná Pomoc na konci
 
 **Variant - Pokud nemáme video:**
 Grafika s quotem + foto Martina (pokud souhlasil)
@@ -117,9 +117,9 @@ Tady je checklist, co MUSÍTE vyfotit:
 
 💡 TIP: Udělejte 50+ fotek raději. Víc = líp.
 
-Nechcete řešit tohle všechno? ClaimBuddy to udělá za vás → [Link]
+Nechcete řešit tohle všechno? Pojistná Pomoc to udělá za vás → [Link]
 
-#tipy #autoneho #pojistka #claimbuddy
+#tipy #autoneho #pojistka #pojistnaPomoc
 ```
 
 **Vizuál:**
@@ -177,11 +177,11 @@ Po vyjednání: 26,000 Kč (+44%)
 
 Rozdíl? Člověk, který ví jak na ně.
 
-ClaimBuddy vyřídil 500+ případů. Průměrně získáme o 23% více.
+Pojistná Pomoc vyřídil 500+ případů. Průměrně získáme o 23% více.
 
 Máte pojistnou událost? → [Link]
 
-#mytus #realita #pojistka #claimbuddy
+#mytus #realita #pojistka #pojistnaPomoc
 ```
 
 **Vizuál:**
@@ -199,7 +199,7 @@ Split graphic:
 **Copy:**
 
 ```
-Poznávejte tým ClaimBuddy 👋
+Poznávejte tým Pojistná Pomoc 👋
 
 Tohle je Jana, naše Head of Operations.
 
@@ -213,7 +213,7 @@ Víme, jak fungují zevnitř. A to je naše výhoda.
 
 Máte pojistnou událost? Pošlete nám ji → [Link]
 
-#team #onas #claimbuddy #lide
+#team #onas #pojistnaPomoc #lide
 ```
 
 **Vizuál:**
@@ -236,9 +236,9 @@ Foto Jany (casual, ne corporate)
 → I když by mohli vyjednat víc
 
 28 dní trvá průměrně vyřízení pojistné události
-→ S ClaimBuddy: 14 dní
+→ S Pojistná Pomoc: 14 dní
 
-23% je průměrné navýšení, které ClaimBuddy vyjedná
+23% je průměrné navýšení, které Pojistná Pomoc vyjedná
 → To je v průměru +11,500 Kč čistého zisku klientům
 
 500+ případů jsme už vyřídili
@@ -246,14 +246,14 @@ Foto Jany (casual, ne corporate)
 
 Chcete být součástí statistiky? → [Link]
 
-#statistiky #data #pojistka #claimbuddy
+#statistiky #data #pojistka #pojistnaPomoc
 ```
 
 **Vizuál:**
 Infografika (vertikální):
 - Každé číslo = velký bold font
 - Ikona pro každou statistiku
-- Barvy ClaimBuddy brandu
+- Barvy Pojistná Pomoc brandu
 
 **LinkedIn-friendly:** Funguje dobře i na LinkedIn
 
@@ -268,7 +268,7 @@ Infografika (vertikální):
 
 "Měla jsem zatečení v bytě. Pojišťovna nabídla 45 tisíc s tím, že 'to je standardní sazba'.
 
-ClaimBuddy vyjednal 67 tisíc. Zaplatila jsem jim 990 Kč.
+Pojistná Pomoc vyjednal 67 tisíc. Zaplatila jsem jim 990 Kč.
 
 Získala jsem o 21 tisíc víc, než kdybych to řešila sama. Děkuji! 🙏"
 
@@ -278,7 +278,7 @@ Máte pojistnou událost? Pošlete nám ji → [Link]
 
 Nebo si přečtěte víc recenzí: [Google Reviews link]
 
-#recenze #spokojeniKlienti #claimbuddy
+#recenze #spokojeniKlienti #pojistnaPomoc
 ```
 
 **Vizuál:**
@@ -318,7 +318,7 @@ Vráceno 5x? Zní to jako dobrý deal 🙂
 
 Máte pojistnou událost? → [Link]
 
-#faq #cena #claimbuddy
+#faq #cena #pojistnaPomoc
 ```
 
 **Vizuál:**
@@ -347,11 +347,11 @@ Jen tento týden jsme přijali 20+ případů autonehod kvůli sněhu a ledu.
 
 A pokud nechcete řešit papírování a vyjednávání - pošlete to nám.
 
-ClaimBuddy vyřídí za vás → [Link]
+Pojistná Pomoc vyřídí za vás → [Link]
 
 Opatrně na silnicích! ❄️
 
-#zima #sneh #autonehoda #claimbuddy
+#zima #sneh #autonehoda #pojistnaPomoc
 ```
 
 **Vizuál:**
@@ -373,17 +373,17 @@ Instagram má jiný vibe - více vizuální, mladší audience, Stories!
 **Caption:**
 
 ```
-Takhle to vypadá s ClaimBuddy vs. bez ⬇️
+Takhle to vypadá s Pojistná Pomoc vs. bez ⬇️
 
 Slide 1: Pojišťovna nabídla: 18,000 Kč
-Slide 2: ClaimBuddy vyjednal: 26,000 Kč
+Slide 2: Pojistná Pomoc vyjednal: 26,000 Kč
 Slide 3: Váš zisk: +7,010 Kč (po našem poplatku)
 
 To je realita 500+ našich klientů 💚
 
 Máte pojistnou událost? Link v bio 👆
 
-#pojistka #penize #claimbuddy #uspech
+#pojistka #penize #pojistnaPomoc #uspech
 ```
 
 **Vizuál:**
@@ -408,7 +408,7 @@ Text overlay: "Pojišťovna vám nabídla 18 tisíc"
 Person looks disappointed
 
 [Scene 2 - 2-4s]
-Text overlay: "ClaimBuddy enters the chat 💪"
+Text overlay: "Pojistná Pomoc enters the chat 💪"
 
 [Scene 3 - 4-6s]
 Text overlay: "Vyjednáno: 26 tisíc"
@@ -416,7 +416,7 @@ Person celebrates
 
 [Scene 4 - 6-8s]
 Text overlay: "Your win: +7 tisíc"
-ClaimBuddy logo
+Pojistná Pomoc logo
 
 [Scene 5 - 8-10s]
 CTA: "Link v bio"
@@ -425,7 +425,7 @@ CTA: "Link v bio"
 **Audio:** Trending sound (whatever is popular that week)
 
 **Hashtags:**
-#pojistka #fyp #claimbuddy #penize #tipytriky
+#pojistka #fyp #pojistnaPomoc #penize #tipytriky
 
 ---
 
@@ -446,7 +446,7 @@ Co místo toho? Nechte to na nás 💚
 
 Link v bio 👆
 
-#tipy #pojistka #claimbuddy #lifehack
+#tipy #pojistka #pojistnaPomoc #lifehack
 ```
 
 **Vizuál:**
@@ -467,7 +467,7 @@ Když pojišťovna řekne "to je naše standardní nabídka" 💀
 
 Narrator: It was not.
 
-#pojistka #meme #relatable #claimbuddy
+#pojistka #meme #relatable #pojistnaPomoc
 ```
 
 **Vizuál:**
@@ -499,7 +499,7 @@ My se postaráme, aby se to nestalo vám 💚
 
 Link v bio 👆
 
-#statistiky #pojistka #penize #claimbuddy
+#statistiky #pojistka #penize #pojistnaPomoc
 ```
 
 **Vizuál:**
@@ -515,19 +515,19 @@ Clean infographic
 **Caption:**
 
 ```
-Meet the team: Patrik, zakladatel ClaimBuddy 👋
+Meet the team: Patrik, zakladatel Pojistná Pomoc 👋
 
 "V roce 2022 jsem měl autonehodu. Pojišťovna mi nabídla 14 tisíc za škodu, která stála 28 tisíc opravit.
 
 Vzdal jsem to. Přišel jsem o 14 tisíc.
 
-Tehdy jsem si řekl: Musí to jít líp. A tak vznikl ClaimBuddy."
+Tehdy jsem si řekl: Musí to jít líp. A tak vznikl Pojistná Pomoc."
 
 Dnes pomáháme lidem získat, co jim patří 💚
 
 Máte pojistnou událost? Link v bio 👆
 
-#story #founder #claimbuddy #inspirace
+#story #founder #pojistnaPomoc #inspirace
 ```
 
 **Vizuál:**
@@ -573,7 +573,7 @@ Příběh Martina:
 😤 Stres, papírování, telefonáty
 ⏰ Týdny čekání
 
-→ Poslal to ClaimBuddy
+→ Poslal to Pojistná Pomoc
 
 📈 Vyjednali jsme: 26k
 😌 Zero stress
@@ -583,7 +583,7 @@ Příběh Martina:
 
 Další v řadě? Link v bio 👆
 
-#transformation #success #claimbuddy
+#transformation #success #pojistnaPomoc
 ```
 
 **Vizuál:**
@@ -625,7 +625,7 @@ CTA: "Link v bio"
 **Audio:** Upbeat trending audio
 
 **Hashtags:**
-#tutorial #tips #autonehoda #claimbuddy
+#tutorial #tips #autonehoda #pojistnaPomoc
 
 ---
 
@@ -636,7 +636,7 @@ CTA: "Link v bio"
 ```
 📧 Dnes v inboxu:
 
-"Děkuji ClaimBuddy! Pojišťovna původně odmítla úraz vyplatit. Vy jste to otočili a vyjednali 40 tisíc. You guys rock! 🙌"
+"Děkuji Pojistná Pomoc! Pojišťovna původně odmítla úraz vyplatit. Vy jste to otočili a vyjednali 40 tisíc. You guys rock! 🙌"
 
 - Jan V., Ostrava
 
@@ -646,7 +646,7 @@ CTA: "Link v bio"
 
 Máte pojistnou událost? Link v bio 👆
 
-#testimonial #thanks #claimbuddy #love
+#testimonial #thanks #pojistnaPomoc #love
 ```
 
 **Vizuál:**
@@ -676,7 +676,7 @@ It's not that insurance companies are "evil." It's that incentives are misaligne
 💡 The solution?
 Level the playing field.
 
-ClaimBuddy helps individuals get the same expertise insurance companies have in-house. The result? 23% higher payouts on average.
+Pojistná Pomoc helps individuals get the same expertise insurance companies have in-house. The result? 23% higher payouts on average.
 
 The insurance industry is changing. And it's about time.
 
@@ -696,7 +696,7 @@ What's your experience with insurance claims? Share in comments.
 ```
 Milestone: 500 claims processed 🎉
 
-When we started ClaimBuddy 18 months ago, we had a simple mission: make insurance claims fair.
+When we started Pojistná Pomoc 18 months ago, we had a simple mission: make insurance claims fair.
 
 Today:
 ✅ 500+ clients helped
@@ -773,7 +773,7 @@ Thank you to every client who trusted us. This is just the beginning.
 ## Hashtag Strategy
 
 ### Primary (always use):
-#claimbuddy #pojistka #pojistnaUdalost
+#pojistnaPomoc #pojistka #pojistnaUdalost
 
 ### Secondary (rotate):
 #penize #finance #pojisteni #tipy #uspech #autonehoda #pomoc

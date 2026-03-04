@@ -56,7 +56,7 @@ function createUpstashLimiter(requests: number, window: Parameters<typeof Rateli
     redis,
     limiter: Ratelimit.slidingWindow(requests, window),
     analytics: true,
-    prefix: 'claimbuddy',
+    prefix: 'pojistna-pomoc',
   });
 }
 

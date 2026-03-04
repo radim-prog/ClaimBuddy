@@ -6,16 +6,16 @@
 **Alternative headlines:**
 - "Pomáháme lidem získat, co jim patří"
 - "Víme, jak na pojišťovny. Pracovali jsme pro ně."
-- "Založili jsme ClaimBuddy, protože jsme sami zažili, jak je to frustrující"
+- "Založili jsme Pojistná Pomoc, protože jsme sami zažili, jak je to frustrující"
 
 ## Page Subheadline
-"ClaimBuddy vznikl z osobní zkušenosti. Když jsem musel vyřídit pojistnou událost, bylo to jako navigovat bludiště plné papírů, odmítnutí a nízkých nabídek. Pomyslel jsem si: Musí to jít líp. A tak jsme to vytvořili."
+"Pojistná Pomoc vznikl z osobní zkušenosti. Když jsem musel vyřídit pojistnou událost, bylo to jako navigovat bludiště plné papírů, odmítnutí a nízkých nabídek. Pomyslel jsem si: Musí to jít líp. A tak jsme to vytvořili."
 
 ---
 
 ## Founding Story
 
-### 🎯 Proč ClaimBuddy vznikl
+### 🎯 Proč Pojistná Pomoc vznikl
 
 **Personal story (founder's voice):**
 
@@ -36,9 +36,9 @@ Přišel jsem o 14,000 Kč, které mi patřily. Ne proto, že bych neměl právo
 **Tehdy mi došlo:**
 Pojišťovny mají celé týmy lidí, jejichž práce je dát vám co nejméně. Proč by lidi neměli mít tým, který bojuje za ně?
 
-A tak vznikl ClaimBuddy.
+A tak vznikl Pojistná Pomoc.
 
-*– Patrik [Příjmení], zakladatel ClaimBuddy*
+*– Patrik [Příjmení], zakladatel Pojistná Pomoc*
 
 ---
 
@@ -64,7 +64,7 @@ Pojišťovny mají:
 
 **To není férové. My to měníme.**
 
-ClaimBuddy vám dává:
+Pojistná Pomoc vám dává:
 ✓ Experty, kteří vědí, jak pojišťovny fungují
 ✓ Zkušenosti se stovkami podobných případů
 ✓ Čas věnovat se životu místo papírování
@@ -113,12 +113,12 @@ Pojistné události jsou často spojené s těžkými situacemi - nehodou, ztrá
 [Photo placeholder]
 
 **Bio:**
-Bývalý pojišťovací agent s 8 lety zkušeností v ČPP a Allianz. Viděl z první ruky, jak pojišťovny interně fungují a jak se stanovují "standardní nabídky". Založil ClaimBuddy, aby pomohl lidem dostat férové jednání.
+Bývalý pojišťovací agent s 8 lety zkušeností v ČPP a Allianz. Viděl z první ruky, jak pojišťovny interně fungují a jak se stanovují "standardní nabídky". Založil Pojistná Pomoc, aby pomohl lidem dostat férové jednání.
 
 **Fun fact:** V roce 2021 vyjednal pro svého kamaráda navýšení pojistky o 42,000 Kč. To bylo začátkem všeho.
 
 **LinkedIn:** [link]
-**Email:** patrik@claimbuddy.cz
+**Email:** patrik@pu.zajcon.cz
 
 ---
 
@@ -130,10 +130,10 @@ Bývalý pojišťovací agent s 8 lety zkušeností v ČPP a Allianz. Viděl z p
 **Bio:**
 Vystudovala práva na UK Praha, pracovala jako právní asistentka ve firemním oddělení zaměřeném na pojišťovací právo. Stará se o procesy, školí tým a zajišťuje, že každý případ dostane maximální péči.
 
-**Fun fact:** Vyřídila přes 200 pojistných událostí osobně, než ClaimBuddy přešel na týmový model.
+**Fun fact:** Vyřídila přes 200 pojistných událostí osobně, než Pojistná Pomoc přešel na týmový model.
 
 **LinkedIn:** [link]
-**Email:** jana@claimbuddy.cz
+**Email:** jana@pu.zajcon.cz
 
 ---
 
@@ -195,7 +195,7 @@ IČO: [XXXXXXXX], plátci DPH, registrovaná s.r.o. v Česku.
 ### Psali o nás
 
 **[Logo Hospodářských novin]**
-> "ClaimBuddy přináší inovaci do konzervativního pojišťovacího světa."
+> "Pojistná Pomoc přináší inovaci do konzervativního pojišťovacího světa."
 > – HN, 2024
 
 **[Logo Lupa.cz]**
@@ -207,7 +207,7 @@ IČO: [XXXXXXXX], plátci DPH, registrovaná s.r.o. v Česku.
 > – StartupJobs, 2024
 
 **[Logo Forbes Česko]**
-> "ClaimBuddy ukazuje, že férové pojišťovnictví je možné."
+> "Pojistná Pomoc ukazuje, že férové pojišťovnictví je možné."
 > – Forbes, 2024
 
 ---
@@ -228,7 +228,7 @@ IČO: [XXXXXXXX], plátci DPH, registrovaná s.r.o. v Česku.
 Patrik má osobní zkušenost s frustrující pojistnou událostí. Rozhodne se to změnit.
 
 ### Q1 2023 - Založení
-ClaimBuddy s.r.o. je založena. První klienti jsou přátelé a rodina.
+Pojistná Pomoc s.r.o. je založena. První klienti jsou přátelé a rodina.
 
 ### Q2 2023 - První zaměstnanci
 Jana se připojuje jako co-founder. Přijímáme první 2 case managery.
@@ -273,7 +273,7 @@ Po-Pá: 9:00 - 18:00
 So-Ne: Zavřeno (email/app podpora 24/7)
 
 **Nebo online:**
-📧 Email: info@claimbuddy.cz
+📧 Email: info@pu.zajcon.cz
 📞 Telefon: +420 XXX XXX XXX
 💬 Chat: Na webu nebo v aplikaci
 
@@ -302,7 +302,7 @@ Rosteme rychle a hledáme lidi, kteří sdílí naši misi. Pokud máš zkušeno
 - Vzdělávání (kurzy, konference)
 - Mladý, dynamický tým
 
-**Kontakt:** jobs@claimbuddy.cz
+**Kontakt:** jobs@pu.zajcon.cz
 
 ---
 
@@ -325,7 +325,7 @@ Hledáme partnery, kteří věří v budoucnost férového pojišťovnictví.
 - Mobile app (2025)
 - AI-powered claim analysis (2026)
 
-**Kontakt:** investors@claimbuddy.cz
+**Kontakt:** investors@pu.zajcon.cz
 **Pitch deck:** [Download link]
 
 ---
@@ -397,7 +397,7 @@ Hledáme partnery, kteří věří v budoucnost férového pojišťovnictví.
 > *Zatečení bytu, +15,000 Kč*
 
 **Testimonial 3:**
-> "Pojišťovna mi původně odmítla krýt zdravotní úraz. ClaimBuddy to otočili a vyjednali plné krytí. Zachránili mi 40 tisíc."
+> "Pojišťovna mi původně odmítla krýt zdravotní úraz. Pojistná Pomoc to otočili a vyjednali plné krytí. Zachránili mi 40 tisíc."
 >
 > **Jan V., Ostrava**
 > *Zdravotní úraz, +40,000 Kč*
@@ -406,7 +406,7 @@ Hledáme partnery, kteří věří v budoucnost férového pojišťovnictví.
 
 ## FAQ - About Us
 
-### "Kdo za ClaimBuddy stojí?"
+### "Kdo za Pojistná Pomoc stojí?"
 
 Zakladatelé Patrik a Jana mají celkem 15+ let zkušeností v pojišťovnictví a právní sféře. Náš tým tvoří bývalí zaměstnanci velkých českých pojišťoven.
 

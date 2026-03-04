@@ -15,7 +15,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="mt-6 text-lg leading-8 text-gray-600">
-              ClaimBuddy vyřídí vaši pojistnou událost od A do Z. Bez starostí, bez papírování, bez odmítnutí.
+              Pojistná Pomoc vyřídí vaši pojistnou událost od A do Z. Bez starostí, bez papírování, bez odmítnutí.
               Získáte až o 23% více, než kdybyste jednali sami.
             </p>
 

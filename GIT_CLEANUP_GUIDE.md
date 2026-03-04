@@ -17,9 +17,9 @@ AIzaSyBqBcc2Wc9-dTv1bFLBIpMJUVCG-B_ZfP4
 ### Clean repository
 ```bash
 # Backup
-cp -r /Users/Radim/Projects/claimbuddy /Users/Radim/Projects/claimbuddy-backup
+cp -r <project-root> <project-root>-backup
 
-cd /Users/Radim/Projects/claimbuddy
+cd <project-root>
 
 # Remove sensitive data from all commits
 bfg --replace-text secrets.txt

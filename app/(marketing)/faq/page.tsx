@@ -10,18 +10,18 @@ import { Building, DollarSign, FileText, Shield, Scale, HelpCircle, Phone, Mail 
 const FAQ_CATEGORIES = [
   {
     id: 'about',
-    title: 'O ClaimBuddy',
+    title: 'O Pojistná Pomoc',
     icon: Building,
     emoji: '🏢',
     questions: [
       {
-        question: 'Co přesně je ClaimBuddy?',
-        answer: `ClaimBuddy je asistenční služba, která vyřídí vaši pojistnou událost od A do Z. Přebíráme veškerou komunikaci s pojišťovnou, shromažďujeme dokumenty, vyplňujeme formuláře a vyjednáváme co nejvyšší možné plnění.
+        question: 'Co přesně je Pojistná Pomoc?',
+        answer: `Pojistná Pomoc je asistenční služba, která vyřídí vaši pojistnou událost od A do Z. Přebíráme veškerou komunikaci s pojišťovnou, shromažďujeme dokumenty, vyplňujeme formuláře a vyjednáváme co nejvyšší možné plnění.
 
 Jednoduše řečeno: Děláme vše, co byste museli dělat vy, ale rychleji, efektivněji a s lepšími výsledky. Průměrně našim klientům vyjednáváme o 23% více než pojišťovny původně nabízejí.`,
       },
       {
-        question: 'Proč bych měl použít ClaimBuddy místo vyřízení sám?',
+        question: 'Proč bych měl použít Pojistná Pomoc místo vyřízení sám?',
         answer: `Tři hlavní důvody:
 
 1. Čas: Průměrné vyřízení pojistky zabere 15-20 hodin vašeho času (telefonáty, papírování, čekání). My to vyřídíme za vás.
@@ -31,11 +31,11 @@ Jednoduše řečeno: Děláme vše, co byste museli dělat vy, ale rychleji, efe
 3. Stres: Pojistné události jsou stresující. Nemusíte se starat o nic, prostě to necháte na nás.
 
 Příklad:
-• Bez ClaimBuddy: 20 hodin vašeho času + pojišťovna nabídne 18,000 Kč
-• S ClaimBuddy: 0 hodin vašeho času + vyjednáme 25,000 Kč, zaplatíte nám 990 Kč = zisk +6,010 Kč a ušetříte 20 hodin`,
+• Bez Pojistná Pomoc: 20 hodin vašeho času + pojišťovna nabídne 18,000 Kč
+• S Pojistná Pomoc: 0 hodin vašeho času + vyjednáme 25,000 Kč, zaplatíte nám 990 Kč = zisk +6,010 Kč a ušetříte 20 hodin`,
       },
       {
-        question: 'Nejsou ClaimBuddy pojišťovací zprostředkovatelé?',
+        question: 'Nejsou Pojistná Pomoc pojišťovací zprostředkovatelé?',
         answer: `Ne. Neprodáváme pojistky, nebereme provize od pojišťoven a nejsme vázáni na žádnou konkrétní pojišťovnu.
 
 Jsme na VAŠÍ straně, ne na straně pojišťovny.
@@ -59,8 +59,8 @@ Poskytujeme asistenční a poradenskou službu. Pomáháme vám dostat maximum z
 Pracujeme s pojišťovnou, u které máte pojistku. Neměníme vaši pojišťovnu, jen vyřídíme událost efektivněji.`,
       },
       {
-        question: 'Potřebuji advokáta nebo stačí ClaimBuddy?',
-        answer: `Pro 85% případů stačí ClaimBuddy.
+        question: 'Potřebuji advokáta nebo stačí Pojistná Pomoc?',
+        answer: `Pro 85% případů stačí Pojistná Pomoc.
 
 Advokáta potřebujete pouze pokud:
 • Případ jde k soudu (pojišťovna odmítne vyplácet vůbec)
@@ -230,7 +230,7 @@ To je vše. Zbytek je na nás.`,
         question: 'Jak budu informován o průběhu?',
         answer: `Máte přehled o všem:
 
-1. Aplikace ClaimBuddy - Real-time status vašeho případu
+1. Aplikace Pojistná Pomoc - Real-time status vašeho případu
 2. SMS notifikace - Při každé změně stavu (Premium+)
 3. Email updates - Týdenní souhrn průběhu
 4. Telefonní kontakt - Kdykoliv se můžete ozvat case managerovi
@@ -281,7 +281,7 @@ Bez "lock-in", bez fine printu.`,
         question: 'Je to legální?',
         answer: `Ano, 100% legální.
 
-ClaimBuddy poskytuje asistenční a poradenskou službu, nikoliv zprostředkování pojištění.
+Pojistná Pomoc poskytuje asistenční a poradenskou službu, nikoliv zprostředkování pojištění.
 
 Právní rámec:
 • Jsme registrovaná s.r.o.
@@ -491,7 +491,7 @@ export default function FAQPage() {
               Máte otázky? Máme odpovědi.
             </h1>
             <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-              Připravili jsme odpovědi na nejčastější otázky o ClaimBuddy, pojistných
+              Připravili jsme odpovědi na nejčastější otázky o Pojistná Pomoc, pojistných
               událostech a našich službách.
             </p>
           </div>

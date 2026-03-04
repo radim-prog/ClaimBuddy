@@ -19,15 +19,15 @@ export default function WelcomeEmail({ name, dashboardUrl }: WelcomeEmailProps) 
   return (
     <Html>
       <Head />
-      <Preview>Vítejte v ClaimBuddy - Začněte už dnes!</Preview>
+      <Preview>Vítejte v Pojistná Pomoc - Začněte už dnes!</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={heading}>Vítejte v ClaimBuddy! 🎉</Heading>
+          <Heading style={heading}>Vítejte v Pojistná Pomoc! 🎉</Heading>
 
           <Text style={paragraph}>Dobrý den {name},</Text>
 
           <Text style={paragraph}>
-            Děkujeme, že jste se k nám připojili! ClaimBuddy vám pomůže efektivně
+            Děkujeme, že jste se k nám připojili! Pojistná Pomoc vám pomůže efektivně
             spravovat vaše pojistné události a maximalizovat pojistné plnění.
           </Text>
 
@@ -66,7 +66,7 @@ export default function WelcomeEmail({ name, dashboardUrl }: WelcomeEmailProps) 
           <Text style={footer}>
             S přáním hezkého dne,
             <br />
-            Tým ClaimBuddy
+            Tým Pojistná Pomoc
           </Text>
         </Container>
       </Body>

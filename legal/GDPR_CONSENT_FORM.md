@@ -7,7 +7,7 @@
 
 ## O tomto dokumentu
 
-Tento souhlas je **nezbytný** pro zpracování Vašich **zdravotních údajů** a **biometrických údajů** v rámci služeb ClaimBuddy.
+Tento souhlas je **nezbytný** pro zpracování Vašich **zdravotních údajů** a **biometrických údajů** v rámci služeb Pojistná Pomoc.
 
 Bez tohoto souhlasu nemůžeme:
 - Získávat lékařské zprávy
@@ -19,10 +19,10 @@ Bez tohoto souhlasu nemůžeme:
 
 ## 1. Správce údajů
 
-**ClaimBuddy s.r.o.**
+**Pojistná Pomoc s.r.o.**
 IČO: [IČO bude doplněno před launch]
 Sídlo: [Adresa sídla bude doplněna před launch]
-Email: gdpr@claimbuddy.cz
+Email: gdpr@pu.zajcon.cz
 Telefon: [Kontaktní telefon bude doplněn před launch]
 
 ---
@@ -99,8 +99,8 @@ Telefon: [Kontaktní telefon bude doplněn před launch]
 - [ ] **Získávání zdravotní dokumentace** od lékařů/nemocnic v mém zastoupení
 - [ ] **Předání zdravotní dokumentace pojišťovně** [název pojišťovny]
 - [ ] **Komunikace s pojišťovnou** o mém zdravotním stavu
-- [ ] **Konzultace případu** s interními odborníky ClaimBuddy (lékaři, likvidátoři)
-- [ ] **Uložení dokumentace** na šifrovaném serveru ClaimBuddy
+- [ ] **Konzultace případu** s interními odborníky Pojistná Pomoc (lékaři, likvidátoři)
+- [ ] **Uložení dokumentace** na šifrovaném serveru Pojistná Pomoc
 - [ ] **Pořízení fotografií/videí** zranění (pokud ještě nebyly pořízeny)
 
 ### 3.2 Co NENÍ zahrnuto (vyžaduje samostatný souhlas):
@@ -117,14 +117,14 @@ Telefon: [Kontaktní telefon bude doplněn před launch]
 **Tento souhlas můžete KDYKOLIV odvolat** jedním z následujících způsobů:
 
 **A) Emailem:**
-Pošlete email na: **gdpr@claimbuddy.cz**
+Pošlete email na: **gdpr@pu.zajcon.cz**
 Předmět: "Odvolání souhlasu - [Vaše jméno]"
 
 **B) V aplikaci:**
 Nastavení → Ochrana údajů → Odvolat souhlas
 
 **C) Písemně:**
-Doporučeným dopisem na adresu sídla ClaimBuddy
+Doporučeným dopisem na adresu sídla Pojistná Pomoc
 
 **Důsledky odvolání:**
 - Přestaneme zpracovávat Vaše zdravotní údaje (pokud to není vyžadováno zákonem)
@@ -141,7 +141,7 @@ Doporučeným dopisem na adresu sídla ClaimBuddy
 - **Přenositelnost:** Získat data ve strojově čitelném formátu
 - **Námitka:** Nesouhlasit se zpracováním (obdobné jako odvolání)
 
-**Uplatnění práv:** gdpr@claimbuddy.cz
+**Uplatnění práv:** gdpr@pu.zajcon.cz
 
 ### 4.3 Stížnost u dozorového úřadu
 Máte právo podat stížnost u:
@@ -184,13 +184,13 @@ Web: uoou.cz
 ## 6. Informovanost
 
 ### 6.1 Potvrzuji, že:
-- [ ] Byl/a jsem seznámen/a s tím, **proč** ClaimBuddy zpracovává mé citlivé údaje
+- [ ] Byl/a jsem seznámen/a s tím, **proč** Pojistná Pomoc zpracovává mé citlivé údaje
 - [ ] Byl/a jsem seznámen/a s tím, **jak dlouho** budou údaje zpracovávány (3 roky)
 - [ ] Byl/a jsem seznámen/a s tím, **komu** budou údaje předány (pojišťovna, IT poskytovatelé)
 - [ ] Byl/a jsem seznámen/a se svými **právy** (odvolání, přístup, oprava, stížnost)
 - [ ] Rozumím, že **souhlas mohu kdykoliv odvolat**
 - [ ] Rozumím, že **odvolání souhlasu neovlivní zákonnost** zpracování před odvoláním
-- [ ] Četl/a jsem **Zásady ochrany osobních údajů** dostupné na: www.claimbuddy.cz/gdpr
+- [ ] Četl/a jsem **Zásady ochrany osobních údajů** dostupné na: www.pu.zajcon.cz/gdpr
 
 ### 6.2 Prohlašuji, že:
 - [ ] Tento souhlas uděluju **dobrovolně**
@@ -245,7 +245,7 @@ Název: ______________________________________
 
 ---
 
-## 9. Příjem souhlasu (vyplňuje ClaimBuddy)
+## 9. Příjem souhlasu (vyplňuje Pojistná Pomoc)
 
 **Souhlas přijal/a:** ______________________________________
 
@@ -262,7 +262,7 @@ Název: ______________________________________
 
 ---
 
-## 10. Odvolání souhlasu (vyplňuje ClaimBuddy při odvolání)
+## 10. Odvolání souhlasu (vyplňuje Pojistná Pomoc při odvolání)
 
 **Datum odvolání:** ______________________________________
 
@@ -327,12 +327,12 @@ Název: ______________________________________
 ---
 
 **Máte otázky?**
-Kontaktujte nás: gdpr@claimbuddy.cz
+Kontaktujte nás: gdpr@pu.zajcon.cz
 
 **Více informací:**
-[www.claimbuddy.cz/gdpr]
+[www.pu.zajcon.cz/gdpr]
 
 ---
 
 *Tento formulář souhlasu je v souladu s nařízením GDPR (EU) 2016/679 a zákonem č. 110/2019 Sb.*
-*Verze 1.0 | ClaimBuddy s.r.o. | IČO: [IČO bude doplněno před launch]*
+*Verze 1.0 | Pojistná Pomoc s.r.o. | IČO: [IČO bude doplněno před launch]*

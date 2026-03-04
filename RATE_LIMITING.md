@@ -1,6 +1,6 @@
 # Rate Limiting
 
-ClaimBuddy používá rate limiting pro ochranu API před abuse a kontrolu nákladů.
+Pojistná Pomoc používá rate limiting pro ochranu API před abuse a kontrolu nákladů.
 
 ## Limity
 
@@ -112,7 +112,7 @@ console.log(`API calls remaining: ${remaining}/${limit}`);
 - 256 MB storage
 - Global replication
 
-Pro ClaimBuddy s očekávaným provozem:
+Pro Pojistná Pomoc s očekávaným provozem:
 - 100 aktivních uživatelů/den
 - Průměr 5 OCR requests/user = 500 requests/den
 - 50 chat requests/user = 5,000 requests/den

@@ -9,7 +9,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold text-primary">ClaimBuddy</span>
+            <span className="text-2xl font-bold text-primary">Pojistná Pomoc</span>
           </Link>
 
           <nav className="hidden md:flex gap-6">
@@ -43,7 +43,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
         <div className="container">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
             <div>
-              <h3 className="mb-4 text-lg font-semibold">ClaimBuddy</h3>
+              <h3 className="mb-4 text-lg font-semibold">Pojistná Pomoc</h3>
               <p className="text-sm text-muted-foreground">
                 Profesionální asistence při pojistných událostech.
               </p>
@@ -70,14 +70,14 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
             <div>
               <h4 className="mb-4 font-semibold">Kontakt</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>info@claimbuddy.cz</li>
+                <li>info@pu.zajcon.cz</li>
                 <li>+420 XXX XXX XXX</li>
               </ul>
             </div>
           </div>
 
           <div className="mt-8 border-t pt-8 text-center text-sm text-muted-foreground">
-            © 2025 ClaimBuddy s.r.o. Všechna práva vyhrazena.
+            © 2025 Pojistná Pomoc s.r.o. Všechna práva vyhrazena.
           </div>
         </div>
       </footer>

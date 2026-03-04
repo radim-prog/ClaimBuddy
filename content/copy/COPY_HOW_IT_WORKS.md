@@ -5,7 +5,7 @@
 "Tři kroky k maximálnímu pojistnému plnění"
 
 **Alternative headlines:**
-- "Jak probíhá spolupráce s ClaimBuddy"
+- "Jak probíhá spolupráce s Pojistná Pomoc"
 - "Od prvního kontaktu k vyplacení pojistky"
 - "Pojistka vyřízená za tři jednoduché kroky"
 
@@ -58,7 +58,7 @@ Převezmeme veškerou komunikaci s pojišťovnou. Seženeme potřebné dokumenty
 - **Dokumentace** - Vedeme kompletní evidenci celého případu
 
 ### Průběžné informace
-"Máte přehled o všem díky aplikaci ClaimBuddy. Vidíte, v jaké fázi je váš případ, co se právě děje a co bude následovat."
+"Máte přehled o všem díky aplikaci Pojistná Pomoc. Vidíte, v jaké fázi je váš případ, co se právě děje a co bude následovat."
 
 ### Timeline indikátor
 ```
@@ -103,7 +103,7 @@ Jakmile pojišťovna schválí vyšší plnění, peníze vám přijdou přímo 
 ### Success story příklad
 ```
 💬 "Pojišťovna původně nabídla 18,000 Kč za škodu na autě.
-   ClaimBuddy vyjednal 34,500 Kč.
+   Pojistná Pomoc vyjednal 34,500 Kč.
 
    Klient získal navíc: +16,500 Kč
    Náš poplatek (15%): 2,475 Kč
@@ -163,7 +163,7 @@ A: Naše služba je v tom případě zdarma. Platíte pouze pokud dosáhneme nav
 A: Průměrně 14 dní. U složitějších případů až 30 dní.
 
 **Q: Potřebuji advokáta?**
-A: Ne. ClaimBuddy vyřídí většinu případů bez advokáta. Pokud by byl potřeba, doporučíme vám toho správného.
+A: Ne. Pojistná Pomoc vyřídí většinu případů bez advokáta. Pokud by byl potřeba, doporučíme vám toho správného.
 
 ---
 
@@ -172,7 +172,7 @@ A: Ne. ClaimBuddy vyřídí většinu případů bez advokáta. Pokud by byl pot
 ### Testimonials mezi kroky
 
 **Po kroku 1:**
-> "Vyplnění formuláře mi zabralo 3 minuty. O hodinu později mi volali z ClaimBuddy a vše jsme probral. Super rychlý proces."
+> "Vyplnění formuláře mi zabralo 3 minuty. O hodinu později mi volali z Pojistná Pomoc a vše jsme probral. Super rychlý proces."
 >
 > **– Martin K., Praha**
 
@@ -182,7 +182,7 @@ A: Ne. ClaimBuddy vyřídí většinu případů bez advokáta. Pokud by byl pot
 > **– Petra N., Brno**
 
 **Po kroku 3:**
-> "Pojišťovna mi původně nabídla 15 tisíc. ClaimBuddy vyjednal 28 tisíc. Zaplatila jsem jim 2 tisíce a zbývajících 11 tisíc je čistý zisk navíc."
+> "Pojišťovna mi původně nabídla 15 tisíc. Pojistná Pomoc vyjednal 28 tisíc. Zaplatila jsem jim 2 tisíce a zbývajících 11 tisíc je čistý zisk navíc."
 >
 > **– Jan V., Ostrava**
 
