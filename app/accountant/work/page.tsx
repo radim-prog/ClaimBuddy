@@ -16,10 +16,14 @@ import {
   Trophy,
   CheckCircle,
   Loader2,
+  FolderKanban,
+  CheckSquare,
+  LayoutGrid,
 } from 'lucide-react'
 import { PrioritySwimlanes, WorkItem } from '@/components/gtd/priority-swimlanes'
 
 type ViewMode = 'inbox' | 'list' | 'kanban'
+type TypeFilter = 'all' | 'tasks' | 'projects'
 
 type TaskFromAPI = {
   id: string
@@ -94,6 +98,7 @@ export default function WorkPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
 
   useEffect(() => {
     Promise.all([
@@ -161,6 +166,13 @@ export default function WorkPage() {
 
     let combined = [...taskItems, ...projectItems]
 
+    // Type filter
+    if (typeFilter === 'tasks') {
+      combined = combined.filter(i => i.type === 'task')
+    } else if (typeFilter === 'projects') {
+      combined = combined.filter(i => i.type === 'project' || i.is_project)
+    }
+
     // Search filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
@@ -168,7 +180,7 @@ export default function WorkPage() {
     }
 
     return combined
-  }, [tasks, projects, searchQuery])
+  }, [tasks, projects, searchQuery, typeFilter])
 
   if (loading) {
     return (
@@ -243,13 +255,15 @@ export default function WorkPage() {
         </div>
         <div className="flex border rounded-lg overflow-hidden">
           {[
-            { mode: 'list' as const, icon: List, label: 'Seznam' },
+            { mode: 'all' as TypeFilter, icon: LayoutGrid, label: 'Vše' },
+            { mode: 'tasks' as TypeFilter, icon: CheckSquare, label: 'Úkoly' },
+            { mode: 'projects' as TypeFilter, icon: FolderKanban, label: 'Projekty' },
           ].map(v => (
             <button
               key={v.mode}
-              onClick={() => setViewMode(v.mode)}
+              onClick={() => setTypeFilter(v.mode)}
               className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${
-                viewMode === v.mode
+                typeFilter === v.mode
                   ? 'bg-purple-600 text-white'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
