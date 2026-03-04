@@ -98,7 +98,7 @@ export default function WorkPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('list')
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('tasks')
 
   useEffect(() => {
     Promise.all([
@@ -200,12 +200,33 @@ export default function WorkPage() {
             {workItems.length} aktivních položek
           </p>
         </div>
-        <Button asChild className="bg-purple-600 hover:bg-purple-700">
-          <Link href="/accountant/work/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Nová práce
-          </Link>
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex border-2 rounded-xl overflow-hidden">
+            {[
+              { mode: 'tasks' as TypeFilter, icon: CheckSquare, label: 'Úkoly' },
+              { mode: 'projects' as TypeFilter, icon: FolderKanban, label: 'Projekty' },
+            ].map(v => (
+              <button
+                key={v.mode}
+                onClick={() => setTypeFilter(v.mode)}
+                className={`px-5 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors ${
+                  typeFilter === v.mode
+                    ? 'bg-purple-500 text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                <v.icon className="h-4 w-4" />
+                {v.label}
+              </button>
+            ))}
+          </div>
+          <Button asChild className="bg-purple-500 hover:bg-purple-600">
+            <Link href="/accountant/work/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Nová práce
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Quick Stats inline */}
@@ -242,7 +263,7 @@ export default function WorkPage() {
         )}
       </div>
 
-      {/* Search + View toggles */}
+      {/* Search */}
       <div className="flex items-center gap-3 mb-5">
         <div className="flex items-center gap-2 flex-1 bg-white dark:bg-gray-900 border rounded-xl px-3 shadow-sm">
           <Search className="h-4 w-4 text-gray-400" />
@@ -252,27 +273,6 @@ export default function WorkPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="border-0 shadow-none focus-visible:ring-0 px-0"
           />
-        </div>
-        <div className="flex border rounded-lg overflow-hidden">
-          {[
-            { mode: 'all' as TypeFilter, icon: LayoutGrid, label: 'Vše' },
-            { mode: 'tasks' as TypeFilter, icon: CheckSquare, label: 'Úkoly' },
-            { mode: 'projects' as TypeFilter, icon: FolderKanban, label: 'Projekty' },
-          ].map(v => (
-            <button
-              key={v.mode}
-              onClick={() => setTypeFilter(v.mode)}
-              className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${
-                typeFilter === v.mode
-                  ? 'bg-purple-600 text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-              }`}
-              title={v.label}
-            >
-              <v.icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{v.label}</span>
-            </button>
-          ))}
         </div>
       </div>
 

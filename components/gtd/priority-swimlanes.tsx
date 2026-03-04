@@ -91,7 +91,7 @@ function PrioritySection({ label, emoji, items, defaultOpen = true, color, borde
             <div className="col-span-2 text-center">Poslední akce</div>
             <div className="col-span-2 text-right">Přiřazeno</div>
           </div>
-          <div className="space-y-0">
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
             {items.map(item => (
               <WorkItemRow key={item.id} item={item} />
             ))}

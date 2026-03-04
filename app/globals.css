@@ -130,12 +130,12 @@
   background: linear-gradient(180deg, hsl(215 55% 14%) 0%, hsl(220 60% 8%) 100%);
 }
 
-/* Purple sidebar — accountant section */
+/* Purple sidebar — accountant section (pastel, lighter) */
 .sidebar-purple {
-  background: linear-gradient(180deg, hsl(262 50% 24%) 0%, hsl(268 55% 14%) 100%);
+  background: linear-gradient(180deg, hsl(262 38% 38%) 0%, hsl(268 40% 28%) 100%);
 }
 .dark .sidebar-purple {
-  background: linear-gradient(180deg, hsl(262 45% 14%) 0%, hsl(268 50% 8%) 100%);
+  background: linear-gradient(180deg, hsl(262 35% 20%) 0%, hsl(268 38% 12%) 100%);
 }
 
 /* Generic fallback */
