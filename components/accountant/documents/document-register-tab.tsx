@@ -262,101 +262,91 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
   )
 
   return (
-    <div className="space-y-4">
-      {/* Year Tabs */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {availableYears.map(year => (
-          <button
-            key={year}
-            onClick={() => {
-              setSelectedYear(year)
-              // Auto-select January of the new year (or current month if current year)
-              const now = new Date()
-              if (year === now.getFullYear()) {
-                setSelectedMonth(`${year}-${String(now.getMonth() + 1).padStart(2, '0')}`)
-              } else {
-                setSelectedMonth(`${year}-01`)
-              }
-              setPagination(p => ({ ...p, page: 1 }))
-            }}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-              selectedYear === year
-                ? 'bg-purple-500 text-white shadow-md shadow-purple-200 dark:shadow-purple-900/30'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            {year}
-          </button>
-        ))}
-      </div>
+    <div className="space-y-3">
+      {/* Combined Navigator: Year selector + Month strip + Summary — all in one block */}
+      <div className="rounded-2xl border border-gray-200/80 dark:border-gray-700/60 bg-white dark:bg-gray-900/60 overflow-hidden">
+        {/* Year + Month row */}
+        <div className="flex items-center gap-0 border-b border-gray-100 dark:border-gray-800">
+          {/* Year selector */}
+          <div className="flex items-center border-r border-gray-100 dark:border-gray-800">
+            {availableYears.map(year => (
+              <button
+                key={year}
+                onClick={() => {
+                  setSelectedYear(year)
+                  const now = new Date()
+                  if (year === now.getFullYear()) {
+                    setSelectedMonth(`${year}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+                  } else {
+                    setSelectedMonth(`${year}-01`)
+                  }
+                  setPagination(p => ({ ...p, page: 1 }))
+                }}
+                className={`px-4 py-3 text-sm font-semibold transition-colors ${
+                  selectedYear === year
+                    ? 'text-purple-600 dark:text-purple-400 bg-purple-50/50 dark:bg-purple-900/20'
+                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                {year}
+              </button>
+            ))}
+          </div>
 
-      {/* Month Pills */}
-      <div className="grid grid-cols-12 gap-1.5">
-        {MONTH_NAMES_SHORT.map((name, i) => {
-          const period = `${selectedYear}-${String(i + 1).padStart(2, '0')}`
-          const monthData = yearSummary?.months?.[period]
-          const status = getMonthStatus(monthData as MonthSummary | undefined, selectedYear, i)
-          const isSelected = selectedMonth === period
-          const count = monthData?.count ?? 0
+          {/* Month pills — horizontal scroll */}
+          <div className="flex items-center gap-0.5 px-2 flex-1 overflow-x-auto">
+            {MONTH_NAMES_SHORT.map((name, i) => {
+              const period = `${selectedYear}-${String(i + 1).padStart(2, '0')}`
+              const monthData = yearSummary?.months?.[period]
+              const status = getMonthStatus(monthData as MonthSummary | undefined, selectedYear, i)
+              const isSelected = selectedMonth === period
+              const count = monthData?.count ?? 0
 
-          return (
-            <button
-              key={period}
-              onClick={() => handleMonthClick(period)}
-              className={`flex flex-col items-center py-2 px-1 rounded-xl text-xs transition-all ${
-                isSelected
-                  ? `bg-white dark:bg-gray-700 shadow-md ring-2 ${statusRingColors[status] || 'ring-purple-300'}`
-                  : status === 'future'
-                    ? 'bg-gray-50 dark:bg-gray-800/30 text-gray-300 dark:text-gray-600 cursor-default'
-                    : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm'
-              }`}
-              disabled={status === 'future'}
-            >
-              <span className={`font-medium ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
-                {name}
+              return (
+                <button
+                  key={period}
+                  onClick={() => handleMonthClick(period)}
+                  disabled={status === 'future'}
+                  className={`relative flex items-center gap-1.5 px-3 py-3 text-xs font-medium transition-all whitespace-nowrap ${
+                    isSelected
+                      ? 'text-gray-900 dark:text-white'
+                      : status === 'future'
+                        ? 'text-gray-300 dark:text-gray-600'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${statusColors[status]}`} />
+                  {name}
+                  {count > 0 && <span className="text-[10px] text-gray-400 dark:text-gray-500">{count}</span>}
+                  {isSelected && <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-purple-500" />}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Summary strip */}
+        {selectedMonth && (
+          <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50/50 dark:bg-gray-800/30">
+            <div className="flex items-center gap-4 text-sm">
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {selectedMonthIndex >= 0 ? MONTH_NAMES_LONG[selectedMonthIndex] : ''} {selectedYear}
               </span>
-              <div className="flex items-center gap-1 mt-1">
-                <div className={`w-2 h-2 rounded-full ${statusColors[status]}`} />
-                <span className={`text-[10px] ${isSelected ? 'text-gray-700 dark:text-gray-300 font-semibold' : 'text-gray-400 dark:text-gray-500'}`}>
-                  {count > 0 ? count : '—'}
-                </span>
-              </div>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Month Summary Card */}
-      {selectedMonth && (
-        <Card className="rounded-xl shadow-sm border-gray-200/80 dark:border-gray-700/80">
-          <CardContent className="py-3 px-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-purple-500" />
-                <div>
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {selectedMonthIndex >= 0 ? MONTH_NAMES_LONG[selectedMonthIndex] : ''} {selectedYear}
-                  </span>
-                  <span className="text-gray-400 dark:text-gray-500 mx-2">|</span>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {summary.by_type ? Object.values(summary.by_type).reduce((a, b) => a + b, 0) : pagination.total} doklad{pagination.total === 1 ? '' : pagination.total < 5 ? 'y' : 'u'}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">Celkem: </span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(summary.total_amount)}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">DPH: </span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(summary.total_vat)}</span>
-                </div>
-              </div>
+              <span className="text-gray-500 dark:text-gray-400">
+                {pagination.total} doklad{pagination.total === 1 ? '' : pagination.total < 5 ? 'y' : 'ů'}
+              </span>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-gray-500 dark:text-gray-400">
+                Celkem <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(summary.total_amount)}</span>
+              </span>
+              <span className="text-gray-500 dark:text-gray-400">
+                DPH <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(summary.total_vat)}</span>
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Filters */}
       <DocumentRegisterFilters filters={filters} onChange={handleFilterChange} />
@@ -365,7 +355,7 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 bg-purple-50 dark:bg-purple-900/20 px-4 py-2.5 rounded-xl border border-purple-200/50 dark:border-purple-800/50">
           <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
-            Vybrano: {selectedIds.size}
+            Vybráno: {selectedIds.size}
           </span>
           <Button size="sm" variant="outline" className="text-green-600 border-green-300" onClick={() => handleBulkAction('approve')} disabled={bulkLoading}>
             {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle className="h-4 w-4 mr-1" />}
@@ -378,203 +368,158 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
       )}
 
       {/* Document Table */}
-      <Card className="rounded-xl shadow-sm border-gray-200/80 dark:border-gray-700/80 overflow-hidden">
-        <CardContent className="pt-0 px-0">
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto" />
-                <p className="mt-3 text-sm text-gray-400 dark:text-gray-500">Načítám doklady...</p>
-              </div>
-            </div>
-          ) : documents.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 mb-4">
-                <Inbox className="h-8 w-8 text-gray-400 dark:text-gray-500" />
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 font-medium">
-                {selectedMonth
-                  ? `Žádné doklady za ${selectedMonthIndex >= 0 ? MONTH_NAMES_LONG[selectedMonthIndex].toLowerCase() : ''} ${selectedYear}`
-                  : 'Vyberte měsíc'}
-              </p>
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Zkuste upravit filtry nebo nahrát nový doklad</p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-100 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30">
-                      <th className="py-3 px-4 w-8">
-                        <Checkbox
-                          checked={selectedIds.size === documents.length && documents.length > 0}
-                          onCheckedChange={toggleSelectAll}
-                        />
-                      </th>
-                      <SortHeader field="accounting_number" label="Číslo" />
-                      <SortHeader field="type" label="Typ" />
-                      <SortHeader field="supplier_name" label="Dodavatel" />
-                      <SortHeader field="total_with_vat" label="Částka" />
-                      <th className="text-left py-3 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">DPH</th>
-                      <th className="text-left py-3 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">VS</th>
-                      <SortHeader field="date_issued" label="Datum" />
-                      <SortHeader field="status" label="Status" />
-                      <th className="text-center py-3 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">OCR</th>
-                      <th className="text-center py-3 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-10"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {documents.map(doc => {
-                      const isSelected = selectedIds.has(doc.id)
-                      const isExpanded = expandedId === doc.id
-                      const statusColor = DOCUMENT_STATUS_COLORS[doc.status]
+      <div className="rounded-2xl border border-gray-200/80 dark:border-gray-700/60 bg-white dark:bg-gray-900/60 overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
+          </div>
+        ) : documents.length === 0 ? (
+          <div className="text-center py-12">
+            <Inbox className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {selectedMonth
+                ? `Žádné doklady za ${selectedMonthIndex >= 0 ? MONTH_NAMES_LONG[selectedMonthIndex].toLowerCase() : ''} ${selectedYear}`
+                : 'Vyberte měsíc'}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
+                    <th className="py-2.5 px-3 w-8">
+                      <Checkbox
+                        checked={selectedIds.size === documents.length && documents.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </th>
+                    <SortHeader field="supplier_name" label="Dodavatel" />
+                    <SortHeader field="type" label="Typ" />
+                    <SortHeader field="total_with_vat" label="Částka" />
+                    <SortHeader field="date_issued" label="Datum" />
+                    <SortHeader field="status" label="Stav" />
+                    <th className="py-2.5 px-3 w-10" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {documents.map(doc => {
+                    const isSelected = selectedIds.has(doc.id)
+                    const isExpanded = expandedId === doc.id
+                    const statusColor = DOCUMENT_STATUS_COLORS[doc.status]
 
-                      return (
-                        <><tr
-                            key={doc.id}
-                            className={`border-b border-gray-100 dark:border-gray-700/50 hover:bg-purple-50/40 dark:hover:bg-purple-900/10 cursor-pointer transition-colors ${isSelected ? 'bg-purple-50 dark:bg-purple-900/10' : ''}`}
-                          >
-                            <td className="py-2.5 px-4" onClick={(e) => e.stopPropagation()}>
-                              <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(doc.id)} />
-                            </td>
-                            <td className="py-2.5 px-4 text-sm font-mono text-gray-700 dark:text-gray-300" onClick={() => setExpandedId(isExpanded ? null : doc.id)}>
-                              {doc.accounting_number || '—'}
-                            </td>
-                            <td className="py-2.5 px-4" onClick={() => setExpandedId(isExpanded ? null : doc.id)}>
-                              <Badge variant="outline" className="text-xs whitespace-nowrap">
-                                {DOCUMENT_TYPE_LABELS[doc.type]?.substring(0, 12) || doc.type}
-                              </Badge>
-                            </td>
-                            <td className="py-2.5 px-4 text-sm text-gray-900 dark:text-white max-w-[180px] truncate" onClick={() => setExpandedId(isExpanded ? null : doc.id)}>
+                    return (
+                      <><tr
+                          key={doc.id}
+                          onClick={() => setExpandedId(isExpanded ? null : doc.id)}
+                          className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors ${isSelected ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''}`}
+                        >
+                          <td className="py-2.5 px-3" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(doc.id)} />
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[220px]">
                               {doc.supplier_name || doc.file_name}
-                            </td>
-                            <td className="py-2.5 px-4 text-sm font-medium text-gray-900 dark:text-white text-right whitespace-nowrap" onClick={() => setExpandedId(isExpanded ? null : doc.id)}>
+                            </div>
+                            {doc.variable_symbol && (
+                              <span className="text-[11px] text-gray-400 dark:text-gray-500 font-mono">VS: {doc.variable_symbol}</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className="text-xs text-gray-600 dark:text-gray-400">
+                              {DOCUMENT_TYPE_LABELS[doc.type]?.substring(0, 14) || doc.type}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white">
                               {doc.total_with_vat !== null ? formatCurrency(doc.total_with_vat) : '—'}
-                            </td>
-                            <td className="py-2.5 px-4 text-sm text-gray-600 dark:text-gray-400 text-right whitespace-nowrap" onClick={() => setExpandedId(isExpanded ? null : doc.id)}>
-                              {doc.total_vat !== null ? formatCurrency(doc.total_vat) : '—'}
-                            </td>
-                            <td className="py-2.5 px-4 text-sm text-gray-600 dark:text-gray-400 font-mono" onClick={() => setExpandedId(isExpanded ? null : doc.id)}>
-                              {doc.variable_symbol || '—'}
-                            </td>
-                            <td className="py-2.5 px-4 text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap" onClick={() => setExpandedId(isExpanded ? null : doc.id)}>
-                              {doc.date_issued ? formatDate(doc.date_issued) : '—'}
-                            </td>
-                            <td className="py-2.5 px-4" onClick={() => setExpandedId(isExpanded ? null : doc.id)}>
-                              <Badge className={`${statusColor.bg} ${statusColor.text} text-xs`}>
-                                {DOCUMENT_STATUS_LABELS[doc.status]}
-                              </Badge>
-                            </td>
-                            <td className="py-2.5 px-4 text-center" onClick={() => setExpandedId(isExpanded ? null : doc.id)}>
-                              {doc.confidence_score !== null ? (
-                                <span className={`text-xs font-medium ${doc.confidence_score >= 85 ? 'text-green-600' : doc.confidence_score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                  {doc.confidence_score}%
-                                </span>
-                              ) : (
-                                <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
-                              )}
-                            </td>
-                            <td className="py-2.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                              {doc.storage_path && (
-                                <button
-                                  onClick={async () => {
-                                    const res = await fetch(`/api/documents/${doc.id}/download`)
-                                    if (res.ok) {
-                                      const data = await res.json()
-                                      const a = document.createElement('a')
-                                      a.href = data.url
-                                      a.download = data.file_name || doc.file_name
-                                      a.click()
-                                    }
-                                  }}
-                                  className="p-1 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
-                                  title="Stáhnout"
-                                >
-                                  <Download className="h-4 w-4" />
-                                </button>
-                              )}
+                            </div>
+                            {doc.total_vat !== null && doc.total_vat > 0 && (
+                              <span className="text-[11px] text-gray-400 dark:text-gray-500">DPH {formatCurrency(doc.total_vat)}</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                            {doc.date_issued ? formatDate(doc.date_issued) : '—'}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <Badge className={`${statusColor.bg} ${statusColor.text} text-[11px] border-0`}>
+                              {DOCUMENT_STATUS_LABELS[doc.status]}
+                            </Badge>
+                          </td>
+                          <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                            {doc.storage_path && (
+                              <button
+                                onClick={async () => {
+                                  const res = await fetch(`/api/documents/${doc.id}/download`)
+                                  if (res.ok) {
+                                    const data = await res.json()
+                                    const a = document.createElement('a')
+                                    a.href = data.url
+                                    a.download = data.file_name || doc.file_name
+                                    a.click()
+                                  }
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                                title="Stáhnout"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr key={`${doc.id}-detail`}>
+                            <td colSpan={7} className="p-2">
+                              <DocumentDetailPanel
+                                document={doc}
+                                companyId={companyId}
+                                onApprove={handleApprove}
+                                onReject={handleReject}
+                                onExtract={handleExtract}
+                              />
                             </td>
                           </tr>
-                          {isExpanded && (
-                            <tr key={`${doc.id}-detail`}>
-                              <td colSpan={11} className="p-2">
-                                <DocumentDetailPanel
-                                  document={doc}
-                                  companyId={companyId}
-                                  onApprove={handleApprove}
-                                  onReject={handleReject}
-                                  onExtract={handleExtract}
-                                />
-                              </td>
-                            </tr>
-                          )}
-                        </>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                        )}
+                      </>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-              {/* Pagination + Page Summary */}
-              <div className="mt-0 px-4 py-3 border-t border-gray-100 dark:border-gray-700/50 bg-gray-50/30 dark:bg-gray-800/20 flex items-center justify-between">
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  <span>Zobrazeno {(pagination.page - 1) * pagination.perPage + 1}–{Math.min(pagination.page * pagination.perPage, pagination.total)} z {pagination.total}</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={pagination.page <= 1}
-                    onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {pagination.page} / {pagination.totalPages || 1}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={pagination.page >= pagination.totalPages}
-                    onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Yearly Total */}
-      {yearSummary && yearSummary.yearly_total.count > 0 && (
-        <Card className="rounded-xl shadow-sm border-gray-200/80 dark:border-gray-700/80 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/10 dark:to-indigo-900/10">
-          <CardContent className="py-3 px-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-purple-500" />
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  Rok {selectedYear}
+            {/* Pagination */}
+            <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {(pagination.page - 1) * pagination.perPage + 1}–{Math.min(pagination.page * pagination.perPage, pagination.total)} z {pagination.total}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={pagination.page <= 1} onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-gray-600 dark:text-gray-400 min-w-[40px] text-center">
+                  {pagination.page}/{pagination.totalPages || 1}
                 </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  — {yearSummary.yearly_total.count} doklad{yearSummary.yearly_total.count === 1 ? '' : yearSummary.yearly_total.count < 5 ? 'y' : 'u'}
-                </span>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">Celkem: </span>
-                  <span className="font-semibold text-purple-700 dark:text-purple-300">{formatCurrency(yearSummary.yearly_total.amount)}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500 dark:text-gray-400">DPH: </span>
-                  <span className="font-semibold text-purple-700 dark:text-purple-300">{formatCurrency(yearSummary.yearly_total.vat)}</span>
-                </div>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={pagination.page >= pagination.totalPages} onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </>
+        )}
+      </div>
+
+      {/* Yearly Total — compact */}
+      {yearSummary && yearSummary.yearly_total.count > 0 && (
+        <div className="flex items-center justify-between px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
+          <span>
+            <TrendingUp className="h-3.5 w-3.5 inline mr-1" />
+            Rok {selectedYear}: {yearSummary.yearly_total.count} dokladů
+          </span>
+          <span>
+            Celkem <span className="font-semibold text-gray-700 dark:text-gray-300">{formatCurrency(yearSummary.yearly_total.amount)}</span>
+            {' · '}DPH <span className="font-semibold text-gray-700 dark:text-gray-300">{formatCurrency(yearSummary.yearly_total.vat)}</span>
+          </span>
+        </div>
       )}
     </div>
   )
