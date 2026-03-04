@@ -47,7 +47,7 @@ import { useCompany } from '../layout'
 const healthInsuranceLabels: Record<string, string> = {
   vzp: 'VZP (111)',
   vozp: 'VOZP (201)',
-  cpzp: '\u010cPZP (205)',
+  cpzp: 'ČPZP (205)',
   ozp: 'OZP (207)',
   zpmv: 'ZP MV (211)',
   rbp: 'RBP (213)',
@@ -55,14 +55,14 @@ const healthInsuranceLabels: Record<string, string> = {
 }
 
 const FIRMA_TILES: TileDefinition[] = [
-  { id: 'company-info', label: '\u00dadaje o firm\u011b', defaultVisible: true },
+  { id: 'company-info', label: 'Údaje o firmě', defaultVisible: true },
   { id: 'reports', label: 'Reporty', defaultVisible: true },
-  { id: 'employees', label: 'Zam\u011bstnanci', defaultVisible: true },
+  { id: 'employees', label: 'Zaměstnanci', defaultVisible: true },
   { id: 'assets', label: 'Majetek', defaultVisible: true },
-  { id: 'insurance', label: 'Poji\u0161t\u011bn\u00ed', defaultVisible: true },
-  { id: 'travel-diary', label: 'Kniha j\u00edzd', defaultVisible: true },
-  { id: 'deadlines', label: 'Term\u00edny a v\u00fdro\u010d\u00ed', defaultVisible: true },
-  { id: 'annual-closing', label: 'Ro\u010dn\u00ed uz\u00e1v\u011brka', defaultVisible: true },
+  { id: 'insurance', label: 'Pojištění', defaultVisible: true },
+  { id: 'travel-diary', label: 'Kniha jízd', defaultVisible: true },
+  { id: 'deadlines', label: 'Termíny a výročí', defaultVisible: true },
+  { id: 'annual-closing', label: 'Roční uzávěrka', defaultVisible: true },
   { id: 'notifications', label: 'Notifikace klienta', defaultVisible: true },
   { id: 'activity', label: 'Historie aktivit', defaultVisible: true },
 ]
@@ -89,29 +89,29 @@ export default function ProfilePage() {
                     <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-purple-100 dark:bg-purple-900/30">
                       <Building2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                     </div>
-                    \u00dadaje o firm\u011b
+                    Údaje o firmě
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y border-border/50 dark:border-gray-700/50">
                     <div>
-                      <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">I\u010cO</div>
+                      <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">IČO</div>
                       <div className="font-medium text-gray-900 dark:text-white">{company.ico}</div>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">DI\u010c</div>
-                      <div className="font-medium text-gray-900 dark:text-white">{company.dic || '\u2014'}</div>
+                      <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">DIČ</div>
+                      <div className="font-medium text-gray-900 dark:text-white">{company.dic || '—'}</div>
                     </div>
                     <div>
                       <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Telefon</div>
                       <div className={`font-medium flex items-center gap-1 ${contactPhone ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
                         <Phone className="h-3.5 w-3.5 text-gray-400" />
-                        {contactPhone || 'Nezad\u00e1no'}
+                        {contactPhone || 'Nezadáno'}
                       </div>
                     </div>
                     <div>
                       <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Email</div>
                       <div className={`font-medium flex items-center gap-1 truncate ${contactEmail ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
                         <Mail className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                        <span className="truncate">{contactEmail || 'Nezad\u00e1no'}</span>
+                        <span className="truncate">{contactEmail || 'Nezadáno'}</span>
                       </div>
                     </div>
                   </div>
@@ -125,11 +125,11 @@ export default function ProfilePage() {
                   <div className="flex flex-wrap gap-2 pt-2">
                     {company.vat_payer ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                        Pl\u00e1tce DPH \u2022 {company.vat_period === 'monthly' ? 'M\u011bs\u00ed\u010dn\u00ed' : 'Kvart\u00e1ln\u00ed'}
+                        Plátce DPH • {company.vat_period === 'monthly' ? 'Měsíční' : 'Kvartální'}
                       </span>
                     ) : (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                        Nepl\u00e1tce DPH
+                        Neplátce DPH
                       </span>
                     )}
                     {company.data_box && (
@@ -144,21 +144,21 @@ export default function ProfilePage() {
                           <div className="space-y-3">
                             <div className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white">
                               <Key className="h-4 w-4 text-purple-600" />
-                              P\u0159\u00edstupov\u00e9 \u00fadaje do datovky
+                              Přístupové údaje do datovky
                             </div>
                             <div className="space-y-1">
-                              <label className="text-xs text-gray-500 dark:text-gray-400">ID datov\u00e9 schr\u00e1nky</label>
+                              <label className="text-xs text-gray-500 dark:text-gray-400">ID datové schránky</label>
                               <div className="flex items-center gap-2">
                                 <code className="flex-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">{company.data_box.id}</code>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { navigator.clipboard.writeText(company.data_box!.id); toast.success('ID zkop\u00edrov\u00e1no') }}><Copy className="h-3.5 w-3.5" /></Button>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { navigator.clipboard.writeText(company.data_box!.id); toast.success('ID zkopírováno') }}><Copy className="h-3.5 w-3.5" /></Button>
                               </div>
                             </div>
                             {company.data_box.login && (
                               <div className="space-y-1">
-                                <label className="text-xs text-gray-500 dark:text-gray-400">P\u0159ihla\u0161ovac\u00ed jm\u00e9no</label>
+                                <label className="text-xs text-gray-500 dark:text-gray-400">Přihlašovací jméno</label>
                                 <div className="flex items-center gap-2">
                                   <code className="flex-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">{company.data_box.login}</code>
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { navigator.clipboard.writeText(company.data_box!.login!); toast.success('Login zkop\u00edrov\u00e1n') }}><Copy className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { navigator.clipboard.writeText(company.data_box!.login!); toast.success('Login zkopírován') }}><Copy className="h-3.5 w-3.5" /></Button>
                                 </div>
                               </div>
                             )}
@@ -166,14 +166,14 @@ export default function ProfilePage() {
                               <div className="space-y-1">
                                 <label className="text-xs text-gray-500 dark:text-gray-400">Heslo</label>
                                 <div className="flex items-center gap-2">
-                                  <code className="flex-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">{showDataBoxPassword ? company.data_box.password : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}</code>
+                                  <code className="flex-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-mono">{showDataBoxPassword ? company.data_box.password : '••••••••'}</code>
                                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setShowDataBoxPassword(!showDataBoxPassword)}>{showDataBoxPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}</Button>
-                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { navigator.clipboard.writeText(company.data_box!.password!); toast.success('Heslo zkop\u00edrov\u00e1no') }}><Copy className="h-3.5 w-3.5" /></Button>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { navigator.clipboard.writeText(company.data_box!.password!); toast.success('Heslo zkopírováno') }}><Copy className="h-3.5 w-3.5" /></Button>
                                 </div>
                               </div>
                             )}
                             {!company.data_box.login && !company.data_box.password && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 italic">P\u0159ihla\u0161ovac\u00ed \u00fadaje nejsou ulo\u017eeny</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 italic">Přihlašovací údaje nejsou uloženy</p>
                             )}
                           </div>
                         </PopoverContent>
@@ -181,10 +181,10 @@ export default function ProfilePage() {
                     )}
                     {company.has_employees && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                        <User className="h-3 w-3 mr-1" />{company.employee_count} zam\u011bstnanc\u016f
+                        <User className="h-3 w-3 mr-1" />{company.employee_count} zaměstnanců
                       </span>
                     )}
-                    {company.legal_form === 'OSV\u010c' && company.health_insurance_company && (
+                    {company.legal_form === 'OSVČ' && company.health_insurance_company && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                         {healthInsuranceLabels[company.health_insurance_company] || company.health_insurance_company}
                       </span>
@@ -213,21 +213,21 @@ export default function ProfilePage() {
             )
           case 'deadlines':
             return (
-              <CollapsibleSection id="deadlines" title="Term\u00edny a v\u00fdro\u010d\u00ed" icon={CalendarDays} defaultOpen={false}>
+              <CollapsibleSection id="deadlines" title="Termíny a výročí" icon={CalendarDays} defaultOpen={false}>
                 <AccountantDeadlineCalendar
                   companyId={companyId} companyName={company.name} vatPeriod={company.vat_period}
                   hasEmployees={company.has_employees}
-                  entityType={company.legal_form === 'OSV\u010c' ? 'osvc' : company.legal_form === 's.r.o.' ? 'sro' : company.legal_form === 'a.s.' ? 'as' : null}
+                  entityType={company.legal_form === 'OSVČ' ? 'osvc' : company.legal_form === 's.r.o.' ? 'sro' : company.legal_form === 'a.s.' ? 'as' : null}
                 />
                 <div className="mt-6 pt-6 border-t border-border/50 dark:border-gray-700">
-                  <h4 className="text-sm font-medium font-display text-gray-700 dark:text-gray-200 mb-4">V\u00fdro\u010d\u00ed z poji\u0161t\u011bn\u00ed a majetku</h4>
+                  <h4 className="text-sm font-medium font-display text-gray-700 dark:text-gray-200 mb-4">Výročí z pojištění a majetku</h4>
                   <AnniversaryCalendar insurances={insurances} assets={assets} employees={employees} />
                 </div>
               </CollapsibleSection>
             )
           case 'annual-closing':
             return (
-              <CollapsibleSection id="annual-closing" title="Ro\u010dn\u00ed uz\u00e1v\u011brka" icon={BookOpen} defaultOpen={false}>
+              <CollapsibleSection id="annual-closing" title="Roční uzávěrka" icon={BookOpen} defaultOpen={false}>
                 <AnnualClosingSection companyId={companyId} companyName={company.name} />
               </CollapsibleSection>
             )
@@ -242,7 +242,7 @@ export default function ProfilePage() {
             )
           case 'travel-diary':
             return (
-              <CollapsibleSection id="travel-diary" title="Kniha j\u00edzd" icon={Car} defaultOpen={false}>
+              <CollapsibleSection id="travel-diary" title="Kniha jízd" icon={Car} defaultOpen={false}>
                 <TravelDiaryTile companyId={companyId} />
               </CollapsibleSection>
             )

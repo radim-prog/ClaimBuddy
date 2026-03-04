@@ -76,7 +76,7 @@ export default function AnnualClosingPage() {
     const result = initAnnualClosingsForCompanies(companies, selectedYear)
     setClosings([...result])
     setInitialized(true)
-    toast.success(`Ro\u010dn\u00ed uz\u00e1v\u011brky vytvo\u0159eny pro ${result.length} firem`)
+    toast.success(`Roční uzávěrky vytvořeny pro ${result.length} firem`)
   }
 
   // Refresh closings from store
@@ -132,7 +132,7 @@ export default function AnnualClosingPage() {
     const newStatus = nextStatus[currentStatus]
     updateAnnualClosingStep(companyId, selectedYear, stepId, {
       status: newStatus,
-      completed_by: newStatus === 'completed' ? '\u00da\u010detn\u00ed' : undefined,
+      completed_by: newStatus === 'completed' ? 'Účetní' : undefined,
       completed_at: newStatus === 'completed' ? new Date().toISOString() : undefined,
     })
     refreshClosings()
@@ -143,7 +143,7 @@ export default function AnnualClosingPage() {
     const notes = editingNotes[stepId] || ''
     updateAnnualClosingStep(companyId, selectedYear, stepId, { notes })
     refreshClosings()
-    toast.success('Pozn\u00e1mka ulo\u017eena')
+    toast.success('Poznámka uložena')
   }
 
   // Status icon
@@ -171,8 +171,8 @@ export default function AnnualClosingPage() {
   // Company status label
   const getCompanyStatusLabel = (percentage: number) => {
     if (percentage === 100) return { label: 'Hotovo', color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-300' }
-    if (percentage > 0) return { label: 'Rozpracov\u00e1no', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-300' }
-    return { label: 'Nezah\u00e1jeno', color: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-gray-300' }
+    if (percentage > 0) return { label: 'Rozpracováno', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-300' }
+    return { label: 'Nezahájeno', color: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border-gray-300' }
   }
 
   const years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - i)
@@ -183,10 +183,10 @@ export default function AnnualClosingPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold font-display text-gray-900 dark:text-white flex items-center gap-3">
           <BookOpen className="h-8 w-8 text-purple-600" />
-          Ro\u010dn\u00ed uz\u00e1v\u011brka
+          Roční uzávěrka
         </h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Checklist krok\u016f pro ro\u010dn\u00ed \u00fa\u010detn\u00ed uz\u00e1v\u011brku jednotliv\u00fdch klient\u016f
+          Checklist kroků pro roční účetní uzávěrku jednotlivých klientů
         </p>
       </div>
 
@@ -210,7 +210,7 @@ export default function AnnualClosingPage() {
         {!initialized ? (
           <Button onClick={handleInitialize} className="bg-purple-600 hover:bg-purple-700">
             <Play className="h-4 w-4 mr-2" />
-            Inicializovat uz\u00e1v\u011brky pro {selectedYear}
+            Inicializovat uzávěrky pro {selectedYear}
           </Button>
         ) : (
           <>
@@ -229,10 +229,10 @@ export default function AnnualClosingPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">V\u0161echny stavy</SelectItem>
-                <SelectItem value="not_started">Nezah\u00e1jen\u00e9</SelectItem>
-                <SelectItem value="in_progress">Rozpracovan\u00e9</SelectItem>
-                <SelectItem value="completed">Hotov\u00e9</SelectItem>
+                <SelectItem value="all">Všechny stavy</SelectItem>
+                <SelectItem value="not_started">Nezahájené</SelectItem>
+                <SelectItem value="in_progress">Rozpracované</SelectItem>
+                <SelectItem value="completed">Hotové</SelectItem>
               </SelectContent>
             </Select>
           </>
@@ -251,13 +251,13 @@ export default function AnnualClosingPage() {
           <Card className="rounded-xl shadow-soft-sm">
             <CardContent className="pt-6 text-center">
               <p className="text-3xl font-bold font-display text-gray-500 dark:text-gray-400">{summary.notStarted}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Nezah\u00e1jeno</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Nezahájeno</p>
             </CardContent>
           </Card>
           <Card className="rounded-xl shadow-soft-sm">
             <CardContent className="pt-6 text-center">
               <p className="text-3xl font-bold font-display text-blue-600 dark:text-blue-400">{summary.inProgress}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Rozpracov\u00e1no</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Rozpracováno</p>
             </CardContent>
           </Card>
           <Card className="rounded-xl shadow-soft-sm">
@@ -275,11 +275,11 @@ export default function AnnualClosingPage() {
           <CardContent className="py-16 text-center">
             <BookOpen className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-white mb-2">
-              Ro\u010dn\u00ed uz\u00e1v\u011brky pro {selectedYear}
+              Roční uzávěrky pro {selectedYear}
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-              Klikn\u011bte na tla\u010d\u00edtko v\u00fd\u0161e pro vytvo\u0159en\u00ed checklistech ro\u010dn\u00ed uz\u00e1v\u011brky pro v\u0161echny aktivn\u00ed klienty.
-              Ka\u017ed\u00fd klient dostane standardn\u00ed checklist s 12 kroky.
+              Klikněte na tlačítko výše pro vytvoření checklistech roční uzávěrky pro všechny aktivní klienty.
+              Každý klient dostane standardní checklist s 12 kroky.
             </p>
           </CardContent>
         </Card>
@@ -293,7 +293,7 @@ export default function AnnualClosingPage() {
               <CardContent className="py-12 text-center">
                 <Search className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
                 <p className="text-gray-500 dark:text-gray-400">
-                  {searchQuery ? '\u017d\u00e1dn\u00e9 firmy odpov\u00eddaj\u00edc\u00ed hled\u00e1n\u00ed' : '\u017d\u00e1dn\u00e9 firmy v tomto stavu'}
+                  {searchQuery ? 'Žádné firmy odpovídající hledání' : 'Žádné firmy v tomto stavu'}
                 </p>
               </CardContent>
             </Card>
@@ -351,7 +351,7 @@ export default function AnnualClosingPage() {
                             <button
                               onClick={() => cycleStepStatus(checklist.company_id, step.id, step.status)}
                               className="flex-shrink-0 hover:scale-110 transition-transform"
-                              title="Klikn\u011bte pro zm\u011bnu stavu"
+                              title="Klikněte pro změnu stavu"
                             >
                               <StepStatusIcon status={step.status} />
                             </button>
@@ -378,7 +378,7 @@ export default function AnnualClosingPage() {
                             {step.notes && (
                               <Badge variant="outline" className="text-xs flex-shrink-0 rounded-md">
                                 <FileText className="h-3 w-3 mr-1" />
-                                Pozn\u00e1mka
+                                Poznámka
                               </Badge>
                             )}
 
@@ -413,7 +413,7 @@ export default function AnnualClosingPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display">
               <FileText className="h-5 w-5 text-purple-600" />
-              Pozn\u00e1mky ke kroku
+              Poznámky ke kroku
             </DialogTitle>
           </DialogHeader>
           {selectedChecklist && (
@@ -431,7 +431,7 @@ export default function AnnualClosingPage() {
                     <Textarea
                       value={editingNotes[step.id] || ''}
                       onChange={(e) => setEditingNotes({ ...editingNotes, [step.id]: e.target.value })}
-                      placeholder="Pozn\u00e1mka k tomuto kroku..."
+                      placeholder="Poznámka k tomuto kroku..."
                       rows={4}
                       className="resize-none"
                     />
@@ -444,7 +444,7 @@ export default function AnnualClosingPage() {
                         }}
                       >
                         <Save className="h-4 w-4 mr-1" />
-                        Ulo\u017eit
+                        Uložit
                       </Button>
                     </div>
                   </div>

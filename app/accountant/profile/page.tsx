@@ -15,7 +15,7 @@ export default function AccountantProfilePage() {
       <div>
         <h1 className="text-3xl font-bold font-display">Profil</h1>
         <p className="text-muted-foreground">
-          Spravujte sv\u00e9 osobn\u00ed \u00fadaje
+          Spravujte své osobní údaje
         </p>
       </div>
 
@@ -29,23 +29,23 @@ export default function AccountantProfilePage() {
               </AvatarFallback>
             </Avatar>
             <Button variant="outline" size="sm">
-              Zm\u011bnit foto
+              Změnit foto
             </Button>
           </CardContent>
         </Card>
 
-        {/* Osobn\u00ed \u00fadaje */}
+        {/* Osobní údaje */}
         <Card className="rounded-xl shadow-soft">
           <CardHeader>
-            <CardTitle className="font-display">Osobn\u00ed \u00fadaje</CardTitle>
+            <CardTitle className="font-display">Osobní údaje</CardTitle>
             <CardDescription>
-              Aktualizujte sv\u00e9 kontaktn\u00ed informace
+              Aktualizujte své kontaktní informace
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name">Jm\u00e9no a p\u0159\u00edjmen\u00ed</Label>
+                <Label htmlFor="name">Jméno a příjmení</Label>
                 <Input id="name" defaultValue={userName || ''} className="h-11" />
               </div>
               <div className="space-y-2">
@@ -59,34 +59,34 @@ export default function AccountantProfilePage() {
                 <Input id="phone" type="tel" defaultValue="+420 777 654 321" className="h-11" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ic">I\u010c (jako OSV\u010c)</Label>
+                <Label htmlFor="ic">IČ (jako OSVČ)</Label>
                 <Input id="ic" defaultValue="12345678" className="h-11" />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="address">Adresa</Label>
-              <Input id="address" defaultValue="Hlavn\u00ed 123, Praha 1, 110 00" className="h-11" />
+              <Input id="address" defaultValue="Hlavní 123, Praha 1, 110 00" className="h-11" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Zm\u011bna hesla */}
+      {/* Změna hesla */}
       <Card className="rounded-xl shadow-soft">
         <CardHeader>
-          <CardTitle className="font-display">Zm\u011bna hesla</CardTitle>
+          <CardTitle className="font-display">Změna hesla</CardTitle>
           <CardDescription>
-            Aktualizujte sv\u00e9 p\u0159ihla\u0161ovac\u00ed heslo
+            Aktualizujte své přihlašovací heslo
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="current-password">Sou\u010dasn\u00e9 heslo</Label>
+            <Label htmlFor="current-password">Současné heslo</Label>
             <Input id="current-password" type="password" className="h-11" />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="new-password">Nov\u00e9 heslo</Label>
+              <Label htmlFor="new-password">Nové heslo</Label>
               <Input id="new-password" type="password" className="h-11" />
             </div>
             <div className="space-y-2">
@@ -97,10 +97,10 @@ export default function AccountantProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Ulo\u017eit zm\u011bny */}
+      {/* Uložit změny */}
       <div className="flex justify-end gap-4">
-        <Button variant="outline">Zru\u0161it</Button>
-        <Button>Ulo\u017eit zm\u011bny</Button>
+        <Button variant="outline">Zrušit</Button>
+        <Button>Uložit změny</Button>
       </div>
     </div>
   )

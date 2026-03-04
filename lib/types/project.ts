@@ -223,18 +223,18 @@ export interface CaseBudgetData {
 }
 
 export const CASE_EVENT_TYPES: { value: CaseEventType; label: string; icon: string }[] = [
-  { value: 'note', label: 'Pozn\u00e1mka', icon: 'StickyNote' },
+  { value: 'note', label: 'Poznámka', icon: 'StickyNote' },
   { value: 'document', label: 'Dokument', icon: 'FileText' },
   { value: 'email', label: 'Email', icon: 'Mail' },
-  { value: 'phone_call', label: 'Telefon\u00e1t', icon: 'Phone' },
-  { value: 'meeting', label: 'Sch\u016fzka', icon: 'Users' },
-  { value: 'deadline', label: 'Term\u00edn', icon: 'Clock' },
-  { value: 'status_change', label: 'Zm\u011bna stavu', icon: 'RefreshCw' },
-  { value: 'task_completed', label: 'Dokon\u010den\u00ed \u00fakolu', icon: 'CheckCircle' },
-  { value: 'invoice_sent', label: 'Odesl\u00e1n\u00ed faktury', icon: 'Send' },
-  { value: 'state_filing', label: 'Pod\u00e1n\u00ed na \u00fa\u0159ad', icon: 'Building' },
-  { value: 'client_request', label: 'Po\u017eadavek klienta', icon: 'User' },
-  { value: 'internal', label: 'Intern\u00ed', icon: 'Settings' },
+  { value: 'phone_call', label: 'Telefonát', icon: 'Phone' },
+  { value: 'meeting', label: 'Schůzka', icon: 'Users' },
+  { value: 'deadline', label: 'Termín', icon: 'Clock' },
+  { value: 'status_change', label: 'Změna stavu', icon: 'RefreshCw' },
+  { value: 'task_completed', label: 'Dokončení úkolu', icon: 'CheckCircle' },
+  { value: 'invoice_sent', label: 'Odeslání faktury', icon: 'Send' },
+  { value: 'state_filing', label: 'Podání na úřad', icon: 'Building' },
+  { value: 'client_request', label: 'Požadavek klienta', icon: 'User' },
+  { value: 'internal', label: 'Interní', icon: 'Settings' },
 ]
 
 export const CASE_DOCUMENT_CATEGORIES: { value: CaseDocumentCategory; label: string; color: string }[] = [

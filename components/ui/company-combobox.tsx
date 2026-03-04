@@ -47,7 +47,7 @@ export function CompanyCombobox({
   }, [open])
 
   const normalize = (str: string) =>
-    str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    str.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
   const filtered = search
     ? companies.filter(c => normalize(c.name).includes(normalize(search)))
