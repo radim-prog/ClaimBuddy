@@ -185,13 +185,13 @@ export default function AuditLogsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Audit logy</h1>
+          <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white">Audit logy</h1>
           <p className="text-gray-600 dark:text-gray-300">Historie všech akcí v systému</p>
         </div>
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="shadow-soft">
         <CardContent className="pt-6">
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-2 flex-1">
@@ -200,7 +200,7 @@ export default function AuditLogsPage() {
                 placeholder="Hledat v lozích..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1"
+                className="flex-1 h-11"
               />
             </div>
           </div>
@@ -209,7 +209,7 @@ export default function AuditLogsPage() {
             <div>
               <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Typ akce</label>
               <Select value={filterAction} onValueChange={(v) => { setFilterAction(v); setPage(1) }}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -227,7 +227,7 @@ export default function AuditLogsPage() {
             <div>
               <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Období</label>
               <Select value={filterDateRange} onValueChange={(v) => { setFilterDateRange(v); setPage(1) }}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -247,13 +247,13 @@ export default function AuditLogsPage() {
       </Card>
 
       {/* Logs List */}
-      <Card>
+      <Card className="shadow-soft">
         <CardContent className="pt-6">
           <div className="space-y-2">
             {filteredLogs.length === 0 ? (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                <p>Žádné záznamy v audit logu</p>
+                <p className="font-medium">Žádné záznamy v audit logu</p>
                 <p className="text-xs mt-1">Záznamy se vytváří automaticky při akcích v systému</p>
               </div>
             ) : (
@@ -265,7 +265,7 @@ export default function AuditLogsPage() {
                 return (
                   <div
                     key={log.id}
-                    className="border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="border border-border/50 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
                     <div
                       className="p-4 cursor-pointer"
@@ -302,7 +302,7 @@ export default function AuditLogsPage() {
                           </div>
                         </div>
 
-                        <Badge variant="outline" className="flex-shrink-0">
+                        <Badge variant="outline" className="flex-shrink-0 rounded-md">
                           <TableIcon className="h-3 w-3 mr-1" />
                           {log.table_name || '-'}
                         </Badge>
@@ -316,7 +316,7 @@ export default function AuditLogsPage() {
                     </div>
 
                     {isExpanded && (
-                      <div className="px-4 pb-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                      <div className="px-4 pb-4 border-t border-border/50 bg-gray-50 dark:bg-gray-800/50">
                         <div className="pt-4 grid grid-cols-2 gap-4 text-sm">
                           <div>
                             <p className="text-gray-500 dark:text-gray-400">ID záznamu</p>
@@ -338,7 +338,7 @@ export default function AuditLogsPage() {
                           {log.old_values && Object.keys(log.old_values).length > 0 && (
                             <div className="col-span-2">
                               <p className="text-gray-500 dark:text-gray-400 mb-2">Předchozí hodnoty</p>
-                              <pre className="bg-white dark:bg-gray-800 rounded-lg p-3 border dark:border-gray-700 text-xs overflow-x-auto">
+                              <pre className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-border/50 text-xs overflow-x-auto">
                                 {JSON.stringify(log.old_values, null, 2)}
                               </pre>
                             </div>
@@ -347,7 +347,7 @@ export default function AuditLogsPage() {
                           {log.new_values && Object.keys(log.new_values).length > 0 && (
                             <div className="col-span-2">
                               <p className="text-gray-500 dark:text-gray-400 mb-2">Nové hodnoty</p>
-                              <pre className="bg-white dark:bg-gray-800 rounded-lg p-3 border dark:border-gray-700 text-xs overflow-x-auto">
+                              <pre className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-border/50 text-xs overflow-x-auto">
                                 {JSON.stringify(log.new_values, null, 2)}
                               </pre>
                             </div>
@@ -363,7 +363,7 @@ export default function AuditLogsPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t dark:border-gray-700">
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/50">
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Strana {page} z {totalPages}
               </p>

@@ -182,7 +182,7 @@ export default function CompanySettingsPage() {
       {/* Základní informace + Kontakt */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base font-display flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             Základní informace
           </CardTitle>
@@ -191,21 +191,21 @@ export default function CompanySettingsPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="company-name" className="text-xs">Název firmy *</Label>
-              <Input id="company-name" placeholder="Účetní Svobodová s.r.o." value={form.name} onChange={e => update('name', e.target.value)} className="h-8" />
+              <Input id="company-name" placeholder="Účetní Svobodová s.r.o." value={form.name} onChange={e => update('name', e.target.value)} className="h-11" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="company-ico" className="text-xs">IČO *</Label>
-              <Input id="company-ico" placeholder="12345678" value={form.ico} onChange={e => update('ico', e.target.value)} className="h-8" />
+              <Input id="company-ico" placeholder="12345678" value={form.ico} onChange={e => update('ico', e.target.value)} className="h-11" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="company-dic" className="text-xs">DIČ</Label>
-              <Input id="company-dic" placeholder="CZ12345678" value={form.dic} onChange={e => update('dic', e.target.value)} className="h-8" />
+              <Input id="company-dic" placeholder="CZ12345678" value={form.dic} onChange={e => update('dic', e.target.value)} className="h-11" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="company-reg" className="text-xs">Registrace</Label>
-              <Input id="company-reg" placeholder="C 12345 vedená u KS v Praze" value={form.registration} onChange={e => update('registration', e.target.value)} className="h-8" />
+              <Input id="company-reg" placeholder="C 12345 vedená u KS v Praze" value={form.registration} onChange={e => update('registration', e.target.value)} className="h-11" />
             </div>
           </div>
         </CardContent>
@@ -214,7 +214,7 @@ export default function CompanySettingsPage() {
       {/* Kontakt + Adresa */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base font-display flex items-center gap-2">
             <Mail className="h-4 w-4" />
             Kontakt a adresa
           </CardTitle>
@@ -223,30 +223,30 @@ export default function CompanySettingsPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="company-email" className="text-xs">Email *</Label>
-              <Input id="company-email" type="email" placeholder="info@ucetni-svobodova.cz" value={form.email} onChange={e => update('email', e.target.value)} className="h-8" />
+              <Input id="company-email" type="email" placeholder="info@ucetni-svobodova.cz" value={form.email} onChange={e => update('email', e.target.value)} className="h-11" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="company-phone" className="text-xs">Telefon</Label>
-              <Input id="company-phone" type="tel" placeholder="+420 123 456 789" value={form.phone} onChange={e => update('phone', e.target.value)} className="h-8" />
+              <Input id="company-phone" type="tel" placeholder="+420 123 456 789" value={form.phone} onChange={e => update('phone', e.target.value)} className="h-11" />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="company-address" className="text-xs">Ulice *</Label>
-              <Input id="company-address" placeholder="Na Poříčí 1041/12" value={form.address} onChange={e => update('address', e.target.value)} className="h-8" />
+              <Input id="company-address" placeholder="Na Poříčí 1041/12" value={form.address} onChange={e => update('address', e.target.value)} className="h-11" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="company-city" className="text-xs">Město *</Label>
-              <Input id="company-city" placeholder="Praha 1" value={form.city} onChange={e => update('city', e.target.value)} className="h-8" />
+              <Input id="company-city" placeholder="Praha 1" value={form.city} onChange={e => update('city', e.target.value)} className="h-11" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="company-zip" className="text-xs">PSČ *</Label>
-              <Input id="company-zip" placeholder="110 00" value={form.zip} onChange={e => update('zip', e.target.value)} className="h-8" />
+              <Input id="company-zip" placeholder="110 00" value={form.zip} onChange={e => update('zip', e.target.value)} className="h-11" />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="company-website" className="text-xs">Web</Label>
-            <Input id="company-website" type="url" placeholder="https://www.ucetni-svobodova.cz" value={form.web} onChange={e => update('web', e.target.value)} className="h-8" />
+            <Input id="company-website" type="url" placeholder="https://www.ucetni-svobodova.cz" value={form.web} onChange={e => update('web', e.target.value)} className="h-11" />
           </div>
         </CardContent>
       </Card>
@@ -254,22 +254,22 @@ export default function CompanySettingsPage() {
       {/* Banka */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Bankovní spojení</CardTitle>
+          <CardTitle className="text-base font-display">Bankovní spojení</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="bank-account" className="text-xs">Číslo účtu *</Label>
-              <Input id="bank-account" placeholder="123456789/0100" value={form.bankAccount} onChange={e => update('bankAccount', e.target.value)} className="h-8" />
+              <Input id="bank-account" placeholder="123456789/0100" value={form.bankAccount} onChange={e => update('bankAccount', e.target.value)} className="h-11" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="bank-iban" className="text-xs">IBAN</Label>
-              <Input id="bank-iban" placeholder="CZ65 0100 0000 0012 3456 7890" value={form.iban} onChange={e => update('iban', e.target.value)} className="h-8" />
+              <Input id="bank-iban" placeholder="CZ65 0100 0000 0012 3456 7890" value={form.iban} onChange={e => update('iban', e.target.value)} className="h-11" />
             </div>
           </div>
           <div className="max-w-[200px] space-y-1.5">
             <Label htmlFor="bank-swift" className="text-xs">SWIFT/BIC</Label>
-            <Input id="bank-swift" placeholder="KOMBCZPP" value={form.swift} onChange={e => update('swift', e.target.value)} className="h-8" />
+            <Input id="bank-swift" placeholder="KOMBCZPP" value={form.swift} onChange={e => update('swift', e.target.value)} className="h-11" />
           </div>
         </CardContent>
       </Card>
@@ -277,7 +277,7 @@ export default function CompanySettingsPage() {
       {/* Logo a razítko */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base font-display flex items-center gap-2">
             <ImageIcon className="h-4 w-4" />
             Logo a razítko
           </CardTitle>
@@ -287,7 +287,7 @@ export default function CompanySettingsPage() {
             <div className="space-y-2">
               <Label className="text-xs">Logo firmy</Label>
               {logoUrl ? (
-                <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800 flex items-center gap-3">
+                <div className="border rounded-xl p-3 bg-gray-50 dark:bg-gray-800 flex items-center gap-3">
                   <img src={logoUrl} alt="Logo" className="max-h-10 object-contain" />
                   <Button variant="ghost" size="sm" onClick={() => handleAssetDelete('logo')} className="text-red-600 h-7 px-2">
                     <Trash2 className="h-3 w-3" />
@@ -307,7 +307,7 @@ export default function CompanySettingsPage() {
             <div className="space-y-2">
               <Label className="text-xs">Razítko / podpis</Label>
               {signatureUrl ? (
-                <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800 flex items-center gap-3">
+                <div className="border rounded-xl p-3 bg-gray-50 dark:bg-gray-800 flex items-center gap-3">
                   <img src={signatureUrl} alt="Razítko" className="max-h-10 object-contain" />
                   <Button variant="ghost" size="sm" onClick={() => handleAssetDelete('signature')} className="text-red-600 h-7 px-2">
                     <Trash2 className="h-3 w-3" />
@@ -331,7 +331,7 @@ export default function CompanySettingsPage() {
       {/* Patička */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base font-display flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Patička faktury
           </CardTitle>

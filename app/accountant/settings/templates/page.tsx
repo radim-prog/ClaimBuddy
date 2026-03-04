@@ -104,7 +104,7 @@ export default function TemplatesPage() {
       {/* Header Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 font-display">
             <Repeat className="h-5 w-5 text-purple-600" />
             Šablony opakujících se úkolů
           </CardTitle>
@@ -175,7 +175,7 @@ export default function TemplatesPage() {
           return (
             <div
               key={template.id}
-              className={`border rounded-lg bg-white dark:bg-gray-800 transition-all ${
+              className={`border rounded-xl bg-white dark:bg-gray-800 transition-all ${
                 !applicable ? 'opacity-50' : ''
               }`}
             >

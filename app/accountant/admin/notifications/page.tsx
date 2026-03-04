@@ -243,7 +243,7 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white flex items-center gap-2">
           <Bell className="h-6 w-6" />
           Nastavení notifikací
         </h1>
@@ -276,7 +276,7 @@ export default function NotificationsPage() {
                     placeholder="Hledat události..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 h-11"
                   />
                 </div>
                 <Select
@@ -310,7 +310,7 @@ export default function NotificationsPage() {
               return (
                 <Card key={category}>
                   <CardHeader className="py-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
+                    <CardTitle className="flex items-center gap-2 text-base font-display">
                       <div
                         className={`p-2 rounded-lg ${
                           categoryColors[category as NotificationEventCategory]
@@ -361,7 +361,7 @@ export default function NotificationsPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="pt-4 pb-4 text-center">
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                <p className="text-3xl font-bold font-display text-gray-900 dark:text-white">
                   {events.length}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Celkem událostí</p>
@@ -369,7 +369,7 @@ export default function NotificationsPage() {
             </Card>
             <Card>
               <CardContent className="pt-4 pb-4 text-center">
-                <p className="text-3xl font-bold text-green-600">
+                <p className="text-3xl font-bold font-display text-green-600">
                   {events.filter((e) => e.is_active).length}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Aktivních</p>
@@ -377,7 +377,7 @@ export default function NotificationsPage() {
             </Card>
             <Card>
               <CardContent className="pt-4 pb-4 text-center">
-                <p className="text-3xl font-bold text-gray-400">
+                <p className="text-3xl font-bold font-display text-gray-400">
                   {events.filter((e) => !e.is_active).length}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Vypnutých</p>
@@ -385,7 +385,7 @@ export default function NotificationsPage() {
             </Card>
             <Card>
               <CardContent className="pt-4 pb-4 text-center">
-                <p className="text-3xl font-bold text-blue-600">{rules.length}</p>
+                <p className="text-3xl font-bold font-display text-blue-600">{rules.length}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Pravidel</p>
               </CardContent>
             </Card>

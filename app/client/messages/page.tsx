@@ -32,7 +32,7 @@ export default function MessagesPage() {
     <div className="flex flex-col h-[calc(100vh-11rem)] md:h-[calc(100vh-6rem)]">
       {/* Header */}
       <div className="px-4 pt-4 pb-2">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Zprávy</h1>
+        <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white">Zprávy</h1>
         <p className="text-sm text-gray-600 dark:text-gray-400">Komunikace s vaším účetním</p>
       </div>
 
@@ -58,7 +58,7 @@ export default function MessagesPage() {
       )}
 
       {/* Chat area - takes remaining space */}
-      <div className="flex-1 overflow-hidden border-t border-gray-200 dark:border-gray-700">
+      <div className="flex-1 overflow-hidden border-t border-border/50">
         <MessagesSection
           key={selectedCompany.id}
           companyId={selectedCompany.id}

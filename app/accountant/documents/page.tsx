@@ -45,7 +45,7 @@ type OverviewData = {
   summary: { complete: number; incomplete: number; not_started: number; total: number }
 }
 
-const monthNamesFull = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec']
+const monthNamesFull = ['Leden', '\u00danor', 'B\u0159ezen', 'Duben', 'Kv\u011bten', '\u010cerven', '\u010cervenec', 'Srpen', 'Z\u00e1\u0159\u00ed', '\u0158\u00edjen', 'Listopad', 'Prosinec']
 
 function StatusIcon({ status }: { status: string }) {
   if (status === 'approved') return <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -138,14 +138,14 @@ export default function DocumentsOverviewPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Přehled dokladů</h1>
-          <p className="text-gray-600 dark:text-gray-300">Stav podkladů od klientů</p>
+          <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white">P\u0159ehled doklad\u016f</h1>
+          <p className="text-gray-600 dark:text-gray-300">Stav podklad\u016f od klient\u016f</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={prevMonth}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-lg font-semibold text-gray-900 dark:text-white min-w-[140px] text-center">
+          <span className="text-lg font-semibold font-display text-gray-900 dark:text-white min-w-[140px] text-center">
             {monthNamesFull[month - 1]} {year}
           </span>
           <Button variant="ghost" size="sm" onClick={nextMonth} disabled={isNextDisabled}>
@@ -156,27 +156,27 @@ export default function DocumentsOverviewPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilter('complete')}>
+        <Card className="card-hover cursor-pointer rounded-xl shadow-soft-sm" onClick={() => setFilter('complete')}>
           <CardContent className="pt-4 pb-4">
-            <div className="text-3xl font-bold text-green-600 dark:text-green-400">{summary.complete}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Kompletní</div>
+            <div className="text-3xl font-bold font-display text-green-600 dark:text-green-400">{summary.complete}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Kompletn\u00ed</div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilter('incomplete')}>
+        <Card className="card-hover cursor-pointer rounded-xl shadow-soft-sm" onClick={() => setFilter('incomplete')}>
           <CardContent className="pt-4 pb-4">
-            <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{summary.incomplete}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Nekompletní</div>
+            <div className="text-3xl font-bold font-display text-yellow-600 dark:text-yellow-400">{summary.incomplete}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Nekompletn\u00ed</div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilter('not_started')}>
+        <Card className="card-hover cursor-pointer rounded-xl shadow-soft-sm" onClick={() => setFilter('not_started')}>
           <CardContent className="pt-4 pb-4">
-            <div className="text-3xl font-bold text-red-600 dark:text-red-400">{summary.not_started}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Nezačato</div>
+            <div className="text-3xl font-bold font-display text-red-600 dark:text-red-400">{summary.not_started}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Neza\u010dato</div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilter('all')}>
+        <Card className="card-hover cursor-pointer rounded-xl shadow-soft-sm" onClick={() => setFilter('all')}>
           <CardContent className="pt-4 pb-4">
-            <div className="text-3xl font-bold text-gray-900 dark:text-white">{summary.total}</div>
+            <div className="text-3xl font-bold font-display text-gray-900 dark:text-white">{summary.total}</div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Celkem firem</div>
           </CardContent>
         </Card>
@@ -190,39 +190,39 @@ export default function DocumentsOverviewPage() {
             placeholder="Hledat firmu..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 max-w-sm"
+            className="flex-1 max-w-sm h-11"
           />
         </div>
         <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] h-11">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Všechny firmy</SelectItem>
-            <SelectItem value="incomplete">Nekompletní</SelectItem>
-            <SelectItem value="not_started">Nezačato</SelectItem>
-            <SelectItem value="complete">Kompletní</SelectItem>
+            <SelectItem value="all">V\u0161echny firmy</SelectItem>
+            <SelectItem value="incomplete">Nekompletn\u00ed</SelectItem>
+            <SelectItem value="not_started">Neza\u010dato</SelectItem>
+            <SelectItem value="complete">Kompletn\u00ed</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* Companies table */}
-      <Card>
+      <Card className="rounded-xl shadow-soft">
         <CardContent className="pt-4">
           {filteredCompanies.length === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <Inbox className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-              <p>Žádné firmy odpovídající filtru</p>
+              <p>\u017d\u00e1dn\u00e9 firmy odpov\u00eddaj\u00edc\u00ed filtru</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b dark:border-gray-700">
+                  <tr className="border-b border-border/50 dark:border-gray-700">
                     <th className="text-left py-3 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Firma</th>
-                    <th className="text-center py-3 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Výpis</th>
-                    <th className="text-center py-3 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Náklady</th>
-                    <th className="text-center py-3 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Příjmy</th>
+                    <th className="text-center py-3 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">V\u00fdpis</th>
+                    <th className="text-center py-3 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">N\u00e1klady</th>
+                    <th className="text-center py-3 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">P\u0159\u00edjmy</th>
                     <th className="text-center py-3 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Doklady</th>
                     <th className="text-center py-3 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Stav</th>
                   </tr>
@@ -236,7 +236,7 @@ export default function DocumentsOverviewPage() {
                     return (
                       <tr
                         key={company.company_id}
-                        className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                        className="border-b border-border/50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
                         onClick={() => router.push(`/accountant/clients/${company.company_id}#documents`)}
                       >
                         <td className="py-3 px-3">
@@ -248,7 +248,7 @@ export default function DocumentsOverviewPage() {
                               </div>
                               {company.ico && (
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  IČO: {company.ico}
+                                  I\u010cO: {company.ico}
                                 </div>
                               )}
                             </div>
@@ -270,17 +270,17 @@ export default function DocumentsOverviewPage() {
                         </td>
                         <td className="py-3 px-3 text-center">
                           {allApproved ? (
-                            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                              Kompletní
+                            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-md">
+                              Kompletn\u00ed
                             </Badge>
                           ) : allMissing ? (
-                            <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                              Nezačato
+                            <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-md">
+                              Neza\u010dato
                             </Badge>
                           ) : (
-                            <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                            <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-md">
                               <AlertTriangle className="h-3 w-3 mr-1" />
-                              Nekompletní
+                              Nekompletn\u00ed
                             </Badge>
                           )}
                         </td>
@@ -292,7 +292,7 @@ export default function DocumentsOverviewPage() {
             </div>
           )}
 
-          <div className="mt-4 pt-3 border-t dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+          <div className="mt-4 pt-3 border-t border-border/50 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
             Zobrazeno {filteredCompanies.length} z {data?.companies.length || 0} firem
           </div>
         </CardContent>
@@ -301,13 +301,13 @@ export default function DocumentsOverviewPage() {
       {/* Legend */}
       <div className="flex items-center gap-6 text-xs text-gray-500 dark:text-gray-400">
         <span className="flex items-center gap-1">
-          <CheckCircle className="h-3 w-3 text-green-600" /> Schváleno
+          <CheckCircle className="h-3 w-3 text-green-600" /> Schv\u00e1leno
         </span>
         <span className="flex items-center gap-1">
-          <Clock className="h-3 w-3 text-yellow-600" /> Nahráno, ke schválení
+          <Clock className="h-3 w-3 text-yellow-600" /> Nahr\u00e1no, ke schv\u00e1len\u00ed
         </span>
         <span className="flex items-center gap-1">
-          <XCircle className="h-3 w-3 text-red-500" /> Chybí
+          <XCircle className="h-3 w-3 text-red-500" /> Chyb\u00ed
         </span>
       </div>
     </div>

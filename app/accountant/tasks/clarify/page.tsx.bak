@@ -223,7 +223,7 @@ export default function ClarifyPage() {
     return (
       <div className="max-w-lg mx-auto text-center py-20 space-y-6">
         <PartyPopper className="h-16 w-16 mx-auto text-purple-600" />
-        <h2 className="text-2xl font-bold font-display">Inbox je prázdný!</h2>
+        <h2 className="text-2xl font-bold">Inbox je prázdný!</h2>
         <p className="text-muted-foreground">
           Zpracováno {processedCount} {processedCount === 1 ? 'úkol' : processedCount < 5 ? 'úkoly' : 'úkolů'}.
         </p>
@@ -304,7 +304,7 @@ export default function ClarifyPage() {
       </Card>
 
       {/* Action question */}
-      <h3 className="text-lg font-semibold font-display text-center">Co s tímto úkolem?</h3>
+      <h3 className="text-lg font-semibold text-center">Co s tímto úkolem?</h3>
 
       {/* 4 action buttons */}
       <div className="grid grid-cols-2 gap-3">

@@ -66,7 +66,7 @@ export default function ClientCaseDetailPage({ params }: { params: { id: string 
   if (error || !caseData) {
     return (
       <div className="text-center py-12">
-        <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-30" />
         <p className="text-muted-foreground mb-4">{error || 'Spis nenalezen'}</p>
         <Button onClick={() => router.push('/client/cases')}>
           <ArrowLeft className="h-4 w-4 mr-2" /> Zpět na spisy
@@ -90,11 +90,11 @@ export default function ClientCaseDetailPage({ params }: { params: { id: string 
         <CardContent className="p-6">
           <div className="flex items-center gap-2 mb-2">
             {caseData.case_number && (
-              <Badge variant="outline">{caseData.case_number}</Badge>
+              <Badge variant="outline" className="rounded-md">{caseData.case_number}</Badge>
             )}
-            <Badge className={statusCfg.color}>{statusCfg.label}</Badge>
+            <Badge className={`rounded-md ${statusCfg.color}`}>{statusCfg.label}</Badge>
           </div>
-          <h1 className="text-xl font-bold mb-1">{caseData.title}</h1>
+          <h1 className="text-xl font-bold font-display mb-1">{caseData.title}</h1>
           {caseData.case_type_name && (
             <p className="text-sm text-muted-foreground">{caseData.case_type_name}</p>
           )}

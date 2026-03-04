@@ -163,7 +163,7 @@ function NewProjectContent() {
       {step === 1 && (
         <Card>
           <CardHeader>
-            <CardTitle className="font-display">1. Základní informace</CardTitle>
+            <CardTitle>1. Základní informace</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -198,7 +198,7 @@ function NewProjectContent() {
       {step === 2 && (
         <Card>
           <CardHeader>
-            <CardTitle className="font-display">2. Fáze projektu</CardTitle>
+            <CardTitle>2. Fáze projektu</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {phases.map((phase, i) => (
@@ -249,7 +249,7 @@ function NewProjectContent() {
       {step === 3 && (
         <Card>
           <CardHeader>
-            <CardTitle className="font-display">3. Termín a odhad</CardTitle>
+            <CardTitle>3. Termín a odhad</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -267,7 +267,7 @@ function NewProjectContent() {
       {step === 4 && (
         <Card>
           <CardHeader>
-            <CardTitle className="font-display">4. Priorita (R-Tasks)</CardTitle>
+            <CardTitle>4. Priorita (R-Tasks)</CardTitle>
           </CardHeader>
           <CardContent>
             {scores ? (
@@ -303,7 +303,7 @@ function NewProjectContent() {
       {step === 5 && (
         <Card>
           <CardHeader>
-            <CardTitle className="font-display">5. Rekapitulace</CardTitle>
+            <CardTitle>5. Rekapitulace</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>

@@ -227,7 +227,7 @@ export default function UserActivityPage() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Online</p>
-                <p className="text-2xl font-bold text-green-600">{activeUsersCount}</p>
+                <p className="text-2xl font-bold font-display text-green-600">{activeUsersCount}</p>
               </div>
             </div>
           </CardContent>
@@ -241,7 +241,7 @@ export default function UserActivityPage() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Celkem uživatelů</p>
-                <p className="text-2xl font-bold text-blue-600">{apiUsers.length}</p>
+                <p className="text-2xl font-bold font-display text-blue-600">{apiUsers.length}</p>
               </div>
             </div>
           </CardContent>
@@ -255,7 +255,7 @@ export default function UserActivityPage() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Posledních akcí</p>
-                <p className="text-2xl font-bold text-purple-600">{recentActivity.length}</p>
+                <p className="text-2xl font-bold font-display text-purple-600">{recentActivity.length}</p>
               </div>
             </div>
           </CardContent>
@@ -281,7 +281,7 @@ export default function UserActivityPage() {
       {/* User Cards */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 font-display">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             Uživatelé
           </CardTitle>
@@ -294,7 +294,7 @@ export default function UserActivityPage() {
               return (
                 <div
                   key={user.id}
-                  className={`p-4 rounded-lg border ${
+                  className={`p-4 rounded-xl border ${
                     user.isOnline
                       ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
                       : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
@@ -353,7 +353,7 @@ export default function UserActivityPage() {
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 font-display">
                   <Activity className="h-5 w-5" />
                   Poslední aktivita
                 </CardTitle>
@@ -366,7 +366,7 @@ export default function UserActivityPage() {
                     placeholder="Hledat..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 w-48"
+                    className="pl-9 w-48 h-11"
                   />
                 </div>
                 <Select value={selectedUser} onValueChange={setSelectedUser}>
@@ -399,7 +399,7 @@ export default function UserActivityPage() {
                   return (
                     <div
                       key={entry.id}
-                      className="p-3 rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+                      className="p-3 rounded-xl border border-border/50 bg-gray-50 dark:bg-gray-800/50"
                     >
                       <div className="flex items-start gap-3">
                         <div className={`p-2 rounded-lg ${getActionColor(entry.action)}`}>
@@ -441,7 +441,7 @@ export default function UserActivityPage() {
           {/* Activity by Action */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
+              <CardTitle className="flex items-center gap-2 text-base font-display">
                 <TrendingUp className="h-5 w-5" />
                 Typy akcí
               </CardTitle>
@@ -477,7 +477,7 @@ export default function UserActivityPage() {
           {/* Activity by Table */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
+              <CardTitle className="flex items-center gap-2 text-base font-display">
                 <Eye className="h-5 w-5" />
                 Aktivita podle tabulek
               </CardTitle>

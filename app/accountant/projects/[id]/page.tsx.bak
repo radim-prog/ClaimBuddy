@@ -211,7 +211,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     return (
       <div className="max-w-2xl mx-auto text-center py-20">
         <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold font-display mb-2">Projekt nenalezen</h3>
+        <h3 className="text-lg font-semibold mb-2">Projekt nenalezen</h3>
         <Button onClick={() => router.push('/accountant/projects')}>
           <ArrowLeft className="h-4 w-4 mr-2" /> Zpět na projekty
         </Button>
@@ -243,7 +243,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   {statusCfg.label}
                 </Badge>
               </div>
-              <h1 className="text-2xl font-bold font-display mb-2">{project.title}</h1>
+              <h1 className="text-2xl font-bold mb-2">{project.title}</h1>
               {project.outcome && (
                 <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 mb-3">
                   <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-medium text-sm mb-1">
@@ -529,7 +529,7 @@ function PhasesAndTasks({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold font-display flex items-center gap-2">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
           <ListTodo className="h-5 w-5" />
           Fáze a úkoly
         </h2>
@@ -610,7 +610,7 @@ function PhasesAndTasks({
       {unassignedTasks.length > 0 && (
         <Card>
           <CardHeader className="py-3">
-            <CardTitle className="text-base font-display">Volné úkoly</CardTitle>
+            <CardTitle className="text-base">Volné úkoly</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {unassignedTasks.map(task => (

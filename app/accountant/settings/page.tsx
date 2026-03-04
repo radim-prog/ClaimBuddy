@@ -110,7 +110,7 @@ export default function AccountantSettingsPage() {
       {/* Deadline + Sazby */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base font-display flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Deadline a sazby
           </CardTitle>
@@ -126,7 +126,7 @@ export default function AccountantSettingsPage() {
                 max="28"
                 value={deadlineDay}
                 onChange={(e) => setDeadlineDay(Math.min(28, Math.max(1, parseInt(e.target.value) || 1)))}
-                className="h-8"
+                className="h-11"
               />
             </div>
             <Button size="sm" onClick={handleDeadlineDaySave} disabled={deadlineSaving}>
@@ -137,15 +137,15 @@ export default function AccountantSettingsPage() {
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="hourlyRate" className="text-xs">Kč/hod</Label>
-                <Input id="hourlyRate" type="number" min="0" step="50" value={hourlyRate} onChange={(e) => setHourlyRate(Number(e.target.value) || 0)} className="h-8" />
+                <Input id="hourlyRate" type="number" min="0" step="50" value={hourlyRate} onChange={(e) => setHourlyRate(Number(e.target.value) || 0)} className="h-11" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="kmRate" className="text-xs">Kč/km</Label>
-                <Input id="kmRate" type="number" min="0" step="0.5" value={kmRate} onChange={(e) => setKmRate(Number(e.target.value) || 0)} className="h-8" />
+                <Input id="kmRate" type="number" min="0" step="0.5" value={kmRate} onChange={(e) => setKmRate(Number(e.target.value) || 0)} className="h-11" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="wastedTimeRate" className="text-xs">Kč/hod cesta</Label>
-                <Input id="wastedTimeRate" type="number" min="0" step="50" value={wastedTimeRate} onChange={(e) => setWastedTimeRate(Number(e.target.value) || 0)} className="h-8" />
+                <Input id="wastedTimeRate" type="number" min="0" step="50" value={wastedTimeRate} onChange={(e) => setWastedTimeRate(Number(e.target.value) || 0)} className="h-11" />
               </div>
             </div>
             <div className="flex justify-end mt-3">
@@ -160,7 +160,7 @@ export default function AccountantSettingsPage() {
       {/* Notifikace */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Notifikace</CardTitle>
+          <CardTitle className="text-base font-display">Notifikace</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
@@ -189,22 +189,22 @@ export default function AccountantSettingsPage() {
       {/* Prahy upozornění */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Prahy upozornění</CardTitle>
+          <CardTitle className="text-base font-display">Prahy upozornění</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dokumenty</p>
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="documentCriticalDays" className="text-xs">Kritický (dní)</Label>
-              <Input id="documentCriticalDays" type="number" min="0" max="30" value={localSettings.documentCriticalDays} onChange={(e) => handleChange('documentCriticalDays', parseInt(e.target.value) || 0)} className="h-8" />
+              <Input id="documentCriticalDays" type="number" min="0" max="30" value={localSettings.documentCriticalDays} onChange={(e) => handleChange('documentCriticalDays', parseInt(e.target.value) || 0)} className="h-11" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="documentUrgentDays" className="text-xs">Urgentní (dní)</Label>
-              <Input id="documentUrgentDays" type="number" min="0" max="30" value={localSettings.documentUrgentDays} onChange={(e) => handleChange('documentUrgentDays', parseInt(e.target.value) || 0)} className="h-8" />
+              <Input id="documentUrgentDays" type="number" min="0" max="30" value={localSettings.documentUrgentDays} onChange={(e) => handleChange('documentUrgentDays', parseInt(e.target.value) || 0)} className="h-11" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="closureDeadlineDay" className="text-xs">Deadline uzávěrky (den)</Label>
-              <Input id="closureDeadlineDay" type="number" min="1" max="28" value={localSettings.closureDeadlineDay} onChange={(e) => handleChange('closureDeadlineDay', parseInt(e.target.value) || 10)} className="h-8" />
+              <Input id="closureDeadlineDay" type="number" min="1" max="28" value={localSettings.closureDeadlineDay} onChange={(e) => handleChange('closureDeadlineDay', parseInt(e.target.value) || 10)} className="h-11" />
             </div>
           </div>
           <div className="border-t pt-3">
@@ -212,11 +212,11 @@ export default function AccountantSettingsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="taskOverdueCriticalDays" className="text-xs">Kritický (dní po termínu)</Label>
-                <Input id="taskOverdueCriticalDays" type="number" min="0" max="30" value={localSettings.taskOverdueCriticalDays} onChange={(e) => handleChange('taskOverdueCriticalDays', parseInt(e.target.value) || 0)} className="h-8" />
+                <Input id="taskOverdueCriticalDays" type="number" min="0" max="30" value={localSettings.taskOverdueCriticalDays} onChange={(e) => handleChange('taskOverdueCriticalDays', parseInt(e.target.value) || 0)} className="h-11" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="taskOverdueUrgentDays" className="text-xs">Urgentní (dní před termínem)</Label>
-                <Input id="taskOverdueUrgentDays" type="number" min="0" max="30" value={localSettings.taskOverdueUrgentDays} onChange={(e) => handleChange('taskOverdueUrgentDays', parseInt(e.target.value) || 0)} className="h-8" />
+                <Input id="taskOverdueUrgentDays" type="number" min="0" max="30" value={localSettings.taskOverdueUrgentDays} onChange={(e) => handleChange('taskOverdueUrgentDays', parseInt(e.target.value) || 0)} className="h-11" />
               </div>
             </div>
           </div>
@@ -226,17 +226,17 @@ export default function AccountantSettingsPage() {
       {/* Onboarding */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Onboarding klientů</CardTitle>
+          <CardTitle className="text-base font-display">Onboarding klientů</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="onboardingStalledDays" className="text-xs">Dní bez aktivity = zaseklý</Label>
-              <Input id="onboardingStalledDays" type="number" min="1" max="60" value={localSettings.onboardingStalledDays} onChange={(e) => handleChange('onboardingStalledDays', parseInt(e.target.value) || 7)} className="h-8" />
+              <Input id="onboardingStalledDays" type="number" min="1" max="60" value={localSettings.onboardingStalledDays} onChange={(e) => handleChange('onboardingStalledDays', parseInt(e.target.value) || 7)} className="h-11" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="onboardingLowProgressPercent" className="text-xs">Práh nízkého postupu (%)</Label>
-              <Input id="onboardingLowProgressPercent" type="number" min="10" max="90" value={localSettings.onboardingLowProgressPercent} onChange={(e) => handleChange('onboardingLowProgressPercent', parseInt(e.target.value) || 50)} className="h-8" />
+              <Input id="onboardingLowProgressPercent" type="number" min="10" max="90" value={localSettings.onboardingLowProgressPercent} onChange={(e) => handleChange('onboardingLowProgressPercent', parseInt(e.target.value) || 50)} className="h-11" />
             </div>
           </div>
           <div className="flex items-center justify-between">
@@ -253,17 +253,17 @@ export default function AccountantSettingsPage() {
       {/* Výchozí + Automatizace */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Výchozí nastavení a automatizace</CardTitle>
+          <CardTitle className="text-base font-display">Výchozí nastavení a automatizace</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="defaultVatRate" className="text-xs">Výchozí DPH (%)</Label>
-              <Input id="defaultVatRate" type="number" min="0" max="100" value={localSettings.defaultVatRate} onChange={(e) => handleChange('defaultVatRate', parseInt(e.target.value) || 21)} className="h-8" />
+              <Input id="defaultVatRate" type="number" min="0" max="100" value={localSettings.defaultVatRate} onChange={(e) => handleChange('defaultVatRate', parseInt(e.target.value) || 21)} className="h-11" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="reminderDays" className="text-xs">Dní před urgováním</Label>
-              <Input id="reminderDays" type="number" min="1" max="30" value={localSettings.reminderDays} onChange={(e) => handleChange('reminderDays', parseInt(e.target.value) || 7)} className="h-8" />
+              <Input id="reminderDays" type="number" min="1" max="30" value={localSettings.reminderDays} onChange={(e) => handleChange('reminderDays', parseInt(e.target.value) || 7)} className="h-11" />
             </div>
           </div>
           <div className="border-t pt-3 space-y-3">

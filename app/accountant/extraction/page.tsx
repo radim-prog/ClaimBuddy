@@ -299,7 +299,7 @@ export default function AccountantExtractionPage() {
       <div className="border-b bg-white dark:bg-gray-800 dark:border-gray-700 p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold dark:text-white">Vytěžování dokumentů</h1>
+            <h1 className="text-2xl font-bold font-display dark:text-white">Vytěžování dokumentů</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Nahrání a automatické zpracování faktur a účtenek pomocí Kimi AI
             </p>
@@ -338,7 +338,7 @@ export default function AccountantExtractionPage() {
               <div className="space-y-4">
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Typ dokumentu</CardTitle>
+                    <CardTitle className="text-sm font-medium font-display">Typ dokumentu</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <DocumentTypeSelector
@@ -464,7 +464,7 @@ export default function AccountantExtractionPage() {
                     <CardHeader className="border-b">
                       <div className="flex items-center justify-between">
                         <div>
-                          <CardTitle>Vytěžená data</CardTitle>
+                          <CardTitle className="font-display">Vytěžená data</CardTitle>
                           <p className="text-sm text-gray-500 mt-1">
                             Zkontrolujte a upravte extrahované údaje
                           </p>
@@ -563,7 +563,7 @@ export default function AccountantExtractionPage() {
                   <Card className="h-full flex items-center justify-center">
                     <div className="text-center text-gray-400 p-8">
                       <FileText className="w-16 h-16 mx-auto mb-4" />
-                      <p className="text-lg font-medium">Žádná data k zobrazení</p>
+                      <p className="text-lg font-medium font-display">Žádná data k zobrazení</p>
                       <p className="text-sm mt-2">
                         Nahrajte dokument pro automatické vytěžení
                       </p>
@@ -580,7 +580,7 @@ export default function AccountantExtractionPage() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2 mb-2">
                     <History className="w-4 h-4 text-gray-500" />
-                    <CardTitle className="text-base">Naposledy vytěžené</CardTitle>
+                    <CardTitle className="text-base font-display">Naposledy vytěžené</CardTitle>
                   </div>
                   <Select value={historyFilter} onValueChange={setHistoryFilter}>
                     <SelectTrigger>
@@ -645,7 +645,7 @@ export default function AccountantExtractionPage() {
 
               <Card className="lg:col-span-2 flex flex-col h-full">
                 <CardHeader className="border-b">
-                  <CardTitle>Detail dokumentu</CardTitle>
+                  <CardTitle className="font-display">Detail dokumentu</CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 overflow-auto p-4">
                   {selectedHistoryItem?.extracted_data ? (
@@ -720,7 +720,7 @@ function CompareTab({ userId }: { userId: string | null }) {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>A/B Porovnání Kimi modelů</CardTitle>
+          <CardTitle className="font-display">A/B Porovnání Kimi modelů</CardTitle>
           <p className="text-sm text-gray-500">
             Nahrajte fakturu a porovnejte výsledky extrakce mezi modely Kimi K2.5 a Moonshot V1
           </p>
@@ -774,7 +774,7 @@ function CompareTab({ userId }: { userId: string | null }) {
               <Card key={result.model} className={result.model === compareResult.bestModel.model ? 'border-purple-400 border-2' : ''}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{result.modelName}</CardTitle>
+                    <CardTitle className="text-lg font-display">{result.modelName}</CardTitle>
                     <Badge variant={result.success ? 'default' : 'destructive'}>
                       {result.success ? `${result.confidence}%` : 'Chyba'}
                     </Badge>

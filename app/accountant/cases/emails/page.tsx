@@ -13,10 +13,10 @@ import { toast } from 'sonner'
 import type { CaseEmail } from '@/lib/types/project'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Mail }> = {
-  unassigned: { label: 'Nepřiřazeno', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-  assigned: { label: 'Přiřazeno', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+  unassigned: { label: 'Nep\u0159i\u0159azeno', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
+  assigned: { label: 'P\u0159i\u0159azeno', color: 'bg-green-100 text-green-700', icon: CheckCircle },
   auto_assigned: { label: 'Auto', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
-  ignored: { label: 'Ignorováno', color: 'bg-gray-100 text-gray-600', icon: Mail },
+  ignored: { label: 'Ignorov\u00e1no', color: 'bg-gray-100 text-gray-600', icon: Mail },
 }
 
 export default function CaseEmailsPage() {
@@ -46,10 +46,10 @@ export default function CaseEmailsPage() {
     try {
       const res = await fetch('/api/cron/fetch-emails', { method: 'POST' })
       const data = await res.json()
-      toast.success(`Synchronizace dokončena: ${data.fetched || 0} nových emailů`)
+      toast.success(`Synchronizace dokon\u010dena: ${data.fetched || 0} nov\u00fdch email\u016f`)
       fetchEmails()
     } catch {
-      toast.error('Chyba při synchronizaci')
+      toast.error('Chyba p\u0159i synchronizaci')
     } finally {
       setSyncing(false)
     }
@@ -62,7 +62,7 @@ export default function CaseEmailsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'ignored' }),
       })
-      toast.success('Email ignorován')
+      toast.success('Email ignorov\u00e1n')
       fetchEmails()
     } catch {}
   }
@@ -70,8 +70,8 @@ export default function CaseEmailsPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Mail className="h-6 w-6" /> Příchozí emaily
+        <h1 className="text-2xl font-bold font-display flex items-center gap-2">
+          <Mail className="h-6 w-6" /> P\u0159\u00edchoz\u00ed emaily
         </h1>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
@@ -80,7 +80,7 @@ export default function CaseEmailsPage() {
           </Button>
           <Button variant="outline" size="sm" onClick={() => setShowSettings(!showSettings)}>
             <Settings className="h-4 w-4 mr-1" />
-            Nastavení
+            Nastaven\u00ed
           </Button>
         </div>
       </div>
@@ -89,22 +89,22 @@ export default function CaseEmailsPage() {
 
       <Tabs value={filter} onValueChange={setFilter}>
         <TabsList>
-          <TabsTrigger value="unassigned">Nepřiřazené</TabsTrigger>
-          <TabsTrigger value="assigned">Přiřazené</TabsTrigger>
+          <TabsTrigger value="unassigned">Nep\u0159i\u0159azen\u00e9</TabsTrigger>
+          <TabsTrigger value="assigned">P\u0159i\u0159azen\u00e9</TabsTrigger>
           <TabsTrigger value="auto_assigned">Auto</TabsTrigger>
-          <TabsTrigger value="all">Vše</TabsTrigger>
+          <TabsTrigger value="all">V\u0161e</TabsTrigger>
         </TabsList>
 
         <TabsContent value={filter} className="mt-4">
           {loading ? (
-            <Card>
-              <CardContent className="p-6 text-center text-muted-foreground">Načítání...</CardContent>
+            <Card className="rounded-xl shadow-soft">
+              <CardContent className="p-6 text-center text-muted-foreground">Na\u010d\u00edt\u00e1n\u00ed...</CardContent>
             </Card>
           ) : emails.length === 0 ? (
-            <Card>
+            <Card className="rounded-xl shadow-soft">
               <CardContent className="py-12 text-center">
                 <Mail className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Žádné emaily v této kategorii</p>
+                <p className="text-muted-foreground">\u017d\u00e1dn\u00e9 emaily v t\u00e9to kategorii</p>
               </CardContent>
             </Card>
           ) : (
@@ -113,13 +113,13 @@ export default function CaseEmailsPage() {
                 {emails.map(email => {
                   const statusCfg = STATUS_CONFIG[email.status] || STATUS_CONFIG.unassigned
                   return (
-                    <Card key={email.id} className="hover:bg-muted/50 transition-colors">
+                    <Card key={email.id} className="rounded-xl shadow-soft-sm hover:bg-muted/50 transition-colors">
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="font-medium text-sm truncate">{email.from_name || email.from_address}</span>
-                              <Badge className={`${statusCfg.color} text-xs`}>{statusCfg.label}</Badge>
+                              <Badge className={`${statusCfg.color} text-xs rounded-md`}>{statusCfg.label}</Badge>
                               {email.has_attachments && (
                                 <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                               )}
@@ -143,7 +143,7 @@ export default function CaseEmailsPage() {
                                   setAssignDialogOpen(true)
                                 }}
                               >
-                                <Briefcase className="h-3.5 w-3.5 mr-1" /> Přiřadit
+                                <Briefcase className="h-3.5 w-3.5 mr-1" /> P\u0159i\u0159adit
                               </Button>
                               <Button
                                 variant="ghost"

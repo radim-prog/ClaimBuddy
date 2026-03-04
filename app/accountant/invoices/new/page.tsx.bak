@@ -173,7 +173,7 @@ export default function NewInvoicePage() {
             Zpet na seznam
           </Button>
         </Link>
-        <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white">Nova faktura</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nova faktura</h1>
       </div>
 
       {/* Customer */}

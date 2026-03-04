@@ -70,7 +70,7 @@ function DocumentsPageInner() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Doklady</h1>
+        <h1 className="text-2xl font-bold font-display">Doklady</h1>
         <p className="text-muted-foreground">Nahrajte doklady, spravujte výpisy a vystavujte faktury</p>
       </div>
 
@@ -85,7 +85,7 @@ function DocumentsPageInner() {
               className={cn(
                 'flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors flex-1 justify-center whitespace-nowrap',
                 activeTab === tab.id
-                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-soft-sm'
                   : 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
               )}
             >
@@ -379,11 +379,11 @@ function UploadTab() {
   if (showSuccess) {
     return (
       <Card className="text-center">
-        <CardContent className="pt-6 pb-6">
+        <CardContent className="p-6">
           <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-8 h-8 text-green-600" />
           </div>
-          <h2 className="text-xl font-semibold mb-2">Doklady odeslány!</h2>
+          <h2 className="text-xl font-semibold font-display mb-2">Doklady odeslány!</h2>
           <p className="text-muted-foreground">
             Vaše doklady byly úspěšně odeslány k účetnímu zpracování.
           </p>
@@ -400,7 +400,7 @@ function UploadTab() {
           <CardContent className="p-4">
             <Label className="mb-2 block">Firma</Label>
             <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-              <SelectTrigger>
+              <SelectTrigger className="h-11">
                 <SelectValue placeholder="Vyberte firmu..." />
               </SelectTrigger>
               <SelectContent>
@@ -453,7 +453,7 @@ function UploadTab() {
       </div>
 
       {!selectedCompany && companies.length > 1 && (
-        <p className="text-center text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded">
+        <p className="text-center text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg">
           Nejprve vyberte firmu
         </p>
       )}
@@ -474,12 +474,12 @@ function UploadTab() {
                 <FileText className="w-16 h-16 text-muted-foreground" />
               </div>
             )}
-            <div className="absolute top-2 right-2 bg-white dark:bg-gray-800 rounded-full p-1 shadow">
+            <div className="absolute top-2 right-2 bg-white dark:bg-gray-800 rounded-full p-1 shadow-soft-sm">
               {getStatusIcon(currentJob.status)}
             </div>
           </div>
 
-          <CardContent className="p-4 space-y-4">
+          <CardContent className="p-6 space-y-4">
             {currentJob.status === 'extracting' && (
               <div className="flex items-center gap-2 text-blue-600">
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -488,7 +488,7 @@ function UploadTab() {
             )}
 
             {currentJob.status === 'error' && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3">
                 <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
                   <AlertCircle className="w-4 h-4" />
                   <span className="text-sm font-medium">Vytěžování selhalo</span>
@@ -550,7 +550,7 @@ function UploadTab() {
                 key={job.id}
                 onClick={() => setCurrentJobIndex(idx)}
                 className={cn(
-                  'flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden relative',
+                  'flex-shrink-0 w-20 h-20 rounded-xl border-2 overflow-hidden relative',
                   idx === currentJobIndex
                     ? 'border-blue-500 ring-2 ring-blue-200'
                     : 'border-gray-200 dark:border-gray-700'
@@ -775,7 +775,7 @@ function DocumentListTab() {
                           </button>
                         </div>
                       )}
-                      <Badge className={statusColors[docStatus] || 'bg-gray-100 text-gray-800'}>
+                      <Badge className={cn('rounded-md', statusColors[docStatus] || 'bg-gray-100 text-gray-800')}>
                         {statusLabels[docStatus] || docStatus}
                       </Badge>
                       <span className="text-xs text-muted-foreground hidden sm:inline">
@@ -787,7 +787,7 @@ function DocumentListTab() {
                 </CardContent>
 
                 {isSelected && (
-                  <div className="px-4 pb-4 border-t" onClick={(e) => e.stopPropagation()}>
+                  <div className="px-4 pb-4 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
                     <div className="pt-4">
                       <DocumentComments documentId={doc.id} userRole="client" />
                     </div>
@@ -901,7 +901,7 @@ function BankTab() {
           <CardContent className="p-4">
             <Label className="mb-2 block">Firma</Label>
             <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-              <SelectTrigger><SelectValue placeholder="Vyberte firmu..." /></SelectTrigger>
+              <SelectTrigger className="h-11"><SelectValue placeholder="Vyberte firmu..." /></SelectTrigger>
               <SelectContent>
                 {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
@@ -980,7 +980,7 @@ function InvoicesTab() {
           <CardContent className="p-4">
             <Label className="mb-2 block">Firma</Label>
             <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-              <SelectTrigger><SelectValue placeholder="Vyberte firmu..." /></SelectTrigger>
+              <SelectTrigger className="h-11"><SelectValue placeholder="Vyberte firmu..." /></SelectTrigger>
               <SelectContent>
                 {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
@@ -1060,11 +1060,12 @@ function ClientInvoiceListView({ companyId }: { companyId: string }) {
                 <span className="text-sm font-semibold text-green-600">
                   {(inv.total_with_vat || inv.amount || 0).toLocaleString('cs-CZ')} Kč
                 </span>
-                <Badge className={
+                <Badge className={cn(
+                  'rounded-md',
                   inv.status === 'paid' ? 'bg-green-100 text-green-800' :
                   inv.status === 'sent' ? 'bg-blue-100 text-blue-800' :
                   'bg-gray-100 text-gray-800'
-                }>
+                )}>
                   {inv.status === 'paid' ? 'Zaplaceno' : inv.status === 'sent' ? 'Odesláno' : 'Koncept'}
                 </Badge>
               </div>

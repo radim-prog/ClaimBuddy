@@ -10,6 +10,7 @@ import { User, Lock, Save, Building2, FileText, ArrowDownLeft, ArrowUpRight, Ref
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { useClientUser } from '@/lib/contexts/client-user-context'
+import { cn } from '@/lib/utils'
 
 type Tab = 'profile' | 'company' | 'invoices' | 'notifications'
 
@@ -59,7 +60,7 @@ export default function AccountPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Můj účet</h1>
+        <h1 className="text-2xl font-bold font-display">Můj účet</h1>
         <p className="text-muted-foreground">Spravujte svůj profil, firmu a faktury</p>
       </div>
 
@@ -74,7 +75,7 @@ export default function AccountPage() {
               className={`
                 flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors flex-1 justify-center
                 ${activeTab === tab.id
-                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-soft-sm'
                   : 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
                 }
               `}
@@ -175,7 +176,7 @@ function ProfileTab() {
     <div className="space-y-6 max-w-2xl">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
+          <CardTitle className="flex items-center gap-2 text-lg font-display">
             <User className="h-5 w-5" />
             Osobní údaje
           </CardTitle>
@@ -183,16 +184,16 @@ function ProfileTab() {
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="login">Přihlašovací jméno</Label>
-            <Input id="login" value={loginName} disabled className="bg-muted" />
+            <Input id="login" value={loginName} disabled className="bg-muted h-11" />
             <p className="text-xs text-muted-foreground mt-1">Nelze změnit</p>
           </div>
           <div>
             <Label htmlFor="name">Jméno</Label>
-            <Input id="name" value={name} onChange={e => setName(e.target.value)} />
+            <Input id="name" value={name} onChange={e => setName(e.target.value)} className="h-11" />
           </div>
           <div>
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="h-11" />
           </div>
           <Button onClick={handleSaveProfile} disabled={saving}>
             <Save className="mr-2 h-4 w-4" />
@@ -203,7 +204,7 @@ function ProfileTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
+          <CardTitle className="flex items-center gap-2 text-lg font-display">
             <Lock className="h-5 w-5" />
             Změna hesla
           </CardTitle>
@@ -212,15 +213,15 @@ function ProfileTab() {
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="current">Současné heslo</Label>
-            <Input id="current" type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
+            <Input id="current" type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="h-11" />
           </div>
           <div>
             <Label htmlFor="new">Nové heslo</Label>
-            <Input id="new" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+            <Input id="new" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="h-11" />
           </div>
           <div>
             <Label htmlFor="confirm">Potvrdit nové heslo</Label>
-            <Input id="confirm" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+            <Input id="confirm" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="h-11" />
           </div>
           <Button onClick={handleChangePassword} disabled={saving || !currentPassword || !newPassword} variant="outline">
             <Lock className="mr-2 h-4 w-4" />
@@ -249,7 +250,7 @@ function CompanyTab() {
         <CardContent className="py-12">
           <div className="text-center text-muted-foreground">
             <Building2 className="h-16 w-16 mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium">Žádné firmy</p>
+            <p className="text-lg font-medium font-display">Žádné firmy</p>
             <p className="mt-1 text-sm">Kontaktujte svého účetního.</p>
           </div>
         </CardContent>
@@ -262,7 +263,7 @@ function CompanyTab() {
       {companies.map((company) => (
         <Card key={company.id}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-display">
               <Building2 className="h-5 w-5 text-blue-600" />
               {company.name}
             </CardTitle>
@@ -294,7 +295,7 @@ function CompanyTab() {
               <div>
                 <dt className="text-muted-foreground">Status</dt>
                 <dd>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
                     company.status === 'active'
                       ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                       : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
@@ -350,22 +351,22 @@ function InvoicesTab() {
     <div className="space-y-4">
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card className="cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all" onClick={() => setFilter('all')}>
-          <CardContent className="pt-4 pb-3">
+        <Card className="cursor-pointer card-hover shadow-soft-sm" onClick={() => setFilter('all')}>
+          <CardContent className="pt-4 pb-3 p-6">
             <p className="text-xs text-muted-foreground">Celkem faktur</p>
-            <p className="text-2xl font-bold">{invoices.length}</p>
+            <p className="text-2xl font-bold font-display">{invoices.length}</p>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:ring-2 hover:ring-green-500 transition-all" onClick={() => setFilter('income')}>
-          <CardContent className="pt-4 pb-3">
+        <Card className="cursor-pointer card-hover shadow-soft-sm" onClick={() => setFilter('income')}>
+          <CardContent className="pt-4 pb-3 p-6">
             <p className="text-xs text-muted-foreground">Vydané (příjmy)</p>
-            <p className="text-2xl font-bold text-green-600">{formatAmount(totalIncome, 'CZK')}</p>
+            <p className="text-2xl font-bold font-display text-green-600">{formatAmount(totalIncome, 'CZK')}</p>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:ring-2 hover:ring-red-500 transition-all" onClick={() => setFilter('expense')}>
-          <CardContent className="pt-4 pb-3">
+        <Card className="cursor-pointer card-hover shadow-soft-sm" onClick={() => setFilter('expense')}>
+          <CardContent className="pt-4 pb-3 p-6">
             <p className="text-xs text-muted-foreground">Přijaté (náklady)</p>
-            <p className="text-2xl font-bold text-red-600">{formatAmount(totalExpense, 'CZK')}</p>
+            <p className="text-2xl font-bold font-display text-red-600">{formatAmount(totalExpense, 'CZK')}</p>
           </CardContent>
         </Card>
       </div>
@@ -435,7 +436,7 @@ function InvoicesTab() {
                     }`}>
                       {formatAmount(inv.amount || 0, inv.currency)}
                     </span>
-                    <Badge className={statusColors[inv.status] || 'bg-gray-100 text-gray-800'}>
+                    <Badge className={cn('rounded-md', statusColors[inv.status] || 'bg-gray-100 text-gray-800')}>
                       {statusLabels[inv.status] || inv.status}
                     </Badge>
                   </div>
@@ -524,7 +525,7 @@ function NotificationsTab() {
       {/* Channels */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
+          <CardTitle className="flex items-center gap-2 text-lg font-display">
             <Bell className="h-5 w-5" />
             Kanály upozornění
           </CardTitle>
@@ -566,6 +567,7 @@ function NotificationsTab() {
                 value={telegramChatId}
                 onChange={e => setTelegramChatId(e.target.value)}
                 placeholder="Např. 123456789"
+                className="h-11"
               />
               <p className="text-xs text-muted-foreground">
                 Napište /start botovi @UcetniWebAppBot a pošlete příkaz /id pro zjištění vašeho Chat ID
@@ -578,7 +580,7 @@ function NotificationsTab() {
       {/* Notification types */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Typy upozornění</CardTitle>
+          <CardTitle className="text-lg font-display">Typy upozornění</CardTitle>
           <CardDescription>Zvolte o čem chcete být informováni</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

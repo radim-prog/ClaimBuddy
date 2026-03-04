@@ -98,71 +98,71 @@ export default function AdminDashboardPage() {
     <div className="space-y-6">
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="pt-4 pb-4">
+        <Card className="shadow-soft-sm">
+          <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                 <Users className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Uživatelů</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{s?.users.total ?? 0}</p>
+                <p className="text-xl font-bold font-display text-gray-900 dark:text-white">{s?.users.total ?? 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-4 pb-4">
+        <Card className="shadow-soft-sm">
+          <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                 <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Aktivních (30d)</p>
-                <p className="text-xl font-bold text-green-600 dark:text-green-400">{s?.users.active ?? 0}</p>
+                <p className="text-xl font-bold font-display text-green-600 dark:text-green-400">{s?.users.active ?? 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-4 pb-4">
+        <Card className="shadow-soft-sm">
+          <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                 <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Klientů</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{s?.companies.total ?? 0}</p>
+                <p className="text-xl font-bold font-display text-gray-900 dark:text-white">{s?.companies.total ?? 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-4 pb-4">
+        <Card className="shadow-soft-sm">
+          <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
                 <FileText className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Logů dnes</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{s?.audit.today_count ?? 0}</p>
+                <p className="text-xl font-bold font-display text-gray-900 dark:text-white">{s?.audit.today_count ?? 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-4 pb-4">
+        <Card className="shadow-soft-sm">
+          <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
                 <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Hodin (měsíc)</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{s?.time_logs.month_hours ?? 0}h</p>
+                <p className="text-xl font-bold font-display text-gray-900 dark:text-white">{s?.time_logs.month_hours ?? 0}h</p>
               </div>
             </div>
           </CardContent>
@@ -171,11 +171,11 @@ export default function AdminDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activity */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 shadow-soft">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 font-display">
                   <Activity className="h-5 w-5" />
                   Poslední aktivita
                 </CardTitle>
@@ -226,9 +226,9 @@ export default function AdminDashboardPage() {
         </Card>
 
         {/* System Health */}
-        <Card>
+        <Card className="shadow-soft">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-display">
               <Shield className="h-5 w-5" />
               Stav systému
             </CardTitle>
@@ -241,7 +241,7 @@ export default function AdminDashboardPage() {
                 { name: 'API Server', ok: healthOk },
                 { name: 'Autentizace', ok: true },
               ].map((service) => (
-                <div key={service.name} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div key={service.name} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                   <div className="flex items-center gap-2">
                     {service.ok ? (
                       <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -257,8 +257,8 @@ export default function AdminDashboardPage() {
               ))}
             </div>
 
-            <div className="mt-6 pt-4 border-t dark:border-gray-700">
-              <h4 className="font-medium text-gray-900 dark:text-white mb-2">Rychlé akce</h4>
+            <div className="mt-6 pt-4 border-t border-border/50">
+              <h4 className="font-medium font-display text-gray-900 dark:text-white mb-2">Rychlé akce</h4>
               <div className="space-y-2">
                 <Link href="/accountant/admin/audit-logs">
                   <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors">
@@ -292,11 +292,11 @@ export default function AdminDashboardPage() {
 
       {/* Security Notice */}
       <Card className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-200 dark:border-amber-800">
-        <CardContent className="pt-6">
+        <CardContent className="pt-6 pb-6">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-semibold text-amber-900 dark:text-amber-200 mb-1">Bezpečnostní upozornění</h4>
+              <h4 className="font-semibold font-display text-amber-900 dark:text-amber-200 mb-1">Bezpečnostní upozornění</h4>
               <p className="text-sm text-amber-800 dark:text-amber-300 mb-2">
                 Jako administrátor máte přístup ke všem datům v systému. Všechny vaše akce jsou logovány.
               </p>

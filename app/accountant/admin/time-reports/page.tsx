@@ -198,7 +198,7 @@ export default function TimeReportsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white flex items-center gap-2">
             <Clock className="h-7 w-7 text-blue-600" />
             Time Reports
           </h1>
@@ -234,7 +234,7 @@ export default function TimeReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Celkem odpracováno</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{fmtMin(totalMinutesAll)}</p>
+                <p className="text-2xl font-bold font-display text-gray-900 dark:text-white">{fmtMin(totalMinutesAll)}</p>
               </div>
               <Clock className="h-10 w-10 text-blue-100 dark:text-blue-900/50" />
             </div>
@@ -245,7 +245,7 @@ export default function TimeReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Fakturovatelné</p>
-                <p className="text-2xl font-bold text-green-600">{fmtMin(billableMinutesAll)}</p>
+                <p className="text-2xl font-bold font-display text-green-600">{fmtMin(billableMinutesAll)}</p>
               </div>
               <TrendingUp className="h-10 w-10 text-green-100 dark:text-green-900/50" />
             </div>
@@ -256,7 +256,7 @@ export default function TimeReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Záznamy</p>
-                <p className="text-2xl font-bold text-blue-600">{summary.total_entries}</p>
+                <p className="text-2xl font-bold font-display text-blue-600">{summary.total_entries}</p>
               </div>
               <Briefcase className="h-10 w-10 text-blue-100 dark:text-blue-900/50" />
             </div>
@@ -267,7 +267,7 @@ export default function TimeReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Nefakturovatelné</p>
-                <p className="text-2xl font-bold text-orange-600">{fmtMin(totalMinutesAll - billableMinutesAll)}</p>
+                <p className="text-2xl font-bold font-display text-orange-600">{fmtMin(totalMinutesAll - billableMinutesAll)}</p>
               </div>
               <Timer className="h-10 w-10 text-orange-100 dark:text-orange-900/50" />
             </div>
@@ -279,7 +279,7 @@ export default function TimeReportsPage() {
       {statsByUser.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-display">
               <Users className="h-5 w-5" />
               Podle účetních
             </CardTitle>
@@ -333,7 +333,7 @@ export default function TimeReportsPage() {
       {statsByCompany.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-display">
               <Building2 className="h-5 w-5" />
               Podle klientů
             </CardTitle>
@@ -373,7 +373,7 @@ export default function TimeReportsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Detailní záznamy</CardTitle>
+              <CardTitle className="font-display">Detailní záznamy</CardTitle>
               <CardDescription>Všechny záznamy za vybraný měsíc</CardDescription>
             </div>
             <div className="flex items-center gap-2">

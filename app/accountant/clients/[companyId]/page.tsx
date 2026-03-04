@@ -158,22 +158,22 @@ export default function ClientHubPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {cards.map((card) => (
           <Link key={card.id} href={card.href}>
-            <Card className="rounded-xl shadow-sm hover:shadow-md border-gray-200/80 dark:border-gray-700/80 hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-200 cursor-pointer group h-full">
-              <div className="p-5 flex flex-col h-full">
+            <Card className="card-hover rounded-xl shadow-soft-sm border-gray-200/80 dark:border-gray-700/80 hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-200 cursor-pointer group h-full">
+              <div className="p-6 flex flex-col h-full">
                 <div className="flex items-start justify-between mb-3">
                   <div className={`flex items-center justify-center h-10 w-10 rounded-xl ${card.iconBg} transition-colors group-hover:scale-105`}>
                     <card.icon className={`h-5 w-5 ${card.iconColor}`} />
                   </div>
                   <div className="flex items-center gap-2">
                     {card.badge && card.badge > 0 && (
-                      <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-[10px]">
+                      <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-[10px] rounded-md">
                         {card.badge}
                       </Badge>
                     )}
                     <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-purple-400 transition-colors" />
                   </div>
                 </div>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
+                <h3 className="text-base font-semibold font-display text-gray-900 dark:text-white mb-2 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
                   {card.label}
                 </h3>
                 <div className="mt-auto space-y-0.5">
@@ -194,14 +194,14 @@ export default function ClientHubPage() {
 
       {/* Attention Section */}
       {attentionItems.length > 0 && (
-        <Card className="rounded-xl shadow-sm border-amber-200/60 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-900/10">
-          <div className="p-4">
+        <Card className="rounded-xl shadow-soft-sm border-amber-200/60 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-900/10">
+          <div className="p-6">
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
-              <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              <h3 className="text-sm font-semibold font-display text-amber-800 dark:text-amber-300">
                 Vyzaduje pozornost
               </h3>
-              <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 text-[10px] ml-auto">
+              <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 text-[10px] ml-auto rounded-md">
                 {attentionItems.length}
               </Badge>
             </div>

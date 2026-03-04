@@ -78,11 +78,11 @@ export default function TripDetailPage() {
         <Link href="/client/travel">
           <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 mr-1" />Zpet</Button>
         </Link>
-        <h1 className="text-xl font-bold">Detail jizdy</h1>
+        <h1 className="text-xl font-bold font-display">Detail jizdy</h1>
       </div>
 
       <Card className="rounded-xl">
-        <CardContent className="p-4 sm:p-6">
+        <CardContent className="p-6">
           <TripForm
             trip={trip}
             vehicles={vehicles}

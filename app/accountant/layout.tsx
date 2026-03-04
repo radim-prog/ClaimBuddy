@@ -96,7 +96,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col z-30">
-        <div className="flex flex-col flex-grow sidebar-gradient shadow-sidebar overflow-y-auto custom-scrollbar">
+        <div className="flex flex-col flex-grow sidebar-purple shadow-sidebar overflow-y-auto custom-scrollbar">
           {/* Subtle texture overlay */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
             style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Cpath d=\'M0 40L40 0H20L0 20M40 40V20L20 40\'/%3E%3C/g%3E%3C/svg%3E")' }}
@@ -105,7 +105,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <div className="relative flex items-center h-16 flex-shrink-0 px-5 border-b border-white/[0.06]">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-soft-sm">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-400 to-violet-500 flex items-center justify-center shadow-soft-sm">
                 <span className="text-sm font-bold text-white font-display">U</span>
               </div>
               <div>
@@ -136,12 +136,12 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                   `}
                 >
                   <span className="flex items-center">
-                    <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-amber-400' : 'text-white/40 group-hover:text-white/65'}`} />
+                    <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-violet-300' : 'text-white/40 group-hover:text-white/65'}`} />
                     {item.name}
                   </span>
                   <span className="flex items-center gap-1.5">
                     {item.badge === 'dynamic' && inboxCount > 0 && (
-                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-amber-400 text-gray-900 rounded-full min-w-[1.25rem]">
+                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-violet-400 text-white rounded-full min-w-[1.25rem]">
                         {inboxCount}
                       </span>
                     )}
@@ -159,7 +159,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
             {/* ADMIN SECTION */}
             {showAdmin && (
               <div className="pt-3 mt-3 border-t border-white/[0.06]">
-                <p className="px-3 text-[10px] font-semibold text-amber-400/60 uppercase tracking-widest mb-1.5">
+                <p className="px-3 text-[10px] font-semibold text-violet-300/60 uppercase tracking-widest mb-1.5">
                   Administrace
                 </p>
                 {adminNavigation.map((item) => {
@@ -178,7 +178,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                       `}
                     >
                       <span className="flex items-center">
-                        <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${isActive ? 'text-amber-400' : 'text-white/40'}`} />
+                        <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${isActive ? 'text-violet-300' : 'text-white/40'}`} />
                         {item.name}
                       </span>
                       {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
@@ -213,7 +213,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                         <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0`} />
                         {item.name}
                       </span>
-                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-400 text-gray-900 rounded-full">
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-violet-400 text-white rounded-full">
                         {item.badge}
                       </span>
                     </Link>
@@ -250,7 +250,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                     <p className="text-[11px] text-white/40">{roleLabel}</p>
                   </div>
                   {userRole === 'admin' && (
-                    <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-amber-400/20 text-amber-300 rounded-md border border-amber-400/20">
+                    <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-violet-400/20 text-violet-300 rounded-md border border-violet-400/20">
                       ADMIN
                     </span>
                   )}
@@ -287,9 +287,9 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Mobile header */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between sidebar-gradient px-4 py-3">
+        <div className="flex items-center justify-between sidebar-purple px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-400 to-violet-500 flex items-center justify-center">
               <span className="text-xs font-bold text-white font-display">U</span>
             </div>
             <span className="text-sm font-semibold text-white/90 font-display">Účetní OS</span>

@@ -36,12 +36,12 @@ export default function ErrorLogsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Error Logy</h1>
+          <h1 className="text-2xl font-bold font-display">Error Logy</h1>
           <p className="text-muted-foreground">Chyby zachycené v aplikaci</p>
         </div>
         <button
           onClick={fetchLogs}
-          className="flex items-center gap-2 px-3 py-2 rounded-md border hover:bg-muted transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg border hover:bg-muted transition-colors"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Obnovit
@@ -49,16 +49,17 @@ export default function ErrorLogsPage() {
       </div>
 
       {logs.length === 0 && !loading && (
-        <Card>
+        <Card className="shadow-soft">
           <CardContent className="py-12 text-center text-muted-foreground">
-            Zatim zadne chyby - to je dobre!
+            <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+            <p className="font-medium">Zatím žádné chyby - to je dobře!</p>
           </CardContent>
         </Card>
       )}
 
       <div className="space-y-3">
         {logs.map((log) => (
-          <Card key={log.id}>
+          <Card key={log.id} className="shadow-soft-sm">
             <CardHeader className="py-3 px-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-2 min-w-0">
@@ -68,7 +69,7 @@ export default function ErrorLogsPage() {
                   </CardTitle>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Badge variant={log.level === 'error' ? 'destructive' : 'secondary'}>
+                  <Badge variant={log.level === 'error' ? 'destructive' : 'secondary'} className="rounded-md">
                     {log.level}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
@@ -85,7 +86,7 @@ export default function ErrorLogsPage() {
                   {log.user_id && <span>User: {log.user_id}</span>}
                 </div>
                 {log.stack && (
-                  <pre className="text-xs bg-muted p-2 rounded overflow-x-auto max-h-32">
+                  <pre className="text-xs bg-muted p-2 rounded-xl overflow-x-auto max-h-32">
                     {log.stack}
                   </pre>
                 )}

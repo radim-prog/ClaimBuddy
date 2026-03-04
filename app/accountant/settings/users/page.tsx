@@ -295,7 +295,7 @@ export default function UserManagementPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Správa uživatelů</h2>
+          <h2 className="text-2xl font-bold font-display">Správa uživatelů</h2>
           <p className="text-gray-600 dark:text-gray-300 mt-2">Spravujte přístup uživatelů k systému</p>
         </div>
 
@@ -391,7 +391,7 @@ export default function UserManagementPage() {
       {/* USER LIST */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 font-display">
             <UsersIcon className="h-5 w-5" />
             Seznam uživatelů
           </CardTitle>
@@ -404,7 +404,7 @@ export default function UserManagementPage() {
             {users.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50"
+                className="flex items-center justify-between p-4 border rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
@@ -561,7 +561,7 @@ export default function UserManagementPage() {
       {/* ROLE INFO */}
       <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
         <CardHeader>
-          <CardTitle className="text-sm">Informace o rolích</CardTitle>
+          <CardTitle className="text-sm font-display">Informace o rolích</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <div className="flex items-start gap-2">

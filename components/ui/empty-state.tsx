@@ -17,7 +17,7 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
       <div className="rounded-full bg-purple-50 dark:bg-purple-900/20 p-4 mb-4">
         <Icon className="h-8 w-8 text-purple-400" />
       </div>
-      <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">{title}</h3>
+      <h3 className="text-base font-semibold font-display text-gray-900 dark:text-white mb-1">{title}</h3>
       {description && (
         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">{description}</p>
       )}

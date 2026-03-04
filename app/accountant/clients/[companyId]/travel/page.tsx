@@ -121,7 +121,7 @@ export default function AccountantTravelPage() {
 
       {/* Alerts */}
       {vehicles.length > 0 && trips.length === 0 && (
-        <Card className="rounded-xl border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10">
+        <Card className="rounded-xl shadow-soft-sm border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10">
           <CardContent className="p-3 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
             <span className="text-sm text-amber-700 dark:text-amber-400">
@@ -136,13 +136,13 @@ export default function AccountantTravelPage() {
         <div className="flex gap-3 items-end flex-wrap">
           <div>
             <Label className="text-xs">Obdobi</Label>
-            <Input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-40" />
+            <Input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-40 h-11" />
           </div>
           {vehicles.length > 0 && (
             <div>
               <Label className="text-xs">Vozidlo</Label>
               <Select value={vehicleFilter || 'all'} onValueChange={v => setVehicleFilter(v === 'all' ? '' : v)}>
-                <SelectTrigger className="w-44"><SelectValue placeholder="Vse" /></SelectTrigger>
+                <SelectTrigger className="w-44 h-11"><SelectValue placeholder="Vse" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Vse</SelectItem>
                   {vehicles.map(v => (
@@ -166,7 +166,7 @@ export default function AccountantTravelPage() {
       </div>
 
       {/* Trips table */}
-      <Card className="rounded-xl">
+      <Card className="rounded-xl shadow-soft">
         <CardContent className="p-0">
           {trips.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
@@ -177,7 +177,7 @@ export default function AccountantTravelPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left text-xs text-muted-foreground">
+                  <tr className="border-b border-border/50 text-left text-xs text-muted-foreground">
                     <th className="p-3">Datum</th>
                     <th className="p-3">Trasa</th>
                     <th className="p-3">Ucel</th>
@@ -189,7 +189,7 @@ export default function AccountantTravelPage() {
                 </thead>
                 <tbody>
                   {trips.map(trip => (
-                    <tr key={trip.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+                    <tr key={trip.id} className="border-b border-border/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
                       onClick={() => setSelectedTrip(selectedTrip?.id === trip.id ? null : trip)}
                     >
                       <td className="p-3 whitespace-nowrap">{new Date(trip.trip_date).toLocaleDateString('cs')}</td>
@@ -228,25 +228,25 @@ export default function AccountantTravelPage() {
 
       {/* Trip detail modal-like inline */}
       {selectedTrip && (
-        <Card className="rounded-xl border-purple-200 dark:border-purple-800">
-          <CardContent className="p-4">
+        <Card className="rounded-xl shadow-soft border-purple-200 dark:border-purple-800">
+          <CardContent className="p-6">
             <div className="flex justify-between items-start mb-3">
-              <h3 className="font-semibold">Detail jizdy</h3>
-              <Badge className={tripTypeColors[selectedTrip.trip_type as TripType]} variant="secondary">
+              <h3 className="font-semibold font-display">Detail jizdy</h3>
+              <Badge className={`${tripTypeColors[selectedTrip.trip_type as TripType]} rounded-md`} variant="secondary">
                 {TRIP_TYPE_LABELS[selectedTrip.trip_type as TripType]}
               </Badge>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
               <div><span className="text-muted-foreground">Datum:</span> {new Date(selectedTrip.trip_date).toLocaleDateString('cs')}</div>
               <div><span className="text-muted-foreground">Cas:</span> {selectedTrip.departure_time?.slice(0, 5) || '-'} - {selectedTrip.arrival_time?.slice(0, 5) || '-'}</div>
-              <div><span className="text-muted-foreground">Trasa:</span> {selectedTrip.origin} → {selectedTrip.destination}</div>
+              <div><span className="text-muted-foreground">Trasa:</span> {selectedTrip.origin} &rarr; {selectedTrip.destination}</div>
               <div><span className="text-muted-foreground">Ucel:</span> {selectedTrip.purpose}</div>
               <div><span className="text-muted-foreground">Vzdalenost:</span> {selectedTrip.distance_km} km {selectedTrip.is_round_trip && '(zpet)'}</div>
-              <div><span className="text-muted-foreground">Tachometr:</span> {selectedTrip.odometer_start || '-'} → {selectedTrip.odometer_end || '-'}</div>
+              <div><span className="text-muted-foreground">Tachometr:</span> {selectedTrip.odometer_start || '-'} &rarr; {selectedTrip.odometer_end || '-'}</div>
               <div><span className="text-muted-foreground">Zakl. sazba:</span> {selectedTrip.basic_rate_per_km || selectedTrip.rate_per_km || '-'} Kc/km</div>
               {selectedTrip.fuel_price_per_unit && <div><span className="text-muted-foreground">Cena PHM:</span> {selectedTrip.fuel_price_per_unit} Kc/l</div>}
               <div><span className="text-muted-foreground">Nahrada:</span> <strong className="text-green-600">{selectedTrip.reimbursement?.toLocaleString('cs')} Kc</strong></div>
-              {selectedTrip.manual_override && <Badge variant="outline" className="text-xs">Rucne upraveno</Badge>}
+              {selectedTrip.manual_override && <Badge variant="outline" className="text-xs rounded-md">Rucne upraveno</Badge>}
               {selectedTrip.notes && <div className="col-span-full"><span className="text-muted-foreground">Poznamka:</span> {selectedTrip.notes}</div>}
             </div>
           </CardContent>
@@ -260,12 +260,12 @@ export default function AccountantTravelPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {vehicles.map(v => (
-              <Card key={v.id} className="rounded-xl">
-                <CardContent className="p-3">
+              <Card key={v.id} className="rounded-xl shadow-soft-sm">
+                <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Car className="h-4 w-4 text-purple-600" />
                     <span className="font-medium">{v.name}</span>
-                    <Badge variant="outline" className="text-xs font-mono ml-auto">{v.license_plate}</Badge>
+                    <Badge variant="outline" className="text-xs font-mono ml-auto rounded-md">{v.license_plate}</Badge>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                     <div>Spotreba: {v.fuel_consumption || '-'} l/100km</div>

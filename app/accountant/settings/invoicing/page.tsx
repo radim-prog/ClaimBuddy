@@ -182,7 +182,7 @@ export default function InvoicingSettingsPage() {
       {/* Default settings */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 font-display">
             <Hash className="h-5 w-5" />
             Výchozí nastavení faktur
           </CardTitle>
@@ -229,7 +229,7 @@ export default function InvoicingSettingsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 font-display">
                 <ListOrdered className="h-5 w-5" />
                 Číselné řady
               </CardTitle>
@@ -244,7 +244,7 @@ export default function InvoicingSettingsPage() {
         <CardContent>
           <div className="space-y-3">
             {series.map(s => (
-              <div key={s.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
                 {editingSeries === s.id ? (
                   <SeriesEditRow
                     series={s}
@@ -303,7 +303,7 @@ export default function InvoicingSettingsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Ceník / Oblíbené položky</CardTitle>
+              <CardTitle className="font-display">Ceník / Oblíbené položky</CardTitle>
               <CardDescription>Šablony položek pro rychlé přidání na fakturu</CardDescription>
             </div>
             <Button size="sm" variant="outline" onClick={() => setAddingTemplate(true)} disabled={addingTemplate}>
@@ -327,7 +327,7 @@ export default function InvoicingSettingsPage() {
               </thead>
               <tbody>
                 {templates.map(t => (
-                  <tr key={t.id} className="border-b border-gray-100 dark:border-gray-800">
+                  <tr key={t.id} className="border-b border-border/50 dark:border-gray-800">
                     {editingTemplate === t.id ? (
                       <TemplateEditRow
                         template={t}

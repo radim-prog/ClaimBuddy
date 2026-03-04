@@ -43,9 +43,9 @@ export default function RegisterPage() {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md shadow-soft">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+        <CardTitle className="text-2xl font-bold font-display bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
           Registrace
         </CardTitle>
         <CardDescription>
@@ -62,6 +62,7 @@ export default function RegisterPage() {
               type="text"
               placeholder="Jan Novák"
               required
+              className="h-11"
             />
           </div>
           <div className="space-y-2">
@@ -72,6 +73,7 @@ export default function RegisterPage() {
               type="email"
               placeholder="vas@email.cz"
               required
+              className="h-11"
             />
           </div>
           <div className="space-y-2">
@@ -83,6 +85,7 @@ export default function RegisterPage() {
               placeholder="••••••••"
               required
               minLength={6}
+              className="h-11"
             />
           </div>
           <div className="space-y-2">
@@ -94,6 +97,7 @@ export default function RegisterPage() {
               placeholder="••••••••"
               required
               minLength={6}
+              className="h-11"
             />
           </div>
         </CardContent>

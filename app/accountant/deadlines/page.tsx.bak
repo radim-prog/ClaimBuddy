@@ -243,7 +243,7 @@ export default function DeadlinesPage() {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold font-display text-gray-900 dark:text-white flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
           <CalendarCheck className="h-8 w-8 text-purple-600" />
           Zákonné termíny
         </h1>
@@ -310,7 +310,7 @@ export default function DeadlinesPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-soft-sm">
+      <div className="flex flex-wrap gap-3 mb-6 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-gray-400" />
           <span className="text-sm text-gray-500 dark:text-gray-400">Filtr:</span>
@@ -375,7 +375,7 @@ export default function DeadlinesPage() {
             const dayProgress = dayTotal > 0 ? Math.round((dayCompleted / dayTotal) * 100) : 0
 
             return (
-              <div key={dateStr} className={`border rounded-xl ${dayStatus.border} overflow-hidden transition-all duration-200 hover:shadow-soft-sm`}>
+              <div key={dateStr} className={`border rounded-xl ${dayStatus.border} overflow-hidden transition-all duration-200 hover:shadow-sm`}>
                 {/* Date header - clickable to collapse */}
                 <button
                   onClick={() => setCollapsedDays(prev => {

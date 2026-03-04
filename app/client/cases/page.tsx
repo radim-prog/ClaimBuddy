@@ -55,7 +55,7 @@ export default function ClientCasesPage() {
             <ArrowLeft className="h-4 w-4 mr-1" /> Zpět
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h1 className="text-2xl font-bold font-display flex items-center gap-2">
           <Briefcase className="h-6 w-6" />
           Vaše spisy
         </h1>
@@ -71,7 +71,7 @@ export default function ClientCasesPage() {
       ) : cases.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-30" />
             <p className="text-muted-foreground">Zatím nemáte žádné viditelné spisy.</p>
           </CardContent>
         </Card>
@@ -81,15 +81,15 @@ export default function ClientCasesPage() {
             const statusCfg = STATUS_LABELS[c.status] || STATUS_LABELS.active
             return (
               <Link key={c.id} href={`/client/cases/${c.id}`}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+                <Card className="card-hover cursor-pointer h-full">
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           {c.case_number && (
-                            <Badge variant="outline" className="text-xs">{c.case_number}</Badge>
+                            <Badge variant="outline" className="text-xs rounded-md">{c.case_number}</Badge>
                           )}
-                          <Badge className={statusCfg.color}>{statusCfg.label}</Badge>
+                          <Badge className={`rounded-md ${statusCfg.color}`}>{statusCfg.label}</Badge>
                         </div>
                         <h3 className="font-semibold text-sm truncate">{c.title}</h3>
                         {c.case_type_name && (

@@ -109,7 +109,7 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
         {selected && <CheckSquare className="h-5 w-5 p-0.5" />}
       </button>
       <Link href={`/accountant/clients/${company.id}`} className="flex-1">
-        <Card className={`card-hover transition-all duration-200 cursor-pointer border-l-4 rounded-xl ${borderColor} ${isInactive ? 'opacity-60' : ''}`}>
+        <Card className={`hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer border-l-4 rounded-xl ${borderColor} ${isInactive ? 'opacity-60' : ''}`}>
           <CardContent className="py-3 px-4">
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 items-start sm:items-center">
               {/* Název */}
@@ -623,7 +623,7 @@ function ClientsPageContent() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold font-display text-gray-900 dark:text-white tracking-tight">Klienti</h1>
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight">Klienti</h1>
             <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
               {companies.filter((c: any) => (c.status || 'active') === 'active').length} aktivních z {companies.length} • {currentMonthName}
             </p>
@@ -647,7 +647,7 @@ function ClientsPageContent() {
       />
 
       {/* Search and Filters */}
-      <Card className="mb-5 rounded-xl shadow-soft-sm">
+      <Card className="mb-5 rounded-xl shadow-sm">
         <CardContent className="pt-4 pb-4">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 flex-1 relative">

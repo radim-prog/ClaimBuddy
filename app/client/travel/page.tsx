@@ -196,7 +196,7 @@ function TravelPageInner() {
     <div className="space-y-6 min-w-0 overflow-hidden">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold">Kniha jizd</h1>
+          <h1 className="text-2xl font-bold font-display">Kniha jizd</h1>
           <p className="text-muted-foreground">Evidence sluzebních jizd</p>
         </div>
         <Button onClick={() => { setShowTripForm(true); setEditingTrip(undefined) }}>
@@ -217,7 +217,7 @@ function TravelPageInner() {
               className={cn(
                 'flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors flex-1 justify-center whitespace-nowrap',
                 activeTab === tab.id
-                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
+                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-soft-sm'
                   : 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
               )}
             >
@@ -241,7 +241,7 @@ function TravelPageInner() {
               {(showTripForm || editingTrip) && (
                 <Card className="rounded-xl border-blue-200 dark:border-blue-800">
                   <CardContent className="p-4 sm:p-6">
-                    <h2 className="text-lg font-semibold mb-4">{editingTrip ? 'Upravit jizdu' : 'Nova jizda'}</h2>
+                    <h2 className="text-lg font-semibold font-display mb-4">{editingTrip ? 'Upravit jizdu' : 'Nova jizda'}</h2>
                     <TripForm
                       trip={editingTrip}
                       vehicles={vehicles}
@@ -260,13 +260,13 @@ function TravelPageInner() {
                   <div className="flex gap-3 items-end flex-wrap">
                     <div>
                       <Label className="text-xs">Mesic</Label>
-                      <Input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-40" />
+                      <Input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-40 h-11" />
                     </div>
                     {vehicles.length > 0 && (
                       <div>
                         <Label className="text-xs">Vozidlo</Label>
                         <Select value={vehicleFilter || 'all'} onValueChange={v => setVehicleFilter(v === 'all' ? '' : v)}>
-                          <SelectTrigger className="w-44"><SelectValue placeholder="Vse" /></SelectTrigger>
+                          <SelectTrigger className="w-44 h-11"><SelectValue placeholder="Vse" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">Vse</SelectItem>
                             {vehicles.map(v => (
@@ -294,7 +294,7 @@ function TravelPageInner() {
               {(showVehicleForm || editingVehicle) ? (
                 <Card className="rounded-xl">
                   <CardContent className="p-4 sm:p-6">
-                    <h2 className="text-lg font-semibold mb-4">{editingVehicle ? 'Upravit vozidlo' : 'Nove vozidlo'}</h2>
+                    <h2 className="text-lg font-semibold font-display mb-4">{editingVehicle ? 'Upravit vozidlo' : 'Nove vozidlo'}</h2>
                     <VehicleForm
                       vehicle={editingVehicle}
                       onSubmit={editingVehicle ? handleUpdateVehicle : handleCreateVehicle}
@@ -305,7 +305,7 @@ function TravelPageInner() {
               ) : (
                 <>
                   <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-semibold">Vozidla ({vehicles.length})</h2>
+                    <h2 className="text-lg font-semibold font-display">Vozidla ({vehicles.length})</h2>
                     <div className="flex gap-2">
                       {vehicles.length > 0 && (
                         <Button variant="outline" size="sm" onClick={() => setShowFuelForm(!showFuelForm)}>
@@ -323,37 +323,37 @@ function TravelPageInner() {
                   {showFuelForm && (
                     <Card className="rounded-xl border-orange-200 dark:border-orange-800">
                       <CardContent className="p-4">
-                        <h3 className="font-semibold mb-3">Zaznamenat tankovani</h3>
+                        <h3 className="font-semibold font-display mb-3">Zaznamenat tankovani</h3>
                         <form onSubmit={handleCreateFuelLog} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div>
                             <Label className="text-xs">Vozidlo *</Label>
-                            <select name="vehicle_id" required className="w-full rounded-md border px-3 py-2 text-sm bg-white dark:bg-gray-800">
+                            <select name="vehicle_id" required className="w-full rounded-md border px-3 py-2 h-11 text-sm bg-white dark:bg-gray-800">
                               {vehicles.map(v => <option key={v.id} value={v.id}>{v.license_plate}</option>)}
                             </select>
                           </div>
                           <div>
                             <Label className="text-xs">Datum *</Label>
-                            <Input type="date" name="log_date" defaultValue={new Date().toISOString().split('T')[0]} required />
+                            <Input type="date" name="log_date" defaultValue={new Date().toISOString().split('T')[0]} required className="h-11" />
                           </div>
                           <div>
                             <Label className="text-xs">Litry *</Label>
-                            <Input type="number" step="0.01" name="liters" placeholder="35" required />
+                            <Input type="number" step="0.01" name="liters" placeholder="35" required className="h-11" />
                           </div>
                           <div>
                             <Label className="text-xs">Cena/l</Label>
-                            <Input type="number" step="0.01" name="price_per_liter" placeholder="38.90" />
+                            <Input type="number" step="0.01" name="price_per_liter" placeholder="38.90" className="h-11" />
                           </div>
                           <div>
                             <Label className="text-xs">Celkem Kc</Label>
-                            <Input type="number" step="0.01" name="total_price" />
+                            <Input type="number" step="0.01" name="total_price" className="h-11" />
                           </div>
                           <div>
                             <Label className="text-xs">Tachometr</Label>
-                            <Input type="number" name="odometer" />
+                            <Input type="number" name="odometer" className="h-11" />
                           </div>
                           <div>
                             <Label className="text-xs">Cerp. stanice</Label>
-                            <Input type="text" name="station_name" />
+                            <Input type="text" name="station_name" className="h-11" />
                           </div>
                           <div className="flex items-end gap-2">
                             <label className="flex items-center gap-2 text-sm">
@@ -397,7 +397,7 @@ function TravelPageInner() {
           {activeTab === 'places' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold">Mista ({places.length})</h2>
+                <h2 className="text-lg font-semibold font-display">Mista ({places.length})</h2>
               </div>
 
               {places.length === 0 ? (

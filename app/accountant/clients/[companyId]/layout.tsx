@@ -299,7 +299,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                           size="sm"
                           className={`rounded-xl shrink-0 text-xs h-8 ${
                             active
-                              ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm'
+                              ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-soft-sm'
                               : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                           }`}
                         >
@@ -316,7 +316,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
         })()}
 
         {/* Compact Company Header */}
-        <Card className="rounded-xl shadow-sm border-0 bg-gradient-to-r from-white via-white to-purple-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-purple-900/10 overflow-hidden">
+        <Card className="rounded-xl shadow-soft border-0 bg-gradient-to-r from-white via-white to-purple-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-purple-900/10 overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-purple-500 via-purple-400 to-indigo-400" />
           <CardContent className="py-3 sm:py-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
@@ -325,7 +325,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                   <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white truncate">
+                  <h1 className="text-lg sm:text-xl font-semibold font-display tracking-tight text-gray-900 dark:text-white truncate">
                     {company.group_name && <span className="text-purple-600">{company.group_name} &ndash; </span>}
                     {company.name}
                   </h1>

@@ -136,7 +136,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     return (
       <div className="max-w-4xl mx-auto py-12 text-center">
         <AlertTriangle className="mx-auto h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-        <h2 className="text-xl font-semibold font-display text-gray-900 dark:text-white mb-2">Faktura nenalezena</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Faktura nenalezena</h2>
         <Link href="/accountant/invoices">
           <Button variant="outline">Zpět na seznam</Button>
         </Link>
@@ -174,7 +174,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                     {invoice.invoice_number}
                   </h1>
                   <Badge className={config.color}>
@@ -259,7 +259,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
       {/* Items table */}
       <Card>
         <CardHeader>
-          <CardTitle className="font-display">Položky faktury</CardTitle>
+          <CardTitle>Položky faktury</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -277,7 +277,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
               </thead>
               <tbody>
                 {invoice.items.map((item, i) => (
-                  <tr key={item.id} className={`border-b border-border/50 ${i % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/30' : ''}`}>
+                  <tr key={item.id} className={`border-b border-gray-100 dark:border-gray-800 ${i % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/30' : ''}`}>
                     <td className="py-2.5 px-3 text-sm text-gray-500">{i + 1}</td>
                     <td className="py-2.5 px-3 text-sm font-medium text-gray-900 dark:text-white">{item.description}</td>
                     <td className="py-2.5 px-3 text-sm text-right text-gray-700 dark:text-gray-300">{item.quantity}</td>
@@ -363,7 +363,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
       {/* Actions */}
       <Card>
         <CardHeader>
-          <CardTitle className="font-display">Akce</CardTitle>
+          <CardTitle>Akce</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">

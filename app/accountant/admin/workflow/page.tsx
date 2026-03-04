@@ -208,7 +208,7 @@ export default function WorkflowPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white flex items-center gap-2">
           <GitBranch className="h-6 w-6" />
           Workflow dokumentů
         </h1>
@@ -239,7 +239,7 @@ export default function WorkflowPage() {
                 placeholder="Hledat klienta..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-11"
               />
             </div>
             <Button onClick={() => setIsAddRuleOpen(true)}>
@@ -378,7 +378,7 @@ export default function WorkflowPage() {
         <TabsContent value="document-types" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Typy dokumentů a výchozí akce</CardTitle>
+              <CardTitle className="font-display">Typy dokumentů a výchozí akce</CardTitle>
               <CardDescription>
                 Nastavte výchozí chování pro jednotlivé typy dokumentů. Pravidla
                 klientů mají vyšší prioritu.
@@ -751,7 +751,7 @@ export default function WorkflowPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">
+            <p className="text-3xl font-bold font-display text-gray-900 dark:text-white">
               {clientRules.length}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Pravidel klientů</p>
@@ -759,7 +759,7 @@ export default function WorkflowPage() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-3xl font-bold text-green-600">
+            <p className="text-3xl font-bold font-display text-green-600">
               {clientRules.filter((r) => r.action === 'auto_approve').length}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Automatické schválení</p>
@@ -767,7 +767,7 @@ export default function WorkflowPage() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-3xl font-bold text-blue-600">
+            <p className="text-3xl font-bold font-display text-blue-600">
               {
                 clientRules.filter(
                   (r) =>
@@ -781,7 +781,7 @@ export default function WorkflowPage() {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-3xl font-bold text-gray-600 dark:text-gray-300">
+            <p className="text-3xl font-bold font-display text-gray-600 dark:text-gray-300">
               {documentTypes.length}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Typů dokumentů</p>

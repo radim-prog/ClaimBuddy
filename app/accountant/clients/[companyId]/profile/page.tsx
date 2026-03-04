@@ -83,15 +83,15 @@ export default function ProfilePage() {
         switch (tileId) {
           case 'company-info':
             return (
-              <Card className="rounded-xl shadow-sm border-gray-200/80 dark:border-gray-700/80">
+              <Card className="rounded-xl shadow-soft border-gray-200/80 dark:border-gray-700/80">
                 <CardContent className="pt-6 space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-white flex items-center gap-2">
                     <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-purple-100 dark:bg-purple-900/30">
                       <Building2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                     </div>
                     \u00dadaje o firm\u011b
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y dark:border-gray-700/50 border-gray-100">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y border-border/50 dark:border-gray-700/50">
                     <div>
                       <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">I\u010cO</div>
                       <div className="font-medium text-gray-900 dark:text-white">{company.ico}</div>
@@ -104,14 +104,14 @@ export default function ProfilePage() {
                       <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Telefon</div>
                       <div className={`font-medium flex items-center gap-1 ${contactPhone ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
                         <Phone className="h-3.5 w-3.5 text-gray-400" />
-                        {contactPhone || 'Nezadáno'}
+                        {contactPhone || 'Nezad\u00e1no'}
                       </div>
                     </div>
                     <div>
                       <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Email</div>
                       <div className={`font-medium flex items-center gap-1 truncate ${contactEmail ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
                         <Mail className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                        <span className="truncate">{contactEmail || 'Nezadáno'}</span>
+                        <span className="truncate">{contactEmail || 'Nezad\u00e1no'}</span>
                       </div>
                     </div>
                   </div>
@@ -124,18 +124,18 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex flex-wrap gap-2 pt-2">
                     {company.vat_payer ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
                         Pl\u00e1tce DPH \u2022 {company.vat_period === 'monthly' ? 'M\u011bs\u00ed\u010dn\u00ed' : 'Kvart\u00e1ln\u00ed'}
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                         Nepl\u00e1tce DPH
                       </span>
                     )}
                     {company.data_box && (
                       <Popover>
                         <PopoverTrigger asChild>
-                          <button className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 transition-colors cursor-pointer">
+                          <button className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 transition-colors cursor-pointer">
                             <Inbox className="h-3 w-3 mr-1" />
                             Datovka: {company.data_box.id}
                           </button>
@@ -180,12 +180,12 @@ export default function ProfilePage() {
                       </Popover>
                     )}
                     {company.has_employees && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                         <User className="h-3 w-3 mr-1" />{company.employee_count} zam\u011bstnanc\u016f
                       </span>
                     )}
                     {company.legal_form === 'OSV\u010c' && company.health_insurance_company && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                         {healthInsuranceLabels[company.health_insurance_company] || company.health_insurance_company}
                       </span>
                     )}
@@ -219,8 +219,8 @@ export default function ProfilePage() {
                   hasEmployees={company.has_employees}
                   entityType={company.legal_form === 'OSV\u010c' ? 'osvc' : company.legal_form === 's.r.o.' ? 'sro' : company.legal_form === 'a.s.' ? 'as' : null}
                 />
-                <div className="mt-6 pt-6 border-t dark:border-gray-700">
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">V\u00fdro\u010d\u00ed z poji\u0161t\u011bn\u00ed a majetku</h4>
+                <div className="mt-6 pt-6 border-t border-border/50 dark:border-gray-700">
+                  <h4 className="text-sm font-medium font-display text-gray-700 dark:text-gray-200 mb-4">V\u00fdro\u010d\u00ed z poji\u0161t\u011bn\u00ed a majetku</h4>
                   <AnniversaryCalendar insurances={insurances} assets={assets} employees={employees} />
                 </div>
               </CollapsibleSection>
@@ -242,7 +242,7 @@ export default function ProfilePage() {
             )
           case 'travel-diary':
             return (
-              <CollapsibleSection id="travel-diary" title="Kniha jízd" icon={Car} defaultOpen={false}>
+              <CollapsibleSection id="travel-diary" title="Kniha j\u00edzd" icon={Car} defaultOpen={false}>
                 <TravelDiaryTile companyId={companyId} />
               </CollapsibleSection>
             )
@@ -306,7 +306,7 @@ function TravelDiaryTile({ companyId }: { companyId: string }) {
       {stats.last_trip && (
         <p className="text-xs text-muted-foreground">Posledni jizda: {new Date(stats.last_trip).toLocaleDateString('cs')}</p>
       )}
-      <a href={`${basePath}/travel`} className="text-xs text-purple-600 hover:underline">Zobrazit vse →</a>
+      <a href={`${basePath}/travel`} className="text-xs text-purple-600 hover:underline">Zobrazit vse &rarr;</a>
     </div>
   )
 }

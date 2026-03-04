@@ -398,7 +398,7 @@ export default function TaskDetailPage() {
         <Card>
           <CardContent className="p-12 text-center">
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-2xl font-bold font-display mb-2">Úkol nenalezen</h2>
+            <h2 className="text-2xl font-bold mb-2">Úkol nenalezen</h2>
             <p className="text-muted-foreground mb-4">
               {fetchError || `Úkol s ID ${taskId} neexistuje.`}
             </p>
@@ -836,12 +836,12 @@ export default function TaskDetailPage() {
                     setEditingTitle(false)
                   }}
                   onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditingTitle(false) }}
-                  className="text-3xl font-bold font-display h-auto py-1"
+                  className="text-3xl font-bold h-auto py-1"
                   autoFocus
                 />
               ) : (
                 <h1
-                  className="text-3xl font-bold font-display text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -mx-1"
+                  className="text-3xl font-bold text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -mx-1"
                   onClick={() => { setEditTitle(task.title); setEditingTitle(true) }}
                   title="Klikni pro úpravu"
                 >
@@ -1363,7 +1363,7 @@ export default function TaskDetailPage() {
           {/* Actions */}
           <Card>
             <CardHeader>
-              <CardTitle className="font-display">Akce</CardTitle>
+              <CardTitle>Akce</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {/* FÁZE 4: Bonus task claim section */}

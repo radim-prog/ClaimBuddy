@@ -27,7 +27,7 @@ export default function CapacityPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Users className="h-6 w-6 text-purple-600" />
-        <h1 className="text-2xl font-bold">Kapacitní plánování</h1>
+        <h1 className="text-2xl font-bold font-display">Kapacitní plánování</h1>
       </div>
 
       <CapacityOverview />
@@ -37,7 +37,7 @@ export default function CapacityPage() {
         {capacities.map(cap => (
           <div
             key={cap.user_id}
-            className="border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+            className="border rounded-xl p-4 cursor-pointer hover:shadow-soft-md hover:-translate-y-0.5 transition-all"
             onClick={() => setSelectedUser(cap)}
           >
             <div className="font-medium">{cap.user_name}</div>
@@ -57,7 +57,7 @@ export default function CapacityPage() {
       <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Úprava kapacity</DialogTitle>
+            <DialogTitle className="font-display">Úprava kapacity</DialogTitle>
           </DialogHeader>
           {selectedUser && (
             <UserScheduleEditor

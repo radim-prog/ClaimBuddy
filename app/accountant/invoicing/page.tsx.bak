@@ -531,7 +531,7 @@ export default function InvoicingPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold font-display text-gray-900 dark:text-white">Přehled fakturace</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Přehled fakturace</h1>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
               Služby a projekty připravené k vyfakturování
             </p>
@@ -683,26 +683,26 @@ export default function InvoicingPage() {
         {timeSummary && timeSummary.by_company.length > 0 && (
           <Card className="mb-6 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/10 dark:to-blue-900/10 border-purple-200 dark:border-purple-800">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-purple-900 dark:text-purple-200 font-display">
+              <CardTitle className="flex items-center gap-2 text-purple-900 dark:text-purple-200">
                 <Clock className="h-5 w-5" />
                 Odpracovaný čas – {formatPeriod(currentPeriod)}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4 mb-4">
-                <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-soft-sm">
+                <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
                   <div className="text-2xl font-bold text-gray-900 dark:text-white">
                     {Math.floor(timeSummary.total_minutes / 60)}h {timeSummary.total_minutes % 60}m
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">celkem odpracováno</div>
                 </div>
-                <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-soft-sm">
+                <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
                   <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                     {Math.round(timeSummary.billable_amount).toLocaleString('cs-CZ')} Kč
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">k fakturaci</div>
                 </div>
-                <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-soft-sm">
+                <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
                   <div className="text-2xl font-bold text-gray-600 dark:text-gray-300">
                     {timeSummary.by_company.length}
                   </div>
@@ -725,7 +725,7 @@ export default function InvoicingPage() {
                   </thead>
                   <tbody>
                     {timeSummary.by_company.map(c => (
-                      <tr key={c.company_id} className="border-b border-border/50 hover:bg-white/50 dark:hover:bg-gray-800/50">
+                      <tr key={c.company_id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-white/50 dark:hover:bg-gray-800/50">
                         <td className="py-2.5 px-3">
                           <a href={`/accountant/clients/${c.company_id}`} className="font-medium text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400">
                             {c.company_name}
@@ -773,7 +773,7 @@ export default function InvoicingPage() {
         {Object.keys(billableTasksByCompany).length > 0 && (
           <Card className="mb-6 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-amber-900 font-display">
+              <CardTitle className="flex items-center gap-2 text-amber-900">
                 <Clock className="h-5 w-5" />
                 Neprofakturované úkoly (billing_type: extra)
               </CardTitle>
@@ -783,7 +783,7 @@ export default function InvoicingPage() {
                 {Object.entries(billableTasksByCompany).map(([companyId, data]) => (
                   <div
                     key={companyId}
-                    className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-soft-sm border-amber-200"
+                    className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border-amber-200"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -822,7 +822,7 @@ export default function InvoicingPage() {
         {isAdmin && userStats.length > 0 && (
           <Card className="mb-6 bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-900 font-display">
+              <CardTitle className="flex items-center gap-2 text-blue-900">
                 <Users className="h-5 w-5" />
                 Statistiky podle účetních
               </CardTitle>
@@ -840,7 +840,7 @@ export default function InvoicingPage() {
                   </thead>
                   <tbody>
                     {userStats.map((stat) => (
-                      <tr key={stat.userId} className="border-b border-border/50">
+                      <tr key={stat.userId} className="border-b border-gray-200">
                         <td className="py-3 px-4 font-semibold">{stat.userName}</td>
                         <td className="text-right py-3 px-4">{stat.projectCount}</td>
                         <td className="text-right py-3 px-4 font-semibold text-blue-700">{stat.totalHours.toFixed(1)}h</td>
@@ -891,7 +891,7 @@ export default function InvoicingPage() {
                   <SelectItem value="paid">Zaplaceno</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg border">
+              <div className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-md border">
                 <span className="text-sm text-gray-600">
                   Zobrazeno projektů: <strong>{filteredProjects.length}</strong>
                 </span>
@@ -907,7 +907,7 @@ export default function InvoicingPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <FileText className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold font-display text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Žádné projekty k fakturaci
               </h3>
               <p className="text-gray-600">
@@ -923,7 +923,7 @@ export default function InvoicingPage() {
             const StatusIcon = statusConfig[project.invoiceStatus].icon
 
             return (
-              <Card key={project.id} className="card-hover transition-shadow">
+              <Card key={project.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => router.push(`/accountant/projects/${project.id}`)}>
@@ -981,7 +981,7 @@ export default function InvoicingPage() {
                   {isExpanded && (
                     <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                       {project.timeEntries.map((entry, index) => (
-                        <div key={index} className="bg-white rounded-xl p-3 shadow-soft-sm">
+                        <div key={index} className="bg-white rounded-xl p-3 shadow-sm">
                           <div className="flex justify-between">
                             <div>
                               <span className="text-xs text-gray-500">{entry.date}</span>

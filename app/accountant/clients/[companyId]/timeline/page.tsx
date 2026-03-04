@@ -514,7 +514,7 @@ export default function ClientTimelinePage() {
       <div className="mb-8">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{caseData.title}</h1>
+            <h1 className="text-3xl font-bold font-display text-gray-900 dark:text-white">{caseData.title}</h1>
             <p className="text-gray-600 dark:text-gray-300 mt-2">
               Poslední aktivita: {new Date(caseData.lastActivity).toLocaleDateString('cs-CZ')} •
               Status: <Badge className={caseData.status === 'active' ? 'bg-green-500' : 'bg-gray-50 dark:bg-gray-800/500'}>{caseData.status === 'active' ? 'Aktivní' : 'Ukončeno'}</Badge>
@@ -522,13 +522,13 @@ export default function ClientTimelinePage() {
           </div>
           {/* Celková statistika */}
           <div className="flex gap-3">
-            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+            <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
               <CardContent className="p-3 text-center min-w-[100px]">
                 <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Úkoly</div>
                 <div className="text-2xl font-bold text-green-700">{completedTasks}/{totalTasks}</div>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+            <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
               <CardContent className="p-3 text-center min-w-[120px]">
                 <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Odpracováno</div>
                 <div className="text-lg font-bold text-blue-700">{formatDuration(totalMinutes)}</div>
@@ -599,7 +599,7 @@ export default function ClientTimelinePage() {
             </Button>
           </>
         ) : (
-          <Card>
+          <Card className="rounded-xl shadow-soft-sm">
             <CardContent className="p-4">
               <h4 className="font-semibold mb-3 flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
@@ -655,9 +655,9 @@ export default function ClientTimelinePage() {
 
       {/* Přehled hodin a fakturace */}
       {showBillingReport && (
-        <Card className="mb-8 border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
+        <Card className="mb-8 rounded-xl shadow-soft border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
           <CardContent className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <h2 className="text-xl font-bold font-display text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
               Přehled hodin a podklad pro fakturaci
             </h2>
@@ -742,9 +742,9 @@ export default function ClientTimelinePage() {
         <div className="space-y-6">
           {/* Poslední poznámka */}
           {caseData.progressNotes.length > 0 && (
-            <Card className="border-green-200 bg-green-50">
+            <Card className="rounded-xl shadow-soft border-green-200 bg-green-50">
               <CardContent className="p-6">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">📍 Kde jsme skončili</h2>
+                <h2 className="text-lg font-bold font-display text-gray-900 dark:text-white mb-3">📍 Kde jsme skončili</h2>
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
                   <div className="text-sm text-gray-600 dark:text-gray-300 mb-2" suppressHydrationWarning>
                     {new Date(caseData.progressNotes[0].date).toLocaleString('cs-CZ')} • {caseData.progressNotes[0].author}
@@ -774,21 +774,21 @@ export default function ClientTimelinePage() {
 
           {/* Quick stats */}
           <div className="grid grid-cols-3 gap-4">
-            <Card>
+            <Card className="rounded-xl shadow-soft-sm">
               <CardContent className="p-4">
                 <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Úkoly</div>
                 <div className="text-3xl font-bold">{completedTasks}/{totalTasks}</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{Math.round((completedTasks/totalTasks)*100)}% dokončeno</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="rounded-xl shadow-soft-sm">
               <CardContent className="p-4">
                 <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Dokumenty</div>
                 <div className="text-3xl font-bold">{getAllDocuments().length}</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Připojeno ke spisu</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="rounded-xl shadow-soft-sm">
               <CardContent className="p-4">
                 <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">Fakturace</div>
                 <div className="text-2xl font-bold">{totalCost.toLocaleString()} Kč</div>
@@ -798,9 +798,9 @@ export default function ClientTimelinePage() {
           </div>
 
           {/* Nedokončené úkoly */}
-          <Card>
+          <Card className="rounded-xl shadow-soft-sm">
             <CardContent className="p-6">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">🚀 Nedokončené úkoly</h3>
+              <h3 className="font-bold font-display text-gray-900 dark:text-white mb-4">🚀 Nedokončené úkoly</h3>
               <div className="space-y-2">
                 {caseData.tasks.filter(t => !t.completed).map(task => (
                   <div key={task.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -824,9 +824,9 @@ export default function ClientTimelinePage() {
           </Button>
 
           {showAddProgressNote && (
-            <Card className="border-green-200">
+            <Card className="rounded-xl shadow-soft border-green-200">
               <CardContent className="p-6">
-                <h3 className="font-bold mb-4">📝 Nová poznámka o průběhu</h3>
+                <h3 className="font-bold font-display mb-4">📝 Nová poznámka o průběhu</h3>
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium mb-1 block">Aktuální stav *</label>
@@ -854,7 +854,7 @@ export default function ClientTimelinePage() {
           )}
 
           {caseData.progressNotes.map(note => (
-            <Card key={note.id} className="border-l-4 border-blue-500">
+            <Card key={note.id} className="rounded-xl shadow-soft-sm border-l-4 border-blue-500">
               <CardContent className="p-6">
                 <div className="text-sm text-gray-600 dark:text-gray-300 mb-4" suppressHydrationWarning>{new Date(note.date).toLocaleString('cs-CZ')} • {note.author}</div>
                 <div className="space-y-3">
@@ -876,9 +876,9 @@ export default function ClientTimelinePage() {
       {activeView === 'tasks' && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
-            <Card className="border-red-200">
+            <Card className="rounded-xl shadow-soft border-red-200">
               <CardContent className="p-6">
-                <h3 className="font-bold text-red-700 mb-4">🔥 Nedokončené úkoly ({caseData.tasks.filter(t => !t.completed).length})</h3>
+                <h3 className="font-bold font-display text-red-700 mb-4">🔥 Nedokončené úkoly ({caseData.tasks.filter(t => !t.completed).length})</h3>
                 <div className="space-y-2">
                   {caseData.tasks.filter(t => !t.completed).map(task => (
                     <div key={task.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 cursor-pointer" onClick={() => toggleTask(task.id)}>
@@ -896,9 +896,9 @@ export default function ClientTimelinePage() {
               </CardContent>
             </Card>
 
-            <Card className="border-green-200">
+            <Card className="rounded-xl shadow-soft border-green-200">
               <CardContent className="p-6">
-                <h3 className="font-bold text-green-700 mb-4">✅ Dokončené úkoly ({caseData.tasks.filter(t => t.completed).length})</h3>
+                <h3 className="font-bold font-display text-green-700 mb-4">✅ Dokončené úkoly ({caseData.tasks.filter(t => t.completed).length})</h3>
                 <div className="space-y-2">
                   {caseData.tasks.filter(t => t.completed).map(task => (
                     <div key={task.id} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg opacity-60 hover:opacity-100 cursor-pointer" onClick={() => toggleTask(task.id)}>
@@ -918,9 +918,9 @@ export default function ClientTimelinePage() {
 
       {/* DOKUMENTY VIEW */}
       {activeView === 'documents' && (
-        <Card>
+        <Card className="rounded-xl shadow-soft-sm">
           <CardContent className="p-6">
-            <h2 className="text-xl font-bold mb-4">📎 Všechny dokumenty ve spisu ({getAllDocuments().length})</h2>
+            <h2 className="text-xl font-bold font-display mb-4">📎 Všechny dokumenty ve spisu ({getAllDocuments().length})</h2>
             <div className="space-y-2">
               {getAllDocuments().map((doc, idx) => (
                 <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700">
@@ -962,7 +962,7 @@ export default function ClientTimelinePage() {
                     return (
                       <Card
                         key={event.id}
-                        className="hover:shadow-md transition-shadow cursor-pointer"
+                        className="card-hover rounded-xl shadow-soft-sm cursor-pointer"
                         onClick={() => toggleEvent(event.id)}
                       >
                         <CardContent className="p-4">

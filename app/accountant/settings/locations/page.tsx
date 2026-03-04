@@ -104,7 +104,7 @@ export default function LocationsSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Místa</h2>
+        <h2 className="text-xl font-semibold font-display">Místa</h2>
         <p className="text-sm text-muted-foreground">
           Správa míst pro location-based úkoly. Výchozí místa nelze smazat.
         </p>
@@ -113,7 +113,7 @@ export default function LocationsSettingsPage() {
       {/* Add new location */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Přidat nové místo</CardTitle>
+          <CardTitle className="text-base font-display">Přidat nové místo</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-end gap-3">
@@ -159,7 +159,7 @@ export default function LocationsSettingsPage() {
       {/* Locations list */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Existující místa ({locations.length})</CardTitle>
+          <CardTitle className="text-base font-display">Existující místa ({locations.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {locations.map(loc => {
@@ -167,7 +167,7 @@ export default function LocationsSettingsPage() {
             return (
               <div
                 key={loc.id}
-                className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="flex items-center justify-between p-3 rounded-xl border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">

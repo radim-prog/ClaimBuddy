@@ -147,7 +147,7 @@ export default function ClientDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white">
           Dobrý den, {userName.split(' ')[0]}
         </h1>
         <p className="text-gray-500 dark:text-gray-400">
@@ -186,7 +186,7 @@ export default function ClientDashboard() {
 
       {/* Draft badge */}
       {draftCount > 0 && (
-        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 card-hover">
           <CardContent className="py-3 px-4">
             <Link href="/client/documents" className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -212,7 +212,7 @@ export default function ClientDashboard() {
                 <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
               <div className="flex-1">
-                <h2 className="text-lg font-semibold text-red-900 dark:text-red-100">
+                <h2 className="text-lg font-semibold font-display text-red-900 dark:text-red-100">
                   {monthNames[currentMonth]} {currentYear} — Chybí podklady
                 </h2>
                 <ul className="mt-2 space-y-1">
@@ -243,7 +243,7 @@ export default function ClientDashboard() {
                 <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-yellow-900 dark:text-yellow-100">
+                <h2 className="text-lg font-semibold font-display text-yellow-900 dark:text-yellow-100">
                   {monthNames[currentMonth]} {currentYear} — Zpracovává se
                 </h2>
                 <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
@@ -263,7 +263,7 @@ export default function ClientDashboard() {
                 <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-green-900 dark:text-green-100">
+                <h2 className="text-lg font-semibold font-display text-green-900 dark:text-green-100">
                   {monthNames[currentMonth]} {currentYear} — Vše v pořádku
                 </h2>
                 <p className="mt-1 text-sm text-green-700 dark:text-green-300">
@@ -278,7 +278,7 @@ export default function ClientDashboard() {
       {/* Year Matrix */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Přehled roku {currentYear}</CardTitle>
+          <CardTitle className="text-base font-display">Přehled roku {currentYear}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-2">
@@ -315,7 +315,7 @@ export default function ClientDashboard() {
 
       {/* Cases Widget - only if client has visible cases */}
       {casesCount > 0 && (
-        <Card className="border-purple-200 dark:border-purple-800">
+        <Card className="border-purple-200 dark:border-purple-800 card-hover">
           <CardContent className="py-4 px-5">
             <Link href="/client/cases" className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -341,7 +341,7 @@ export default function ClientDashboard() {
       )}
 
       {/* Travel Quick Action */}
-      <Card className="border-blue-200 dark:border-blue-800">
+      <Card className="border-blue-200 dark:border-blue-800 card-hover">
         <CardContent className="py-4 px-5">
           <Link href="/client/travel/new" className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -367,7 +367,7 @@ export default function ClientDashboard() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
+              <CardTitle className="text-base font-display flex items-center gap-2">
                 <MessageCircle className="h-4 w-4" />
                 Zprávy
               </CardTitle>
@@ -389,7 +389,7 @@ export default function ClientDashboard() {
         {/* Deadlines Widget */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-base font-display flex items-center gap-2">
               <CalendarDays className="h-4 w-4" />
               Nadcházející termíny
             </CardTitle>
@@ -405,7 +405,7 @@ export default function ClientDashboard() {
                 {deadlines.map(deadline => (
                   <div key={deadline.id} className="flex items-start gap-3">
                     <div className="text-center min-w-[40px]">
-                      <div className="text-lg font-bold text-gray-900 dark:text-white">
+                      <div className="text-lg font-bold font-display text-gray-900 dark:text-white">
                         {new Date(deadline.due_date).getDate()}
                       </div>
                       <div className="text-[10px] text-gray-500 dark:text-gray-400">

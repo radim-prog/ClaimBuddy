@@ -186,7 +186,7 @@ export default function ProjectsPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold font-display text-gray-900 dark:text-white">Projekty</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Projekty</h1>
             <p className="mt-1 text-gray-600 dark:text-gray-400">
               {projects.length} projektů • {activeCount} aktivních
               {reviewCount > 0 && ` • ${reviewCount} k review`}
@@ -291,7 +291,7 @@ export default function ProjectsPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <FolderKanban className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-white mb-2">Žádné projekty</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Žádné projekty</h3>
               <p className="text-gray-600 dark:text-gray-400">
                 {searchQuery || activeFiltersCount > 0
                   ? 'Nenalezeny žádné výsledky pro tyto filtry'
@@ -317,7 +317,7 @@ export default function ProjectsPage() {
 
             return (
               <Link key={project.id} href={`/accountant/projects/${project.id}`}>
-                <Card className={`card-hover transition-all cursor-pointer border-l-4 ${config.borderColor}`}>
+                <Card className={`hover:shadow-md transition-all cursor-pointer border-l-4 ${config.borderColor}`}>
                   <CardContent className="py-3 px-4">
                     <div className="grid grid-cols-12 gap-4 items-center">
 

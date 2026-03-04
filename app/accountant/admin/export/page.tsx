@@ -148,11 +148,11 @@ export default function ExportPage() {
     <div className="space-y-6">
       {/* Security Warning */}
       <Card className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border-red-200 dark:border-red-800">
-        <CardContent className="pt-6">
+        <CardContent className="pt-6 pb-6">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-bold text-red-900 dark:text-red-200 mb-2">Bezpečnostní upozornění - Export citlivých dat</h4>
+              <h4 className="font-bold font-display text-red-900 dark:text-red-200 mb-2">Bezpečnostní upozornění - Export citlivých dat</h4>
               <div className="text-sm text-red-800 dark:text-red-300 space-y-2">
                 <p>
                   <strong>Export dat klienta je citlivá operace.</strong> Všechny exporty jsou logovány a můžou být předmětem auditu.
@@ -172,9 +172,9 @@ export default function ExportPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Export Form */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 shadow-soft">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-display">
               <Download className="h-5 w-5" />
               Export dat klienta
             </CardTitle>
@@ -186,21 +186,21 @@ export default function ExportPage() {
                 <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 className="h-8 w-8 text-green-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Export dokončen</h3>
+                <h3 className="text-lg font-semibold font-display text-gray-900 dark:text-white mb-2">Export dokončen</h3>
                 <p className="text-gray-600 dark:text-gray-300">Soubor byl úspěšně stažen. Export byl zalogován.</p>
               </div>
             ) : (
               <>
                 {/* Client Selection */}
                 <div className="space-y-3">
-                  <Label className="text-base font-semibold">1. Vyberte klienta</Label>
+                  <Label className="text-base font-semibold font-display">1. Vyberte klienta</Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
                       placeholder="Hledat podle názvu nebo IČO..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
+                      className="pl-9 h-11"
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
@@ -208,7 +208,7 @@ export default function ExportPage() {
                       <div
                         key={client.id}
                         onClick={() => setSelectedClient(client.id)}
-                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                        className={`p-3 rounded-xl border cursor-pointer transition-colors ${
                           selectedClient === client.id
                             ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
                             : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -237,14 +237,14 @@ export default function ExportPage() {
                   <>
                     {/* Data Types */}
                     <div className="space-y-3">
-                      <Label className="text-base font-semibold">2. Vyberte data k exportu</Label>
+                      <Label className="text-base font-semibold font-display">2. Vyberte data k exportu</Label>
                       <div className="space-y-2">
                         {dataTypes.map((type) => {
                           const Icon = type.icon
                           return (
                             <div
                               key={type.id}
-                              className={`p-3 rounded-lg border ${
+                              className={`p-3 rounded-xl border ${
                                 selectedDataTypes.includes(type.id)
                                   ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
                                   : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
@@ -263,7 +263,7 @@ export default function ExportPage() {
                                       {type.label}
                                     </Label>
                                     {type.sensitive && (
-                                      <Badge variant="outline" className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700 text-xs">
+                                      <Badge variant="outline" className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700 text-xs rounded-md">
                                         <Lock className="h-3 w-3 mr-1" />
                                         Citlivé
                                       </Badge>
@@ -280,7 +280,7 @@ export default function ExportPage() {
 
                     {/* Export Format */}
                     <div className="space-y-3">
-                      <Label className="text-base font-semibold">3. Formát exportu</Label>
+                      <Label className="text-base font-semibold font-display">3. Formát exportu</Label>
                       <div className="flex gap-3">
                         {[
                           { id: 'json', label: 'JSON', icon: FileJson, desc: 'Strojově čitelný' },
@@ -292,7 +292,7 @@ export default function ExportPage() {
                             <div
                               key={format.id}
                               onClick={() => setExportFormat(format.id)}
-                              className={`flex-1 p-3 rounded-lg border cursor-pointer transition-colors text-center ${
+                              className={`flex-1 p-3 rounded-xl border cursor-pointer transition-colors text-center ${
                                 exportFormat === format.id
                                   ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'
                                   : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -311,12 +311,12 @@ export default function ExportPage() {
 
                     {/* Reason */}
                     <div className="space-y-3">
-                      <Label className="text-base font-semibold">4. Důvod exportu *</Label>
+                      <Label className="text-base font-semibold font-display">4. Důvod exportu *</Label>
                       <Input
                         placeholder="Uveďte důvod exportu (min. 10 znaků)..."
                         value={exportReason}
                         onChange={(e) => setExportReason(e.target.value)}
-                        className={exportReason.length > 0 && exportReason.length < 10 ? 'border-red-300' : ''}
+                        className={`h-11 ${exportReason.length > 0 && exportReason.length < 10 ? 'border-red-300' : ''}`}
                       />
                       {exportReason.length > 0 && exportReason.length < 10 && (
                         <p className="text-xs text-red-600">Důvod musí mít alespoň 10 znaků</p>
@@ -324,7 +324,7 @@ export default function ExportPage() {
                     </div>
 
                     {/* Confirmation */}
-                    <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                    <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
                       <div className="flex items-start gap-3">
                         <Checkbox
                           id="confirm"
@@ -369,28 +369,28 @@ export default function ExportPage() {
         <div className="space-y-6">
           {/* Export Preview */}
           {selectedClient && selectedDataTypes.length > 0 && (
-            <Card>
+            <Card className="shadow-soft">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
+                <CardTitle className="flex items-center gap-2 text-base font-display">
                   <Eye className="h-5 w-5" />
                   Náhled exportu
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Klient</p>
                     <p className="font-medium text-gray-900 dark:text-white">{selectedClientData?.name}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">IČO: {selectedClientData?.ico || '-'}</p>
                   </div>
 
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Data k exportu</p>
                     <div className="space-y-1">
                       {selectedDataTypes.map(typeId => {
                         const type = dataTypes.find(t => t.id === typeId)
                         return type ? (
-                          <Badge key={typeId} variant="outline" className="mr-1">
+                          <Badge key={typeId} variant="outline" className="mr-1 rounded-md">
                             {type.label}
                           </Badge>
                         ) : null
@@ -398,12 +398,12 @@ export default function ExportPage() {
                     </div>
                   </div>
 
-                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                     <p className="text-xs text-gray-500 dark:text-gray-400">Formát</p>
                     <p className="font-medium uppercase text-gray-900 dark:text-white">{exportFormat}</p>
                   </div>
 
-                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800">
                     <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300 text-sm">
                       <AlertCircle className="h-4 w-4" />
                       <span>Export bude zalogován</span>
@@ -415,9 +415,9 @@ export default function ExportPage() {
           )}
 
           {/* Export History from audit_log */}
-          <Card>
+          <Card className="shadow-soft">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
+              <CardTitle className="flex items-center gap-2 text-base font-display">
                 <History className="h-5 w-5" />
                 Historie exportů
               </CardTitle>
@@ -430,7 +430,7 @@ export default function ExportPage() {
                   </p>
                 ) : (
                   exportHistory.map((exp) => (
-                    <div key={exp.id} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <div key={exp.id} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
                           <p className="font-medium text-sm text-gray-900 dark:text-white">{exp.table_name || 'Export'}</p>

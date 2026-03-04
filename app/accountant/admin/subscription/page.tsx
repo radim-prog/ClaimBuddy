@@ -136,7 +136,7 @@ export default function SubscriptionPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Předplatné</h2>
+        <h2 className="text-2xl font-bold font-display text-gray-900 dark:text-white">Předplatné</h2>
         <p className="text-gray-600 dark:text-gray-300 mt-1">
           Správa vašeho tarifu Účetní OS
         </p>
@@ -152,7 +152,7 @@ export default function SubscriptionPage() {
               </div>
               <div>
                 <p className="text-sm text-white/80">Aktuální tarif</p>
-                <h3 className="text-2xl font-bold">Professional</h3>
+                <h3 className="text-2xl font-bold font-display">Professional</h3>
                 <p className="text-sm text-white/80 mt-1">
                   Trial verze - 30 dní zdarma
                 </p>
@@ -212,7 +212,7 @@ export default function SubscriptionPage() {
               key={plan.id}
               className={`relative flex flex-col ${
                 plan.popular
-                  ? 'border-purple-500 border-2 shadow-lg shadow-purple-100 dark:shadow-purple-900/20'
+                  ? 'border-purple-500 border-2 shadow-soft-lg shadow-purple-100 dark:shadow-purple-900/20'
                   : ''
               } ${isCurrent ? 'ring-2 ring-purple-400' : ''}`}
             >
@@ -235,7 +235,7 @@ export default function SubscriptionPage() {
                     plan.popular ? 'text-purple-600' : 'text-gray-600 dark:text-gray-300'
                   }`} />
                 </div>
-                <CardTitle className="text-xl">{plan.name}</CardTitle>
+                <CardTitle className="text-xl font-display">{plan.name}</CardTitle>
                 <CardDescription>{plan.description}</CardDescription>
               </CardHeader>
 
@@ -312,7 +312,7 @@ export default function SubscriptionPage() {
       {/* Add-ons */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Doplňkové služby</CardTitle>
+          <CardTitle className="text-lg font-display">Doplňkové služby</CardTitle>
           <CardDescription>Rozšíření nad rámec vašeho tarifu</CardDescription>
         </CardHeader>
         <CardContent>
@@ -342,7 +342,7 @@ export default function SubscriptionPage() {
       {/* Contact */}
       <Card className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-700">
         <CardContent className="py-8 text-center">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+          <h3 className="text-lg font-bold text-gray-900 font-display dark:text-white mb-2">
             Potřebujete pomoc s výběrem?
           </h3>
           <p className="text-gray-600 dark:text-gray-300 mb-4 max-w-md mx-auto">

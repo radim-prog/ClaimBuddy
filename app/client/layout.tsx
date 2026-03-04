@@ -54,7 +54,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar - Desktop */}
       <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col z-30">
-        <div className="flex flex-col flex-grow sidebar-gradient shadow-sidebar overflow-y-auto custom-scrollbar">
+        <div className="flex flex-col flex-grow sidebar-blue shadow-sidebar overflow-y-auto custom-scrollbar">
           {/* Subtle texture overlay */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
             style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Cpath d=\'M0 40L40 0H20L0 20M40 40V20L20 40\'/%3E%3C/g%3E%3C/svg%3E")' }}
@@ -63,7 +63,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <div className="relative flex items-center h-16 flex-shrink-0 px-5 border-b border-white/[0.06]">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-soft-sm">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center shadow-soft-sm">
                 <span className="text-sm font-bold text-white font-display">U</span>
               </div>
               <div>
@@ -91,7 +91,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                   `}
                 >
                   <span className="flex items-center">
-                    <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-amber-400' : 'text-white/40 group-hover:text-white/65'}`} />
+                    <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-blue-400' : 'text-white/40 group-hover:text-white/65'}`} />
                     {item.name}
                   </span>
                   {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
@@ -146,9 +146,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Mobile header */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between sidebar-gradient px-4 py-3">
+        <div className="flex items-center justify-between sidebar-blue px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center">
               <span className="text-xs font-bold text-white font-display">U</span>
             </div>
             <span className="text-sm font-semibold text-white/90 font-display">Účetní OS</span>

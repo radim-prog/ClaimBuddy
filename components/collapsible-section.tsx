@@ -29,7 +29,7 @@ export function CollapsibleSection({
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
   return (
-    <Card id={id} className={`scroll-mt-4 rounded-xl shadow-sm ${className}`}>
+    <Card id={id} className={`scroll-mt-4 rounded-xl shadow-soft ${className}`}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <button
@@ -37,12 +37,12 @@ export function CollapsibleSection({
             className="flex items-center gap-2 hover:text-purple-600 transition-colors"
           >
             {isOpen ? (
-              <ChevronDown className="h-5 w-5 text-gray-400" />
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-5 w-5 text-gray-400" />
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
             )}
             <Icon className="h-5 w-5 text-purple-600" />
-            <CardTitle className="text-lg">{title}</CardTitle>
+            <CardTitle className="text-lg font-display">{title}</CardTitle>
             {badge}
           </button>
           {isOpen && actions && (

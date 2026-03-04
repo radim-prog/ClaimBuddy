@@ -458,7 +458,7 @@ export default function ClientRequestsPage() {
         <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
           <Inbox className="h-10 w-10 text-gray-400" />
         </div>
-        <h3 className="text-lg font-semibold font-display mb-2">Zatím nemáte žádné požadavky</h3>
+        <h3 className="text-lg font-semibold mb-2">Zatím nemáte žádné požadavky</h3>
         <p className="text-muted-foreground mb-6 max-w-sm">
           Vytvořte první požadavek pro klienta. Požadavky slouží ke komunikaci a sledování úkolů.
         </p>
@@ -475,7 +475,7 @@ export default function ClientRequestsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold font-display">Požadavky klientů</h1>
+          <h1 className="text-3xl font-bold">Požadavky klientů</h1>
           <p className="text-muted-foreground">
             Správa a zpracování požadavků od klientů
           </p>
@@ -491,7 +491,7 @@ export default function ClientRequestsPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-xl">
+              <div className="p-2 bg-purple-100 rounded-lg">
                 <Inbox className="h-5 w-5 text-purple-600" />
               </div>
               <div>
@@ -504,7 +504,7 @@ export default function ClientRequestsPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-100 rounded-xl">
+              <div className="p-2 bg-yellow-100 rounded-lg">
                 <Clock className="h-5 w-5 text-yellow-600" />
               </div>
               <div>
@@ -517,7 +517,7 @@ export default function ClientRequestsPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 rounded-xl">
+              <div className="p-2 bg-red-100 rounded-lg">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
               </div>
               <div>
@@ -530,7 +530,7 @@ export default function ClientRequestsPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-xl">
+              <div className="p-2 bg-green-100 rounded-lg">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
               </div>
               <div>
@@ -543,7 +543,7 @@ export default function ClientRequestsPage() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-xl">
+              <div className="p-2 bg-blue-100 rounded-lg">
                 <MessageSquare className="h-5 w-5 text-blue-600" />
               </div>
               <div>
@@ -714,7 +714,7 @@ export default function ClientRequestsPage() {
         <TabsContent value="my" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="font-display">Moje přiřazené požadavky</CardTitle>
+              <CardTitle>Moje přiřazené požadavky</CardTitle>
               <CardDescription>
                 Požadavky, které jsou přiřazeny vám k vyřešení
               </CardDescription>
@@ -775,7 +775,7 @@ export default function ClientRequestsPage() {
         <TabsContent value="unassigned" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-display">
+              <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-orange-500" />
                 Nepřiřazené požadavky
               </CardTitle>

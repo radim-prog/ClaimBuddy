@@ -204,7 +204,7 @@ function DraggableKanbanCard({ task, isOverdue, isUrgent, getDaysUntilDue, onCom
 
   return (
     <div ref={setNodeRef} style={style}>
-      <Card className={`card-hover transition-all duration-200 cursor-grab active:cursor-grabbing rounded-xl ${getCardClassName()} ${isDragging ? 'shadow-xl ring-2 ring-purple-400' : ''}`}>
+      <Card className={`hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-grab active:cursor-grabbing rounded-xl ${getCardClassName()} ${isDragging ? 'shadow-xl ring-2 ring-purple-400' : ''}`}>
         <CardContent className="p-3">
           <div className="flex items-start gap-2">
             <div {...attributes} {...listeners} className="mt-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
@@ -685,7 +685,7 @@ export default function TasksPage() {
     }
 
     return (
-      <Card className={`card-hover transition-all duration-200 rounded-xl ${getCardClassName()}`}>
+      <Card className={`hover:shadow-md transition-all duration-200 rounded-xl ${getCardClassName()}`}>
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex items-center gap-2">
@@ -816,7 +816,7 @@ export default function TasksPage() {
 
       {/* Expandable Filters */}
       {showFilters && (
-        <Card className="mb-4 rounded-xl shadow-soft-sm"><CardContent className="py-3 px-4">
+        <Card className="mb-4 rounded-xl shadow-sm"><CardContent className="py-3 px-4">
           <div className="flex flex-wrap items-center gap-3">
             <Select value={filterPriority} onValueChange={(v) => setFilterPriority(v as ScorePriority | 'all')}>
               <SelectTrigger className="w-[160px] h-8"><SelectValue placeholder="Priorita" /></SelectTrigger>

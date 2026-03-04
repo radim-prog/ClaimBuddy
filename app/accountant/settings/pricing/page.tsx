@@ -80,7 +80,7 @@ export default function PricingSettingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Ceník a Sazby</h2>
+          <h2 className="text-2xl font-bold font-display">Ceník a Sazby</h2>
           <p className="text-gray-600 dark:text-gray-300 mt-2">Nastavení hodinových sazeb, dopravy a poplatků pro fakturaci</p>
         </div>
         <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
@@ -92,7 +92,7 @@ export default function PricingSettingsPage() {
       {/* Hodinové sazby */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 font-display">
             <Clock className="h-5 w-5" />
             Hodinové Sazby
           </CardTitle>
@@ -166,7 +166,7 @@ export default function PricingSettingsPage() {
       {/* Doprava */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 font-display">
             <Car className="h-5 w-5" />
             Doprava
           </CardTitle>
@@ -255,7 +255,7 @@ export default function PricingSettingsPage() {
       {/* Poplatky */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 font-display">
             <FileText className="h-5 w-5" />
             Poplatky
           </CardTitle>
@@ -314,7 +314,7 @@ export default function PricingSettingsPage() {
       {/* Penalties */}
       <Card className="border-orange-200 bg-orange-50">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-orange-900">
+          <CardTitle className="flex items-center gap-2 font-display text-orange-900">
             <AlertTriangle className="h-5 w-5" />
             Poplatky za Promeškání
           </CardTitle>
@@ -366,7 +366,7 @@ export default function PricingSettingsPage() {
       {/* Preview */}
       <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 font-display">
             <DollarSign className="h-5 w-5" />
             Příklad Fakturace
           </CardTitle>

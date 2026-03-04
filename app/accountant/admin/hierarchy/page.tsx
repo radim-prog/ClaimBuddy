@@ -83,9 +83,9 @@ function OrgNode({ member, members, level, onEdit }: OrgNodeProps) {
     <div className={`${level > 0 ? 'ml-8 border-l-2 border-gray-200 dark:border-gray-700 pl-4' : ''}`}>
       <div
         className={`
-          flex items-center gap-3 p-3 rounded-lg border-2 mb-2 transition-all
+          flex items-center gap-3 p-3 rounded-xl border-2 mb-2 transition-all
           ${roleColors[member.role]}
-          hover:shadow-md cursor-pointer
+          hover:shadow-soft-md cursor-pointer
         `}
         onClick={() => onEdit(member)}
       >
@@ -114,7 +114,7 @@ function OrgNode({ member, members, level, onEdit }: OrgNodeProps) {
           <div className="flex items-center gap-2">
             <span className="font-semibold truncate">{member.name}</span>
             {!member.is_active && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="secondary" className="text-xs rounded-md">
                 Neaktivní
               </Badge>
             )}
@@ -307,7 +307,7 @@ export default function HierarchyPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white flex items-center gap-2">
             <Network className="h-6 w-6" />
             Hierarchie týmu
           </h1>
@@ -323,9 +323,9 @@ export default function HierarchyPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Org Chart */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 shadow-soft">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-display">
               <Users className="h-5 w-5" />
               Organizační struktura
             </CardTitle>
@@ -347,7 +347,7 @@ export default function HierarchyPage() {
             </div>
 
             {/* Legend */}
-            <div className="mt-6 pt-4 border-t flex flex-wrap gap-4">
+            <div className="mt-6 pt-4 border-t border-border/50 flex flex-wrap gap-4">
               {Object.entries(roleLabels).map(([role, label]) => {
                 const Icon = roleIcons[role as UserRole]
                 return (
@@ -368,11 +368,11 @@ export default function HierarchyPage() {
         </Card>
 
         {/* Substitution Rules */}
-        <Card>
+        <Card className="shadow-soft">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 font-display">
                   <Calendar className="h-5 w-5" />
                   Zastupování
                 </CardTitle>
@@ -403,13 +403,13 @@ export default function HierarchyPage() {
                     <div
                       key={sub.id}
                       className={`
-                        p-3 rounded-lg border
+                        p-3 rounded-xl border
                         ${sub.is_active ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50 opacity-60'}
                       `}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <Badge
-                          className={getSubstitutionTypeBadge(sub.type)}
+                          className={`rounded-md ${getSubstitutionTypeBadge(sub.type)}`}
                         >
                           {getSubstitutionTypeLabel(sub.type)}
                         </Badge>
@@ -446,60 +446,60 @@ export default function HierarchyPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-4 pb-4">
+        <Card className="shadow-soft-sm">
+          <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-100 rounded-lg">
                 <Shield className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Administrátoři</p>
-                <p className="text-xl font-bold">
+                <p className="text-xl font-bold font-display">
                   {members.filter((m) => m.role === 'admin').length}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
+        <Card className="shadow-soft-sm">
+          <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
                 <Briefcase className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Manažeři</p>
-                <p className="text-xl font-bold">
+                <p className="text-xl font-bold font-display">
                   {members.filter((m) => m.role === 'manager').length}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
+        <Card className="shadow-soft-sm">
+          <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 rounded-lg">
                 <Calculator className="h-5 w-5 text-green-600" />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Účetní</p>
-                <p className="text-xl font-bold">
+                <p className="text-xl font-bold font-display">
                   {members.filter((m) => m.role === 'accountant').length}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
+        <Card className="shadow-soft-sm">
+          <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-100 rounded-lg">
                 <Calendar className="h-5 w-5 text-orange-600" />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Aktivní zastoupení</p>
-                <p className="text-xl font-bold">
+                <p className="text-xl font-bold font-display">
                   {substitutions.filter((s) => s.is_active).length}
                 </p>
               </div>
@@ -512,7 +512,7 @@ export default function HierarchyPage() {
       <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Přidat člena týmu</DialogTitle>
+            <DialogTitle className="font-display">Přidat člena týmu</DialogTitle>
             <DialogDescription>
               Vytvořte nového člena organizační struktury
             </DialogDescription>
@@ -527,6 +527,7 @@ export default function HierarchyPage() {
                   setNewMember({ ...newMember, name: e.target.value })
                 }
                 placeholder="Jan Novák"
+                className="h-11"
               />
             </div>
             <div className="space-y-2">
@@ -539,6 +540,7 @@ export default function HierarchyPage() {
                   setNewMember({ ...newMember, email: e.target.value })
                 }
                 placeholder="jan@example.com"
+                className="h-11"
               />
             </div>
             <div className="space-y-2">
@@ -549,7 +551,7 @@ export default function HierarchyPage() {
                   setNewMember({ ...newMember, role: v as UserRole })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -567,7 +569,7 @@ export default function HierarchyPage() {
                   setNewMember({ ...newMember, supervisor_id: v })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Vyberte nadřízeného" />
                 </SelectTrigger>
                 <SelectContent>
@@ -605,7 +607,7 @@ export default function HierarchyPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Přidat zastupování</DialogTitle>
+            <DialogTitle className="font-display">Přidat zastupování</DialogTitle>
             <DialogDescription>
               Nastavte pravidlo pro zastupování při nepřítomnosti
             </DialogDescription>
@@ -619,7 +621,7 @@ export default function HierarchyPage() {
                   setNewSubstitution({ ...newSubstitution, user_id: v })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Vyberte osobu" />
                 </SelectTrigger>
                 <SelectContent>
@@ -639,7 +641,7 @@ export default function HierarchyPage() {
                   setNewSubstitution({ ...newSubstitution, substitute_id: v })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Vyberte zástupce" />
                 </SelectTrigger>
                 <SelectContent>
@@ -664,7 +666,7 @@ export default function HierarchyPage() {
                   })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -687,6 +689,7 @@ export default function HierarchyPage() {
                         start_date: e.target.value,
                       })
                     }
+                    className="h-11"
                   />
                 </div>
                 <div className="space-y-2">
@@ -700,6 +703,7 @@ export default function HierarchyPage() {
                         end_date: e.target.value,
                       })
                     }
+                    className="h-11"
                   />
                 </div>
               </div>
@@ -732,19 +736,19 @@ export default function HierarchyPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Upravit člena týmu</DialogTitle>
+            <DialogTitle className="font-display">Upravit člena týmu</DialogTitle>
             <DialogDescription>
               {editingMember?.name} - {editingMember && roleLabels[editingMember.role]}
             </DialogDescription>
           </DialogHeader>
           {editingMember && (
             <div className="space-y-4 py-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                 <div>
                   <p className="font-medium">{editingMember.name}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">{editingMember.email}</p>
                 </div>
-                <Badge className={roleColors[editingMember.role]}>
+                <Badge className={`rounded-md ${roleColors[editingMember.role]}`}>
                   {roleLabels[editingMember.role]}
                 </Badge>
               </div>
@@ -767,7 +771,7 @@ export default function HierarchyPage() {
                     })
                   }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11">
                     <SelectValue placeholder="Žádný" />
                   </SelectTrigger>
                   <SelectContent>
@@ -787,7 +791,7 @@ export default function HierarchyPage() {
                 </Select>
               </div>
 
-              <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div className="flex items-center justify-between p-3 border rounded-xl">
                 <div>
                   <p className="font-medium">Stav účtu</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
