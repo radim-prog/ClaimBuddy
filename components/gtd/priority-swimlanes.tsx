@@ -141,7 +141,7 @@ function WorkItemRow({ item }: { item: WorkItem }) {
             {item.title}
           </span>
           {item.is_next_action && (
-            <Zap className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" title="Další akce" />
+            <Zap className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />
           )}
         </div>
         {item.company_name && (
