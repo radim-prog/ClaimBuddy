@@ -1,5 +1,10 @@
 # Pojistná Pomoc (Notion Mode)
 
+## Start Here
+- Projektový handover: `CONTINUE_HERE.md`
+- Provozní runbook: `docs/DEPLOYMENT_RUNBOOK.md`
+- Otevřené kroky: `docs/NEXT_STEPS.md`
+
 Pojistná Pomoc je nyní připravený v dočasném provozním režimu bez Firebase.
 
 Data případů se ukládají přímo do Notion databáze přes `POST /api/cases`.
