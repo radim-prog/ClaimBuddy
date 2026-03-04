@@ -203,7 +203,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
       <div className="max-w-5xl mx-auto">
         <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 p-4">
           <p className="text-sm text-red-700 dark:text-red-400">
-            Nepodarilo se nacist profil klienta: {error}
+            Nepodařilo se načíst profil klienta: {error}
           </p>
         </div>
       </div>
@@ -235,14 +235,14 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
           const basePath = `/accountant/clients/${companyId}`
           const isOnHub = pathname === basePath || pathname === `${basePath}/`
           const backHref = isOnHub ? '/accountant/clients' : basePath
-          const backLabel = isOnHub ? 'Seznam klientu' : company.name
+          const backLabel = isOnHub ? 'Seznam klientů' : company.name
 
           const tabs = [
-            { href: basePath, label: 'Prehled', icon: LayoutGrid, match: (p: string) => p === basePath || p === `${basePath}/` },
+            { href: basePath, label: 'Přehled', icon: LayoutGrid, match: (p: string) => p === basePath || p === `${basePath}/` },
             { href: `${basePath}/documents`, label: 'Doklady', icon: FileText, match: (p: string) => p.includes('/documents') },
             { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files') },
-            { href: `${basePath}/work`, label: 'Prace', icon: Clock, match: (p: string) => p.includes('/work') },
-            { href: `${basePath}/travel`, label: 'Jizdy', icon: Car, match: (p: string) => p.includes('/travel') },
+            { href: `${basePath}/work`, label: 'Práce', icon: Clock, match: (p: string) => p.includes('/work') },
+            { href: `${basePath}/travel`, label: 'Jízdy', icon: Car, match: (p: string) => p.includes('/travel') },
             { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile') },
             { href: `${basePath}/timeline`, label: 'Osa', icon: Eye, match: (p: string) => p.includes('/timeline') },
           ]
@@ -254,7 +254,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                   <Button variant="ghost" size="sm" className="rounded-xl text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                     <ArrowLeft className="mr-1.5 h-4 w-4" />
                     <span className="hidden sm:inline">{backLabel}</span>
-                    <span className="sm:hidden">Zpet</span>
+                    <span className="sm:hidden">Zpět</span>
                   </Button>
                 </Link>
                 <div className="flex gap-1.5 sm:gap-2">
@@ -277,7 +277,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                   <Link href={`/accountant/extraction?company=${companyId}`}>
                     <Button variant="outline" size="sm" className="rounded-xl border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 transition-colors">
                       <FileText className="h-4 w-4 sm:mr-1" />
-                      <span className="hidden sm:inline">Vytezovani</span>
+                      <span className="hidden sm:inline">Vytěžování</span>
                     </Button>
                   </Link>
                   <Button variant="outline" size="sm" className="rounded-xl border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 transition-colors" onClick={() => setEditModalOpen(true)}>
@@ -299,7 +299,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                           size="sm"
                           className={`rounded-xl shrink-0 text-xs h-8 ${
                             active
-                              ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-soft-sm'
+                              ? 'bg-purple-500 hover:bg-purple-600 text-white shadow-soft-sm'
                               : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                           }`}
                         >
@@ -334,7 +334,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                       <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 text-[10px] sm:text-xs">Onboarding</Badge>
                     )}
                     {company.status === 'inactive' && (
-                      <Badge variant="outline" className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700 text-[10px] sm:text-xs">Neaktivni</Badge>
+                      <Badge variant="outline" className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700 text-[10px] sm:text-xs">Neaktivní</Badge>
                     )}
                     {company.legal_form === 'OSVC' ? (
                       <Badge variant="outline" className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700 text-[10px] sm:text-xs">FO</Badge>
