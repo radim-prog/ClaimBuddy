@@ -53,7 +53,7 @@ import { Logo } from '@/components/ui/logo'
 const navigation = [
   { name: 'Přehled', href: '/accountant/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
   { name: 'Klienti', href: '/accountant/clients', icon: Users, badge: 'attention' as const, tourId: 'nav-clients' },
-  { name: 'Práce', href: '/accountant/tasks', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/tasks', '/accountant/projects'] },
+  { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'] },
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices'], tourId: 'nav-invoicing' },
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings, tourId: 'nav-settings' },

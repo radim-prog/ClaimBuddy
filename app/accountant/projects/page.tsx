@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -19,7 +21,6 @@ import {
   AlertCircle,
   ArrowUpDown,
 } from 'lucide-react'
-import { WorkTabBar } from '@/components/work-tab-bar'
 
 type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'review' | 'completed' | 'cancelled'
 type ScorePriority = 'high' | 'medium' | 'low'
@@ -102,6 +103,12 @@ function formatDeadline(dateString: string): string {
 }
 
 export default function ProjectsPage() {
+  const router = useRouter()
+
+  useEffect(() => {
+    router.replace('/accountant/work')
+  }, [router])
+
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -180,8 +187,6 @@ export default function ProjectsPage() {
 
   return (
     <div className="max-w-7xl">
-      <WorkTabBar />
-
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between">

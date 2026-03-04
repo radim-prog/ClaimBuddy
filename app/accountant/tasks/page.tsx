@@ -72,7 +72,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
-import { WorkTabBar } from '@/components/work-tab-bar'
+
 import { CompanyCombobox } from '@/components/ui/company-combobox'
 import type { TaskStatus } from '@/lib/types/tasks'
 
@@ -771,8 +771,6 @@ export default function TasksPage() {
 
   return (
     <div className="max-w-7xl">
-      <WorkTabBar />
-
       {/* Gamifikace - progress ring + stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <DailyProgressRing />

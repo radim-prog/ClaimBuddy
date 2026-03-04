@@ -22,7 +22,6 @@ interface CaseToggleProps {
     case_type_id?: string
     case_opposing_party?: string
     case_reference?: string
-    hourly_rate?: number
     client_visible?: boolean
     client_visible_tabs?: string[]
   }
@@ -34,7 +33,6 @@ export function CaseToggle({ projectId, project, onUpdate }: CaseToggleProps) {
   const [caseTypeId, setCaseTypeId] = useState(project.case_type_id || '')
   const [opposingParty, setOpposingParty] = useState(project.case_opposing_party || '')
   const [reference, setReference] = useState(project.case_reference || '')
-  const [hourlyRate, setHourlyRate] = useState(project.hourly_rate || 1500)
   const [caseTypes, setCaseTypes] = useState<CaseType[]>([])
   const [clientVisible, setClientVisible] = useState(project.client_visible || false)
   const [clientVisibleTabs, setClientVisibleTabs] = useState<string[]>(project.client_visible_tabs || ['timeline', 'documents'])
@@ -95,7 +93,6 @@ export function CaseToggle({ projectId, project, onUpdate }: CaseToggleProps) {
           case_type_id: caseTypeId || null,
           case_opposing_party: opposingParty || null,
           case_reference: reference || null,
-          hourly_rate: hourlyRate,
           client_visible: clientVisible,
           client_visible_tabs: clientVisibleTabs,
         }),
@@ -172,20 +169,11 @@ export function CaseToggle({ projectId, project, onUpdate }: CaseToggleProps) {
               </div>
 
               <div className="space-y-2">
-                <Label>Reference / spisová značka</Label>
+                <Label>Spisová značka</Label>
                 <Input
-                  placeholder="Externí reference"
+                  placeholder="Externí spisová značka"
                   value={reference}
                   onChange={(e) => setReference(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Hodinová sazba (Kč)</Label>
-                <Input
-                  type="number"
-                  value={hourlyRate}
-                  onChange={(e) => setHourlyRate(Number(e.target.value))}
                 />
               </div>
 
