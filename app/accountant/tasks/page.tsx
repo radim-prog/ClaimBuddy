@@ -809,7 +809,7 @@ export default function TasksPage() {
           triggerClassName="w-[200px] h-9 rounded-xl"
         />
         <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)} className="h-9 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-700">Filtry{showFilters ? <ChevronUp className="ml-1 h-4 w-4" /> : <ChevronDown className="ml-1 h-4 w-4" />}</Button>
-        <Button size="sm" className="h-9 rounded-xl bg-purple-600 hover:bg-purple-700" onClick={() => setShowNewTask(true)}><Plus className="h-4 w-4 mr-1" />Nový úkol</Button>
+        <Button size="sm" className="h-9 rounded-xl bg-purple-600 hover:bg-purple-700" asChild><Link href="/accountant/work/new"><Plus className="h-4 w-4 mr-1" />Nový úkol</Link></Button>
       </div>
 
       {/* Expandable Filters */}

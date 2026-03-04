@@ -142,6 +142,7 @@ export default function WorkPage() {
         company_name: t.company_name,
         assigned_to_name: t.assigned_to_name,
         is_next_action: t.is_next_action,
+        updated_at: t.updated_at,
       }))
 
     const projectItems: WorkItem[] = projects
