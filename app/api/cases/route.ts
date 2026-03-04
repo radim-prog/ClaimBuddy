@@ -1,71 +1,40 @@
 import { NextRequest } from 'next/server';
-import { getAuthUser, errorResponse, successResponse } from '@/lib/api-helpers';
-import { createCase, getCases, getAllCases } from '@/lib/firebase/firestore';
-import { createCaseSchema } from '@/lib/validations';
-import { getUserData } from '@/lib/firebase/auth';
-import { USER_ROLES } from '@/lib/constants';
+import { z } from 'zod';
+import { createNotionCase, listNotionCases } from '@/lib/notion';
+import { errorResponse, successResponse } from '@/lib/api-helpers';
 
-export async function GET(request: NextRequest) {
+const publicCaseSchema = z.object({
+  fullName: z.string().min(2),
+  email: z.string().email(),
+  phone: z.string().optional(),
+  insuranceType: z.string().min(2),
+  insuranceCompany: z.string().min(2),
+  incidentDate: z.string().min(8),
+  incidentLocation: z.string().min(2),
+  incidentDescription: z.string().min(10),
+  claimAmount: z.number().optional(),
+});
+
+export async function GET() {
   try {
-    const { user, error: authError } = await getAuthUser(request);
-    if (authError || !user) {
-      return errorResponse('Unauthorized', 401);
-    }
-
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') || undefined;
-    const limit = parseInt(searchParams.get('limit') || '10');
-
-    // Admini vidí všechny případy, agenti jen přiřazené, klienti jen své
-    const userData = await getUserData(user.uid);
-    if (!userData) {
-      return errorResponse('User not found', 404);
-    }
-
-    let result;
-    if (userData.role === USER_ROLES.ADMIN) {
-      result = await getAllCases({ status, limitCount: limit });
-    } else if (userData.role === USER_ROLES.AGENT) {
-      result = await getCases(user.uid, { assignedTo: user.uid, status, limitCount: limit });
-    } else {
-      result = await getCases(user.uid, { status, limitCount: limit });
-    }
-
-    if (result.error) {
-      return errorResponse(result.error, 500);
-    }
-
-    return successResponse({ cases: result.cases });
+    const cases = await listNotionCases(30);
+    return successResponse({ cases });
   } catch (error: any) {
-    console.error('GET /api/cases error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
+    return errorResponse(error.message || 'Failed to load cases', 500);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthUser(request);
-    if (authError || !user) {
-      return errorResponse('Unauthorized', 401);
-    }
-
     const body = await request.json();
-
-    // Validace
-    const validation = createCaseSchema.safeParse(body);
+    const validation = publicCaseSchema.safeParse(body);
     if (!validation.success) {
       return errorResponse(validation.error.errors[0].message, 400);
     }
 
-    const { id, error } = await createCase(user.uid, validation.data);
-
-    if (error) {
-      return errorResponse(error, 500);
-    }
-
-    return successResponse({ id, message: 'Case created successfully' }, 201);
+    const created = await createNotionCase(validation.data);
+    return successResponse({ id: created.id, caseNumber: created.caseNumber, notionUrl: created.url }, 201);
   } catch (error: any) {
-    console.error('POST /api/cases error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
+    return errorResponse(error.message || 'Failed to create case', 500);
   }
 }

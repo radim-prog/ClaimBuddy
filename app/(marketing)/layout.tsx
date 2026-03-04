@@ -25,10 +25,10 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-4">
-            <Link href="/login">
+            <Link href="/cases/new">
               <Button variant="ghost">Přihlásit se</Button>
             </Link>
-            <Link href="/register">
+            <Link href="/cases/new">
               <Button>Začít zdarma</Button>
             </Link>
           </div>

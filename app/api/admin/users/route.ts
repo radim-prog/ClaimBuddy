@@ -1,188 +1,21 @@
-import { NextRequest } from 'next/server';
-import { requireAdmin, errorResponse, successResponse } from '@/lib/api-helpers';
-import { adminDb, adminAuth } from '@/lib/firebase/admin';
-import { USER_ROLES, UserRole } from '@/lib/constants';
-import { getUserStats } from '@/lib/firebase/admin-operations';
-import { z } from 'zod';
-import { randomBytes } from 'crypto';
-import { checkRateLimit, rateLimiters, rateLimitExceeded } from '@/lib/rate-limit';
+import { errorResponse } from '@/lib/api-helpers';
 
-const createUserSchema = z.object({
-  name: z.string().min(2, 'Jméno musí mít alespoň 2 znaky'),
-  email: z.string().email('Neplatný email'),
-  phone: z.string().optional(),
-  role: z.enum(['client', 'agent', 'admin'] as const),
-});
-
-// GET /api/admin/users - List all users with filters
-export async function GET(request: NextRequest) {
-  try {
-    const user = await requireAdmin(request);
-
-    const { searchParams } = new URL(request.url);
-    const roleFilter = searchParams.get('role') as UserRole | null;
-    const statusFilter = searchParams.get('status'); // 'active' | 'inactive'
-    const searchQuery = searchParams.get('search')?.toLowerCase();
-
-    let query = adminDb.collection('users');
-
-    // Filter by role
-    if (roleFilter && Object.values(USER_ROLES).includes(roleFilter)) {
-      query = query.where('role', '==', roleFilter) as any;
-    }
-
-    const snapshot = await query.get();
-
-    let users = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        name: data.name || '',
-        email: data.email || '',
-        phone: data.phone || '',
-        role: data.role as UserRole,
-        status: data.status || 'active',
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        lastLoginAt: data.lastLoginAt?.toDate?.()?.toISOString(),
-        emailVerified: data.emailVerified || false,
-      };
-    });
-
-    // PERFORMANCE FIX: Batch fetch cases count using aggregation instead of loading all cases
-    // Get unique user IDs
-    const userIds = users.map(u => u.id);
-
-    // Batch count cases per user (Firestore 'in' operator supports max 10 items per query)
-    const casesByUser: Record<string, number> = {};
-    for (let i = 0; i < userIds.length; i += 10) {
-      const batch = userIds.slice(i, i + 10);
-      try {
-        // Count cases for each user in this batch
-        const casesSnapshot = await adminDb.collection('cases')
-          .where('userId', 'in', batch)
-          .get();
-
-        casesSnapshot.docs.forEach(doc => {
-          const userId = doc.data().userId;
-          casesByUser[userId] = (casesByUser[userId] || 0) + 1;
-        });
-      } catch (error) {
-        console.error('Error batch counting cases:', error);
-      }
-    }
-
-    // Add casesCount and stats to users
-    const usersWithStats = await Promise.all(
-      users.map(async (u) => {
-        const baseUser = {
-          ...u,
-          casesCount: casesByUser[u.id] || 0,
-          status: u.status || 'active',
-        };
-
-        // Add detailed stats for agents
-        if (u.role === USER_ROLES.AGENT) {
-          try {
-            const stats = await getUserStats(u.id);
-            return { ...baseUser, stats };
-          } catch (error) {
-            console.error('Error fetching agent stats:', error);
-          }
-        }
-
-        return baseUser;
-      })
-    );
-
-    users = usersWithStats;
-
-    // Filter by status
-    if (statusFilter) {
-      users = users.filter(u => u.status === statusFilter);
-    }
-
-    // Search filter
-    if (searchQuery) {
-      users = users.filter(u =>
-        u.name?.toLowerCase().includes(searchQuery) ||
-        u.email?.toLowerCase().includes(searchQuery)
-      );
-    }
-
-    return successResponse({ users });
-  } catch (error: any) {
-    console.error('GET /api/admin/users error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
-  }
+export async function GET() {
+  return errorResponse('Endpoint disabled in Notion mode', 501);
 }
 
-// POST /api/admin/users - Create new agent/admin
-export async function POST(request: NextRequest) {
-  try {
-    const user = await requireAdmin(request);
+export async function POST() {
+  return errorResponse('Endpoint disabled in Notion mode', 501);
+}
 
-    // Rate limiting: Prevent brute force user creation
-    const rateLimitResult = await checkRateLimit(rateLimiters.api, user.uid);
-    if (!rateLimitResult.success) {
-      return rateLimitExceeded(rateLimitResult.reset);
-    }
+export async function PATCH() {
+  return errorResponse('Endpoint disabled in Notion mode', 501);
+}
 
-    const body = await request.json();
-    const validation = createUserSchema.safeParse(body);
+export async function PUT() {
+  return errorResponse('Endpoint disabled in Notion mode', 501);
+}
 
-    if (!validation.success) {
-      return errorResponse(validation.error.errors[0].message, 400);
-    }
-
-    const { name, email, phone, role } = validation.data;
-
-    // Check if user already exists
-    const existingUser = await adminAuth.getUserByEmail(email).catch(() => null);
-    if (existingUser) {
-      return errorResponse('Uživatel s tímto emailem již existuje', 400);
-    }
-
-    // Create user in Firebase Auth
-    const authUser = await adminAuth.createUser({
-      email,
-      emailVerified: false,
-      disabled: false,
-    });
-
-    // Generate cryptographically secure random password
-    // Uses crypto.randomBytes instead of Math.random() for security
-    const tempPassword = randomBytes(12).toString('base64').slice(0, 12) + 'Aa1!';
-    await adminAuth.updateUser(authUser.uid, {
-      password: tempPassword,
-    });
-
-    // Create user in Firestore
-    const userData = {
-      email,
-      name,
-      phone: phone || '',
-      role,
-      status: 'active',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      emailVerified: false,
-    };
-
-    await adminDb.collection('users').doc(authUser.uid).set(userData);
-
-    // TODO: Send invitation email with tempPassword
-    // This would be done via email service (e.g., SendGrid, Resend)
-    console.log(`Created user ${email}`);
-
-    return successResponse({
-      id: authUser.uid,
-      message: 'Uživatel byl vytvořen',
-      // In production, don't return password!
-      // tempPassword,
-    }, 201);
-  } catch (error: any) {
-    console.error('POST /api/admin/users error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
-  }
+export async function DELETE() {
+  return errorResponse('Endpoint disabled in Notion mode', 501);
 }

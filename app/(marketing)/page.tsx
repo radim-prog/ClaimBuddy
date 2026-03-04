@@ -20,7 +20,7 @@ export default function LandingPage() {
             </p>
 
             <div className="mt-10 flex items-center justify-center gap-4">
-              <Link href="/register">
+              <Link href="/cases/new">
                 <Button size="lg" className="px-8 py-6 text-lg">
                   Začít hned zdarma
                 </Button>
@@ -217,7 +217,7 @@ export default function LandingPage() {
               Registrace je zdarma. Platíte až po úspěchu.
             </p>
             <div className="mt-8">
-              <Link href="/register">
+              <Link href="/cases/new">
                 <Button size="lg" className="px-12 py-6 text-lg">
                   Začít hned zdarma
                 </Button>

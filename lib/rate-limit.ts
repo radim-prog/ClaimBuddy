@@ -4,11 +4,11 @@ import { Redis } from '@upstash/redis';
 // Fallback in-memory rate limiter pro development (bez Upstash)
 class InMemoryRateLimiter {
   private requests: Map<string, number[]> = new Map();
-  private limit: number;
+  private maxRequests: number;
   private window: number;
 
   constructor(limit: number, windowMs: number) {
-    this.limit = limit;
+    this.maxRequests = limit;
     this.window = windowMs;
   }
 
@@ -19,10 +19,10 @@ class InMemoryRateLimiter {
     // Filter out old requests outside window
     const recentRequests = userRequests.filter(time => now - time < this.window);
 
-    if (recentRequests.length >= this.limit) {
+    if (recentRequests.length >= this.maxRequests) {
       return {
         success: false,
-        limit: this.limit,
+        limit: this.maxRequests,
         remaining: 0,
         reset: Math.min(...recentRequests) + this.window,
       };
@@ -33,15 +33,15 @@ class InMemoryRateLimiter {
 
     return {
       success: true,
-      limit: this.limit,
-      remaining: this.limit - recentRequests.length,
+      limit: this.maxRequests,
+      remaining: this.maxRequests - recentRequests.length,
       reset: now + this.window,
     };
   }
 }
 
 // Production: Upstash Redis rate limiter
-function createUpstashLimiter(requests: number, window: string) {
+function createUpstashLimiter(requests: number, window: Parameters<typeof Ratelimit.slidingWindow>[1]) {
   if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
     console.warn('⚠️ Upstash credentials not found, using in-memory rate limiter');
     return null;
@@ -61,7 +61,7 @@ function createUpstashLimiter(requests: number, window: string) {
 }
 
 // Parse window string like "1 h" to milliseconds
-function parseWindow(window: string): number {
+function parseWindow(window: Parameters<typeof Ratelimit.slidingWindow>[1]): number {
   const [amount, unit] = window.split(' ');
   const num = parseInt(amount);
 
@@ -98,13 +98,13 @@ export async function checkRateLimit(
   limiter: Ratelimit | InMemoryRateLimiter,
   identifier: string
 ) {
-  const result = await limiter.limit(identifier);
+  const result = await (limiter as any).limit(identifier);
 
   return {
-    success: result.success,
-    limit: result.limit,
-    remaining: result.remaining,
-    reset: result.reset,
+    success: Boolean(result?.success),
+    limit: Number(result?.limit ?? 0),
+    remaining: Number(result?.remaining ?? 0),
+    reset: Number(result?.reset ?? Date.now()),
   };
 }
 
