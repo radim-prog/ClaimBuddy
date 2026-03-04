@@ -11,10 +11,13 @@ import {
   Briefcase,
   AlertTriangle,
   ArrowRight,
-  TrendingUp,
   MessageSquare,
   Upload,
   FileWarning,
+  Car,
+  CheckCircle2,
+  XCircle,
+  Calendar,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useCompany } from './layout'
@@ -39,7 +42,7 @@ export default function ClientHubPage() {
           setHubStats(data)
         }
       } catch {
-        // API may not exist yet, gracefully ignore
+        // API may not exist yet
       } finally {
         setStatsLoading(false)
       }
@@ -47,7 +50,6 @@ export default function ClientHubPage() {
     fetchHubStats()
   }, [companyId])
 
-  // Compute badge counts
   const activeTaskCount = tasks.filter(t =>
     t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress'
   ).length
@@ -55,218 +57,203 @@ export default function ClientHubPage() {
   const messagesBadge = attention.unread_messages || 0
   const docsBadge = (attention.missing_documents + attention.pending_uploads) || 0
 
-  // Build attention items
-  const attentionItems: Array<{ type: string; message: string; severity: 'high' | 'medium' | 'low'; icon: typeof FileWarning }> = []
-
+  // Attention items
+  const attentionItems: Array<{ message: string; severity: 'high' | 'medium' | 'low' }> = []
   if (hubStats?.attention?.items) {
-    attentionItems.push(...hubStats.attention.items.map(item => ({ ...item, icon: FileWarning })))
+    attentionItems.push(...hubStats.attention.items)
   }
   if (attention.missing_documents > 0) {
     attentionItems.push({
-      type: 'documents',
       message: `${attention.missing_documents} chybějící${attention.missing_documents > 1 ? ' doklady' : ' doklad'}`,
       severity: 'high',
-      icon: FileWarning,
     })
   }
   if (attention.pending_uploads > 0) {
     attentionItems.push({
-      type: 'uploads',
       message: `${attention.pending_uploads} nahrání ke zpracování`,
       severity: 'medium',
-      icon: Upload,
     })
   }
   if (attention.unread_messages > 0) {
     attentionItems.push({
-      type: 'messages',
       message: `${attention.unread_messages} nepřečten${attention.unread_messages > 1 ? 'ých zpráv' : 'á zpráva'}`,
       severity: 'medium',
-      icon: MessageSquare,
     })
   }
 
-  const stat = (val: number | undefined) => {
-    if (statsLoading) return '—'
-    return val !== undefined ? val : '—'
-  }
+  // Latest closure status
+  const latestClosure = closures.length > 0
+    ? closures.sort((a, b) => b.period.localeCompare(a.period))[0]
+    : null
+  const closureComplete = latestClosure
+    ? latestClosure.bank_statement_status !== 'missing' &&
+      latestClosure.expense_documents_status !== 'missing' &&
+      latestClosure.income_invoices_status !== 'missing'
+    : false
 
-  const cards = [
-    {
-      id: 'files',
-      href: `/accountant/clients/${companyId}/files`,
-      icon: FolderOpen,
-      label: 'Soubory',
-      value: stat(hubStats?.files?.total),
-      unit: 'souborů',
-      sub: hubStats?.files?.recent ? `${hubStats.files.recent} nových` : null,
-      badge: null as number | null,
-      color: 'emerald' as const,
-    },
-    {
-      id: 'documents',
-      href: `/accountant/clients/${companyId}/documents`,
-      icon: FileText,
-      label: 'Doklady',
-      value: stat(hubStats?.documents?.total),
-      unit: 'dokladů',
-      sub: hubStats?.documents?.pending ? `${hubStats.documents.pending} ke zpracování` : null,
-      badge: docsBadge > 0 ? docsBadge : null,
-      color: 'blue' as const,
-    },
-    {
-      id: 'work',
-      href: `/accountant/clients/${companyId}/work`,
-      icon: Clock,
-      label: 'Práce',
-      value: hubStats?.work?.hours_this_month !== undefined ? hubStats.work.hours_this_month : '—',
-      unit: 'h tento měsíc',
-      sub: tasksBadge > 0 ? `${tasksBadge} aktivních úkolů` : null,
-      badge: (tasksBadge + messagesBadge) > 0 ? tasksBadge + messagesBadge : null,
-      color: 'amber' as const,
-    },
-    {
-      id: 'profile',
-      href: `/accountant/clients/${companyId}/profile`,
-      icon: Building2,
-      label: 'Firma',
-      value: company.legal_form || '—',
-      unit: '',
-      sub: company.vat_payer ? 'Plátce DPH' : 'Neplátce',
-      badge: null,
-      color: 'purple' as const,
-    },
-    {
-      id: 'projects',
-      href: `/accountant/clients/${companyId}/projects`,
-      icon: Briefcase,
-      label: 'Projekty',
-      value: hubStats?.projects?.active !== undefined ? hubStats.projects.active : '—',
-      unit: 'aktivních',
-      sub: hubStats?.projects?.cases ? `${hubStats.projects.cases} spisů` : null,
-      badge: null,
-      color: 'indigo' as const,
-    },
-  ]
-
-  const colorMap = {
-    emerald: {
-      iconBg: 'bg-emerald-50 dark:bg-emerald-900/20',
-      iconColor: 'text-emerald-600 dark:text-emerald-400',
-      hoverBorder: 'hover:border-emerald-200 dark:hover:border-emerald-800',
-      valueBg: 'text-emerald-700 dark:text-emerald-300',
-    },
-    blue: {
-      iconBg: 'bg-blue-50 dark:bg-blue-900/20',
-      iconColor: 'text-blue-600 dark:text-blue-400',
-      hoverBorder: 'hover:border-blue-200 dark:hover:border-blue-800',
-      valueBg: 'text-blue-700 dark:text-blue-300',
-    },
-    amber: {
-      iconBg: 'bg-amber-50 dark:bg-amber-900/20',
-      iconColor: 'text-amber-600 dark:text-amber-400',
-      hoverBorder: 'hover:border-amber-200 dark:hover:border-amber-800',
-      valueBg: 'text-amber-700 dark:text-amber-300',
-    },
-    purple: {
-      iconBg: 'bg-purple-50 dark:bg-purple-900/20',
-      iconColor: 'text-purple-600 dark:text-purple-400',
-      hoverBorder: 'hover:border-purple-200 dark:hover:border-purple-800',
-      valueBg: 'text-purple-700 dark:text-purple-300',
-    },
-    indigo: {
-      iconBg: 'bg-indigo-50 dark:bg-indigo-900/20',
-      iconColor: 'text-indigo-600 dark:text-indigo-400',
-      hoverBorder: 'hover:border-indigo-200 dark:hover:border-indigo-800',
-      valueBg: 'text-indigo-700 dark:text-indigo-300',
-    },
-  }
+  const s = (val: number | undefined) => statsLoading ? '—' : (val ?? '—')
 
   return (
-    <div className="space-y-5">
-      {/* Attention Banner */}
+    <div className="space-y-4">
+
+      {/* Attention Banner — only if issues */}
       {attentionItems.length > 0 && (
-        <div className="rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-200/60 dark:border-amber-800/40 px-5 py-4">
-          <div className="flex items-center gap-2.5 mb-3">
-            <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-amber-100 dark:bg-amber-900/40">
-              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-            </div>
-            <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-              Vyžaduje pozornost
-            </span>
-            <Badge className="ml-auto bg-amber-200/80 dark:bg-amber-800/50 text-amber-800 dark:text-amber-300 border-0 text-[10px] font-bold px-2">
-              {attentionItems.length}
-            </Badge>
-          </div>
-          <div className="grid gap-2">
-            {attentionItems.slice(0, 6).map((item, i) => (
-              <div key={i} className="flex items-center gap-2.5 text-sm">
-                <div className={`h-2 w-2 rounded-full shrink-0 ${
-                  item.severity === 'high' ? 'bg-red-500' :
-                  item.severity === 'medium' ? 'bg-amber-500' :
-                  'bg-gray-400'
+        <div className="flex items-start gap-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 px-4 py-3">
+          <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {attentionItems.slice(0, 5).map((item, i) => (
+              <span key={i} className="text-sm text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                <span className={`h-1.5 w-1.5 rounded-full ${
+                  item.severity === 'high' ? 'bg-red-500' : 'bg-amber-400'
                 }`} />
-                <span className="text-gray-700 dark:text-gray-300">{item.message}</span>
-              </div>
+                {item.message}
+              </span>
             ))}
           </div>
         </div>
       )}
 
-      {/* Hub Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {cards.map((card) => {
-          const colors = colorMap[card.color]
-          return (
-            <Link key={card.id} href={card.href} className="group">
-              <div className={`relative rounded-2xl border border-gray-200/80 dark:border-gray-700/60 bg-white dark:bg-gray-900/60 ${colors.hoverBorder} transition-all duration-200 hover:shadow-md p-5 h-full flex flex-col`}>
-                {/* Badge */}
-                {card.badge && card.badge > 0 && (
-                  <div className="absolute top-3 right-3">
-                    <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 text-[10px] font-bold bg-red-500 text-white rounded-full">
-                      {card.badge}
-                    </span>
-                  </div>
-                )}
+      {/* Metrics Strip — key numbers at a glance */}
+      <div className="flex items-center gap-6 flex-wrap py-1">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-blue-500" />
+          <span className="text-sm font-bold text-gray-900 dark:text-white">{s(hubStats?.documents?.total)}</span>
+          <span className="text-sm text-gray-500">dokladů</span>
+          {hubStats?.documents?.pending ? (
+            <Badge className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-0 px-1.5 py-0">{hubStats.documents.pending} ke zprac.</Badge>
+          ) : null}
+        </div>
+        <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-amber-500" />
+          <span className="text-sm font-bold text-gray-900 dark:text-white">
+            {hubStats?.work?.hours_this_month !== undefined ? `${hubStats.work.hours_this_month}h` : '—'}
+          </span>
+          <span className="text-sm text-gray-500">tento měsíc</span>
+        </div>
+        <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className={`h-4 w-4 ${tasksBadge > 0 ? 'text-purple-500' : 'text-green-500'}`} />
+          <span className="text-sm font-bold text-gray-900 dark:text-white">{tasksBadge}</span>
+          <span className="text-sm text-gray-500">úkolů</span>
+        </div>
+        <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+        <div className="flex items-center gap-2">
+          <FolderOpen className="h-4 w-4 text-emerald-500" />
+          <span className="text-sm font-bold text-gray-900 dark:text-white">{s(hubStats?.files?.total)}</span>
+          <span className="text-sm text-gray-500">souborů</span>
+        </div>
+        {latestClosure && (
+          <>
+            <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+            <div className="flex items-center gap-2">
+              <Calendar className={`h-4 w-4 ${closureComplete ? 'text-green-500' : 'text-red-500'}`} />
+              <span className="text-sm text-gray-500">{formatPeriod(latestClosure.period)}</span>
+              {closureComplete ? (
+                <Badge className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0 px-1.5 py-0">OK</Badge>
+              ) : (
+                <Badge className="text-[10px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0 px-1.5 py-0">Chybí</Badge>
+              )}
+            </div>
+          </>
+        )}
+      </div>
 
-                {/* Icon + Label */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`flex items-center justify-center h-10 w-10 rounded-xl ${colors.iconBg} transition-transform group-hover:scale-105`}>
-                    <card.icon className={`h-5 w-5 ${colors.iconColor}`} />
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {card.label}
-                  </span>
+      {/* Primary Actions — the two things an accountant does most */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Doklady */}
+        <Link href={`/accountant/clients/${companyId}/documents`} className="group">
+          <div className="relative rounded-2xl border border-gray-200/80 dark:border-gray-700/60 bg-white dark:bg-gray-900/60 hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200 hover:shadow-md p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-blue-50 dark:bg-blue-900/20 group-hover:scale-105 transition-transform">
+                  <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
-
-                {/* Value */}
-                <div className="mt-auto">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className={`text-2xl font-bold ${colors.valueBg}`}>
-                      {card.value}
-                    </span>
-                    {card.unit && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {card.unit}
-                      </span>
-                    )}
-                  </div>
-                  {card.sub && (
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      {card.sub}
-                    </p>
-                  )}
-                </div>
-
-                {/* Hover arrow */}
-                <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <ArrowRight className="h-4 w-4 text-gray-300 dark:text-gray-600" />
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">Doklady</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Příjmové a výdajové doklady</p>
                 </div>
               </div>
-            </Link>
-          )
-        })}
+              {docsBadge > 0 && (
+                <span className="inline-flex items-center justify-center h-6 min-w-[24px] px-2 text-xs font-bold bg-red-500 text-white rounded-full">
+                  {docsBadge}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-gray-600 dark:text-gray-400">
+                <span className="font-semibold text-gray-900 dark:text-white">{s(hubStats?.documents?.total)}</span> celkem
+              </span>
+              {hubStats?.documents?.pending ? (
+                <span className="text-blue-600 dark:text-blue-400 font-medium">{hubStats.documents.pending} ke zpracování</span>
+              ) : null}
+            </div>
+            <ArrowRight className="absolute bottom-4 right-4 h-4 w-4 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        </Link>
+
+        {/* Práce */}
+        <Link href={`/accountant/clients/${companyId}/work`} className="group">
+          <div className="relative rounded-2xl border border-gray-200/80 dark:border-gray-700/60 bg-white dark:bg-gray-900/60 hover:border-amber-300 dark:hover:border-amber-700 transition-all duration-200 hover:shadow-md p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-amber-50 dark:bg-amber-900/20 group-hover:scale-105 transition-transform">
+                  <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">Práce</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Úkoly, hodiny, zprávy</p>
+                </div>
+              </div>
+              {(tasksBadge + messagesBadge) > 0 && (
+                <span className="inline-flex items-center justify-center h-6 min-w-[24px] px-2 text-xs font-bold bg-purple-500 text-white rounded-full">
+                  {tasksBadge + messagesBadge}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-gray-600 dark:text-gray-400">
+                <span className="font-semibold text-gray-900 dark:text-white">{tasksBadge}</span> aktivních úkolů
+              </span>
+              {hubStats?.work?.hours_this_month !== undefined && (
+                <span className="text-amber-600 dark:text-amber-400 font-medium">{hubStats.work.hours_this_month}h tento měsíc</span>
+              )}
+            </div>
+            <ArrowRight className="absolute bottom-4 right-4 h-4 w-4 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        </Link>
+      </div>
+
+      {/* Quick Links — compact row for secondary sections */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {[
+          { href: `/accountant/clients/${companyId}/files`, icon: FolderOpen, label: 'Soubory', count: s(hubStats?.files?.total), color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+          { href: `/accountant/clients/${companyId}/projects`, icon: Briefcase, label: 'Projekty', count: hubStats?.projects?.active !== undefined ? hubStats.projects.active : '—', color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
+          { href: `/accountant/clients/${companyId}/travel`, icon: Car, label: 'Jízdy', count: null, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-900/20' },
+          { href: `/accountant/clients/${companyId}/profile`, icon: Building2, label: 'Firma', count: null, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+        ].map((item) => (
+          <Link key={item.href} href={item.href} className="group">
+            <div className="flex items-center gap-3 rounded-xl border border-gray-200/80 dark:border-gray-700/60 bg-white dark:bg-gray-900/60 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all px-4 py-3">
+              <div className={`flex items-center justify-center h-8 w-8 rounded-lg ${item.bg} shrink-0`}>
+                <item.icon className={`h-4 w-4 ${item.color}`} />
+              </div>
+              <div className="min-w-0">
+                <span className="text-sm font-medium text-gray-900 dark:text-white">{item.label}</span>
+                {item.count !== null && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">{item.count}</span>
+                )}
+              </div>
+              <ArrowRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 ml-auto opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+            </div>
+          </Link>
+        ))}
       </div>
     </div>
   )
+}
+
+function formatPeriod(period: string): string {
+  const [year, month] = period.split('-')
+  const months = ['', 'Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čer', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro']
+  return `${months[parseInt(month)]} ${year}`
 }
