@@ -281,7 +281,7 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
             }}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
               selectedYear === year
-                ? 'bg-purple-600 text-white shadow-md shadow-purple-200 dark:shadow-purple-900/30'
+                ? 'bg-purple-500 text-white shadow-md shadow-purple-200 dark:shadow-purple-900/30'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}
           >
@@ -369,10 +369,10 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
           </span>
           <Button size="sm" variant="outline" className="text-green-600 border-green-300" onClick={() => handleBulkAction('approve')} disabled={bulkLoading}>
             {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle className="h-4 w-4 mr-1" />}
-            Schvalit
+            Schválit
           </Button>
           <Button size="sm" variant="outline" className="text-red-600 border-red-300" onClick={() => handleBulkAction('reject')} disabled={bulkLoading}>
-            <XCircle className="h-4 w-4 mr-1" /> Zamitnout
+            <XCircle className="h-4 w-4 mr-1" /> Zamítnout
           </Button>
         </div>
       )}
@@ -384,7 +384,7 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
             <div className="flex items-center justify-center py-16">
               <div className="text-center">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto" />
-                <p className="mt-3 text-sm text-gray-400 dark:text-gray-500">Nacitam doklady...</p>
+                <p className="mt-3 text-sm text-gray-400 dark:text-gray-500">Načítám doklady...</p>
               </div>
             </div>
           ) : documents.length === 0 ? (
@@ -394,10 +394,10 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
               </div>
               <p className="text-gray-600 dark:text-gray-400 font-medium">
                 {selectedMonth
-                  ? `Zadne doklady za ${selectedMonthIndex >= 0 ? MONTH_NAMES_LONG[selectedMonthIndex].toLowerCase() : ''} ${selectedYear}`
-                  : 'Vyberte mesic'}
+                  ? `Žádné doklady za ${selectedMonthIndex >= 0 ? MONTH_NAMES_LONG[selectedMonthIndex].toLowerCase() : ''} ${selectedYear}`
+                  : 'Vyberte měsíc'}
               </p>
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Zkuste upravit filtry nebo nahrat novy doklad</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Zkuste upravit filtry nebo nahrát nový doklad</p>
             </div>
           ) : (
             <>
@@ -411,10 +411,10 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
                           onCheckedChange={toggleSelectAll}
                         />
                       </th>
-                      <SortHeader field="accounting_number" label="Cislo" />
+                      <SortHeader field="accounting_number" label="Číslo" />
                       <SortHeader field="type" label="Typ" />
                       <SortHeader field="supplier_name" label="Dodavatel" />
-                      <SortHeader field="total_with_vat" label="Castka" />
+                      <SortHeader field="total_with_vat" label="Částka" />
                       <th className="text-left py-3 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">DPH</th>
                       <th className="text-left py-3 px-4 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">VS</th>
                       <SortHeader field="date_issued" label="Datum" />
