@@ -10,6 +10,7 @@ import {
   UserCircle,
   FileText,
   Car,
+  ChevronRight,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Logo } from '@/components/ui/logo'
@@ -46,23 +47,34 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Impersonation banner for accountants viewing as client */}
+    <div className="min-h-screen bg-background">
       <ImpersonationBanner />
-      {/* Notification popup on login */}
       <NotificationModal onDismissed={() => setNotificationsDismissed(true)} />
-      {/* Persistent banner after dismissal */}
       <NotificationBanner dismissed={notificationsDismissed} />
+
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
-        <div className="flex flex-col flex-grow bg-blue-700 overflow-y-auto">
+      <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col z-30">
+        <div className="flex flex-col flex-grow sidebar-gradient shadow-sidebar overflow-y-auto custom-scrollbar">
+          {/* Subtle texture overlay */}
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Cpath d=\'M0 40L40 0H20L0 20M40 40V20L20 40\'/%3E%3C/g%3E%3C/svg%3E")' }}
+          />
+
           {/* Logo */}
-          <div className="flex items-center h-16 flex-shrink-0 px-4">
-            <Logo size="md" showText={true} variant="blue" />
+          <div className="relative flex items-center h-16 flex-shrink-0 px-5 border-b border-white/[0.06]">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-soft-sm">
+                <span className="text-sm font-bold text-white font-display">U</span>
+              </div>
+              <div>
+                <h1 className="text-base font-semibold text-white/95 font-display tracking-tight">Účetní OS</h1>
+                <p className="text-[10px] text-white/40 font-medium">Klientský portál</p>
+              </div>
+            </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-2 py-4 space-y-1">
+          <nav className="relative flex-1 px-3 py-4 space-y-0.5">
             {navigation.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
               const Icon = item.icon
@@ -71,38 +83,41 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                   key={item.name}
                   href={item.href}
                   className={`
-                    group flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors
+                    group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
                     ${isActive
-                      ? 'bg-blue-500 text-white'
-                      : 'text-white/80 hover:bg-blue-500/50 hover:text-white'
+                      ? 'bg-white/[0.08] text-white nav-active-indicator'
+                      : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
                     }
                   `}
                 >
-                  <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
-                  {item.name}
+                  <span className="flex items-center">
+                    <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-amber-400' : 'text-white/40 group-hover:text-white/65'}`} />
+                    {item.name}
+                  </span>
+                  {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
                 </Link>
               )
             })}
           </nav>
 
           {/* Theme Toggle */}
-          <div className="px-2 pb-2">
-            <ThemeToggle variant="full" className="text-white/80 hover:text-white hover:bg-blue-500/50" />
+          <div className="relative px-3 pb-2">
+            <ThemeToggle variant="full" className="text-white/40 hover:text-white/70 hover:bg-white/[0.05] rounded-xl" />
           </div>
 
           {/* User section */}
-          <div className="flex-shrink-0 flex border-t border-white/10 p-4">
+          <div className="relative flex-shrink-0 flex border-t border-white/[0.06] p-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center w-full group hover:bg-blue-500/50 rounded-lg p-2 transition-colors">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-white text-blue-700 font-bold">
+                <button className="flex items-center w-full group hover:bg-white/[0.05] rounded-xl p-2 transition-all duration-200">
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="bg-white/10 text-white/80 text-sm font-semibold">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
                   <div className="ml-3 text-left">
-                    <p className="text-sm font-medium text-white">{userName}</p>
-                    <p className="text-xs text-white/70">Klient</p>
+                    <p className="text-sm font-medium text-white/90">{userName}</p>
+                    <p className="text-[11px] text-white/40">Klient</p>
                   </div>
                 </button>
               </DropdownMenuTrigger>
@@ -131,13 +146,18 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Mobile header */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between bg-blue-700 px-4 py-3">
-          <Logo size="sm" showText={true} variant="blue" />
+        <div className="flex items-center justify-between sidebar-gradient px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center">
+              <span className="text-xs font-bold text-white font-display">U</span>
+            </div>
+            <span className="text-sm font-semibold text-white/90 font-display">Účetní OS</span>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 text-white/90 hover:text-white">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-white text-blue-700 font-bold text-xs">
+                  <AvatarFallback className="bg-white/10 text-white font-bold text-xs">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
@@ -167,13 +187,13 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <div className="md:pl-64 flex flex-col min-h-screen overflow-hidden">
-        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-20 md:pb-6 min-w-0">
+        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-20 md:pb-6 min-w-0 page-enter">
           {children}
         </main>
       </div>
 
       {/* Mobile bottom tab bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-border/50 z-50">
         <nav className="flex justify-around">
           {navigation.slice(0, 5).map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
@@ -183,15 +203,16 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                 key={item.name}
                 href={item.href}
                 className={`
-                  flex flex-col items-center py-2 px-3 min-w-0 flex-1
+                  flex flex-col items-center py-2 px-3 min-w-0 flex-1 transition-colors
                   ${isActive
                     ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-gray-500 dark:text-gray-400'
+                    : 'text-gray-400 dark:text-gray-500'
                   }
                 `}
               >
                 <Icon className="h-5 w-5" />
                 <span className="text-[10px] mt-0.5 truncate">{item.name}</span>
+                {isActive && <div className="absolute bottom-1 w-5 h-0.5 rounded-full bg-blue-600 dark:bg-blue-400" />}
               </Link>
             )
           })}

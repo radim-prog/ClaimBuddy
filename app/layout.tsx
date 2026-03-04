@@ -1,10 +1,20 @@
 import type { Metadata, Viewport } from 'next'
-import { Plus_Jakarta_Sans } from 'next/font/google'
+import { DM_Sans, Plus_Jakarta_Sans } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
-const font = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'] })
+const dmSans = DM_Sans({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-dm-sans',
+})
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['500', '600', '700', '800'],
+  variable: '--font-plus-jakarta',
+})
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -27,7 +37,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="cs" suppressHydrationWarning>
-      <body className={font.className}>
+      <body className={`${dmSans.variable} ${plusJakarta.variable} font-sans`}>
         <ThemeProvider>
           {children}
           <Toaster position="top-center" richColors />

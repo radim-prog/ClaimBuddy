@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { Users, LayoutDashboard, Clock, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { Users, LayoutDashboard, Clock, ArrowRight, Eye, EyeOff, LogIn } from 'lucide-react'
 import { login } from '../auth/login/actions'
 
 export default function AccountantLandingPage() {
@@ -31,97 +31,113 @@ export default function AccountantLandingPage() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-100 dark:from-gray-950 dark:via-gray-900 dark:to-purple-950">
-      <div className="container mx-auto px-4 py-8 lg:py-16">
-        <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+  const features = [
+    {
+      icon: LayoutDashboard,
+      title: 'Master Dashboard',
+      desc: 'Přehled všech klientů na jednom místě',
+    },
+    {
+      icon: Users,
+      title: 'Správa klientů',
+      desc: 'Dokumenty, schvalování, komunikace',
+    },
+    {
+      icon: Clock,
+      title: 'Time Tracking',
+      desc: 'Sledování času a automatická fakturace',
+    },
+  ]
 
-          {/* Levá strana - Marketing */}
-          <div className="space-y-8">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-100 dark:from-purple-950/30 dark:via-background dark:to-purple-900/20 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[40%] -right-[20%] w-[60%] h-[80%] rounded-full bg-purple-400/[0.07] blur-3xl" />
+        <div className="absolute -bottom-[30%] -left-[15%] w-[50%] h-[60%] rounded-full bg-violet-300/[0.06] blur-3xl" />
+      </div>
+
+      <div className="container relative mx-auto px-4 py-8 lg:py-16">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-6xl mx-auto">
+
+          {/* Left side - Marketing */}
+          <div className="space-y-8 animate-fade-in-up">
             <div>
-              <h1 className="text-4xl lg:text-5xl font-bold text-purple-900 dark:text-purple-100 mb-4">
-                Účetní OS
-              </h1>
-              <p className="text-xl text-purple-700 dark:text-purple-300">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-soft">
+                  <span className="text-base font-bold text-white font-display">U</span>
+                </div>
+                <h1 className="text-3xl lg:text-4xl font-bold text-purple-900 dark:text-purple-100 font-display tracking-tight">
+                  Účetní OS
+                </h1>
+              </div>
+              <p className="text-lg text-purple-700 dark:text-purple-300 font-medium font-display">
                 Portál pro účetní
               </p>
             </div>
 
-            <p className="text-lg text-gray-600 dark:text-gray-300">
+            <p className="text-base text-muted-foreground leading-relaxed">
               Spravujte desítky klientů bez stresu. Master dashboard,
-              automatické urgování, time tracking a fakturace - vše
+              automatické urgování, time tracking a fakturace — vše
               co potřebujete pro efektivní práci.
             </p>
 
             <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                  <LayoutDashboard className="h-5 w-5 text-purple-600" />
+              {features.map((f, i) => (
+                <div
+                  key={f.title}
+                  className="flex items-start gap-4 group"
+                  style={{ animationDelay: `${(i + 1) * 100}ms` }}
+                >
+                  <div className="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-900/30 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors flex-shrink-0">
+                    <f.icon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm">{f.title}</h3>
+                    <p className="text-sm text-muted-foreground">{f.desc}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Master Dashboard</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Přehled všech klientů na jednom místě</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                  <Users className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Správa klientů</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Dokumenty, schvalování, komunikace</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                  <Clock className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Time Tracking</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Sledování času a automatická fakturace</p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Pravá strana - Login */}
-          <div>
-            <Card className="border-2 border-purple-200 dark:border-purple-800 shadow-xl">
+          {/* Right side - Login */}
+          <div className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+            <Card className="border-2 border-purple-200 dark:border-purple-800/50 shadow-soft-lg">
               <CardContent className="p-8">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-purple-900 dark:text-purple-100">Přihlášení</h2>
-                  <p className="text-gray-600 dark:text-gray-300 mt-1">Vstupte do svého účtu</p>
+                <div className="text-center mb-8">
+                  <h2 className="text-xl font-semibold text-purple-900 dark:text-purple-100 font-display">Přihlášení</h2>
+                  <p className="text-muted-foreground text-sm mt-1">Vstupte do svého účtu</p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="username">Jméno</Label>
+                    <Label htmlFor="username" className="text-sm font-medium">Jméno</Label>
                     <Input
                       id="username"
                       name="username"
                       type="text"
                       placeholder="Vaše jméno"
                       required
-                      className="border-purple-200 focus:border-purple-500"
+                      autoFocus
+                      className="h-11 border-purple-200 dark:border-purple-800/50 focus-visible:ring-purple-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Heslo</Label>
+                    <Label htmlFor="password" className="text-sm font-medium">Heslo</Label>
                     <div className="relative">
                       <Input
                         id="password"
                         name="password"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
+                        placeholder="Zadejte heslo"
                         required
-                        className="border-purple-200 focus:border-purple-500 pr-10"
+                        className="h-11 pr-10 border-purple-200 dark:border-purple-800/50 focus-visible:ring-purple-500"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -129,29 +145,36 @@ export default function AccountantLandingPage() {
                   </div>
                   <Button
                     type="submit"
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold h-11"
+                    className="w-full h-11 font-semibold bg-purple-600 hover:bg-purple-700 text-white"
                     disabled={loading}
                   >
-                    {loading ? 'Přihlašování...' : 'Přihlásit se'}
+                    {loading ? (
+                      'Přihlašování...'
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <LogIn className="h-4 w-4" />
+                        Přihlásit se
+                      </span>
+                    )}
                   </Button>
                 </form>
 
-                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-                    Přihlaste se jménem a heslem od administrátora.
+                <div className="mt-8 pt-6 border-t border-purple-100 dark:border-purple-800/30">
+                  <p className="text-xs text-muted-foreground text-center">
+                    Účty vytváří administrátor systému.
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Přepínač na klientskou verzi */}
+            {/* Switch to client */}
             <div className="mt-6 text-center">
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                className="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors group"
               >
                 Jste klient? Přejít na klientský portál
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
           </div>

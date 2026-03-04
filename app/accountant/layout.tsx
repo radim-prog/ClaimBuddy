@@ -15,6 +15,7 @@ import {
   Shield,
   CalendarCheck,
   MoreHorizontal,
+  ChevronRight,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -92,17 +93,30 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const roleLabel = userRole === 'admin' ? 'Admin' : userRole === 'accountant' ? 'Účetní' : userRole === 'assistant' ? 'Asistentka' : 'Klient'
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
-        <div className="flex flex-col flex-grow bg-gradient-to-b from-purple-700 via-purple-800 to-purple-900 overflow-y-auto">
+      <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col z-30">
+        <div className="flex flex-col flex-grow sidebar-gradient shadow-sidebar overflow-y-auto custom-scrollbar">
+          {/* Subtle texture overlay */}
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Cpath d=\'M0 40L40 0H20L0 20M40 40V20L20 40\'/%3E%3C/g%3E%3C/svg%3E")' }}
+          />
+
           {/* Logo */}
-          <div className="flex items-center h-14 flex-shrink-0 px-5 border-b border-white/10">
-            <Logo size="md" />
+          <div className="relative flex items-center h-16 flex-shrink-0 px-5 border-b border-white/[0.06]">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-soft-sm">
+                <span className="text-sm font-bold text-white font-display">U</span>
+              </div>
+              <div>
+                <h1 className="text-base font-semibold text-white/95 font-display tracking-tight">Účetní OS</h1>
+                <p className="text-[10px] text-white/40 font-medium">Portál pro účetní</p>
+              </div>
+            </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-0.5">
+          <nav className="relative flex-1 px-3 py-4 space-y-0.5">
             {navigation.map((item) => {
               const isActive = item.activeMatch
                 ? item.activeMatch.some(p => pathname.startsWith(p))
@@ -116,33 +130,36 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                   className={`
                     group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
                     ${isActive
-                      ? 'bg-white/15 text-white shadow-sm backdrop-blur-sm'
-                      : 'text-white/70 hover:bg-white/10 hover:text-white'
+                      ? 'bg-white/[0.08] text-white nav-active-indicator'
+                      : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
                     }
                   `}
                 >
                   <span className="flex items-center">
-                    <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${isActive ? 'text-white' : 'text-white/60 group-hover:text-white/90'}`} />
+                    <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-amber-400' : 'text-white/40 group-hover:text-white/65'}`} />
                     {item.name}
                   </span>
-                  {item.badge === 'dynamic' && inboxCount > 0 && (
-                    <span className="ml-auto inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-yellow-400 text-gray-900 rounded-full min-w-[1.25rem]">
-                      {inboxCount}
-                    </span>
-                  )}
-                  {item.badge === 'attention' && attentionTotals.total > 0 && (
-                    <span className="ml-auto inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">
-                      {attentionTotals.total}
-                    </span>
-                  )}
+                  <span className="flex items-center gap-1.5">
+                    {item.badge === 'dynamic' && inboxCount > 0 && (
+                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-amber-400 text-gray-900 rounded-full min-w-[1.25rem]">
+                        {inboxCount}
+                      </span>
+                    )}
+                    {item.badge === 'attention' && attentionTotals.total > 0 && (
+                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">
+                        {attentionTotals.total}
+                      </span>
+                    )}
+                    {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
+                  </span>
                 </Link>
               )
             })}
 
             {/* ADMIN SECTION */}
             {showAdmin && (
-              <div className="pt-3 mt-3 border-t border-white/10">
-                <p className="px-3 text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1.5">
+              <div className="pt-3 mt-3 border-t border-white/[0.06]">
+                <p className="px-3 text-[10px] font-semibold text-amber-400/60 uppercase tracking-widest mb-1.5">
                   Administrace
                 </p>
                 {adminNavigation.map((item) => {
@@ -153,15 +170,18 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                       key={item.name}
                       href={item.href}
                       className={`
-                        group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
+                        group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
                         ${isActive
-                          ? 'bg-white/15 text-white shadow-sm'
-                          : 'text-white/70 hover:bg-white/10 hover:text-white'
+                          ? 'bg-white/[0.08] text-white nav-active-indicator'
+                          : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
                         }
                       `}
                     >
-                      <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${isActive ? 'text-white' : 'text-white/60'}`} />
-                      {item.name}
+                      <span className="flex items-center">
+                        <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0 ${isActive ? 'text-amber-400' : 'text-white/40'}`} />
+                        {item.name}
+                      </span>
+                      {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
                     </Link>
                   )
                 })}
@@ -170,7 +190,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
 
             {/* DEMO FEATURES SECTION */}
             {demoFeatures.length > 0 && (
-              <div className="pt-3 mt-3 border-t border-white/10">
+              <div className="pt-3 mt-3 border-t border-white/[0.06]">
                 <p className="px-3 text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1.5">
                   Nové Funkce
                 </p>
@@ -184,8 +204,8 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                       className={`
                         group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
                         ${isActive
-                          ? 'bg-white/15 text-white shadow-sm'
-                          : 'text-white/70 hover:bg-white/10 hover:text-white'
+                          ? 'bg-white/[0.08] text-white'
+                          : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
                         }
                       `}
                     >
@@ -193,7 +213,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                         <Icon className={`mr-3 h-[18px] w-[18px] flex-shrink-0`} />
                         {item.name}
                       </span>
-                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-yellow-400 text-gray-900 rounded-full">
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-400 text-gray-900 rounded-full">
                         {item.badge}
                       </span>
                     </Link>
@@ -203,32 +223,37 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
             )}
 
             {/* Tools */}
-            <div className="pt-3 mt-3 border-t border-white/10 space-y-0.5">
+            <div className="pt-3 mt-3 border-t border-white/[0.06] space-y-0.5">
               <button
                 onClick={() => startTour()}
-                className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl text-white/50 hover:bg-white/10 hover:text-white/80 transition-all duration-200"
+                className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200"
               >
                 <BookOpen className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
                 Průvodce
               </button>
-              <ThemeToggle variant="full" className="text-white/50 hover:text-white/80 hover:bg-white/10 rounded-xl" />
+              <ThemeToggle variant="full" className="text-white/40 hover:text-white/70 hover:bg-white/[0.05] rounded-xl" />
             </div>
           </nav>
 
           {/* User section */}
-          <div className="flex-shrink-0 flex border-t border-white/10 p-3">
+          <div className="relative flex-shrink-0 flex border-t border-white/[0.06] p-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center w-full group hover:bg-white/10 rounded-xl p-2 transition-all duration-200">
+                <button className="flex items-center w-full group hover:bg-white/[0.05] rounded-xl p-2 transition-all duration-200">
                   <Avatar className="h-9 w-9">
-                    <AvatarFallback className="bg-white/20 text-white text-sm font-semibold">
+                    <AvatarFallback className="bg-white/10 text-white/80 text-sm font-semibold">
                       {userInitials || '..'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="ml-3 text-left">
                     <p className="text-sm font-medium text-white/90">{userName || 'Načítání...'}</p>
-                    <p className="text-[11px] text-white/50">{roleLabel}</p>
+                    <p className="text-[11px] text-white/40">{roleLabel}</p>
                   </div>
+                  {userRole === 'admin' && (
+                    <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-amber-400/20 text-amber-300 rounded-md border border-amber-400/20">
+                      ADMIN
+                    </span>
+                  )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -260,18 +285,23 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Mobile header - minimal */}
+      {/* Mobile header */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between bg-gradient-to-r from-purple-700 to-purple-800 px-4 py-3">
-          <Logo size="sm" />
+        <div className="flex items-center justify-between sidebar-gradient px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center">
+              <span className="text-xs font-bold text-white font-display">U</span>
+            </div>
+            <span className="text-sm font-semibold text-white/90 font-display">Účetní OS</span>
+          </div>
           <div className="flex items-center gap-2">
-            <ThemeToggle variant="icon" className="text-white/70 hover:text-white hover:bg-white/10 rounded-lg" />
+            <ThemeToggle variant="icon" className="text-white/50 hover:text-white hover:bg-white/10 rounded-lg" />
           </div>
         </div>
       </div>
 
       {/* Mobile bottom navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 safe-area-bottom">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-border/50 safe-area-bottom">
         <nav className="flex items-center justify-around px-1 py-1">
           {navigation.slice(0, 4).map((item) => {
             const isActive = item.activeMatch
@@ -291,7 +321,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 <div className="relative">
                   <Icon className="h-5 w-5" />
                   {item.badge === 'dynamic' && inboxCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-yellow-400 text-gray-900 rounded-full">
+                    <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-amber-400 text-gray-900 rounded-full">
                       {inboxCount}
                     </span>
                   )}
@@ -302,6 +332,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                   )}
                 </div>
                 <span className={`text-[10px] mt-0.5 ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.name}</span>
+                {isActive && <div className="absolute bottom-1 w-5 h-0.5 rounded-full bg-purple-600 dark:bg-purple-400" />}
               </Link>
             )
           })}
@@ -330,7 +361,6 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           >
             <div className="w-12 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mt-3 mb-2" />
             <div className="px-4 pb-4 space-y-1">
-              {/* Fakturace */}
               <Link
                 href="/accountant/invoicing"
                 onClick={() => setMobileMenuOpen(false)}
@@ -344,7 +374,6 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 <span className="text-sm font-medium">Fakturace</span>
               </Link>
 
-              {/* Nastavení */}
               <Link
                 href="/accountant/settings"
                 onClick={() => setMobileMenuOpen(false)}
@@ -358,7 +387,6 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 <span className="text-sm font-medium">Nastavení</span>
               </Link>
 
-              {/* Admin */}
               {showAdmin && (
                 <Link
                   href="/accountant/admin"
@@ -374,7 +402,6 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 </Link>
               )}
 
-              {/* Profil */}
               <Link
                 href="/accountant/profile"
                 onClick={() => setMobileMenuOpen(false)}
@@ -384,7 +411,6 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 <span className="text-sm font-medium">Profil</span>
               </Link>
 
-              {/* Průvodce */}
               <button
                 onClick={() => { setMobileMenuOpen(false); startTour(); }}
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800 transition-all duration-200"
@@ -393,10 +419,8 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 <span className="text-sm font-medium">Průvodce</span>
               </button>
 
-              {/* Divider */}
               <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
 
-              {/* User info + logout */}
               <div className="flex items-center justify-between px-3 py-2">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
@@ -428,7 +452,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           <GlobalDeadlineAlert />
         )}
 
-        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-24 md:pb-6">
+        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-24 md:pb-6 page-enter">
           {children}
         </main>
         <QuickAddButton />

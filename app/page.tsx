@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { FileText, PieChart, Bell, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { FileText, PieChart, Bell, ArrowRight, Eye, EyeOff, LogIn } from 'lucide-react'
 import { login } from './auth/login/actions'
 
 export default function ClientLandingPage() {
@@ -31,97 +31,113 @@ export default function ClientLandingPage() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
-      <div className="container mx-auto px-4 py-8 lg:py-16">
-        <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+  const features = [
+    {
+      icon: FileText,
+      title: 'Nahrávání dokladů',
+      desc: 'Jednoduše nahrajte faktury a účtenky',
+    },
+    {
+      icon: PieChart,
+      title: 'Přehled financí',
+      desc: 'DPH, daně a uzávěrky na jednom místě',
+    },
+    {
+      icon: Bell,
+      title: 'Upozornění',
+      desc: 'Včas vás upozorníme na důležité termíny',
+    },
+  ]
 
-          {/* Levá strana - Marketing */}
-          <div className="space-y-8">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-blue-950/30 dark:via-background dark:to-blue-900/20 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[40%] -right-[20%] w-[60%] h-[80%] rounded-full bg-blue-400/[0.07] blur-3xl" />
+        <div className="absolute -bottom-[30%] -left-[15%] w-[50%] h-[60%] rounded-full bg-sky-300/[0.06] blur-3xl" />
+      </div>
+
+      <div className="container relative mx-auto px-4 py-8 lg:py-16">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-6xl mx-auto">
+
+          {/* Left side - Marketing */}
+          <div className="space-y-8 animate-fade-in-up">
             <div>
-              <h1 className="text-4xl lg:text-5xl font-bold text-blue-900 mb-4">
-                Účetní OS
-              </h1>
-              <p className="text-xl text-blue-700">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-soft">
+                  <span className="text-base font-bold text-white font-display">U</span>
+                </div>
+                <h1 className="text-3xl lg:text-4xl font-bold text-blue-900 dark:text-blue-100 font-display tracking-tight">
+                  Účetní OS
+                </h1>
+              </div>
+              <p className="text-lg text-blue-700 dark:text-blue-300 font-medium font-display">
                 Klientský portál
               </p>
             </div>
 
-            <p className="text-lg text-gray-600 dark:text-gray-300">
+            <p className="text-base text-muted-foreground leading-relaxed">
               Mějte přehled o svém účetnictví kdykoliv a odkudkoliv.
               Nahrávejte doklady, sledujte stav uzávěrek a komunikujte
-              se svým účetním - vše na jednom místě.
+              se svým účetním — vše na jednom místě.
             </p>
 
             <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FileText className="h-5 w-5 text-blue-600" />
+              {features.map((f, i) => (
+                <div
+                  key={f.title}
+                  className="flex items-start gap-4 group"
+                  style={{ animationDelay: `${(i + 1) * 100}ms` }}
+                >
+                  <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors flex-shrink-0">
+                    <f.icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm">{f.title}</h3>
+                    <p className="text-sm text-muted-foreground">{f.desc}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Nahrávání dokladů</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Jednoduše nahrajte faktury a účtenky</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <PieChart className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Přehled financí</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">DPH, daně a uzávěrky na jednom místě</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Bell className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Upozornění</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Včas vás upozorníme na důležité termíny</p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Pravá strana - Login */}
-          <div>
-            <Card className="border-2 border-blue-200 shadow-xl">
+          {/* Right side - Login */}
+          <div className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+            <Card className="border-2 border-blue-200 dark:border-blue-800/50 shadow-soft-lg">
               <CardContent className="p-8">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-blue-900">Přihlášení</h2>
-                  <p className="text-gray-600 dark:text-gray-300 mt-1">Vstupte do svého účtu</p>
+                <div className="text-center mb-8">
+                  <h2 className="text-xl font-semibold text-blue-900 dark:text-blue-100 font-display">Přihlášení</h2>
+                  <p className="text-muted-foreground text-sm mt-1">Vstupte do svého účtu</p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="username">Jméno</Label>
+                    <Label htmlFor="username" className="text-sm font-medium">Jméno</Label>
                     <Input
                       id="username"
                       name="username"
                       type="text"
                       placeholder="Vaše jméno"
                       required
-                      className="border-blue-200 focus:border-blue-500"
+                      autoFocus
+                      className="h-11 border-blue-200 dark:border-blue-800/50 focus-visible:ring-blue-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Heslo</Label>
+                    <Label htmlFor="password" className="text-sm font-medium">Heslo</Label>
                     <div className="relative">
                       <Input
                         id="password"
                         name="password"
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
+                        placeholder="Zadejte heslo"
                         required
-                        className="border-blue-200 focus:border-blue-500 pr-10"
+                        className="h-11 pr-10 border-blue-200 dark:border-blue-800/50 focus-visible:ring-blue-500"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -129,29 +145,36 @@ export default function ClientLandingPage() {
                   </div>
                   <Button
                     type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold h-11"
+                    className="w-full h-11 font-semibold bg-blue-600 hover:bg-blue-700 text-white"
                     disabled={loading}
                   >
-                    {loading ? 'Přihlašování...' : 'Přihlásit se'}
+                    {loading ? (
+                      'Přihlašování...'
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <LogIn className="h-4 w-4" />
+                        Přihlásit se
+                      </span>
+                    )}
                   </Button>
                 </form>
 
-                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                <div className="mt-8 pt-6 border-t border-blue-100 dark:border-blue-800/30">
+                  <p className="text-xs text-muted-foreground text-center">
                     Nemáte účet? Kontaktujte svého účetního.
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Přepínač na účetní verzi */}
+            {/* Switch to accountant */}
             <div className="mt-6 text-center">
               <Link
                 href="/ucetni"
-                className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium transition-colors"
+                className="inline-flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors group"
               >
                 Jste účetní? Přejít na portál pro účetní
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
           </div>
