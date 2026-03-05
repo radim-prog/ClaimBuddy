@@ -2,14 +2,10 @@
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { ClosureDetailModal } from '@/components/closure-detail-modal'
-import { ActivityFeed } from '@/components/accountant/activity-feed'
-import { TileContainer } from '@/components/tiles/tile-container'
-import type { TileDefinition } from '@/lib/types/layout'
-import { useSettings } from '@/lib/contexts/settings-context'
-import { AttentionCard } from '@/components/accountant/attention-card'
-import { CheckCircle2, Circle, Clock, ArrowRight } from 'lucide-react'
+// settings context removed — no longer needed on dashboard
+import { useAttention } from '@/lib/contexts/attention-context'
+import { Clock, ArrowRight, AlertTriangle, FileX, MessageCircle, Upload, CheckCircle2, Circle } from 'lucide-react'
 
 type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
 
@@ -148,217 +144,6 @@ function getMonthStatus(closureMap: Map<string, MonthlyClosure>, companyId: stri
   return 'uploaded'
 }
 
-// Generate deadline alerts from closures
-function generateDeadlines(closures: MonthlyClosure[], companies: Company[], deadlineDay = 15) {
-  const deadlines: Array<{
-    id: string
-    title: string
-    dueDate: string
-    type: 'critical' | 'urgent' | 'warning'
-    caseId?: string
-    companyId?: string
-    companyName?: string
-    // Extended details for expandable view
-    description?: string
-    checklist?: Array<{ id: string; label: string; completed: boolean }>
-    assignedTo?: string
-    attachments?: Array<{ name: string; url: string }>
-  }> = []
-
-  const now = new Date()
-  // Build lookup map for O(1) company access instead of O(n) find per closure
-  const companyMap = new Map(companies.map(c => [c.id, c]))
-
-  closures.forEach(closure => {
-    const company = companyMap.get(closure.company_id)
-    if (!company) return
-
-    // Parse period (e.g., "2025-01")
-    const [year, month] = closure.period.split('-').map(Number)
-
-    // Deadline is the configured day of the following month
-    const deadline = new Date(year, month, deadlineDay) // month is already 1-indexed in Date constructor
-    const daysUntil = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-
-    // Check if any documents are missing
-    const hasMissing =
-      closure.bank_statement_status === 'missing' ||
-      closure.expense_documents_status === 'missing' ||
-      closure.income_invoices_status === 'missing'
-
-    const hasUploaded =
-      closure.bank_statement_status === 'uploaded' ||
-      closure.expense_documents_status === 'uploaded' ||
-      closure.income_invoices_status === 'uploaded'
-
-    if (hasMissing && daysUntil <= 7) {
-      // Critical: missing documents with approaching deadline
-      const missingDocs: string[] = []
-      const checklist: Array<{ id: string; label: string; completed: boolean }> = []
-
-      if (closure.bank_statement_status === 'missing') {
-        missingDocs.push('výpis')
-        checklist.push({ id: `${closure.id}-bank`, label: 'Výpis z banky', completed: false })
-      } else {
-        checklist.push({ id: `${closure.id}-bank`, label: 'Výpis z banky', completed: true })
-      }
-
-      if (closure.expense_documents_status === 'missing') {
-        missingDocs.push('náklady')
-        checklist.push({ id: `${closure.id}-expense`, label: 'Nákladové doklady', completed: false })
-      } else {
-        checklist.push({ id: `${closure.id}-expense`, label: 'Nákladové doklady', completed: true })
-      }
-
-      if (closure.income_invoices_status === 'missing') {
-        missingDocs.push('příjmy')
-        checklist.push({ id: `${closure.id}-income`, label: 'Příjmové faktury', completed: false })
-      } else {
-        checklist.push({ id: `${closure.id}-income`, label: 'Příjmové faktury', completed: true })
-      }
-
-      deadlines.push({
-        id: `${closure.id}-missing`,
-        title: `Uzávěrka ${months[month - 1]} - chybí ${missingDocs.join(', ')}`,
-        dueDate: deadline.toISOString(),
-        type: daysUntil < 0 ? 'critical' : daysUntil <= 2 ? 'critical' : 'urgent',
-        caseId: closure.id,
-        companyId: company.id,
-        companyName: company.name,
-        description: `Měsíční uzávěrka za ${months[month - 1]} ${year} pro firmu ${company.name}. Klient musí dodat chybějící dokumenty do ${deadline.toLocaleDateString('cs-CZ')}.`,
-        checklist,
-        assignedTo: 'Účetní'
-      })
-    }
-
-    if (hasUploaded && !hasMissing && daysUntil <= 14) {
-      // Urgent: uploaded documents waiting for approval
-      const checklist: Array<{ id: string; label: string; completed: boolean }> = []
-
-      checklist.push({
-        id: `${closure.id}-review-bank`,
-        label: 'Zkontrolovat výpis z banky',
-        completed: closure.bank_statement_status === 'approved'
-      })
-      checklist.push({
-        id: `${closure.id}-review-expense`,
-        label: 'Zkontrolovat nákladové doklady',
-        completed: closure.expense_documents_status === 'approved'
-      })
-      checklist.push({
-        id: `${closure.id}-review-income`,
-        label: 'Zkontrolovat příjmové faktury',
-        completed: closure.income_invoices_status === 'approved'
-      })
-      checklist.push({
-        id: `${closure.id}-approve`,
-        label: 'Schválit celou uzávěrku',
-        completed: false
-      })
-
-      deadlines.push({
-        id: `${closure.id}-approval`,
-        title: `Uzávěrka ${months[month - 1]} - čeká na schválení`,
-        dueDate: deadline.toISOString(),
-        type: daysUntil <= 3 ? 'urgent' : 'warning',
-        caseId: closure.id,
-        companyId: company.id,
-        companyName: company.name,
-        description: `Klient ${company.name} nahrál všechny dokumenty pro uzávěrku za ${months[month - 1]} ${year}. Je třeba zkontrolovat a schválit.`,
-        checklist,
-        assignedTo: 'Účetní',
-        attachments: []
-      })
-    }
-  })
-
-  // Sort by urgency: critical first, then by date
-  return deadlines.sort((a, b) => {
-    if (a.type === 'critical' && b.type !== 'critical') return -1
-    if (a.type !== 'critical' && b.type === 'critical') return 1
-    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-  })
-}
-
-// Generate deadline tasks for dashboard widget
-function generateDeadlineTasks(closures: MonthlyClosure[], companies: Company[], deadlineDay = 15) {
-  const tasks: Array<{
-    id: string
-    title: string
-    dueDate: string
-    priority: 'critical' | 'high' | 'medium' | 'low'
-    status: 'overdue' | 'today' | 'this-week' | 'later'
-    companyId?: string
-    companyName?: string
-    assignedTo?: string
-  }> = []
-
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  // Build lookup map for O(1) company access instead of O(n) find per closure
-  const companyMap = new Map(companies.map(c => [c.id, c]))
-
-  closures.forEach(closure => {
-    const company = companyMap.get(closure.company_id)
-    if (!company) return
-
-    const [year, month] = closure.period.split('-').map(Number)
-    const deadline = new Date(year, month, deadlineDay)
-    const daysUntil = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-
-    const hasMissing =
-      closure.bank_statement_status === 'missing' ||
-      closure.expense_documents_status === 'missing' ||
-      closure.income_invoices_status === 'missing'
-
-    const hasUploaded =
-      closure.bank_statement_status === 'uploaded' ||
-      closure.expense_documents_status === 'uploaded' ||
-      closure.income_invoices_status === 'uploaded'
-
-    if (hasMissing || hasUploaded) {
-      let status: 'overdue' | 'today' | 'this-week' | 'later'
-      let priority: 'critical' | 'high' | 'medium' | 'low'
-
-      if (daysUntil < 0) {
-        status = 'overdue'
-        priority = 'critical'
-      } else if (daysUntil === 0) {
-        status = 'today'
-        priority = 'critical'
-      } else if (daysUntil <= 7) {
-        status = 'this-week'
-        priority = hasMissing ? 'high' : 'medium'
-      } else {
-        status = 'later'
-        priority = hasMissing ? 'medium' : 'low'
-      }
-
-      const missingDocs: string[] = []
-      if (closure.bank_statement_status === 'missing') missingDocs.push('výpis')
-      if (closure.expense_documents_status === 'missing') missingDocs.push('náklady')
-      if (closure.income_invoices_status === 'missing') missingDocs.push('příjmy')
-
-      const title = hasMissing
-        ? `${months[month - 1]} - chybí ${missingDocs.join(', ')}`
-        : `${months[month - 1]} - schválit dokumenty`
-
-      tasks.push({
-        id: closure.id,
-        title,
-        dueDate: deadline.toISOString(),
-        priority,
-        status,
-        companyId: company.id,
-        companyName: company.name,
-        assignedTo: 'Účetní'
-      })
-    }
-  })
-
-  return tasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-}
-
 const StatusCell = React.memo(function StatusCell({
   companyId,
   companyName,
@@ -484,13 +269,7 @@ const StatusCell = React.memo(function StatusCell({
   )
 })
 
-const DASHBOARD_TILES: TileDefinition[] = [
-  { id: 'today-tasks', label: 'Dnešní úkoly', defaultVisible: true },
-  { id: 'attention-summary', label: 'Vyžaduje pozornost', defaultVisible: true },
-  { id: 'my-time', label: 'Můj čas tento měsíc', defaultVisible: true },
-  { id: 'master-matrix', label: 'Master Matice', defaultVisible: true },
-  { id: 'activity-feed', label: 'Poslední aktivita', defaultVisible: true },
-]
+// Dashboard tiles removed — using direct compact layout
 
 export default function AccountantDashboard() {
   const [data, setData] = useState<MatrixData | null>(null)
@@ -503,8 +282,7 @@ export default function AccountantDashboard() {
   const [selectedCompanyName, setSelectedCompanyName] = useState('')
   const [todayTasks, setTodayTasks] = useState<GtdTask[]>([])
   const [timeSummary, setTimeSummary] = useState<TimeSummary | null>(null)
-  const { userName } = useAccountantUser()
-  const { settings } = useSettings()
+  // settings removed — closureDeadlineDay no longer used here
 
   useEffect(() => {
     async function fetchData() {
@@ -542,12 +320,6 @@ export default function AccountantDashboard() {
       .then(json => { if (json) setTimeSummary(json) })
       .catch(() => {})
   }, [])
-
-  // Generate deadline tasks - MUST be before conditional returns (Rules of Hooks)
-  const deadlineTasks = useMemo(() => {
-    if (!data) return []
-    return generateDeadlineTasks(data.closures, data.companies, settings.closureDeadlineDay)
-  }, [data, settings.closureDeadlineDay])
 
   const handleCellClick = useCallback((closure: MonthlyClosure, companyName: string) => {
     setSelectedClosure(closure)
@@ -601,145 +373,18 @@ export default function AccountantDashboard() {
     return `${h}h ${m}m`
   }, [])
 
-  const renderTile = useCallback((tileId: string) => {
-    switch (tileId) {
-      case 'today-tasks': {
-        const overdue = todayTasks.filter(t => {
-          if (!t.due_date) return false
-          return t.due_date < new Date().toISOString().split('T')[0]
-        })
-        const dueToday = todayTasks.filter(t => {
-          if (!t.due_date) return false
-          return t.due_date === new Date().toISOString().split('T')[0]
-        })
-        const upcoming = todayTasks.filter(t => !t.due_date)
+  // Attention data
+  const { totals: attentionTotals, loading: attentionLoading } = useAttention()
 
-        return (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft-sm hover:shadow-soft-md transition-all duration-200 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                <Clock className="h-4 w-4 text-purple-500" />
-                Dnešní úkoly
-                {todayTasks.length > 0 && (
-                  <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs px-2 py-0.5 rounded-full">
-                    {todayTasks.length}
-                  </span>
-                )}
-              </h3>
-              <Link href="/accountant/tasks" className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 flex items-center gap-1">
-                Všechny úkoly <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
+  // Task counts for compact strip
+  const overdueCount = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return todayTasks.filter(t => t.due_date && t.due_date < today).length
+  }, [todayTasks])
 
-            {todayTasks.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
-                Žádné úkoly na dnes
-              </p>
-            ) : (
-              <div className="space-y-1">
-                {overdue.length > 0 && (
-                  <div className="text-xs font-medium text-red-600 dark:text-red-400 mb-1 mt-1">Po termínu ({overdue.length})</div>
-                )}
-                {overdue.map(task => (
-                  <Link key={task.id} href={`/accountant/tasks`} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-red-50 dark:hover:bg-red-900/10 group text-sm">
-                    <Circle className="h-4 w-4 text-red-400 shrink-0" />
-                    <span className="truncate text-gray-900 dark:text-white">{task.title}</span>
-                    {task.company_name && <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{task.company_name}</span>}
-                  </Link>
-                ))}
-
-                {dueToday.length > 0 && (
-                  <div className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-1 mt-2">Dnes ({dueToday.length})</div>
-                )}
-                {dueToday.map(task => (
-                  <Link key={task.id} href={`/accountant/tasks`} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-orange-50 dark:hover:bg-orange-900/10 group text-sm">
-                    <Circle className="h-4 w-4 text-orange-400 shrink-0" />
-                    <span className="truncate text-gray-900 dark:text-white">{task.title}</span>
-                    {task.company_name && <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{task.company_name}</span>}
-                  </Link>
-                ))}
-
-                {upcoming.length > 0 && overdue.length === 0 && dueToday.length === 0 && (
-                  <>
-                    {upcoming.slice(0, 5).map(task => (
-                      <Link key={task.id} href={`/accountant/tasks`} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 group text-sm">
-                        <Circle className="h-4 w-4 text-gray-300 dark:text-gray-600 shrink-0" />
-                        <span className="truncate text-gray-900 dark:text-white">{task.title}</span>
-                        {task.company_name && <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{task.company_name}</span>}
-                      </Link>
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        )
-      }
-
-      case 'my-time': {
-        const monthName = new Date().toLocaleDateString('cs-CZ', { month: 'long' })
-        return (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft-sm hover:shadow-soft-md transition-all duration-200 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                Můj čas – {monthName}
-              </h3>
-              <Link href="/accountant/invoicing" className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 flex items-center gap-1">
-                Fakturace <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-
-            {!timeSummary || timeSummary.entry_count === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
-                Žádné záznamy za {monthName}
-              </p>
-            ) : (
-              <>
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatMinutes(timeSummary.total_minutes)}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">celkem</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{Math.round(timeSummary.billable_amount).toLocaleString('cs-CZ')} Kč</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">k fakturaci</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-600 dark:text-gray-300">{timeSummary.entry_count}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">záznamů</div>
-                  </div>
-                </div>
-
-                {timeSummary.by_company.length > 0 && (
-                  <div className="space-y-1.5">
-                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Top klienti</div>
-                    {timeSummary.by_company.slice(0, 5).map(c => (
-                      <div key={c.company_id} className="flex items-center justify-between text-sm py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                        <Link href={`/accountant/clients/${c.company_id}`} className="text-gray-900 dark:text-white hover:text-purple-600 truncate">
-                          {c.company_name}
-                        </Link>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-gray-500 dark:text-gray-400 text-xs">{formatMinutes(c.total_minutes)}</span>
-                          {c.billable_amount > 0 && (
-                            <span className="text-purple-600 dark:text-purple-400 text-xs font-medium">{Math.round(c.billable_amount).toLocaleString('cs-CZ')} Kč</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )
-      }
-
-      case 'attention-summary':
-        return <AttentionCard />
-      case 'master-matrix':
-        return (
-          <>
+  const renderMatrix = useCallback(() => {
+    return (
+      <>
             {/* Header with year selector */}
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
@@ -809,36 +454,6 @@ export default function AccountantDashboard() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {stats.uploaded > 0 && (
-                    <button
-                      onClick={() => {
-                        if (!data) return
-                        const now = new Date()
-                        const currentPeriod = `${selectedYear}-${String(currentMonth + 1).padStart(2, '0')}`
-                        const updatedClosures = data.closures.map(c => {
-                          if (c.period !== currentPeriod) return c
-                          const needsApproval =
-                            c.bank_statement_status === 'uploaded' ||
-                            c.expense_documents_status === 'uploaded' ||
-                            c.income_invoices_status === 'uploaded'
-                          if (!needsApproval) return c
-                          return {
-                            ...c,
-                            bank_statement_status: c.bank_statement_status === 'uploaded' ? 'approved' as const : c.bank_statement_status,
-                            expense_documents_status: c.expense_documents_status === 'uploaded' ? 'approved' as const : c.expense_documents_status,
-                            income_invoices_status: c.income_invoices_status === 'uploaded' ? 'approved' as const : c.income_invoices_status,
-                            updated_by: userName || 'Účetní',
-                            updated_at: now.toISOString(),
-                          }
-                        })
-                        setData({ ...data, closures: updatedClosures })
-                      }}
-                      className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all duration-200"
-                    >
-                      Hromadně schválit aktuální měsíc
-                    </button>
-                  )}
-
                   <button
                     onClick={() => {
                       if (!data) return
@@ -944,17 +559,7 @@ export default function AccountantDashboard() {
             </div>
           </>
         )
-      case 'activity-feed':
-        return (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft-sm hover:shadow-soft-md transition-all duration-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Poslední aktivita</h3>
-            <ActivityFeed limit={10} />
-          </div>
-        )
-      default:
-        return null
-    }
-  }, [companies, closures, selectedYear, filter, filteredCompanies, stats, data, userName, handleCellClick, todayTasks, timeSummary, formatMinutes])
+  }, [companies, closures, selectedYear, filter, filteredCompanies, stats, data, handleCellClick])
 
   if (loading) {
     return (
@@ -992,15 +597,102 @@ export default function AccountantDashboard() {
     )
   }
 
-  return (
-    <div className="min-w-0 overflow-hidden">
-      <TileContainer
-        pageKey="accountant-dashboard"
-        definitions={DASHBOARD_TILES}
-        renderTile={renderTile}
-      />
+  const monthName = new Date().toLocaleDateString('cs-CZ', { month: 'long' })
 
-      {/* Closure Detail Modal - always present */}
+  return (
+    <div className="min-w-0 overflow-hidden space-y-5">
+
+      {/* Compact info strip — 3 widgets in one row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+        {/* Dnešní úkoly */}
+        <Link href="/accountant/work" className="group">
+          <div className="flex items-center gap-3 rounded-xl border border-gray-200/80 dark:border-gray-700/60 bg-white dark:bg-gray-900/60 px-4 py-3 hover:border-purple-300 dark:hover:border-purple-700 transition-all">
+            <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-purple-50 dark:bg-purple-900/20 shrink-0">
+              <Clock className="h-4 w-4 text-purple-500" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">{todayTasks.length}</span>
+                <span className="text-sm text-gray-500">úkolů na dnes</span>
+              </div>
+              {overdueCount > 0 && (
+                <span className="text-xs text-red-600 dark:text-red-400">{overdueCount} po termínu</span>
+              )}
+            </div>
+            <ArrowRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          </div>
+        </Link>
+
+        {/* Vyžaduje pozornost */}
+        <div className="flex items-center gap-3 rounded-xl border border-gray-200/80 dark:border-gray-700/60 bg-white dark:bg-gray-900/60 px-4 py-3">
+          <div className={`flex items-center justify-center h-9 w-9 rounded-lg shrink-0 ${attentionTotals.total > 0 ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
+            {attentionTotals.total > 0
+              ? <AlertTriangle className="h-4 w-4 text-amber-500" />
+              : <CheckCircle2 className="h-4 w-4 text-green-500" />
+            }
+          </div>
+          <div className="min-w-0 flex-1">
+            {attentionLoading ? (
+              <span className="text-sm text-gray-400">Načítám...</span>
+            ) : attentionTotals.total === 0 ? (
+              <span className="text-sm text-green-600 dark:text-green-400 font-medium">Vše v pořádku</span>
+            ) : (
+              <div className="flex items-center gap-3 flex-wrap">
+                {attentionTotals.missing_documents > 0 && (
+                  <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                    <FileX className="h-3 w-3" />{attentionTotals.missing_documents}
+                  </span>
+                )}
+                {attentionTotals.unread_messages > 0 && (
+                  <span className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                    <MessageCircle className="h-3 w-3" />{attentionTotals.unread_messages}
+                  </span>
+                )}
+                {attentionTotals.pending_uploads > 0 && (
+                  <span className="flex items-center gap-1 text-xs text-yellow-600 dark:text-yellow-400">
+                    <Upload className="h-3 w-3" />{attentionTotals.pending_uploads}
+                  </span>
+                )}
+                {attentionTotals.active_tasks > 0 && (
+                  <span className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
+                    <Circle className="h-3 w-3" />{attentionTotals.active_tasks}
+                  </span>
+                )}
+                <span className="text-xs text-gray-400">{attentionTotals.companies_needing_attention} firem</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Můj čas */}
+        <Link href="/accountant/invoicing" className="group">
+          <div className="flex items-center gap-3 rounded-xl border border-gray-200/80 dark:border-gray-700/60 bg-white dark:bg-gray-900/60 px-4 py-3 hover:border-green-300 dark:hover:border-green-700 transition-all">
+            <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-green-50 dark:bg-green-900/20 shrink-0">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+            </div>
+            <div className="min-w-0 flex-1">
+              {!timeSummary || timeSummary.entry_count === 0 ? (
+                <span className="text-sm text-gray-400">Žádný čas za {monthName}</span>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatMinutes(timeSummary.total_minutes)}</span>
+                  {timeSummary.billable_amount > 0 && (
+                    <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">{Math.round(timeSummary.billable_amount).toLocaleString('cs-CZ')} Kč</span>
+                  )}
+                  <span className="text-xs text-gray-400">{monthName}</span>
+                </div>
+              )}
+            </div>
+            <ArrowRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          </div>
+        </Link>
+      </div>
+
+      {/* Master Matrix */}
+      {renderMatrix()}
+
+      {/* Closure Detail Modal */}
       <ClosureDetailModal
         open={closureModalOpen}
         onOpenChange={setClosureModalOpen}
