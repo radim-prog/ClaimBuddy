@@ -163,6 +163,18 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
         const tasksData = await tasksRes.json()
         setTasks(tasksData.tasks || [])
       }
+
+      // Fetch onboarding data if company is in onboarding status
+      if (companyData.company.status === 'onboarding') {
+        const onboardingRes = await fetch(`/api/accountant/onboarding?company_id=${companyId}`)
+        if (onboardingRes.ok) {
+          const onboardingData = await onboardingRes.json()
+          const companyOnboarding = onboardingData.companies?.[0]?.onboarding
+          if (companyOnboarding) {
+            setOnboarding(companyOnboarding)
+          }
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
