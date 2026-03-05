@@ -63,7 +63,9 @@ const adminNavigation = [
   { name: 'Administrace', href: '/accountant/admin', icon: Shield },
 ]
 
-const demoFeatures: { name: string; href: string; icon: typeof Sparkles; badge: string }[] = []
+const demoFeatures: { name: string; href: string; icon: typeof Sparkles; badge: string }[] = [
+  { name: 'Pracovní pohled', href: '/accountant/work-preview', icon: Sparkles, badge: 'DEMO' },
+]
 
 export default function AccountantLayout({
   children,
