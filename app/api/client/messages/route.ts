@@ -65,18 +65,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Send a message
-    const { company_id, chat_id, content, sender_type, sender_name } = body
-    if (!company_id || !chat_id || !content || !sender_type || !sender_name) {
+    const { company_id, chat_id, content, sender_type, sender_name, attachments } = body
+    if (!company_id || !chat_id || !sender_type || !sender_name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+    if (!content?.trim() && (!attachments || attachments.length === 0)) {
+      return NextResponse.json({ error: 'Content is required' }, { status: 400 })
     }
 
     const message = await addMessage({
       chat_id,
       company_id,
       sender_id: userId,
-      content: content.trim(),
+      content: content?.trim() || '',
       sender_type,
       sender_name,
+      attachments,
     })
 
     return NextResponse.json({ message })

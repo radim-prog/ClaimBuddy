@@ -64,9 +64,12 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
   const [showNewConversation, setShowNewConversation] = useState(false)
   const [newSubject, setNewSubject] = useState('')
   const [creatingConversation, setCreatingConversation] = useState(false)
+  const [pendingAttachments, setPendingAttachments] = useState<{ name: string; url: string; storage_path: string }[]>([])
+  const [uploading, setUploading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const prevMessageCountRef = useRef<number>(0)
   const initialLoadRef = useRef<boolean>(true)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const apiBase = '/api/client/messages'
 
@@ -138,26 +141,56 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
     prevMessageCountRef.current = messages.length
   }, [messages])
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0 || !selectedChatId) return
+
+    setUploading(true)
+    try {
+      for (const file of Array.from(files)) {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('companyId', companyId)
+        formData.append('chatId', selectedChatId)
+
+        const res = await fetch('/api/chat-attachments/upload', { method: 'POST', body: formData })
+        if (!res.ok) continue
+        const data = await res.json()
+        setPendingAttachments(prev => [...prev, data.attachment])
+      }
+    } catch {
+      // silent
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   const handleSend = async () => {
-    if (!newMessage.trim() || sending || !selectedChatId) return
+    if ((!newMessage.trim() && pendingAttachments.length === 0) || sending || !selectedChatId) return
 
     setSending(true)
     try {
+      const attachments = pendingAttachments.map(a => ({ name: a.name, url: a.url }))
+      const content = newMessage.trim() || (attachments.length > 0 ? `📎 ${attachments.map(a => a.name).join(', ')}` : '')
+
       const res = await fetch(apiBase, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           company_id: companyId,
           chat_id: selectedChatId,
-          content: newMessage.trim(),
+          content,
           sender_type: 'client',
           sender_name: userName,
+          attachments: attachments.length > 0 ? attachments : undefined,
         }),
       })
       if (!res.ok) throw new Error('Failed to send')
       const data = await res.json()
       setMessages(prev => [...prev, data.message])
       setNewMessage('')
+      setPendingAttachments([])
       fetchConversations()
     } catch {
       // silent
@@ -380,6 +413,20 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
         {/* Message input */}
         {selectedChatId && (
           <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
+            {/* Pending attachments */}
+            {pendingAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {pendingAttachments.map((att, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded text-xs">
+                    <Paperclip className="h-3 w-3" />
+                    {att.name}
+                    <button onClick={() => setPendingAttachments(prev => prev.filter((_, j) => j !== i))} className="ml-0.5 hover:text-red-500">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="flex gap-2">
               <Textarea
                 value={newMessage}
@@ -393,14 +440,34 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
                   }
                 }}
               />
-              <Button
-                size="icon"
-                onClick={handleSend}
-                disabled={!newMessage.trim() || sending}
-                className="h-12 w-12 flex-shrink-0"
-              >
-                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv,.doc,.docx,.zip"
+                onChange={handleFileUpload}
+              />
+              <div className="flex flex-col gap-1">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-8 w-8"
+                  title="Připojit soubor"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                </Button>
+                <Button
+                  size="icon"
+                  onClick={handleSend}
+                  disabled={(!newMessage.trim() && pendingAttachments.length === 0) || sending}
+                  className="h-8 w-8 flex-shrink-0"
+                >
+                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
               Enter = odeslat, Shift+Enter = nový řádek

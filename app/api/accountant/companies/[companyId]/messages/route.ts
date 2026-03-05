@@ -68,11 +68,11 @@ export async function POST(
     }
 
     // Send a message to a specific chat
-    const { chat_id, content, sender_name } = body
+    const { chat_id, content, sender_name, attachments } = body
     if (!chat_id) {
       return NextResponse.json({ error: 'chat_id is required' }, { status: 400 })
     }
-    if (!content?.trim()) {
+    if (!content?.trim() && (!attachments || attachments.length === 0)) {
       return NextResponse.json({ error: 'Content is required' }, { status: 400 })
     }
 
@@ -82,7 +82,8 @@ export async function POST(
       sender_id: userId,
       sender_type: 'accountant',
       sender_name: sender_name || 'Účetní',
-      content: content.trim(),
+      content: content?.trim() || '',
+      attachments,
     })
 
     return NextResponse.json({ message })
