@@ -255,6 +255,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
             { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files') },
             { href: `${basePath}/work`, label: 'Práce', icon: Clock, match: (p: string) => p.includes('/work') },
             { href: `${basePath}/travel`, label: 'Jízdy', icon: Car, match: (p: string) => p.includes('/travel') },
+            { href: `${basePath}/case`, label: 'Spis', icon: Briefcase, match: (p: string) => p.includes('/case') },
             { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile') },
             { href: `${basePath}/timeline`, label: 'Osa', icon: Eye, match: (p: string) => p.includes('/timeline') },
           ]
