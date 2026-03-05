@@ -392,6 +392,9 @@ function ClientsPageContent() {
         if (closure.bank_statement_status === 'uploaded') uploadedDocs++
         if (closure.expense_documents_status === 'uploaded') uploadedDocs++
         if (closure.income_invoices_status === 'uploaded') uploadedDocs++
+      } else if (company.monthly_reporting !== false && (company as any).status !== 'inactive') {
+        // No closure record for current month = all 3 document types missing
+        missingDocs = 3
       }
 
       // Determine overall status
