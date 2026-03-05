@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { addMessage } from '@/lib/message-store-db'
+import { addMessageToCompany } from '@/lib/message-store-db'
 import twilio from 'twilio'
 
 export const dynamic = 'force-dynamic'
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Save message to DB (sender_id uses a system placeholder since Twilio doesn't have user accounts)
-    await addMessage({
+    await addMessageToCompany({
       company_id: config.company_id,
       sender_id: '00000000-0000-0000-0000-000000000000',
       sender_type: 'client',

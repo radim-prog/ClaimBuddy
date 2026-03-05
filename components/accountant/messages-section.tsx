@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
   Send,
   Paperclip,
@@ -14,6 +15,11 @@ import {
   Pin,
   Trash2,
   Loader2,
+  Plus,
+  CheckCircle,
+  RotateCcw,
+  MessageSquare,
+  X,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -28,6 +34,7 @@ import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 interface Message {
   id: string
   company_id: string
+  chat_id: string
   sender_type: 'client' | 'accountant'
   sender_name: string
   content: string
@@ -37,6 +44,19 @@ interface Message {
   attachments?: { name: string; url: string }[]
 }
 
+interface Conversation {
+  id: string
+  company_id: string
+  subject: string
+  status: 'open' | 'completed'
+  last_message_at: string | null
+  last_message_preview: string | null
+  unread_count: number
+  started_by: 'client' | 'accountant'
+  completed_at: string | null
+  created_at: string
+}
+
 interface AccountantMessagesSectionProps {
   companyId: string
   companyName: string
@@ -44,62 +64,108 @@ interface AccountantMessagesSectionProps {
 }
 
 export function AccountantMessagesSection({ companyId, companyName, clientName }: AccountantMessagesSectionProps) {
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loadingConversations, setLoadingConversations] = useState(true)
+  const [loadingMessages, setLoadingMessages] = useState(false)
+  const [showNewConversation, setShowNewConversation] = useState(false)
+  const [newSubject, setNewSubject] = useState('')
+  const [creatingConversation, setCreatingConversation] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const prevMessageCountRef = useRef<number>(0)
   const initialLoadRef = useRef<boolean>(true)
   const { userName } = useAccountantUser()
 
-  const fetchMessages = useCallback(async () => {
+  const apiBase = `/api/accountant/companies/${companyId}/messages`
+
+  // Fetch conversations
+  const fetchConversations = useCallback(async () => {
     try {
-      const res = await fetch(`/api/accountant/companies/${companyId}/messages`)
+      const res = await fetch(apiBase)
+      if (!res.ok) return
+      const data = await res.json()
+      setConversations(data.conversations ?? [])
+
+      // Auto-select first open conversation if none selected
+      if (!selectedChatId && data.conversations?.length > 0) {
+        const firstOpen = data.conversations.find((c: Conversation) => c.status === 'open')
+        if (firstOpen) setSelectedChatId(firstOpen.id)
+        else setSelectedChatId(data.conversations[0].id)
+      }
+    } catch {
+      // silently fail on polling
+    } finally {
+      setLoadingConversations(false)
+    }
+  }, [apiBase, selectedChatId])
+
+  // Fetch messages for selected chat
+  const fetchMessages = useCallback(async () => {
+    if (!selectedChatId) return
+    try {
+      const res = await fetch(`${apiBase}?chat_id=${selectedChatId}`)
       if (!res.ok) return
       const data = await res.json()
       setMessages(data.messages ?? [])
     } catch {
-      // silently fail on polling
+      // silently fail
     } finally {
-      setLoading(false)
+      setLoadingMessages(false)
     }
-  }, [companyId])
+  }, [apiBase, selectedChatId])
 
-  // Initial fetch + polling every 30s
+  // Initial fetch + polling
   useEffect(() => {
-    setLoading(true)
-    fetchMessages()
-    const interval = setInterval(fetchMessages, 30_000)
+    setLoadingConversations(true)
+    fetchConversations()
+    const interval = setInterval(fetchConversations, 30_000)
     return () => clearInterval(interval)
-  }, [fetchMessages])
+  }, [fetchConversations])
 
-  // Mark client messages as read when opening
   useEffect(() => {
-    fetch(`/api/accountant/companies/${companyId}/messages`, { method: 'PATCH' }).catch(() => {})
-  }, [companyId])
+    if (selectedChatId) {
+      setLoadingMessages(true)
+      initialLoadRef.current = true
+      prevMessageCountRef.current = 0
+      fetchMessages()
+      // Mark as read
+      fetch(apiBase, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark_read', chat_id: selectedChatId }),
+      }).catch(() => {})
+      const interval = setInterval(fetchMessages, 15_000)
+      return () => clearInterval(interval)
+    } else {
+      setMessages([])
+    }
+  }, [selectedChatId, fetchMessages, apiBase])
 
+  // Auto-scroll
   useEffect(() => {
     if (!initialLoadRef.current && messages.length > prevMessageCountRef.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
     if (initialLoadRef.current && messages.length > 0) {
       initialLoadRef.current = false
-      // Scroll to bottom on initial load
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 100)
     }
     prevMessageCountRef.current = messages.length
   }, [messages])
 
   const handleSend = async () => {
-    if (!newMessage.trim() || sending) return
+    if (!newMessage.trim() || sending || !selectedChatId) return
 
     setSending(true)
     try {
-      const res = await fetch(`/api/accountant/companies/${companyId}/messages`, {
+      const res = await fetch(apiBase, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          chat_id: selectedChatId,
           content: newMessage.trim(),
           sender_name: userName || 'Účetní',
         }),
@@ -108,10 +174,64 @@ export function AccountantMessagesSection({ companyId, companyName, clientName }
       const data = await res.json()
       setMessages(prev => [...prev, data.message])
       setNewMessage('')
+      // Update conversation preview
+      fetchConversations()
     } catch {
       // TODO: toast error
     } finally {
       setSending(false)
+    }
+  }
+
+  const handleCreateConversation = async () => {
+    if (!newSubject.trim() || creatingConversation) return
+
+    setCreatingConversation(true)
+    try {
+      const res = await fetch(apiBase, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_conversation',
+          subject: newSubject.trim(),
+        }),
+      })
+      if (!res.ok) throw new Error('Failed to create')
+      const data = await res.json()
+      setConversations(prev => [data.conversation, ...prev])
+      setSelectedChatId(data.conversation.id)
+      setShowNewConversation(false)
+      setNewSubject('')
+    } catch {
+      // TODO: toast error
+    } finally {
+      setCreatingConversation(false)
+    }
+  }
+
+  const handleCompleteConversation = async (chatId: string) => {
+    try {
+      await fetch(apiBase, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'complete_conversation', chat_id: chatId }),
+      })
+      fetchConversations()
+    } catch {
+      // silent
+    }
+  }
+
+  const handleReopenConversation = async (chatId: string) => {
+    try {
+      await fetch(apiBase, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reopen_conversation', chat_id: chatId }),
+      })
+      fetchConversations()
+    } catch {
+      // silent
     }
   }
 
@@ -127,22 +247,22 @@ export function AccountantMessagesSection({ companyId, companyName, clientName }
 
   const formatMessageTime = (dateString: string) => {
     const date = new Date(dateString)
-    if (isToday(date)) {
-      return format(date, 'HH:mm', { locale: cs })
-    }
-    if (isYesterday(date)) {
-      return `Včera ${format(date, 'HH:mm', { locale: cs })}`
-    }
+    if (isToday(date)) return format(date, 'HH:mm', { locale: cs })
+    if (isYesterday(date)) return `Včera ${format(date, 'HH:mm', { locale: cs })}`
     return format(date, 'd.M. HH:mm', { locale: cs })
   }
 
-  const unreadFromClient = messages.filter(
-    m => m.sender_type === 'client' && !m.read_at
-  ).length
+  const formatConversationTime = (dateString: string | null) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    if (isToday(date)) return format(date, 'HH:mm', { locale: cs })
+    if (isYesterday(date)) return 'Včera'
+    return format(date, 'd.M.', { locale: cs })
+  }
 
-  const pinnedMessages = messages.filter(m => m.pinned)
+  const selectedConversation = conversations.find(c => c.id === selectedChatId)
 
-  if (loading) {
+  if (loadingConversations) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -151,186 +271,306 @@ export function AccountantMessagesSection({ companyId, companyName, clientName }
   }
 
   return (
-    <div className="space-y-4">
-      {/* Unread indicator */}
-      {unreadFromClient > 0 && (
-        <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 rounded-lg">
-          <Badge variant="default" className="bg-blue-600">
-            {unreadFromClient} nová zpráva
-          </Badge>
-          <span className="text-sm text-blue-700">od klienta {clientName || companyName}</span>
-        </div>
-      )}
-
-      {/* Pinned messages */}
-      {pinnedMessages.length > 0 && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-          <div className="flex items-center gap-2 text-sm font-medium text-amber-800 mb-2">
-            <Pin className="h-4 w-4" />
-            Připnuté zprávy
-          </div>
-          {pinnedMessages.map(msg => (
-            <div key={msg.id} className="text-sm text-amber-700 pl-6">
-              {msg.content.substring(0, 100)}{msg.content.length > 100 ? '...' : ''}
+    <div className="flex h-[500px] border rounded-lg overflow-hidden bg-white dark:bg-gray-900">
+      {/* Main chat area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Chat header */}
+        {selectedConversation && (
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50 dark:bg-gray-800/50">
+            <div className="flex items-center gap-2 min-w-0">
+              <MessageSquare className="h-4 w-4 text-purple-600 flex-shrink-0" />
+              <span className="font-medium text-sm truncate">{selectedConversation.subject}</span>
+              {selectedConversation.status === 'completed' && (
+                <Badge variant="secondary" className="text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-400 flex-shrink-0">
+                  Dokončeno
+                </Badge>
+              )}
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Messages list */}
-      <div className="max-h-[400px] overflow-y-auto space-y-4 pr-2">
-        {messages.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Zatím žádná komunikace s tímto klientem</p>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {selectedConversation.status === 'open' ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleCompleteConversation(selectedChatId!)}
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50 h-8 text-xs"
+                >
+                  <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                  Dokončit
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleReopenConversation(selectedChatId!)}
+                  className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 h-8 text-xs"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                  Znovu otevřít
+                </Button>
+              )}
+            </div>
           </div>
-        ) : (
-          messages.map((message) => {
-            const isAccountant = message.sender_type === 'accountant'
-            return (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${isAccountant ? 'flex-row-reverse' : ''}`}
-              >
-                <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarFallback
-                    className={
-                      isAccountant
-                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                    }
-                  >
-                    {message.sender_name
-                      .split(' ')
-                      .map((n) => n[0])
-                      .join('')
-                      .slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className={`max-w-[75%] ${isAccountant ? 'items-end' : 'items-start'}`}>
-                  <div className={`flex items-center gap-2 mb-1 ${isAccountant ? 'flex-row-reverse' : ''}`}>
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {message.sender_name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatMessageTime(message.created_at)}
-                    </span>
-                    {message.pinned && <Pin className="h-3 w-3 text-amber-500" />}
-                  </div>
-
-                  <div className="flex items-start gap-1">
-                    <div
-                      className={`p-3 rounded-lg ${
-                        isAccountant
-                          ? 'bg-purple-600 text-white rounded-br-none'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    </div>
-
-                    {/* Message actions */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:opacity-100">
-                          <MoreVertical className="h-3 w-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align={isAccountant ? 'end' : 'start'}>
-                        <DropdownMenuItem onClick={() => handlePin(message.id)}>
-                          <Pin className="h-4 w-4 mr-2" />
-                          {message.pinned ? 'Odepnout' : 'Připnout'}
-                        </DropdownMenuItem>
-                        {isAccountant && (
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(message.id)}
-                            className="text-red-600 dark:text-red-400"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Smazat
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  {/* Message status for accountant messages */}
-                  {isAccountant && (
-                    <div className="flex justify-end mt-1">
-                      {message.read_at ? (
-                        <span className="flex items-center gap-1 text-xs text-gray-400">
-                          <CheckCheck className="h-3 w-3 text-blue-500" />
-                          Přečteno
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-xs text-gray-400">
-                          <Check className="h-3 w-3" />
-                          Odesláno
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Attachments */}
-                  {message.attachments && message.attachments.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {message.attachments.map((att, i) => (
-                        <a
-                          key={i}
-                          href={att.url}
-                          className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
-                        >
-                          <Paperclip className="h-3 w-3" />
-                          {att.name}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })
         )}
-        <div ref={messagesEndRef} />
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto space-y-4 p-4">
+          {!selectedChatId ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">Vyberte konverzaci nebo vytvořte novou</p>
+            </div>
+          ) : loadingMessages ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-sm">Zatím žádné zprávy v této konverzaci</p>
+            </div>
+          ) : (
+            messages.map((message) => {
+              const isAccountant = message.sender_type === 'accountant'
+              return (
+                <div
+                  key={message.id}
+                  className={`flex gap-3 group ${isAccountant ? 'flex-row-reverse' : ''}`}
+                >
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarFallback
+                      className={
+                        isAccountant
+                          ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      }
+                    >
+                      {message.sender_name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')
+                        .slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div className={`max-w-[75%] ${isAccountant ? 'items-end' : 'items-start'}`}>
+                    <div className={`flex items-center gap-2 mb-1 ${isAccountant ? 'flex-row-reverse' : ''}`}>
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {message.sender_name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatMessageTime(message.created_at)}
+                      </span>
+                      {message.pinned && <Pin className="h-3 w-3 text-amber-500" />}
+                    </div>
+
+                    <div className="flex items-start gap-1">
+                      <div
+                        className={`p-3 rounded-lg ${
+                          isAccountant
+                            ? 'bg-purple-600 text-white rounded-br-none'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
+                        }`}
+                      >
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      </div>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:opacity-100">
+                            <MoreVertical className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align={isAccountant ? 'end' : 'start'}>
+                          <DropdownMenuItem onClick={() => handlePin(message.id)}>
+                            <Pin className="h-4 w-4 mr-2" />
+                            {message.pinned ? 'Odepnout' : 'Připnout'}
+                          </DropdownMenuItem>
+                          {isAccountant && (
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(message.id)}
+                              className="text-red-600 dark:text-red-400"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Smazat
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {isAccountant && (
+                      <div className="flex justify-end mt-1">
+                        {message.read_at ? (
+                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                            <CheckCheck className="h-3 w-3 text-blue-500" />
+                            Přečteno
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                            <Check className="h-3 w-3" />
+                            Odesláno
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {message.attachments && message.attachments.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {message.attachments.map((att, i) => (
+                          <a
+                            key={i}
+                            href={att.url}
+                            className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                          >
+                            <Paperclip className="h-3 w-3" />
+                            {att.name}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Message input */}
+        {selectedChatId && (
+          <div className="border-t p-3">
+            <div className="flex gap-2">
+              <Textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Napište zprávu klientovi..."
+                className="min-h-[48px] max-h-[100px] resize-none"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSend()
+                  }
+                }}
+              />
+              <div className="flex flex-col gap-1">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-8 w-8"
+                  title="Připojit soubor"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  onClick={handleSend}
+                  disabled={!newMessage.trim() || sending}
+                  className="h-8 w-8 bg-purple-600 hover:bg-purple-700"
+                >
+                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Enter pro odeslání, Shift+Enter pro nový řádek
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Message input */}
-      <div className="border-t pt-4">
-        <div className="flex gap-2">
-          <Textarea
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Napište zprávu klientovi..."
-            className="min-h-[60px] resize-none"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                handleSend()
-              }
-            }}
-          />
-          <div className="flex flex-col gap-2">
+      {/* Conversation sidebar */}
+      <div className="w-72 border-l bg-gray-50 dark:bg-gray-800/30 flex flex-col">
+        {/* New conversation button */}
+        <div className="p-3 border-b">
+          {showNewConversation ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">Nová konverzace</span>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => { setShowNewConversation(false); setNewSubject('') }}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <Input
+                value={newSubject}
+                onChange={(e) => setNewSubject(e.target.value)}
+                placeholder="Téma konverzace..."
+                className="h-8 text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateConversation()
+                }}
+                autoFocus
+              />
+              <Button
+                size="sm"
+                className="w-full h-7 text-xs bg-purple-600 hover:bg-purple-700"
+                onClick={handleCreateConversation}
+                disabled={!newSubject.trim() || creatingConversation}
+              >
+                {creatingConversation ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
+                Vytvořit
+              </Button>
+            </div>
+          ) : (
             <Button
-              size="icon"
               variant="outline"
-              className="h-8 w-8"
-              title="Připojit soubor"
+              size="sm"
+              className="w-full h-8 text-xs"
+              onClick={() => setShowNewConversation(true)}
             >
-              <Paperclip className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Nová konverzace
             </Button>
-            <Button
-              size="icon"
-              onClick={handleSend}
-              disabled={!newMessage.trim() || sending}
-              className="h-8 w-8 bg-purple-600 hover:bg-purple-700"
-            >
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-          </div>
+          )}
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          Enter pro odeslání, Shift+Enter pro nový řádek
-        </p>
+
+        {/* Conversations list */}
+        <div className="flex-1 overflow-y-auto">
+          {conversations.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-30" />
+              <p className="text-xs">Zatím žádné konverzace</p>
+            </div>
+          ) : (
+            conversations.map((conv) => (
+              <button
+                key={conv.id}
+                onClick={() => setSelectedChatId(conv.id)}
+                className={`w-full text-left px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/50 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/30 ${
+                  conv.id === selectedChatId
+                    ? 'bg-purple-50 dark:bg-purple-900/20 border-l-2 border-l-purple-600'
+                    : ''
+                } ${conv.status === 'completed' ? 'opacity-60' : ''}`}
+              >
+                <div className="flex items-start gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      {conv.status === 'completed' ? (
+                        <CheckCircle className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                      ) : (
+                        <MessageSquare className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                      )}
+                      <span className="text-sm font-medium truncate">{conv.subject}</span>
+                    </div>
+                    {conv.last_message_preview && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5 pl-5">
+                        {conv.last_message_preview}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <span className="text-[10px] text-muted-foreground">
+                      {formatConversationTime(conv.last_message_at || conv.created_at)}
+                    </span>
+                    {conv.unread_count > 0 && (
+                      <Badge className="h-4 min-w-[16px] text-[10px] px-1 bg-purple-600 hover:bg-purple-600">
+                        {conv.unread_count}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
       </div>
     </div>
   )
