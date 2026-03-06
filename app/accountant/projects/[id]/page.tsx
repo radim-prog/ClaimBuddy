@@ -143,6 +143,7 @@ function Section({
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const [activeView, setActiveView] = useState<'summary' | 'tasks' | 'documents' | 'timeline' | 'budget' | 'case'>('summary')
   const [project, setProject] = useState<Project | null>(null)
   const [phases, setPhases] = useState<Phase[]>([])
   const [tasks, setTasks] = useState<TaskItem[]>([])
@@ -285,10 +286,44 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const completedTasksList = tasks.filter(t => t.status === 'completed')
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-5xl mx-auto py-8 px-6">
       <Button variant="ghost" size="sm" onClick={() => router.push('/accountant/work')} className="mb-4">
         <ArrowLeft className="h-4 w-4 mr-1" /> Práce
       </Button>
+
+      <div className="flex gap-3 mb-4 flex-wrap">
+        <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+          <CardContent className="p-3 text-center min-w-[100px]">
+            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Ukoly</div>
+            <div className="text-2xl font-bold text-green-700">{completedTasks}/{tasks.length}</div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+          <CardContent className="p-3 text-center min-w-[110px]">
+            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Progress</div>
+            <div className="text-2xl font-bold text-blue-700">{project.progress_percentage}%</div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200">
+          <CardContent className="p-3 text-center min-w-[110px]">
+            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Status</div>
+            <div className="text-sm font-bold text-amber-700">{statusCfg.label}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 overflow-x-auto">
+        <Button variant={activeView === 'summary' ? 'default' : 'ghost'} onClick={() => setActiveView('summary')} className={activeView === 'summary' ? 'bg-blue-600 hover:bg-blue-700' : ''}>📋 Souhrn spisu</Button>
+        <Button variant={activeView === 'tasks' ? 'default' : 'ghost'} onClick={() => setActiveView('tasks')} className={activeView === 'tasks' ? 'bg-blue-600 hover:bg-blue-700' : ''}>✓ Ukoly ({completedTasks}/{tasks.length})</Button>
+        {project.is_case && (
+          <>
+            <Button variant={activeView === 'documents' ? 'default' : 'ghost'} onClick={() => setActiveView('documents')} className={activeView === 'documents' ? 'bg-blue-600 hover:bg-blue-700' : ''}>📎 Dokumenty</Button>
+            <Button variant={activeView === 'timeline' ? 'default' : 'ghost'} onClick={() => setActiveView('timeline')} className={activeView === 'timeline' ? 'bg-blue-600 hover:bg-blue-700' : ''}>🕐 Timeline</Button>
+            <Button variant={activeView === 'budget' ? 'default' : 'ghost'} onClick={() => setActiveView('budget')} className={activeView === 'budget' ? 'bg-blue-600 hover:bg-blue-700' : ''}>💰 Rozpocet</Button>
+          </>
+        )}
+        <Button variant={activeView === 'case' ? 'default' : 'ghost'} onClick={() => setActiveView('case')} className={activeView === 'case' ? 'bg-blue-600 hover:bg-blue-700' : ''}>⚙️ Spisovy system</Button>
+      </div>
 
       {/* PROJECT HEADER — folder metafora */}
       <Card className="mb-6 overflow-hidden">
@@ -355,9 +390,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           )}
         </div>
 
-        {/* FOLDER SECTIONS — scrollable, collapsible */}
+        {/* CONTENT */}
         <div>
           {/* TASKS SECTION */}
+          {(activeView === 'tasks' || activeView === 'summary') && (
           <Section
             title="Úkoly"
             icon={CheckCircle2}
@@ -454,9 +490,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               </div>
             </div>
           </Section>
+          )}
 
           {/* DOCUMENTS SECTION */}
-          {project.is_case && (
+          {project.is_case && activeView === 'documents' && (
             <Section title="Dokumenty" icon={FileText} defaultOpen={true}>
               <CaseDocuments projectId={params.id} />
               {project.company_id && (
@@ -473,20 +510,21 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           )}
 
           {/* TIMELINE SECTION */}
-          {project.is_case && (
+          {project.is_case && activeView === 'timeline' && (
             <Section title="Průběh" icon={Clock} defaultOpen={false}>
               <CaseTimeline projectId={params.id} />
             </Section>
           )}
 
           {/* BUDGET SECTION */}
-          {project.is_case && (
+          {project.is_case && activeView === 'budget' && (
             <Section title="Rozpočet" icon={TrendingUp} defaultOpen={false}>
               <CaseBudgetCard projectId={params.id} />
             </Section>
           )}
 
           {/* CASE TOGGLE */}
+          {(activeView === 'case' || activeView === 'summary') && (
           <Section title="Spisový systém" icon={FileText} defaultOpen={false}>
             <CaseToggle
               projectId={params.id}
@@ -494,6 +532,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               onUpdate={(updated) => setProject(prev => prev ? { ...prev, ...updated } : prev)}
             />
           </Section>
+          )}
         </div>
       </Card>
 
