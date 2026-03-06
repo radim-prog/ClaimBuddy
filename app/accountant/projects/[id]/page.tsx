@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -157,7 +157,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       .catch(() => setProgressNotes([]))
   }, [params.id, userId])
 
-  useEffect(() => {
+  const refreshCaseCounts = useCallback(() => {
     if (!userId) return
     fetch(`/api/projects/${params.id}/documents`, { headers: { 'x-user-id': userId } })
       .then(r => r.json())
@@ -168,7 +168,11 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       .then(r => r.json())
       .then(data => setTimelineCount(data.pagination?.total || 0))
       .catch(() => setTimelineCount(0))
-  }, [params.id, userId, activeView])
+  }, [params.id, userId])
+
+  useEffect(() => {
+    refreshCaseCounts()
+  }, [refreshCaseCounts, activeView])
 
   const toggleNextAction = async (taskId: string, current: boolean) => {
     if (!current) {
@@ -594,7 +598,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
           {project.is_case && activeView === 'documents' && (
             <div className="space-y-4">
-              <CaseDocuments projectId={params.id} />
+              <CaseDocuments projectId={params.id} onChanged={refreshCaseCounts} />
               {project.company_id && (
                 <Card className="rounded-xl shadow-soft-sm">
                   <CardContent className="p-4">
@@ -611,7 +615,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           )}
 
           {project.is_case && activeView === 'timeline' && (
-            <CaseTimeline projectId={params.id} openComposerSignal={timelineComposerSignal} />
+            <CaseTimeline projectId={params.id} openComposerSignal={timelineComposerSignal} onChanged={refreshCaseCounts} />
           )}
 
           {project.is_case && activeView === 'budget' && (

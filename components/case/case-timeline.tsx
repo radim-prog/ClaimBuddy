@@ -21,6 +21,7 @@ interface CaseTimelineProps {
   readOnly?: boolean
   apiBasePath?: string  // Override for client-side API, e.g. '/api/client/cases'
   openComposerSignal?: number
+  onChanged?: () => void
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -38,7 +39,7 @@ function formatDayHeading(dateStr: string): string {
   return d.toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-export function CaseTimeline({ projectId, readOnly = false, apiBasePath, openComposerSignal }: CaseTimelineProps) {
+export function CaseTimeline({ projectId, readOnly = false, apiBasePath, openComposerSignal, onChanged }: CaseTimelineProps) {
   const [entries, setEntries] = useState<CaseTimelineEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -83,6 +84,7 @@ export function CaseTimeline({ projectId, readOnly = false, apiBasePath, openCom
       if (res.ok) {
         const data = await res.json()
         setEntries([data.entry, ...entries])
+        onChanged?.()
         setTitle('')
         setDescription('')
         setShowForm(false)
@@ -106,6 +108,7 @@ export function CaseTimeline({ projectId, readOnly = false, apiBasePath, openCom
         setEntries(prev => prev.map(e =>
           e.id === entryId ? { ...e, client_visible: !currentVisible } : e
         ))
+        onChanged?.()
         toast.success(!currentVisible ? 'Záznam zviditelněn pro klienta' : 'Záznam skryt pro klienta')
       } else {
         toast.error('Chyba při změně viditelnosti')

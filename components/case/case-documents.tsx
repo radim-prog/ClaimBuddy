@@ -21,9 +21,10 @@ interface CaseDocumentsProps {
   projectId: string
   readOnly?: boolean
   apiBasePath?: string
+  onChanged?: () => void
 }
 
-export function CaseDocuments({ projectId, readOnly = false, apiBasePath }: CaseDocumentsProps) {
+export function CaseDocuments({ projectId, readOnly = false, apiBasePath, onChanged }: CaseDocumentsProps) {
   const [documents, setDocuments] = useState<CaseDocument[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -64,6 +65,7 @@ export function CaseDocuments({ projectId, readOnly = false, apiBasePath }: Case
       if (res.ok) {
         const data = await res.json()
         setDocuments([data.document, ...documents])
+        onChanged?.()
         setName('')
         setFileUrl('')
         setCategory('other')
@@ -89,6 +91,7 @@ export function CaseDocuments({ projectId, readOnly = false, apiBasePath }: Case
         setDocuments(prev => prev.map(d =>
           d.id === docId ? { ...d, client_visible: !currentVisible } : d
         ))
+        onChanged?.()
         toast.success(!currentVisible ? 'Dokument zviditelněn pro klienta' : 'Dokument skryt pro klienta')
       } else {
         toast.error('Chyba při změně viditelnosti')
