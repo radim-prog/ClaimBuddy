@@ -65,7 +65,6 @@ const adminNavigation = [
 ]
 
 const demoFeatures: { name: string; href: string; icon: typeof Sparkles; badge: string }[] = [
-  { name: 'Pracovní pohled', href: '/accountant/work-preview', icon: Sparkles, badge: 'DEMO' },
   { name: 'Osa', href: '/accountant/timeline-demo', icon: Eye, badge: 'DEMO' },
 ]
 
