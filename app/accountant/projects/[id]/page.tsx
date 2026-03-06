@@ -330,7 +330,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 overflow-x-auto">
         <Button variant={activeView === 'summary' ? 'default' : 'ghost'} onClick={() => setActiveView('summary')} className={activeView === 'summary' ? 'bg-blue-600 hover:bg-blue-700' : ''}>📋 Souhrn spisu</Button>
-        <Button variant={activeView === 'notes' ? 'default' : 'ghost'} onClick={() => setActiveView('notes')} className={activeView === 'notes' ? 'bg-blue-600 hover:bg-blue-700' : ''}>📝 Poznamky o prubehu</Button>
+        <Button variant={activeView === 'notes' ? 'default' : 'ghost'} onClick={() => setActiveView('notes')} className={activeView === 'notes' ? 'bg-blue-600 hover:bg-blue-700' : ''}>📝 Poznamky o prubehu{progressNotes.length ? ` (${progressNotes.length})` : ''}</Button>
         <Button variant={activeView === 'tasks' ? 'default' : 'ghost'} onClick={() => setActiveView('tasks')} className={activeView === 'tasks' ? 'bg-blue-600 hover:bg-blue-700' : ''}>✓ Ukoly ({completedTasks}/{tasks.length})</Button>
         {project.is_case && (
           <>
