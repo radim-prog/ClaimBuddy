@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -15,7 +16,8 @@ import {
   Pause,
   Check,
   X,
-  Trash2,
+  Circle,
+  ExternalLink,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -28,11 +30,10 @@ import { format, isToday, isTomorrow, isPast, differenceInDays } from 'date-fns'
 import { cs } from 'date-fns/locale'
 import type { Task, TaskStatus } from '@/lib/types/tasks'
 import { toast } from 'sonner'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
-// Priority derived from R-Tasks score_fire
 type TaskPriority = 'critical' | 'high' | 'medium' | 'low'
 
-// Helper function to derive priority from score_fire
 function getTaskPriority(scoreFire: number | undefined | null): TaskPriority {
   if (scoreFire === undefined || scoreFire === null) return 'low'
   if (scoreFire >= 4) return 'critical'
@@ -56,10 +57,10 @@ const priorityColors: Record<TaskPriority, string> = {
 }
 
 const priorityLabels: Record<TaskPriority, string> = {
-  critical: 'Kritické',
-  high: 'Vysoká',
-  medium: 'Střední',
-  low: 'Nízká',
+  critical: 'Kriticka',
+  high: 'Vysoka',
+  medium: 'Stredni',
+  low: 'Nizka',
 }
 
 const statusColors: Record<TaskStatus, string> = {
@@ -79,25 +80,21 @@ const statusColors: Record<TaskStatus, string> = {
 
 const statusLabels: Record<TaskStatus, string> = {
   draft: 'Koncept',
-  pending: 'Čeká',
-  clarifying: 'Upřesňuje se',
-  accepted: 'Přijato',
-  in_progress: 'Rozpracováno',
-  waiting_for: 'Čeká interně',
-  waiting_client: 'Čeká na klienta',
-  awaiting_approval: 'Ke schválení',
-  completed: 'Dokončeno',
-  invoiced: 'Vyfakturováno',
-  cancelled: 'Zrušeno',
-  someday_maybe: 'Někdy',
+  pending: 'Ceka',
+  clarifying: 'Upresnuje se',
+  accepted: 'Prijato',
+  in_progress: 'Rozpracovano',
+  waiting_for: 'Ceka interne',
+  waiting_client: 'Ceka na klienta',
+  awaiting_approval: 'Ke schvaleni',
+  completed: 'Dokonceno',
+  invoiced: 'Vyfakturovano',
+  cancelled: 'Zruseno',
+  someday_maybe: 'Nekdy',
 }
 
-export function AccountantTasksSection({
-  companyId,
-  companyName,
-  tasks,
-  onTasksChange
-}: AccountantTasksSectionProps) {
+export function AccountantTasksSection({ companyId, companyName, tasks, onTasksChange }: AccountantTasksSectionProps) {
+  const { userId, userName } = useAccountantUser()
   const [filter, setFilter] = useState<'all' | 'active' | 'waiting' | 'completed'>('active')
   const [showNewForm, setShowNewForm] = useState(false)
   const [newTitle, setNewTitle] = useState('')
@@ -105,26 +102,21 @@ export function AccountantTasksSection({
   const [newDueDate, setNewDueDate] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // Filter and sort tasks
   const filteredTasks = useMemo(() => {
     let filtered = tasks
-
     switch (filter) {
       case 'active':
-        filtered = tasks.filter(t =>
-          t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress'
-        )
+        filtered = tasks.filter(t => t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress')
         break
       case 'waiting':
-        filtered = tasks.filter(t => t.status === 'waiting_for')
+        filtered = tasks.filter(t => t.status === 'waiting_for' || t.status === 'waiting_client')
         break
       case 'completed':
         filtered = tasks.filter(t => t.status === 'completed')
         break
     }
 
-    // Sort by priority and due date
-    return filtered.sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 }
       const aPriority = getTaskPriority(a.score_fire)
       const bPriority = getTaskPriority(b.score_fire)
@@ -137,23 +129,20 @@ export function AccountantTasksSection({
     })
   }, [tasks, filter])
 
-  // Task counts by status
   const counts = useMemo(() => ({
     all: tasks.length,
-    active: tasks.filter(t =>
-      t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress'
-    ).length,
-    waiting: tasks.filter(t => t.status === 'waiting_for').length,
+    active: tasks.filter(t => t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress').length,
+    waiting: tasks.filter(t => t.status === 'waiting_for' || t.status === 'waiting_client').length,
     completed: tasks.filter(t => t.status === 'completed').length,
   }), [tasks])
 
   const formatDueDate = (dateString: string) => {
     const date = new Date(dateString)
     if (isToday(date)) return 'Dnes'
-    if (isTomorrow(date)) return 'Zítra'
+    if (isTomorrow(date)) return 'Zitra'
     if (isPast(date)) {
       const days = differenceInDays(new Date(), date)
-      return `${days} ${days === 1 ? 'den' : days < 5 ? 'dny' : 'dní'} po termínu`
+      return `${days} ${days === 1 ? 'den' : days < 5 ? 'dny' : 'dni'} po terminu`
     }
     return format(date, 'd. MMMM', { locale: cs })
   }
@@ -167,48 +156,61 @@ export function AccountantTasksSection({
     return 'text-gray-500 dark:text-gray-400'
   }
 
+  const patchTask = async (taskId: string, changes: Record<string, any>) => {
+    if (!userId) throw new Error('missing user')
+    const res = await fetch(`/api/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': userId,
+        'x-user-name': userName || 'Ucetni',
+      },
+      body: JSON.stringify(changes),
+    })
+    if (!res.ok) throw new Error('patch failed')
+    const data = await res.json()
+    return data.task as Task
+  }
+
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
     try {
-      const res = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      })
-      if (!res.ok) throw new Error('Failed')
-      const { task: updated } = await res.json()
-      if (onTasksChange) {
-        onTasksChange(tasks.map(t => t.id === taskId ? { ...t, ...updated } : t))
-      }
-      toast.success(newStatus === 'completed' ? 'Úkol dokončen' : 'Status aktualizován')
+      const updated = await patchTask(taskId, { status: newStatus })
+      if (onTasksChange) onTasksChange(tasks.map(t => (t.id === taskId ? { ...t, ...updated } : t)))
+      toast.success(newStatus === 'completed' ? 'Ukol dokoncen' : 'Status aktualizovan')
     } catch {
-      toast.error('Chyba při změně statusu')
+      toast.error('Chyba pri zmene statusu')
     }
   }
 
-  const handleDelete = async (taskId: string) => {
-    if (!confirm('Opravdu smazat tento úkol?')) return
+  const handleCancel = async (taskId: string) => {
     try {
-      const res = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Failed')
-      if (onTasksChange) {
-        onTasksChange(tasks.filter(t => t.id !== taskId))
-      }
-      toast.success('Úkol smazán')
+      const updated = await patchTask(taskId, {
+        status: 'cancelled',
+        completed_at: new Date().toISOString(),
+      })
+      if (onTasksChange) onTasksChange(tasks.map(t => (t.id === taskId ? { ...t, ...updated } : t)))
+      toast.success('Ukol oznacen jako zruseny')
     } catch {
-      toast.error('Chyba při mazání úkolu')
+      toast.error('Chyba pri ruseni ukolu')
     }
   }
 
   const handleCreateTask = async () => {
+    if (!userId) return
     if (!newTitle.trim()) {
-      toast.error('Zadejte název úkolu')
+      toast.error('Zadejte nazev ukolu')
       return
     }
+
     setSaving(true)
     try {
       const res = await fetch('/api/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId,
+          'x-user-name': userName || 'Ucetni',
+        },
         body: JSON.stringify({
           title: newTitle.trim(),
           description: newDescription.trim() || undefined,
@@ -218,35 +220,35 @@ export function AccountantTasksSection({
           status: 'pending',
         }),
       })
+
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Failed')
+        throw new Error(data.error || 'create failed')
       }
+
       const { task: created } = await res.json()
-      if (onTasksChange) {
-        onTasksChange([created, ...tasks])
-      }
+      if (onTasksChange) onTasksChange([created, ...tasks])
       setNewTitle('')
       setNewDescription('')
       setNewDueDate('')
       setShowNewForm(false)
-      toast.success('Úkol vytvořen')
+      toast.success('Ukol vytvoren')
     } catch (err: any) {
-      toast.error(err.message || 'Chyba při vytváření úkolu')
+      toast.error(err.message || 'Chyba pri vytvareni ukolu')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   return (
     <div className="space-y-4">
-      {/* Filter tabs and add button */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-0.5 bg-gray-100 dark:bg-gray-700 p-0.5 rounded-lg">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
           {([
-            { key: 'active' as const, label: 'Aktivní', count: counts.active },
-            { key: 'waiting' as const, label: 'Čeká', count: counts.waiting },
+            { key: 'active' as const, label: 'Aktivni', count: counts.active },
+            { key: 'waiting' as const, label: 'Ceka', count: counts.waiting },
             { key: 'completed' as const, label: 'Hotovo', count: counts.completed },
-            { key: 'all' as const, label: 'Vše', count: counts.all },
+            { key: 'all' as const, label: 'Vse', count: counts.all },
           ] as const).map(tab => (
             <button
               key={tab.key}
@@ -257,10 +259,11 @@ export function AccountantTasksSection({
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              {tab.label}({tab.count})
+              {tab.label} ({tab.count})
             </button>
           ))}
         </div>
+
         <Button
           size="sm"
           variant={showNewForm ? 'secondary' : 'default'}
@@ -268,15 +271,14 @@ export function AccountantTasksSection({
           onClick={() => setShowNewForm(!showNewForm)}
         >
           {showNewForm ? <X className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
-          {showNewForm ? 'Zavřít' : 'Nový úkol'}
+          {showNewForm ? 'Zavrit' : 'Novy ukol'}
         </Button>
       </div>
 
-      {/* Inline new task form */}
       {showNewForm && (
         <div className="p-3 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10 space-y-2">
           <Input
-            placeholder="Název úkolu *"
+            placeholder="Nazev ukolu *"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleCreateTask()}
@@ -285,7 +287,7 @@ export function AccountantTasksSection({
           />
           <div className="flex items-center gap-2">
             <Input
-              placeholder="Popis (volitelné)"
+              placeholder="Popis (volitelne)"
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               className="h-8 text-sm flex-1"
@@ -308,70 +310,71 @@ export function AccountantTasksSection({
         </div>
       )}
 
-      {/* Task list */}
       {filteredTasks.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
-          {filter === 'active' && 'Žádné aktivní úkoly'}
-          {filter === 'waiting' && 'Žádné čekající úkoly'}
-          {filter === 'completed' && 'Žádné dokončené úkoly'}
-          {filter === 'all' && 'Zatím žádné úkoly'}
+        <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">
+          {filter === 'active' && 'Zadne aktivni ukoly'}
+          {filter === 'waiting' && 'Zadne cekajici ukoly'}
+          {filter === 'completed' && 'Zadne dokoncene ukoly'}
+          {filter === 'all' && 'Zatim zadne ukoly'}
         </p>
       ) : (
-        <div className="space-y-1">
-          {filteredTasks.map((task) => {
+        <div className="space-y-2">
+          {filteredTasks.map(task => {
             const priority = getTaskPriority(task.score_fire)
             return (
               <div
                 key={task.id}
-                className={`flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800/50 group ${
-                  task.status === 'completed' ? 'opacity-50' : ''
+                className={`flex items-center justify-between gap-3 py-2.5 px-3 rounded-lg border bg-white dark:bg-gray-900 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50/40 dark:hover:bg-purple-900/10 group transition-colors ${
+                  task.status === 'completed' ? 'opacity-60' : ''
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  {/* Status icon */}
                   {task.status === 'in_progress' ? (
                     <Loader2 className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400 animate-spin shrink-0" />
-                  ) : task.status === 'waiting_for' ? (
+                  ) : task.status === 'waiting_for' || task.status === 'waiting_client' ? (
                     <Clock className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-400 shrink-0" />
                   ) : task.status === 'completed' ? (
                     <CheckCircle className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
                   ) : task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date)) ? (
                     <AlertCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400 shrink-0" />
                   ) : (
-                    <div className="h-3.5 w-3.5 rounded-full border-2 border-gray-300 dark:border-gray-600 shrink-0" />
+                    <Circle className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 shrink-0" />
                   )}
 
-                  {/* Title */}
-                  <span className={`text-sm truncate ${
-                    task.status === 'completed' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'
-                  }`}>
+                  <Link
+                    href={`/accountant/tasks/${task.id}`}
+                    className={`text-sm truncate hover:underline ${
+                      task.status === 'completed' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
                     {task.title}
-                  </span>
+                  </Link>
 
-                  {/* Priority badge (only for high+) */}
                   {(priority === 'critical' || priority === 'high') && (
                     <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${priorityColors[priority]}`}>
                       {priorityLabels[priority]}
                     </Badge>
                   )}
+
+                  <Badge className={`text-[10px] px-1.5 py-0 border-0 hidden sm:inline-flex ${statusColors[task.status] || 'bg-gray-100 text-gray-600'}`}>
+                    {statusLabels[task.status] || task.status}
+                  </Badge>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  {/* Due date */}
                   {task.due_date && (
-                    <span className={`text-xs ${getDueDateColor(task.due_date, task.status)}`}>
+                    <span className={`text-xs ${getDueDateColor(task.due_date, task.status)} hidden sm:inline`}>
                       {formatDueDate(task.due_date)}
                     </span>
                   )}
 
-                  {/* Waiting for */}
-                  {task.status === 'waiting_for' && task.waiting_for_who && (
-                    <span className="text-xs text-yellow-700 dark:text-yellow-400 truncate max-w-[100px]">
-                      {task.waiting_for_who}
-                    </span>
-                  )}
+                  <Button asChild variant="ghost" size="sm" className="h-7 px-2 hidden md:inline-flex">
+                    <Link href={`/accountant/tasks/${task.id}`}>
+                      <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                      Detail
+                    </Link>
+                  </Button>
 
-                  {/* Actions */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-all">
@@ -382,7 +385,7 @@ export function AccountantTasksSection({
                       {task.status !== 'in_progress' && task.status !== 'completed' && (
                         <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'in_progress')}>
                           <Play className="h-4 w-4 mr-2" />
-                          Začít pracovat
+                          Zacit pracovat
                         </DropdownMenuItem>
                       )}
                       {task.status === 'in_progress' && (
@@ -394,16 +397,13 @@ export function AccountantTasksSection({
                       {task.status !== 'completed' && (
                         <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'completed')}>
                           <Check className="h-4 w-4 mr-2" />
-                          Dokončit
+                          Dokoncit
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-red-600 dark:text-red-400"
-                        onClick={() => handleDelete(task.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Smazat
+                      <DropdownMenuItem className="text-red-600 dark:text-red-400" onClick={() => handleCancel(task.id)}>
+                        <X className="h-4 w-4 mr-2" />
+                        Oznacit jako zruseny
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
