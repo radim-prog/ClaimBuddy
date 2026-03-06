@@ -442,6 +442,26 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
     toast.warning('Ukol vracen')
   }
 
+  const handleCancelTask = () => {
+    updateTask(prev => ({
+      ...prev,
+      status: 'cancelled',
+      updated_at: new Date().toISOString(),
+    }))
+    setTimeline(prev => [
+      ...prev,
+      {
+        id: `tl-cancel-${Date.now()}`,
+        task_id: taskId,
+        event_type: 'note',
+        user_name: userName,
+        description: 'Ukol oznacen jako zruseny',
+        created_at: new Date().toISOString(),
+      },
+    ])
+    toast.success('Ukol oznacen jako zruseny')
+  }
+
   const handleClaimTask = () => {
     if (!task) return
     updateTask(prev => ({ ...prev, claimed_by: userId, claimed_by_name: userName, claimed_at: new Date().toISOString(), assigned_to: userId, assigned_to_name: userName, status: 'accepted' }))
@@ -685,6 +705,7 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
             onComplete={handleMarkComplete} onDelegate={() => setShowDelegateDialog(true)}
             onClaim={handleClaimTask} onApprove={handleApproveTask}
             onReject={() => setShowRejectionDialog(true)}
+            onCancel={handleCancelTask}
             canApprove={canApprove} currentUserId={userId}
             editingDesc={editingDesc} setEditingDesc={setEditingDesc}
             editDesc={editDesc} setEditDesc={setEditDesc}
@@ -928,7 +949,7 @@ function SummaryTab({ task, totalScore, scorePriority, progress, timeData, linke
   )
 }
 
-function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalScore, scorePriority, timeData, onAccept, onStart, onComplete, onDelegate, onClaim, onApprove, onReject, canApprove, currentUserId, editingDesc, setEditingDesc, editDesc, setEditDesc }: {
+function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalScore, scorePriority, timeData, onAccept, onStart, onComplete, onDelegate, onClaim, onApprove, onReject, onCancel, canApprove, currentUserId, editingDesc, setEditingDesc, editDesc, setEditDesc }: {
   task: Task
   updateTask: (updater: (prev: Task) => Task) => void
   checklistItems: ChecklistItem[]
@@ -943,6 +964,7 @@ function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalS
   onClaim: () => void
   onApprove: () => void
   onReject: () => void
+  onCancel: () => void
   canApprove: boolean
   currentUserId: string
   editingDesc: boolean
@@ -1060,6 +1082,11 @@ function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalS
                   <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 h-8 text-xs" onClick={onApprove}><CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />Schvalit</Button>
                   <Button size="sm" variant="outline" className="w-full h-8 text-xs" onClick={onReject}><AlertCircle className="mr-1.5 h-3.5 w-3.5" />Vratit</Button>
                 </>
+              )}
+              {!['completed', 'cancelled'].includes(task.status) && (
+                <Button size="sm" variant="outline" className="w-full h-8 text-xs text-red-600 border-red-300 hover:bg-red-50" onClick={onCancel}>
+                  Oznacit jako zruseny
+                </Button>
               )}
             </div>
           </CardContent>
