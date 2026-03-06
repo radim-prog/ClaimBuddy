@@ -194,14 +194,14 @@ const SCORE_OPTIONS = {
   ],
 }
 
-type TabKey = 'souhrn' | 'poznamky' | 'osa' | 'dokumenty' | 'hodiny'
+type TabKey = 'souhrn' | 'poznamky' | 'timeline' | 'dokumenty' | 'hodiny'
 
 const TABS: { id: TabKey; label: string; icon: typeof Clock }[] = [
-  { id: 'souhrn', label: 'Souhrn', icon: Target },
-  { id: 'poznamky', label: 'Poznamky', icon: MessageSquare },
-  { id: 'osa', label: 'Osa', icon: History },
-  { id: 'dokumenty', label: 'Dokumenty', icon: FileText },
-  { id: 'hodiny', label: 'Hodiny', icon: Timer },
+  { id: 'souhrn', label: '📋 Souhrn spisu', icon: Target },
+  { id: 'poznamky', label: '📝 Poznamky o prubehu', icon: MessageSquare },
+  { id: 'dokumenty', label: '📎 Dokumenty', icon: FileText },
+  { id: 'timeline', label: '🕐 Timeline', icon: History },
+  { id: 'hodiny', label: '💰 Hodiny', icon: Timer },
 ]
 
 // ============================================
@@ -515,9 +515,9 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
   // ============================================
 
   return (
-    <div className="space-y-5">
+    <div className="max-w-5xl mx-auto py-8 px-6 space-y-6">
       {/* Header */}
-      <div>
+      <div className="mb-2">
         <Button variant="ghost" size="sm" onClick={onBack} className="mb-3 rounded-xl text-gray-500 hover:text-gray-700">
           <ArrowLeft className="h-4 w-4 mr-1" />
           Zpet
@@ -599,28 +599,64 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
         )}
       </div>
 
-      {/* Pill Tabs — Case Detail style */}
-      <div className="flex gap-1 overflow-x-auto pb-0.5 -mx-1 px-1">
+      {/* Top stats cards like timeline-demo */}
+      <div className="flex gap-3 flex-wrap">
+        <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+          <CardContent className="p-3 text-center min-w-[110px]">
+            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Ukoly</div>
+            <div className="text-2xl font-bold text-green-700">
+              {task.is_project ? `${checklistItems.filter(i => i.completed).length}/${checklistItems.length}` : `${task.status === 'completed' ? 1 : 0}/1`}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+          <CardContent className="p-3 text-center min-w-[130px]">
+            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Odpracovano</div>
+            <div className="text-lg font-bold text-blue-700">{timeData.actual} min</div>
+            <div className="text-xs font-semibold text-gray-900 dark:text-white">{timeEntries.length} zaznamu</div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200">
+          <CardContent className="p-3 text-center min-w-[120px]">
+            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Dokumenty</div>
+            <div className="text-2xl font-bold text-amber-700">{linkedDocs.length}</div>
+            <div className="text-xs font-semibold text-gray-900 dark:text-white">pripojeno</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* View Tabs */}
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto">
         {TABS.map(tab => {
-          const Icon = tab.icon
           const isActive = activeTab === tab.id
           return (
             <Button
               key={tab.id}
               variant={isActive ? 'default' : 'ghost'}
               size="sm"
-              className={`rounded-xl shrink-0 text-xs h-8 ${
+              className={`shrink-0 ${
                 isActive
-                  ? 'bg-purple-500 hover:bg-purple-600 text-white shadow-soft-sm'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : ''
               }`}
               onClick={() => setActiveTab(tab.id)}
             >
-              <Icon className="h-3.5 w-3.5 mr-1" />
               {tab.label}
             </Button>
           )
         })}
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex gap-3 flex-wrap">
+        <Button onClick={() => setShowEventDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="h-4 w-4 mr-2" />
+          Pridat udalost
+        </Button>
+        <Button onClick={() => setShowProgressNoteDialog(true)} variant="outline">
+          <MessageSquare className="h-4 w-4 mr-2" />
+          Pridat poznamku o prubehu
+        </Button>
       </div>
 
       {/* Tab Content */}
@@ -648,7 +684,7 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
             onAddProgressNote={() => setShowProgressNoteDialog(true)}
           />
         )}
-        {activeTab === 'osa' && (
+        {activeTab === 'timeline' && (
           <OsaTab
             timeline={timeline}
             onAddEvent={() => setShowEventDialog(true)}
