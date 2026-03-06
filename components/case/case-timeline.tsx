@@ -32,6 +32,11 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
+function formatDayHeading(dateStr: string): string {
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+}
+
 export function CaseTimeline({ projectId, readOnly = false, apiBasePath }: CaseTimelineProps) {
   const [entries, setEntries] = useState<CaseTimelineEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -112,6 +117,15 @@ export function CaseTimeline({ projectId, readOnly = false, apiBasePath }: CaseT
     return CASE_EVENT_TYPES.find(e => e.value === type)?.label || type
   }
 
+  const groupedEntries = Object.entries(
+    entries.reduce<Record<string, CaseTimelineEntry[]>>((acc, entry) => {
+      const key = new Date(entry.event_date).toISOString().slice(0, 10)
+      if (!acc[key]) acc[key] = []
+      acc[key].push(entry)
+      return acc
+    }, {})
+  ).sort(([a], [b]) => b.localeCompare(a))
+
   if (loading) {
     return (
       <Card>
@@ -179,51 +193,58 @@ export function CaseTimeline({ projectId, readOnly = false, apiBasePath }: CaseT
           </form>
         )}
 
-        <ScrollArea className="h-[400px]">
-          <div className="space-y-4">
-            {entries.length === 0 ? (
+        <ScrollArea className="h-[420px]">
+          <div className="space-y-5">
+            {groupedEntries.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 Zatím žádné záznamy v časové ose
               </div>
             ) : (
-              entries.map((entry, index) => (
-                <div key={entry.id} className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      {getEventIcon(entry.event_type)}
-                    </div>
-                    {index < entries.length - 1 && (
-                      <div className="w-px h-full bg-border mt-2" />
-                    )}
+              groupedEntries.map(([day, dayEntries]) => (
+                <div key={day} className="space-y-3">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {formatDayHeading(day)}
                   </div>
-                  <div className="flex-1 pb-6">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="secondary" className="text-xs">
-                        {getEventLabel(entry.event_type)}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(entry.event_date)}
-                      </span>
-                      {!readOnly && (
-                        <button
-                          onClick={() => toggleClientVisible(entry.id, entry.client_visible === true)}
-                          className={`ml-auto p-1 rounded hover:bg-muted transition-colors ${
-                            entry.client_visible === true ? 'text-blue-500' : 'text-muted-foreground'
-                          }`}
-                          title={entry.client_visible === true ? 'Viditelné pro klienta — klikni pro skrytí' : 'Skryté pro klienta — klikni pro zviditelnění'}
-                        >
-                          {entry.client_visible === true ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                        </button>
-                      )}
+                  {dayEntries.map((entry, index) => (
+                    <div key={entry.id} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          {getEventIcon(entry.event_type)}
+                        </div>
+                        {index < dayEntries.length - 1 && (
+                          <div className="w-px h-full bg-border mt-2" />
+                        )}
+                      </div>
+                      <div className="flex-1 pb-5">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {getEventLabel(entry.event_type)}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(entry.event_date)}
+                          </span>
+                          {!readOnly && (
+                            <button
+                              onClick={() => toggleClientVisible(entry.id, entry.client_visible === true)}
+                              className={`ml-auto p-1 rounded hover:bg-muted transition-colors ${
+                                entry.client_visible === true ? 'text-blue-500' : 'text-muted-foreground'
+                              }`}
+                              title={entry.client_visible === true ? 'Viditelné pro klienta — klikni pro skrytí' : 'Skryté pro klienta — klikni pro zviditelnění'}
+                            >
+                              {entry.client_visible === true ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                            </button>
+                          )}
+                        </div>
+                        <h4 className="font-medium text-sm">{entry.title}</h4>
+                        {entry.description && (
+                          <p className="text-sm text-muted-foreground mt-1">{entry.description}</p>
+                        )}
+                        {entry.created_by_name && (
+                          <p className="text-xs text-muted-foreground mt-1">{entry.created_by_name}</p>
+                        )}
+                      </div>
                     </div>
-                    <h4 className="font-medium text-sm">{entry.title}</h4>
-                    {entry.description && (
-                      <p className="text-sm text-muted-foreground mt-1">{entry.description}</p>
-                    )}
-                    {entry.created_by_name && (
-                      <p className="text-xs text-muted-foreground mt-1">{entry.created_by_name}</p>
-                    )}
-                  </div>
+                  ))}
                 </div>
               ))
             )}
