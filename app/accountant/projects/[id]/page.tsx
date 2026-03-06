@@ -315,6 +315,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const completedTasks = tasks.filter(t => t.status === 'completed').length
   const activeTasks = tasks.filter(t => t.status !== 'completed')
   const completedTasksList = tasks.filter(t => t.status === 'completed')
+  const latestProgressNote = progressNotes[0]
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-6">
@@ -408,11 +409,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       <div className="space-y-4">
           {activeView === 'summary' && (
             <div className="space-y-4">
-              {project.outcome && (
+              {(latestProgressNote?.current_status || project.outcome) && (
                 <Card className="rounded-xl shadow-soft border-green-200 bg-green-50">
                   <CardContent className="p-5">
                     <h3 className="font-bold mb-2">📍 Kde jsme skoncili</h3>
-                    <p className="text-sm text-gray-700 dark:text-gray-200">{project.outcome}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-200">{latestProgressNote?.current_status || project.outcome}</p>
+                    {latestProgressNote?.next_steps && (
+                      <p className="text-xs text-blue-700 mt-3 whitespace-pre-wrap"><strong>Dalsi kroky:</strong> {latestProgressNote.next_steps}</p>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -439,6 +443,28 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   </CardContent>
                 </Card>
               </div>
+              <Card className="rounded-xl shadow-soft-sm">
+                <CardContent className="p-5">
+                  <h3 className="font-bold mb-3">🚀 Nedokoncene ukoly</h3>
+                  {activeTasks.length === 0 ? (
+                    <p className="text-sm text-gray-500">Vsechny ukoly jsou dokoncene.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {activeTasks.slice(0, 8).map(task => (
+                        <div key={task.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate cursor-pointer hover:underline" onClick={() => router.push(`/accountant/tasks/${task.id}`)}>{task.title}</div>
+                            <div className="flex gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              {task.due_date && <span>⏰ {new Date(task.due_date).toLocaleDateString('cs-CZ')}</span>}
+                              {task.assigned_to_name && <span>👤 {task.assigned_to_name}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
 
