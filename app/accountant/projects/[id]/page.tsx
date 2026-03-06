@@ -126,6 +126,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [timelineComposerSignal, setTimelineComposerSignal] = useState(0)
   const [documentsCount, setDocumentsCount] = useState(0)
   const [timelineCount, setTimelineCount] = useState(0)
+  const [lastActivityAt, setLastActivityAt] = useState<string | null>(null)
   const [progressNotes, setProgressNotes] = useState<ProgressNote[]>([])
   const [showAddProgressNote, setShowAddProgressNote] = useState(false)
   const [newNoteStatus, setNewNoteStatus] = useState('')
@@ -166,8 +167,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
     fetch(`/api/projects/${params.id}/timeline?page_size=1`, { headers: { 'x-user-id': userId } })
       .then(r => r.json())
-      .then(data => setTimelineCount(data.pagination?.total || 0))
-      .catch(() => setTimelineCount(0))
+      .then(data => {
+        setTimelineCount(data.pagination?.total || 0)
+        setLastActivityAt(data.entries?.[0]?.event_date || null)
+      })
+      .catch(() => {
+        setTimelineCount(0)
+        setLastActivityAt(null)
+      })
   }, [params.id, userId])
 
   useEffect(() => {
@@ -402,7 +409,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             </div>
             <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
               <span>
-                Posledni aktivita: {new Date(project.created_at).toLocaleDateString('cs-CZ')} •
+                Posledni aktivita: {new Date(lastActivityAt || project.created_at).toLocaleDateString('cs-CZ')} •
                 {' '}Status: <span className="font-medium">{statusCfg.label}</span>
               </span>
               <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{project.due_date ? new Date(project.due_date).toLocaleDateString('cs-CZ') : '—'}</span>
