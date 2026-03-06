@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ import { DocumentLinksPanel } from '@/components/documents/document-links-panel'
 import { ScoringWizard } from '@/components/gtd/scoring-wizard'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import {
   ArrowLeft,
   Calendar,
@@ -81,6 +83,16 @@ type TaskItem = {
   phase_id: string | null
 }
 
+type ProgressNote = {
+  id: string
+  current_status: string
+  problems?: string | null
+  next_steps?: string | null
+  note?: string | null
+  author_name?: string | null
+  created_at: string
+}
+
 const calculateScore = (p: Project) =>
   (p.score_money || 0) + (p.score_fire || 0) + (p.score_time || 0) + (p.score_distance || 0) + (p.score_personal || 0)
 
@@ -101,6 +113,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: typeof PlayCircle; co
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const { userId, userName } = useAccountantUser()
   const [activeView, setActiveView] = useState<'summary' | 'notes' | 'tasks' | 'documents' | 'timeline' | 'budget' | 'case'>('summary')
   const [project, setProject] = useState<Project | null>(null)
   const [phases, setPhases] = useState<Phase[]>([])
@@ -110,6 +123,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [showScoreDialog, setShowScoreDialog] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [addingTask, setAddingTask] = useState(false)
+  const [progressNotes, setProgressNotes] = useState<ProgressNote[]>([])
+  const [showAddProgressNote, setShowAddProgressNote] = useState(false)
+  const [newNoteStatus, setNewNoteStatus] = useState('')
+  const [newNoteProblems, setNewNoteProblems] = useState('')
+  const [newNoteNextSteps, setNewNoteNextSteps] = useState('')
+  const [newNoteText, setNewNoteText] = useState('')
 
   useEffect(() => {
     fetch(`/api/projects/${params.id}`)
@@ -126,6 +145,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       })
       .catch(() => { setError('Nepodařilo se načíst projekt'); setLoading(false) })
   }, [params.id])
+
+  useEffect(() => {
+    if (!userId) return
+    fetch(`/api/projects/${params.id}/progress-notes`, { headers: { 'x-user-id': userId } })
+      .then(r => r.json())
+      .then(data => setProgressNotes(data.notes || []))
+      .catch(() => setProgressNotes([]))
+  }, [params.id, userId])
 
   const toggleNextAction = async (taskId: string, current: boolean) => {
     if (!current) {
@@ -211,6 +238,37 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       toast.error('Chyba při přidávání úkolu')
     } finally {
       setAddingTask(false)
+    }
+  }
+
+  const addProgressNote = async () => {
+    if (!userId || !newNoteStatus.trim()) return
+    try {
+      const res = await fetch(`/api/projects/${params.id}/progress-notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId,
+          'x-user-name': userName || 'Ucetni',
+        },
+        body: JSON.stringify({
+          current_status: newNoteStatus.trim(),
+          problems: newNoteProblems.trim() || undefined,
+          next_steps: newNoteNextSteps.trim() || undefined,
+          note: newNoteText.trim() || undefined,
+        }),
+      })
+      if (!res.ok) throw new Error('save failed')
+      const data = await res.json()
+      setProgressNotes(prev => [data.note, ...prev])
+      setShowAddProgressNote(false)
+      setNewNoteStatus('')
+      setNewNoteProblems('')
+      setNewNoteNextSteps('')
+      setNewNoteText('')
+      toast.success('Poznamka o prubehu pridana')
+    } catch {
+      toast.error('Chyba pri ukladani poznamky')
     }
   }
 
@@ -388,11 +446,59 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           )}
 
           {activeView === 'notes' && (
-            <Card className="rounded-xl shadow-soft-sm">
-              <CardContent className="p-0">
-                <CaseTimeline projectId={params.id} />
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              <Button onClick={() => setShowAddProgressNote(true)} className="bg-green-600 hover:bg-green-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Pridat poznamku o prubehu
+              </Button>
+
+              {showAddProgressNote && (
+                <Card className="rounded-xl shadow-soft border-green-200">
+                  <CardContent className="p-6 space-y-4">
+                    <h3 className="font-bold">📝 Nova poznamka o prubehu</h3>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Aktualni stav *</label>
+                      <Textarea value={newNoteStatus} onChange={(e) => setNewNoteStatus(e.target.value)} rows={3} />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Problemy</label>
+                      <Textarea value={newNoteProblems} onChange={(e) => setNewNoteProblems(e.target.value)} rows={2} />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Dalsi kroky</label>
+                      <Textarea value={newNoteNextSteps} onChange={(e) => setNewNoteNextSteps(e.target.value)} rows={2} />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Volna poznamka</label>
+                      <Textarea value={newNoteText} onChange={(e) => setNewNoteText(e.target.value)} rows={2} />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={addProgressNote} className="bg-green-600">Ulozit</Button>
+                      <Button variant="outline" onClick={() => setShowAddProgressNote(false)}>Zrusit</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {progressNotes.map(note => (
+                <Card key={note.id} className="rounded-xl shadow-soft-sm border-l-4 border-blue-500">
+                  <CardContent className="p-6">
+                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-4" suppressHydrationWarning>
+                      {new Date(note.created_at).toLocaleString('cs-CZ')} • {note.author_name || 'Ucetni'}
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="font-semibold mb-1">📌 Aktualni stav:</div>
+                        <div className="text-gray-700 dark:text-gray-200">{note.current_status}</div>
+                      </div>
+                      {note.problems && (<div><div className="font-semibold text-red-700 mb-1">⚠️ Problemy:</div><div className="text-gray-700 dark:text-gray-200">{note.problems}</div></div>)}
+                      {note.next_steps && (<div><div className="font-semibold text-blue-700 mb-1">⏭️ Dalsi kroky:</div><div className="text-gray-700 dark:text-gray-200 whitespace-pre-line">{note.next_steps}</div></div>)}
+                      {note.note && (<div className="text-sm text-gray-600 dark:text-gray-300 italic">{note.note}</div>)}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
 
           {activeView === 'tasks' && (

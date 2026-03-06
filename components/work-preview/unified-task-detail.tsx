@@ -1244,6 +1244,15 @@ function OsaTab({ timeline, onAddEvent }: {
   timeline: TimelineEvent[]
   onAddEvent: () => void
 }) {
+  const grouped = timeline.reduce<Record<string, TimelineEvent[]>>((acc, ev) => {
+    const d = new Date(ev.created_at)
+    const key = d.toISOString().slice(0, 10)
+    if (!acc[key]) acc[key] = []
+    acc[key].push(ev)
+    return acc
+  }, {})
+  const groupedEntries = Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a))
+
   return (
     <Card className="rounded-xl">
       <CardHeader className="pb-2">
@@ -1253,33 +1262,40 @@ function OsaTab({ timeline, onAddEvent }: {
         </div>
       </CardHeader>
       <CardContent>
-        {timeline.length === 0 ? (
+        {groupedEntries.length === 0 ? (
           <div className="text-center py-8 text-gray-400"><History className="h-8 w-8 mx-auto mb-2 opacity-30" /><p className="text-sm">Zatim zadne udalosti</p></div>
         ) : (
-          <div className="space-y-3">
-            {timeline.map((event, index) => {
-              const config = TIMELINE_EVENT_CONFIG[event.event_type]
-              const EventIcon = config.icon
-              return (
-                <div key={event.id} className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className={cn("w-7 h-7 rounded-full flex items-center justify-center", config.bgColor)}>
-                      <EventIcon className={cn("h-3.5 w-3.5", config.color)} />
-                    </div>
-                    {index < timeline.length - 1 && <div className="w-0.5 flex-1 min-h-[12px] bg-gray-200" />}
-                  </div>
-                  <div className="flex-1 pb-3">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <Badge variant="outline" className={cn("text-[10px]", config.bgColor, config.color)}>{config.label}</Badge>
-                      {event.duration_minutes && <Badge variant="outline" className="text-[10px]"><Clock className="h-3 w-3 mr-0.5" />{event.duration_minutes} min</Badge>}
-                    </div>
-                    <p className="text-sm font-medium">{event.description}</p>
-                    {event.contact_name && <p className="text-xs text-gray-500 flex items-center gap-1"><Building2 className="h-3 w-3" />{event.contact_name}</p>}
-                    <p className="text-xs text-gray-400" suppressHydrationWarning>{event.user_name} &bull; {new Date(event.created_at).toLocaleString('cs-CZ')}</p>
-                  </div>
+          <div className="space-y-5">
+            {groupedEntries.map(([day, events]) => (
+              <div key={day} className="space-y-3">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {new Date(day).toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 </div>
-              )
-            })}
+                {events.map((event, index) => {
+                  const config = TIMELINE_EVENT_CONFIG[event.event_type]
+                  const EventIcon = config.icon
+                  return (
+                    <div key={event.id} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className={cn("w-7 h-7 rounded-full flex items-center justify-center", config.bgColor)}>
+                          <EventIcon className={cn("h-3.5 w-3.5", config.color)} />
+                        </div>
+                        {index < events.length - 1 && <div className="w-0.5 flex-1 min-h-[12px] bg-gray-200" />}
+                      </div>
+                      <div className="flex-1 pb-3">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <Badge variant="outline" className={cn("text-[10px]", config.bgColor, config.color)}>{config.label}</Badge>
+                          {event.duration_minutes && <Badge variant="outline" className="text-[10px]"><Clock className="h-3 w-3 mr-0.5" />{event.duration_minutes} min</Badge>}
+                        </div>
+                        <p className="text-sm font-medium">{event.description}</p>
+                        {event.contact_name && <p className="text-xs text-gray-500 flex items-center gap-1"><Building2 className="h-3 w-3" />{event.contact_name}</p>}
+                        <p className="text-xs text-gray-400" suppressHydrationWarning>{event.user_name} &bull; {new Date(event.created_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
           </div>
         )}
       </CardContent>
