@@ -949,27 +949,12 @@ function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalS
           </CardContent>
         </Card>
 
-        {/* GTD Metadata + Actions */}
+        {/* Workflow Actions */}
         <Card className="rounded-xl">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-1.5"><Target className="h-4 w-4" />GTD & Akce</CardTitle>
+            <CardTitle className="text-base flex items-center gap-1.5"><Target className="h-4 w-4" />Workflow akce</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {task.gtd_context && task.gtd_context.length > 0 && (
-              <div>
-                <Label className="text-xs text-gray-500">Kontext</Label>
-                <div className="flex flex-wrap gap-1 mt-0.5">{task.gtd_context.map(c => <Badge key={c} variant="outline" className="text-xs">{c}</Badge>)}</div>
-              </div>
-            )}
-            {task.gtd_energy_level && (
-              <div>
-                <Label className="text-xs text-gray-500">Energie</Label>
-                <div className="mt-0.5"><Badge variant="outline" className="text-xs">{task.gtd_energy_level === 'high' ? 'Vysoka' : task.gtd_energy_level === 'medium' ? 'Stredni' : 'Nizka'}</Badge></div>
-              </div>
-            )}
-
-            <Separator />
-
             {/* Action buttons */}
             <div className="space-y-1.5">
               {isBonusAvailable && (
@@ -1003,7 +988,6 @@ function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalS
                 </>
               )}
 
-              <Separator />
               <Button size="sm" variant="outline" className="w-full h-8 text-xs" onClick={onGTDWizard}><Edit2 className="mr-1.5 h-3.5 w-3.5" />GTD Wizard</Button>
             </div>
           </CardContent>

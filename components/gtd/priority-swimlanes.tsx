@@ -91,7 +91,7 @@ function PrioritySection({ label, emoji, items, defaultOpen = true, color, borde
             <div className="col-span-2 text-center">Poslední akce</div>
             <div className="col-span-2 text-right">Přiřazeno</div>
           </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+          <div className="space-y-1.5 py-1">
             {items.map(item => (
               <WorkItemRow key={item.id} item={item} />
             ))}
@@ -125,7 +125,7 @@ function WorkItemRow({ item }: { item: WorkItem }) {
   return (
     <Link
       href={href}
-      className="flex sm:grid sm:grid-cols-12 items-center gap-2 sm:gap-2 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg ml-2 transition-colors group"
+      className="flex sm:grid sm:grid-cols-12 items-center gap-2 sm:gap-2 px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50/40 dark:hover:bg-purple-900/10 rounded-lg ml-2 transition-colors shadow-soft-sm group"
     >
       {/* Title + company (col-span-4) */}
       <div className="flex-1 sm:col-span-4 min-w-0">
