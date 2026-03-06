@@ -168,7 +168,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       .then(r => r.json())
       .then(data => setTimelineCount(data.pagination?.total || 0))
       .catch(() => setTimelineCount(0))
-  }, [params.id, userId])
+  }, [params.id, userId, activeView])
 
   const toggleNextAction = async (taskId: string, current: boolean) => {
     if (!current) {
