@@ -194,11 +194,12 @@ const SCORE_OPTIONS = {
   ],
 }
 
-type TabKey = 'souhrn' | 'poznamky' | 'timeline' | 'dokumenty' | 'hodiny'
+type TabKey = 'souhrn' | 'poznamky' | 'ukoly' | 'timeline' | 'dokumenty' | 'hodiny'
 
 const TABS: { id: TabKey; label: string; icon: typeof Clock }[] = [
   { id: 'souhrn', label: '📋 Souhrn spisu', icon: Target },
   { id: 'poznamky', label: '📝 Poznamky o prubehu', icon: MessageSquare },
+  { id: 'ukoly', label: '✓ Ukoly', icon: ListTodo },
   { id: 'dokumenty', label: '📎 Dokumenty', icon: FileText },
   { id: 'timeline', label: '🕐 Timeline', icon: History },
   { id: 'hodiny', label: '💰 Hodiny', icon: Timer },
@@ -564,6 +565,10 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
             </div>
 
             <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+              <span>
+                Posledni aktivita: {new Date(task.updated_at || task.created_at || new Date().toISOString()).toLocaleDateString('cs-CZ')} •
+                {' '}Status: <span className="font-medium">{getStatusLabel(task.status)}</span>
+              </span>
               <span className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{task.company_name}</span>
               <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{task.due_date ? new Date(task.due_date).toLocaleDateString('cs-CZ') : '—'}{task.due_time && ` ${task.due_time}`}</span>
               {task.assigned_to_name && <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" />{task.assigned_to_name}</span>}
@@ -662,6 +667,16 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
       {/* Tab Content */}
       <div className="min-h-[400px]">
         {activeTab === 'souhrn' && (
+          <SummaryTab
+            task={task}
+            totalScore={totalScore}
+            scorePriority={scorePriority}
+            progress={progress}
+            timeData={timeData}
+            linkedDocsCount={linkedDocs.length}
+          />
+        )}
+        {activeTab === 'ukoly' && (
           <SouhrnTab
             task={task} updateTask={updateTask} checklistItems={checklistItems}
             onChecklistToggle={handleChecklistToggle} totalScore={totalScore}
@@ -670,7 +685,6 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
             onComplete={handleMarkComplete} onDelegate={() => setShowDelegateDialog(true)}
             onClaim={handleClaimTask} onApprove={handleApproveTask}
             onReject={() => setShowRejectionDialog(true)}
-            onGTDWizard={() => setShowGTDWizard(true)}
             canApprove={canApprove} currentUserId={userId}
             editingDesc={editingDesc} setEditingDesc={setEditingDesc}
             editDesc={editDesc} setEditDesc={setEditDesc}
@@ -889,7 +903,32 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
 // TAB 1: SOUHRN
 // ============================================
 
-function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalScore, scorePriority, timeData, onAccept, onStart, onComplete, onDelegate, onClaim, onApprove, onReject, onGTDWizard, canApprove, currentUserId, editingDesc, setEditingDesc, editDesc, setEditDesc }: {
+function SummaryTab({ task, totalScore, scorePriority, progress, timeData, linkedDocsCount }: {
+  task: Task
+  totalScore: number
+  scorePriority: { label: string; color: string }
+  progress: number
+  timeData: { estimated: number; actual: number }
+  linkedDocsCount: number
+}) {
+  return (
+    <div className="space-y-6">
+      <Card className="rounded-xl shadow-soft border-green-200 bg-green-50">
+        <CardContent className="p-6">
+          <h2 className="text-lg font-bold mb-2">📍 Kde jsme skoncili</h2>
+          <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{task.description || 'Zatim bez popisu.'}</p>
+        </CardContent>
+      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="rounded-xl shadow-soft-sm"><CardContent className="p-4"><div className="text-sm text-gray-600 mb-1">Priorita</div><div className="text-xl font-bold">{scorePriority.label}</div><div className="text-xs text-gray-500 mt-1">Skore {totalScore}/12</div></CardContent></Card>
+        <Card className="rounded-xl shadow-soft-sm"><CardContent className="p-4"><div className="text-sm text-gray-600 mb-1">Postup</div><div className="text-xl font-bold">{progress}%</div><div className="text-xs text-gray-500 mt-1">{timeData.actual} min odpracovano</div></CardContent></Card>
+        <Card className="rounded-xl shadow-soft-sm"><CardContent className="p-4"><div className="text-sm text-gray-600 mb-1">Dokumenty</div><div className="text-xl font-bold">{linkedDocsCount}</div><div className="text-xs text-gray-500 mt-1">{task.is_project ? 'projekt' : 'ukol'}</div></CardContent></Card>
+      </div>
+    </div>
+  )
+}
+
+function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalScore, scorePriority, timeData, onAccept, onStart, onComplete, onDelegate, onClaim, onApprove, onReject, canApprove, currentUserId, editingDesc, setEditingDesc, editDesc, setEditDesc }: {
   task: Task
   updateTask: (updater: (prev: Task) => Task) => void
   checklistItems: ChecklistItem[]
@@ -904,7 +943,6 @@ function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalS
   onClaim: () => void
   onApprove: () => void
   onReject: () => void
-  onGTDWizard: () => void
   canApprove: boolean
   currentUserId: string
   editingDesc: boolean
@@ -1023,8 +1061,6 @@ function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalS
                   <Button size="sm" variant="outline" className="w-full h-8 text-xs" onClick={onReject}><AlertCircle className="mr-1.5 h-3.5 w-3.5" />Vratit</Button>
                 </>
               )}
-
-              <Button size="sm" variant="outline" className="w-full h-8 text-xs" onClick={onGTDWizard}><Edit2 className="mr-1.5 h-3.5 w-3.5" />GTD Wizard</Button>
             </div>
           </CardContent>
         </Card>
