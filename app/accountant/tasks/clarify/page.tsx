@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { ScoringWizard } from '@/components/gtd/scoring-wizard'
 import { fireTaskConfetti, fireInboxClearedConfetti } from '@/components/gtd/confetti'
 import { toast } from 'sonner'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 type Task = {
   id: string
@@ -55,6 +56,7 @@ function getDefaultDeadline(): string {
 
 export default function ClarifyPage() {
   const router = useRouter()
+  const { userId, userName } = useAccountantUser()
   const [tasks, setTasks] = useState<Task[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -116,15 +118,16 @@ export default function ClarifyPage() {
   }
 
   const updateTask = async (taskId: string, updates: Record<string, unknown>) => {
+    if (!userId) throw new Error('missing user')
     await fetch(`/api/tasks/${taskId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': userId,
+        'x-user-name': userName || 'Ucetni',
+      },
       body: JSON.stringify(updates),
     })
-  }
-
-  const deleteTask = async (taskId: string) => {
-    await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
   }
 
   // Action handlers
@@ -132,7 +135,7 @@ export default function ClarifyPage() {
     if (!currentTask || saving) return
     setSaving(true)
     await updateTask(currentTask.id, { status: 'someday_maybe' })
-    toast.success('Odloženo na později')
+    toast.success('Odlozeno na pozdeji')
     setSaving(false)
     nextTask()
   }
@@ -141,7 +144,7 @@ export default function ClarifyPage() {
     if (!currentTask || saving) return
     setSaving(true)
     await updateTask(currentTask.id, { status: 'cancelled', tags: ['reference'] })
-    toast.success('Archivováno jako reference')
+    toast.success('Archivovano jako reference')
     setSaving(false)
     nextTask()
   }
@@ -154,8 +157,8 @@ export default function ClarifyPage() {
     if (!currentTask || saving) return
     setSaving(true)
     setConfirmDelete(false)
-    await deleteTask(currentTask.id)
-    toast.success('Smazáno')
+    await updateTask(currentTask.id, { status: 'cancelled', completed_at: new Date().toISOString() })
+    toast.success('Ukol oznacen jako zruseny')
     setSaving(false)
     nextTask()
   }
@@ -207,7 +210,7 @@ export default function ClarifyPage() {
   }
 
   const handleGoBack = () => {
-    router.push('/accountant/tasks')
+    router.push('/accountant/work')
     router.refresh()
   }
 
@@ -348,8 +351,8 @@ export default function ClarifyPage() {
           className="p-4 rounded-xl border-2 border-red-200 dark:border-red-700 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-center"
         >
           <Trash2 className="h-8 w-8 mx-auto mb-2 text-red-600" />
-          <span className="font-medium block">Smazat</span>
-          <span className="text-xs text-muted-foreground">Trvale odstranit</span>
+          <span className="font-medium block">Zrusit ukol</span>
+          <span className="text-xs text-muted-foreground">Skryt z aktivniho prehledu</span>
         </button>
       </div>
 
@@ -360,12 +363,12 @@ export default function ClarifyPage() {
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-red-800 dark:text-red-300">Opravdu smazat tento úkol?</p>
-                <p className="text-xs text-red-600 dark:text-red-400 mt-1">Tato akce je nevratná.</p>
+                <p className="text-sm font-medium text-red-800 dark:text-red-300">Opravdu oznacit tento ukol jako zruseny?</p>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">Data zustanou ulozena pro historii.</p>
                 <div className="flex gap-2 mt-3">
                   <Button size="sm" variant="destructive" onClick={handleDeleteConfirm} disabled={saving}>
                     {saving ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Trash2 className="h-3 w-3 mr-1" />}
-                    Ano, smazat
+                    Ano, zrusit
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>
                     Zrušit
