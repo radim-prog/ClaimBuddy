@@ -196,15 +196,6 @@ const SCORE_OPTIONS = {
 
 type TabKey = 'souhrn' | 'poznamky' | 'ukoly' | 'timeline' | 'dokumenty' | 'hodiny'
 
-const TABS: { id: TabKey; label: string; icon: typeof Clock }[] = [
-  { id: 'souhrn', label: '📋 Souhrn spisu', icon: Target },
-  { id: 'poznamky', label: '📝 Poznamky o prubehu', icon: MessageSquare },
-  { id: 'ukoly', label: '✓ Ukoly', icon: ListTodo },
-  { id: 'dokumenty', label: '📎 Dokumenty', icon: FileText },
-  { id: 'timeline', label: '🕐 Timeline', icon: History },
-  { id: 'hodiny', label: '💰 Hodiny', icon: Timer },
-]
-
 // ============================================
 // HELPERS
 // ============================================
@@ -652,7 +643,14 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
 
       {/* View Tabs */}
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto">
-        {TABS.map(tab => {
+        {[
+          { id: 'souhrn' as TabKey, label: '📋 Souhrn spisu' },
+          { id: 'poznamky' as TabKey, label: `📝 Poznamky o prubehu${progressNotes.length ? ` (${progressNotes.length})` : ''}` },
+          { id: 'ukoly' as TabKey, label: `✓ Ukoly${task.is_project ? ` (${checklistItems.filter(i => i.completed).length}/${checklistItems.length})` : ''}` },
+          { id: 'dokumenty' as TabKey, label: `📎 Dokumenty (${linkedDocs.length})` },
+          { id: 'timeline' as TabKey, label: `🕐 Timeline (${timeline.length})` },
+          { id: 'hodiny' as TabKey, label: `💰 Hodiny${timeEntries.length ? ` (${timeEntries.length})` : ''}` },
+        ].map(tab => {
           const isActive = activeTab === tab.id
           return (
             <Button
