@@ -131,17 +131,23 @@ export async function PATCH(
     // Allowlisted fields for update (prevents mass assignment)
     const ALLOWED_UPDATE_FIELDS = [
       'title', 'description', 'status',
+      'is_project', 'project_outcome', 'parent_project_id',
       'score_money', 'score_fire', 'score_time', 'score_distance', 'score_personal',
       'assigned_to', 'assigned_to_name',
       'delegated_from', 'delegated_to', 'delegation_reason',
       'is_waiting_for', 'waiting_for_who', 'waiting_for_what',
       'accepted', 'accepted_at',
+      'claimed_by', 'claimed_by_name', 'claimed_at',
       'due_date', 'due_time', 'estimated_minutes',
+      'actual_minutes',
       'is_billable', 'hourly_rate',
       'gtd_context', 'gtd_energy_level', 'gtd_is_quick_action',
       'tags', 'progress_percentage', 'task_data',
       'project_id', 'phase_id', 'location_id', 'position_in_phase', 'is_next_action',
       'company_id', 'company_name',
+      'approved_by', 'approved_by_name', 'approved_at',
+      'rejected_by', 'rejected_by_name', 'rejected_at', 'rejection_comment', 'rejection_count',
+      'completed_at',
     ]
 
     const updateData: Record<string, any> = { updated_at: new Date().toISOString() }

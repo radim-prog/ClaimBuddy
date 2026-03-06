@@ -300,7 +300,11 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId,
+          'x-user-name': userName || 'Ucetni',
+        },
         body: JSON.stringify(changes),
       })
       if (!res.ok) {
@@ -327,6 +331,16 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
     })
   }
 
+  const persistTaskData = (updater: (prevData: Record<string, any>) => Record<string, any>) => {
+    setTask(prev => {
+      if (!prev) return null
+      const prevTaskData = (prev.task_data && typeof prev.task_data === 'object') ? prev.task_data : {}
+      const nextTaskData = updater(prevTaskData)
+      persistTaskUpdate({ task_data: nextTaskData })
+      return { ...prev, task_data: nextTaskData }
+    })
+  }
+
   const fetchLinkedDocs = useCallback(() => {
     fetch(`/api/tasks/${taskId}/documents`)
       .then(r => r.json())
@@ -343,6 +357,10 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
         const data = await res.json()
         setTask(data.task)
         if (data.task.checklist_items) setChecklistItems(data.task.checklist_items)
+        if (Array.isArray(data.task.task_data?.comments)) setComments(data.task.task_data.comments)
+        if (Array.isArray(data.task.task_data?.timeline)) {
+          setTimeline(data.task.task_data.timeline.sort((a: TimelineEvent, b: TimelineEvent) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
+        }
         if (data.task.time_entries) {
           setTimeEntries(data.task.time_entries.map((te: any) => ({
             id: te.id, task_id: te.task_id || taskId, user_id: te.user_id,
@@ -406,12 +424,40 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
   }
 
   const handleChecklistToggle = (itemId: string) => {
-    setChecklistItems(prev => prev.map(item =>
-      item.id === itemId
-        ? { ...item, completed: !item.completed, completed_by: !item.completed ? userId : undefined, completed_at: !item.completed ? new Date().toISOString() : undefined }
-        : item
-    ))
-    toast.success('Checklist aktualizovan')
+    setChecklistItems(prev => {
+      const nextItems = prev.map(item =>
+        item.id === itemId
+          ? {
+              ...item,
+              completed: !item.completed,
+              completed_by: !item.completed ? userId : undefined,
+              completed_at: !item.completed ? new Date().toISOString() : undefined,
+            }
+          : item
+      )
+      const target = nextItems.find(item => item.id === itemId)
+      if (target) {
+        fetch(`/api/tasks/${taskId}/checklist/${itemId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': userId,
+            'x-user-name': userName || 'Ucetni',
+          },
+          body: JSON.stringify({
+            completed: target.completed,
+            completed_by: target.completed ? userId : null,
+            completed_at: target.completed ? target.completed_at : null,
+          }),
+        })
+          .then(res => {
+            if (!res.ok) throw new Error('save failed')
+            toast.success('Checklist aktualizovan')
+          })
+          .catch(() => toast.error('Checklist se nepodarilo ulozit'))
+      }
+      return nextItems
+    })
   }
 
   const handleAcceptTask = () => { updateTask(prev => ({ ...prev, status: 'accepted' })); toast.success('Ukol prijat') }
@@ -421,7 +467,19 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
     if (!delegateTo) { toast.error('Vyberte osobu'); return }
     const delegateUser = apiUsers.find(u => u.id === delegateTo)
     updateTask(prev => ({ ...prev, status: 'pending', assigned_to: delegateTo, assigned_to_name: delegateUser?.name || '', updated_at: new Date().toISOString() }))
-    setTimeline(prev => [...prev, { id: `tl-del-${Date.now()}`, task_id: taskId, event_type: 'delegated', user_name: userName, description: `Delegoval(a) na: ${delegateUser?.name}${delegateReason ? ` (${delegateReason})` : ''}`, created_at: new Date().toISOString() }])
+    setTimeline(prev => {
+      const newEvent: TimelineEvent = {
+        id: `tl-del-${Date.now()}`,
+        task_id: taskId,
+        event_type: 'delegated',
+        user_name: userName,
+        description: `Delegoval(a) na: ${delegateUser?.name}${delegateReason ? ` (${delegateReason})` : ''}`,
+        created_at: new Date().toISOString(),
+      }
+      const next = [...prev, newEvent]
+      persistTaskData(taskData => ({ ...taskData, timeline: next }))
+      return next
+    })
     setShowDelegateDialog(false); setDelegateTo(''); setDelegateReason('')
     toast.success(`Delegovano na ${delegateUser?.name}`)
   }
@@ -437,7 +495,19 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
     const mins = parseInt(completionActualMinutes)
     if (isNaN(mins) || mins <= 0) { toast.error('Zadejte skutecny cas'); return }
     updateTask(prev => ({ ...prev, status: 'awaiting_approval', actual_minutes: mins, progress_percentage: 100, updated_at: new Date().toISOString() }))
-    setTimeline(prev => [...prev, { id: `tl-comp-${Date.now()}`, task_id: taskId, event_type: 'completed', user_name: userName, description: `Oznacil(a) jako hotovo (${mins} min)${completionNote ? ` - ${completionNote}` : ''}`, created_at: new Date().toISOString() }])
+    setTimeline(prev => {
+      const newEvent: TimelineEvent = {
+        id: `tl-comp-${Date.now()}`,
+        task_id: taskId,
+        event_type: 'completed',
+        user_name: userName,
+        description: `Oznacil(a) jako hotovo (${mins} min)${completionNote ? ` - ${completionNote}` : ''}`,
+        created_at: new Date().toISOString(),
+      }
+      const next = [...prev, newEvent]
+      persistTaskData(taskData => ({ ...taskData, timeline: next }))
+      return next
+    })
     setShowCompletionDialog(false); setCompletionActualMinutes(''); setCompletionNote('')
     toast.success('Ukol odeslan ke schvaleni')
   }
@@ -461,17 +531,19 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
       status: 'cancelled',
       updated_at: new Date().toISOString(),
     }))
-    setTimeline(prev => [
-      ...prev,
-      {
+    setTimeline(prev => {
+      const newEvent: TimelineEvent = {
         id: `tl-cancel-${Date.now()}`,
         task_id: taskId,
         event_type: 'note',
         user_name: userName,
         description: 'Ukol oznacen jako zruseny',
         created_at: new Date().toISOString(),
-      },
-    ])
+      }
+      const next = [...prev, newEvent]
+      persistTaskData(taskData => ({ ...taskData, timeline: next }))
+      return next
+    })
     toast.success('Ukol oznacen jako zruseny')
   }
 
@@ -483,13 +555,38 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
 
   const handleAddComment = () => {
     if (!newComment.trim()) return
-    setComments(prev => [...prev, { id: `c-${Date.now()}`, task_id: taskId, user_id: userId, user_name: userName, text: newComment, created_at: new Date().toISOString() }])
+    const note: Comment = {
+      id: `c-${Date.now()}`,
+      task_id: taskId,
+      user_id: userId,
+      user_name: userName,
+      text: newComment.trim(),
+      created_at: new Date().toISOString(),
+    }
+    setComments(prev => {
+      const next = [...prev, note]
+      persistTaskData(taskData => ({ ...taskData, comments: next }))
+      return next
+    })
     setNewComment(''); toast.success('Komentar pridan')
   }
 
   const handleAddTimelineEvent = () => {
     if (!newEventDescription.trim()) { toast.error('Zadejte popis udalosti'); return }
-    setTimeline(prev => [...prev, { id: `tl-${newEventType}-${Date.now()}`, task_id: taskId, event_type: newEventType, user_name: userName, description: newEventDescription, created_at: new Date().toISOString(), ...(newEventContact && { contact_name: newEventContact }), ...(newEventDuration && { duration_minutes: parseInt(newEventDuration) }) }].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
+    setTimeline(prev => {
+      const next = [...prev, {
+        id: `tl-${newEventType}-${Date.now()}`,
+        task_id: taskId,
+        event_type: newEventType,
+        user_name: userName,
+        description: newEventDescription.trim(),
+        created_at: new Date().toISOString(),
+        ...(newEventContact && { contact_name: newEventContact }),
+        ...(newEventDuration && { duration_minutes: parseInt(newEventDuration) }),
+      }].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      persistTaskData(taskData => ({ ...taskData, timeline: next }))
+      return next
+    })
     setShowEventDialog(false); setNewEventDescription(''); setNewEventContact(''); setNewEventDuration('')
     toast.success(`${TIMELINE_EVENT_CONFIG[newEventType].label} zaznamenan`)
   }
