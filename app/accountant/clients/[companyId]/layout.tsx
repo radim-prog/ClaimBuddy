@@ -10,11 +10,9 @@ import {
   Mail,
   FileText,
   Pencil,
-  Eye,
   Users,
   FolderOpen,
   Clock,
-  Briefcase,
   Car,
   ClipboardList,
   MessageCircle,
@@ -273,17 +271,18 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
           ).length
           const tasksBadge = attention.active_tasks || activeTaskCount || 0
           const messagesBadge = attention.unread_messages || 0
+          const documentsBadge = (attention.missing_documents || 0) + (attention.pending_uploads || 0)
+          const filesBadge = hubStats?.files?.recent || 0
+          const notificationsBadge = attention.active_notifications || 0
 
-          const tabs = [
+          const tabs: Array<{ href: string; label: string; icon: typeof Clock; match: (p: string) => boolean; badge?: number }> = [
             { href: `${basePath}/work`, label: 'Práce', icon: Clock, match: (p: string) => p.includes('/work') },
             { href: `${basePath}/tasks`, label: 'Úkoly', icon: ClipboardList, match: (p: string) => p.includes('/tasks'), badge: tasksBadge },
             { href: `${basePath}/messages`, label: 'Zprávy', icon: MessageCircle, match: (p: string) => p.includes('/messages'), badge: messagesBadge },
-            { href: `${basePath}/documents`, label: 'Doklady', icon: FileText, match: (p: string) => p.includes('/documents') },
-            { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files') },
+            { href: `${basePath}/documents`, label: 'Doklady', icon: FileText, match: (p: string) => p.includes('/documents'), badge: documentsBadge },
+            { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files'), badge: filesBadge },
             { href: `${basePath}/travel`, label: 'Jízdy', icon: Car, match: (p: string) => p.includes('/travel') },
-            { href: `${basePath}/case`, label: 'Spis', icon: Briefcase, match: (p: string) => p.includes('/case') },
-            { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile') },
-            { href: `${basePath}/timeline`, label: 'Osa', icon: Eye, match: (p: string) => p.includes('/timeline') },
+            { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile'), badge: notificationsBadge },
           ]
 
           // Attention items for banner
@@ -366,7 +365,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
               <div className="flex gap-1 overflow-x-auto pb-0.5 -mx-1 px-1" data-tour="client-tabs">
                 {tabs.map(tab => {
                   const active = tab.match(pathname)
-                  const badge = (tab as { badge?: number }).badge
+                  const badge = tab.badge
                   return (
                     <Link key={tab.href} href={tab.href}>
                       <Button
@@ -538,7 +537,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
               )}
 
               {/* Metrics Strip */}
-              <div className="flex items-center gap-6 flex-wrap py-1">
+              <div className="flex items-center gap-6 flex-wrap py-1 w-fit mx-auto">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-blue-500" />
                   <span className="text-sm font-bold text-gray-900 dark:text-white">{s(hubStats?.documents?.total)}</span>

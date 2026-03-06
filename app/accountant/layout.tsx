@@ -13,6 +13,7 @@ import {
   User,
   Receipt,
   Sparkles,
+  Eye,
   Shield,
   CalendarCheck,
   MoreHorizontal,
@@ -65,6 +66,7 @@ const adminNavigation = [
 
 const demoFeatures: { name: string; href: string; icon: typeof Sparkles; badge: string }[] = [
   { name: 'Pracovní pohled', href: '/accountant/work-preview', icon: Sparkles, badge: 'DEMO' },
+  { name: 'Osa', href: '/accountant/timeline-demo', icon: Eye, badge: 'DEMO' },
 ]
 
 export default function AccountantLayout({
@@ -502,6 +504,31 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 <Settings className="h-5 w-5" />
                 <span className="text-sm font-medium">Nastavení</span>
               </Link>
+
+              {demoFeatures.map((item) => {
+                const Icon = item.icon
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center justify-between gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                        : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
+                    }`}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Icon className="h-5 w-5" />
+                      <span className="text-sm font-medium">{item.name}</span>
+                    </span>
+                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-violet-400 text-white rounded-full">
+                      {item.badge}
+                    </span>
+                  </Link>
+                )
+              })}
 
               {showAdmin && (
                 <Link
