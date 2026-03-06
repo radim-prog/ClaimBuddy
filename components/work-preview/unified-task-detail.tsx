@@ -974,6 +974,8 @@ function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalS
 }) {
   const isBonusAvailable = task.task_type === 'bonus' && !task.claimed_by && !task.assigned_to
   const isBonusClaimed = task.task_type === 'bonus' && task.claimed_by
+  const openChecklist = checklistItems.filter(i => !i.completed)
+  const doneChecklist = checklistItems.filter(i => i.completed)
 
   return (
     <div className="space-y-4">
@@ -1109,34 +1111,43 @@ function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalS
 
       {/* Checklist for projects */}
       {task.is_project && checklistItems.length > 0 && (
-        <Card className="rounded-xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <ListTodo className="h-4 w-4" />Dilci ukoly ({checklistItems.filter(i => i.completed).length}/{checklistItems.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {checklistItems.map(item => (
-              <div
-                key={item.id}
-                className={cn("flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors", item.completed ? 'bg-green-50 border-green-300' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:border-purple-300')}
-                onClick={() => onChecklistToggle(item.id)}
-              >
-                <Checkbox checked={item.completed} className="mt-0.5" />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className={cn("text-sm font-medium", item.completed && "line-through text-gray-500")}>{item.text}</span>
-                    {item.estimated_minutes && <Badge variant="outline" className="text-[10px]"><Clock className="h-3 w-3 mr-0.5" />{item.estimated_minutes} min</Badge>}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="rounded-xl shadow-soft border-red-200">
+            <CardContent className="p-5">
+              <h3 className="font-bold text-red-700 mb-3">🔥 Nedokoncene ukoly ({openChecklist.length})</h3>
+              <div className="space-y-2">
+                {openChecklist.map(item => (
+                  <div key={item.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg cursor-pointer" onClick={() => onChecklistToggle(item.id)}>
+                    <Checkbox checked={item.completed} className="mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{item.text}</div>
+                      <div className="flex gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {item.due_date && <span>⏰ {new Date(item.due_date).toLocaleDateString('cs-CZ')}</span>}
+                        {item.assigned_to_name && <span>👤 {item.assigned_to_name}</span>}
+                        {item.estimated_minutes && <span>🕐 {item.estimated_minutes} min</span>}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
-                    {item.due_date && <span className="flex items-center gap-0.5"><Calendar className="h-3 w-3" />{new Date(item.due_date).toLocaleDateString('cs-CZ')}</span>}
-                    {item.assigned_to_name && <span className="flex items-center gap-0.5"><User className="h-3 w-3" />{item.assigned_to_name}</span>}
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+          <Card className="rounded-xl shadow-soft border-green-200">
+            <CardContent className="p-5">
+              <h3 className="font-bold text-green-700 mb-3">✅ Dokoncene ukoly ({doneChecklist.length})</h3>
+              <div className="space-y-2">
+                {doneChecklist.map(item => (
+                  <div key={item.id} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg opacity-80 cursor-pointer" onClick={() => onChecklistToggle(item.id)}>
+                    <Checkbox checked={item.completed} className="mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium line-through truncate">{item.text}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   )
