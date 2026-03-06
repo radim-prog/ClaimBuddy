@@ -36,8 +36,6 @@ import {
   FileText,
   Clock,
   TrendingUp,
-  ChevronDown,
-  ChevronRight,
   Pencil,
 } from 'lucide-react'
 
@@ -101,49 +99,9 @@ const STATUS_CONFIG: Record<string, { label: string; icon: typeof PlayCircle; co
   cancelled: { label: 'Zrušeno', icon: AlertCircle, color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
 }
 
-// Collapsible section component
-function Section({
-  title,
-  icon: Icon,
-  count,
-  defaultOpen = true,
-  children,
-}: {
-  title: string
-  icon: typeof FileText
-  count?: number
-  defaultOpen?: boolean
-  children: React.ReactNode
-}) {
-  const [open, setOpen] = useState(defaultOpen)
-
-  return (
-    <div className="border-b border-gray-200 dark:border-gray-800 last:border-b-0">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-      >
-        <div className="flex items-center gap-2.5">
-          <Icon className="h-4 w-4 text-muted-foreground" />
-          <span className="font-semibold text-sm">{title}</span>
-          {count !== undefined && (
-            <Badge variant="secondary" className="text-xs">{count}</Badge>
-          )}
-        </div>
-        {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-      </button>
-      {open && (
-        <div className="px-5 pb-4 animate-in fade-in slide-in-from-top-1 duration-200">
-          {children}
-        </div>
-      )}
-    </div>
-  )
-}
-
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const [activeView, setActiveView] = useState<'summary' | 'tasks' | 'documents' | 'timeline' | 'budget' | 'case'>('summary')
+  const [activeView, setActiveView] = useState<'summary' | 'notes' | 'tasks' | 'documents' | 'timeline' | 'budget' | 'case'>('summary')
   const [project, setProject] = useState<Project | null>(null)
   const [phases, setPhases] = useState<Phase[]>([])
   const [tasks, setTasks] = useState<TaskItem[]>([])
@@ -314,6 +272,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 overflow-x-auto">
         <Button variant={activeView === 'summary' ? 'default' : 'ghost'} onClick={() => setActiveView('summary')} className={activeView === 'summary' ? 'bg-blue-600 hover:bg-blue-700' : ''}>📋 Souhrn spisu</Button>
+        <Button variant={activeView === 'notes' ? 'default' : 'ghost'} onClick={() => setActiveView('notes')} className={activeView === 'notes' ? 'bg-blue-600 hover:bg-blue-700' : ''}>📝 Poznamky o prubehu</Button>
         <Button variant={activeView === 'tasks' ? 'default' : 'ghost'} onClick={() => setActiveView('tasks')} className={activeView === 'tasks' ? 'bg-blue-600 hover:bg-blue-700' : ''}>✓ Ukoly ({completedTasks}/{tasks.length})</Button>
         {project.is_case && (
           <>
@@ -391,147 +350,148 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         </div>
 
         {/* CONTENT */}
-        <div>
-          {/* TASKS SECTION */}
-          {(activeView === 'tasks' || activeView === 'summary') && (
-          <Section
-            title="Úkoly"
-            icon={CheckCircle2}
-            count={tasks.length}
-            defaultOpen={true}
-          >
-            <div className="space-y-1">
-              {activeTasks.map(task => (
-                <div
-                  key={task.id}
-                  className={cn(
-                    "flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group",
-                    task.is_next_action && "bg-blue-50/50 dark:bg-blue-900/10"
-                  )}
-                >
-                  <button
-                    onClick={() => toggleTaskComplete(task.id, task.status)}
-                    className="flex-shrink-0 w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 hover:border-purple-500 transition-colors flex items-center justify-center"
-                  >
-                    {task.status === 'completed' && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-                  </button>
-                  <span
-                    className="flex-1 text-sm font-medium cursor-pointer hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-                    onClick={() => router.push(`/accountant/tasks/${task.id}`)}
-                  >
-                    {task.title}
-                  </span>
-                  {task.is_next_action && (
-                    <Zap className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />
-                  )}
-                  {task.assigned_to_name && (
-                    <span className="text-xs text-muted-foreground hidden sm:flex items-center gap-1">
-                      <User className="h-3 w-3" /> {task.assigned_to_name}
-                    </span>
-                  )}
-                  {task.due_date && (
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(task.due_date).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' })}
-                    </span>
-                  )}
-                  <button
-                    onClick={() => toggleNextAction(task.id, task.is_next_action)}
-                    className={cn(
-                      "p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity",
-                      task.is_next_action ? 'text-yellow-500 opacity-100' : 'text-gray-300 hover:text-yellow-400'
-                    )}
-                    title={task.is_next_action ? 'Odebrat Next Action' : 'Nastavit jako Next Action'}
-                  >
-                    <Star className="h-3.5 w-3.5" fill={task.is_next_action ? 'currentColor' : 'none'} />
-                  </button>
-                </div>
-              ))}
+        <div className="p-5">
+          {activeView === 'summary' && (
+            <div className="space-y-4">
+              {project.outcome && (
+                <Card className="rounded-xl shadow-soft border-green-200 bg-green-50">
+                  <CardContent className="p-5">
+                    <h3 className="font-bold mb-2">📍 Kde jsme skoncili</h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-200">{project.outcome}</p>
+                  </CardContent>
+                </Card>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="rounded-xl shadow-soft-sm">
+                  <CardContent className="p-4">
+                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Priorita</div>
+                    <div className="text-xl font-bold">{priority.label}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Skore {score}/12</div>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-xl shadow-soft-sm">
+                  <CardContent className="p-4">
+                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Deadline</div>
+                    <div className="text-xl font-bold">{project.due_date ? new Date(project.due_date).toLocaleDateString('cs-CZ') : 'Neni'}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Status {statusCfg.label}</div>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-xl shadow-soft-sm">
+                  <CardContent className="p-4">
+                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Dalsi krok</div>
+                    <div className="text-sm font-bold truncate">{nextAction?.title || 'Neni nastaven'}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{nextAction?.assigned_to_name || ''}</div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
 
-              {/* Completed tasks (collapsed) */}
-              {completedTasksList.length > 0 && (
-                <details className="mt-2">
-                  <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground py-1">
-                    {completedTasksList.length} dokončených úkolů
-                  </summary>
-                  <div className="space-y-1 mt-1 opacity-60">
-                    {completedTasksList.map(task => (
-                      <div key={task.id} className="flex items-center gap-3 py-1.5 px-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                        <span className="text-sm line-through text-muted-foreground">{task.title}</span>
+          {activeView === 'notes' && (
+            <Card className="rounded-xl shadow-soft-sm">
+              <CardContent className="p-0">
+                <CaseTimeline projectId={params.id} />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeView === 'tasks' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="rounded-xl shadow-soft border-red-200">
+                <CardContent className="p-5">
+                  <h3 className="font-bold text-red-700 mb-3">🔥 Nedokoncene ukoly ({activeTasks.length})</h3>
+                  <div className="space-y-2">
+                    {activeTasks.map(task => (
+                      <div key={task.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                        <button onClick={() => toggleTaskComplete(task.id, task.status)} className="mt-1">
+                          <CheckCircle2 className="h-4 w-4 text-gray-300 hover:text-green-600" />
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate cursor-pointer hover:underline" onClick={() => router.push(`/accountant/tasks/${task.id}`)}>{task.title}</div>
+                          <div className="flex gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {task.due_date && <span>⏰ {new Date(task.due_date).toLocaleDateString('cs-CZ')}</span>}
+                            {task.assigned_to_name && <span>👤 {task.assigned_to_name}</span>}
+                          </div>
+                        </div>
+                        <button onClick={() => toggleNextAction(task.id, task.is_next_action)} className={task.is_next_action ? 'text-yellow-500' : 'text-gray-300 hover:text-yellow-500'}>
+                          <Star className="h-4 w-4" fill={task.is_next_action ? 'currentColor' : 'none'} />
+                        </button>
                       </div>
                     ))}
                   </div>
-                </details>
-              )}
-
-              {/* Add task inline */}
-              <div className="flex gap-2 mt-3 pt-2 border-t border-dashed">
-                <Input
-                  placeholder="Přidat úkol..."
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newTaskTitle.trim()) {
-                      e.preventDefault()
-                      handleAddTask()
-                    }
-                  }}
-                  className="h-8 text-sm"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleAddTask}
-                  disabled={!newTaskTitle.trim() || addingTask}
-                  className="h-8 px-3"
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
+                  <div className="flex gap-2 mt-4 pt-3 border-t border-dashed">
+                    <Input
+                      placeholder="Pridat ukol..."
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newTaskTitle.trim()) {
+                          e.preventDefault()
+                          handleAddTask()
+                        }
+                      }}
+                      className="h-8 text-sm"
+                    />
+                    <Button size="sm" variant="outline" onClick={handleAddTask} disabled={!newTaskTitle.trim() || addingTask} className="h-8 px-3">
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="rounded-xl shadow-soft border-green-200">
+                <CardContent className="p-5">
+                  <h3 className="font-bold text-green-700 mb-3">✅ Dokoncene ukoly ({completedTasksList.length})</h3>
+                  <div className="space-y-2">
+                    {completedTasksList.map(task => (
+                      <div key={task.id} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg opacity-80">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-1" />
+                        <div className="flex-1">
+                          <div className="font-medium line-through">{task.title}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </Section>
           )}
 
-          {/* DOCUMENTS SECTION */}
           {project.is_case && activeView === 'documents' && (
-            <Section title="Dokumenty" icon={FileText} defaultOpen={true}>
+            <div className="space-y-4">
               <CaseDocuments projectId={params.id} />
               {project.company_id && (
-                <div className="mt-4">
-                  <DocumentLinksPanel
-                    entityType="project"
-                    entityId={params.id}
-                    companyId={project.company_id}
-                    allowEdit
-                  />
-                </div>
+                <Card className="rounded-xl shadow-soft-sm">
+                  <CardContent className="p-4">
+                    <DocumentLinksPanel
+                      entityType="project"
+                      entityId={params.id}
+                      companyId={project.company_id}
+                      allowEdit
+                    />
+                  </CardContent>
+                </Card>
               )}
-            </Section>
+            </div>
           )}
 
-          {/* TIMELINE SECTION */}
           {project.is_case && activeView === 'timeline' && (
-            <Section title="Průběh" icon={Clock} defaultOpen={false}>
-              <CaseTimeline projectId={params.id} />
-            </Section>
+            <CaseTimeline projectId={params.id} />
           )}
 
-          {/* BUDGET SECTION */}
           {project.is_case && activeView === 'budget' && (
-            <Section title="Rozpočet" icon={TrendingUp} defaultOpen={false}>
-              <CaseBudgetCard projectId={params.id} />
-            </Section>
+            <CaseBudgetCard projectId={params.id} />
           )}
 
-          {/* CASE TOGGLE */}
-          {(activeView === 'case' || activeView === 'summary') && (
-          <Section title="Spisový systém" icon={FileText} defaultOpen={false}>
-            <CaseToggle
-              projectId={params.id}
-              project={project}
-              onUpdate={(updated) => setProject(prev => prev ? { ...prev, ...updated } : prev)}
-            />
-          </Section>
+          {activeView === 'case' && (
+            <Card className="rounded-xl shadow-soft-sm">
+              <CardContent className="p-4">
+                <CaseToggle
+                  projectId={params.id}
+                  project={project}
+                  onUpdate={(updated) => setProject(prev => prev ? { ...prev, ...updated } : prev)}
+                />
+              </CardContent>
+            </Card>
           )}
         </div>
       </Card>
