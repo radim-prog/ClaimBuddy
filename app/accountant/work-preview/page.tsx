@@ -2,138 +2,77 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import {
-  Loader2, ChevronDown, FileText, ClipboardList, Clock, BarChart3,
-  Briefcase, Wrench,
-} from 'lucide-react'
-import { CaseSummaryPanel } from '@/components/work-preview/case-summary-panel'
-import { TimelineTasksPanel } from '@/components/work-preview/timeline-tasks-panel'
-import { BillingReport } from '@/components/work-preview/billing-report'
-import { CaseTimeline } from '@/components/case/case-timeline'
-import { CaseDocuments } from '@/components/case/case-documents'
-import { PrepaidProjectsSection } from '@/components/prepaid/prepaid-projects-section'
-import { QuickTimeLog } from '@/components/quick-time-log'
-import { WorkOverviewSection } from '@/components/accountant/work-overview-section'
+import { Loader2, Search, Clock, Building2, Calendar } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { UnifiedTaskDetail } from '@/components/work-preview/unified-task-detail'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { cn } from '@/lib/utils'
 
-type Tab = 'summary' | 'timeline' | 'tasks' | 'projects' | 'documents' | 'work'
-
-interface Company {
+interface TaskListItem {
   id: string
-  name: string
-  ico: string
+  title: string
   status: string
-  vat_payer?: boolean
-  vat_period?: string | null
+  company_name: string
+  due_date?: string
+  is_project?: boolean
+  total_score?: number
+  score_money?: number
+  score_fire?: number
+  score_time?: number
+  score_distance?: number
+  score_personal?: number
 }
 
-interface Project {
-  id: string
-  title?: string
-  name?: string
-  status: string
-  company_id?: string
+const getStatusLabel = (status: string) => {
+  const map: Record<string, string> = {
+    pending: 'Ceka', accepted: 'Prijato', in_progress: 'Probiha',
+    waiting_for: 'Ceka na', completed: 'Dokonceno', someday_maybe: 'Nekdy/Mozna',
+    awaiting_approval: 'Ke schvaleni', draft: 'Koncept',
+  }
+  return map[status] || status
 }
 
-interface HeaderStats {
-  tasksCompleted: number
-  tasksTotal: number
-  totalMinutes: number
-  billableAmount: number
-}
-
-const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: 'summary', label: 'Souhrn', icon: BarChart3 },
-  { id: 'timeline', label: 'Timeline', icon: Clock },
-  { id: 'tasks', label: 'Ukoly', icon: ClipboardList },
-  { id: 'projects', label: 'Projekty', icon: Briefcase },
-  { id: 'documents', label: 'Dokumenty', icon: FileText },
-  { id: 'work', label: 'Prace', icon: Wrench },
-]
-
-function formatMinutes(mins: number): string {
-  const h = Math.floor(mins / 60)
-  const m = mins % 60
-  if (h === 0 && m === 0) return '0 min'
-  if (h === 0) return `${m} min`
-  if (m === 0) return `${h} hod`
-  return `${h} hod ${m} min`
+const getStatusDot = (status: string) => {
+  const map: Record<string, string> = {
+    completed: 'bg-green-500', in_progress: 'bg-blue-500', waiting_for: 'bg-yellow-500',
+    accepted: 'bg-purple-500', awaiting_approval: 'bg-indigo-500', pending: 'bg-gray-400',
+  }
+  return map[status] || 'bg-gray-400'
 }
 
 export default function WorkPreviewPage() {
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
-  const [projects, setProjects] = useState<Project[]>([])
-  const [activeTab, setActiveTab] = useState<Tab>('summary')
+  const { userId, userName } = useAccountantUser()
+  const [tasks, setTasks] = useState<TaskListItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [showBilling, setShowBilling] = useState(false)
-  const [stats, setStats] = useState<HeaderStats>({
-    tasksCompleted: 0, tasksTotal: 0, totalMinutes: 0, billableAmount: 0,
-  })
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  // Load companies
   useEffect(() => {
-    fetch('/api/accountant/companies', {
-      headers: { 'x-user-id': 'radim' },
+    if (!userId) return
+    fetch('/api/tasks?page_size=50', {
+      headers: { 'x-user-id': userId },
     })
       .then(r => r.json())
-      .then(data => {
-        const list = (data.companies || []).filter((c: Company) => c.status === 'active')
-        setCompanies(list)
-        if (list.length > 0) setSelectedCompanyId(list[0].id)
-      })
+      .then(data => setTasks(data.tasks || []))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }, [userId])
 
-  const selectedCompany = companies.find(c => c.id === selectedCompanyId)
+  // Filter tasks by search
+  const filteredTasks = tasks.filter(t => {
+    if (!searchQuery) return true
+    const q = searchQuery.toLowerCase()
+    return t.title.toLowerCase().includes(q) || t.company_name.toLowerCase().includes(q)
+  })
 
-  // Load projects + stats when company changes
-  useEffect(() => {
-    if (!selectedCompanyId) return
-
-    const headers: Record<string, string> = { 'x-user-id': 'radim', 'x-user-name': 'Radim Zajicek' }
-    const now = new Date()
-    const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-
-    Promise.all([
-      fetch(`/api/projects?company_id=${selectedCompanyId}`, { headers })
-        .then(r => r.json()).catch(() => ({ projects: [] })),
-      fetch(`/api/tasks?company_id=${selectedCompanyId}&page_size=100`, { headers })
-        .then(r => r.json()).catch(() => ({ tasks: [] })),
-      fetch(`/api/time-entries?company_id=${selectedCompanyId}&period=${period}&limit=200`, { headers })
-        .then(r => r.json()).catch(() => ({ entries: [] })),
-    ]).then(([projectsData, tasksData, timeData]) => {
-      setProjects(projectsData.projects || [])
-
-      const tasks = tasksData.tasks || []
-      const completedCount = tasks.filter((t: any) => t.status === 'completed').length
-
-      let totalMins = 0
-      let billable = 0
-      const entries = timeData.entries || []
-      for (const e of entries) {
-        const mins = e.minutes || Math.round((e.hours || 0) * 60)
-        totalMins += mins
-        if (e.billable && !e.in_tariff) {
-          billable += (mins / 60) * (e.hourly_rate || 700)
-        }
-      }
-
-      setStats({
-        tasksCompleted: completedCount,
-        tasksTotal: tasks.length,
-        totalMinutes: totalMins,
-        billableAmount: Math.round(billable),
-      })
-    })
-  }, [selectedCompanyId, refreshTrigger])
-
-  // First project for timeline/docs/summary tabs
-  const firstProjectId = projects.length > 0 ? projects[0].id : null
+  // Sort: in_progress first, then accepted, pending, rest
+  const statusOrder: Record<string, number> = { in_progress: 0, accepted: 1, pending: 2, waiting_for: 3, awaiting_approval: 4 }
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    const oa = statusOrder[a.status] ?? 10
+    const ob = statusOrder[b.status] ?? 10
+    return oa - ob
+  })
 
   if (loading) {
     return (
@@ -143,218 +82,89 @@ export default function WorkPreviewPage() {
     )
   }
 
-  if (companies.length === 0) {
+  // If task is selected, show unified detail
+  if (selectedTaskId) {
     return (
-      <div className="max-w-3xl mx-auto py-12">
-        <Card className="rounded-xl shadow-soft">
-          <CardContent className="p-12 text-center">
-            <h1 className="text-2xl font-bold font-display mb-4">Pracovni pohled</h1>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Zatim nemate zadne aktivni klienty.
-            </p>
-            <Badge variant="outline" className="text-sm">DEMO</Badge>
-          </CardContent>
-        </Card>
+      <div className="max-w-5xl mx-auto">
+        <UnifiedTaskDetail
+          taskId={selectedTaskId}
+          userId={userId}
+          userName={userName}
+          onBack={() => setSelectedTaskId(null)}
+        />
       </div>
     )
   }
 
-  const tasksPercent = stats.tasksTotal > 0
-    ? Math.round((stats.tasksCompleted / stats.tasksTotal) * 100)
-    : 0
-
+  // Task selector
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header */}
+    <div className="max-w-3xl mx-auto space-y-5">
       <div>
         <div className="flex items-center gap-3 mb-1">
           <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white">
             Pracovni pohled
           </h1>
-          <Badge variant="outline" className="text-xs">DEMO</Badge>
+          <Badge variant="outline" className="text-xs">DEMO v2</Badge>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Slouceny koncept: Osa + Prace
+          Vyberte ukol pro zobrazeni kompletniho detailu
         </p>
       </div>
 
-      {/* Company selector */}
-      <Card className="rounded-xl shadow-soft">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Klient:</span>
-            <Select
-              value={selectedCompanyId}
-              onValueChange={v => { setSelectedCompanyId(v); setActiveTab('summary') }}
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          placeholder="Hledat ukol nebo klienta..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="pl-9 rounded-xl"
+        />
+      </div>
+
+      {/* Task list */}
+      <div className="space-y-2">
+        {sortedTasks.length === 0 ? (
+          <Card className="rounded-xl">
+            <CardContent className="p-8 text-center text-gray-500">
+              {searchQuery ? 'Zadne ukoly odpovidajici hledani' : 'Zatim nemata zadne ukoly'}
+            </CardContent>
+          </Card>
+        ) : sortedTasks.map(task => {
+          const score = (task.score_money || 0) + (task.score_fire || 0) + (task.score_time || 0) + (task.score_distance || 0) + (task.score_personal || 0)
+          return (
+            <Card
+              key={task.id}
+              className="rounded-xl cursor-pointer hover:border-purple-300 hover:shadow-md transition-all group"
+              onClick={() => setSelectedTaskId(task.id)}
             >
-              <SelectTrigger className="w-[400px]">
-                <SelectValue placeholder="Vyberte klienta" />
-              </SelectTrigger>
-              <SelectContent>
-                {companies.map(c => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Header stat cards */}
-      {selectedCompanyId && (
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="rounded-xl shadow-soft-sm">
-            <CardContent className="p-4">
-              <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Ukoly</div>
-              <div className="text-3xl font-bold">
-                {stats.tasksCompleted}/{stats.tasksTotal}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {stats.tasksTotal > 0 ? `${tasksPercent}% dokonceno` : 'Zadne ukoly'}
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-xl shadow-soft-sm">
-            <CardContent className="p-4">
-              <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Odpracovano</div>
-              <div className="text-2xl font-bold">{formatMinutes(stats.totalMinutes)}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">tento mesic</div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-xl shadow-soft-sm">
-            <CardContent className="p-4">
-              <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">K fakturaci</div>
-              <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">
-                {stats.billableAmount.toLocaleString('cs-CZ')} Kc
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">tento mesic</div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* 6-tab interface */}
-      {selectedCompanyId && (
-        <>
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <div className="flex gap-1">
-              {TABS.map(tab => {
-                const Icon = tab.icon
-                const isActive = activeTab === tab.id
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                      isActive
-                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {tab.label}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Tab content */}
-          <div className="min-h-[400px]">
-            {/* Tab 1: Souhrn */}
-            {activeTab === 'summary' && firstProjectId && (
-              <CaseSummaryPanel projectId={firstProjectId} />
-            )}
-            {activeTab === 'summary' && !firstProjectId && (
-              <NoProjectMessage message="Tento klient zatim nema zadne projekty/spisy pro zobrazeni souhrnu." />
-            )}
-
-            {/* Tab 2: Timeline */}
-            {activeTab === 'timeline' && firstProjectId && (
-              <CaseTimeline projectId={firstProjectId} />
-            )}
-            {activeTab === 'timeline' && !firstProjectId && (
-              <NoProjectMessage message="Tento klient zatim nema zadne spisy pro timeline." />
-            )}
-
-            {/* Tab 3: Ukoly (new timeline visual + GTD) */}
-            {activeTab === 'tasks' && (
-              <TimelineTasksPanel
-                companyId={selectedCompanyId}
-                companyName={selectedCompany?.name || ''}
-              />
-            )}
-
-            {/* Tab 4: Projekty (prepaid) */}
-            {activeTab === 'projects' && (
-              <PrepaidProjectsSection
-                companyId={selectedCompanyId}
-                companyName={selectedCompany?.name || ''}
-                refreshTrigger={refreshTrigger}
-              />
-            )}
-
-            {/* Tab 5: Dokumenty */}
-            {activeTab === 'documents' && firstProjectId && (
-              <CaseDocuments projectId={firstProjectId} />
-            )}
-            {activeTab === 'documents' && !firstProjectId && (
-              <NoProjectMessage message="Tento klient zatim nema zadne dokumenty ve spisu." />
-            )}
-
-            {/* Tab 6: Prace (WorkOverview + QuickTimeLog) */}
-            {activeTab === 'work' && (
-              <div className="space-y-6">
-                <WorkOverviewSection
-                  companyId={selectedCompanyId}
-                  vatPayer={selectedCompany?.vat_payer}
-                  vatPeriod={(selectedCompany?.vat_period as 'monthly' | 'quarterly') || null}
-                />
-                <QuickTimeLog
-                  companyId={selectedCompanyId}
-                  companyName={selectedCompany?.name || ''}
-                  onTimeLogged={() => setRefreshTrigger(t => t + 1)}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Billing report toggle */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowBilling(!showBilling)}
-              className="w-full justify-between"
-            >
-              <span className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Prehled hodin a fakturace
-              </span>
-              <ChevronDown className={`h-4 w-4 transition-transform ${showBilling ? 'rotate-180' : ''}`} />
-            </Button>
-            {showBilling && firstProjectId && (
-              <div className="mt-4">
-                <BillingReport projectId={firstProjectId} />
-              </div>
-            )}
-            {showBilling && !firstProjectId && (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                Zadny projekt pro zobrazeni fakturace
-              </div>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-function NoProjectMessage({ message }: { message: string }) {
-  return (
-    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-      {message}
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className={cn("w-2.5 h-2.5 rounded-full mt-1.5 shrink-0", getStatusDot(task.status))} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors">
+                        {task.title}
+                      </h3>
+                      {task.is_project && <Badge variant="outline" className="text-[10px] shrink-0 bg-purple-50 text-purple-600 border-purple-200">Projekt</Badge>}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                      <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{task.company_name}</span>
+                      {task.due_date && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(task.due_date).toLocaleDateString('cs-CZ')}</span>}
+                      <span>{getStatusLabel(task.status)}</span>
+                    </div>
+                  </div>
+                  {score > 0 && (
+                    <Badge variant="outline" className={cn("text-xs shrink-0", score >= 9 ? 'bg-red-50 text-red-600 border-red-200' : score >= 6 ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-green-50 text-green-600 border-green-200')}>
+                      {score}/12
+                    </Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
     </div>
   )
 }
