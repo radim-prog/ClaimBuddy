@@ -342,6 +342,23 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         <Button variant={activeView === 'case' ? 'default' : 'ghost'} onClick={() => setActiveView('case')} className={activeView === 'case' ? 'bg-blue-600 hover:bg-blue-700' : ''}>⚙️ Spisovy system</Button>
       </div>
 
+      <div className="flex gap-3 mb-4 flex-wrap">
+        <Button onClick={() => setActiveView('timeline')} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="h-4 w-4 mr-2" />
+          Pridat udalost
+        </Button>
+        <Button
+          onClick={() => {
+            setActiveView('notes')
+            setShowAddProgressNote(true)
+          }}
+          variant="outline"
+        >
+          <Pencil className="h-4 w-4 mr-2" />
+          Pridat poznamku o prubehu
+        </Button>
+      </div>
+
       <div className="mb-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
