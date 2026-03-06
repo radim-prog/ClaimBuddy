@@ -124,6 +124,17 @@ interface ProgressNote {
   created_at: string
 }
 
+const normalizeProgressNote = (note: any): ProgressNote => ({
+  id: note.id,
+  task_id: note.task_id,
+  user_id: note.user_id || note.author_id || '',
+  user_name: note.user_name || note.author_name || 'Neznamy',
+  current_status: note.current_status || '',
+  problems: note.problems || undefined,
+  next_steps: note.next_steps || undefined,
+  created_at: note.created_at || new Date().toISOString(),
+})
+
 interface LinkedDoc {
   id: string
   document_id: string
@@ -356,6 +367,17 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
 
   useEffect(() => { fetchLinkedDocs() }, [fetchLinkedDocs])
 
+  useEffect(() => {
+    if (!userId) return
+    fetch(`/api/tasks/${taskId}/progress-notes`, { headers: { 'x-user-id': userId } })
+      .then(r => r.json())
+      .then(data => {
+        const notes = Array.isArray(data.notes) ? data.notes.map(normalizeProgressNote) : []
+        setProgressNotes(notes)
+      })
+      .catch(() => setProgressNotes([]))
+  }, [taskId, userId])
+
   // ============================================
   // HANDLERS
   // ============================================
@@ -472,11 +494,33 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
     toast.success(`${TIMELINE_EVENT_CONFIG[newEventType].label} zaznamenan`)
   }
 
-  const handleAddProgressNote = () => {
+  const handleAddProgressNote = async () => {
     if (!newProgressStatus.trim()) { toast.error('Zadejte aktualni stav'); return }
-    setProgressNotes(prev => [{ id: `pn-${Date.now()}`, task_id: taskId, user_id: userId, user_name: userName, current_status: newProgressStatus, problems: newProgressProblems || undefined, next_steps: newProgressNextSteps || undefined, created_at: new Date().toISOString() }, ...prev])
-    setShowProgressNoteDialog(false); setNewProgressStatus(''); setNewProgressProblems(''); setNewProgressNextSteps('')
-    toast.success('Progress note pridan')
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/progress-notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId,
+          'x-user-name': userName || 'Ucetni',
+        },
+        body: JSON.stringify({
+          current_status: newProgressStatus.trim(),
+          problems: newProgressProblems.trim() || undefined,
+          next_steps: newProgressNextSteps.trim() || undefined,
+        }),
+      })
+      if (!res.ok) throw new Error('save failed')
+      const data = await res.json()
+      setProgressNotes(prev => [normalizeProgressNote(data.note), ...prev])
+      setShowProgressNoteDialog(false)
+      setNewProgressStatus('')
+      setNewProgressProblems('')
+      setNewProgressNextSteps('')
+      toast.success('Progress note pridan')
+    } catch {
+      toast.error('Chyba pri ukladani progress note')
+    }
   }
 
   const handleTimeUpdate = (actualMinutes: number, entries: TimeTrackingEntry[]) => {
