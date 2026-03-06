@@ -1081,10 +1081,31 @@ function SummaryTab({ task, totalScore, scorePriority, progress, timeData, linke
       <Card className="rounded-xl shadow-soft border-green-200 bg-green-50">
         <CardContent className="p-6">
           <h2 className="text-lg font-bold mb-2">📍 Kde jsme skoncili</h2>
-          <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{latestStatus}</p>
-          {latestNote?.next_steps && (
-            <p className="text-xs text-blue-700 mt-3 whitespace-pre-wrap"><strong>Dalsi kroky:</strong> {latestNote.next_steps}</p>
-          )}
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-green-100">
+            {latestNote && (
+              <div className="text-sm text-gray-600 dark:text-gray-300 mb-2" suppressHydrationWarning>
+                {new Date(latestNote.created_at).toLocaleString('cs-CZ')} • {latestNote.user_name}
+              </div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <div className="font-semibold text-gray-900 dark:text-white mb-1">Aktualni stav:</div>
+                <div className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{latestStatus}</div>
+              </div>
+              {latestNote?.problems && (
+                <div>
+                  <div className="font-semibold text-red-700 mb-1">Problemy:</div>
+                  <div className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{latestNote.problems}</div>
+                </div>
+              )}
+              {latestNote?.next_steps && (
+                <div>
+                  <div className="font-semibold text-blue-700 mb-1">Dalsi kroky:</div>
+                  <div className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{latestNote.next_steps}</div>
+                </div>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
