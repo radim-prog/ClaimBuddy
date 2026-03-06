@@ -15,8 +15,12 @@ import {
   FolderOpen,
   Clock,
   Briefcase,
-  LayoutGrid,
   Car,
+  ClipboardList,
+  MessageCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Calendar,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -29,6 +33,8 @@ import { Asset } from '@/lib/types/asset'
 import { Insurance } from '@/lib/types/insurance'
 import { ClientOnboarding } from '@/lib/types/onboarding'
 import type { Task } from '@/lib/types/tasks'
+import { useAttention } from '@/lib/contexts/attention-context'
+import type { HubStats } from '@/lib/types/drive'
 
 // ============================================
 // TYPES (shared across sub-pages)
@@ -133,6 +139,10 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
   const [error, setError] = useState<string | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [urgencyModalOpen, setUrgencyModalOpen] = useState(false)
+  const [hubStats, setHubStats] = useState<HubStats | null>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const attentionCtx = useAttention()
+  const attention = attentionCtx.getCompanyAttention(companyId)
 
   // Current period for urgency modal
   const currentYear = new Date().getFullYear()
@@ -162,6 +172,19 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
       if (tasksRes.ok) {
         const tasksData = await tasksRes.json()
         setTasks(tasksData.tasks || [])
+      }
+
+      // Fetch hub stats for metrics strip
+      try {
+        const hubRes = await fetch(`/api/drive/hub-stats?companyId=${companyId}`)
+        if (hubRes.ok) {
+          const hubData = await hubRes.json()
+          setHubStats(hubData)
+        }
+      } catch {
+        // hub stats optional
+      } finally {
+        setStatsLoading(false)
       }
 
       // Fetch onboarding data if company is in onboarding status
@@ -245,28 +268,67 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
         {/* Navigation */}
         {(() => {
           const basePath = `/accountant/clients/${companyId}`
-          const isOnHub = pathname === basePath || pathname === `${basePath}/`
-          const backHref = isOnHub ? '/accountant/clients' : basePath
-          const backLabel = isOnHub ? 'Seznam klientů' : company.name
+          const activeTaskCount = tasks.filter(t =>
+            t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress'
+          ).length
+          const tasksBadge = attention.active_tasks || activeTaskCount || 0
+          const messagesBadge = attention.unread_messages || 0
 
           const tabs = [
-            { href: basePath, label: 'Přehled', icon: LayoutGrid, match: (p: string) => p === basePath || p === `${basePath}/` },
+            { href: `${basePath}/work`, label: 'Práce', icon: Clock, match: (p: string) => p.includes('/work') },
+            { href: `${basePath}/tasks`, label: 'Úkoly', icon: ClipboardList, match: (p: string) => p.includes('/tasks'), badge: tasksBadge },
+            { href: `${basePath}/messages`, label: 'Zprávy', icon: MessageCircle, match: (p: string) => p.includes('/messages'), badge: messagesBadge },
             { href: `${basePath}/documents`, label: 'Doklady', icon: FileText, match: (p: string) => p.includes('/documents') },
             { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files') },
-            { href: `${basePath}/work`, label: 'Práce', icon: Clock, match: (p: string) => p.includes('/work') },
             { href: `${basePath}/travel`, label: 'Jízdy', icon: Car, match: (p: string) => p.includes('/travel') },
             { href: `${basePath}/case`, label: 'Spis', icon: Briefcase, match: (p: string) => p.includes('/case') },
             { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile') },
             { href: `${basePath}/timeline`, label: 'Osa', icon: Eye, match: (p: string) => p.includes('/timeline') },
           ]
 
+          // Attention items for banner
+          const attentionItems: Array<{ message: string; severity: 'high' | 'medium' | 'low' }> = []
+          if (hubStats?.attention?.items) {
+            attentionItems.push(...hubStats.attention.items)
+          }
+          if (attention.missing_documents > 0) {
+            attentionItems.push({
+              message: `${attention.missing_documents} chybějící${attention.missing_documents > 1 ? ' doklady' : ' doklad'}`,
+              severity: 'high',
+            })
+          }
+          if (attention.pending_uploads > 0) {
+            attentionItems.push({
+              message: `${attention.pending_uploads} nahrání ke zpracování`,
+              severity: 'medium',
+            })
+          }
+          if (attention.unread_messages > 0) {
+            attentionItems.push({
+              message: `${attention.unread_messages} nepřečten${attention.unread_messages > 1 ? 'ých zpráv' : 'á zpráva'}`,
+              severity: 'medium',
+            })
+          }
+
+          // Latest closure status
+          const latestClosure = closures.length > 0
+            ? [...closures].sort((a, b) => b.period.localeCompare(a.period))[0]
+            : null
+          const closureComplete = latestClosure
+            ? latestClosure.bank_statement_status !== 'missing' &&
+              latestClosure.expense_documents_status !== 'missing' &&
+              latestClosure.income_invoices_status !== 'missing'
+            : false
+
+          const s = (val: number | undefined) => statsLoading ? '—' : (val ?? '—')
+
           return (
             <>
               <div className="flex items-center justify-between gap-2">
-                <Link href={backHref}>
+                <Link href="/accountant/clients">
                   <Button variant="ghost" size="sm" className="rounded-xl text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                     <ArrowLeft className="mr-1.5 h-4 w-4" />
-                    <span className="hidden sm:inline">{backLabel}</span>
+                    <span className="hidden sm:inline">Seznam klientů</span>
                     <span className="sm:hidden">Zpět</span>
                   </Button>
                 </Link>
@@ -300,30 +362,36 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                 </div>
               </div>
 
-              {/* Sub-page tabs */}
-              {!isOnHub && (
-                <div className="flex gap-1 overflow-x-auto pb-0.5 -mx-1 px-1" data-tour="client-tabs">
-                  {tabs.map(tab => {
-                    const active = tab.match(pathname)
-                    return (
-                      <Link key={tab.href} href={tab.href}>
-                        <Button
-                          variant={active ? 'default' : 'ghost'}
-                          size="sm"
-                          className={`rounded-xl shrink-0 text-xs h-8 ${
-                            active
-                              ? 'bg-purple-500 hover:bg-purple-600 text-white shadow-soft-sm'
-                              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
-                        >
-                          <tab.icon className="h-3.5 w-3.5 mr-1" />
-                          {tab.label}
-                        </Button>
-                      </Link>
-                    )
-                  })}
-                </div>
-              )}
+              {/* Tabs — always visible */}
+              <div className="flex gap-1 overflow-x-auto pb-0.5 -mx-1 px-1" data-tour="client-tabs">
+                {tabs.map(tab => {
+                  const active = tab.match(pathname)
+                  const badge = (tab as { badge?: number }).badge
+                  return (
+                    <Link key={tab.href} href={tab.href}>
+                      <Button
+                        variant={active ? 'default' : 'ghost'}
+                        size="sm"
+                        className={`rounded-xl shrink-0 text-xs h-8 ${
+                          active
+                            ? 'bg-purple-500 hover:bg-purple-600 text-white shadow-soft-sm'
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        <tab.icon className="h-3.5 w-3.5 mr-1" />
+                        {tab.label}
+                        {badge !== undefined && badge > 0 && (
+                          <span className={`ml-1 inline-flex items-center justify-center h-4 min-w-[16px] px-1 text-[10px] font-bold rounded-full ${
+                            active ? 'bg-white/25 text-white' : 'bg-red-500 text-white'
+                          }`}>
+                            {badge}
+                          </span>
+                        )}
+                      </Button>
+                    </Link>
+                  )
+                })}
+              </div>
             </>
           )
         })()}
@@ -410,6 +478,114 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
           </CardContent>
         </Card>
 
+        {/* Attention Banner — only if issues */}
+        {(() => {
+          const attentionItems: Array<{ message: string; severity: 'high' | 'medium' | 'low' }> = []
+          if (hubStats?.attention?.items) {
+            attentionItems.push(...hubStats.attention.items)
+          }
+          if (attention.missing_documents > 0) {
+            attentionItems.push({
+              message: `${attention.missing_documents} chybějící${attention.missing_documents > 1 ? ' doklady' : ' doklad'}`,
+              severity: 'high',
+            })
+          }
+          if (attention.pending_uploads > 0) {
+            attentionItems.push({
+              message: `${attention.pending_uploads} nahrání ke zpracování`,
+              severity: 'medium',
+            })
+          }
+          if (attention.unread_messages > 0) {
+            attentionItems.push({
+              message: `${attention.unread_messages} nepřečten${attention.unread_messages > 1 ? 'ých zpráv' : 'á zpráva'}`,
+              severity: 'medium',
+            })
+          }
+
+          const latestClosure = closures.length > 0
+            ? [...closures].sort((a, b) => b.period.localeCompare(a.period))[0]
+            : null
+          const closureComplete = latestClosure
+            ? latestClosure.bank_statement_status !== 'missing' &&
+              latestClosure.expense_documents_status !== 'missing' &&
+              latestClosure.income_invoices_status !== 'missing'
+            : false
+
+          const activeTaskCount = tasks.filter(t =>
+            t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress'
+          ).length
+          const tasksBadge = attention.active_tasks || activeTaskCount || 0
+
+          const s = (val: number | undefined) => statsLoading ? '—' : (val ?? '—')
+
+          return (
+            <>
+              {attentionItems.length > 0 && (
+                <div className="flex items-start gap-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30 px-4 py-3">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    {attentionItems.slice(0, 5).map((item, i) => (
+                      <span key={i} className="text-sm text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                        <span className={`h-1.5 w-1.5 rounded-full ${
+                          item.severity === 'high' ? 'bg-red-500' : 'bg-amber-400'
+                        }`} />
+                        {item.message}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Metrics Strip */}
+              <div className="flex items-center gap-6 flex-wrap py-1">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">{s(hubStats?.documents?.total)}</span>
+                  <span className="text-sm text-gray-500">dokladů</span>
+                  {hubStats?.documents?.pending ? (
+                    <Badge className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-0 px-1.5 py-0">{hubStats.documents.pending} ke zprac.</Badge>
+                  ) : null}
+                </div>
+                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-amber-500" />
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    {hubStats?.work?.hours_this_month !== undefined ? `${hubStats.work.hours_this_month}h` : '—'}
+                  </span>
+                  <span className="text-sm text-gray-500">tento měsíc</span>
+                </div>
+                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className={`h-4 w-4 ${tasksBadge > 0 ? 'text-purple-500' : 'text-green-500'}`} />
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">{tasksBadge}</span>
+                  <span className="text-sm text-gray-500">úkolů</span>
+                </div>
+                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                <div className="flex items-center gap-2">
+                  <FolderOpen className="h-4 w-4 text-emerald-500" />
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">{s(hubStats?.files?.total)}</span>
+                  <span className="text-sm text-gray-500">souborů</span>
+                </div>
+                {latestClosure && (
+                  <>
+                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                    <div className="flex items-center gap-2">
+                      <Calendar className={`h-4 w-4 ${closureComplete ? 'text-green-500' : 'text-red-500'}`} />
+                      <span className="text-sm text-gray-500">{formatPeriod(latestClosure.period)}</span>
+                      {closureComplete ? (
+                        <Badge className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0 px-1.5 py-0">OK</Badge>
+                      ) : (
+                        <Badge className="text-[10px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0 px-1.5 py-0">Chybí</Badge>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )
+        })()}
+
         {/* Onboarding banner */}
         {onboarding && company.status === 'onboarding' && (
           <OnboardingSection
@@ -449,4 +625,10 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
       )}
     </CompanyContext.Provider>
   )
+}
+
+function formatPeriod(period: string): string {
+  const [year, month] = period.split('-')
+  const months = ['', 'Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čer', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro']
+  return `${months[parseInt(month)]} ${year}`
 }
