@@ -342,73 +342,38 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         <Button variant={activeView === 'case' ? 'default' : 'ghost'} onClick={() => setActiveView('case')} className={activeView === 'case' ? 'bg-blue-600 hover:bg-blue-700' : ''}>⚙️ Spisovy system</Button>
       </div>
 
-      {/* PROJECT HEADER — folder metafora */}
-      <Card className="mb-6 overflow-hidden">
-        <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 px-5 py-4 border-b border-purple-100 dark:border-purple-800/30">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <Badge className={statusCfg.color}>
-                  <StatusIcon className="h-3 w-3 mr-1" />
-                  {statusCfg.label}
-                </Badge>
-                {/* Compact R-Tasks Score Badge */}
-                <Badge className={cn("text-xs", priority.color)}>
-                  {priority.emoji} {score}/12 · {priority.label}
-                </Badge>
-                <button
-                  onClick={() => setShowScoreDialog(true)}
-                  className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-0.5"
-                >
-                  <Pencil className="h-3 w-3" /> Upravit
-                </button>
-              </div>
-              <h1 className="text-xl font-bold font-display text-gray-900 dark:text-white">{project.title}</h1>
+      <div className="mb-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white truncate">{project.title}</h1>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <Badge className={statusCfg.color}>{statusCfg.label}</Badge>
+              <Badge className={priority.color}>{priority.emoji} {score}/12 · {priority.label}</Badge>
+              <button
+                onClick={() => setShowScoreDialog(true)}
+                className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-0.5"
+              >
+                <Pencil className="h-3 w-3" /> Upravit skore
+              </button>
             </div>
-
-            {/* Deadline + Progress */}
-            <div className="flex flex-col items-end gap-2 flex-shrink-0">
-              {project.due_date && (
-                <div className="flex items-center gap-1.5 text-sm font-medium">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  {new Date(project.due_date).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long' })}
-                </div>
-              )}
-              <div className="text-right">
-                <div className="flex items-center gap-2">
-                  <Progress value={project.progress_percentage} className="h-2 w-24" />
-                  <span className="text-sm font-bold">{project.progress_percentage}%</span>
-                </div>
-                <span className="text-xs text-muted-foreground">{completedTasks}/{tasks.length} úkolů</span>
-              </div>
+            <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+              <span>
+                Posledni aktivita: {new Date(project.created_at).toLocaleDateString('cs-CZ')} •
+                {' '}Status: <span className="font-medium">{statusCfg.label}</span>
+              </span>
+              <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{project.due_date ? new Date(project.due_date).toLocaleDateString('cs-CZ') : '—'}</span>
             </div>
           </div>
-
-          {/* Outcome */}
-          {project.outcome && (
-            <div className="mt-3 flex items-start gap-2">
-              <Target className="h-4 w-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-purple-800 dark:text-purple-200">{project.outcome}</p>
-            </div>
-          )}
-
-          {/* Next Action */}
-          {nextAction && (
-            <div className="mt-3 flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
-              <Zap className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-              <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Další krok:</span>
-              <span
-                className="text-sm cursor-pointer hover:underline text-blue-700 dark:text-blue-300"
-                onClick={() => router.push(`/accountant/tasks/${nextAction.id}`)}
-              >
-                {nextAction.title}
-              </span>
-            </div>
-          )}
+          <div className="text-right shrink-0">
+            <div className="text-xs text-gray-500 mb-1">Progress</div>
+            <div className="text-xl font-bold text-purple-700">{project.progress_percentage}%</div>
+            <div className="text-xs text-gray-500">{completedTasks}/{tasks.length} ukolu</div>
+          </div>
         </div>
+      </div>
 
-        {/* CONTENT */}
-        <div className="p-5">
+      {/* CONTENT */}
+      <div className="space-y-4">
           {activeView === 'summary' && (
             <div className="space-y-4">
               {project.outcome && (
@@ -599,8 +564,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               </CardContent>
             </Card>
           )}
-        </div>
-      </Card>
+      </div>
 
       {/* Score Dialog */}
       <Dialog open={showScoreDialog} onOpenChange={setShowScoreDialog}>
