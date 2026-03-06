@@ -123,6 +123,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [showScoreDialog, setShowScoreDialog] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [addingTask, setAddingTask] = useState(false)
+  const [timelineComposerSignal, setTimelineComposerSignal] = useState(0)
   const [documentsCount, setDocumentsCount] = useState(0)
   const [timelineCount, setTimelineCount] = useState(0)
   const [progressNotes, setProgressNotes] = useState<ProgressNote[]>([])
@@ -359,7 +360,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       </div>
 
       <div className="flex gap-3 mb-4 flex-wrap">
-        <Button onClick={() => setActiveView('timeline')} className="bg-blue-600 hover:bg-blue-700">
+        <Button
+          onClick={() => {
+            setActiveView('timeline')
+            setTimelineComposerSignal(v => v + 1)
+          }}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Pridat udalost
         </Button>
@@ -604,7 +611,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           )}
 
           {project.is_case && activeView === 'timeline' && (
-            <CaseTimeline projectId={params.id} />
+            <CaseTimeline projectId={params.id} openComposerSignal={timelineComposerSignal} />
           )}
 
           {project.is_case && activeView === 'budget' && (

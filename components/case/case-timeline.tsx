@@ -20,6 +20,7 @@ interface CaseTimelineProps {
   projectId: string
   readOnly?: boolean
   apiBasePath?: string  // Override for client-side API, e.g. '/api/client/cases'
+  openComposerSignal?: number
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -37,7 +38,7 @@ function formatDayHeading(dateStr: string): string {
   return d.toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-export function CaseTimeline({ projectId, readOnly = false, apiBasePath }: CaseTimelineProps) {
+export function CaseTimeline({ projectId, readOnly = false, apiBasePath, openComposerSignal }: CaseTimelineProps) {
   const [entries, setEntries] = useState<CaseTimelineEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -56,6 +57,13 @@ export function CaseTimeline({ projectId, readOnly = false, apiBasePath }: CaseT
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [projectId, apiBasePath])
+
+  useEffect(() => {
+    if (readOnly) return
+    if (openComposerSignal && openComposerSignal > 0) {
+      setShowForm(true)
+    }
+  }, [openComposerSignal, readOnly])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
