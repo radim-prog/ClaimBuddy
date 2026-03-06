@@ -123,6 +123,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [showScoreDialog, setShowScoreDialog] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [addingTask, setAddingTask] = useState(false)
+  const [documentsCount, setDocumentsCount] = useState(0)
+  const [timelineCount, setTimelineCount] = useState(0)
   const [progressNotes, setProgressNotes] = useState<ProgressNote[]>([])
   const [showAddProgressNote, setShowAddProgressNote] = useState(false)
   const [newNoteStatus, setNewNoteStatus] = useState('')
@@ -152,6 +154,19 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       .then(r => r.json())
       .then(data => setProgressNotes(data.notes || []))
       .catch(() => setProgressNotes([]))
+  }, [params.id, userId])
+
+  useEffect(() => {
+    if (!userId) return
+    fetch(`/api/projects/${params.id}/documents`, { headers: { 'x-user-id': userId } })
+      .then(r => r.json())
+      .then(data => setDocumentsCount((data.documents || []).length))
+      .catch(() => setDocumentsCount(0))
+
+    fetch(`/api/projects/${params.id}/timeline?page_size=1`, { headers: { 'x-user-id': userId } })
+      .then(r => r.json())
+      .then(data => setTimelineCount(data.pagination?.total || 0))
+      .catch(() => setTimelineCount(0))
   }, [params.id, userId])
 
   const toggleNextAction = async (taskId: string, current: boolean) => {
@@ -334,8 +349,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         <Button variant={activeView === 'tasks' ? 'default' : 'ghost'} onClick={() => setActiveView('tasks')} className={activeView === 'tasks' ? 'bg-blue-600 hover:bg-blue-700' : ''}>✓ Ukoly ({completedTasks}/{tasks.length})</Button>
         {project.is_case && (
           <>
-            <Button variant={activeView === 'documents' ? 'default' : 'ghost'} onClick={() => setActiveView('documents')} className={activeView === 'documents' ? 'bg-blue-600 hover:bg-blue-700' : ''}>📎 Dokumenty</Button>
-            <Button variant={activeView === 'timeline' ? 'default' : 'ghost'} onClick={() => setActiveView('timeline')} className={activeView === 'timeline' ? 'bg-blue-600 hover:bg-blue-700' : ''}>🕐 Timeline</Button>
+            <Button variant={activeView === 'documents' ? 'default' : 'ghost'} onClick={() => setActiveView('documents')} className={activeView === 'documents' ? 'bg-blue-600 hover:bg-blue-700' : ''}>📎 Dokumenty ({documentsCount})</Button>
+            <Button variant={activeView === 'timeline' ? 'default' : 'ghost'} onClick={() => setActiveView('timeline')} className={activeView === 'timeline' ? 'bg-blue-600 hover:bg-blue-700' : ''}>🕐 Timeline ({timelineCount})</Button>
             <Button variant={activeView === 'budget' ? 'default' : 'ghost'} onClick={() => setActiveView('budget')} className={activeView === 'budget' ? 'bg-blue-600 hover:bg-blue-700' : ''}>💰 Rozpocet</Button>
           </>
         )}
