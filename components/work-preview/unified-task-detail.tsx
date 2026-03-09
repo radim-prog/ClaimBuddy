@@ -782,7 +782,7 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
               <span>Ukoly: {checklistItems.filter(i => i.completed).length}/{checklistItems.length}</span>
             )}
             <span>Odpracovano: {timeData.actual} min</span>
-            <span>Dok: {linkedDocs.length}</span>
+            <span>Dokumenty: {linkedDocs.length}</span>
             {task.is_billable && task.hourly_rate && timeData.actual > 0 && (
               <span className="text-purple-600 font-medium">{Math.round((timeData.actual / 60) * task.hourly_rate).toLocaleString('cs-CZ')} Kc</span>
             )}
@@ -817,11 +817,10 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
                   <>
                     <Separator orientation="vertical" className="h-4" />
                     <Button size="sm" variant="outline" className="h-7 text-xs border-purple-300 text-purple-700 hover:bg-purple-50" onClick={() => setShowConvertDialog(true)}>
-                      <Target className="mr-1 h-3 w-3" />Projekt
+                      <Target className="mr-1 h-3 w-3" />Prepnout na projekt
                     </Button>
                   </>
                 )}
-                <Separator orientation="vertical" className="h-4" />
                 <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowDelegateDialog(true)}><Send className="mr-1 h-3 w-3" />Delegovat</Button>
                 <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={handleCancelTask}>Zrusit</Button>
               </>
