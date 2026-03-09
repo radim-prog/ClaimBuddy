@@ -23,6 +23,10 @@ interface UploadDialogProps {
   onOpenChange: (open: boolean) => void
   companyId: string
   onUploaded?: () => void
+  /** When set, auto-links uploaded documents to this task */
+  taskId?: string
+  userId?: string
+  userName?: string
 }
 
 const DOC_TYPES = [
@@ -55,7 +59,7 @@ function getPeriodOptions() {
   return options
 }
 
-export function UploadDialog({ open, onOpenChange, companyId, onUploaded }: UploadDialogProps) {
+export function UploadDialog({ open, onOpenChange, companyId, onUploaded, taskId, userId, userName }: UploadDialogProps) {
   const [files, setFiles] = useState<File[]>([])
   const [docType, setDocType] = useState('expense_invoice')
   const [period, setPeriod] = useState(getCurrentPeriod())
@@ -84,6 +88,9 @@ export function UploadDialog({ open, onOpenChange, companyId, onUploaded }: Uplo
 
     setUploading(true)
     let successCount = 0
+    const headers: Record<string, string> = {}
+    if (userId) headers['x-user-id'] = userId
+    if (userName) headers['x-user-name'] = userName
 
     for (const file of files) {
       const formData = new FormData()
@@ -95,10 +102,22 @@ export function UploadDialog({ open, onOpenChange, companyId, onUploaded }: Uplo
       try {
         const res = await fetch('/api/documents/upload', {
           method: 'POST',
+          headers,
           body: formData,
         })
         if (res.ok) {
           successCount++
+          // Auto-link to task if taskId is provided
+          if (taskId) {
+            const data = await res.json().catch(() => null)
+            if (data?.document?.id) {
+              await fetch(`/api/tasks/${taskId}/documents`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...headers },
+                body: JSON.stringify({ documentIds: [data.document.id] }),
+              }).catch(() => {})
+            }
+          }
         } else {
           const data = await res.json().catch(() => ({}))
           toast.error(`Chyba: ${file.name} — ${data.error || 'Upload selhal'}`)

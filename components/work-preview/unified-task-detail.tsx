@@ -58,10 +58,10 @@ import {
   Paperclip,
   X,
   Timer,
-  Loader2,
 } from 'lucide-react'
 import { GTDWizard } from '@/components/tasks/gtd-wizard'
 import { DocumentPicker } from '@/components/documents/document-picker'
+import { UploadDialog } from '@/components/accountant/documents/upload-dialog'
 import { TimeTracker, type TimeTrackingEntry } from '@/components/tasks/time-tracker'
 import { UrgencyBadge } from '@/components/tasks/UrgencyBadge'
 import { UrgencyActions, ManagerActions } from '@/components/tasks/UrgencyActions'
@@ -881,17 +881,7 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
             taskId={taskId} userId={userId} userName={userName || ''}
             onAttach={() => setShowDocPicker(true)}
             onDetach={handleDetachDoc}
-            onUploadAndLink={async (docId: string) => {
-              try {
-                const res = await fetch(`/api/tasks/${taskId}/documents`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', 'x-user-id': userId, 'x-user-name': userName || 'Ucetni' },
-                  body: JSON.stringify({ documentIds: [docId] }),
-                })
-                if (!res.ok) throw new Error('Link failed')
-                fetchLinkedDocs()
-              } catch { /* toast already shown in DokumentyTab */ }
-            }}
+            onRefresh={fetchLinkedDocs}
           />
         )}
         {activeTab === 'hodiny' && (
@@ -1497,7 +1487,7 @@ function OsaTab({ timeline, onAddEvent }: {
 // TAB 4: DOKUMENTY
 // ============================================
 
-function DokumentyTab({ linkedDocs, companyId, taskId, userId, userName, onAttach, onDetach, onUploadAndLink }: {
+function DokumentyTab({ linkedDocs, companyId, taskId, userId, userName, onAttach, onDetach, onRefresh }: {
   linkedDocs: LinkedDoc[]
   companyId: string
   taskId: string
@@ -1505,48 +1495,9 @@ function DokumentyTab({ linkedDocs, companyId, taskId, userId, userName, onAttac
   userName: string
   onAttach: () => void
   onDetach: (docId: string) => void
-  onUploadAndLink: (docId: string) => void
+  onRefresh: () => void
 }) {
-  const [uploading, setUploading] = useState(false)
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !companyId) return
-
-    setUploading(true)
-    try {
-      const now = new Date()
-      const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('companyId', companyId)
-      formData.append('period', period)
-      formData.append('type', 'other')
-
-      const res = await fetch('/api/documents/upload', {
-        method: 'POST',
-        headers: { 'x-user-id': userId, 'x-user-name': userName || 'Ucetni' },
-        body: formData,
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Upload failed')
-      }
-
-      const data = await res.json()
-      if (data.document?.id) {
-        onUploadAndLink(data.document.id)
-        toast.success(`Nahrano a pripojeno: ${file.name}`)
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'Chyba pri nahravani')
-    } finally {
-      setUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
-  }
+  const [showUpload, setShowUpload] = useState(false)
 
   return (
     <Card className="rounded-xl">
@@ -1554,8 +1505,8 @@ function DokumentyTab({ linkedDocs, companyId, taskId, userId, userName, onAttac
         <CardTitle className="text-base flex items-center justify-between">
           <span className="flex items-center gap-2"><FileText className="h-4 w-4" />Dokumenty ({linkedDocs.length})</span>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-              {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowUpload(true)}>
+              <Plus className="h-3.5 w-3.5 mr-1" />
               Nahrat novy
             </Button>
             {companyId && <Button variant="outline" size="sm" onClick={onAttach} className="h-7 text-xs"><Paperclip className="h-3.5 w-3.5 mr-1" />Pripojit existujici</Button>}
@@ -1563,7 +1514,15 @@ function DokumentyTab({ linkedDocs, companyId, taskId, userId, userName, onAttac
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv,.doc,.docx" onChange={handleFileUpload} />
+        <UploadDialog
+          open={showUpload}
+          onOpenChange={setShowUpload}
+          companyId={companyId}
+          taskId={taskId}
+          userId={userId}
+          userName={userName}
+          onUploaded={onRefresh}
+        />
         {linkedDocs.length === 0 ? (
           <div className="text-center py-8 text-gray-400"><FileText className="h-8 w-8 mx-auto mb-2 opacity-30" /><p className="text-sm">Zadne pripojene dokumenty</p></div>
         ) : (
