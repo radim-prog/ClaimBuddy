@@ -252,33 +252,35 @@ export function AccountantTasksSection({ companyId, companyName, tasks, onTasksC
 
   return (
     <div className="space-y-4">
-      {/* View mode toggle: Úkoly / Projekty */}
-      <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg w-fit">
-        <button
-          onClick={() => { setViewMode('tasks'); setFilter('active') }}
-          className={`px-3 py-1.5 text-sm rounded-md transition-colors font-medium ${
-            viewMode === 'tasks'
-              ? 'bg-white dark:bg-gray-800 text-purple-700 dark:text-purple-400 shadow-sm'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
-        >
-          Úkoly ({taskCount})
-        </button>
-        <button
-          onClick={() => { setViewMode('projects'); setFilter('active') }}
-          className={`px-3 py-1.5 text-sm rounded-md transition-colors font-medium flex items-center gap-1.5 ${
-            viewMode === 'projects'
-              ? 'bg-white dark:bg-gray-800 text-purple-700 dark:text-purple-400 shadow-sm'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-          }`}
-        >
-          <Briefcase className="h-3.5 w-3.5" />
-          Projekty ({projectCount})
-        </button>
-      </div>
-
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+        <div className="flex items-center gap-0 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+          {/* View mode: Úkoly / Projekty */}
+          <button
+            onClick={() => { setViewMode('tasks'); setFilter('active') }}
+            className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+              viewMode === 'tasks'
+                ? 'bg-white dark:bg-gray-800 text-purple-700 dark:text-purple-400 font-medium shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            Ukoly ({taskCount})
+          </button>
+          <button
+            onClick={() => { setViewMode('projects'); setFilter('active') }}
+            className={`px-2.5 py-1 text-xs rounded-md transition-colors flex items-center gap-1 ${
+              viewMode === 'projects'
+                ? 'bg-white dark:bg-gray-800 text-purple-700 dark:text-purple-400 font-medium shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <Briefcase className="h-3 w-3" />
+            Projekty ({projectCount})
+          </button>
+
+          {/* Separator */}
+          <div className="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1" />
+
+          {/* Status filter tabs */}
           {([
             { key: 'active' as const, label: 'Aktivni', count: counts.active },
             { key: 'waiting' as const, label: 'Ceka', count: counts.waiting },
