@@ -292,6 +292,8 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
   const [editingDesc, setEditingDesc] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editDesc, setEditDesc] = useState('')
+  const [showRScorePanel, setShowRScorePanel] = useState(false)
+  const [showConvertDialog, setShowConvertDialog] = useState(false)
 
   // ============================================
   // DATA FETCHING
@@ -757,50 +759,143 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
         )}
       </div>
 
-      {/* Top stats cards like timeline-demo */}
-      <div className="flex gap-3 flex-wrap">
-        <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-          <CardContent className="p-3 text-center min-w-[110px]">
-            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Ukoly</div>
-            <div className="text-2xl font-bold text-green-700">
-              {task.is_project ? `${checklistItems.filter(i => i.completed).length}/${checklistItems.length}` : `${task.status === 'completed' ? 1 : 0}/1`}
+      {/* Description — always visible above tabs */}
+      <div className="border rounded-xl p-3 bg-white dark:bg-gray-900">
+        {editingDesc ? (
+          <div className="space-y-2">
+            <Textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} autoFocus placeholder="Popis ukolu..." />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => { if (editDesc !== (task.description || '')) { updateTask(prev => ({ ...prev, description: editDesc.trim() })); toast.success('Popis ulozen') } setEditingDesc(false) }}>Ulozit</Button>
+              <Button size="sm" variant="outline" onClick={() => setEditingDesc(false)}>Zrusit</Button>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
-          <CardContent className="p-3 text-center min-w-[130px]">
-            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Odpracovano</div>
-            <div className="text-lg font-bold text-blue-700">{timeData.actual} min</div>
-            <div className="text-xs font-semibold text-gray-900 dark:text-white">{timeEntries.length} zaznamu</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200">
-          <CardContent className="p-3 text-center min-w-[120px]">
-            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Dokumenty</div>
-            <div className="text-2xl font-bold text-amber-700">{linkedDocs.length}</div>
-            <div className="text-xs font-semibold text-gray-900 dark:text-white">pripojeno</div>
-          </CardContent>
-        </Card>
-        {task.is_billable && task.hourly_rate ? (
-          <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
-            <CardContent className="p-3 text-center min-w-[130px]">
-              <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Fakturace</div>
-              <div className="text-xl font-bold text-purple-700">{Math.round((timeData.actual / 60) * task.hourly_rate).toLocaleString('cs-CZ')} Kc</div>
-              <div className="text-xs font-semibold text-gray-900 dark:text-white">{timeData.actual > 0 ? `${(timeData.actual / 60).toFixed(1)}h` : '—'}</div>
-            </CardContent>
-          </Card>
-        ) : null}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded p-1 -m-1" onClick={() => { setEditDesc(task.description || ''); setEditingDesc(true) }}>
+            {task.description || 'Klikni pro pridani popisu...'}
+          </p>
+        )}
+      </div>
+
+      {/* Compact action bar */}
+      <div className="border rounded-xl bg-gray-50 dark:bg-gray-900 p-3 space-y-2">
+        {/* Row 1: R-Score + Workflow buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* R-Score badge (clickable → toggles dropdown panel) */}
+          <button
+            onClick={() => setShowRScorePanel(!showRScorePanel)}
+            className={cn(
+              'text-xs font-semibold px-2.5 py-1 rounded-full border cursor-pointer transition-colors flex items-center gap-1',
+              scorePriority.color
+            )}
+          >
+            <TrendingUp className="h-3 w-3" />
+            {totalScore}/12
+            <span className="text-[10px] ml-0.5">{showRScorePanel ? '▲' : '▼'}</span>
+          </button>
+
+          <Separator orientation="vertical" className="h-5" />
+
+          {/* Workflow action buttons — inline */}
+          {task.task_type === 'bonus' && !task.claimed_by && !task.assigned_to && (
+            <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleClaimTask}>
+              <TrendingUp className="mr-1 h-3 w-3" />Bonus +{task.points_value || 0}b
+            </Button>
+          )}
+          {task.status === 'pending' && (
+            <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleAcceptTask}><UserCheck className="mr-1 h-3 w-3" />Prijmout</Button>
+          )}
+          {task.status === 'accepted' && (
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 h-7 text-xs" onClick={handleStartTask}><Play className="mr-1 h-3 w-3" />Zacit</Button>
+          )}
+          {(task.status === 'in_progress' || task.status === 'accepted') && (
+            <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleMarkComplete}><CheckCircle2 className="mr-1 h-3 w-3" />Hotovo</Button>
+          )}
+          {task.status === 'awaiting_approval' && canApprove && (
+            <>
+              <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200">Ceka na schvaleni</Badge>
+              <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleApproveTask}><CheckCircle2 className="mr-1 h-3 w-3" />Schvalit</Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowRejectionDialog(true)}><AlertCircle className="mr-1 h-3 w-3" />Vratit</Button>
+            </>
+          )}
+          {!['completed', 'cancelled'].includes(task.status) && (
+            <>
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowDelegateDialog(true)}><Send className="mr-1 h-3 w-3" />Delegovat</Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={handleCancelTask}>Zrusit</Button>
+            </>
+          )}
+        </div>
+
+        {/* R-Score collapsible panel */}
+        {showRScorePanel && (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 border-t">
+            {([
+              { key: 'score_money' as const, label: 'Money', emoji: '\uD83D\uDCB0', options: SCORE_OPTIONS.money },
+              { key: 'score_fire' as const, label: 'Fire', emoji: '\uD83D\uDD25', options: SCORE_OPTIONS.fire },
+              { key: 'score_time' as const, label: 'Time', emoji: '\u23F1\uFE0F', options: SCORE_OPTIONS.time },
+              { key: 'score_distance' as const, label: 'Distance', emoji: '\uD83D\uDCCD', options: SCORE_OPTIONS.distance },
+              { key: 'score_personal' as const, label: 'Personal', emoji: '\u2764\uFE0F', options: SCORE_OPTIONS.personal },
+            ] as const).map(({ key, label, emoji, options }) => (
+              <div key={key}>
+                <span className="text-[10px] text-gray-500">{emoji} {label}</span>
+                <Select
+                  value={(task[key] ?? 0).toString()}
+                  onValueChange={v => { updateTask(prev => ({ ...prev, [key]: parseInt(v) })); toast.success('Score aktualizovano') }}
+                >
+                  <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {options.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value.toString()}>
+                        <span className={opt.color}>{opt.label}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Row 2: Mini stats + convert to project */}
+        <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
+          <div className="flex items-center gap-3 flex-wrap">
+            {task.is_project ? (
+              <span>Ukoly: {checklistItems.filter(i => i.completed).length}/{checklistItems.length}</span>
+            ) : (
+              <span>Status: {task.status === 'completed' ? '1/1' : '0/1'}</span>
+            )}
+            <span>Odpracovano: {timeData.actual} min</span>
+            <span>Dokumenty: {linkedDocs.length}</span>
+            {task.is_billable && task.hourly_rate && timeData.actual > 0 && (
+              <span className="text-purple-600 font-medium">Fakturace: {Math.round((timeData.actual / 60) * task.hourly_rate).toLocaleString('cs-CZ')} Kc</span>
+            )}
+          </div>
+          {!task.is_project && (
+            <Button variant="ghost" size="sm" className="h-6 text-[11px] text-gray-400 hover:text-purple-600" onClick={() => setShowConvertDialog(true)}>
+              Prepnout na projekt
+            </Button>
+          )}
+        </div>
+
+        {/* Waiting for */}
+        {task.is_waiting_for && (
+          <div className="border-t pt-2 mt-1">
+            <div className="flex items-center gap-2 text-xs text-yellow-800 bg-yellow-50 rounded-lg p-2">
+              <Clock className="h-3.5 w-3.5 shrink-0" />
+              <span>Cekam na: <strong>{task.waiting_for_who}</strong> {task.waiting_for_what && `— ${task.waiting_for_what}`}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* View Tabs */}
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto">
         {[
-          { id: 'souhrn' as TabKey, label: '📋 Souhrn spisu' },
-          { id: 'poznamky' as TabKey, label: `📝 Poznamky o prubehu${progressNotes.length ? ` (${progressNotes.length})` : ''}` },
-          { id: 'ukoly' as TabKey, label: `✓ Ukoly${task.is_project ? ` (${checklistItems.filter(i => i.completed).length}/${checklistItems.length})` : ''}` },
-          { id: 'dokumenty' as TabKey, label: `📎 Dokumenty (${linkedDocs.length})` },
-          { id: 'timeline' as TabKey, label: `🕐 Timeline (${timeline.length})` },
-          { id: 'hodiny' as TabKey, label: `💰 Hodiny${timeEntries.length ? ` (${timeEntries.length})` : ''}` },
+          { id: 'souhrn' as TabKey, label: 'Souhrn spisu' },
+          { id: 'poznamky' as TabKey, label: `Poznamky${progressNotes.length ? ` (${progressNotes.length})` : ''}` },
+          ...(task.is_project ? [{ id: 'ukoly' as TabKey, label: `Ukoly (${checklistItems.filter(i => i.completed).length}/${checklistItems.length})` }] : []),
+          { id: 'dokumenty' as TabKey, label: `Dokumenty (${linkedDocs.length})` },
+          { id: 'timeline' as TabKey, label: `Timeline (${timeline.length})` },
+          { id: 'hodiny' as TabKey, label: `Hodiny${timeEntries.length ? ` (${timeEntries.length})` : ''}` },
         ].map(tab => {
           const isActive = activeTab === tab.id
           return (
@@ -821,18 +916,6 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
         })}
       </div>
 
-      {/* Action buttons */}
-      <div className="flex gap-3 flex-wrap">
-        <Button onClick={() => setShowEventDialog(true)} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Pridat udalost
-        </Button>
-        <Button onClick={() => setShowProgressNoteDialog(true)} variant="outline">
-          <MessageSquare className="h-4 w-4 mr-2" />
-          Pridat poznamku o prubehu
-        </Button>
-      </div>
-
       {/* Tab Content */}
       <div className="min-h-[400px]">
         {activeTab === 'souhrn' && (
@@ -848,17 +931,8 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
         )}
         {activeTab === 'ukoly' && (
           <SouhrnTab
-            task={task} updateTask={updateTask} checklistItems={checklistItems}
-            onChecklistToggle={handleChecklistToggle} totalScore={totalScore}
-            scorePriority={scorePriority} timeData={timeData}
-            onAccept={handleAcceptTask} onStart={handleStartTask}
-            onComplete={handleMarkComplete} onDelegate={() => setShowDelegateDialog(true)}
-            onClaim={handleClaimTask} onApprove={handleApproveTask}
-            onReject={() => setShowRejectionDialog(true)}
-            onCancel={handleCancelTask}
-            canApprove={canApprove} currentUserId={userId}
-            editingDesc={editingDesc} setEditingDesc={setEditingDesc}
-            editDesc={editDesc} setEditDesc={setEditDesc}
+            task={task} checklistItems={checklistItems}
+            onChecklistToggle={handleChecklistToggle}
           />
         )}
         {activeTab === 'poznamky' && (
@@ -906,6 +980,26 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
           excludeIds={linkedDocs.map(l => l.document_id)}
         />
       )}
+
+      {/* Convert to Project dialog */}
+      <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Prepnout na projekt?</DialogTitle>
+            <DialogDescription>
+              Ukol se stane projektem a budete moct pridavat dilci ukoly. Tato akce je nevratna.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConvertDialog(false)}>Zrusit</Button>
+            <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => {
+              updateTask(prev => ({ ...prev, is_project: true }))
+              setShowConvertDialog(false)
+              toast.success('Prepnuto na projekt')
+            }}>Ano, prepnout</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* GTD Wizard */}
       {showGTDWizard && (
@@ -1129,172 +1223,22 @@ function SummaryTab({ task, totalScore, scorePriority, progress, timeData, linke
   )
 }
 
-function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalScore, scorePriority, timeData, onAccept, onStart, onComplete, onDelegate, onClaim, onApprove, onReject, onCancel, canApprove, currentUserId, editingDesc, setEditingDesc, editDesc, setEditDesc }: {
+function SouhrnTab({ task, checklistItems, onChecklistToggle }: {
   task: Task
-  updateTask: (updater: (prev: Task) => Task) => void
   checklistItems: ChecklistItem[]
   onChecklistToggle: (id: string) => void
-  totalScore: number
-  scorePriority: { label: string; color: string }
-  timeData: { estimated: number; actual: number }
-  onAccept: () => void
-  onStart: () => void
-  onComplete: () => void
-  onDelegate: () => void
-  onClaim: () => void
-  onApprove: () => void
-  onReject: () => void
-  onCancel: () => void
-  canApprove: boolean
-  currentUserId: string
-  editingDesc: boolean
-  setEditingDesc: (v: boolean) => void
-  editDesc: string
-  setEditDesc: (v: string) => void
 }) {
-  const isBonusAvailable = task.task_type === 'bonus' && !task.claimed_by && !task.assigned_to
-  const isBonusClaimed = task.task_type === 'bonus' && task.claimed_by
   const openChecklist = checklistItems.filter(i => !i.completed)
   const doneChecklist = checklistItems.filter(i => i.completed)
 
   return (
     <div className="space-y-4">
-      {/* Description */}
-      <Card className="rounded-xl">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center justify-between">
-            Popis ukolu
-            {!editingDesc && (
-              <Button variant="ghost" size="sm" onClick={() => { setEditDesc(task.description || ''); setEditingDesc(true) }}>
-                <Edit2 className="h-3 w-3 mr-1" />Upravit
-              </Button>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {editingDesc ? (
-            <div className="space-y-2">
-              <Textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={4} autoFocus />
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => { if (editDesc !== (task.description || '')) { updateTask(prev => ({ ...prev, description: editDesc.trim() })); toast.success('Popis ulozen') } setEditingDesc(false) }}>Ulozit</Button>
-                <Button size="sm" variant="outline" onClick={() => setEditingDesc(false)}>Zrusit</Button>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded p-1 -m-1" onClick={() => { setEditDesc(task.description || ''); setEditingDesc(true) }}>
-              {task.description || 'Klikni pro pridani popisu...'}
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Two-column: R-Score + GTD */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* R-Tasks Score Card */}
-        <Card className="rounded-xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><TrendingUp className="h-4 w-4" />R-Tasks Score</span>
-              <Badge className={cn('text-sm px-2 py-0.5', scorePriority.color)}>{totalScore}/12</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {/* Score dropdowns */}
-            {([
-              { key: 'score_money' as const, label: 'Money', emoji: '\uD83D\uDCB0', options: SCORE_OPTIONS.money },
-              { key: 'score_fire' as const, label: 'Fire', emoji: '\uD83D\uDD25', options: SCORE_OPTIONS.fire },
-              { key: 'score_time' as const, label: 'Time', emoji: '\u23F1\uFE0F', options: SCORE_OPTIONS.time },
-              { key: 'score_distance' as const, label: 'Distance', emoji: '\uD83D\uDCCD', options: SCORE_OPTIONS.distance },
-              { key: 'score_personal' as const, label: 'Personal', emoji: '\u2764\uFE0F', options: SCORE_OPTIONS.personal },
-            ] as const).map(({ key, label, emoji, options }) => (
-              <div key={key} className="flex items-center gap-2">
-                <span className="text-xs w-20 text-gray-500 flex items-center gap-1">{emoji} {label}</span>
-                <Select
-                  value={(task[key] ?? 0).toString()}
-                  onValueChange={v => { updateTask(prev => ({ ...prev, [key]: parseInt(v) })); toast.success('Score aktualizovano') }}
-                >
-                  <SelectTrigger className="h-7 text-xs flex-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {options.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value.toString()}>
-                        <span className={opt.color}>{opt.label}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Workflow Actions */}
-        <Card className="rounded-xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-1.5"><Target className="h-4 w-4" />Workflow akce</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Action buttons */}
-            <div className="space-y-1.5">
-              {isBonusAvailable && (
-                <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 h-8 text-xs" onClick={onClaim}>
-                  <TrendingUp className="mr-1.5 h-3.5 w-3.5" />Prevzit bonus (+{task.points_value || 0}b)
-                </Button>
-              )}
-              {isBonusClaimed && task.claimed_by !== currentUserId && (
-                <p className="text-xs text-gray-500">Prevzal(a): {task.claimed_by_name}</p>
-              )}
-
-              {task.status === 'pending' && (
-                <>
-                  <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 h-8 text-xs" onClick={onAccept}><UserCheck className="mr-1.5 h-3.5 w-3.5" />Prijmout</Button>
-                  <Button size="sm" variant="outline" className="w-full h-8 text-xs" onClick={onDelegate}><Users className="mr-1.5 h-3.5 w-3.5" />Delegovat</Button>
-                </>
-              )}
-              {task.status === 'accepted' && (
-                <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 h-8 text-xs" onClick={onStart}><Play className="mr-1.5 h-3.5 w-3.5" />Zacit pracovat</Button>
-              )}
-              {(task.status === 'in_progress' || task.status === 'accepted') && (
-                <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 h-8 text-xs" onClick={onComplete}><CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />Oznacit jako hotovo</Button>
-              )}
-              {task.status === 'awaiting_approval' && canApprove && (
-                <>
-                  <div className="p-2 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-800 mb-1">
-                    Ceka na schvaleni ({task.actual_minutes} min)
-                  </div>
-                  <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 h-8 text-xs" onClick={onApprove}><CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />Schvalit</Button>
-                  <Button size="sm" variant="outline" className="w-full h-8 text-xs" onClick={onReject}><AlertCircle className="mr-1.5 h-3.5 w-3.5" />Vratit</Button>
-                </>
-              )}
-              {!['completed', 'cancelled'].includes(task.status) && (
-                <Button size="sm" variant="outline" className="w-full h-8 text-xs text-red-600 border-red-300 hover:bg-red-50" onClick={onCancel}>
-                  Oznacit jako zruseny
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Waiting for */}
-      {task.is_waiting_for && (
-        <Card className="border-yellow-200 bg-yellow-50 rounded-xl">
-          <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2 text-yellow-900"><Clock className="h-4 w-4" />Cekam na</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
-            {task.waiting_for_who && <div><Label className="text-yellow-900 text-xs">Kdo:</Label><p className="text-sm text-yellow-800 font-medium">{task.waiting_for_who}</p></div>}
-            {task.waiting_for_what && <div><Label className="text-yellow-900 text-xs">Co:</Label><p className="text-sm text-yellow-800 font-medium">{task.waiting_for_what}</p></div>}
-            <Separator className="my-2" />
-            <UrgencyActions task={task} onTaskUpdate={updated => updateTask(() => updated)} />
-            {task.escalated_to && <ManagerActions task={task} onTaskUpdate={updated => updateTask(() => updated)} currentUserId={currentUserId} />}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Checklist for projects */}
       {task.is_project && checklistItems.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="rounded-xl shadow-soft border-red-200">
             <CardContent className="p-5">
-              <h3 className="font-bold text-red-700 mb-3">🔥 Nedokoncene ukoly ({openChecklist.length})</h3>
+              <h3 className="font-bold text-red-700 mb-3">Nedokoncene ukoly ({openChecklist.length})</h3>
               <div className="space-y-2">
                 {openChecklist.map(item => (
                   <div key={item.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg cursor-pointer" onClick={() => onChecklistToggle(item.id)}>
@@ -1302,9 +1246,9 @@ function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalS
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{item.text}</div>
                       <div className="flex gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        {item.due_date && <span>⏰ {new Date(item.due_date).toLocaleDateString('cs-CZ')}</span>}
-                        {item.assigned_to_name && <span>👤 {item.assigned_to_name}</span>}
-                        {item.estimated_minutes && <span>🕐 {item.estimated_minutes} min</span>}
+                        {item.due_date && <span>{new Date(item.due_date).toLocaleDateString('cs-CZ')}</span>}
+                        {item.assigned_to_name && <span>{item.assigned_to_name}</span>}
+                        {item.estimated_minutes && <span>{item.estimated_minutes} min</span>}
                       </div>
                     </div>
                   </div>
@@ -1314,7 +1258,7 @@ function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalS
           </Card>
           <Card className="rounded-xl shadow-soft border-green-200">
             <CardContent className="p-5">
-              <h3 className="font-bold text-green-700 mb-3">✅ Dokoncene ukoly ({doneChecklist.length})</h3>
+              <h3 className="font-bold text-green-700 mb-3">Dokoncene ukoly ({doneChecklist.length})</h3>
               <div className="space-y-2">
                 {doneChecklist.map(item => (
                   <div key={item.id} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg opacity-80 cursor-pointer" onClick={() => onChecklistToggle(item.id)}>
@@ -1327,6 +1271,12 @@ function SouhrnTab({ task, updateTask, checklistItems, onChecklistToggle, totalS
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {!task.is_project && (
+        <div className="text-center py-8 text-gray-400">
+          <p className="text-sm">Toto je ukol, nikoliv projekt. Dilci ukoly se zobrazuji pouze u projektu.</p>
         </div>
       )}
     </div>
