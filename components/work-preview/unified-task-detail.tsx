@@ -801,9 +801,6 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
             {task.status === 'accepted' && (
               <Button size="sm" className="bg-blue-600 hover:bg-blue-700 h-7 text-xs" onClick={handleStartTask}><Play className="mr-1 h-3 w-3" />Zacit</Button>
             )}
-            {(task.status === 'in_progress' || task.status === 'accepted') && (
-              <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleMarkComplete}><CheckCircle2 className="mr-1 h-3 w-3" />Hotovo</Button>
-            )}
             {task.status === 'awaiting_approval' && canApprove && (
               <>
                 <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200">Ceka</Badge>
@@ -820,6 +817,9 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
                       <Target className="mr-1 h-3 w-3" />Prepnout na projekt
                     </Button>
                   </>
+                )}
+                {(task.status === 'in_progress' || task.status === 'accepted') && (
+                  <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleMarkComplete}><CheckCircle2 className="mr-1 h-3 w-3" />Hotovo</Button>
                 )}
                 <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowDelegateDialog(true)}><Send className="mr-1 h-3 w-3" />Delegovat</Button>
                 <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={handleCancelTask}>Zrusit</Button>
