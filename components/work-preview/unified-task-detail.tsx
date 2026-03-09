@@ -780,6 +780,15 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
             <div className="text-xs font-semibold text-gray-900 dark:text-white">pripojeno</div>
           </CardContent>
         </Card>
+        {task.is_billable && task.hourly_rate ? (
+          <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
+            <CardContent className="p-3 text-center min-w-[130px]">
+              <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Fakturace</div>
+              <div className="text-xl font-bold text-purple-700">{Math.round((timeData.actual / 60) * task.hourly_rate).toLocaleString('cs-CZ')} Kc</div>
+              <div className="text-xs font-semibold text-gray-900 dark:text-white">{timeData.actual > 0 ? `${(timeData.actual / 60).toFixed(1)}h` : '—'}</div>
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
 
       {/* View Tabs */}
@@ -1532,6 +1541,18 @@ function HodinyTab({ task, timeEntries, timeData, onTimeUpdate, userId, userName
   userId: string
   userName: string
 }) {
+  const [showBillingReport, setShowBillingReport] = useState(false)
+  const rate = task.hourly_rate || 0
+  const billableEntries = timeEntries.filter(e => e.billable)
+  const billableMinutes = billableEntries.reduce((sum, e) => sum + (e.duration_minutes || 0), 0)
+  const totalCost = Math.round((billableMinutes / 60) * rate)
+
+  const formatDur = (mins: number) => {
+    const h = Math.floor(mins / 60)
+    const m = mins % 60
+    return h > 0 ? `${h}h ${m}min` : `${m} min`
+  }
+
   return (
     <div className="space-y-4">
       {/* Time Tracker */}
@@ -1551,18 +1572,88 @@ function HodinyTab({ task, timeEntries, timeData, onTimeUpdate, userId, userName
         initialEntries={timeEntries}
       />
 
-      {/* Billing Summary */}
-      {task.is_billable && task.hourly_rate && (
+      {/* Toggle billing report */}
+      {task.is_billable && rate > 0 && (
+        <Button
+          onClick={() => setShowBillingReport(!showBillingReport)}
+          variant={showBillingReport ? 'default' : 'outline'}
+          className={showBillingReport ? 'bg-purple-600 hover:bg-purple-700 w-full' : 'w-full'}
+        >
+          <TrendingUp className="h-4 w-4 mr-2" />
+          {showBillingReport ? 'Skryt' : 'Zobrazit'} prehled hodin
+        </Button>
+      )}
+
+      {/* Billing report - Osa style */}
+      {showBillingReport && task.is_billable && rate > 0 && (
+        <Card className="rounded-xl shadow-soft border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-bold font-display text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Prehled hodin a podklad pro fakturaci
+            </h2>
+
+            {billableEntries.length === 0 ? (
+              <div className="text-center py-6 text-gray-400">
+                <Clock className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">Zatim zadne fakturovatelne zaznamy</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {billableEntries.map(entry => {
+                  const mins = entry.duration_minutes || 0
+                  const cost = Math.round((mins / 60) * rate)
+                  return (
+                    <div key={entry.id} className="bg-white dark:bg-gray-800 rounded-lg p-3 flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="font-medium text-sm text-gray-900 dark:text-white">{entry.user_name}</span>
+                          <Badge className="bg-green-600 text-white text-[10px] px-1.5 py-0">Fakturovatelne</Badge>
+                        </div>
+                        {entry.note && <p className="text-xs text-gray-600 dark:text-gray-300 italic">{entry.note}</p>}
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5" suppressHydrationWarning>
+                          {new Date(entry.stopped_at || entry.created_at).toLocaleDateString('cs-CZ')}
+                          {entry.stopped_at && ` ${new Date(entry.stopped_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}`}
+                        </div>
+                      </div>
+                      <div className="text-right ml-4 shrink-0">
+                        <div className="font-semibold text-purple-700">{formatDur(mins)}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-300">{cost.toLocaleString('cs-CZ')} Kc</div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Total */}
+            <div className="mt-4 pt-4 border-t-2 border-purple-300">
+              <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-4">
+                <div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Celkem k fakturaci</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Sazba: {rate} Kc/hod &bull; {billableEntries.length} zaznamu
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-purple-700">{formatDur(billableMinutes)}</div>
+                  <div className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{totalCost.toLocaleString('cs-CZ')} Kc</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Simple billing summary (always visible when billable) */}
+      {task.is_billable && rate > 0 && !showBillingReport && (
         <Card className="rounded-xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4" />Fakturace</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-gray-500">Sazba:</span><span className="font-semibold">{task.hourly_rate} Kc/hod</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Odhad:</span><span className="font-semibold">{timeData.estimated} min ({(timeData.estimated / 60).toFixed(1)}h)</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Skutecne:</span><span className="font-semibold">{timeData.actual} min ({(timeData.actual / 60).toFixed(1)}h)</span></div>
+          <CardContent className="p-4 space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-gray-500">Sazba:</span><span className="font-semibold">{rate} Kc/hod</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Odhad:</span><span className="font-semibold">{formatDur(timeData.estimated)}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Skutecne:</span><span className="font-semibold">{formatDur(timeData.actual)}</span></div>
             <Separator />
-            <div className="flex justify-between text-base"><span className="font-semibold">Celkem k fakturaci:</span><span className="font-bold text-green-600">{Math.round((timeData.actual / 60) * task.hourly_rate).toLocaleString('cs-CZ')} Kc</span></div>
+            <div className="flex justify-between text-base"><span className="font-semibold">Celkem k fakturaci:</span><span className="font-bold text-green-600">{totalCost.toLocaleString('cs-CZ')} Kc</span></div>
           </CardContent>
         </Card>
       )}
@@ -1574,8 +1665,8 @@ function HodinyTab({ task, timeEntries, timeData, onTimeUpdate, userId, userName
             <CardTitle className="text-base flex items-center gap-2"><Clock className="h-4 w-4" />Casovy souhrn projektu</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-gray-500">Odhad:</span><span className="font-semibold">{timeData.estimated} min ({(timeData.estimated / 60).toFixed(1)}h)</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Skutecne:</span><span className="font-semibold">{timeData.actual} min ({(timeData.actual / 60).toFixed(1)}h)</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Odhad:</span><span className="font-semibold">{formatDur(timeData.estimated)}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Skutecne:</span><span className="font-semibold">{formatDur(timeData.actual)}</span></div>
             <div className="flex justify-between">
               <span className="text-gray-500">Rozdil:</span>
               <span className={cn("font-semibold", timeData.actual > timeData.estimated ? "text-red-600" : "text-green-600")}>
