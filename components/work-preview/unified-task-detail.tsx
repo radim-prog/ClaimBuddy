@@ -759,28 +759,10 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
         )}
       </div>
 
-      {/* Description — always visible above tabs */}
-      <div className="border rounded-xl p-3 bg-white dark:bg-gray-900">
-        {editingDesc ? (
-          <div className="space-y-2">
-            <Textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} autoFocus placeholder="Popis ukolu..." />
-            <div className="flex gap-2">
-              <Button size="sm" onClick={() => { if (editDesc !== (task.description || '')) { updateTask(prev => ({ ...prev, description: editDesc.trim() })); toast.success('Popis ulozen') } setEditingDesc(false) }}>Ulozit</Button>
-              <Button size="sm" variant="outline" onClick={() => setEditingDesc(false)}>Zrusit</Button>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded p-1 -m-1" onClick={() => { setEditDesc(task.description || ''); setEditingDesc(true) }}>
-            {task.description || 'Klikni pro pridani popisu...'}
-          </p>
-        )}
-      </div>
-
-      {/* Compact action bar */}
-      <div className="border rounded-xl bg-gray-50 dark:bg-gray-900 p-3 space-y-2">
-        {/* Row 1: R-Score + Workflow buttons */}
+      {/* Compact action bar — single row */}
+      <div className="border rounded-xl bg-gray-50 dark:bg-gray-900 p-2.5 space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
-          {/* R-Score badge (clickable → toggles dropdown panel) */}
+          {/* Left: R-Score + stats */}
           <button
             onClick={() => setShowRScorePanel(!showRScorePanel)}
             className={cn(
@@ -793,41 +775,61 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
             <span className="text-[10px] ml-0.5">{showRScorePanel ? '▲' : '▼'}</span>
           </button>
 
-          <Separator orientation="vertical" className="h-5" />
+          <Separator orientation="vertical" className="h-4" />
 
-          {/* Workflow action buttons — inline */}
-          {task.task_type === 'bonus' && !task.claimed_by && !task.assigned_to && (
-            <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleClaimTask}>
-              <TrendingUp className="mr-1 h-3 w-3" />Bonus +{task.points_value || 0}b
-            </Button>
-          )}
-          {task.status === 'pending' && (
-            <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleAcceptTask}><UserCheck className="mr-1 h-3 w-3" />Prijmout</Button>
-          )}
-          {task.status === 'accepted' && (
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 h-7 text-xs" onClick={handleStartTask}><Play className="mr-1 h-3 w-3" />Zacit</Button>
-          )}
-          {(task.status === 'in_progress' || task.status === 'accepted') && (
-            <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleMarkComplete}><CheckCircle2 className="mr-1 h-3 w-3" />Hotovo</Button>
-          )}
-          {task.status === 'awaiting_approval' && canApprove && (
-            <>
-              <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200">Ceka na schvaleni</Badge>
-              <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleApproveTask}><CheckCircle2 className="mr-1 h-3 w-3" />Schvalit</Button>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowRejectionDialog(true)}><AlertCircle className="mr-1 h-3 w-3" />Vratit</Button>
-            </>
-          )}
-          {!['completed', 'cancelled'].includes(task.status) && (
-            <>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowDelegateDialog(true)}><Send className="mr-1 h-3 w-3" />Delegovat</Button>
-              <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={handleCancelTask}>Zrusit</Button>
-            </>
-          )}
+          <div className="flex items-center gap-2.5 text-xs text-gray-500 flex-wrap">
+            {task.is_project ? (
+              <span>Ukoly: {checklistItems.filter(i => i.completed).length}/{checklistItems.length}</span>
+            ) : (
+              <span>{task.status === 'completed' ? '1/1' : '0/1'}</span>
+            )}
+            <span>{timeData.actual} min</span>
+            <span>Dok: {linkedDocs.length}</span>
+            {task.is_billable && task.hourly_rate && timeData.actual > 0 && (
+              <span className="text-purple-600 font-medium">{Math.round((timeData.actual / 60) * task.hourly_rate).toLocaleString('cs-CZ')} Kc</span>
+            )}
+            {!task.is_project && (
+              <button className="text-[11px] text-gray-400 hover:text-purple-600 transition-colors" onClick={() => setShowConvertDialog(true)}>
+                Prepnout na projekt
+              </button>
+            )}
+          </div>
+
+          {/* Right: Workflow buttons — pushed to right */}
+          <div className="flex items-center gap-1.5 ml-auto">
+            {task.task_type === 'bonus' && !task.claimed_by && !task.assigned_to && (
+              <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleClaimTask}>
+                <TrendingUp className="mr-1 h-3 w-3" />+{task.points_value || 0}b
+              </Button>
+            )}
+            {task.status === 'pending' && (
+              <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleAcceptTask}><UserCheck className="mr-1 h-3 w-3" />Prijmout</Button>
+            )}
+            {task.status === 'accepted' && (
+              <Button size="sm" className="bg-blue-600 hover:bg-blue-700 h-7 text-xs" onClick={handleStartTask}><Play className="mr-1 h-3 w-3" />Zacit</Button>
+            )}
+            {(task.status === 'in_progress' || task.status === 'accepted') && (
+              <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleMarkComplete}><CheckCircle2 className="mr-1 h-3 w-3" />Hotovo</Button>
+            )}
+            {task.status === 'awaiting_approval' && canApprove && (
+              <>
+                <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200">Ceka</Badge>
+                <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleApproveTask}><CheckCircle2 className="mr-1 h-3 w-3" />Schvalit</Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowRejectionDialog(true)}><AlertCircle className="mr-1 h-3 w-3" />Vratit</Button>
+              </>
+            )}
+            {!['completed', 'cancelled'].includes(task.status) && (
+              <>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowDelegateDialog(true)}><Send className="mr-1 h-3 w-3" />Delegovat</Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={handleCancelTask}>Zrusit</Button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* R-Score collapsible panel */}
         {showRScorePanel && (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 border-t">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t">
             {([
               { key: 'score_money' as const, label: 'Money', emoji: '\uD83D\uDCB0', options: SCORE_OPTIONS.money },
               { key: 'score_fire' as const, label: 'Fire', emoji: '\uD83D\uDD25', options: SCORE_OPTIONS.fire },
@@ -855,27 +857,6 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
           </div>
         )}
 
-        {/* Row 2: Mini stats + convert to project */}
-        <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            {task.is_project ? (
-              <span>Ukoly: {checklistItems.filter(i => i.completed).length}/{checklistItems.length}</span>
-            ) : (
-              <span>Status: {task.status === 'completed' ? '1/1' : '0/1'}</span>
-            )}
-            <span>Odpracovano: {timeData.actual} min</span>
-            <span>Dokumenty: {linkedDocs.length}</span>
-            {task.is_billable && task.hourly_rate && timeData.actual > 0 && (
-              <span className="text-purple-600 font-medium">Fakturace: {Math.round((timeData.actual / 60) * task.hourly_rate).toLocaleString('cs-CZ')} Kc</span>
-            )}
-          </div>
-          {!task.is_project && (
-            <Button variant="ghost" size="sm" className="h-6 text-[11px] text-gray-400 hover:text-purple-600" onClick={() => setShowConvertDialog(true)}>
-              Prepnout na projekt
-            </Button>
-          )}
-        </div>
-
         {/* Waiting for */}
         {task.is_waiting_for && (
           <div className="border-t pt-2 mt-1">
@@ -884,6 +865,24 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
               <span>Cekam na: <strong>{task.waiting_for_who}</strong> {task.waiting_for_what && `— ${task.waiting_for_what}`}</span>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Description — below action bar with label */}
+      <div className="border rounded-xl p-3 bg-white dark:bg-gray-900">
+        <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1">Popis ukolu</div>
+        {editingDesc ? (
+          <div className="space-y-2">
+            <Textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} autoFocus placeholder="Popis ukolu..." />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => { if (editDesc !== (task.description || '')) { updateTask(prev => ({ ...prev, description: editDesc.trim() })); toast.success('Popis ulozen') } setEditingDesc(false) }}>Ulozit</Button>
+              <Button size="sm" variant="outline" onClick={() => setEditingDesc(false)}>Zrusit</Button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded p-1 -m-1" onClick={() => { setEditDesc(task.description || ''); setEditingDesc(true) }}>
+            {task.description || 'Klikni pro pridani popisu...'}
+          </p>
         )}
       </div>
 
