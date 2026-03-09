@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Calculator, Plus, X, Trash2 } from 'lucide-react'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 type ItemType = 'work' | 'travel' | 'wasted_time' | 'other'
 
@@ -59,6 +60,8 @@ export function PrepaidCalculator({
   onCreated,
   onCancel,
 }: PrepaidCalculatorProps) {
+  const { userRole } = useAccountantUser()
+  const isAdmin = userRole === 'admin'
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [alreadyPaid, setAlreadyPaid] = useState(true)
@@ -224,7 +227,7 @@ export function PrepaidCalculator({
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           <Calculator className="h-4 w-4 text-purple-500" />
-          Nový prepaid projekt
+          Nový předplacený projekt
         </h4>
         {onCancel && (
           <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
@@ -305,7 +308,8 @@ export function PrepaidCalculator({
                     step={50}
                     value={item.rate || ''}
                     onChange={e => updateItem(item.id, { rate: Number(e.target.value) })}
-                    className="w-full px-2 py-1 text-sm border rounded bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    readOnly={!isAdmin}
+                    className={`w-full px-2 py-1 text-sm border rounded ${!isAdmin ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white'}`}
                   />
                 </div>
               </div>
@@ -332,7 +336,8 @@ export function PrepaidCalculator({
                     step={0.5}
                     value={item.rate_per_km || ''}
                     onChange={e => updateItem(item.id, { rate_per_km: Number(e.target.value) })}
-                    className="w-full px-2 py-1 text-sm border rounded bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    readOnly={!isAdmin}
+                    className={`w-full px-2 py-1 text-sm border rounded ${!isAdmin ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white'}`}
                   />
                 </div>
                 <div>

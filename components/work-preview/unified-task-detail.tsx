@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -77,6 +78,8 @@ interface TimeTrackingEntry {
   duration_minutes?: number
   note?: string
   billable: boolean
+  in_tariff?: boolean
+  prepaid_project_id?: string | null
   created_at: string
 }
 import { UrgencyBadge } from '@/components/tasks/UrgencyBadge'
@@ -287,6 +290,8 @@ interface UnifiedTaskDetailProps {
 }
 
 export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedTaskDetailProps) {
+  const { userRole } = useAccountantUser()
+  const isAdmin = userRole === 'admin'
   const [task, setTask] = useState<Task | null>(null)
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -786,7 +791,13 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
                 Posledni aktivita: {new Date(task.updated_at || task.created_at || new Date().toISOString()).toLocaleDateString('cs-CZ')} •
                 {' '}Status: <span className="font-medium">{getStatusLabel(task.status)}</span>
               </span>
-              <span className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{task.company_name}</span>
+              {task.company_id ? (
+                <Link href={`/accountant/clients/${task.company_id}/tasks`} className="flex items-center gap-1 hover:text-purple-600 hover:underline transition-colors">
+                  <Building2 className="h-3.5 w-3.5" />{task.company_name}
+                </Link>
+              ) : (
+                <span className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{task.company_name}</span>
+              )}
               <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{task.due_date ? new Date(task.due_date).toLocaleDateString('cs-CZ') : '—'}{task.due_time && ` ${task.due_time}`}</span>
               {task.assigned_to_name && <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" />{task.assigned_to_name}</span>}
             </div>
@@ -883,7 +894,9 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
                     <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={handleMarkComplete}><CheckCircle2 className="mr-1 h-3 w-3" />Hotovo</Button>
                   </>
                 )}
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowDelegateDialog(true)}><Send className="mr-1 h-3 w-3" />Delegovat</Button>
+                {isAdmin && (
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowDelegateDialog(true)}><Send className="mr-1 h-3 w-3" />Delegovat</Button>
+                )}
                 <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={handleCancelTask}>Zrusit</Button>
               </>
             )}
@@ -1680,6 +1693,15 @@ function VykazTab({ task, timeEntries: initialEntries, timeData, onTimeUpdate, u
   }>>([])
   const [saving, setSaving] = useState(false)
 
+  // Edit entry state
+  const [editingEntry, setEditingEntry] = useState<TimeTrackingEntry | null>(null)
+  const [editDate, setEditDate] = useState('')
+  const [editMinutes, setEditMinutes] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editInTariff, setEditInTariff] = useState(false)
+  const [editPrepaidProjectId, setEditPrepaidProjectId] = useState<string | null>(null)
+  const [editSaving, setEditSaving] = useState(false)
+
   // Timer (collapsible)
   const [showTimer, setShowTimer] = useState(false)
   const [timerRunning, setTimerRunning] = useState(false)
@@ -1743,6 +1765,8 @@ function VykazTab({ task, timeEntries: initialEntries, timeData, onTimeUpdate, u
             user_name: te.user_name || '', started_at: te.started_at || te.date,
             stopped_at: te.stopped_at || te.date, duration_minutes: te.duration_minutes || te.minutes,
             note: te.note || te.description || '', billable: te.billable !== false,
+            in_tariff: te.in_tariff === true,
+            prepaid_project_id: te.prepaid_project_id || null,
             created_at: te.created_at,
           }))
           setEntries(mapped)
@@ -1805,6 +1829,50 @@ function VykazTab({ task, timeEntries: initialEntries, timeData, onTimeUpdate, u
     } catch {
       toast.error('Chyba při mazání')
     }
+  }
+
+  const handleEditOpen = (entry: TimeTrackingEntry) => {
+    setEditingEntry(entry)
+    setEditDate(entry.stopped_at || entry.started_at || new Date().toISOString().split('T')[0])
+    setEditMinutes(String(entry.duration_minutes || 0))
+    setEditDescription(entry.note || '')
+    setEditInTariff(entry.in_tariff === true)
+    setEditPrepaidProjectId(entry.prepaid_project_id || null)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingEntry) return
+    const mins = parseInt(editMinutes) || 0
+    if (mins <= 0) { toast.error('Zadejte čas'); return }
+    if (!editDescription.trim()) { toast.error('Zadejte popis práce'); return }
+
+    setEditSaving(true)
+    try {
+      const res = await fetch('/api/time-entries', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId, 'x-user-name': userName || 'Ucetni' },
+        body: JSON.stringify({
+          id: editingEntry.id,
+          date: editDate,
+          minutes: mins,
+          description: editDescription.trim(),
+          billable: !editInTariff,
+          in_tariff: editInTariff,
+          prepaid_project_id: editPrepaidProjectId,
+        }),
+      })
+      if (res.ok) {
+        toast.success('Záznam upraven')
+        setEditingEntry(null)
+        await refreshEntries()
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Chyba při ukládání')
+      }
+    } catch {
+      toast.error('Chyba při ukládání')
+    }
+    setEditSaving(false)
   }
 
   const handleTimerStart = () => {
@@ -2057,12 +2125,22 @@ function VykazTab({ task, timeEntries: initialEntries, timeData, onTimeUpdate, u
                           </td>
                         )}
                         <td className="p-1">
-                          <button
-                            onClick={() => handleDelete(entry.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-all"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              onClick={() => handleEditOpen(entry)}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-purple-500 transition-all"
+                              title="Upravit"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(entry.id)}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-all"
+                              title="Smazat"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )
@@ -2121,6 +2199,78 @@ function VykazTab({ task, timeEntries: initialEntries, timeData, onTimeUpdate, u
           </div>
         )}
       </div>
+
+      {/* Edit entry dialog */}
+      <Dialog open={!!editingEntry} onOpenChange={(open) => { if (!open) setEditingEntry(null) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Edit2 className="h-5 w-5" />Upravit záznam</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Datum</Label>
+              <Input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} />
+            </div>
+            <div>
+              <Label>Čas (minuty)</Label>
+              <Input type="number" min={1} max={480} value={editMinutes} onChange={e => setEditMinutes(e.target.value)} />
+            </div>
+            <div>
+              <Label>Popis práce</Label>
+              <Input value={editDescription} onChange={e => setEditDescription(e.target.value)} placeholder="Co jste dělali..." />
+            </div>
+            {prepaidProjects.length > 0 && (
+              <div>
+                <Label>Předplacený projekt</Label>
+                <select
+                  value={editPrepaidProjectId || ''}
+                  onChange={e => {
+                    setEditPrepaidProjectId(e.target.value || null)
+                    if (e.target.value) setEditInTariff(false)
+                  }}
+                  className="w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="">-- Bez projektu --</option>
+                  {prepaidProjects.map(p => (
+                    <option key={p.id} value={p.id}>{p.title}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {!editPrepaidProjectId && (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setEditInTariff(false)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    !editInTariff
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700'
+                      : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700'
+                  }`}
+                >
+                  K fakturaci
+                </button>
+                <button
+                  onClick={() => setEditInTariff(true)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    editInTariff
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-400 dark:border-gray-600'
+                      : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700'
+                  }`}
+                >
+                  V tarifu
+                </button>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingEntry(null)}>Zrušit</Button>
+            <Button onClick={handleSaveEdit} disabled={editSaving} className="bg-purple-600 hover:bg-purple-700">
+              {editSaving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1" />}
+              Uložit změny
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

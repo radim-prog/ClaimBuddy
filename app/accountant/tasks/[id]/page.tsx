@@ -26,7 +26,7 @@ export default function TaskDetailPage() {
       taskId={taskId}
       userId={userId}
       userName={userName}
-      onBack={() => router.push('/accountant/work')}
+      onBack={() => router.back()}
     />
   )
 }

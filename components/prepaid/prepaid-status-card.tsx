@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Briefcase, Clock, CreditCard, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 type PrepaidProject = {
   id: string
@@ -30,6 +31,8 @@ type PrepaidStatusCardProps = {
 }
 
 export function PrepaidStatusCard({ project, onStatusChange, onOverride, showActions = true }: PrepaidStatusCardProps) {
+  const { userRole } = useAccountantUser()
+  const isAdmin = userRole === 'admin'
   const [expanded, setExpanded] = useState(false)
   const [overrideReason, setOverrideReason] = useState('')
 
@@ -111,32 +114,34 @@ export function PrepaidStatusCard({ project, onStatusChange, onOverride, showAct
         </div>
       </div>
 
-      {/* Summary row */}
-      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-        <span className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          {project.consumed_amount.toLocaleString('cs-CZ')} / {project.total_budget.toLocaleString('cs-CZ')} Kč
-        </span>
-        <span className={`flex items-center gap-1 ${pt.color}`}>
-          <CreditCard className="h-3 w-3" />
-          {pt.label}
-        </span>
-        {consumedPct >= 80 && consumedPct < 100 && (
-          <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
-            <AlertTriangle className="h-3 w-3" />
-            Blíží se limit
+      {/* Summary row — financial details only for admin */}
+      {isAdmin && (
+        <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+          <span className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {project.consumed_amount.toLocaleString('cs-CZ')} / {project.total_budget.toLocaleString('cs-CZ')} Kč
           </span>
-        )}
-        {consumedPct >= 100 && (
-          <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-            <AlertTriangle className="h-3 w-3" />
-            Rozpočet vyčerpán
+          <span className={`flex items-center gap-1 ${pt.color}`}>
+            <CreditCard className="h-3 w-3" />
+            {pt.label}
           </span>
-        )}
-      </div>
+          {consumedPct >= 80 && consumedPct < 100 && (
+            <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
+              <AlertTriangle className="h-3 w-3" />
+              Blíží se limit
+            </span>
+          )}
+          {consumedPct >= 100 && (
+            <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
+              <AlertTriangle className="h-3 w-3" />
+              Rozpočet vyčerpán
+            </span>
+          )}
+        </div>
+      )}
 
-      {/* Action buttons — always visible */}
-      {showActions && (
+      {/* Action buttons — admin only */}
+      {showActions && isAdmin && (
         <div className="flex flex-wrap gap-2">
           {project.status === 'draft' && onStatusChange && (
             <>
@@ -173,8 +178,8 @@ export function PrepaidStatusCard({ project, onStatusChange, onOverride, showAct
         </div>
       )}
 
-      {/* Expanded details */}
-      {expanded && (
+      {/* Expanded details — admin only */}
+      {expanded && isAdmin && (
         <div className="border-t dark:border-gray-700 pt-3 space-y-3">
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>

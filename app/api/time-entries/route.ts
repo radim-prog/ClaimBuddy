@@ -234,6 +234,127 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * PATCH /api/time-entries - Update a time entry
+ *
+ * Body:
+ * {
+ *   id: UUID (required)
+ *   date?: YYYY-MM-DD
+ *   minutes?: number
+ *   description?: string
+ *   billable?: boolean
+ *   in_tariff?: boolean
+ *   prepaid_project_id?: string | null
+ * }
+ */
+export async function PATCH(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  try {
+    const body = await request.json()
+    if (!body.id) {
+      return NextResponse.json({ error: 'id je povinné' }, { status: 400 })
+    }
+
+    // Fetch the existing entry
+    const { data: existing, error: fetchErr } = await supabaseAdmin
+      .from('time_logs')
+      .select('*')
+      .eq('id', body.id)
+      .single()
+
+    if (fetchErr || !existing) {
+      return NextResponse.json({ error: 'Záznam nenalezen' }, { status: 404 })
+    }
+
+    // Build update object
+    const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
+
+    if (body.date !== undefined) update.date = body.date
+    if (body.description !== undefined) update.description = body.description.trim()
+    if (body.billable !== undefined) update.billable = body.billable
+    if (body.in_tariff !== undefined) update.in_tariff = body.in_tariff
+
+    // Recalculate hours from minutes
+    if (body.minutes !== undefined) {
+      const minutes = body.minutes
+      const hours = minutes / 60
+      update.minutes = minutes
+      update.hours = Math.round(hours * 100) / 100
+    }
+
+    // Handle prepaid project change
+    const oldPrepaidId = existing.prepaid_project_id
+    const newPrepaidId = body.prepaid_project_id !== undefined ? (body.prepaid_project_id || null) : oldPrepaidId
+    update.prepaid_project_id = newPrepaidId
+
+    const { data: updated, error: updateErr } = await supabaseAdmin
+      .from('time_logs')
+      .update(update)
+      .eq('id', body.id)
+      .select()
+      .single()
+
+    if (updateErr) {
+      console.error('Time entry PATCH error:', updateErr)
+      return NextResponse.json({ error: updateErr.message }, { status: 500 })
+    }
+
+    // Recalculate prepaid projects if prepaid_project_id changed
+    if (oldPrepaidId !== newPrepaidId) {
+      const entryHours = Number(updated.hours) || 0
+      const entryRate = Number(updated.hourly_rate) || 700
+
+      // Remove from old prepaid project
+      if (oldPrepaidId) {
+        const { data: oldProject } = await supabaseAdmin
+          .from('prepaid_projects')
+          .select('consumed_hours, consumed_amount')
+          .eq('id', oldPrepaidId)
+          .single()
+
+        if (oldProject) {
+          await supabaseAdmin
+            .from('prepaid_projects')
+            .update({
+              consumed_hours: Math.max(0, Number(oldProject.consumed_hours) - entryHours),
+              consumed_amount: Math.max(0, Number(oldProject.consumed_amount) - (entryHours * entryRate)),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', oldPrepaidId)
+        }
+      }
+
+      // Add to new prepaid project
+      if (newPrepaidId) {
+        const { data: newProject } = await supabaseAdmin
+          .from('prepaid_projects')
+          .select('consumed_hours, consumed_amount')
+          .eq('id', newPrepaidId)
+          .single()
+
+        if (newProject) {
+          await supabaseAdmin
+            .from('prepaid_projects')
+            .update({
+              consumed_hours: Number(newProject.consumed_hours) + entryHours,
+              consumed_amount: Number(newProject.consumed_amount) + (entryHours * entryRate),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', newPrepaidId)
+        }
+      }
+    }
+
+    return NextResponse.json({ entry: updated })
+  } catch (err) {
+    console.error('Time entry PATCH error:', err)
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+}
+
+/**
  * DELETE /api/time-entries?id=UUID - Delete a time entry
  */
 export async function DELETE(request: NextRequest) {

@@ -103,20 +103,30 @@ const statusLabels: Record<TaskStatus, string> = {
 export function AccountantTasksSection({ companyId, companyName, tasks, onTasksChange }: AccountantTasksSectionProps) {
   const router = useRouter()
   const { userId, userName } = useAccountantUser()
+  const [viewMode, setViewMode] = useState<'tasks' | 'projects'>('tasks')
   const [filter, setFilter] = useState<'all' | 'active' | 'waiting' | 'completed'>('active')
   const [showGTDWizard, setShowGTDWizard] = useState(false)
 
+  // Count tasks vs projects for the toggle
+  const taskCount = useMemo(() => tasks.filter(t => !t.is_project).length, [tasks])
+  const projectCount = useMemo(() => tasks.filter(t => t.is_project).length, [tasks])
+
+  // First filter by viewMode, then by status
+  const viewFiltered = useMemo(() =>
+    tasks.filter(t => viewMode === 'projects' ? t.is_project : !t.is_project)
+  , [tasks, viewMode])
+
   const filteredTasks = useMemo(() => {
-    let filtered = tasks
+    let filtered = viewFiltered
     switch (filter) {
       case 'active':
-        filtered = tasks.filter(t => t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress')
+        filtered = viewFiltered.filter(t => t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress')
         break
       case 'waiting':
-        filtered = tasks.filter(t => t.status === 'waiting_for' || t.status === 'waiting_client')
+        filtered = viewFiltered.filter(t => t.status === 'waiting_for' || t.status === 'waiting_client')
         break
       case 'completed':
-        filtered = tasks.filter(t => t.status === 'completed')
+        filtered = viewFiltered.filter(t => t.status === 'completed')
         break
     }
 
@@ -131,14 +141,14 @@ export function AccountantTasksSection({ companyId, companyName, tasks, onTasksC
       const bTime = b.due_date ? new Date(b.due_date).getTime() : Infinity
       return aTime - bTime
     })
-  }, [tasks, filter])
+  }, [viewFiltered, filter])
 
   const counts = useMemo(() => ({
-    all: tasks.length,
-    active: tasks.filter(t => t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress').length,
-    waiting: tasks.filter(t => t.status === 'waiting_for' || t.status === 'waiting_client').length,
-    completed: tasks.filter(t => t.status === 'completed').length,
-  }), [tasks])
+    all: viewFiltered.length,
+    active: viewFiltered.filter(t => t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress').length,
+    waiting: viewFiltered.filter(t => t.status === 'waiting_for' || t.status === 'waiting_client').length,
+    completed: viewFiltered.filter(t => t.status === 'completed').length,
+  }), [viewFiltered])
 
   const formatDueDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -242,6 +252,31 @@ export function AccountantTasksSection({ companyId, companyName, tasks, onTasksC
 
   return (
     <div className="space-y-4">
+      {/* View mode toggle: Úkoly / Projekty */}
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg w-fit">
+        <button
+          onClick={() => { setViewMode('tasks'); setFilter('active') }}
+          className={`px-3 py-1.5 text-sm rounded-md transition-colors font-medium ${
+            viewMode === 'tasks'
+              ? 'bg-white dark:bg-gray-800 text-purple-700 dark:text-purple-400 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          Úkoly ({taskCount})
+        </button>
+        <button
+          onClick={() => { setViewMode('projects'); setFilter('active') }}
+          className={`px-3 py-1.5 text-sm rounded-md transition-colors font-medium flex items-center gap-1.5 ${
+            viewMode === 'projects'
+              ? 'bg-white dark:bg-gray-800 text-purple-700 dark:text-purple-400 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          <Briefcase className="h-3.5 w-3.5" />
+          Projekty ({projectCount})
+        </button>
+      </div>
+
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
           {([
@@ -327,11 +362,17 @@ export function AccountantTasksSection({ companyId, companyName, tasks, onTasksC
                     {task.title}
                   </span>
 
-                  {task.is_project && (
+                  {task.is_project && viewMode !== 'projects' && (
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200">
                       <Briefcase className="h-2.5 w-2.5 mr-0.5" />
                       Projekt
                     </Badge>
+                  )}
+
+                  {viewMode === 'projects' && task.project_outcome && (
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-[150px] hidden sm:inline" title={task.project_outcome}>
+                      {task.project_outcome}
+                    </span>
                   )}
 
                   {(priority === 'critical' || priority === 'high') && (

@@ -553,15 +553,12 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                       <span className="text-sm text-gray-500">{tasksBadge === 1 ? 'úkol' : tasksBadge >= 2 && tasksBadge <= 4 ? 'úkoly' : 'úkolů'}</span>
                     </div>
                     {/* Projekty */}
-                    {projectCount > 0 && (
-                      <>
-                        <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
-                        <div className="flex items-center gap-2">
-                          <Briefcase className="h-4 w-4 text-indigo-500" />
-                          <span className="text-sm text-gray-500">{czechPlural(projectCount, 'projekt', 'projekty', 'projektů')}</span>
-                        </div>
-                      </>
-                    )}
+                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                    <div className="flex items-center gap-2">
+                      <Briefcase className={`h-4 w-4 ${projectCount > 0 ? 'text-indigo-500' : 'text-gray-400'}`} />
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">{projectCount}</span>
+                      <span className="text-sm text-gray-500">{czechPlural(projectCount, 'projekt', 'projekty', 'projektů')}</span>
+                    </div>
                     {/* Soubory */}
                     <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
                     <div className="flex items-center gap-2">
