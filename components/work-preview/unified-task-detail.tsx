@@ -58,11 +58,27 @@ import {
   Paperclip,
   X,
   Timer,
+  Loader2,
+  ChevronDown,
+  ChevronRight,
+  Square,
 } from 'lucide-react'
 import { GTDWizard } from '@/components/tasks/gtd-wizard'
 import { DocumentPicker } from '@/components/documents/document-picker'
 import { UploadDialog } from '@/components/accountant/documents/upload-dialog'
-import { TimeTracker, type TimeTrackingEntry } from '@/components/tasks/time-tracker'
+// TimeTrackingEntry type (was imported from time-tracker, now local)
+interface TimeTrackingEntry {
+  id: string
+  task_id: string
+  user_id: string
+  user_name: string
+  started_at: string
+  stopped_at?: string
+  duration_minutes?: number
+  note?: string
+  billable: boolean
+  created_at: string
+}
 import { UrgencyBadge } from '@/components/tasks/UrgencyBadge'
 import { UrgencyActions, ManagerActions } from '@/components/tasks/UrgencyActions'
 import { fireTaskConfetti } from '@/components/gtd/confetti'
@@ -206,7 +222,22 @@ const SCORE_OPTIONS = {
   ],
 }
 
-type TabKey = 'souhrn' | 'poznamky' | 'ukoly' | 'timeline' | 'dokumenty' | 'hodiny'
+type SpisFilterKey = 'all' | 'documents' | 'notes' | 'communication' | 'work'
+
+type SpisEntryType = 'progress_note' | 'comment' | 'timeline_event' | 'document_added' | 'work_session'
+
+interface SpisEntry {
+  id: string
+  type: SpisEntryType
+  user_name: string
+  created_at: string
+  duration_minutes?: number
+  data: ProgressNote | Comment | TimelineEvent | LinkedDoc | TimeTrackingEntry
+}
+
+type UnifiedEntryType = 'note' | 'communication' | 'document'
+
+type TabKey = 'spis' | 'ukoly' | 'dokumenty' | 'vykaz'
 
 // ============================================
 // HELPERS
@@ -258,7 +289,7 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
   const [task, setTask] = useState<Task | null>(null)
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<TabKey>('souhrn')
+  const [activeTab, setActiveTab] = useState<TabKey>('spis')
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([])
   const [comments, setComments] = useState<Comment[]>([])
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
@@ -278,16 +309,23 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
   const [completionNote, setCompletionNote] = useState('')
   const [showRejectionDialog, setShowRejectionDialog] = useState(false)
   const [rejectionComment, setRejectionComment] = useState('')
-  const [showEventDialog, setShowEventDialog] = useState(false)
-  const [newEventType, setNewEventType] = useState<TimelineEventType>('call')
-  const [newEventDescription, setNewEventDescription] = useState('')
-  const [newEventContact, setNewEventContact] = useState('')
-  const [newEventDuration, setNewEventDuration] = useState('')
-  const [showProgressNoteDialog, setShowProgressNoteDialog] = useState(false)
-  const [newProgressStatus, setNewProgressStatus] = useState('')
-  const [newProgressProblems, setNewProgressProblems] = useState('')
-  const [newProgressNextSteps, setNewProgressNextSteps] = useState('')
+  // Unified "Přidat záznam" dialog
+  const [showSpisDialog, setSpisDialog] = useState(false)
+  const [spisEntryType, setSpisEntryType] = useState<UnifiedEntryType>('note')
+  // Note fields
+  const [spisNoteStatus, setSpisNoteStatus] = useState('')
+  const [spisNoteProblems, setSpisNoteProblems] = useState('')
+  const [spisNoteNextSteps, setSpisNoteNextSteps] = useState('')
+  // Communication fields
+  const [spisCommType, setSpisCommType] = useState<TimelineEventType>('call')
+  const [spisCommDescription, setSpisCommDescription] = useState('')
+  const [spisCommContact, setSpisCommContact] = useState('')
+  // Shared: time spent
+  const [spisTimeSpent, setSpisTimeSpent] = useState('')
+  // Spis filter
+  const [spisFilter, setSpisFilter] = useState<SpisFilterKey>('all')
   const [showDocPicker, setShowDocPicker] = useState(false)
+  const [autoOpenUpload, setAutoOpenUpload] = useState(0)
   const [editingTitle, setEditingTitle] = useState(false)
   const [editingDesc, setEditingDesc] = useState(false)
   const [editTitle, setEditTitle] = useState('')
@@ -367,9 +405,9 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
         if (data.task.time_entries) {
           setTimeEntries(data.task.time_entries.map((te: any) => ({
             id: te.id, task_id: te.task_id || taskId, user_id: te.user_id,
-            user_name: te.user_name || '', started_at: te.started_at,
-            stopped_at: te.stopped_at, duration_minutes: te.duration_minutes,
-            note: te.note || te.description || '', billable: te.billable || false,
+            user_name: te.user_name || '', started_at: te.started_at || te.date,
+            stopped_at: te.stopped_at || te.date, duration_minutes: te.duration_minutes || te.minutes,
+            note: te.note || te.description || '', billable: te.billable !== false,
             created_at: te.created_at,
           })))
         }
@@ -574,53 +612,76 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
     setNewComment(''); toast.success('Komentar pridan')
   }
 
-  const handleAddTimelineEvent = () => {
-    if (!newEventDescription.trim()) { toast.error('Zadejte popis udalosti'); return }
-    setTimeline(prev => {
-      const next = [...prev, {
-        id: `tl-${newEventType}-${Date.now()}`,
-        task_id: taskId,
-        event_type: newEventType,
-        user_name: userName,
-        description: newEventDescription.trim(),
-        created_at: new Date().toISOString(),
-        ...(newEventContact && { contact_name: newEventContact }),
-        ...(newEventDuration && { duration_minutes: parseInt(newEventDuration) }),
-      }].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-      persistTaskData(taskData => ({ ...taskData, timeline: next }))
-      return next
-    })
-    setShowEventDialog(false); setNewEventDescription(''); setNewEventContact(''); setNewEventDuration('')
-    toast.success(`${TIMELINE_EVENT_CONFIG[newEventType].label} zaznamenan`)
+  const logTimeEntry = async (minutes: number, description: string) => {
+    if (minutes <= 0) return
+    try {
+      await fetch('/api/time-entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId, 'x-user-name': userName || 'Ucetni' },
+        body: JSON.stringify({ task_id: taskId, company_id: task?.company_id, duration_minutes: minutes, note: description, billable: task?.is_billable || false }),
+      })
+      // Refresh time entries
+      const res = await fetch(`/api/tasks/${taskId}`, { headers: { 'x-user-id': userId } })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.task?.time_entries) {
+          const entries = data.task.time_entries.map((te: any) => ({
+            id: te.id, task_id: te.task_id || taskId, user_id: te.user_id,
+            user_name: te.user_name || '', started_at: te.started_at || te.date,
+            stopped_at: te.stopped_at || te.date, duration_minutes: te.duration_minutes || te.minutes,
+            note: te.note || te.description || '', billable: te.billable !== false,
+            created_at: te.created_at,
+          }))
+          setTimeEntries(entries)
+          const total = entries.reduce((s: number, e: TimeTrackingEntry) => s + (e.duration_minutes || 0), 0)
+          updateTask(prev => ({ ...prev, actual_minutes: total }))
+        }
+      }
+    } catch { /* silently fail, main action already succeeded */ }
   }
 
-  const handleAddProgressNote = async () => {
-    if (!newProgressStatus.trim()) { toast.error('Zadejte aktualni stav'); return }
-    try {
-      const res = await fetch(`/api/tasks/${taskId}/progress-notes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': userId,
-          'x-user-name': userName || 'Ucetni',
-        },
-        body: JSON.stringify({
-          current_status: newProgressStatus.trim(),
-          problems: newProgressProblems.trim() || undefined,
-          next_steps: newProgressNextSteps.trim() || undefined,
-        }),
+  const handleAddSpisEntry = async () => {
+    if (spisEntryType === 'note') {
+      if (!spisNoteStatus.trim()) { toast.error('Zadejte aktualni stav'); return }
+      try {
+        const res = await fetch(`/api/tasks/${taskId}/progress-notes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-user-id': userId, 'x-user-name': userName || 'Ucetni' },
+          body: JSON.stringify({ current_status: spisNoteStatus.trim(), problems: spisNoteProblems.trim() || undefined, next_steps: spisNoteNextSteps.trim() || undefined }),
+        })
+        if (!res.ok) throw new Error('save failed')
+        const data = await res.json()
+        setProgressNotes(prev => [normalizeProgressNote(data.note), ...prev])
+        toast.success('Zaznam pridan do spisu')
+      } catch { toast.error('Chyba pri ukladani'); return }
+    } else if (spisEntryType === 'communication') {
+      if (!spisCommDescription.trim()) { toast.error('Zadejte popis'); return }
+      setTimeline(prev => {
+        const next = [...prev, {
+          id: `tl-${spisCommType}-${Date.now()}`,
+          task_id: taskId,
+          event_type: spisCommType,
+          user_name: userName,
+          description: spisCommDescription.trim(),
+          created_at: new Date().toISOString(),
+          ...(spisCommContact && { contact_name: spisCommContact }),
+          ...(spisTimeSpent && { duration_minutes: parseInt(spisTimeSpent) }),
+        }].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+        persistTaskData(taskData => ({ ...taskData, timeline: next }))
+        return next
       })
-      if (!res.ok) throw new Error('save failed')
-      const data = await res.json()
-      setProgressNotes(prev => [normalizeProgressNote(data.note), ...prev])
-      setShowProgressNoteDialog(false)
-      setNewProgressStatus('')
-      setNewProgressProblems('')
-      setNewProgressNextSteps('')
-      toast.success('Progress note pridan')
-    } catch {
-      toast.error('Chyba pri ukladani progress note')
+      toast.success(`${TIMELINE_EVENT_CONFIG[spisCommType].label} zaznamenan`)
     }
+    // Log time if provided
+    const mins = parseInt(spisTimeSpent)
+    if (!isNaN(mins) && mins > 0) {
+      const desc = spisEntryType === 'note' ? spisNoteStatus.trim() : spisCommDescription.trim()
+      logTimeEntry(mins, desc)
+    }
+    // Reset all fields
+    setSpisDialog(false)
+    setSpisNoteStatus(''); setSpisNoteProblems(''); setSpisNoteNextSteps('')
+    setSpisCommDescription(''); setSpisCommContact(''); setSpisTimeSpent('')
   }
 
   const handleTimeUpdate = (actualMinutes: number, entries: TimeTrackingEntry[]) => {
@@ -890,12 +951,10 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
       {/* View Tabs */}
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto">
         {[
-          { id: 'souhrn' as TabKey, label: 'Souhrn spisu' },
-          { id: 'poznamky' as TabKey, label: `Poznamky${progressNotes.length ? ` (${progressNotes.length})` : ''}` },
+          { id: 'spis' as TabKey, label: 'Spis' },
           ...(task.is_project ? [{ id: 'ukoly' as TabKey, label: `Ukoly (${checklistItems.filter(i => i.completed).length}/${checklistItems.length})` }] : []),
           { id: 'dokumenty' as TabKey, label: `Dokumenty (${linkedDocs.length})` },
-          { id: 'timeline' as TabKey, label: `Timeline (${timeline.length})` },
-          { id: 'hodiny' as TabKey, label: `Hodiny${timeEntries.length ? ` (${timeEntries.length})` : ''}` },
+          { id: 'vykaz' as TabKey, label: `Vykaz prace${timeEntries.length ? ` (${timeEntries.length})` : ''}` },
         ].map(tab => {
           const isActive = activeTab === tab.id
           return (
@@ -918,35 +977,25 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
 
       {/* Tab Content */}
       <div className="min-h-[400px]">
-        {activeTab === 'souhrn' && (
-          <SummaryTab
-            task={task}
-            totalScore={totalScore}
-            scorePriority={scorePriority}
-            progress={progress}
-            timeData={timeData}
-            linkedDocsCount={linkedDocs.length}
+        {activeTab === 'spis' && (
+          <SpisTab
             progressNotes={progressNotes}
+            comments={comments}
+            timeline={timeline}
+            linkedDocs={linkedDocs}
+            timeEntries={timeEntries}
+            filter={spisFilter}
+            onFilterChange={setSpisFilter}
+            onAddEntry={() => setSpisDialog(true)}
+            newComment={newComment}
+            setNewComment={setNewComment}
+            onAddComment={handleAddComment}
           />
         )}
         {activeTab === 'ukoly' && (
-          <SouhrnTab
+          <UkolyTab
             task={task} checklistItems={checklistItems}
             onChecklistToggle={handleChecklistToggle}
-          />
-        )}
-        {activeTab === 'poznamky' && (
-          <PoznamkyTab
-            progressNotes={progressNotes} comments={comments}
-            newComment={newComment} setNewComment={setNewComment}
-            onAddComment={handleAddComment}
-            onAddProgressNote={() => setShowProgressNoteDialog(true)}
-          />
-        )}
-        {activeTab === 'timeline' && (
-          <OsaTab
-            timeline={timeline}
-            onAddEvent={() => setShowEventDialog(true)}
           />
         )}
         {activeTab === 'dokumenty' && (
@@ -956,10 +1005,11 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
             onAttach={() => setShowDocPicker(true)}
             onDetach={handleDetachDoc}
             onRefresh={fetchLinkedDocs}
+            autoOpenUpload={autoOpenUpload}
           />
         )}
-        {activeTab === 'hodiny' && (
-          <HodinyTab
+        {activeTab === 'vykaz' && (
+          <VykazTab
             task={task} timeEntries={timeEntries} timeData={timeData}
             onTimeUpdate={handleTimeUpdate} userId={userId} userName={userName}
           />
@@ -1094,71 +1144,102 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
         </DialogContent>
       </Dialog>
 
-      {/* Timeline Event Dialog */}
-      <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
+      {/* Unified Spis Entry Dialog */}
+      <Dialog open={showSpisDialog} onOpenChange={setSpisDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Zaznamenat udalost</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Plus className="h-5 w-5 text-purple-600" />Pridat zaznam do spisu</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-2">
+            {/* Entry type selector */}
             <div className="space-y-2">
-              <Label>Typ udalosti</Label>
-              <Select value={newEventType} onValueChange={v => setNewEventType(v as TimelineEventType)}>
+              <Label>Typ zaznamu</Label>
+              <Select value={spisEntryType} onValueChange={v => setSpisEntryType(v as UnifiedEntryType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(['call', 'email', 'meeting', 'document', 'note', 'decision'] as TimelineEventType[]).map(t => (
-                    <SelectItem key={t} value={t}>{TIMELINE_EVENT_CONFIG[t].label}</SelectItem>
-                  ))}
+                  <SelectItem value="note">Poznamka</SelectItem>
+                  <SelectItem value="communication">Komunikace</SelectItem>
+                  <SelectItem value="document">Dokument</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Popis *</Label>
-              <Textarea value={newEventDescription} onChange={e => setNewEventDescription(e.target.value)} placeholder="Popis udalosti..." rows={3} />
-            </div>
-            {(newEventType === 'call' || newEventType === 'email' || newEventType === 'meeting') && (
-              <div className="space-y-2">
-                <Label>Kontakt</Label>
-                <Input value={newEventContact} onChange={e => setNewEventContact(e.target.value)} placeholder="Jmeno / organizace" />
-              </div>
-            )}
-            {(newEventType === 'call' || newEventType === 'meeting') && (
-              <div className="space-y-2">
-                <Label>Trvani (minuty)</Label>
-                <Input type="number" value={newEventDuration} onChange={e => setNewEventDuration(e.target.value)} placeholder="30" />
-              </div>
-            )}
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowEventDialog(false)}>Zrusit</Button>
-            <Button onClick={handleAddTimelineEvent} className="bg-purple-600 hover:bg-purple-700">Zaznamenat</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Progress Note Dialog */}
-      <Dialog open={showProgressNoteDialog} onOpenChange={setShowProgressNoteDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Pridat progress note</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Aktualni stav *</Label>
-              <Textarea value={newProgressStatus} onChange={e => setNewProgressStatus(e.target.value)} placeholder="Co se aktualne deje..." rows={3} />
-            </div>
-            <div className="space-y-2">
-              <Label>Problemy (volitelne)</Label>
-              <Textarea value={newProgressProblems} onChange={e => setNewProgressProblems(e.target.value)} placeholder="Zjistene problemy..." rows={2} />
-            </div>
-            <div className="space-y-2">
-              <Label>Dalsi kroky (volitelne)</Label>
-              <Textarea value={newProgressNextSteps} onChange={e => setNewProgressNextSteps(e.target.value)} placeholder="1. ... 2. ..." rows={2} />
-            </div>
+            {/* Note fields */}
+            {spisEntryType === 'note' && (
+              <>
+                <div className="space-y-2">
+                  <Label>Aktualni stav *</Label>
+                  <Textarea value={spisNoteStatus} onChange={e => setSpisNoteStatus(e.target.value)} placeholder="Co se aktualne deje..." rows={3} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Problemy (volitelne)</Label>
+                  <Textarea value={spisNoteProblems} onChange={e => setSpisNoteProblems(e.target.value)} placeholder="Zjistene problemy..." rows={2} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Dalsi kroky (volitelne)</Label>
+                  <Textarea value={spisNoteNextSteps} onChange={e => setSpisNoteNextSteps(e.target.value)} placeholder="1. ... 2. ..." rows={2} />
+                </div>
+              </>
+            )}
+
+            {/* Communication fields */}
+            {spisEntryType === 'communication' && (
+              <>
+                <div className="space-y-2">
+                  <Label>Druh</Label>
+                  <Select value={spisCommType} onValueChange={v => setSpisCommType(v as TimelineEventType)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(['call', 'email', 'meeting', 'decision'] as TimelineEventType[]).map(t => (
+                        <SelectItem key={t} value={t}>{TIMELINE_EVENT_CONFIG[t].label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Popis *</Label>
+                  <Textarea value={spisCommDescription} onChange={e => setSpisCommDescription(e.target.value)} placeholder="Popis komunikace..." rows={3} />
+                </div>
+                <div className="space-y-2">
+                  <Label>S kym (volitelne)</Label>
+                  <Input value={spisCommContact} onChange={e => setSpisCommContact(e.target.value)} placeholder="Klient, urad, pojistovna..." />
+                </div>
+              </>
+            )}
+
+            {/* Document type - opens upload dialog */}
+            {spisEntryType === 'document' && (
+              <div className="text-center py-4 text-gray-500">
+                <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Po kliknuti na &quot;Pridat&quot; se otevre dialog pro nahrani dokumentu.</p>
+              </div>
+            )}
+
+            {/* Always visible: time spent */}
+            {spisEntryType !== 'document' && (
+              <div className="border-t pt-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <Timer className="h-3.5 w-3.5 text-gray-400" />
+                    Straveny cas (minuty)
+                  </Label>
+                  <Input type="number" min="1" value={spisTimeSpent} onChange={e => setSpisTimeSpent(e.target.value)} placeholder="15" />
+                  <p className="text-[11px] text-gray-400">Volitelne — automaticky se zapise do vykazu prace</p>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowProgressNoteDialog(false)}>Zrusit</Button>
-            <Button onClick={handleAddProgressNote} className="bg-emerald-600 hover:bg-emerald-700">Pridat</Button>
+            <Button variant="outline" onClick={() => setSpisDialog(false)}>Zrusit</Button>
+            {spisEntryType === 'document' ? (
+              <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => { setSpisDialog(false); setActiveTab('dokumenty'); setAutoOpenUpload(Date.now()) }}>
+                <FileText className="mr-1 h-4 w-4" />Nahrat dokument
+              </Button>
+            ) : (
+              <Button onClick={handleAddSpisEntry} className="bg-purple-600 hover:bg-purple-700">
+                <Plus className="mr-1 h-4 w-4" />Pridat
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1167,63 +1248,256 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
 }
 
 // ============================================
-// TAB 1: SOUHRN
+// TAB: SPIS (unified chronological feed)
 // ============================================
 
-function SummaryTab({ task, totalScore, scorePriority, progress, timeData, linkedDocsCount, progressNotes }: {
-  task: Task
-  totalScore: number
-  scorePriority: { label: string; color: string }
-  progress: number
-  timeData: { estimated: number; actual: number }
-  linkedDocsCount: number
+const SPIS_FILTER_CHIPS: { key: SpisFilterKey; label: string }[] = [
+  { key: 'all', label: 'Vse' },
+  { key: 'documents', label: 'Dokumenty' },
+  { key: 'notes', label: 'Poznamky' },
+  { key: 'communication', label: 'Komunikace' },
+  { key: 'work', label: 'Prace' },
+]
+
+const SPIS_ENTRY_ICON: Record<SpisEntryType, { icon: typeof Phone; color: string; bg: string }> = {
+  progress_note: { icon: Lightbulb, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+  comment: { icon: MessageSquare, color: 'text-gray-600', bg: 'bg-gray-100' },
+  timeline_event: { icon: History, color: 'text-cyan-600', bg: 'bg-cyan-100' },
+  document_added: { icon: Paperclip, color: 'text-amber-600', bg: 'bg-amber-100' },
+  work_session: { icon: Timer, color: 'text-purple-600', bg: 'bg-purple-100' },
+}
+
+function buildSpisEntries(
+  progressNotes: ProgressNote[],
+  comments: Comment[],
+  timeline: TimelineEvent[],
+  linkedDocs: LinkedDoc[],
+  timeEntries: TimeTrackingEntry[],
+): SpisEntry[] {
+  const entries: SpisEntry[] = []
+
+  for (const n of progressNotes) {
+    entries.push({ id: `pn-${n.id}`, type: 'progress_note', user_name: n.user_name, created_at: n.created_at, data: n })
+  }
+  for (const c of comments) {
+    entries.push({ id: `cm-${c.id}`, type: 'comment', user_name: c.user_name, created_at: c.created_at, data: c })
+  }
+  for (const t of timeline) {
+    entries.push({
+      id: `tl-${t.id}`, type: 'timeline_event', user_name: t.user_name, created_at: t.created_at,
+      duration_minutes: t.duration_minutes, data: t,
+    })
+  }
+  for (const d of linkedDocs) {
+    entries.push({ id: `doc-${d.id}`, type: 'document_added', user_name: '', created_at: '', data: d })
+  }
+  for (const te of timeEntries) {
+    if (te.duration_minutes && te.duration_minutes > 0) {
+      entries.push({
+        id: `te-${te.id}`, type: 'work_session', user_name: te.user_name, created_at: te.created_at,
+        duration_minutes: te.duration_minutes, data: te,
+      })
+    }
+  }
+
+  return entries.filter(e => e.created_at).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+}
+
+function filterSpisEntries(entries: SpisEntry[], filter: SpisFilterKey): SpisEntry[] {
+  if (filter === 'all') return entries
+  if (filter === 'documents') return entries.filter(e => e.type === 'document_added')
+  if (filter === 'notes') return entries.filter(e => e.type === 'progress_note' || e.type === 'comment')
+  if (filter === 'communication') return entries.filter(e => e.type === 'timeline_event')
+  if (filter === 'work') return entries.filter(e => e.type === 'work_session')
+  return entries
+}
+
+function SpisTab({ progressNotes, comments, timeline, linkedDocs, timeEntries, filter, onFilterChange, onAddEntry, newComment, setNewComment, onAddComment }: {
   progressNotes: ProgressNote[]
+  comments: Comment[]
+  timeline: TimelineEvent[]
+  linkedDocs: LinkedDoc[]
+  timeEntries: TimeTrackingEntry[]
+  filter: SpisFilterKey
+  onFilterChange: (f: SpisFilterKey) => void
+  onAddEntry: () => void
+  newComment: string
+  setNewComment: (v: string) => void
+  onAddComment: () => void
 }) {
-  const latestNote = progressNotes[0]
-  const latestStatus = latestNote?.current_status || task.description || 'Zatim bez popisu.'
+  const allEntries = buildSpisEntries(progressNotes, comments, timeline, linkedDocs, timeEntries)
+  const entries = filterSpisEntries(allEntries, filter)
+
+  // Group by day
+  const grouped = entries.reduce<Record<string, SpisEntry[]>>((acc, entry) => {
+    const day = new Date(entry.created_at).toISOString().slice(0, 10)
+    if (!acc[day]) acc[day] = []
+    acc[day].push(entry)
+    return acc
+  }, {})
+  const groupedDays = Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a))
+
+  const renderEntry = (entry: SpisEntry) => {
+    const iconConfig = SPIS_ENTRY_ICON[entry.type]
+    const Icon = entry.type === 'timeline_event'
+      ? (TIMELINE_EVENT_CONFIG[(entry.data as TimelineEvent).event_type]?.icon || iconConfig.icon)
+      : iconConfig.icon
+    const iconColor = entry.type === 'timeline_event'
+      ? (TIMELINE_EVENT_CONFIG[(entry.data as TimelineEvent).event_type]?.color || iconConfig.color)
+      : iconConfig.color
+    const iconBg = entry.type === 'timeline_event'
+      ? (TIMELINE_EVENT_CONFIG[(entry.data as TimelineEvent).event_type]?.bgColor || iconConfig.bg)
+      : iconConfig.bg
+
+    return (
+      <div key={entry.id} className="flex gap-3 py-2">
+        <div className={cn('w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5', iconBg)}>
+          <Icon className={cn('h-3.5 w-3.5', iconColor)} />
+        </div>
+        <div className="flex-1 min-w-0">
+          {/* Progress note */}
+          {entry.type === 'progress_note' && (() => {
+            const note = entry.data as ProgressNote
+            return (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-emerald-700">Stav</span>
+                  {entry.duration_minutes && <Badge variant="outline" className="text-[10px]"><Timer className="h-3 w-3 mr-0.5" />{entry.duration_minutes} min</Badge>}
+                </div>
+                <p className="text-sm text-gray-800 dark:text-gray-200">{note.current_status}</p>
+                {note.problems && <p className="text-sm text-orange-700"><span className="font-medium">Problemy:</span> {note.problems}</p>}
+                {note.next_steps && <p className="text-sm text-blue-700"><span className="font-medium">Dalsi kroky:</span> {note.next_steps}</p>}
+              </div>
+            )
+          })()}
+
+          {/* Comment */}
+          {entry.type === 'comment' && (
+            <p className="text-sm text-gray-700 dark:text-gray-200">{(entry.data as Comment).text}</p>
+          )}
+
+          {/* Timeline event */}
+          {entry.type === 'timeline_event' && (() => {
+            const ev = entry.data as TimelineEvent
+            const config = TIMELINE_EVENT_CONFIG[ev.event_type]
+            return (
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={cn('text-[10px]', config?.bgColor, config?.color)}>{config?.label}</Badge>
+                  {ev.duration_minutes && <Badge variant="outline" className="text-[10px]"><Timer className="h-3 w-3 mr-0.5" />{ev.duration_minutes} min</Badge>}
+                </div>
+                <p className="text-sm font-medium">{ev.description}</p>
+                {ev.contact_name && <p className="text-xs text-gray-500 flex items-center gap-1"><Building2 className="h-3 w-3" />{ev.contact_name}</p>}
+              </div>
+            )
+          })()}
+
+          {/* Document added */}
+          {entry.type === 'document_added' && (() => {
+            const doc = entry.data as LinkedDoc
+            return (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium truncate">{doc.document?.file_name}</span>
+                <Badge variant="outline" className="text-[10px] shrink-0">{doc.document?.type}</Badge>
+              </div>
+            )
+          })()}
+
+          {/* Work session */}
+          {entry.type === 'work_session' && (() => {
+            const te = entry.data as TimeTrackingEntry
+            return (
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-700"><Timer className="h-3 w-3 mr-0.5" />{te.duration_minutes} min</Badge>
+                {te.note && <span className="text-sm text-gray-600 dark:text-gray-300 italic truncate">{te.note}</span>}
+                {te.billable && <Badge className="bg-green-600 text-white text-[10px] px-1.5 py-0">Faktur.</Badge>}
+              </div>
+            )
+          })()}
+
+          {/* Footer: user + time */}
+          <p className="text-xs text-gray-400 mt-0.5" suppressHydrationWarning>
+            {entry.user_name && <>{entry.user_name} &bull; </>}
+            {new Date(entry.created_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      <Card className="rounded-xl shadow-soft border-green-200 bg-green-50">
-        <CardContent className="p-6">
-          <h2 className="text-lg font-bold mb-2">📍 Kde jsme skoncili</h2>
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-green-100">
-            {latestNote && (
-              <div className="text-sm text-gray-600 dark:text-gray-300 mb-2" suppressHydrationWarning>
-                {new Date(latestNote.created_at).toLocaleString('cs-CZ')} • {latestNote.user_name}
-              </div>
+    <div className="space-y-4">
+      {/* Filter chips + add button */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {SPIS_FILTER_CHIPS.map(chip => (
+          <button
+            key={chip.key}
+            onClick={() => onFilterChange(chip.key)}
+            className={cn(
+              'text-xs px-3 py-1.5 rounded-full border transition-colors',
+              filter === chip.key
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-blue-300'
             )}
-            <div className="space-y-3">
-              <div>
-                <div className="font-semibold text-gray-900 dark:text-white mb-1">Aktualni stav:</div>
-                <div className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{latestStatus}</div>
+          >
+            {chip.label}
+          </button>
+        ))}
+        <Button size="sm" className="ml-auto bg-purple-600 hover:bg-purple-700 h-7 text-xs" onClick={onAddEntry}>
+          <Plus className="h-3.5 w-3.5 mr-1" />Pridat zaznam
+        </Button>
+      </div>
+
+      {/* Chronological feed */}
+      {groupedDays.length === 0 ? (
+        <div className="text-center py-12 text-gray-400">
+          <History className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">Zatim zadne zaznamy v tomto filtru</p>
+          <Button size="sm" variant="outline" className="mt-3" onClick={onAddEntry}>
+            <Plus className="h-3.5 w-3.5 mr-1" />Pridat prvni zaznam
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {groupedDays.map(([day, dayEntries]) => (
+            <div key={day}>
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-2">
+                <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                <span suppressHydrationWarning>{new Date(day).toLocaleDateString('cs-CZ', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
               </div>
-              {latestNote?.problems && (
-                <div>
-                  <div className="font-semibold text-red-700 mb-1">Problemy:</div>
-                  <div className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{latestNote.problems}</div>
-                </div>
-              )}
-              {latestNote?.next_steps && (
-                <div>
-                  <div className="font-semibold text-blue-700 mb-1">Dalsi kroky:</div>
-                  <div className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{latestNote.next_steps}</div>
-                </div>
-              )}
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {dayEntries.map(renderEntry)}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="rounded-xl shadow-soft-sm"><CardContent className="p-4"><div className="text-sm text-gray-600 mb-1">Priorita</div><div className="text-xl font-bold">{scorePriority.label}</div><div className="text-xs text-gray-500 mt-1">Skore {totalScore}/12</div></CardContent></Card>
-        <Card className="rounded-xl shadow-soft-sm"><CardContent className="p-4"><div className="text-sm text-gray-600 mb-1">Postup</div><div className="text-xl font-bold">{progress}%</div><div className="text-xs text-gray-500 mt-1">{timeData.actual} min odpracovano</div></CardContent></Card>
-        <Card className="rounded-xl shadow-soft-sm"><CardContent className="p-4"><div className="text-sm text-gray-600 mb-1">Dokumenty</div><div className="text-xl font-bold">{linkedDocsCount}</div><div className="text-xs text-gray-500 mt-1">{task.is_project ? 'projekt' : 'ukol'}</div></CardContent></Card>
+          ))}
+        </div>
+      )}
+
+      {/* Quick comment at bottom */}
+      <div className="border-t pt-3 mt-4">
+        <div className="flex gap-2">
+          <Input
+            value={newComment}
+            onChange={e => setNewComment(e.target.value)}
+            placeholder="Rychly komentar..."
+            onKeyDown={e => { if (e.key === 'Enter' && newComment.trim()) onAddComment() }}
+            className="flex-1"
+          />
+          <Button onClick={onAddComment} disabled={!newComment.trim()} size="sm" className="bg-blue-600 hover:bg-blue-700">
+            <Send className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   )
 }
 
-function SouhrnTab({ task, checklistItems, onChecklistToggle }: {
+// ============================================
+// TAB: UKOLY (only for projects)
+// ============================================
+
+function UkolyTab({ task, checklistItems, onChecklistToggle }: {
   task: Task
   checklistItems: ChecklistItem[]
   onChecklistToggle: (id: string) => void
@@ -1233,7 +1507,6 @@ function SouhrnTab({ task, checklistItems, onChecklistToggle }: {
 
   return (
     <div className="space-y-4">
-      {/* Checklist for projects */}
       {task.is_project && checklistItems.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="rounded-xl shadow-soft border-red-200">
@@ -1273,10 +1546,10 @@ function SouhrnTab({ task, checklistItems, onChecklistToggle }: {
           </Card>
         </div>
       )}
-
-      {!task.is_project && (
+      {(!task.is_project || checklistItems.length === 0) && (
         <div className="text-center py-8 text-gray-400">
-          <p className="text-sm">Toto je ukol, nikoliv projekt. Dilci ukoly se zobrazuji pouze u projektu.</p>
+          <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">{task.is_project ? 'Zatim zadne dilci ukoly' : 'Toto je ukol, nikoliv projekt.'}</p>
         </div>
       )}
     </div>
@@ -1284,160 +1557,10 @@ function SouhrnTab({ task, checklistItems, onChecklistToggle }: {
 }
 
 // ============================================
-// TAB 2: POZNAMKY
-// ============================================
-
-function PoznamkyTab({ progressNotes, comments, newComment, setNewComment, onAddComment, onAddProgressNote }: {
-  progressNotes: ProgressNote[]
-  comments: Comment[]
-  newComment: string
-  setNewComment: (v: string) => void
-  onAddComment: () => void
-  onAddProgressNote: () => void
-}) {
-  return (
-    <div className="space-y-4">
-      {/* Progress Notes */}
-      <Card className="rounded-xl border-emerald-200">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2"><Lightbulb className="h-4 w-4 text-emerald-600" />Aktualni stav</CardTitle>
-            <Button size="sm" variant="outline" onClick={onAddProgressNote} className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 h-7 text-xs">
-              <Plus className="h-3.5 w-3.5 mr-1" />Pridat update
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {progressNotes.length === 0 ? (
-            <div className="text-center py-6 text-gray-400"><Lightbulb className="h-8 w-8 mx-auto mb-2 opacity-30" /><p className="text-sm">Zatim zadne progress notes</p></div>
-          ) : progressNotes.map(note => (
-            <div key={note.id} className="p-3 bg-emerald-50/50 rounded-lg border border-emerald-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-emerald-800">{note.user_name}</span>
-                <span className="text-xs text-gray-500" suppressHydrationWarning>{new Date(note.created_at).toLocaleString('cs-CZ')}</span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5"><CheckCircle2 className="h-3 w-3 text-emerald-600" /></div>
-                  <div><p className="text-[10px] font-medium text-emerald-700 uppercase">Stav</p><p className="text-sm text-gray-700 dark:text-gray-200">{note.current_status}</p></div>
-                </div>
-                {note.problems && (
-                  <div className="flex gap-2">
-                    <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center shrink-0 mt-0.5"><AlertTriangle className="h-3 w-3 text-orange-600" /></div>
-                    <div><p className="text-[10px] font-medium text-orange-700 uppercase">Problemy</p><p className="text-sm text-gray-700 dark:text-gray-200">{note.problems}</p></div>
-                  </div>
-                )}
-                {note.next_steps && (
-                  <div className="flex gap-2">
-                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5"><ArrowRight className="h-3 w-3 text-blue-600" /></div>
-                    <div><p className="text-[10px] font-medium text-blue-700 uppercase">Dalsi kroky</p><p className="text-sm text-gray-700 dark:text-gray-200">{note.next_steps}</p></div>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Comments */}
-      <Card className="rounded-xl">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2"><MessageSquare className="h-4 w-4" />Komentare ({comments.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {comments.map(c => (
-            <div key={c.id} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium">{c.user_name}</span>
-                <span className="text-xs text-gray-500" suppressHydrationWarning>{new Date(c.created_at).toLocaleString('cs-CZ')}</span>
-              </div>
-              <p className="text-sm text-gray-700 dark:text-gray-200">{c.text}</p>
-            </div>
-          ))}
-          <div className="space-y-2 pt-3 border-t">
-            <Textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Napiste komentar..." rows={3} />
-            <Button onClick={onAddComment} disabled={!newComment.trim()} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Send className="mr-1.5 h-3.5 w-3.5" />Pridat
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// ============================================
-// TAB 3: OSA (Timeline)
-// ============================================
-
-function OsaTab({ timeline, onAddEvent }: {
-  timeline: TimelineEvent[]
-  onAddEvent: () => void
-}) {
-  const grouped = timeline.reduce<Record<string, TimelineEvent[]>>((acc, ev) => {
-    const d = new Date(ev.created_at)
-    const key = d.toISOString().slice(0, 10)
-    if (!acc[key]) acc[key] = []
-    acc[key].push(ev)
-    return acc
-  }, {})
-  const groupedEntries = Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a))
-
-  return (
-    <Card className="rounded-xl">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2"><History className="h-4 w-4" />Timeline ({timeline.length})</CardTitle>
-          <Button size="sm" variant="outline" onClick={onAddEvent} className="h-7 text-xs"><Plus className="h-3.5 w-3.5 mr-1" />Zaznamenat</Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {groupedEntries.length === 0 ? (
-          <div className="text-center py-8 text-gray-400"><History className="h-8 w-8 mx-auto mb-2 opacity-30" /><p className="text-sm">Zatim zadne udalosti</p></div>
-        ) : (
-          <div className="space-y-5">
-            {groupedEntries.map(([day, events]) => (
-              <div key={day} className="space-y-3">
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  {new Date(day).toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                </div>
-                {events.map((event, index) => {
-                  const config = TIMELINE_EVENT_CONFIG[event.event_type]
-                  const EventIcon = config.icon
-                  return (
-                    <div key={event.id} className="flex gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className={cn("w-7 h-7 rounded-full flex items-center justify-center", config.bgColor)}>
-                          <EventIcon className={cn("h-3.5 w-3.5", config.color)} />
-                        </div>
-                        {index < events.length - 1 && <div className="w-0.5 flex-1 min-h-[12px] bg-gray-200" />}
-                      </div>
-                      <div className="flex-1 pb-3">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <Badge variant="outline" className={cn("text-[10px]", config.bgColor, config.color)}>{config.label}</Badge>
-                          {event.duration_minutes && <Badge variant="outline" className="text-[10px]"><Clock className="h-3 w-3 mr-0.5" />{event.duration_minutes} min</Badge>}
-                        </div>
-                        <p className="text-sm font-medium">{event.description}</p>
-                        {event.contact_name && <p className="text-xs text-gray-500 flex items-center gap-1"><Building2 className="h-3 w-3" />{event.contact_name}</p>}
-                        <p className="text-xs text-gray-400" suppressHydrationWarning>{event.user_name} &bull; {new Date(event.created_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}</p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-// ============================================
 // TAB 4: DOKUMENTY
 // ============================================
 
-function DokumentyTab({ linkedDocs, companyId, taskId, userId, userName, onAttach, onDetach, onRefresh }: {
+function DokumentyTab({ linkedDocs, companyId, taskId, userId, userName, onAttach, onDetach, onRefresh, autoOpenUpload }: {
   linkedDocs: LinkedDoc[]
   companyId: string
   taskId: string
@@ -1446,8 +1569,13 @@ function DokumentyTab({ linkedDocs, companyId, taskId, userId, userName, onAttac
   onAttach: () => void
   onDetach: (docId: string) => void
   onRefresh: () => void
+  autoOpenUpload?: number
 }) {
   const [showUpload, setShowUpload] = useState(false)
+
+  useEffect(() => {
+    if (autoOpenUpload) setShowUpload(true)
+  }, [autoOpenUpload])
 
   return (
     <Card className="rounded-xl">
@@ -1504,10 +1632,25 @@ function DokumentyTab({ linkedDocs, companyId, taskId, userId, userName, onAttac
 }
 
 // ============================================
-// TAB 5: HODINY
+// TAB: VYKAZ PRACE (redesigned)
 // ============================================
 
-function HodinyTab({ task, timeEntries, timeData, onTimeUpdate, userId, userName }: {
+const VYKAZ_QUICK_TIMES = [
+  { label: '0:15', minutes: 15 },
+  { label: '0:30', minutes: 30 },
+  { label: '1:00', minutes: 60 },
+  { label: '1:30', minutes: 90 },
+  { label: '2:00', minutes: 120 },
+  { label: '3:00', minutes: 180 },
+]
+
+const VYKAZ_DATE_OPTIONS = [
+  { label: 'Dnes', value: () => new Date().toISOString().split('T')[0] },
+  { label: 'Včera', value: () => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0] } },
+  { label: 'Předevčírem', value: () => { const d = new Date(); d.setDate(d.getDate() - 2); return d.toISOString().split('T')[0] } },
+]
+
+function VykazTab({ task, timeEntries: initialEntries, timeData, onTimeUpdate, userId, userName }: {
   task: Task
   timeEntries: TimeTrackingEntry[]
   timeData: { estimated: number; actual: number }
@@ -1515,141 +1658,448 @@ function HodinyTab({ task, timeEntries, timeData, onTimeUpdate, userId, userName
   userId: string
   userName: string
 }) {
-  const [showBillingReport, setShowBillingReport] = useState(false)
   const rate = task.hourly_rate || 0
-  const billableEntries = timeEntries.filter(e => e.billable)
-  const billableMinutes = billableEntries.reduce((sum, e) => sum + (e.duration_minutes || 0), 0)
+
+  // Local entries state (synced from props)
+  const [entries, setEntries] = useState<TimeTrackingEntry[]>(initialEntries)
+  useEffect(() => { setEntries(initialEntries) }, [initialEntries])
+
+  // Form state
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0])
+  const [selectedMinutes, setSelectedMinutes] = useState(0)
+  const [customMinutes, setCustomMinutes] = useState('')
+  const [description, setDescription] = useState('')
+  const [inTariff, setInTariff] = useState(false)
+  const [prepaidProjectId, setPrepaidProjectId] = useState<string | null>(null)
+  const [prepaidProjects, setPrepaidProjects] = useState<Array<{
+    id: string; title: string; status: string
+    total_budget?: number; consumed_amount?: number
+  }>>([])
+  const [saving, setSaving] = useState(false)
+
+  // Timer (collapsible)
+  const [showTimer, setShowTimer] = useState(false)
+  const [timerRunning, setTimerRunning] = useState(false)
+  const [timerStart, setTimerStart] = useState<number | null>(null)
+  const [timerElapsed, setTimerElapsed] = useState(0)
+
+  // Fetch prepaid projects for this company
+  useEffect(() => {
+    if (!task.company_id) return
+    fetch(`/api/prepaid-projects?company_id=${task.company_id}&status=active,sent`, {
+      headers: { 'x-user-id': userId },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.projects) setPrepaidProjects(data.projects) })
+      .catch(() => {})
+  }, [task.company_id, userId])
+
+  // Timer interval
+  useEffect(() => {
+    if (!timerRunning || !timerStart) return
+    const interval = setInterval(() => {
+      setTimerElapsed(Math.floor((Date.now() - timerStart) / 1000))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [timerRunning, timerStart])
+
+  // Calculations
+  const totalMinutes = entries.reduce((sum, e) => sum + (e.duration_minutes || 0), 0)
+  const billableMinutes = entries.filter(e => e.billable).reduce((sum, e) => sum + (e.duration_minutes || 0), 0)
   const totalCost = Math.round((billableMinutes / 60) * rate)
 
   const formatDur = (mins: number) => {
+    if (mins === 0) return '0 min'
     const h = Math.floor(mins / 60)
     const m = mins % 60
-    return h > 0 ? `${h}h ${m}min` : `${m} min`
+    return h > 0 ? (m > 0 ? `${h}h ${m}min` : `${h}h`) : `${m} min`
+  }
+
+  const formatTimerTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
+
+  const selectedProject = prepaidProjects.find(p => p.id === prepaidProjectId)
+
+  const refreshEntries = async () => {
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, { headers: { 'x-user-id': userId } })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.task?.time_entries) {
+          const mapped: TimeTrackingEntry[] = data.task.time_entries.map((te: any) => ({
+            id: te.id, task_id: te.task_id || task.id, user_id: te.user_id,
+            user_name: te.user_name || '', started_at: te.started_at || te.date,
+            stopped_at: te.stopped_at || te.date, duration_minutes: te.duration_minutes || te.minutes,
+            note: te.note || te.description || '', billable: te.billable !== false,
+            created_at: te.created_at,
+          }))
+          setEntries(mapped)
+          const total = mapped.reduce((s: number, e) => s + (e.duration_minutes || 0), 0)
+          onTimeUpdate(total, mapped)
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  const handleSave = async () => {
+    const mins = selectedMinutes || parseInt(customMinutes) || 0
+    if (mins <= 0) { toast.error('Zadejte čas'); return }
+    if (!description.trim()) { toast.error('Zadejte popis práce'); return }
+
+    setSaving(true)
+    try {
+      const res = await fetch('/api/time-entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId, 'x-user-name': userName || 'Ucetni' },
+        body: JSON.stringify({
+          task_id: task.id,
+          company_id: task.company_id,
+          company_name: task.company_name,
+          date: selectedDate,
+          minutes: mins,
+          description: description.trim(),
+          billable: !inTariff,
+          in_tariff: inTariff,
+          prepaid_project_id: prepaidProjectId,
+        }),
+      })
+      if (res.ok) {
+        toast.success(`Zalogováno ${formatDur(mins)}`)
+        setDescription('')
+        setSelectedMinutes(0)
+        setCustomMinutes('')
+        await refreshEntries()
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Chyba při ukládání')
+      }
+    } catch {
+      toast.error('Chyba při ukládání')
+    }
+    setSaving(false)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Smazat záznam?')) return
+    try {
+      const res = await fetch(`/api/time-entries?id=${id}`, {
+        method: 'DELETE',
+        headers: { 'x-user-id': userId },
+      })
+      if (res.ok) {
+        toast.success('Záznam smazán')
+        await refreshEntries()
+      }
+    } catch {
+      toast.error('Chyba při mazání')
+    }
+  }
+
+  const handleTimerStart = () => {
+    setTimerRunning(true)
+    setTimerStart(Date.now())
+    setTimerElapsed(0)
+  }
+
+  const handleTimerStop = () => {
+    setTimerRunning(false)
+    const mins = Math.max(1, Math.round(timerElapsed / 60))
+    setSelectedMinutes(mins)
+    setCustomMinutes('')
+    setTimerElapsed(0)
+    setTimerStart(null)
+    toast.info(`Stopky: ${formatDur(mins)} — zadejte popis a uložte`)
   }
 
   return (
     <div className="space-y-4">
-      {/* Time Tracker */}
-      <TimeTracker
-        taskId={task.id}
-        companyId={task.company_id}
-        companyName={task.company_name}
-        taskTitle={task.title}
-        estimatedMinutes={task.estimated_minutes}
-        actualMinutes={task.actual_minutes}
-        hourlyRate={task.hourly_rate}
-        isBillable={task.is_billable}
-        isProject={task.is_project || false}
-        onTimeUpdate={onTimeUpdate}
-        currentUserId={userId}
-        currentUserName={userName}
-        initialEntries={timeEntries}
-      />
-
-      {/* Toggle billing report */}
-      {task.is_billable && rate > 0 && (
-        <Button
-          onClick={() => setShowBillingReport(!showBillingReport)}
-          variant={showBillingReport ? 'default' : 'outline'}
-          className={showBillingReport ? 'bg-purple-600 hover:bg-purple-700 w-full' : 'w-full'}
-        >
-          <TrendingUp className="h-4 w-4 mr-2" />
-          {showBillingReport ? 'Skryt' : 'Zobrazit'} prehled hodin
-        </Button>
-      )}
-
-      {/* Billing report - Osa style */}
-      {showBillingReport && task.is_billable && rate > 0 && (
-        <Card className="rounded-xl shadow-soft border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-bold font-display text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Prehled hodin a podklad pro fakturaci
-            </h2>
-
-            {billableEntries.length === 0 ? (
-              <div className="text-center py-6 text-gray-400">
-                <Clock className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">Zatim zadne fakturovatelne zaznamy</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {billableEntries.map(entry => {
-                  const mins = entry.duration_minutes || 0
-                  const cost = Math.round((mins / 60) * rate)
-                  return (
-                    <div key={entry.id} className="bg-white dark:bg-gray-800 rounded-lg p-3 flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="font-medium text-sm text-gray-900 dark:text-white">{entry.user_name}</span>
-                          <Badge className="bg-green-600 text-white text-[10px] px-1.5 py-0">Fakturovatelne</Badge>
-                        </div>
-                        {entry.note && <p className="text-xs text-gray-600 dark:text-gray-300 italic">{entry.note}</p>}
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5" suppressHydrationWarning>
-                          {new Date(entry.stopped_at || entry.created_at).toLocaleDateString('cs-CZ')}
-                          {entry.stopped_at && ` ${new Date(entry.stopped_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}`}
-                        </div>
-                      </div>
-                      <div className="text-right ml-4 shrink-0">
-                        <div className="font-semibold text-purple-700">{formatDur(mins)}</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-300">{cost.toLocaleString('cs-CZ')} Kc</div>
-                      </div>
-                    </div>
-                  )
-                })}
+      {/* Section A: Přehled fakturace */}
+      <Card className="rounded-xl">
+        <CardContent className="p-4">
+          <h3 className="text-xs font-semibold uppercase text-gray-400 dark:text-gray-500 mb-3">Přehled</h3>
+          <div className="grid grid-cols-3 gap-4 mb-2">
+            <div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Odpracováno</div>
+              <div className="text-lg font-bold text-gray-900 dark:text-white">{formatDur(totalMinutes)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">K fakturaci</div>
+              <div className="text-lg font-bold text-purple-700 dark:text-purple-400">{formatDur(billableMinutes)}</div>
+            </div>
+            {rate > 0 && (
+              <div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Sazba</div>
+                <div className="text-lg font-bold text-gray-900 dark:text-white">{rate.toLocaleString('cs-CZ')} Kč/h</div>
               </div>
             )}
-
-            {/* Total */}
-            <div className="mt-4 pt-4 border-t-2 border-purple-300">
-              <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-4">
-                <div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Celkem k fakturaci</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Sazba: {rate} Kc/hod &bull; {billableEntries.length} zaznamu
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-purple-700">{formatDur(billableMinutes)}</div>
-                  <div className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{totalCost.toLocaleString('cs-CZ')} Kc</div>
-                </div>
+          </div>
+          {rate > 0 && totalCost > 0 && (
+            <div className="pt-2 border-t text-sm">
+              <span className="text-gray-500 dark:text-gray-400">Částka k fakturaci: </span>
+              <span className="font-bold text-lg text-purple-700 dark:text-purple-400">{totalCost.toLocaleString('cs-CZ')} Kč</span>
+            </div>
+          )}
+          {/* Prepaid project progress */}
+          {selectedProject && selectedProject.total_budget && selectedProject.total_budget > 0 && (
+            <div className="mt-3 pt-3 border-t">
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Projekt: <span className="font-medium text-gray-900 dark:text-white">{selectedProject.title}</span>
+                </span>
+                <span className="text-xs text-gray-400">
+                  {Math.round(((selectedProject.consumed_amount || 0) / selectedProject.total_budget) * 100)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-purple-600 h-2 rounded-full transition-all"
+                  style={{ width: `${Math.min(100, ((selectedProject.consumed_amount || 0) / selectedProject.total_budget) * 100)}%` }}
+                />
+              </div>
+              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                Čerpáno: {(selectedProject.consumed_amount || 0).toLocaleString('cs-CZ')} / {selectedProject.total_budget.toLocaleString('cs-CZ')} Kč
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Simple billing summary (always visible when billable) */}
-      {task.is_billable && rate > 0 && !showBillingReport && (
-        <Card className="rounded-xl">
-          <CardContent className="p-4 space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-gray-500">Sazba:</span><span className="font-semibold">{rate} Kc/hod</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Odhad:</span><span className="font-semibold">{formatDur(timeData.estimated)}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Skutecne:</span><span className="font-semibold">{formatDur(timeData.actual)}</span></div>
-            <Separator />
-            <div className="flex justify-between text-base"><span className="font-semibold">Celkem k fakturaci:</span><span className="font-bold text-green-600">{totalCost.toLocaleString('cs-CZ')} Kc</span></div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Section B: Přidat záznam (always visible form) */}
+      <Card className="rounded-xl border-purple-200 dark:border-purple-800">
+        <CardContent className="p-4 space-y-3">
+          <h3 className="text-xs font-semibold uppercase text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+            <Plus className="h-3.5 w-3.5" /> Přidat záznam
+          </h3>
 
-      {/* Project time summary */}
-      {task.is_project && (
-        <Card className="rounded-xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2"><Clock className="h-4 w-4" />Casovy souhrn projektu</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-gray-500">Odhad:</span><span className="font-semibold">{formatDur(timeData.estimated)}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Skutecne:</span><span className="font-semibold">{formatDur(timeData.actual)}</span></div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Rozdil:</span>
-              <span className={cn("font-semibold", timeData.actual > timeData.estimated ? "text-red-600" : "text-green-600")}>
-                {timeData.actual > timeData.estimated ? '+' : ''}{timeData.actual - timeData.estimated} min
-              </span>
+          {/* Date selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500 dark:text-gray-400 w-16 shrink-0">Datum:</span>
+            <div className="flex gap-1 flex-wrap">
+              {VYKAZ_DATE_OPTIONS.map(opt => (
+                <button
+                  key={opt.label}
+                  onClick={() => setSelectedDate(opt.value())}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    selectedDate === opt.value()
+                      ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-purple-300'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="px-2 py-1 border border-gray-200 dark:border-gray-700 rounded text-xs bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+              />
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+
+          {/* Time quick-pick */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500 dark:text-gray-400 w-16 shrink-0">Čas:</span>
+            <div className="flex gap-1 flex-wrap">
+              {VYKAZ_QUICK_TIMES.map(t => (
+                <button
+                  key={t.minutes}
+                  onClick={() => { setSelectedMinutes(t.minutes); setCustomMinutes('') }}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    selectedMinutes === t.minutes
+                      ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-purple-300'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+              <Input
+                type="number"
+                placeholder="min"
+                value={customMinutes}
+                onChange={(e) => { setCustomMinutes(e.target.value); setSelectedMinutes(0) }}
+                className="w-16 h-7 text-xs"
+                min={1}
+                max={480}
+              />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="flex items-start gap-2">
+            <span className="text-sm text-gray-500 dark:text-gray-400 w-16 shrink-0 pt-1.5">Popis:</span>
+            <Input
+              placeholder="Co jste dělali..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="flex-1"
+              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+            />
+          </div>
+
+          {/* Prepaid project selector */}
+          {prepaidProjects.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400 w-16 shrink-0">Projekt:</span>
+              <select
+                value={prepaidProjectId || ''}
+                onChange={e => setPrepaidProjectId(e.target.value || null)}
+                className="flex-1 px-3 py-1.5 text-xs border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">-- Bez projektu --</option>
+                {prepaidProjects.map(p => (
+                  <option key={p.id} value={p.id}>{p.title}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Tariff toggle + Save */}
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setInTariff(false)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  !inTariff
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700'
+                    : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700'
+                }`}
+              >
+                K fakturaci
+              </button>
+              <button
+                onClick={() => setInTariff(true)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  inTariff
+                    ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-400 dark:border-gray-600'
+                    : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700'
+                }`}
+              >
+                V tarifu
+              </button>
+            </div>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-purple-600 hover:bg-purple-700"
+              size="sm"
+            >
+              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Clock className="h-4 w-4 mr-1" />}
+              Uložit
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Section C: Záznamy práce (table) */}
+      <Card className="rounded-xl">
+        <CardContent className="p-0">
+          {entries.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <Timer className="h-8 w-8 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">Zatím žádné záznamy o práci</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500 uppercase">
+                    <th className="text-left p-3 font-medium">Kdy</th>
+                    <th className="text-right p-3 font-medium">Čas</th>
+                    <th className="text-left p-3 font-medium">Co dělal</th>
+                    {rate > 0 && <th className="text-right p-3 font-medium">Kč</th>}
+                    <th className="w-8"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {entries.map(entry => {
+                    const mins = entry.duration_minutes || 0
+                    const cost = entry.billable ? Math.round((mins / 60) * rate) : 0
+                    return (
+                      <tr key={entry.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 group">
+                        <td className="p-3 text-gray-500" suppressHydrationWarning>
+                          {new Date(entry.stopped_at || entry.started_at || entry.created_at).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' })}
+                        </td>
+                        <td className="p-3 text-right font-semibold text-purple-700 dark:text-purple-400">{formatDur(mins)}</td>
+                        <td className="p-3 text-gray-600 dark:text-gray-300 max-w-[200px] truncate">{entry.note || '—'}</td>
+                        {rate > 0 && (
+                          <td className="p-3 text-right">
+                            {entry.billable ? (
+                              <span className="font-semibold">{cost.toLocaleString('cs-CZ')}</span>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-gray-400 dark:text-gray-500">tarif</Badge>
+                            )}
+                          </td>
+                        )}
+                        <td className="p-1">
+                          <button
+                            onClick={() => handleDelete(entry.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-all"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 bg-gray-50 dark:bg-gray-800/50 font-semibold">
+                    <td className="p-3">CELKEM</td>
+                    <td className="p-3 text-right text-purple-700 dark:text-purple-400">{formatDur(totalMinutes)}</td>
+                    <td className="p-3 text-gray-500 text-xs">{entries.length} záznamů</td>
+                    {rate > 0 && <td className="p-3 text-right text-lg">{totalCost.toLocaleString('cs-CZ')} Kč</td>}
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Section D: Stopky (collapsible, defaultně zavřené) */}
+      <div className="border rounded-xl dark:border-gray-700">
+        <button
+          onClick={() => setShowTimer(!showTimer)}
+          className="w-full px-4 py-2.5 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+        >
+          {showTimer ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          <Timer className="h-4 w-4" />
+          Stopky (volitelné)
+          {timerRunning && (
+            <span className="ml-auto text-purple-600 dark:text-purple-400 font-mono font-semibold animate-pulse">
+              {formatTimerTime(timerElapsed)}
+            </span>
+          )}
+        </button>
+        {showTimer && (
+          <div className="px-4 pb-3 flex items-center gap-3">
+            {!timerRunning ? (
+              <Button size="sm" variant="outline" onClick={handleTimerStart} className="gap-1.5">
+                <Play className="h-3.5 w-3.5" /> Spustit
+              </Button>
+            ) : (
+              <>
+                <span className="font-mono text-2xl text-purple-700 dark:text-purple-400 font-bold">
+                  {formatTimerTime(timerElapsed)}
+                </span>
+                <Button size="sm" variant="destructive" onClick={handleTimerStop} className="gap-1.5">
+                  <Square className="h-3.5 w-3.5" /> Zastavit
+                </Button>
+              </>
+            )}
+            <span className="text-xs text-gray-400 dark:text-gray-500">
+              Po zastavení se čas vyplní do formuláře výše
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
