@@ -61,6 +61,7 @@ export function PrepaidCalculator({
 }: PrepaidCalculatorProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [alreadyPaid, setAlreadyPaid] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -192,6 +193,8 @@ export function PrepaidCalculator({
           hourly_rate: avgRate,
           travel_cost: travelTotal,
           other_costs: otherTotal,
+          status: alreadyPaid ? 'active' : 'draft',
+          payment_status: alreadyPaid ? 'paid' : 'pending',
           budget_items: items.map(item => ({
             type: item.type,
             description: item.description,
@@ -382,6 +385,20 @@ export function PrepaidCalculator({
           ))}
         </div>
       </div>
+
+      {/* Already paid checkbox */}
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={alreadyPaid}
+          onChange={e => setAlreadyPaid(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+        />
+        <span className="text-sm text-gray-700 dark:text-gray-300">Klient již zaplatil</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">
+          {alreadyPaid ? '→ automaticky aktivní' : '→ uloží jako koncept'}
+        </span>
+      </label>
 
       {/* Total + breakdown */}
       <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg px-4 py-3 space-y-2">

@@ -135,8 +135,46 @@ export function PrepaidStatusCard({ project, onStatusChange, onOverride, showAct
         )}
       </div>
 
+      {/* Action buttons — always visible */}
+      {showActions && (
+        <div className="flex flex-wrap gap-2">
+          {project.status === 'draft' && onStatusChange && (
+            <>
+              <button
+                onClick={() => onStatusChange(project.id, 'sent')}
+                className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Odeslat klientovi
+              </button>
+              <button
+                onClick={() => onStatusChange(project.id, 'active')}
+                className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+              >
+                Aktivovat
+              </button>
+            </>
+          )}
+          {project.status === 'sent' && onStatusChange && (
+            <button
+              onClick={() => onStatusChange(project.id, 'active')}
+              className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+            >
+              Aktivovat (zaplaceno)
+            </button>
+          )}
+          {project.status === 'active' && onStatusChange && (
+            <button
+              onClick={() => onStatusChange(project.id, 'completed')}
+              className="px-3 py-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+            >
+              Dokončit
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Expanded details */}
-      {expanded && showActions && (
+      {expanded && (
         <div className="border-t dark:border-gray-700 pt-3 space-y-3">
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
@@ -156,67 +194,6 @@ export function PrepaidStatusCard({ project, onStatusChange, onOverride, showAct
               </div>
             )}
           </div>
-
-          {/* Status actions */}
-          <div className="flex flex-wrap gap-2">
-            {project.status === 'draft' && onStatusChange && (
-              <>
-                <button
-                  onClick={() => onStatusChange(project.id, 'sent')}
-                  className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                >
-                  Odeslat klientovi
-                </button>
-                <button
-                  onClick={() => onStatusChange(project.id, 'active')}
-                  className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                >
-                  Aktivovat
-                </button>
-              </>
-            )}
-            {project.status === 'sent' && onStatusChange && (
-              <button
-                onClick={() => onStatusChange(project.id, 'active')}
-                className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-              >
-                Aktivovat (zaplaceno)
-              </button>
-            )}
-            {project.status === 'active' && onStatusChange && (
-              <button
-                onClick={() => onStatusChange(project.id, 'completed')}
-                className="px-3 py-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-              >
-                Dokončit
-              </button>
-            )}
-          </div>
-
-          {/* Override */}
-          {onOverride && project.status !== 'cancelled' && (
-            <div className="flex items-center gap-2">
-              <select
-                value={project.billing_override || ''}
-                onChange={e => {
-                  const val = e.target.value || null
-                  onOverride(project.id, val, overrideReason)
-                }}
-                className="text-xs border rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              >
-                <option value="">Standardní fakturace</option>
-                <option value="free">Zdarma</option>
-                <option value="in_tariff">V tarifu</option>
-              </select>
-              <input
-                type="text"
-                placeholder="Důvod..."
-                value={overrideReason}
-                onChange={e => setOverrideReason(e.target.value)}
-                className="flex-1 text-xs border rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-            </div>
-          )}
         </div>
       )}
     </div>

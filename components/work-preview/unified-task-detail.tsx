@@ -85,6 +85,7 @@ import { fireTaskConfetti } from '@/components/gtd/confetti'
 import type { Task } from '@/lib/types/tasks'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 // ============================================
 // TYPES
@@ -1658,6 +1659,8 @@ function VykazTab({ task, timeEntries: initialEntries, timeData, onTimeUpdate, u
   userId: string
   userName: string
 }) {
+  const { userRole } = useAccountantUser()
+  const isAdmin = userRole === 'admin'
   const rate = task.hourly_rate || 0
 
   // Local entries state (synced from props)
@@ -1693,6 +1696,11 @@ function VykazTab({ task, timeEntries: initialEntries, timeData, onTimeUpdate, u
       .then(data => { if (data?.projects) setPrepaidProjects(data.projects) })
       .catch(() => {})
   }, [task.company_id, userId])
+
+  // Auto-set inTariff=false when prepaid project selected
+  useEffect(() => {
+    if (prepaidProjectId) setInTariff(false)
+  }, [prepaidProjectId])
 
   // Timer interval
   useEffect(() => {
@@ -1821,30 +1829,32 @@ function VykazTab({ task, timeEntries: initialEntries, timeData, onTimeUpdate, u
       <Card className="rounded-xl">
         <CardContent className="p-4">
           <h3 className="text-xs font-semibold uppercase text-gray-400 dark:text-gray-500 mb-3">Přehled</h3>
-          <div className="grid grid-cols-3 gap-4 mb-2">
+          <div className={`grid ${isAdmin ? 'grid-cols-3' : 'grid-cols-1'} gap-4 mb-2`}>
             <div>
               <div className="text-xs text-gray-500 dark:text-gray-400">Odpracováno</div>
               <div className="text-lg font-bold text-gray-900 dark:text-white">{formatDur(totalMinutes)}</div>
             </div>
-            <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">K fakturaci</div>
-              <div className="text-lg font-bold text-purple-700 dark:text-purple-400">{formatDur(billableMinutes)}</div>
-            </div>
-            {rate > 0 && (
+            {isAdmin && (
+              <div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">K fakturaci</div>
+                <div className="text-lg font-bold text-purple-700 dark:text-purple-400">{formatDur(billableMinutes)}</div>
+              </div>
+            )}
+            {isAdmin && rate > 0 && (
               <div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">Sazba</div>
                 <div className="text-lg font-bold text-gray-900 dark:text-white">{rate.toLocaleString('cs-CZ')} Kč/h</div>
               </div>
             )}
           </div>
-          {rate > 0 && totalCost > 0 && (
+          {isAdmin && rate > 0 && totalCost > 0 && (
             <div className="pt-2 border-t text-sm">
               <span className="text-gray-500 dark:text-gray-400">Částka k fakturaci: </span>
               <span className="font-bold text-lg text-purple-700 dark:text-purple-400">{totalCost.toLocaleString('cs-CZ')} Kč</span>
             </div>
           )}
           {/* Prepaid project progress */}
-          {selectedProject && selectedProject.total_budget && selectedProject.total_budget > 0 && (
+          {isAdmin && selectedProject && selectedProject.total_budget && selectedProject.total_budget > 0 && (
             <div className="mt-3 pt-3 border-t">
               <div className="flex items-center justify-between text-sm mb-1">
                 <span className="text-gray-500 dark:text-gray-400">
@@ -1962,26 +1972,34 @@ function VykazTab({ task, timeEntries: initialEntries, timeData, onTimeUpdate, u
           {/* Tariff toggle + Save */}
           <div className="flex items-center justify-between pt-1">
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setInTariff(false)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                  !inTariff
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700'
-                    : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700'
-                }`}
-              >
-                K fakturaci
-              </button>
-              <button
-                onClick={() => setInTariff(true)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                  inTariff
-                    ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-400 dark:border-gray-600'
-                    : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700'
-                }`}
-              >
-                V tarifu
-              </button>
+              {prepaidProjectId ? (
+                <span className="text-xs text-purple-600 dark:text-purple-400 italic">
+                  Předplacený projekt — automaticky k fakturaci
+                </span>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setInTariff(false)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                      !inTariff
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700'
+                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700'
+                    }`}
+                  >
+                    K fakturaci
+                  </button>
+                  <button
+                    onClick={() => setInTariff(true)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                      inTariff
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-400 dark:border-gray-600'
+                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700'
+                    }`}
+                  >
+                    V tarifu
+                  </button>
+                </>
+              )}
             </div>
             <Button
               onClick={handleSave}
@@ -2010,9 +2028,10 @@ function VykazTab({ task, timeEntries: initialEntries, timeData, onTimeUpdate, u
                 <thead>
                   <tr className="border-b bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500 uppercase">
                     <th className="text-left p-3 font-medium">Kdy</th>
+                    <th className="text-left p-3 font-medium">Kdo</th>
                     <th className="text-right p-3 font-medium">Čas</th>
                     <th className="text-left p-3 font-medium">Co dělal</th>
-                    {rate > 0 && <th className="text-right p-3 font-medium">Kč</th>}
+                    {isAdmin && rate > 0 && <th className="text-right p-3 font-medium">Kč</th>}
                     <th className="w-8"></th>
                   </tr>
                 </thead>
@@ -2025,9 +2044,10 @@ function VykazTab({ task, timeEntries: initialEntries, timeData, onTimeUpdate, u
                         <td className="p-3 text-gray-500" suppressHydrationWarning>
                           {new Date(entry.stopped_at || entry.started_at || entry.created_at).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' })}
                         </td>
+                        <td className="p-3 text-gray-600 dark:text-gray-300 text-xs">{entry.user_name || '—'}</td>
                         <td className="p-3 text-right font-semibold text-purple-700 dark:text-purple-400">{formatDur(mins)}</td>
                         <td className="p-3 text-gray-600 dark:text-gray-300 max-w-[200px] truncate">{entry.note || '—'}</td>
-                        {rate > 0 && (
+                        {isAdmin && rate > 0 && (
                           <td className="p-3 text-right">
                             {entry.billable ? (
                               <span className="font-semibold">{cost.toLocaleString('cs-CZ')}</span>
@@ -2051,9 +2071,10 @@ function VykazTab({ task, timeEntries: initialEntries, timeData, onTimeUpdate, u
                 <tfoot>
                   <tr className="border-t-2 bg-gray-50 dark:bg-gray-800/50 font-semibold">
                     <td className="p-3">CELKEM</td>
+                    <td className="p-3"></td>
                     <td className="p-3 text-right text-purple-700 dark:text-purple-400">{formatDur(totalMinutes)}</td>
                     <td className="p-3 text-gray-500 text-xs">{entries.length} záznamů</td>
-                    {rate > 0 && <td className="p-3 text-right text-lg">{totalCost.toLocaleString('cs-CZ')} Kč</td>}
+                    {isAdmin && rate > 0 && <td className="p-3 text-right text-lg">{totalCost.toLocaleString('cs-CZ')} Kč</td>}
                     <td></td>
                   </tr>
                 </tfoot>

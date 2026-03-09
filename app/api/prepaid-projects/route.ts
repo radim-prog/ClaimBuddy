@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
       'company_id', 'company_name', 'title', 'description',
       'estimated_hours', 'hourly_rate', 'travel_cost', 'other_costs',
       'notify_at_80', 'notify_at_100', 'budget_items',
+      'status', 'payment_status',
     ] as const
 
     const projectData: Record<string, unknown> = {
@@ -68,6 +69,16 @@ export async function POST(request: NextRequest) {
 
     for (const key of ALLOWED_FIELDS) {
       if (body[key] !== undefined) projectData[key] = body[key]
+    }
+
+    // Validate status/payment_status values if provided
+    const validStatuses = ['draft', 'sent', 'active', 'completed', 'cancelled']
+    const validPaymentStatuses = ['pending', 'paid', 'partial', 'waived']
+    if (projectData.status && !validStatuses.includes(projectData.status as string)) {
+      projectData.status = 'draft'
+    }
+    if (projectData.payment_status && !validPaymentStatuses.includes(projectData.payment_status as string)) {
+      projectData.payment_status = 'pending'
     }
 
     // Validate required fields

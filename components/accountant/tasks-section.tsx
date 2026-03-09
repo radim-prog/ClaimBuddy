@@ -2,9 +2,14 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog'
 import {
   Plus,
   Clock,
@@ -18,6 +23,7 @@ import {
   X,
   Circle,
   ExternalLink,
+  Briefcase,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -31,6 +37,7 @@ import { cs } from 'date-fns/locale'
 import type { Task, TaskStatus } from '@/lib/types/tasks'
 import { toast } from 'sonner'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { GTDWizard } from '@/components/tasks/gtd-wizard'
 
 type TaskPriority = 'critical' | 'high' | 'medium' | 'low'
 
@@ -94,13 +101,10 @@ const statusLabels: Record<TaskStatus, string> = {
 }
 
 export function AccountantTasksSection({ companyId, companyName, tasks, onTasksChange }: AccountantTasksSectionProps) {
+  const router = useRouter()
   const { userId, userName } = useAccountantUser()
   const [filter, setFilter] = useState<'all' | 'active' | 'waiting' | 'completed'>('active')
-  const [showNewForm, setShowNewForm] = useState(false)
-  const [newTitle, setNewTitle] = useState('')
-  const [newDescription, setNewDescription] = useState('')
-  const [newDueDate, setNewDueDate] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [showGTDWizard, setShowGTDWizard] = useState(false)
 
   const filteredTasks = useMemo(() => {
     let filtered = tasks
@@ -195,49 +199,45 @@ export function AccountantTasksSection({ companyId, companyName, tasks, onTasksC
     }
   }
 
-  const handleCreateTask = async () => {
+  const handleGTDComplete = async (data: any) => {
     if (!userId) return
-    if (!newTitle.trim()) {
-      toast.error('Zadejte nazev ukolu')
-      return
+    const res = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': userId,
+        'x-user-name': userName || 'Ucetni',
+      },
+      body: JSON.stringify({
+        title: data.title,
+        description: data.description || undefined,
+        due_date: data.dueDate || undefined,
+        due_time: data.dueTime || undefined,
+        company_id: companyId,
+        company_name: companyName,
+        status: 'pending',
+        is_project: data.isProject || false,
+        project_outcome: data.projectOutcome || undefined,
+        contexts: data.contexts?.length ? data.contexts : undefined,
+        energy_level: data.energyLevel || undefined,
+        estimated_minutes: data.estimatedMinutes || undefined,
+        is_billable: data.isBillable ?? true,
+        billing_type: data.billingType || undefined,
+        hourly_rate: data.hourlyRate || undefined,
+        assigned_to: data.assignedTo || undefined,
+        subtasks: data.subtasks?.length ? data.subtasks : undefined,
+      }),
+    })
+
+    if (!res.ok) {
+      const errData = await res.json()
+      throw new Error(errData.error || 'create failed')
     }
 
-    setSaving(true)
-    try {
-      const res = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': userId,
-          'x-user-name': userName || 'Ucetni',
-        },
-        body: JSON.stringify({
-          title: newTitle.trim(),
-          description: newDescription.trim() || undefined,
-          due_date: newDueDate || undefined,
-          company_id: companyId,
-          company_name: companyName,
-          status: 'pending',
-        }),
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'create failed')
-      }
-
-      const { task: created } = await res.json()
-      if (onTasksChange) onTasksChange([created, ...tasks])
-      setNewTitle('')
-      setNewDescription('')
-      setNewDueDate('')
-      setShowNewForm(false)
-      toast.success('Ukol vytvoren')
-    } catch (err: any) {
-      toast.error(err.message || 'Chyba pri vytvareni ukolu')
-    } finally {
-      setSaving(false)
-    }
+    const { task: created } = await res.json()
+    if (onTasksChange) onTasksChange([created, ...tasks])
+    setShowGTDWizard(false)
+    toast.success('Ukol vytvoren')
   }
 
   return (
@@ -266,49 +266,26 @@ export function AccountantTasksSection({ companyId, companyName, tasks, onTasksC
 
         <Button
           size="sm"
-          variant={showNewForm ? 'secondary' : 'default'}
-          className={showNewForm ? '' : 'bg-purple-600 hover:bg-purple-700'}
-          onClick={() => setShowNewForm(!showNewForm)}
+          variant={showGTDWizard ? 'secondary' : 'default'}
+          className={showGTDWizard ? '' : 'bg-purple-600 hover:bg-purple-700'}
+          onClick={() => setShowGTDWizard(!showGTDWizard)}
         >
-          {showNewForm ? <X className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
-          {showNewForm ? 'Zavrit' : 'Novy ukol'}
+          {showGTDWizard ? <X className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+          {showGTDWizard ? 'Zavrit' : 'Novy ukol'}
         </Button>
       </div>
 
-      {showNewForm && (
-        <div className="p-3 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10 space-y-2">
-          <Input
-            placeholder="Nazev ukolu *"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleCreateTask()}
-            className="h-8 text-sm"
-            autoFocus
+      {/* GTD Wizard Dialog */}
+      <Dialog open={showGTDWizard} onOpenChange={setShowGTDWizard}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <GTDWizard
+            companyId={companyId}
+            companyName={companyName}
+            onComplete={handleGTDComplete}
+            onCancel={() => setShowGTDWizard(false)}
           />
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Popis (volitelne)"
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              className="h-8 text-sm flex-1"
-            />
-            <input
-              type="date"
-              value={newDueDate}
-              onChange={(e) => setNewDueDate(e.target.value)}
-              className="px-2 py-1 border border-gray-200 dark:border-gray-700 rounded text-xs bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 h-8"
-            />
-            <Button
-              size="sm"
-              onClick={handleCreateTask}
-              disabled={saving || !newTitle.trim()}
-              className="bg-purple-600 hover:bg-purple-700 h-8"
-            >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            </Button>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {filteredTasks.length === 0 ? (
         <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">
@@ -324,13 +301,14 @@ export function AccountantTasksSection({ companyId, companyName, tasks, onTasksC
             return (
               <div
                 key={task.id}
-                className={`flex items-center justify-between gap-3 py-2.5 px-3 rounded-lg border bg-white dark:bg-gray-900 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50/40 dark:hover:bg-purple-900/10 group transition-colors ${
+                onClick={() => router.push(`/accountant/tasks/${task.id}`)}
+                className={`flex items-center justify-between gap-3 py-2.5 px-3 rounded-lg border bg-white dark:bg-gray-900 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50/40 dark:hover:bg-purple-900/10 group transition-colors cursor-pointer ${
                   task.status === 'completed' ? 'opacity-60' : ''
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   {task.status === 'in_progress' ? (
-                    <Loader2 className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400 animate-spin shrink-0" />
+                    <Play className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
                   ) : task.status === 'waiting_for' || task.status === 'waiting_client' ? (
                     <Clock className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-400 shrink-0" />
                   ) : task.status === 'completed' ? (
@@ -341,14 +319,20 @@ export function AccountantTasksSection({ companyId, companyName, tasks, onTasksC
                     <Circle className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 shrink-0" />
                   )}
 
-                  <Link
-                    href={`/accountant/tasks/${task.id}`}
-                    className={`text-sm truncate hover:underline ${
+                  <span
+                    className={`text-sm truncate ${
                       task.status === 'completed' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'
                     }`}
                   >
                     {task.title}
-                  </Link>
+                  </span>
+
+                  {task.is_project && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200">
+                      <Briefcase className="h-2.5 w-2.5 mr-0.5" />
+                      Projekt
+                    </Badge>
+                  )}
 
                   {(priority === 'critical' || priority === 'high') && (
                     <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${priorityColors[priority]}`}>
@@ -361,7 +345,7 @@ export function AccountantTasksSection({ companyId, companyName, tasks, onTasksC
                   </Badge>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
                   {task.due_date && (
                     <span className={`text-xs ${getDueDateColor(task.due_date, task.status)} hidden sm:inline`}>
                       {formatDueDate(task.due_date)}

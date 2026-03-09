@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Calendar,
+  Briefcase,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -33,6 +34,7 @@ import { ClientOnboarding } from '@/lib/types/onboarding'
 import type { Task } from '@/lib/types/tasks'
 import { useAttention } from '@/lib/contexts/attention-context'
 import type { HubStats } from '@/lib/types/drive'
+import { czechPlural } from '@/lib/utils'
 
 // ============================================
 // TYPES (shared across sub-pages)
@@ -537,50 +539,73 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
               )}
 
               {/* Metrics Strip */}
-              <div className="flex items-center gap-6 flex-wrap py-1 w-fit mx-auto">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">{s(hubStats?.documents?.total)}</span>
-                  <span className="text-sm text-gray-500">dokladů</span>
-                  {hubStats?.documents?.pending ? (
-                    <Badge className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-0 px-1.5 py-0">{hubStats.documents.pending} ke zprac.</Badge>
-                  ) : null}
-                </div>
-                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-amber-500" />
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">
-                    {hubStats?.work?.hours_this_month !== undefined ? `${hubStats.work.hours_this_month}h` : '—'}
-                  </span>
-                  <span className="text-sm text-gray-500">tento měsíc</span>
-                </div>
-                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className={`h-4 w-4 ${tasksBadge > 0 ? 'text-purple-500' : 'text-green-500'}`} />
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">{tasksBadge}</span>
-                  <span className="text-sm text-gray-500">úkolů</span>
-                </div>
-                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
-                <div className="flex items-center gap-2">
-                  <FolderOpen className="h-4 w-4 text-emerald-500" />
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">{s(hubStats?.files?.total)}</span>
-                  <span className="text-sm text-gray-500">souborů</span>
-                </div>
-                {latestClosure && (
-                  <>
+              {(() => {
+                const projectCount = tasks.filter(t => t.is_project && !['completed', 'cancelled'].includes(t.status)).length
+                const docTotal = hubStats?.documents?.total
+                const fileTotal = hubStats?.files?.total
+
+                return (
+                  <div className="flex items-center gap-6 flex-wrap py-1 w-fit mx-auto">
+                    {/* Ukoly */}
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className={`h-4 w-4 ${tasksBadge > 0 ? 'text-purple-500' : 'text-green-500'}`} />
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">{tasksBadge}</span>
+                      <span className="text-sm text-gray-500">{tasksBadge === 1 ? 'úkol' : tasksBadge >= 2 && tasksBadge <= 4 ? 'úkoly' : 'úkolů'}</span>
+                    </div>
+                    {/* Projekty */}
+                    {projectCount > 0 && (
+                      <>
+                        <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="h-4 w-4 text-indigo-500" />
+                          <span className="text-sm text-gray-500">{czechPlural(projectCount, 'projekt', 'projekty', 'projektů')}</span>
+                        </div>
+                      </>
+                    )}
+                    {/* Soubory */}
                     <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
                     <div className="flex items-center gap-2">
-                      <Calendar className={`h-4 w-4 ${closureComplete ? 'text-green-500' : 'text-red-500'}`} />
-                      <span className="text-sm text-gray-500">{formatPeriod(latestClosure.period)}</span>
-                      {closureComplete ? (
-                        <Badge className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0 px-1.5 py-0">OK</Badge>
-                      ) : (
-                        <Badge className="text-[10px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0 px-1.5 py-0">Chybí</Badge>
-                      )}
+                      <FolderOpen className="h-4 w-4 text-emerald-500" />
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">{s(fileTotal)}</span>
+                      <span className="text-sm text-gray-500">{fileTotal === 1 ? 'soubor' : (fileTotal ?? 0) >= 2 && (fileTotal ?? 0) <= 4 ? 'soubory' : 'souborů'}</span>
                     </div>
-                  </>
-                )}
-              </div>
+                    {/* Doklady */}
+                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">{s(docTotal)}</span>
+                      <span className="text-sm text-gray-500">{docTotal === 1 ? 'doklad' : (docTotal ?? 0) >= 2 && (docTotal ?? 0) <= 4 ? 'doklady' : 'dokladů'}</span>
+                      {hubStats?.documents?.pending ? (
+                        <Badge className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-0 px-1.5 py-0">{hubStats.documents.pending} ke zprac.</Badge>
+                      ) : null}
+                    </div>
+                    {/* Hodiny */}
+                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-amber-500" />
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">
+                        {hubStats?.work?.hours_this_month !== undefined ? `${hubStats.work.hours_this_month}h` : '—'}
+                      </span>
+                      <span className="text-sm text-gray-500">tento měsíc</span>
+                    </div>
+                    {/* Uzaverka */}
+                    {latestClosure && (
+                      <>
+                        <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                        <div className="flex items-center gap-2">
+                          <Calendar className={`h-4 w-4 ${closureComplete ? 'text-green-500' : 'text-red-500'}`} />
+                          <span className="text-sm text-gray-500">{formatPeriod(latestClosure.period)}</span>
+                          {closureComplete ? (
+                            <Badge className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0 px-1.5 py-0">OK</Badge>
+                          ) : (
+                            <Badge className="text-[10px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0 px-1.5 py-0">Chybí</Badge>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )
+              })()}
             </>
           )
         })()}

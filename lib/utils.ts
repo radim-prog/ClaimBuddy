@@ -94,6 +94,13 @@ export function calculateVAT(total: number, vatRate: number): number {
   return Math.round((total * vatRate) / (100 + vatRate) * 100) / 100;
 }
 
+// Czech pluralization
+export function czechPlural(count: number, one: string, twoToFour: string, fiveAndMore: string): string {
+  if (count === 1) return `${count} ${one}`
+  if (count >= 2 && count <= 4) return `${count} ${twoToFour}`
+  return `${count} ${fiveAndMore}`
+}
+
 // Calculate total without VAT
 export function calculateWithoutVAT(totalWithVAT: number, vatRate: number): number {
   return Math.round((totalWithVAT / (1 + vatRate / 100)) * 100) / 100;
