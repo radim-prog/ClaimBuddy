@@ -39,6 +39,9 @@ export interface TimeTrackingEntry {
 
 export interface TimeTrackerProps {
   taskId: string
+  companyId?: string
+  companyName?: string
+  taskTitle?: string
   estimatedMinutes?: number
   actualMinutes?: number
   hourlyRate?: number
@@ -81,6 +84,9 @@ function calculateBillableAmount(minutes: number, hourlyRate: number): number {
 
 export function TimeTracker({
   taskId,
+  companyId,
+  companyName,
+  taskTitle,
   estimatedMinutes = 0,
   actualMinutes = 0,
   hourlyRate = 0,
@@ -109,6 +115,76 @@ export function TimeTracker({
   // Entries state - initialize from props
   const [entries, setEntries] = useState<TimeTrackingEntry[]>(initialEntries)
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null)
+
+  // Load persisted entries on mount
+  useEffect(() => {
+    if (!companyId || initialEntries.length > 0) return
+    fetch(`/api/time-entries?task_id=${taskId}&limit=200`, {
+      headers: { 'x-user-id': currentUserId },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data.entries) && data.entries.length > 0) {
+          const mapped: TimeTrackingEntry[] = data.entries.map((e: any) => ({
+            id: e.id,
+            task_id: e.task_id || taskId,
+            user_id: e.user_id || currentUserId,
+            user_name: e.user_name || currentUserName,
+            started_at: e.date ? `${e.date}T00:00:00Z` : e.created_at,
+            stopped_at: e.date ? `${e.date}T00:00:00Z` : e.created_at,
+            duration_minutes: e.minutes || Math.round((e.hours || 0) * 60),
+            note: e.description || e.note || '',
+            billable: e.billable ?? true,
+            created_at: e.created_at,
+          }))
+          setEntries(mapped)
+        }
+      })
+      .catch(() => {})
+  }, [taskId, companyId, currentUserId, currentUserName, initialEntries.length])
+
+  // Persist entry to API
+  const persistEntry = async (entry: TimeTrackingEntry) => {
+    if (!companyId) return
+    try {
+      const res = await fetch('/api/time-entries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUserId,
+          'x-user-name': currentUserName,
+        },
+        body: JSON.stringify({
+          company_id: companyId,
+          company_name: companyName || '',
+          task_id: taskId,
+          task_title: taskTitle || '',
+          date: new Date(entry.stopped_at || entry.created_at).toISOString().split('T')[0],
+          minutes: entry.duration_minutes || 0,
+          description: entry.note || `Prace na ukolu`,
+          billable: entry.billable,
+          hourly_rate: hourlyRate || undefined,
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        // Update entry with server-assigned ID
+        if (data.entry?.id) {
+          setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, id: data.entry.id } : e))
+        }
+      }
+    } catch {}
+  }
+
+  // Delete entry from API
+  const deleteEntryFromApi = async (entryId: string) => {
+    try {
+      await fetch(`/api/time-entries?id=${entryId}`, {
+        method: 'DELETE',
+        headers: { 'x-user-id': currentUserId },
+      })
+    } catch {}
+  }
 
   // Timer tick effect
   useEffect(() => {
@@ -167,13 +243,16 @@ export function TimeTracker({
     const newActualMinutes = actualMinutes + Math.round(elapsedMinutes)
     onTimeUpdate?.(newActualMinutes, newEntries)
 
+    // Persist to API
+    persistEntry(entry)
+
     // Reset timer
     setIsRunning(false)
     setIsPaused(false)
     setElapsedMinutes(0)
     setStartTime(null)
     setPausedTime(0)
-  }, [startTime, elapsedMinutes, pausedTime, taskId, currentUserId, currentUserName, isBillable, entries, actualMinutes, onTimeUpdate])
+  }, [startTime, elapsedMinutes, pausedTime, taskId, currentUserId, currentUserName, isBillable, entries, actualMinutes, onTimeUpdate, persistEntry])
 
   // Quick time buttons
   const handleQuickTime = useCallback((minutes: number) => {
@@ -195,7 +274,10 @@ export function TimeTracker({
 
     const newActualMinutes = actualMinutes + minutes
     onTimeUpdate?.(newActualMinutes, newEntries)
-  }, [taskId, currentUserId, currentUserName, isBillable, entries, actualMinutes, onTimeUpdate])
+
+    // Persist to API
+    persistEntry(entry)
+  }, [taskId, currentUserId, currentUserName, isBillable, entries, actualMinutes, onTimeUpdate, persistEntry])
 
   // Manual time entry
   const handleManualEntry = useCallback(() => {
@@ -223,11 +305,14 @@ export function TimeTracker({
     const newActualMinutes = actualMinutes + minutes
     onTimeUpdate?.(newActualMinutes, newEntries)
 
+    // Persist to API
+    persistEntry(entry)
+
     // Reset form
     setManualMinutes('')
     setManualNote('')
     setShowManualEntry(false)
-  }, [manualMinutes, manualDate, manualTime, manualNote, manualBillable, taskId, currentUserId, currentUserName, entries, actualMinutes, onTimeUpdate])
+  }, [manualMinutes, manualDate, manualTime, manualNote, manualBillable, taskId, currentUserId, currentUserName, entries, actualMinutes, onTimeUpdate, persistEntry])
 
   // Delete entry
   const handleDeleteEntry = useCallback((entryId: string) => {
@@ -239,7 +324,10 @@ export function TimeTracker({
 
     const newActualMinutes = actualMinutes - (entry.duration_minutes || 0)
     onTimeUpdate?.(newActualMinutes, newEntries)
-  }, [entries, actualMinutes, onTimeUpdate])
+
+    // Delete from API
+    deleteEntryFromApi(entryId)
+  }, [entries, actualMinutes, onTimeUpdate, deleteEntryFromApi])
 
   // Calculate totals
   const totalBillableMinutes = entries

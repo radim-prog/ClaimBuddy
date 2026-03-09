@@ -342,11 +342,11 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
   }
 
   const fetchLinkedDocs = useCallback(() => {
-    fetch(`/api/tasks/${taskId}/documents`)
+    fetch(`/api/tasks/${taskId}/documents`, { headers: { 'x-user-id': userId } })
       .then(r => r.json())
       .then(data => setLinkedDocs(Array.isArray(data) ? data : []))
       .catch(() => setLinkedDocs([]))
-  }, [taskId])
+  }, [taskId, userId])
 
   useEffect(() => {
     async function fetchTask() {
@@ -407,7 +407,7 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
   const handleAttachDocs = async (docIds: string[]) => {
     try {
       const res = await fetch(`/api/tasks/${taskId}/documents`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-user-id': userId, 'x-user-name': userName || 'Ucetni' },
         body: JSON.stringify({ document_ids: docIds, link_type: 'reference' }),
       })
       if (res.ok) { toast.success(`Pripojeno ${docIds.length} dokumentu`); fetchLinkedDocs() }
@@ -417,7 +417,7 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
 
   const handleDetachDoc = async (documentId: string) => {
     try {
-      const res = await fetch(`/api/tasks/${taskId}/documents?document_id=${documentId}`, { method: 'DELETE' })
+      const res = await fetch(`/api/tasks/${taskId}/documents?document_id=${documentId}`, { method: 'DELETE', headers: { 'x-user-id': userId } })
       if (res.ok) { toast.success('Dokument odpojen'); fetchLinkedDocs() }
       else toast.error('Chyba pri odpojovani')
     } catch { toast.error('Chyba pri odpojovani') }
@@ -1537,6 +1537,9 @@ function HodinyTab({ task, timeEntries, timeData, onTimeUpdate, userId, userName
       {/* Time Tracker */}
       <TimeTracker
         taskId={task.id}
+        companyId={task.company_id}
+        companyName={task.company_name}
+        taskTitle={task.title}
         estimatedMinutes={task.estimated_minutes}
         actualMinutes={task.actual_minutes}
         hourlyRate={task.hourly_rate}
