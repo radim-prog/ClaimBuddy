@@ -76,11 +76,16 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { company_id, period, paid } = body
+    const { company_id, period, paid, paid_at } = body
 
     if (!company_id || !period || typeof paid !== 'boolean') {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+
+    // Use provided paid_at, or auto-set to now when marking paid, or null when unmarking
+    const resolvedPaidAt = paid
+      ? (paid_at || new Date().toISOString())
+      : null
 
     const { data, error } = await supabaseAdmin
       .from('monthly_payments')
@@ -89,7 +94,7 @@ export async function PUT(request: NextRequest) {
           company_id,
           period,
           paid,
-          paid_at: paid ? new Date().toISOString() : null,
+          paid_at: resolvedPaidAt,
           updated_by: userId,
           updated_at: new Date().toISOString(),
         },

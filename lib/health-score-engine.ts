@@ -8,7 +8,7 @@ import {
   getHealthGrade,
 } from '@/lib/types/health-score'
 
-// Generate last N periods as YYYY-MM strings
+// Generate last N COMPLETED periods as YYYY-MM strings (excludes current month)
 function getLastNPeriods(n: number): string[] {
   const periods: string[] = []
   const now = new Date()
@@ -68,6 +68,8 @@ function calcPaymentsScore(
   payments: Array<{ period: string; paid: boolean }>,
   periods: string[]
 ): { score: number; monthsWithData: number } {
+  // Only score months that have a payment RECORD (explicit data).
+  // Missing records = accountant hasn't entered it yet → don't penalize.
   const relevant = payments.filter(p => periods.includes(p.period))
   if (relevant.length === 0) return { score: 0, monthsWithData: 0 }
 
@@ -119,9 +121,21 @@ function calcCommunicationScore(
 function calcCooperationScore(
   tasks: Array<{ status: string; waiting_for: string | null; created_at: string; completed_at: string | null }>
 ): number {
+  const now = new Date()
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
+
   // Tasks where waiting_for = 'client'
-  const clientTasks = tasks.filter(t => t.waiting_for === 'client')
-  if (clientTasks.length === 0) return 75 // neutral if no client tasks
+  // Exclude tasks created less than 7 days ago that aren't completed yet
+  // (they still have time — don't penalize prematurely)
+  const clientTasks = tasks.filter(t => {
+    if (t.waiting_for !== 'client') return false
+    if (t.status === 'completed') return true // always count completed
+    // Open task: only count if older than 7 days (past deadline)
+    const age = now.getTime() - new Date(t.created_at).getTime()
+    return age > sevenDaysMs
+  })
+
+  if (clientTasks.length === 0) return 75 // neutral if no scoreable client tasks
 
   let resolvedInTime = 0
   for (const t of clientTasks) {

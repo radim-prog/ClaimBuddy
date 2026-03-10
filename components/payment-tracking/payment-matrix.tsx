@@ -161,7 +161,6 @@ export function PaymentMatrix({ selectedYear }: { selectedYear: number }) {
     const newPaid = !currentPaid
     // Optimistic update
     setPayments(prev => {
-      const key = `${companyId}:${period}`
       const existing = prev.find(p => p.company_id === companyId && p.period === period)
       if (existing) {
         return prev.map(p =>
@@ -190,6 +189,28 @@ export function PaymentMatrix({ selectedYear }: { selectedYear: number }) {
       )
     }
   }, [])
+
+  const handleSetPaidAt = useCallback(async (companyId: string, period: string, paidAt: string | null) => {
+    // Optimistic update
+    setPayments(prev =>
+      prev.map(p =>
+        p.company_id === companyId && p.period === period
+          ? { ...p, paid_at: paidAt }
+          : p
+      )
+    )
+
+    try {
+      await fetch('/api/accountant/payments', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: companyId, period, paid: true, paid_at: paidAt }),
+      })
+    } catch {
+      // Revert on error — refetch
+      fetchData()
+    }
+  }, [fetchData])
 
   const handleBillingEntitySelect = useCallback(async (groupName: string, companyId: string) => {
     // Optimistic update
@@ -376,7 +397,8 @@ export function PaymentMatrix({ selectedYear }: { selectedYear: number }) {
                       const status = getPaymentStatus(billingCompanyId, monthIndex)
                       const period = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}`
                       const hasExtra = unitCompanyIds.some(id => extraWorkMap.has(`${id}:${period}`))
-                      const currentPaid = paymentMap.get(`${billingCompanyId}:${period}`)?.paid || false
+                      const payment = paymentMap.get(`${billingCompanyId}:${period}`)
+                      const currentPaid = payment?.paid || false
 
                       return (
                         <PaymentCell
@@ -384,6 +406,8 @@ export function PaymentMatrix({ selectedYear }: { selectedYear: number }) {
                           status={status}
                           hasExtraWork={hasExtra}
                           onToggle={status !== 'future' ? () => handleToggle(billingCompanyId, period, currentPaid) : null}
+                          onSetPaidAt={status !== 'future' ? (date) => handleSetPaidAt(billingCompanyId, period, date) : undefined}
+                          paidAt={payment?.paid_at ?? null}
                           companyName={displayName || ''}
                           monthLabel={`${monthName} ${selectedYear}`}
                         />
