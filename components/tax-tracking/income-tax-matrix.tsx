@@ -32,26 +32,79 @@ function CZK(n: number): string {
 type ExpandedDetailProps = {
   config: Partial<TaxAnnualConfigRow>
   rates: TaxRates
+  calc: IncomeTaxCalculation | null
   onConfigChange: (field: string, value: any) => void
   onSave: () => Promise<void>
   saving: boolean
   isFO: boolean
 }
 
-function ExpandedDetail({ config, rates, onConfigChange, onSave, saving, isFO }: ExpandedDetailProps) {
+function InsuranceBreakdown({
+  label,
+  base,
+  calculated,
+  rateLabel,
+  advancesPaid,
+  onAdvancesChange,
+  due,
+}: {
+  label: string
+  base: number
+  calculated: number
+  rateLabel: string
+  advancesPaid: number
+  onAdvancesChange: (v: number) => void
+  due: number
+}) {
+  return (
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800/50">
+      <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">{label}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
+        <div>
+          <div className="text-[10px] text-gray-400 mb-0.5">Vym. zaklad</div>
+          <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{CZK(base)}</div>
+        </div>
+        <div>
+          <div className="text-[10px] text-gray-400 mb-0.5">Pojistne ({rateLabel})</div>
+          <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{CZK(calculated)}</div>
+        </div>
+        <div>
+          <div className="text-[10px] text-gray-400 mb-0.5">Zaplacene zalohy</div>
+          <input
+            type="number"
+            value={advancesPaid || ''}
+            onChange={e => onAdvancesChange(parseFloat(e.target.value) || 0)}
+            className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+            placeholder="0"
+          />
+        </div>
+        <div>
+          <div className="text-[10px] text-gray-400 mb-0.5">Doplatek/preplatek</div>
+          <div className={`text-sm font-bold ${
+            due > 0 ? 'text-red-600 dark:text-red-400' : due < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'
+          }`}>
+            {due > 0 ? '+' : ''}{CZK(due)}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ExpandedDetail({ config, rates, calc, onConfigChange, onSave, saving, isFO }: ExpandedDetailProps) {
   if (!isFO) {
     return (
       <tr>
         <td colSpan={9} className="px-4 py-3 bg-gray-50/80 dark:bg-gray-800/80">
           <div className="flex items-center gap-4 flex-wrap">
             <div>
-              <label className="text-[10px] text-gray-500 block mb-0.5">Poznámka</label>
+              <label className="text-[10px] text-gray-500 block mb-0.5">Poznamka</label>
               <input
                 type="text"
                 value={config.notes || ''}
                 onChange={e => onConfigChange('notes', e.target.value)}
                 className="h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 w-64"
-                placeholder="Poznámka..."
+                placeholder="Poznamka..."
               />
             </div>
             <button
@@ -60,7 +113,7 @@ function ExpandedDetail({ config, rates, onConfigChange, onSave, saving, isFO }:
               className="h-8 px-4 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
             >
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-              Uložit
+              Ulozit
             </button>
           </div>
         </td>
@@ -72,12 +125,12 @@ function ExpandedDetail({ config, rates, onConfigChange, onSave, saving, isFO }:
     <tr>
       <td colSpan={9} className="px-4 py-3 bg-gray-50/80 dark:bg-gray-800/80">
         <div className="max-w-3xl space-y-3">
-          {/* Odpočty */}
+          {/* Odpocty */}
           <div>
-            <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Odpočty</div>
+            <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Odpocty</div>
             <div className="flex items-center gap-3 flex-wrap">
               <div>
-                <label className="text-[10px] text-gray-500 block mb-0.5">Hypotéka</label>
+                <label className="text-[10px] text-gray-500 block mb-0.5">Hypoteka</label>
                 <input
                   type="number"
                   value={config.mortgage_interest || ''}
@@ -87,7 +140,7 @@ function ExpandedDetail({ config, rates, onConfigChange, onSave, saving, isFO }:
                 />
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 block mb-0.5">Spoření</label>
+                <label className="text-[10px] text-gray-500 block mb-0.5">Sporeni</label>
                 <input
                   type="number"
                   value={config.savings_contributions || ''}
@@ -97,7 +150,7 @@ function ExpandedDetail({ config, rates, onConfigChange, onSave, saving, isFO }:
                 />
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 block mb-0.5">Ostatní</label>
+                <label className="text-[10px] text-gray-500 block mb-0.5">Ostatni</label>
                 <input
                   type="number"
                   value={config.other_deductions || ''}
@@ -120,10 +173,10 @@ function ExpandedDetail({ config, rates, onConfigChange, onSave, saving, isFO }:
                   onChange={e => onConfigChange('taxpayer_discount', e.target.checked)}
                   className="rounded"
                 />
-                Poplatník ({CZK(rates.taxpayer_discount)})
+                Poplatnik ({CZK(rates.taxpayer_discount)})
               </label>
               <div>
-                <label className="text-[10px] text-gray-500 block mb-0.5">Děti</label>
+                <label className="text-[10px] text-gray-500 block mb-0.5">Deti</label>
                 <input
                   type="number"
                   min="0"
@@ -135,7 +188,7 @@ function ExpandedDetail({ config, rates, onConfigChange, onSave, saving, isFO }:
                 />
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 block mb-0.5">Ostatní slevy</label>
+                <label className="text-[10px] text-gray-500 block mb-0.5">Ostatni slevy</label>
                 <input
                   type="number"
                   value={config.other_credits || ''}
@@ -147,43 +200,42 @@ function ExpandedDetail({ config, rates, onConfigChange, onSave, saving, isFO }:
             </div>
           </div>
 
-          {/* Zálohy */}
-          <div>
-            <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Zálohy pojistné</div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <div>
-                <label className="text-[10px] text-gray-500 block mb-0.5">Sociální</label>
-                <input
-                  type="number"
-                  value={config.social_advances_paid || ''}
-                  onChange={e => onConfigChange('social_advances_paid', parseFloat(e.target.value) || 0)}
-                  className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500 block mb-0.5">Zdravotní</label>
-                <input
-                  type="number"
-                  value={config.health_advances_paid || ''}
-                  onChange={e => onConfigChange('health_advances_paid', parseFloat(e.target.value) || 0)}
-                  className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          </div>
+          {/* Socialni pojisteni - breakdown */}
+          {calc && (
+            <InsuranceBreakdown
+              label="Socialni pojisteni"
+              base={calc.socialBase}
+              calculated={calc.socialCalculated}
+              rateLabel={`${(rates.social_insurance_rate * 100).toFixed(1)}%`}
+              advancesPaid={config.social_advances_paid ?? 0}
+              onAdvancesChange={v => onConfigChange('social_advances_paid', v)}
+              due={calc.socialDue}
+            />
+          )}
 
-          {/* Poznámka + save */}
+          {/* Zdravotni pojisteni - breakdown */}
+          {calc && (
+            <InsuranceBreakdown
+              label="Zdravotni pojisteni"
+              base={calc.healthBase}
+              calculated={calc.healthCalculated}
+              rateLabel={`${(rates.health_insurance_rate * 100).toFixed(1)}%`}
+              advancesPaid={config.health_advances_paid ?? 0}
+              onAdvancesChange={v => onConfigChange('health_advances_paid', v)}
+              due={calc.healthDue}
+            />
+          )}
+
+          {/* Poznamka + save */}
           <div className="flex items-end gap-3 pt-1 border-t dark:border-gray-700">
             <div className="flex-1">
-              <label className="text-[10px] text-gray-500 block mb-0.5">Poznámka</label>
+              <label className="text-[10px] text-gray-500 block mb-0.5">Poznamka</label>
               <input
                 type="text"
                 value={config.notes || ''}
                 onChange={e => onConfigChange('notes', e.target.value)}
                 className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500"
-                placeholder="Poznámka k roční kalkulaci..."
+                placeholder="Poznamka k rocni kalkulaci..."
               />
             </div>
             <button
@@ -192,7 +244,7 @@ function ExpandedDetail({ config, rates, onConfigChange, onSave, saving, isFO }:
               className="h-8 px-4 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-1.5 shrink-0"
             >
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-              Uložit
+              Ulozit
             </button>
           </div>
         </div>
@@ -418,6 +470,7 @@ function CompanyRow({
         <ExpandedDetail
           config={config}
           rates={rates}
+          calc={calc}
           onConfigChange={handleConfigChange}
           onSave={handleSaveAll}
           saving={saving}
