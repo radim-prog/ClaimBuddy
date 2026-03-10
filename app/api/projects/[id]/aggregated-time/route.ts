@@ -5,7 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 /**
  * GET /api/projects/[id]/aggregated-time
- * Returns time_logs from all subtasks, with task_title for each entry
+ * Returns time_logs from the project itself + all subtasks, with task_title for each entry
  */
 export async function GET(
   request: Request,
@@ -14,7 +14,7 @@ export async function GET(
   try {
     const userId = request.headers.get('x-user-id')
     if (!userId) {
-      return NextResponse.json({ error: 'Neprihlsen' }, { status: 401 })
+      return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
     }
 
     const projectId = params.id
@@ -45,18 +45,14 @@ export async function GET(
       }
     })
 
-    if (taskIds.length === 0) {
-      return NextResponse.json({
-        entries: [],
-        totals: { total_minutes: 0, billable_minutes: 0 },
-      })
-    }
+    // Include project itself + all subtasks
+    const allIds = [projectId, ...taskIds]
 
     // Fetch time_logs
     const { data: timeLogs } = await supabaseAdmin
       .from('time_logs')
       .select('*')
-      .in('task_id', taskIds)
+      .in('task_id', allIds)
       .order('date', { ascending: false })
 
     const entries = (timeLogs || []).map(log => ({
@@ -73,6 +69,6 @@ export async function GET(
     })
   } catch (error: any) {
     console.error('Aggregated time error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

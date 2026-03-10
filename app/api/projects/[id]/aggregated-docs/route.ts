@@ -14,7 +14,7 @@ export async function GET(
   try {
     const userId = request.headers.get('x-user-id')
     if (!userId) {
-      return NextResponse.json({ error: 'Neprihlsen' }, { status: 401 })
+      return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
     }
 
     const projectId = params.id
@@ -61,6 +61,6 @@ export async function GET(
     return NextResponse.json({ documents })
   } catch (error: any) {
     console.error('Aggregated docs error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
