@@ -7,23 +7,25 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { DollarSign, Car, FileText, Clock, AlertTriangle, Save } from 'lucide-react'
-import { getPricingSettings, savePricingSettings, type PricingSettings } from '@/lib/pricing-settings'
+import { fetchPricingSettings, savePricingSettingsAsync, type PricingSettings } from '@/lib/pricing-settings'
 
 export default function PricingSettingsPage() {
   const [settings, setSettings] = useState<PricingSettings | null>(null)
   const [saved, setSaved] = useState(false)
 
-  // Load settings from localStorage on mount
+  // Load settings from API (with localStorage fallback)
   useEffect(() => {
-    setSettings(getPricingSettings())
+    fetchPricingSettings().then(setSettings)
   }, [])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!settings) return
 
-    savePricingSettings(settings)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    const ok = await savePricingSettingsAsync(settings)
+    if (ok) {
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    }
   }
 
   // Show loading state while settings are loading
