@@ -343,27 +343,20 @@ export function PaymentMatrix({ selectedYear }: { selectedYear: number }) {
                     className={unitIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}
                   >
                     <td className={`px-2 sm:px-4 py-2 sm:py-3 text-sm font-medium text-gray-900 dark:text-white sticky left-0 z-10 max-w-[140px] sm:max-w-none ${unitIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
-                      <div>
-                        <div className="font-semibold truncate flex items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold truncate flex items-center gap-1">
                           {unit.type === 'group' && (
-                            <span className="text-purple-500 text-xs" title="Skupina">●</span>
+                            <span className="text-purple-500 text-xs shrink-0" title="Skupina">●</span>
                           )}
                           {displayName}
-                        </div>
+                        </span>
                         {unit.type === 'group' && (
-                          <div className="mt-0.5">
-                            <BillingEntitySelector
-                              groupName={unit.groupName!}
-                              companies={unit.companies.map(c => ({ id: c.id, name: c.name }))}
-                              currentBillingId={unit.billingCompanyId}
-                              onSelect={handleBillingEntitySelect}
-                            />
-                          </div>
-                        )}
-                        {unit.type === 'standalone' && unit.companies[0]?.billing_settings?.monthly_fee && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
-                            {unit.companies[0].billing_settings.monthly_fee.toLocaleString('cs-CZ')} Kč/měs
-                          </div>
+                          <BillingEntitySelector
+                            groupName={unit.groupName!}
+                            companies={unit.companies.map(c => ({ id: c.id, name: c.name }))}
+                            currentBillingId={unit.billingCompanyId}
+                            onSelect={handleBillingEntitySelect}
+                          />
                         )}
                       </div>
                     </td>
