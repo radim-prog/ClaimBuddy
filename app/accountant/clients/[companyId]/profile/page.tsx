@@ -18,6 +18,9 @@ import {
   BarChart3,
   BookOpen,
   Clock,
+  DollarSign,
+  Save,
+  UserMinus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -42,6 +45,7 @@ import { ActivityFeed } from '@/components/accountant/activity-feed'
 import { TileContainer } from '@/components/tiles/tile-container'
 import type { TileDefinition } from '@/lib/types/layout'
 import { useCompany } from '../layout'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 // Mapování zdravotních pojišťoven
 const healthInsuranceLabels: Record<string, string> = {
@@ -54,7 +58,7 @@ const healthInsuranceLabels: Record<string, string> = {
   zpma: 'ZP M-A (217)',
 }
 
-const FIRMA_TILES: TileDefinition[] = [
+const BASE_TILES: TileDefinition[] = [
   { id: 'company-info', label: 'Údaje o firmě', defaultVisible: true },
   { id: 'reports', label: 'Reporty', defaultVisible: true },
   { id: 'employees', label: 'Zaměstnanci', defaultVisible: true },
@@ -67,13 +71,19 @@ const FIRMA_TILES: TileDefinition[] = [
   { id: 'activity', label: 'Historie aktivit', defaultVisible: true },
 ]
 
+const REVENUE_TILE: TileDefinition = { id: 'revenue', label: 'Revenue', defaultVisible: true }
+
 export default function ProfilePage() {
   const { company, companyId, employees, assets, insurances, setEmployees, setAssets, setInsurances } = useCompany()
+  const { userRole } = useAccountantUser()
   const [showDataBoxPassword, setShowDataBoxPassword] = useState(false)
+  const isAdmin = userRole === 'admin'
 
   // Kontaktní údaje
   const contactEmail = company.email || null
   const contactPhone = company.phone || null
+
+  const FIRMA_TILES = isAdmin ? [REVENUE_TILE, ...BASE_TILES] : BASE_TILES
 
   return (
     <TileContainer
@@ -81,6 +91,12 @@ export default function ProfilePage() {
       definitions={FIRMA_TILES}
       renderTile={(tileId) => {
         switch (tileId) {
+          case 'revenue':
+            return isAdmin ? (
+              <CollapsibleSection id="revenue" title="Revenue" icon={DollarSign} defaultOpen={true}>
+                <RevenueTile companyId={companyId} company={company} />
+              </CollapsibleSection>
+            ) : null
           case 'company-info':
             return (
               <Card className="rounded-xl shadow-soft border-gray-200/80 dark:border-gray-700/80">
@@ -307,6 +323,136 @@ function TravelDiaryTile({ companyId }: { companyId: string }) {
         <p className="text-xs text-muted-foreground">Posledni jizda: {new Date(stats.last_trip).toLocaleDateString('cs')}</p>
       )}
       <a href={`${basePath}/travel`} className="text-xs text-purple-600 hover:underline">Zobrazit vse &rarr;</a>
+    </div>
+  )
+}
+
+function RevenueTile({ companyId, company }: { companyId: string; company: any }) {
+  const [fee, setFee] = useState(company.billing_settings?.monthly_fee || 0)
+  const [editing, setEditing] = useState(false)
+  const [editValue, setEditValue] = useState(String(fee))
+  const [saving, setSaving] = useState(false)
+
+  const clientSince = company.billing_settings?.client_since || null
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      const newFee = Number(editValue)
+      const previousFee = fee
+
+      const res = await fetch(`/api/accountant/companies/${companyId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          billing_settings: {
+            ...(company.billing_settings || {}),
+            monthly_fee: newFee,
+          },
+        }),
+      })
+      if (!res.ok) throw new Error('Failed')
+
+      if (previousFee > 0 && previousFee !== newFee) {
+        await fetch('/api/analytics/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_id: companyId,
+            event_type: 'fee_changed',
+            event_date: new Date().toISOString().split('T')[0],
+            monthly_fee: newFee,
+            previous_fee: previousFee,
+          }),
+        })
+      }
+
+      setFee(newFee)
+      setEditing(false)
+      toast.success('Pausal ulozen')
+    } catch {
+      toast.error('Chyba pri ukladani')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleChurn() {
+    if (!confirm(`Opravdu chcete zaznamenat odchod klienta ${company.name}?`)) return
+
+    try {
+      await fetch('/api/analytics/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: companyId,
+          event_type: 'churned',
+          event_date: new Date().toISOString().split('T')[0],
+          monthly_fee: fee,
+        }),
+      })
+      toast.success('Odchod klienta zaznamena')
+    } catch {
+      toast.error('Chyba')
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <div className="text-xs text-muted-foreground mb-1">Mesicni pausal</div>
+          {editing ? (
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={editValue}
+                onChange={e => setEditValue(e.target.value)}
+                className="w-24 px-2 py-1 text-sm border rounded"
+                onKeyDown={e => e.key === 'Enter' && handleSave()}
+                autoFocus
+              />
+              <span className="text-xs text-muted-foreground">Kc</span>
+              <button onClick={handleSave} disabled={saving} className="p-1 text-green-600 hover:bg-green-50 rounded">
+                <Save className="h-3.5 w-3.5" />
+              </button>
+              <button onClick={() => setEditing(false)} className="p-1 text-gray-400 hover:bg-gray-50 rounded">
+                &times;
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-lg">{fee > 0 ? `${fee.toLocaleString('cs')} Kc` : 'Nezadano'}</span>
+              <button onClick={() => { setEditValue(String(fee)); setEditing(true) }} className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded">
+                <DollarSign className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground mb-1">Klientem od</div>
+          <span className="font-medium">{clientSince ? new Date(clientSince).toLocaleDateString('cs') : 'Nezadano'}</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Stav:</span>
+        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+          company.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+          company.status === 'churned' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+          'bg-gray-100 text-gray-600'
+        }`}>
+          {company.status === 'active' ? 'Aktivni' : company.status === 'churned' ? 'Odsel' : company.status}
+        </span>
+        {company.status === 'active' && (
+          <button
+            onClick={handleChurn}
+            className="ml-auto flex items-center gap-1 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 px-2 py-1 rounded transition-colors"
+          >
+            <UserMinus className="h-3 w-3" />
+            Klient odesel
+          </button>
+        )}
+      </div>
     </div>
   )
 }

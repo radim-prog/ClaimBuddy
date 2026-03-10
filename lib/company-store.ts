@@ -27,6 +27,12 @@ export interface Company {
     channels: { in_app: boolean; email: boolean; sms: boolean; whatsapp: boolean }
     types: { deadline_reminder: boolean; unpaid_invoice: boolean; missing_documents: boolean }
   } | null
+  billing_settings: {
+    monthly_fee?: number
+    invoice_due_day?: number
+    invoice_maturity?: number
+    client_since?: string
+  } | null
   created_at: string
   updated_at: string
 }

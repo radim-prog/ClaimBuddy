@@ -93,6 +93,7 @@ export async function PATCH(
     if (body.status !== undefined) updates.status = body.status
     if (body.notification_preferences !== undefined) updates.notification_preferences = body.notification_preferences
     if (body.accounting_start_date !== undefined) updates.accounting_start_date = body.accounting_start_date || null
+    if (body.billing_settings !== undefined) updates.billing_settings = body.billing_settings
 
     // Address is stored as JSONB object in DB
     if (body.street !== undefined || body.city !== undefined || body.zip !== undefined) {

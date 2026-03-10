@@ -31,6 +31,8 @@ export async function GET(request: NextRequest) {
         email: c.email || null,
         status: c.status || 'active',
         reliability_score: c.reliability_score ?? 5,
+        billing_settings: c.billing_settings || null,
+        created_at: c.created_at,
       })),
       count: companies.length,
     })

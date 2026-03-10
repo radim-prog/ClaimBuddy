@@ -19,6 +19,7 @@ import {
   MoreHorizontal,
   ChevronRight,
   ChevronLeft,
+  BarChart3,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -61,6 +62,7 @@ const navigation = [
 ]
 
 const adminNavigation = [
+  { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics'] },
   { name: 'Administrace', href: '/accountant/admin', icon: Shield },
 ]
 
@@ -529,6 +531,19 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
               })}
 
               {showAdmin && (
+                <>
+                <Link
+                  href="/accountant/analytics"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+                    pathname.startsWith('/accountant/analytics')
+                      ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                      : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
+                  }`}
+                >
+                  <BarChart3 className="h-5 w-5" />
+                  <span className="text-sm font-medium">Analytika</span>
+                </Link>
                 <Link
                   href="/accountant/admin"
                   onClick={() => setMobileMenuOpen(false)}
@@ -541,6 +556,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                   <Shield className="h-5 w-5" />
                   <span className="text-sm font-medium">Administrace</span>
                 </Link>
+                </>
               )}
 
               <Link
