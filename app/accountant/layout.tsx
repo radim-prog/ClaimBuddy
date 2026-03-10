@@ -57,12 +57,12 @@ const navigation = [
   { name: 'Klienti', href: '/accountant/clients', icon: Users, badge: 'attention' as const, tourId: 'nav-clients' },
   { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'] },
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
-  { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices'], tourId: 'nav-invoicing' },
-  { name: 'Nastavení', href: '/accountant/settings', icon: Settings, tourId: 'nav-settings' },
 ]
 
 const adminNavigation = [
   { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics'] },
+  { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices'], tourId: 'nav-invoicing' },
+  { name: 'Nastavení', href: '/accountant/settings', icon: Settings, tourId: 'nav-settings' },
   { name: 'Administrace', href: '/accountant/admin', icon: Shield },
 ]
 
@@ -229,11 +229,14 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                     </p>
                   )}
                   {adminNavigation.map((item) => {
-                    const isActive = pathname.startsWith(item.href)
+                    const isActive = item.activeMatch
+                      ? item.activeMatch.some(p => pathname.startsWith(p))
+                      : pathname === item.href || pathname.startsWith(item.href + '/')
                     const Icon = item.icon
                     const adminLink = (
                       <Link
                         href={item.href}
+                        data-tour={item.tourId}
                         className={`
                           group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
                           ${isActive
@@ -316,38 +319,39 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 </div>
               )}
 
-              {/* Tools */}
-              <div className="pt-3 mt-3 border-t border-white/[0.06] space-y-0.5">
-                {collapsed ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => startTour()}
-                        className="w-full group flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200"
-                      >
-                        <BookOpen className="h-[18px] w-[18px] flex-shrink-0" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="font-medium">Průvodce</TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <button
-                    onClick={() => startTour()}
-                    className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200"
-                  >
-                    <BookOpen className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
-                    Průvodce
-                  </button>
-                )}
-                <div className={`${collapsed ? 'flex justify-center' : ''}`}>
-                  <ThemeToggle
-                    variant={collapsed ? 'icon' : 'full'}
-                    className="text-white/40 hover:text-white/70 hover:bg-white/[0.05] rounded-xl"
-                  />
-                </div>
-              </div>
             </nav>
           </TooltipProvider>
+
+          {/* Tools - Průvodce & Tmavý režim */}
+          <div className="relative flex-shrink-0 border-t border-white/[0.06] px-3 py-3 space-y-0.5">
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => startTour()}
+                    className="w-full group flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200"
+                  >
+                    <BookOpen className="h-[18px] w-[18px] flex-shrink-0" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="font-medium">Průvodce</TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={() => startTour()}
+                className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200"
+              >
+                <BookOpen className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
+                Průvodce
+              </button>
+            )}
+            <div className={`${collapsed ? 'flex justify-center' : ''}`}>
+              <ThemeToggle
+                variant={collapsed ? 'icon' : 'full'}
+                className="text-white/40 hover:text-white/70 hover:bg-white/[0.05] rounded-xl"
+              />
+            </div>
+          </div>
 
           {/* User section */}
           <div className="relative flex-shrink-0 border-t border-white/[0.06] p-3">
@@ -479,32 +483,6 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           >
             <div className="w-12 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mt-3 mb-2" />
             <div className="px-4 pb-4 space-y-1">
-              <Link
-                href="/accountant/invoicing"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
-                  pathname.startsWith('/accountant/invoicing')
-                    ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                    : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
-                }`}
-              >
-                <Receipt className="h-5 w-5" />
-                <span className="text-sm font-medium">Fakturace</span>
-              </Link>
-
-              <Link
-                href="/accountant/settings"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
-                  pathname.startsWith('/accountant/settings')
-                    ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                    : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
-                }`}
-              >
-                <Settings className="h-5 w-5" />
-                <span className="text-sm font-medium">Nastavení</span>
-              </Link>
-
               {demoFeatures.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href
@@ -532,6 +510,8 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
 
               {showAdmin && (
                 <>
+                <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+                <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Administrace</p>
                 <Link
                   href="/accountant/analytics"
                   onClick={() => setMobileMenuOpen(false)}
@@ -543,6 +523,30 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 >
                   <BarChart3 className="h-5 w-5" />
                   <span className="text-sm font-medium">Analytika</span>
+                </Link>
+                <Link
+                  href="/accountant/invoicing"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+                    pathname.startsWith('/accountant/invoicing')
+                      ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                      : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
+                  }`}
+                >
+                  <Receipt className="h-5 w-5" />
+                  <span className="text-sm font-medium">Fakturace</span>
+                </Link>
+                <Link
+                  href="/accountant/settings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+                    pathname.startsWith('/accountant/settings')
+                      ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                      : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
+                  }`}
+                >
+                  <Settings className="h-5 w-5" />
+                  <span className="text-sm font-medium">Nastavení</span>
                 </Link>
                 <Link
                   href="/accountant/admin"
