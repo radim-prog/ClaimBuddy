@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
       status: c.status || 'active',
       monthly_reporting: c.monthly_reporting ?? true,
       billing_settings: c.billing_settings || null,
+      raynet_company_id: c.raynet_company_id || null,
     }))
 
     // Aggregate extra work by company_id + month
@@ -98,6 +99,15 @@ export async function PUT(request: NextRequest) {
       .single()
 
     if (error) throw error
+
+    // Auto-push to Raynet (fire & forget)
+    import('@/lib/raynet-store').then(({ pushPaymentToRaynet }) => {
+      pushPaymentToRaynet(company_id, period, paid).catch(err =>
+        console.error('Raynet auto-push error:', err)
+      )
+    }).catch(() => {
+      // Raynet module not available, skip
+    })
 
     return NextResponse.json(data)
   } catch (error) {

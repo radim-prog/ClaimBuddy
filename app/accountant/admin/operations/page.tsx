@@ -8,6 +8,7 @@ import {
   Receipt,
   DollarSign,
   HardDrive,
+  Link2,
 } from 'lucide-react'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { TaskTemplates } from '@/components/admin/task-templates'
@@ -16,6 +17,7 @@ import { OperationsNotifications } from '@/components/admin/operations-notificat
 import { InvoicingSettings } from '@/components/admin/invoicing-settings'
 import { PricingSettings } from '@/components/admin/pricing-settings'
 import { CompanyDriveMapper } from '@/components/drive/company-drive-mapper'
+import { CompanyRaynetMapper } from '@/components/raynet/company-raynet-mapper'
 
 const sections = [
   { id: 'templates', label: 'Šablony úkolů', icon: Repeat, Component: TaskTemplates },
@@ -24,6 +26,7 @@ const sections = [
   { id: 'invoicing', label: 'Fakturace', icon: Receipt, Component: InvoicingSettings },
   { id: 'pricing', label: 'Ceník a sazby', icon: DollarSign, Component: PricingSettings },
   { id: 'drive', label: 'Google Drive', icon: HardDrive, Component: CompanyDriveMapper },
+  { id: 'raynet', label: 'Raynet CRM', icon: Link2, Component: CompanyRaynetMapper },
 ] as const
 
 export default function OperationsPage() {

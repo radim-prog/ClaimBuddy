@@ -33,6 +33,7 @@ export interface Company {
     invoice_maturity?: number
     client_since?: string
   } | null
+  raynet_company_id: number | null
   created_at: string
   updated_at: string
 }

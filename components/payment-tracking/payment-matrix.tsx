@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
+import { Link2 } from 'lucide-react'
 import { PaymentCell } from './payment-cell'
 import { BillingEntitySelector } from './billing-entity-selector'
 
@@ -27,6 +28,7 @@ type PaymentCompany = {
     monthly_fee?: number
     client_since?: string
   } | null
+  raynet_company_id: number | null
 }
 
 type Payment = {
@@ -337,6 +339,7 @@ export function PaymentMatrix({ selectedYear }: { selectedYear: number }) {
 
                 // Check extra work for any company in the unit
                 const unitCompanyIds = unit.companies.map(c => c.id)
+                const hasRaynet = unit.companies.some(c => c.raynet_company_id)
 
                 return (
                   <tr
@@ -354,6 +357,11 @@ export function PaymentMatrix({ selectedYear }: { selectedYear: number }) {
                           )}
                           {displayName}
                         </Link>
+                        {hasRaynet && (
+                          <span title="Propojeno s Raynet CRM" className="shrink-0">
+                            <Link2 className="h-3 w-3 text-blue-500" />
+                          </span>
+                        )}
                         {unit.type === 'group' && (
                           <BillingEntitySelector
                             groupName={unit.groupName!}

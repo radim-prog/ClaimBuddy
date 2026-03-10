@@ -1,0 +1,42 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { syncFromRaynet, createMonthlyBCs } from '@/lib/raynet-store'
+
+export const dynamic = 'force-dynamic'
+
+// GET - Cron endpoint for Raynet sync (called by systemd timer or node-cron)
+export async function GET(request: NextRequest) {
+  // Verify cron secret
+  const secret = request.nextUrl.searchParams.get('secret')
+  if (secret !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Check working hours (8:00-20:00)
+  const now = new Date()
+  const hour = now.getHours()
+  if (hour < 8 || hour >= 20) {
+    return NextResponse.json({ skipped: true, reason: 'Outside working hours (8-20)' })
+  }
+
+  try {
+    const currentYear = now.getFullYear()
+    const result = await syncFromRaynet(currentYear)
+
+    // 1st day of month: auto-create BCs
+    let createdBCs = 0
+    if (now.getDate() === 1) {
+      const period = `${currentYear}-${String(now.getMonth() + 1).padStart(2, '0')}`
+      createdBCs = await createMonthlyBCs(period)
+    }
+
+    return NextResponse.json({
+      ...result,
+      createdBCs,
+      timestamp: now.toISOString(),
+    })
+  } catch (error) {
+    console.error('Raynet cron sync error:', error)
+    const message = error instanceof Error ? error.message : 'Internal server error'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}

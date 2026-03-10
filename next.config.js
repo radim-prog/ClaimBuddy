@@ -7,7 +7,8 @@ const nextConfig = {
   output: 'standalone',
   experimental: {
     // External packages that should not be bundled (WASM modules etc.)
-    serverComponentsExternalPackages: ['@react-pdf/renderer', 'exceljs'],
+    serverComponentsExternalPackages: ['@react-pdf/renderer', 'exceljs', 'node-cron'],
+    instrumentationHook: true,
   },
 }
 
