@@ -7,19 +7,19 @@ type PaymentStatus = 'paid' | 'unpaid' | 'future'
 export const PaymentCell = React.memo(function PaymentCell({
   status,
   hasExtraWork,
-  onToggle,
-  onSetPaidAt,
   paidAt,
+  period,
   companyName,
   monthLabel,
+  onPaymentChange,
 }: {
   status: PaymentStatus
   hasExtraWork: boolean
-  onToggle: (() => void) | null
-  onSetPaidAt?: (date: string | null) => void
   paidAt?: string | null
+  period: string
   companyName: string
   monthLabel: string
+  onPaymentChange?: (paid: boolean, paidAt: string | null) => void
 }) {
   const cellRef = useRef<HTMLTableCellElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
@@ -38,6 +38,16 @@ export const PaymentCell = React.memo(function PaymentCell({
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
+  }, [showPopover])
+
+  // Close popover on Escape
+  useEffect(() => {
+    if (!showPopover) return
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setShowPopover(false)
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
   }, [showPopover])
 
   const handleMouseEnter = () => {
@@ -60,28 +70,38 @@ export const PaymentCell = React.memo(function PaymentCell({
 
   const isPaid = status === 'paid'
 
-  const handleClick = () => {
-    if (!isPaid) {
-      // Mark as paid → toggle directly
-      onToggle?.()
-    } else {
-      // Already paid → show popover for date edit / unmark
-      const dateStr = paidAt ? new Date(paidAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-      setEditDate(dateStr)
-      setShowPopover(true)
-      setIsHovered(false)
+  // Default date for the date picker:
+  // - paid → existing paid_at
+  // - unpaid → last day of the period month (e.g. 2026-01 → 2026-01-31)
+  function getDefaultDate() {
+    if (isPaid && paidAt) {
+      return new Date(paidAt).toISOString().split('T')[0]
     }
+    // Default to last day of the period month
+    const [y, m] = period.split('-').map(Number)
+    const lastDay = new Date(y, m, 0).getDate()
+    const today = new Date()
+    const todayStr = today.toISOString().split('T')[0]
+    const lastDayStr = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+    // If last day is in the future, use today instead
+    return lastDayStr > todayStr ? todayStr : lastDayStr
   }
 
-  const handleSaveDate = () => {
-    if (editDate && onSetPaidAt) {
-      onSetPaidAt(new Date(editDate).toISOString())
+  const handleClick = () => {
+    setEditDate(getDefaultDate())
+    setShowPopover(true)
+    setIsHovered(false)
+  }
+
+  const handleMarkPaid = () => {
+    if (editDate && onPaymentChange) {
+      onPaymentChange(true, new Date(editDate + 'T12:00:00').toISOString())
     }
     setShowPopover(false)
   }
 
   const handleUnmark = () => {
-    onToggle?.()
+    onPaymentChange?.(false, null)
     setShowPopover(false)
   }
 
@@ -96,7 +116,7 @@ export const PaymentCell = React.memo(function PaymentCell({
         role="button"
         tabIndex={0}
         onClick={handleClick}
-        onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && onToggle) { e.preventDefault(); handleClick() } }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick() } }}
         className={`
           w-10 h-10 sm:w-14 sm:h-14 mx-auto rounded-lg border-2 transition-all cursor-pointer relative
           ${isPaid
@@ -116,7 +136,7 @@ export const PaymentCell = React.memo(function PaymentCell({
         )}
       </div>
 
-      {/* Popover for paid date edit */}
+      {/* Popover — always with date picker */}
       {showPopover && (
         <div
           ref={popoverRef}
@@ -131,23 +151,33 @@ export const PaymentCell = React.memo(function PaymentCell({
               type="date"
               value={editDate}
               onChange={e => setEditDate(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleMarkPaid() }}
               className="w-full text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white mb-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               autoFocus
             />
 
             <div className="flex items-center gap-2">
               <button
-                onClick={handleSaveDate}
+                onClick={handleMarkPaid}
                 className="flex-1 text-xs font-medium px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
               >
-                Ulozit
+                {isPaid ? 'Ulozit' : 'Zaplaceno'}
               </button>
-              <button
-                onClick={handleUnmark}
-                className="text-xs font-medium px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-              >
-                Odznacit
-              </button>
+              {isPaid ? (
+                <button
+                  onClick={handleUnmark}
+                  className="text-xs font-medium px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                >
+                  Odznacit
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowPopover(false)}
+                  className="text-xs font-medium px-3 py-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                >
+                  Zrusit
+                </button>
+              )}
             </div>
           </div>
           <div className={`w-3 h-3 bg-white dark:bg-gray-800 border-l border-t border-gray-200 dark:border-gray-700 transform rotate-45 absolute ${showAbove ? 'top-full -mt-1.5' : 'bottom-full -mb-1.5'} left-1/2 -translate-x-1/2`} />

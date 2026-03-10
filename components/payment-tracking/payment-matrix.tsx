@@ -157,54 +157,25 @@ export function PaymentMatrix({ selectedYear }: { selectedYear: number }) {
     return units.sort((a, b) => a.sortKey.localeCompare(b.sortKey, 'cs'))
   }, [companies, groupBillingMap])
 
-  const handleToggle = useCallback(async (companyId: string, period: string, currentPaid: boolean) => {
-    const newPaid = !currentPaid
+  const handlePaymentChange = useCallback(async (companyId: string, period: string, paid: boolean, paidAt: string | null) => {
     // Optimistic update
     setPayments(prev => {
       const existing = prev.find(p => p.company_id === companyId && p.period === period)
       if (existing) {
         return prev.map(p =>
           p.company_id === companyId && p.period === period
-            ? { ...p, paid: newPaid, paid_at: newPaid ? new Date().toISOString() : null }
+            ? { ...p, paid, paid_at: paidAt }
             : p
         )
       }
-      return [...prev, { company_id: companyId, period, paid: newPaid, paid_at: newPaid ? new Date().toISOString() : null }]
+      return [...prev, { company_id: companyId, period, paid, paid_at: paidAt }]
     })
 
     try {
       await fetch('/api/accountant/payments', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ company_id: companyId, period, paid: newPaid }),
-      })
-    } catch {
-      // Revert on error
-      setPayments(prev =>
-        prev.map(p =>
-          p.company_id === companyId && p.period === period
-            ? { ...p, paid: currentPaid, paid_at: currentPaid ? p.paid_at : null }
-            : p
-        )
-      )
-    }
-  }, [])
-
-  const handleSetPaidAt = useCallback(async (companyId: string, period: string, paidAt: string | null) => {
-    // Optimistic update
-    setPayments(prev =>
-      prev.map(p =>
-        p.company_id === companyId && p.period === period
-          ? { ...p, paid_at: paidAt }
-          : p
-      )
-    )
-
-    try {
-      await fetch('/api/accountant/payments', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ company_id: companyId, period, paid: true, paid_at: paidAt }),
+        body: JSON.stringify({ company_id: companyId, period, paid, paid_at: paidAt }),
       })
     } catch {
       // Revert on error — refetch
@@ -398,18 +369,17 @@ export function PaymentMatrix({ selectedYear }: { selectedYear: number }) {
                       const period = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}`
                       const hasExtra = unitCompanyIds.some(id => extraWorkMap.has(`${id}:${period}`))
                       const payment = paymentMap.get(`${billingCompanyId}:${period}`)
-                      const currentPaid = payment?.paid || false
 
                       return (
                         <PaymentCell
                           key={monthIndex}
                           status={status}
                           hasExtraWork={hasExtra}
-                          onToggle={status !== 'future' ? () => handleToggle(billingCompanyId, period, currentPaid) : null}
-                          onSetPaidAt={status !== 'future' ? (date) => handleSetPaidAt(billingCompanyId, period, date) : undefined}
                           paidAt={payment?.paid_at ?? null}
+                          period={period}
                           companyName={displayName || ''}
                           monthLabel={`${monthName} ${selectedYear}`}
+                          onPaymentChange={status !== 'future' ? (paid, paidAt) => handlePaymentChange(billingCompanyId, period, paid, paidAt) : undefined}
                         />
                       )
                     })}
