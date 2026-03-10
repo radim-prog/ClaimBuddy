@@ -195,9 +195,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [editTitle, setEditTitle] = useState('')
   const [editingDesc, setEditingDesc] = useState(false)
   const [editDesc, setEditDesc] = useState('')
+  const [editingOutcome, setEditingOutcome] = useState(false)
+  const [editOutcome, setEditOutcome] = useState('')
 
   useEffect(() => {
-    fetch(`/api/projects/${params.id}`)
+    if (!userId) return
+    fetch(`/api/projects/${params.id}`, { headers: { 'x-user-id': userId } })
       .then(r => r.json())
       .then(data => {
         if (data.error) { setError(data.error) }
@@ -205,7 +208,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         setLoading(false)
       })
       .catch(() => { setError('Nepodarilo se nacist projekt'); setLoading(false) })
-  }, [params.id])
+  }, [params.id, userId])
 
   useEffect(() => {
     if (!userId) return
@@ -252,7 +255,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     try {
       const res = await fetch(`/api/projects/${params.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
         body: JSON.stringify(changes),
       })
       if (!res.ok) toast.error('Nepodarilo se ulozit zmeny')
@@ -544,11 +547,30 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             {project.description || 'Klikni pro pridani popisu...'}
           </p>
         )}
-        {project.outcome && (
-          <p className="text-sm text-purple-700 dark:text-purple-300 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-            <strong>Cil:</strong> {project.outcome}
-          </p>
-        )}
+        {/* Cil projektu — editable */}
+        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+          <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1">Cil projektu</div>
+          {editingOutcome ? (
+            <div className="space-y-2">
+              <Textarea value={editOutcome} onChange={e => setEditOutcome(e.target.value)} rows={2} autoFocus placeholder="Ceho chceme dosahnut..." />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => {
+                  if (editOutcome !== (project.outcome || '')) {
+                    persistProjectUpdate({ outcome: editOutcome.trim() })
+                    setProject(prev => prev ? { ...prev, outcome: editOutcome.trim() } : prev)
+                    toast.success('Cil ulozen')
+                  }
+                  setEditingOutcome(false)
+                }}>Ulozit</Button>
+                <Button size="sm" variant="outline" onClick={() => setEditingOutcome(false)}>Zrusit</Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-purple-700 dark:text-purple-300 whitespace-pre-wrap cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded p-1 -m-1" onClick={() => { setEditOutcome(project.outcome || ''); setEditingOutcome(true) }}>
+              {project.outcome || 'Klikni pro pridani cile...'}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* View Tabs — matches UnifiedTaskDetail */}

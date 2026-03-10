@@ -340,8 +340,10 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
   const [autoOpenUpload, setAutoOpenUpload] = useState(0)
   const [editingTitle, setEditingTitle] = useState(false)
   const [editingDesc, setEditingDesc] = useState(false)
+  const [editingOutcome, setEditingOutcome] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const [editDesc, setEditDesc] = useState('')
+  const [editOutcome, setEditOutcome] = useState('')
   const [showRScorePanel, setShowRScorePanel] = useState(false)
   const [showConvertDialog, setShowConvertDialog] = useState(false)
 
@@ -954,11 +956,23 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
             {task.description || 'Klikni pro pridani popisu...'}
           </p>
         )}
-        {task.project_outcome && (
-          <p className="text-sm text-purple-700 dark:text-purple-300 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-            <strong>Cil:</strong> {task.project_outcome}
-          </p>
-        )}
+        {/* Cil ukolu/projektu — editable */}
+        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+          <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1">Cil</div>
+          {editingOutcome ? (
+            <div className="space-y-2">
+              <Textarea value={editOutcome} onChange={e => setEditOutcome(e.target.value)} rows={2} autoFocus placeholder="Ceho chceme dosahnut..." />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => { if (editOutcome !== (task.project_outcome || '')) { updateTask(prev => ({ ...prev, project_outcome: editOutcome.trim() })); toast.success('Cil ulozen') } setEditingOutcome(false) }}>Ulozit</Button>
+                <Button size="sm" variant="outline" onClick={() => setEditingOutcome(false)}>Zrusit</Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-purple-700 dark:text-purple-300 whitespace-pre-wrap cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded p-1 -m-1" onClick={() => { setEditOutcome(task.project_outcome || ''); setEditingOutcome(true) }}>
+              {task.project_outcome || 'Klikni pro pridani cile...'}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* View Tabs */}
