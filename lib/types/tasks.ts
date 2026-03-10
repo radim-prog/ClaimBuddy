@@ -82,6 +82,9 @@ export interface Task {
   project_outcome?: string;
   parent_project_id?: string;
 
+  // Subtasks (populated by API)
+  subtasks?: Task[];
+
   // Hierarchie (project/phase grouping)
   project_id?: string;
   project_name?: string;

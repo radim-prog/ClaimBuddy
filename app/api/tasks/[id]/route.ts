@@ -48,23 +48,20 @@ export async function GET(
       .eq('task_id', taskId)
       .order('position', { ascending: true })
 
-    // Get time tracking entries
+    // Get time entries from time_logs
     const { data: timeEntries } = await supabaseAdmin
-      .from('time_tracking_entries')
+      .from('time_logs')
       .select('*')
       .eq('task_id', taskId)
-      .order('started_at', { ascending: false })
+      .order('date', { ascending: false })
 
-    // Get subtasks (if this is a project)
-    let subtasks = null
-    if (task.is_project) {
-      const { data: subtasksData } = await supabaseAdmin
-        .from('tasks')
-        .select('*')
-        .eq('parent_project_id', taskId)
-        .order('created_at', { ascending: true })
-      subtasks = subtasksData
-    }
+    // Get subtasks (always check, not just for is_project)
+    const { data: subtasksData } = await supabaseAdmin
+      .from('tasks')
+      .select('*')
+      .eq('parent_project_id', taskId)
+      .order('created_at', { ascending: true })
+    const subtasks = subtasksData
 
     // Get parent project (if this is a subtask)
     let parentProject = null

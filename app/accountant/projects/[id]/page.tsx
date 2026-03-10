@@ -1,24 +1,32 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { Card, CardContent } from '@/components/ui/card'
+import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Separator } from '@/components/ui/separator'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { CaseToggle } from '@/components/case/case-toggle'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { CaseTimeline } from '@/components/case/case-timeline'
 import { CaseDocuments } from '@/components/case/case-documents'
-import { CaseBudgetCard } from '@/components/case/case-budget-card'
 import { DocumentLinksPanel } from '@/components/documents/document-links-panel'
+import { DocumentPicker } from '@/components/documents/document-picker'
+import { UploadDialog } from '@/components/accountant/documents/upload-dialog'
 import { ScoringWizard } from '@/components/gtd/scoring-wizard'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -27,18 +35,26 @@ import {
   ArrowLeft,
   Calendar,
   User,
+  Users,
   CheckCircle2,
+  Circle,
   PauseCircle,
   PlayCircle,
   Target,
   Zap,
   Plus,
-  Star,
+  XCircle,
   AlertCircle,
   FileText,
   Clock,
   TrendingUp,
   Pencil,
+  ChevronDown,
+  ChevronRight,
+  ListTodo,
+  Loader2,
+  Paperclip,
+  Trash2,
 } from 'lucide-react'
 
 type Project = {
@@ -63,14 +79,8 @@ type Project = {
   score_time?: number
   score_distance?: number
   score_personal?: number
-}
-
-type Phase = {
-  id: string
-  title: string
-  description: string | null
-  position: number
-  status: string
+  assigned_to?: string
+  assigned_to_name?: string
 }
 
 type TaskItem = {
@@ -96,58 +106,105 @@ type ProgressNote = {
 const calculateScore = (p: Project) =>
   (p.score_money || 0) + (p.score_fire || 0) + (p.score_time || 0) + (p.score_distance || 0) + (p.score_personal || 0)
 
-const getPriority = (score: number) => {
-  if (score >= 9) return { label: 'Vysoká', emoji: '🔴', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' }
-  if (score >= 6) return { label: 'Střední', emoji: '🟡', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' }
-  return { label: 'Nízká', emoji: '🟢', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' }
+const getScorePriority = (score: number): { label: string; color: string } => {
+  if (score >= 9) return { label: 'Vysoka', color: 'text-white bg-red-500' }
+  if (score >= 6) return { label: 'Stredni', color: 'text-white bg-orange-500' }
+  return { label: 'Nizka', color: 'text-white bg-green-600' }
 }
 
-const STATUS_CONFIG: Record<string, { label: string; icon: typeof PlayCircle; color: string }> = {
-  planning: { label: 'Plánování', icon: Target, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
-  active: { label: 'Aktivní', icon: PlayCircle, color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-  on_hold: { label: 'Pozastaveno', icon: PauseCircle, color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' },
-  review: { label: 'K review', icon: AlertCircle, color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
-  completed: { label: 'Dokončeno', icon: CheckCircle2, color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
-  cancelled: { label: 'Zrušeno', icon: AlertCircle, color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' },
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  planning: { label: 'Planovani', color: 'bg-blue-100 text-blue-700 border-blue-300' },
+  active: { label: 'Aktivni', color: 'bg-green-100 text-green-700 border-green-300' },
+  on_hold: { label: 'Pozastaveno', color: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
+  review: { label: 'K review', color: 'bg-purple-100 text-purple-700 border-purple-300' },
+  completed: { label: 'Dokonceno', color: 'bg-gray-100 text-gray-600 border-gray-300' },
+  cancelled: { label: 'Zruseno', color: 'bg-red-100 text-red-600 border-red-300' },
 }
+
+const SCORE_OPTIONS = {
+  money: [
+    { value: 0, label: '0 - <5k Kc', color: 'text-red-600' },
+    { value: 1, label: '1 - 5k+ Kc', color: 'text-purple-600' },
+    { value: 2, label: '2 - 15k+ Kc', color: 'text-blue-600' },
+    { value: 3, label: '3 - 50k+ Kc', color: 'text-green-600' },
+  ],
+  fire: [
+    { value: 0, label: '0 - Easy', color: 'text-green-600' },
+    { value: 1, label: '1 - Normal', color: 'text-blue-600' },
+    { value: 2, label: '2 - High', color: 'text-purple-600' },
+    { value: 3, label: '3 - Critical', color: 'text-red-600' },
+  ],
+  time: [
+    { value: 0, label: '0 - den+', color: 'text-red-600' },
+    { value: 1, label: '1 - 2-4h', color: 'text-purple-600' },
+    { value: 2, label: '2 - <1h', color: 'text-blue-600' },
+    { value: 3, label: '3 - <30min', color: 'text-green-600' },
+  ],
+  distance: [
+    { value: 0, label: '0 - Daleko', color: 'text-red-600' },
+    { value: 1, label: '1 - Lokalne', color: 'text-blue-600' },
+    { value: 2, label: '2 - PC', color: 'text-green-600' },
+  ],
+  personal: [
+    { value: 0, label: '0 - Poor', color: 'text-red-600' },
+    { value: 1, label: '1 - Good', color: 'text-green-600' },
+  ],
+}
+
+type TabKey = 'spis' | 'ukoly' | 'dokumenty' | 'vykaz'
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { userId, userName } = useAccountantUser()
-  const [activeView, setActiveView] = useState<'summary' | 'notes' | 'tasks' | 'documents' | 'timeline' | 'budget' | 'case'>('summary')
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    const urlTab = searchParams.get('tab')
+    if (urlTab && ['spis', 'ukoly', 'dokumenty', 'vykaz'].includes(urlTab)) return urlTab as TabKey
+    return 'spis'
+  })
   const [project, setProject] = useState<Project | null>(null)
-  const [phases, setPhases] = useState<Phase[]>([])
   const [tasks, setTasks] = useState<TaskItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [showScoreDialog, setShowScoreDialog] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [addingTask, setAddingTask] = useState(false)
+  const [progressNotes, setProgressNotes] = useState<ProgressNote[]>([])
+  const [showRScorePanel, setShowRScorePanel] = useState(false)
+  const [showScoreDialog, setShowScoreDialog] = useState(false)
   const [timelineComposerSignal, setTimelineComposerSignal] = useState(0)
   const [documentsCount, setDocumentsCount] = useState(0)
   const [timelineCount, setTimelineCount] = useState(0)
   const [lastActivityAt, setLastActivityAt] = useState<string | null>(null)
-  const [progressNotes, setProgressNotes] = useState<ProgressNote[]>([])
-  const [showAddProgressNote, setShowAddProgressNote] = useState(false)
+  // Delegate dialog
+  const [showDelegateDialog, setShowDelegateDialog] = useState(false)
+  const [delegateTo, setDelegateTo] = useState('')
+  const [apiUsers, setApiUsers] = useState<{ id: string; name: string }[]>([])
+  // Aggregated docs & time
+  const [aggDocs, setAggDocs] = useState<any[]>([])
+  const [aggTime, setAggTime] = useState<{ entries: any[]; totals: { total_minutes: number; billable_minutes: number } }>({ entries: [], totals: { total_minutes: 0, billable_minutes: 0 } })
+
+  // Progress note form
+  const [showAddNote, setShowAddNote] = useState(false)
   const [newNoteStatus, setNewNoteStatus] = useState('')
   const [newNoteProblems, setNewNoteProblems] = useState('')
   const [newNoteNextSteps, setNewNoteNextSteps] = useState('')
   const [newNoteText, setNewNoteText] = useState('')
 
+  // Editing
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editingDesc, setEditingDesc] = useState(false)
+  const [editDesc, setEditDesc] = useState('')
+
   useEffect(() => {
     fetch(`/api/projects/${params.id}`)
       .then(r => r.json())
       .then(data => {
-        if (data.error) {
-          setError(data.error)
-        } else {
-          setProject(data.project)
-          setPhases(data.phases || [])
-          setTasks(data.tasks || [])
-        }
+        if (data.error) { setError(data.error) }
+        else { setProject(data.project); setTasks(data.tasks || []) }
         setLoading(false)
       })
-      .catch(() => { setError('Nepodařilo se načíst projekt'); setLoading(false) })
+      .catch(() => { setError('Nepodarilo se nacist projekt'); setLoading(false) })
   }, [params.id])
 
   useEffect(() => {
@@ -164,43 +221,42 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       .then(r => r.json())
       .then(data => setDocumentsCount((data.documents || []).length))
       .catch(() => setDocumentsCount(0))
-
     fetch(`/api/projects/${params.id}/timeline?page_size=1`, { headers: { 'x-user-id': userId } })
       .then(r => r.json())
       .then(data => {
         setTimelineCount(data.pagination?.total || 0)
         setLastActivityAt(data.entries?.[0]?.event_date || null)
       })
-      .catch(() => {
-        setTimelineCount(0)
-        setLastActivityAt(null)
-      })
+      .catch(() => { setTimelineCount(0); setLastActivityAt(null) })
   }, [params.id, userId])
 
-  useEffect(() => {
-    refreshCaseCounts()
-  }, [refreshCaseCounts, activeView])
+  useEffect(() => { refreshCaseCounts() }, [refreshCaseCounts, activeTab])
 
-  const toggleNextAction = async (taskId: string, current: boolean) => {
-    if (!current) {
-      const prevNext = tasks.find(t => t.is_next_action)
-      if (prevNext) {
-        await fetch(`/api/tasks/${prevNext.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ is_next_action: false }),
-        })
-      }
-    }
-    await fetch(`/api/tasks/${taskId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_next_action: !current }),
-    })
-    setTasks(tasks.map(t => ({
-      ...t,
-      is_next_action: t.id === taskId ? !current : false,
-    })))
+  const fetchAggDocs = useCallback(() => {
+    fetch(`/api/projects/${params.id}/aggregated-docs`, { headers: { 'x-user-id': userId || '' } })
+      .then(r => r.json())
+      .then(data => setAggDocs(data.documents || []))
+      .catch(() => setAggDocs([]))
+  }, [params.id, userId])
+
+  const fetchAggTime = useCallback(() => {
+    fetch(`/api/projects/${params.id}/aggregated-time`, { headers: { 'x-user-id': userId || '' } })
+      .then(r => r.json())
+      .then(data => setAggTime({ entries: data.entries || [], totals: data.totals || { total_minutes: 0, billable_minutes: 0 } }))
+      .catch(() => setAggTime({ entries: [], totals: { total_minutes: 0, billable_minutes: 0 } }))
+  }, [params.id, userId])
+
+  useEffect(() => { fetchAggDocs(); fetchAggTime() }, [fetchAggDocs, fetchAggTime])
+
+  const persistProjectUpdate = async (changes: Record<string, any>) => {
+    try {
+      const res = await fetch(`/api/projects/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(changes),
+      })
+      if (!res.ok) toast.error('Nepodarilo se ulozit zmeny')
+    } catch { toast.error('Chyba pri ukladani') }
   }
 
   const toggleTaskComplete = async (taskId: string, currentStatus: string) => {
@@ -208,29 +264,20 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     await fetch(`/api/tasks/${taskId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        status: newStatus,
-        completed_at: newStatus === 'completed' ? new Date().toISOString() : null,
-      }),
+      body: JSON.stringify({ status: newStatus, completed_at: newStatus === 'completed' ? new Date().toISOString() : null }),
     })
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
   }
 
-  const handleScoreUpdate = async (result: { score_money: number; score_fire: number; score_time: number; score_distance: number; score_personal: number }) => {
-    try {
-      const res = await fetch(`/api/projects/${params.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(result),
-      })
-      if (res.ok) {
-        setProject(prev => prev ? { ...prev, ...result } : prev)
-        toast.success('Priorita aktualizována')
+  const toggleNextAction = async (taskId: string, current: boolean) => {
+    if (!current) {
+      const prevNext = tasks.find(t => t.is_next_action)
+      if (prevNext) {
+        await fetch(`/api/tasks/${prevNext.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_next_action: false }) })
       }
-    } catch {
-      toast.error('Chyba při ukládání')
     }
-    setShowScoreDialog(false)
+    await fetch(`/api/tasks/${taskId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_next_action: !current }) })
+    setTasks(prev => prev.map(t => ({ ...t, is_next_action: t.id === taskId ? !current : false })))
   }
 
   const handleAddTask = async () => {
@@ -240,32 +287,23 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: newTaskTitle.trim(),
-          status: 'pending',
-          project_id: params.id,
-          company_id: project?.company_id,
-        }),
+        body: JSON.stringify({ title: newTaskTitle.trim(), status: 'pending', project_id: params.id, parent_project_id: params.id, company_id: project?.company_id }),
       })
       if (res.ok) {
         const data = await res.json()
-        setTasks(prev => [...prev, {
-          id: data.task?.id || data.id,
-          title: newTaskTitle.trim(),
-          status: 'pending',
-          assigned_to_name: null,
-          due_date: null,
-          is_next_action: false,
-          phase_id: null,
-        }])
+        setTasks(prev => [...prev, { id: data.task?.id || data.id, title: newTaskTitle.trim(), status: 'pending', assigned_to_name: null, due_date: null, is_next_action: false, phase_id: null }])
         setNewTaskTitle('')
-        toast.success('Úkol přidán')
+        toast.success('Ukol pridan')
       }
-    } catch {
-      toast.error('Chyba při přidávání úkolu')
-    } finally {
-      setAddingTask(false)
-    }
+    } catch { toast.error('Chyba pri pridavani ukolu') }
+    finally { setAddingTask(false) }
+  }
+
+  const handleScoreUpdate = async (result: { score_money: number; score_fire: number; score_time: number; score_distance: number; score_personal: number }) => {
+    await persistProjectUpdate(result)
+    setProject(prev => prev ? { ...prev, ...result } : prev)
+    setShowScoreDialog(false)
+    toast.success('Priorita aktualizovana')
   }
 
   const addProgressNote = async () => {
@@ -273,140 +311,91 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     try {
       const res = await fetch(`/api/projects/${params.id}/progress-notes`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': userId,
-          'x-user-name': userName || 'Ucetni',
-        },
-        body: JSON.stringify({
-          current_status: newNoteStatus.trim(),
-          problems: newNoteProblems.trim() || undefined,
-          next_steps: newNoteNextSteps.trim() || undefined,
-          note: newNoteText.trim() || undefined,
-        }),
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId, 'x-user-name': userName || 'Ucetni' },
+        body: JSON.stringify({ current_status: newNoteStatus.trim(), problems: newNoteProblems.trim() || undefined, next_steps: newNoteNextSteps.trim() || undefined, note: newNoteText.trim() || undefined }),
       })
-      if (!res.ok) throw new Error('save failed')
+      if (!res.ok) throw new Error()
       const data = await res.json()
       setProgressNotes(prev => [data.note, ...prev])
-      setShowAddProgressNote(false)
-      setNewNoteStatus('')
-      setNewNoteProblems('')
-      setNewNoteNextSteps('')
-      setNewNoteText('')
-      toast.success('Poznamka o prubehu pridana')
-    } catch {
-      toast.error('Chyba pri ukladani poznamky')
-    }
+      setShowAddNote(false)
+      setNewNoteStatus(''); setNewNoteProblems(''); setNewNoteNextSteps(''); setNewNoteText('')
+      toast.success('Poznamka pridana')
+    } catch { toast.error('Chyba pri ukladani') }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
+      <div className="flex items-center justify-center py-24">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600" />
       </div>
     )
   }
 
   if (error || !project) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-20">
-        <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold font-display mb-2">Projekt nenalezen</h3>
-        <Button onClick={() => router.push('/accountant/work')}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Zpět na práci
-        </Button>
+      <div className="text-center py-12">
+        <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <h2 className="text-xl font-bold mb-2">Projekt nenalezen</h2>
+        <p className="text-gray-500 mb-4">{error || 'Neznama chyba'}</p>
+        <Button variant="outline" onClick={() => router.push('/accountant/work')}><ArrowLeft className="mr-2 h-4 w-4" />Zpet</Button>
       </div>
     )
   }
 
-  const statusCfg = STATUS_CONFIG[project.status] || STATUS_CONFIG.planning
-  const StatusIcon = statusCfg.icon
   const score = calculateScore(project)
-  const priority = getPriority(score)
-  const nextAction = tasks.find(t => t.is_next_action)
-  const completedTasks = tasks.filter(t => t.status === 'completed').length
+  const scorePriority = getScorePriority(score)
+  const statusCfg = STATUS_CONFIG[project.status] || STATUS_CONFIG.planning
+  const completedTasks = tasks.filter(t => t.status === 'completed')
   const activeTasks = tasks.filter(t => t.status !== 'completed')
-  const completedTasksList = tasks.filter(t => t.status === 'completed')
-  const latestProgressNote = progressNotes[0]
+  const progress = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : project.progress_percentage
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-6">
-      <Button variant="ghost" size="sm" onClick={() => router.push('/accountant/work')} className="mb-4">
-        <ArrowLeft className="h-4 w-4 mr-1" /> Práce
-      </Button>
-
-      <div className="flex gap-3 mb-4 flex-wrap">
-        <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-          <CardContent className="p-3 text-center min-w-[100px]">
-            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Ukoly</div>
-            <div className="text-2xl font-bold text-green-700">{completedTasks}/{tasks.length}</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
-          <CardContent className="p-3 text-center min-w-[110px]">
-            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Progress</div>
-            <div className="text-2xl font-bold text-blue-700">{project.progress_percentage}%</div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-xl shadow-soft-sm bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200">
-          <CardContent className="p-3 text-center min-w-[110px]">
-            <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">Status</div>
-            <div className="text-sm font-bold text-amber-700">{statusCfg.label}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 overflow-x-auto">
-        <Button variant={activeView === 'summary' ? 'default' : 'ghost'} onClick={() => setActiveView('summary')} className={activeView === 'summary' ? 'bg-blue-600 hover:bg-blue-700' : ''}>📋 Souhrn spisu</Button>
-        <Button variant={activeView === 'notes' ? 'default' : 'ghost'} onClick={() => setActiveView('notes')} className={activeView === 'notes' ? 'bg-blue-600 hover:bg-blue-700' : ''}>📝 Poznamky o prubehu{progressNotes.length ? ` (${progressNotes.length})` : ''}</Button>
-        <Button variant={activeView === 'tasks' ? 'default' : 'ghost'} onClick={() => setActiveView('tasks')} className={activeView === 'tasks' ? 'bg-blue-600 hover:bg-blue-700' : ''}>✓ Ukoly ({completedTasks}/{tasks.length})</Button>
-        {project.is_case && (
-          <>
-            <Button variant={activeView === 'documents' ? 'default' : 'ghost'} onClick={() => setActiveView('documents')} className={activeView === 'documents' ? 'bg-blue-600 hover:bg-blue-700' : ''}>📎 Dokumenty ({documentsCount})</Button>
-            <Button variant={activeView === 'timeline' ? 'default' : 'ghost'} onClick={() => setActiveView('timeline')} className={activeView === 'timeline' ? 'bg-blue-600 hover:bg-blue-700' : ''}>🕐 Timeline ({timelineCount})</Button>
-            <Button variant={activeView === 'budget' ? 'default' : 'ghost'} onClick={() => setActiveView('budget')} className={activeView === 'budget' ? 'bg-blue-600 hover:bg-blue-700' : ''}>💰 Rozpocet</Button>
-          </>
-        )}
-        <Button variant={activeView === 'case' ? 'default' : 'ghost'} onClick={() => setActiveView('case')} className={activeView === 'case' ? 'bg-blue-600 hover:bg-blue-700' : ''}>⚙️ Spisovy system</Button>
-      </div>
-
-      <div className="flex gap-3 mb-4 flex-wrap">
-        <Button
-          onClick={() => {
-            setActiveView('timeline')
-            setTimelineComposerSignal(v => v + 1)
-          }}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Pridat udalost
+    <div className="max-w-5xl mx-auto py-8 px-6 space-y-6">
+      {/* Header — matches UnifiedTaskDetail */}
+      <div className="mb-2">
+        <Button variant="ghost" size="sm" onClick={() => router.push('/accountant/work')} className="mb-3 rounded-xl text-gray-500 hover:text-gray-700">
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Zpet
         </Button>
-        <Button
-          onClick={() => {
-            setActiveView('notes')
-            setShowAddProgressNote(true)
-          }}
-          variant="outline"
-        >
-          <Pencil className="h-4 w-4 mr-2" />
-          Pridat poznamku o prubehu
-        </Button>
-      </div>
 
-      <div className="mb-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white truncate">{project.title}</h1>
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <Badge className={statusCfg.color}>{statusCfg.label}</Badge>
-              <Badge className={priority.color}>{priority.emoji} {score}/12 · {priority.label}</Badge>
-              <button
-                onClick={() => setShowScoreDialog(true)}
-                className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-0.5"
+            {editingTitle ? (
+              <Input
+                value={editTitle}
+                onChange={e => setEditTitle(e.target.value)}
+                onBlur={() => {
+                  if (editTitle.trim() && editTitle !== project.title) {
+                    persistProjectUpdate({ title: editTitle.trim() })
+                    setProject(prev => prev ? { ...prev, title: editTitle.trim() } : prev)
+                    toast.success('Nazev ulozen')
+                  }
+                  setEditingTitle(false)
+                }}
+                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditingTitle(false) }}
+                className="text-2xl font-bold font-display h-auto py-1"
+                autoFocus
+              />
+            ) : (
+              <h1
+                className="text-2xl font-bold font-display text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -mx-1 truncate"
+                onClick={() => { setEditTitle(project.title); setEditingTitle(true) }}
               >
-                <Pencil className="h-3 w-3" /> Upravit skore
-              </button>
+                {project.title}
+              </h1>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-300">
+                <Target className="h-3 w-3 mr-1" />Projekt
+              </Badge>
+              {project.is_case && (
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                  <FileText className="h-3 w-3 mr-1" />Spis
+                </Badge>
+              )}
             </div>
+
             <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
               <span>
                 Posledni aktivita: {new Date(lastActivityAt || project.created_at).toLocaleDateString('cs-CZ')} •
@@ -415,245 +404,658 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
               <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{project.due_date ? new Date(project.due_date).toLocaleDateString('cs-CZ') : '—'}</span>
             </div>
           </div>
-          <div className="text-right shrink-0">
-            <div className="text-xs text-gray-500 mb-1">Progress</div>
-            <div className="text-xl font-bold text-purple-700">{project.progress_percentage}%</div>
-            <div className="text-xs text-gray-500">{completedTasks}/{tasks.length} ukolu</div>
+
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            <Badge className={cn('text-sm px-3 py-1', scorePriority.color)}>
+              {score} &bull; {scorePriority.label}
+            </Badge>
+            <Badge variant="outline" className={statusCfg.color}>
+              {statusCfg.label}
+            </Badge>
           </div>
         </div>
+
       </div>
 
-      {/* CONTENT */}
-      <div className="space-y-4">
-          {activeView === 'summary' && (
-            <div className="space-y-4">
-              {(latestProgressNote?.current_status || project.outcome) && (
-                <Card className="rounded-xl shadow-soft border-green-200 bg-green-50">
-                  <CardContent className="p-5">
-                    <h3 className="font-bold mb-2">📍 Kde jsme skoncili</h3>
-                    <p className="text-sm text-gray-700 dark:text-gray-200">{latestProgressNote?.current_status || project.outcome}</p>
-                    {latestProgressNote?.next_steps && (
-                      <p className="text-xs text-blue-700 mt-3 whitespace-pre-wrap"><strong>Dalsi kroky:</strong> {latestProgressNote.next_steps}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="rounded-xl shadow-soft-sm">
-                  <CardContent className="p-4">
-                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Priorita</div>
-                    <div className="text-xl font-bold">{priority.label}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Skore {score}/12</div>
-                  </CardContent>
-                </Card>
-                <Card className="rounded-xl shadow-soft-sm">
-                  <CardContent className="p-4">
-                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Deadline</div>
-                    <div className="text-xl font-bold">{project.due_date ? new Date(project.due_date).toLocaleDateString('cs-CZ') : 'Neni'}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Status {statusCfg.label}</div>
-                  </CardContent>
-                </Card>
-                <Card className="rounded-xl shadow-soft-sm">
-                  <CardContent className="p-4">
-                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Dalsi krok</div>
-                    <div className="text-sm font-bold truncate">{nextAction?.title || 'Neni nastaven'}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{nextAction?.assigned_to_name || ''}</div>
-                  </CardContent>
-                </Card>
+      {/* Compact action bar — matches UnifiedTaskDetail */}
+      <div className="border rounded-xl bg-gray-50 dark:bg-gray-900 p-2.5 space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setShowRScorePanel(!showRScorePanel)}
+            className={cn('text-xs font-semibold px-2.5 py-1 rounded-full border cursor-pointer transition-colors flex items-center gap-1', scorePriority.color)}
+          >
+            <TrendingUp className="h-3 w-3" />
+            {score}/12
+            <span className="text-[10px] ml-0.5">{showRScorePanel ? '▲' : '▼'}</span>
+          </button>
+
+          <Separator orientation="vertical" className="h-4" />
+
+          <div className="flex items-center gap-2.5 text-xs text-gray-500 flex-wrap">
+            <span className="flex items-center gap-1.5">
+              <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                <div className="bg-purple-500 h-1.5 rounded-full transition-all" style={{ width: `${progress}%` }} />
               </div>
-              <Card className="rounded-xl shadow-soft-sm">
-                <CardContent className="p-5">
-                  <h3 className="font-bold mb-3">🚀 Nedokoncene ukoly</h3>
-                  {activeTasks.length === 0 ? (
-                    <p className="text-sm text-gray-500">Vsechny ukoly jsou dokoncene.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {activeTasks.slice(0, 8).map(task => (
-                        <div key={task.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate cursor-pointer hover:underline" onClick={() => router.push(`/accountant/tasks/${task.id}`)}>{task.title}</div>
-                            <div className="flex gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                              {task.due_date && <span>⏰ {new Date(task.due_date).toLocaleDateString('cs-CZ')}</span>}
-                              {task.assigned_to_name && <span>👤 {task.assigned_to_name}</span>}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
+              {completedTasks.length}/{tasks.length}
+            </span>
+            {project.estimated_hours && <span>Odhad: {project.estimated_hours}h</span>}
+            {project.actual_hours > 0 && <span>Odpracovano: {project.actual_hours}h</span>}
+          </div>
 
-          {activeView === 'notes' && (
-            <div className="space-y-6">
-              <Button onClick={() => setShowAddProgressNote(true)} className="bg-green-600 hover:bg-green-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Pridat poznamku o prubehu
-              </Button>
+          <div className="flex items-center gap-1.5 ml-auto">
+            {project.status === 'active' && (
+              <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={() => {
+                persistProjectUpdate({ status: 'completed' })
+                setProject(prev => prev ? { ...prev, status: 'completed' } : prev)
+                toast.success('Projekt dokoncen')
+              }}><CheckCircle2 className="mr-1 h-3 w-3" />Dokoncit</Button>
+            )}
+            {project.status === 'active' && (
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => {
+                persistProjectUpdate({ status: 'on_hold' })
+                setProject(prev => prev ? { ...prev, status: 'on_hold' } : prev)
+                toast.success('Projekt pozastaven')
+              }}><PauseCircle className="mr-1 h-3 w-3" />Pozastavit</Button>
+            )}
+            {project.status === 'on_hold' && (
+              <Button size="sm" className="bg-blue-600 hover:bg-blue-700 h-7 text-xs" onClick={() => {
+                persistProjectUpdate({ status: 'active' })
+                setProject(prev => prev ? { ...prev, status: 'active' } : prev)
+                toast.success('Projekt obnoven')
+              }}><PlayCircle className="mr-1 h-3 w-3" />Obnovit</Button>
+            )}
+            {project.status !== 'completed' && project.status !== 'cancelled' && (
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => {
+                if (apiUsers.length === 0) {
+                  fetch('/api/accountant/users', { headers: { 'x-user-id': userId || '' } })
+                    .then(r => r.json())
+                    .then(data => setApiUsers(data.users || []))
+                    .catch(() => {})
+                }
+                setShowDelegateDialog(true)
+              }}><Users className="mr-1 h-3 w-3" />Delegovat</Button>
+            )}
+            {project.status !== 'completed' && project.status !== 'cancelled' && (
+              <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 hover:text-red-700 border-red-200 hover:border-red-300" onClick={() => {
+                persistProjectUpdate({ status: 'cancelled' })
+                setProject(prev => prev ? { ...prev, status: 'cancelled' } : prev)
+                toast.success('Projekt zrusen')
+              }}><XCircle className="mr-1 h-3 w-3" />Zrusit</Button>
+            )}
+          </div>
+        </div>
 
-              {showAddProgressNote && (
-                <Card className="rounded-xl shadow-soft border-green-200">
-                  <CardContent className="p-6 space-y-4">
-                    <h3 className="font-bold">📝 Nova poznamka o prubehu</h3>
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Aktualni stav *</label>
-                      <Textarea value={newNoteStatus} onChange={(e) => setNewNoteStatus(e.target.value)} rows={3} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Problemy</label>
-                      <Textarea value={newNoteProblems} onChange={(e) => setNewNoteProblems(e.target.value)} rows={2} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Dalsi kroky</label>
-                      <Textarea value={newNoteNextSteps} onChange={(e) => setNewNoteNextSteps(e.target.value)} rows={2} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Volna poznamka</label>
-                      <Textarea value={newNoteText} onChange={(e) => setNewNoteText(e.target.value)} rows={2} />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button onClick={addProgressNote} className="bg-green-600">Ulozit</Button>
-                      <Button variant="outline" onClick={() => setShowAddProgressNote(false)}>Zrusit</Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {progressNotes.map(note => (
-                <Card key={note.id} className="rounded-xl shadow-soft-sm border-l-4 border-blue-500">
-                  <CardContent className="p-6">
-                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-4" suppressHydrationWarning>
-                      {new Date(note.created_at).toLocaleString('cs-CZ')} • {note.author_name || 'Ucetni'}
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="font-semibold mb-1">📌 Aktualni stav:</div>
-                        <div className="text-gray-700 dark:text-gray-200">{note.current_status}</div>
-                      </div>
-                      {note.problems && (<div><div className="font-semibold text-red-700 mb-1">⚠️ Problemy:</div><div className="text-gray-700 dark:text-gray-200">{note.problems}</div></div>)}
-                      {note.next_steps && (<div><div className="font-semibold text-blue-700 mb-1">⏭️ Dalsi kroky:</div><div className="text-gray-700 dark:text-gray-200 whitespace-pre-line">{note.next_steps}</div></div>)}
-                      {note.note && (<div className="text-sm text-gray-600 dark:text-gray-300 italic">{note.note}</div>)}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {activeView === 'tasks' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="rounded-xl shadow-soft border-red-200">
-                <CardContent className="p-5">
-                  <h3 className="font-bold text-red-700 mb-3">🔥 Nedokoncene ukoly ({activeTasks.length})</h3>
-                  <div className="space-y-2">
-                    {activeTasks.map(task => (
-                      <div key={task.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                        <button onClick={() => toggleTaskComplete(task.id, task.status)} className="mt-1">
-                          <CheckCircle2 className="h-4 w-4 text-gray-300 hover:text-green-600" />
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate cursor-pointer hover:underline" onClick={() => router.push(`/accountant/tasks/${task.id}`)}>{task.title}</div>
-                          <div className="flex gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            {task.due_date && <span>⏰ {new Date(task.due_date).toLocaleDateString('cs-CZ')}</span>}
-                            {task.assigned_to_name && <span>👤 {task.assigned_to_name}</span>}
-                          </div>
-                        </div>
-                        <button onClick={() => toggleNextAction(task.id, task.is_next_action)} className={task.is_next_action ? 'text-yellow-500' : 'text-gray-300 hover:text-yellow-500'}>
-                          <Star className="h-4 w-4" fill={task.is_next_action ? 'currentColor' : 'none'} />
-                        </button>
-                      </div>
+        {/* R-Score collapsible panel */}
+        {showRScorePanel && (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t">
+            {([
+              { key: 'score_money' as const, label: 'Money', emoji: '\uD83D\uDCB0', options: SCORE_OPTIONS.money },
+              { key: 'score_fire' as const, label: 'Fire', emoji: '\uD83D\uDD25', options: SCORE_OPTIONS.fire },
+              { key: 'score_time' as const, label: 'Time', emoji: '\u23F1\uFE0F', options: SCORE_OPTIONS.time },
+              { key: 'score_distance' as const, label: 'Distance', emoji: '\uD83D\uDCCD', options: SCORE_OPTIONS.distance },
+              { key: 'score_personal' as const, label: 'Personal', emoji: '\u2764\uFE0F', options: SCORE_OPTIONS.personal },
+            ] as const).map(({ key, label, emoji, options }) => (
+              <div key={key}>
+                <span className="text-[10px] text-gray-500">{emoji} {label}</span>
+                <Select
+                  value={(project[key] ?? 0).toString()}
+                  onValueChange={v => {
+                    const val = parseInt(v)
+                    persistProjectUpdate({ [key]: val })
+                    setProject(prev => prev ? { ...prev, [key]: val } : prev)
+                    toast.success('Score aktualizovano')
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {options.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value.toString()}>
+                        <span className={opt.color}>{opt.label}</span>
+                      </SelectItem>
                     ))}
-                  </div>
-                  <div className="flex gap-2 mt-4 pt-3 border-t border-dashed">
-                    <Input
-                      placeholder="Pridat ukol..."
-                      value={newTaskTitle}
-                      onChange={(e) => setNewTaskTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && newTaskTitle.trim()) {
-                          e.preventDefault()
-                          handleAddTask()
-                        }
-                      }}
-                      className="h-8 text-sm"
-                    />
-                    <Button size="sm" variant="outline" onClick={handleAddTask} disabled={!newTaskTitle.trim() || addingTask} className="h-8 px-3">
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="rounded-xl shadow-soft border-green-200">
-                <CardContent className="p-5">
-                  <h3 className="font-bold text-green-700 mb-3">✅ Dokoncene ukoly ({completedTasksList.length})</h3>
-                  <div className="space-y-2">
-                    {completedTasksList.map(task => (
-                      <div key={task.id} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg opacity-80">
-                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-1" />
-                        <div className="flex-1">
-                          <div className="font-medium line-through">{task.title}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Description */}
+      <div className="border rounded-xl p-3 bg-white dark:bg-gray-900">
+        <div className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1">Popis projektu</div>
+        {editingDesc ? (
+          <div className="space-y-2">
+            <Textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} autoFocus placeholder="Popis projektu..." />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => {
+                if (editDesc !== (project.description || '')) {
+                  persistProjectUpdate({ description: editDesc.trim() })
+                  setProject(prev => prev ? { ...prev, description: editDesc.trim() } : prev)
+                  toast.success('Popis ulozen')
+                }
+                setEditingDesc(false)
+              }}>Ulozit</Button>
+              <Button size="sm" variant="outline" onClick={() => setEditingDesc(false)}>Zrusit</Button>
             </div>
-          )}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded p-1 -m-1" onClick={() => { setEditDesc(project.description || ''); setEditingDesc(true) }}>
+            {project.description || 'Klikni pro pridani popisu...'}
+          </p>
+        )}
+        {project.outcome && (
+          <p className="text-sm text-purple-700 dark:text-purple-300 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+            <strong>Cil:</strong> {project.outcome}
+          </p>
+        )}
+      </div>
 
-          {project.is_case && activeView === 'documents' && (
-            <div className="space-y-4">
-              <CaseDocuments projectId={params.id} onChanged={refreshCaseCounts} />
-              {project.company_id && (
-                <Card className="rounded-xl shadow-soft-sm">
-                  <CardContent className="p-4">
-                    <DocumentLinksPanel
-                      entityType="project"
-                      entityId={params.id}
-                      companyId={project.company_id}
-                      allowEdit
-                    />
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
+      {/* View Tabs — matches UnifiedTaskDetail */}
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto">
+        {[
+          { id: 'spis' as TabKey, label: 'Spis' },
+          { id: 'ukoly' as TabKey, label: `Ukoly (${completedTasks.length}/${tasks.length})` },
+          { id: 'dokumenty' as TabKey, label: `Dokumenty (${aggDocs.length})` },
+          { id: 'vykaz' as TabKey, label: `Vykaz${aggTime.totals.total_minutes ? ` (${Math.round(aggTime.totals.total_minutes / 60 * 10) / 10}h)` : ''}` },
+        ].map(tab => {
+          const isActive = activeTab === tab.id
+          return (
+            <Button
+              key={tab.id}
+              variant={isActive ? 'default' : 'ghost'}
+              size="sm"
+              className={`shrink-0 ${isActive ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </Button>
+          )
+        })}
+      </div>
 
-          {project.is_case && activeView === 'timeline' && (
-            <CaseTimeline projectId={params.id} openComposerSignal={timelineComposerSignal} onChanged={refreshCaseCounts} />
-          )}
+      {/* Tab Content */}
+      <div className="min-h-[400px]">
+        {activeTab === 'spis' && (
+          <ProjectSpisTab
+            progressNotes={progressNotes}
+            showAddNote={showAddNote}
+            setShowAddNote={setShowAddNote}
+            newNoteStatus={newNoteStatus}
+            setNewNoteStatus={setNewNoteStatus}
+            newNoteProblems={newNoteProblems}
+            setNewNoteProblems={setNewNoteProblems}
+            newNoteNextSteps={newNoteNextSteps}
+            setNewNoteNextSteps={setNewNoteNextSteps}
+            newNoteText={newNoteText}
+            setNewNoteText={setNewNoteText}
+            onAddNote={addProgressNote}
+            projectId={params.id}
+            timelineComposerSignal={timelineComposerSignal}
+            setTimelineComposerSignal={setTimelineComposerSignal}
+            refreshCaseCounts={refreshCaseCounts}
+            isCase={project.is_case}
+          />
+        )}
 
-          {project.is_case && activeView === 'budget' && (
-            <CaseBudgetCard projectId={params.id} />
-          )}
+        {activeTab === 'ukoly' && (
+          <ProjectUkolyTab
+            tasks={tasks}
+            activeTasks={activeTasks}
+            completedTasks={completedTasks}
+            newTaskTitle={newTaskTitle}
+            setNewTaskTitle={setNewTaskTitle}
+            addingTask={addingTask}
+            onAddTask={handleAddTask}
+            onToggleComplete={toggleTaskComplete}
+            onToggleNextAction={toggleNextAction}
+            projectId={params.id}
+          />
+        )}
 
-          {activeView === 'case' && (
-            <Card className="rounded-xl shadow-soft-sm">
-              <CardContent className="p-4">
-                <CaseToggle
-                  projectId={params.id}
-                  project={project}
-                  onUpdate={(updated) => setProject(prev => prev ? { ...prev, ...updated } : prev)}
-                />
-              </CardContent>
-            </Card>
-          )}
+        {activeTab === 'dokumenty' && (
+          <ProjectDokumentyTab
+            projectId={params.id}
+            companyId={project.company_id}
+            docs={aggDocs}
+            onRefresh={() => fetchAggDocs()}
+            userId={userId || ''}
+          />
+        )}
+
+        {activeTab === 'vykaz' && (
+          <ProjectVykazTab
+            entries={aggTime.entries}
+            totals={aggTime.totals}
+          />
+        )}
       </div>
 
       {/* Score Dialog */}
       <Dialog open={showScoreDialog} onOpenChange={setShowScoreDialog}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Ohodnocení priority</DialogTitle>
-          </DialogHeader>
-          <ScoringWizard
-            onComplete={handleScoreUpdate}
-            onCancel={() => setShowScoreDialog(false)}
-          />
+          <DialogHeader><DialogTitle>Ohodnoceni priority</DialogTitle></DialogHeader>
+          <ScoringWizard onComplete={handleScoreUpdate} onCancel={() => setShowScoreDialog(false)} />
         </DialogContent>
       </Dialog>
+
+      {/* Delegate Dialog */}
+      <Dialog open={showDelegateDialog} onOpenChange={setShowDelegateDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Delegovat projekt</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium mb-1 block">Komu delegovat</label>
+              <Select value={delegateTo} onValueChange={setDelegateTo}>
+                <SelectTrigger><SelectValue placeholder="Vyberte uzivatele" /></SelectTrigger>
+                <SelectContent>
+                  {apiUsers.map(u => (
+                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button size="sm" variant="outline" onClick={() => setShowDelegateDialog(false)}>Zrusit</Button>
+              <Button size="sm" disabled={!delegateTo} onClick={() => {
+                const user = apiUsers.find(u => u.id === delegateTo)
+                persistProjectUpdate({ assigned_to: delegateTo, assigned_to_name: user?.name })
+                toast.success(`Delegovano: ${user?.name}`)
+                setShowDelegateDialog(false)
+                setDelegateTo('')
+              }}>Delegovat</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+// ============================================
+// TAB: SPIS (progress notes + timeline)
+// ============================================
+
+function ProjectSpisTab({
+  progressNotes, showAddNote, setShowAddNote,
+  newNoteStatus, setNewNoteStatus, newNoteProblems, setNewNoteProblems,
+  newNoteNextSteps, setNewNoteNextSteps, newNoteText, setNewNoteText,
+  onAddNote, projectId, timelineComposerSignal, setTimelineComposerSignal,
+  refreshCaseCounts, isCase,
+}: {
+  progressNotes: ProgressNote[]
+  showAddNote: boolean; setShowAddNote: (v: boolean) => void
+  newNoteStatus: string; setNewNoteStatus: (v: string) => void
+  newNoteProblems: string; setNewNoteProblems: (v: string) => void
+  newNoteNextSteps: string; setNewNoteNextSteps: (v: string) => void
+  newNoteText: string; setNewNoteText: (v: string) => void
+  onAddNote: () => void
+  projectId: string
+  timelineComposerSignal: number; setTimelineComposerSignal: (fn: (v: number) => number) => void
+  refreshCaseCounts: () => void
+  isCase?: boolean
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <Button size="sm" onClick={() => setShowAddNote(true)} className="bg-purple-600 hover:bg-purple-700">
+          <Plus className="h-3.5 w-3.5 mr-1" />Pridat zaznam
+        </Button>
+        {isCase && (
+          <Button size="sm" variant="outline" onClick={() => setTimelineComposerSignal(v => v + 1)}>
+            <Plus className="h-3.5 w-3.5 mr-1" />Pridat udalost
+          </Button>
+        )}
+      </div>
+
+      {/* Add note form */}
+      {showAddNote && (
+        <Card className="rounded-xl border-green-200 bg-green-50/50">
+          <CardContent className="p-5 space-y-3">
+            <h3 className="font-bold text-sm">Nova poznamka o prubehu</h3>
+            <div>
+              <label className="text-xs font-medium mb-1 block">Aktualni stav *</label>
+              <Textarea value={newNoteStatus} onChange={e => setNewNoteStatus(e.target.value)} rows={2} className="text-sm" />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block">Problemy</label>
+              <Textarea value={newNoteProblems} onChange={e => setNewNoteProblems(e.target.value)} rows={2} className="text-sm" />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block">Dalsi kroky</label>
+              <Textarea value={newNoteNextSteps} onChange={e => setNewNoteNextSteps(e.target.value)} rows={2} className="text-sm" />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block">Volna poznamka</label>
+              <Textarea value={newNoteText} onChange={e => setNewNoteText(e.target.value)} rows={2} className="text-sm" />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={onAddNote} disabled={!newNoteStatus.trim()} className="bg-green-600 hover:bg-green-700">Ulozit</Button>
+              <Button size="sm" variant="outline" onClick={() => setShowAddNote(false)}>Zrusit</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Progress notes timeline */}
+      {progressNotes.length > 0 ? (
+        <div className="space-y-3">
+          {progressNotes.map(note => (
+            <Card key={note.id} className="rounded-xl shadow-soft-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span className="text-xs text-gray-500" suppressHydrationWarning>
+                    {new Date(note.created_at).toLocaleString('cs-CZ')} • {note.author_name || 'Ucetni'}
+                  </span>
+                </div>
+                <div className="ml-4 space-y-1.5">
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{note.current_status}</p>
+                  {note.problems && <p className="text-xs text-red-600"><strong>Problemy:</strong> {note.problems}</p>}
+                  {note.next_steps && <p className="text-xs text-blue-600 whitespace-pre-line"><strong>Dalsi kroky:</strong> {note.next_steps}</p>}
+                  {note.note && <p className="text-xs text-gray-500 italic">{note.note}</p>}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8 text-gray-400">
+          <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">Zatim zadne zaznamy. Pridejte prvni poznamku vyse.</p>
+        </div>
+      )}
+
+      {/* Case timeline */}
+      {isCase && (
+        <div className="mt-6">
+          <CaseTimeline projectId={projectId} openComposerSignal={timelineComposerSignal} onChanged={refreshCaseCounts} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============================================
+// TAB: UKOLY
+// ============================================
+
+function ProjectUkolyTab({
+  tasks, activeTasks, completedTasks,
+  newTaskTitle, setNewTaskTitle, addingTask,
+  onAddTask, onToggleComplete, onToggleNextAction,
+  projectId,
+}: {
+  tasks: TaskItem[]
+  activeTasks: TaskItem[]
+  completedTasks: TaskItem[]
+  newTaskTitle: string; setNewTaskTitle: (v: string) => void
+  addingTask: boolean
+  onAddTask: () => void
+  onToggleComplete: (id: string, status: string) => void
+  onToggleNextAction: (id: string, current: boolean) => void
+  projectId: string
+}) {
+  const [showDone, setShowDone] = useState(false)
+  const progressPct = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0
+
+  return (
+    <div className="space-y-4">
+      {/* Progress bar */}
+      {tasks.length > 0 && (
+        <div className="flex items-center gap-3 px-1">
+          <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="bg-gradient-to-r from-purple-600 to-purple-500 h-2 rounded-full transition-all" style={{ width: `${progressPct}%` }} />
+          </div>
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
+            {completedTasks.length}/{tasks.length} dokonceno
+          </span>
+        </div>
+      )}
+
+      {/* Add task input */}
+      <div className="flex gap-2">
+        <Input
+          placeholder="Pridat novy ukol..."
+          value={newTaskTitle}
+          onChange={e => setNewTaskTitle(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && newTaskTitle.trim()) { e.preventDefault(); onAddTask() } }}
+          className="flex-1"
+        />
+        <Button size="sm" onClick={onAddTask} disabled={!newTaskTitle.trim() || addingTask} className="bg-purple-600 hover:bg-purple-700 shrink-0">
+          <Plus className="h-4 w-4 mr-1" />Pridat
+        </Button>
+      </div>
+
+      {/* Active tasks */}
+      {activeTasks.length > 0 && (
+        <div className="space-y-1.5">
+          {activeTasks.map(task => (
+            <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg border bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-purple-300 transition-colors group">
+              <button onClick={() => onToggleComplete(task.id, task.status)} className="shrink-0">
+                <Circle className="h-5 w-5 text-gray-300 group-hover:text-purple-400 transition-colors" />
+              </button>
+              <Link href={`/accountant/tasks/${task.id}?from_project=${projectId}&from_type=legacy`} className="flex-1 min-w-0 text-sm font-medium truncate hover:text-purple-600 transition-colors">
+                {task.title}
+              </Link>
+              <div className="flex items-center gap-2 shrink-0">
+                {task.due_date && <span className="text-xs text-gray-500">{new Date(task.due_date).toLocaleDateString('cs-CZ')}</span>}
+                {task.assigned_to_name && <span className="text-xs text-gray-400">{task.assigned_to_name}</span>}
+                <button
+                  onClick={() => onToggleNextAction(task.id, task.is_next_action)}
+                  className={cn(
+                    'text-[10px] px-2 py-0.5 rounded-full border',
+                    task.is_next_action
+                      ? 'bg-yellow-100 text-yellow-700 border-yellow-300 font-semibold'
+                      : 'text-gray-400 border-gray-200 hover:border-yellow-300'
+                  )}
+                >
+                  {task.is_next_action ? 'Dalsi akce' : 'Nastavit'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Completed tasks (collapsible) */}
+      {completedTasks.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowDone(!showDone)}
+            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors py-1"
+          >
+            {showDone ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            Dokoncene ({completedTasks.length})
+          </button>
+          {showDone && (
+            <div className="space-y-1.5 mt-1.5">
+              {completedTasks.map(task => (
+                <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg border bg-green-50/50 dark:bg-green-900/10 border-green-200 transition-colors">
+                  <button onClick={() => onToggleComplete(task.id, task.status)} className="shrink-0">
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  </button>
+                  <Link href={`/accountant/tasks/${task.id}?from_project=${projectId}&from_type=legacy`} className="flex-1 min-w-0 text-sm font-medium truncate line-through text-gray-400 hover:text-purple-600 transition-colors">
+                    {task.title}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {tasks.length === 0 && (
+        <div className="text-center py-8 text-gray-400">
+          <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">Zatim zadne ukoly. Pridejte prvni vyse.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============================================
+// TAB: DOKUMENTY (aggregated from subtasks)
+// ============================================
+
+function ProjectDokumentyTab({ projectId, companyId, docs, onRefresh, userId }: {
+  projectId: string
+  companyId: string | null
+  docs: any[]
+  onRefresh: () => void
+  userId: string
+}) {
+  const [showUpload, setShowUpload] = useState(false)
+  const [showDocPicker, setShowDocPicker] = useState(false)
+
+  const handleDetach = async (linkId: string) => {
+    try {
+      await fetch(`/api/document-links/${linkId}`, { method: 'DELETE', headers: { 'x-user-id': userId } })
+      onRefresh()
+      toast.success('Dokument odpojen')
+    } catch { toast.error('Chyba pri odpojovani') }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <Button size="sm" className="bg-purple-600 hover:bg-purple-700" onClick={() => setShowUpload(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1" />Nahrat dokument
+        </Button>
+        {companyId && (
+          <Button size="sm" variant="outline" onClick={() => setShowDocPicker(true)}>
+            <Paperclip className="h-3.5 w-3.5 mr-1" />Pripojit existujici
+          </Button>
+        )}
+      </div>
+
+      {docs.length > 0 ? (
+        <div className="space-y-1.5">
+          {docs.map((doc: any) => (
+            <div key={doc.id} className="flex items-center gap-3 p-3 rounded-lg border bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+              <FileText className="h-4 w-4 text-gray-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-medium truncate block">{doc.document?.file_name || doc.file_name || 'Dokument'}</span>
+                {doc.source_task_title && (
+                  <Badge variant="outline" className="text-[10px] mt-0.5">z ukolu: {doc.source_task_title}</Badge>
+                )}
+              </div>
+              <button onClick={() => handleDetach(doc.id)} className="text-gray-300 hover:text-red-500 shrink-0">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8 text-gray-400">
+          <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">Zatim zadne dokumenty.</p>
+        </div>
+      )}
+
+      {companyId && showUpload && (
+        <UploadDialog
+          companyId={companyId}
+          open={showUpload}
+          onOpenChange={setShowUpload}
+          onUploaded={() => {
+            onRefresh()
+            setShowUpload(false)
+          }}
+        />
+      )}
+
+      {companyId && (
+        <DocumentPicker
+          companyId={companyId}
+          open={showDocPicker}
+          onOpenChange={setShowDocPicker}
+          onSelect={(docIds) => {
+            Promise.all(docIds.map(docId =>
+              fetch('/api/document-links', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
+                body: JSON.stringify({ entity_type: 'project', entity_id: projectId, document_id: docId, link_type: 'attachment' }),
+              })
+            )).then(() => { onRefresh(); setShowDocPicker(false) }).catch(() => {})
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// ============================================
+// TAB: VYKAZ PRACE (aggregated from subtasks)
+// ============================================
+
+function ProjectVykazTab({ entries, totals }: {
+  entries: any[]
+  totals: { total_minutes: number; billable_minutes: number }
+}) {
+  // Group entries by task_title
+  const grouped: Record<string, any[]> = {}
+  entries.forEach((e: any) => {
+    const key = e.task_title || 'Bez ukolu'
+    if (!grouped[key]) grouped[key] = []
+    grouped[key].push(e)
+  })
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <Card className="rounded-xl border-purple-200 bg-purple-50/50">
+        <CardContent className="p-4">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold text-purple-700">{Math.round(totals.total_minutes / 60 * 10) / 10}h</div>
+              <div className="text-xs text-gray-500">Celkem</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-700">{Math.round(totals.billable_minutes / 60 * 10) / 10}h</div>
+              <div className="text-xs text-gray-500">Fakturovatelne</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-600">{entries.length}</div>
+              <div className="text-xs text-gray-500">Zaznamu</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Grouped entries */}
+      {Object.entries(grouped).map(([taskTitle, taskEntries]) => (
+        <div key={taskTitle}>
+          <div className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1.5">
+            <Target className="h-3 w-3" />
+            {taskTitle}
+          </div>
+          <div className="space-y-1">
+            {taskEntries.sort((a: any, b: any) => (b.date || b.created_at || '').localeCompare(a.date || a.created_at || '')).map((entry: any) => (
+              <div key={entry.id} className="flex items-center gap-3 p-2.5 rounded-lg border bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-sm">
+                <Clock className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                <span className="text-xs text-gray-500 shrink-0">
+                  {entry.date ? new Date(entry.date).toLocaleDateString('cs-CZ') : '—'}
+                </span>
+                <span className="font-medium shrink-0">{entry.duration_minutes || 0} min</span>
+                <span className="text-gray-500 truncate flex-1">{entry.description || entry.note || ''}</span>
+                {entry.billable && <Badge variant="outline" className="text-[10px] text-green-600 border-green-300 shrink-0">Fakt.</Badge>}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {entries.length === 0 && (
+        <div className="text-center py-8 text-gray-400">
+          <Clock className="h-8 w-8 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">Zatim zadne zaznamy prace.</p>
+        </div>
+      )}
     </div>
   )
 }

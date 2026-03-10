@@ -1,14 +1,17 @@
 'use client'
 
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { UnifiedTaskDetail } from '@/components/work-preview/unified-task-detail'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 export default function TaskDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { userId, userName } = useAccountantUser()
   const taskId = params.id as string
+  const fromProject = searchParams.get('from_project')
+  const fromType = searchParams.get('from_type')
 
   if (!userId) {
     return (
@@ -26,7 +29,16 @@ export default function TaskDetailPage() {
       taskId={taskId}
       userId={userId}
       userName={userName}
-      onBack={() => router.back()}
+      onBack={() => {
+        if (fromProject) {
+          const base = fromType === 'legacy'
+            ? `/accountant/projects/${fromProject}?tab=ukoly`
+            : `/accountant/tasks/${fromProject}?tab=ukoly`
+          router.push(base)
+        } else {
+          router.back()
+        }
+      }}
     />
   )
 }

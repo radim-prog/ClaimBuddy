@@ -249,11 +249,13 @@ export async function POST(request: NextRequest) {
     }
 
     // R-Tasks default scores (only for non-quick actions)
+    // Subtasks default to 0 (inherit priority from parent project)
     if (!isQuickAction) {
-      taskData.score_money = body.score_money ?? 1
-      taskData.score_fire = body.score_fire ?? 1
-      taskData.score_time = body.score_time ?? 1
-      taskData.score_distance = body.score_distance ?? 2
+      const isSubtask = taskData.parent_project_id || taskData.project_id
+      taskData.score_money = body.score_money ?? (isSubtask ? 0 : 1)
+      taskData.score_fire = body.score_fire ?? (isSubtask ? 0 : 1)
+      taskData.score_time = body.score_time ?? (isSubtask ? 0 : 1)
+      taskData.score_distance = body.score_distance ?? (isSubtask ? 0 : 2)
       taskData.score_personal = body.score_personal ?? 0
     }
 

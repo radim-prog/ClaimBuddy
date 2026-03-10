@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -292,10 +293,15 @@ interface UnifiedTaskDetailProps {
 export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedTaskDetailProps) {
   const { userRole } = useAccountantUser()
   const isAdmin = userRole === 'admin'
+  const urlSearchParams = useSearchParams()
   const [task, setTask] = useState<Task | null>(null)
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<TabKey>('spis')
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    const urlTab = urlSearchParams.get('tab')
+    if (urlTab && ['spis', 'ukoly', 'dokumenty', 'vykaz'].includes(urlTab)) return urlTab as TabKey
+    return 'spis'
+  })
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([])
   const [comments, setComments] = useState<Comment[]>([])
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
@@ -813,23 +819,6 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
           </div>
         </div>
 
-        {/* Project progress bar */}
-        {task.is_project && (
-          <Card className="border-purple-200 bg-purple-50/50 mt-4 rounded-xl">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-purple-900 flex items-center gap-1.5">
-                  <Target className="h-4 w-4 text-purple-600" />Progress projektu
-                </span>
-                <span className="text-xl font-bold text-purple-600">{progress}%</span>
-              </div>
-              <div className="w-full bg-purple-200 rounded-full h-2.5">
-                <div className="bg-gradient-to-r from-purple-600 to-purple-500 h-2.5 rounded-full transition-all" style={{ width: `${progress}%` }} />
-              </div>
-              {task.project_outcome && <p className="text-sm text-purple-700 mt-2"><strong>Cil:</strong> {task.project_outcome}</p>}
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       {/* Compact action bar — single row */}
@@ -852,7 +841,12 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
 
           <div className="flex items-center gap-2.5 text-xs text-gray-500 flex-wrap">
             {task.is_project && (
-              <span>Ukoly: {checklistItems.filter(i => i.completed).length}/{checklistItems.length}</span>
+              <span className="flex items-center gap-1.5">
+                <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                  <div className="bg-purple-500 h-1.5 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                </div>
+                {checklistItems.filter(i => i.completed).length}/{checklistItems.length}
+              </span>
             )}
             <span>Odpracovano: {timeData.actual} min</span>
             <span>Dokumenty: {linkedDocs.length}</span>
@@ -960,13 +954,18 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
             {task.description || 'Klikni pro pridani popisu...'}
           </p>
         )}
+        {task.project_outcome && (
+          <p className="text-sm text-purple-700 dark:text-purple-300 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+            <strong>Cil:</strong> {task.project_outcome}
+          </p>
+        )}
       </div>
 
       {/* View Tabs */}
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto">
         {[
           { id: 'spis' as TabKey, label: 'Spis' },
-          ...(task.is_project ? [{ id: 'ukoly' as TabKey, label: `Ukoly (${checklistItems.filter(i => i.completed).length}/${checklistItems.length})` }] : []),
+          ...((task.is_project || (task.subtasks && task.subtasks.length > 0)) ? [{ id: 'ukoly' as TabKey, label: 'Ukoly' }] : []),
           { id: 'dokumenty' as TabKey, label: `Dokumenty (${linkedDocs.length})` },
           { id: 'vykaz' as TabKey, label: `Vykaz prace${timeEntries.length ? ` (${timeEntries.length})` : ''}` },
         ].map(tab => {
@@ -1008,8 +1007,9 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
         )}
         {activeTab === 'ukoly' && (
           <UkolyTab
-            task={task} checklistItems={checklistItems}
-            onChecklistToggle={handleChecklistToggle}
+            task={task} projectId={taskId}
+            companyId={task.company_id} companyName={task.company_name || ''}
+            userId={userId} userName={userName}
           />
         )}
         {activeTab === 'dokumenty' && (
@@ -1508,62 +1508,236 @@ function SpisTab({ progressNotes, comments, timeline, linkedDocs, timeEntries, f
 }
 
 // ============================================
-// TAB: UKOLY (only for projects)
+// TAB: UKOLY (only for projects) — fetches subtasks via API
 // ============================================
 
-function UkolyTab({ task, checklistItems, onChecklistToggle }: {
+interface SubTask {
+  id: string
+  title: string
+  status: string
+  due_date?: string
+  assigned_to_name?: string
+  is_next_action?: boolean
+}
+
+function UkolyTab({ task, projectId, companyId, companyName, userId, userName }: {
   task: Task
-  checklistItems: ChecklistItem[]
-  onChecklistToggle: (id: string) => void
+  projectId: string
+  companyId: string
+  companyName: string
+  userId: string
+  userName: string
 }) {
-  const openChecklist = checklistItems.filter(i => !i.completed)
-  const doneChecklist = checklistItems.filter(i => i.completed)
+  const [subtasks, setSubtasks] = useState<SubTask[]>([])
+  const [loading, setLoading] = useState(true)
+  const [newTitle, setNewTitle] = useState('')
+  const [adding, setAdding] = useState(false)
+
+  const fetchSubtasks = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/tasks?parent_project_id=${projectId}&page_size=200`, {
+        headers: { 'x-user-id': userId },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setSubtasks(data.tasks || [])
+      }
+    } catch { /* ignore */ }
+    finally { setLoading(false) }
+  }, [projectId, userId])
+
+  useEffect(() => { fetchSubtasks() }, [fetchSubtasks])
+
+  const toggleStatus = async (subtask: SubTask) => {
+    const newStatus = subtask.status === 'completed' ? 'pending' : 'completed'
+    const completedAt = newStatus === 'completed' ? new Date().toISOString() : null
+    setSubtasks(prev => prev.map(s => s.id === subtask.id ? { ...s, status: newStatus } : s))
+    try {
+      await fetch(`/api/tasks/${subtask.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId, 'x-user-name': userName },
+        body: JSON.stringify({ status: newStatus, completed_at: completedAt }),
+      })
+    } catch { /* revert on error */ fetchSubtasks() }
+  }
+
+  const toggleNextAction = async (taskId: string, current: boolean) => {
+    if (!current) {
+      const prevNext = subtasks.find(s => s.is_next_action)
+      if (prevNext) {
+        await fetch(`/api/tasks/${prevNext.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-user-id': userId, 'x-user-name': userName }, body: JSON.stringify({ is_next_action: false }) })
+      }
+    }
+    await fetch(`/api/tasks/${taskId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-user-id': userId, 'x-user-name': userName }, body: JSON.stringify({ is_next_action: !current }) })
+    setSubtasks(prev => prev.map(s => ({ ...s, is_next_action: s.id === taskId ? !current : false })))
+  }
+
+  const addSubtask = async () => {
+    if (!newTitle.trim() || adding) return
+    setAdding(true)
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId, 'x-user-name': userName },
+        body: JSON.stringify({
+          title: newTitle.trim(),
+          status: 'pending',
+          parent_project_id: projectId,
+          company_id: companyId || undefined,
+          company_name: companyName || undefined,
+        }),
+      })
+      if (res.ok) {
+        setNewTitle('')
+        fetchSubtasks()
+        toast.success('Ukol pridan')
+      }
+    } catch { toast.error('Chyba pri pridavani') }
+    finally { setAdding(false) }
+  }
+
+  const completedCount = subtasks.filter(s => s.status === 'completed').length
+  const totalCount = subtasks.length
+  const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+      </div>
+    )
+  }
+
+  const openSubtasks = subtasks.filter(s => s.status !== 'completed')
+  const doneSubtasks = subtasks.filter(s => s.status === 'completed')
 
   return (
     <div className="space-y-4">
-      {task.is_project && checklistItems.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="rounded-xl shadow-soft border-red-200">
-            <CardContent className="p-5">
-              <h3 className="font-bold text-red-700 mb-3">Nedokoncene ukoly ({openChecklist.length})</h3>
-              <div className="space-y-2">
-                {openChecklist.map(item => (
-                  <div key={item.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg cursor-pointer" onClick={() => onChecklistToggle(item.id)}>
-                    <Checkbox checked={item.completed} className="mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{item.text}</div>
-                      <div className="flex gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        {item.due_date && <span>{new Date(item.due_date).toLocaleDateString('cs-CZ')}</span>}
-                        {item.assigned_to_name && <span>{item.assigned_to_name}</span>}
-                        {item.estimated_minutes && <span>{item.estimated_minutes} min</span>}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-xl shadow-soft border-green-200">
-            <CardContent className="p-5">
-              <h3 className="font-bold text-green-700 mb-3">Dokoncene ukoly ({doneChecklist.length})</h3>
-              <div className="space-y-2">
-                {doneChecklist.map(item => (
-                  <div key={item.id} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg opacity-80 cursor-pointer" onClick={() => onChecklistToggle(item.id)}>
-                    <Checkbox checked={item.completed} className="mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium line-through truncate">{item.text}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      {/* Progress bar */}
+      {totalCount > 0 && (
+        <div className="flex items-center gap-3 px-1">
+          <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div
+              className="bg-gradient-to-r from-purple-600 to-purple-500 h-2 rounded-full transition-all"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
+            {completedCount}/{totalCount} dokonceno
+          </span>
         </div>
       )}
-      {(!task.is_project || checklistItems.length === 0) && (
+
+      {/* Add subtask input */}
+      <div className="flex gap-2">
+        <Input
+          placeholder="Pridat novy ukol..."
+          value={newTitle}
+          onChange={e => setNewTitle(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') addSubtask() }}
+          className="flex-1"
+        />
+        <Button
+          size="sm"
+          onClick={addSubtask}
+          disabled={!newTitle.trim() || adding}
+          className="bg-purple-600 hover:bg-purple-700 shrink-0"
+        >
+          <Plus className="h-4 w-4 mr-1" />Pridat
+        </Button>
+      </div>
+
+      {/* Open subtasks */}
+      {openSubtasks.length > 0 && (
+        <div className="space-y-1.5">
+          {openSubtasks.map(subtask => (
+            <SubtaskRow key={subtask.id} subtask={subtask} onToggle={() => toggleStatus(subtask)} projectId={projectId} onToggleNextAction={toggleNextAction} />
+          ))}
+        </div>
+      )}
+
+      {/* Done subtasks (collapsible) */}
+      {doneSubtasks.length > 0 && (
+        <DoneSubtasksSection subtasks={doneSubtasks} onToggle={toggleStatus} projectId={projectId} />
+      )}
+
+      {/* Empty state */}
+      {subtasks.length === 0 && (
         <div className="text-center py-8 text-gray-400">
           <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-30" />
-          <p className="text-sm">{task.is_project ? 'Zatim zadne dilci ukoly' : 'Toto je ukol, nikoliv projekt.'}</p>
+          <p className="text-sm">Zatim zadne dilci ukoly. Pridejte prvni vyse.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SubtaskRow({ subtask, onToggle, projectId, onToggleNextAction }: { subtask: SubTask; onToggle: () => void; projectId?: string; onToggleNextAction?: (id: string, current: boolean) => void }) {
+  const isDone = subtask.status === 'completed'
+
+  return (
+    <div className={cn(
+      'flex items-center gap-3 p-3 rounded-lg border transition-colors group',
+      isDone ? 'bg-green-50/50 dark:bg-green-900/10 border-green-200' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-purple-300'
+    )}>
+      <button onClick={onToggle} className="shrink-0">
+        {isDone ? (
+          <CheckCircle2 className="h-5 w-5 text-green-600" />
+        ) : (
+          <Circle className="h-5 w-5 text-gray-300 group-hover:text-purple-400 transition-colors" />
+        )}
+      </button>
+      <Link
+        href={`/accountant/tasks/${subtask.id}${projectId ? `?from_project=${projectId}&from_type=task` : ''}`}
+        className={cn(
+          'flex-1 min-w-0 text-sm font-medium truncate hover:text-purple-600 transition-colors',
+          isDone && 'line-through text-gray-400'
+        )}
+      >
+        {subtask.title}
+      </Link>
+      <div className="flex items-center gap-2 shrink-0">
+        {subtask.due_date && (
+          <span className="text-xs text-gray-500">{new Date(subtask.due_date).toLocaleDateString('cs-CZ')}</span>
+        )}
+        {subtask.assigned_to_name && (
+          <span className="text-xs text-gray-400">{subtask.assigned_to_name}</span>
+        )}
+        {onToggleNextAction && !isDone && (
+          <button
+            onClick={() => onToggleNextAction(subtask.id, !!subtask.is_next_action)}
+            className={cn(
+              'text-[10px] px-2 py-0.5 rounded-full border',
+              subtask.is_next_action
+                ? 'bg-yellow-100 text-yellow-700 border-yellow-300 font-semibold'
+                : 'text-gray-400 border-gray-200 hover:border-yellow-300'
+            )}
+          >
+            {subtask.is_next_action ? 'Dalsi akce' : 'Nastavit'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function DoneSubtasksSection({ subtasks, onToggle, projectId }: { subtasks: SubTask[]; onToggle: (s: SubTask) => void; projectId?: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors py-1"
+      >
+        {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        <CheckCircle2 className="h-4 w-4 text-green-500" />
+        Dokoncene ({subtasks.length})
+      </button>
+      {open && (
+        <div className="space-y-1.5 mt-1.5">
+          {subtasks.map(subtask => (
+            <SubtaskRow key={subtask.id} subtask={subtask} onToggle={() => onToggle(subtask)} projectId={projectId} />
+          ))}
         </div>
       )}
     </div>
