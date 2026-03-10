@@ -401,7 +401,7 @@ function RevenueTile({ companyId, company }: { companyId: string; company: any }
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <div className="text-xs text-muted-foreground mb-1">Mesicni pausal</div>
+          <div className="text-xs text-muted-foreground mb-1">Měsíční paušál</div>
           {editing ? (
             <div className="flex items-center gap-1">
               <input
@@ -412,7 +412,7 @@ function RevenueTile({ companyId, company }: { companyId: string; company: any }
                 onKeyDown={e => e.key === 'Enter' && handleSave()}
                 autoFocus
               />
-              <span className="text-xs text-muted-foreground">Kc</span>
+              <span className="text-xs text-muted-foreground">Kč</span>
               <button onClick={handleSave} disabled={saving} className="p-1 text-green-600 hover:bg-green-50 rounded">
                 <Save className="h-3.5 w-3.5" />
               </button>
@@ -422,7 +422,7 @@ function RevenueTile({ companyId, company }: { companyId: string; company: any }
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-lg">{fee > 0 ? `${fee.toLocaleString('cs')} Kc` : 'Nezadano'}</span>
+              <span className="font-semibold text-lg">{fee > 0 ? `${fee.toLocaleString('cs')} Kč` : 'Nezadáno'}</span>
               <button onClick={() => { setEditValue(String(fee)); setEditing(true) }} className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded">
                 <DollarSign className="h-3.5 w-3.5" />
               </button>
@@ -431,7 +431,7 @@ function RevenueTile({ companyId, company }: { companyId: string; company: any }
         </div>
         <div>
           <div className="text-xs text-muted-foreground mb-1">Klientem od</div>
-          <span className="font-medium">{clientSince ? new Date(clientSince).toLocaleDateString('cs') : 'Nezadano'}</span>
+          <span className="font-medium">{clientSince ? new Date(clientSince).toLocaleDateString('cs') : 'Nezadáno'}</span>
         </div>
       </div>
       <div className="flex items-center gap-2">

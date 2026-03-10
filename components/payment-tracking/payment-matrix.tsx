@@ -346,7 +346,7 @@ export function PaymentMatrix({ selectedYear }: { selectedYear: number }) {
                     <td className={`px-2 sm:px-4 py-2 sm:py-3 text-sm font-medium text-gray-900 dark:text-white sticky left-0 z-10 max-w-[140px] sm:max-w-none ${unitIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
                       <div className="flex items-center gap-2">
                         <Link
-                          href={`/accountant/clients/${unit.type === 'group' ? unit.companies[0]?.id : unit.companies[0]?.id}`}
+                          href={`/accountant/clients/${unit.type === 'group' ? (unit.billingCompanyId || unit.companies[0]?.id) : unit.companies[0]?.id}`}
                           className="font-semibold truncate flex items-center gap-1 hover:text-purple-600 transition-colors"
                         >
                           {unit.type === 'group' && (
