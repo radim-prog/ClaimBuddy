@@ -8,6 +8,8 @@ import { useAttention } from '@/lib/contexts/attention-context'
 import { Clock, ArrowRight, AlertTriangle, FileX, MessageCircle, Upload, CheckCircle2, Circle, ChevronRight } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { PaymentMatrix } from '@/components/payment-tracking/payment-matrix'
+import { VatMatrix } from '@/components/tax-tracking/vat-matrix'
+import { IncomeTaxMatrix } from '@/components/tax-tracking/income-tax-matrix'
 
 type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
 
@@ -832,6 +834,8 @@ export default function AccountantDashboard() {
           <TabsList>
             <TabsTrigger value="closures">Uzávěrky</TabsTrigger>
             <TabsTrigger value="payments">Platby</TabsTrigger>
+            <TabsTrigger value="vat">DPH</TabsTrigger>
+            <TabsTrigger value="income-tax">Daň z příjmu</TabsTrigger>
           </TabsList>
 
           <div className="flex items-center gap-1.5 shrink-0">
@@ -861,6 +865,14 @@ export default function AccountantDashboard() {
 
         <TabsContent value="payments">
           <PaymentMatrix selectedYear={selectedYear} />
+        </TabsContent>
+
+        <TabsContent value="vat">
+          <VatMatrix selectedYear={selectedYear} />
+        </TabsContent>
+
+        <TabsContent value="income-tax">
+          <IncomeTaxMatrix selectedYear={selectedYear} />
         </TabsContent>
       </Tabs>
 

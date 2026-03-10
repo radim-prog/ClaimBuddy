@@ -9,6 +9,7 @@ import {
   DollarSign,
   HardDrive,
   Link2,
+  Calculator,
 } from 'lucide-react'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { TaskTemplates } from '@/components/admin/task-templates'
@@ -18,6 +19,7 @@ import { InvoicingSettings } from '@/components/admin/invoicing-settings'
 import { PricingSettings } from '@/components/admin/pricing-settings'
 import { CompanyDriveMapper } from '@/components/drive/company-drive-mapper'
 import { CompanyRaynetMapper } from '@/components/raynet/company-raynet-mapper'
+import { OperationsTaxRates } from '@/components/admin/operations-tax-rates'
 
 const sections = [
   { id: 'templates', label: 'Šablony úkolů', icon: Repeat, Component: TaskTemplates },
@@ -27,6 +29,7 @@ const sections = [
   { id: 'pricing', label: 'Ceník a sazby', icon: DollarSign, Component: PricingSettings },
   { id: 'drive', label: 'Google Drive', icon: HardDrive, Component: CompanyDriveMapper },
   { id: 'raynet', label: 'Raynet CRM', icon: Link2, Component: CompanyRaynetMapper },
+  { id: 'tax-rates', label: 'Daňové sazby', icon: Calculator, Component: OperationsTaxRates },
 ] as const
 
 export default function OperationsPage() {
