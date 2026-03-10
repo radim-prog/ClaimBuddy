@@ -15,6 +15,8 @@ import {
   ArrowUpRight,
   DollarSign,
   BarChart3,
+  Wallet,
+  CircleDollarSign,
 } from 'lucide-react'
 
 interface RevenueData {
@@ -48,6 +50,10 @@ interface RevenueData {
     onboarded: number
     churned: number
   }[]
+  monthlyExpenses?: number[]
+  totalExpensesYTD?: number
+  totalRevenueYTD?: number
+  estimatedProfit?: number
   recentEvents: {
     id: string
     event_type: string
@@ -179,8 +185,8 @@ export default function AnalyticsDashboard() {
         </Card>
       )}
 
-      {/* 4 hlavni cisla */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI cisla */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <KPICard
           title="Mesicni prijem"
           value={formatKc(data.currentMRR)}
@@ -209,6 +215,24 @@ export default function AnalyticsDashboard() {
           icon={TrendingUp}
           color="green"
         />
+        {(data.totalExpensesYTD ?? 0) > 0 && (
+          <KPICard
+            title="Naklady letos"
+            value={formatKc(data.totalExpensesYTD || 0)}
+            subtitle="Mzdy a odmeny ucetnich"
+            icon={Wallet}
+            color="red"
+          />
+        )}
+        {(data.estimatedProfit ?? 0) !== 0 && (
+          <KPICard
+            title="Odhadovany zisk"
+            value={formatKc(data.estimatedProfit || 0)}
+            subtitle="Trzby z pausalu minus naklady"
+            icon={CircleDollarSign}
+            color="green"
+          />
+        )}
       </div>
 
       {/* Tento mesic + Letos celkem */}
@@ -299,12 +323,19 @@ export default function AnalyticsDashboard() {
                   <span className="w-3 h-3 rounded bg-gray-300 dark:bg-gray-600" /> Plan
                 </span>
               )}
+              {data.monthlyExpenses && data.monthlyExpenses.some(e => e > 0) && (
+                <span className="flex items-center gap-1">
+                  <span className="w-3 h-3 rounded bg-red-400" /> Naklady
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-end gap-2 h-48">
-            {data.monthlyData.map((m) => {
+            {data.monthlyData.map((m, idx) => {
+              const expense = data.monthlyExpenses?.[idx] || 0
               const actualPct = m.actual != null ? (m.actual / maxBar) * 100 : 0
               const targetPct = m.target ? (m.target / maxBar) * 100 : 0
+              const expensePct = expense > 0 ? (expense / maxBar) * 100 : 0
               const isCurrent = m.month === new Date().getMonth() + 1 && year === new Date().getFullYear()
 
               return (
@@ -315,6 +346,8 @@ export default function AnalyticsDashboard() {
                       <p className="font-semibold">{m.label} {year}</p>
                       {m.actual != null && <p>Prijem: {formatKc(m.actual)}</p>}
                       {hasGoal && <p>Cil: {formatKc(m.target)}</p>}
+                      {expense > 0 && <p className="text-red-400">Naklady: {formatKc(expense)}</p>}
+                      {m.actual != null && expense > 0 && <p className="text-green-400">Zisk: {formatKc(m.actual - expense)}</p>}
                       {m.onboarded > 0 && <p className="text-green-400">+{m.onboarded} novych klientu</p>}
                       {m.churned > 0 && <p className="text-red-400">-{m.churned} odeslych</p>}
                     </div>
@@ -336,6 +369,12 @@ export default function AnalyticsDashboard() {
                       }`}
                       style={{ height: `${actualPct}%`, minHeight: m.actual != null ? '4px' : '0' }}
                     />
+                    {expense > 0 && (
+                      <div
+                        className="flex-1 bg-red-400 dark:bg-red-500 rounded-t transition-all duration-500"
+                        style={{ height: `${expensePct}%`, minHeight: '4px' }}
+                      />
+                    )}
                   </div>
                   <span className={`text-[10px] ${isCurrent ? 'font-bold text-purple-600' : 'text-gray-400'}`}>
                     {m.label}

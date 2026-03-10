@@ -38,6 +38,18 @@ export async function GET(request: NextRequest) {
 
     if (evError) throw evError
 
+    // 4. Get all users with compensation
+    const { data: allUsers } = await supabaseAdmin
+      .from('users')
+      .select('id, name, compensation_type, compensation_amount')
+
+    // 5. Get time logs for the year to calculate hourly costs
+    const { data: timeLogs } = await supabaseAdmin
+      .from('time_logs')
+      .select('user_id, hours, minutes, date')
+      .gte('date', `${year}-01-01`)
+      .lte('date', `${year}-12-31`)
+
     // Calculate current MRR from active companies
     const activeCompanies = (companies || []).filter(c => c.status === 'active')
     const currentMRR = activeCompanies.reduce((sum, c) => {
@@ -112,6 +124,37 @@ export async function GET(request: NextRequest) {
       ? Math.round((yearChurned.length / (totalActiveClients + yearChurned.length)) * 100)
       : 0
 
+    // Calculate monthly expenses from user compensations + time logs
+    const userMap = new Map((allUsers || []).map(u => [u.id, u]))
+
+    const monthlyExpenses: number[] = []
+    for (let m = 1; m <= 12; m++) {
+      const mStr = String(m).padStart(2, '0')
+      let monthExpense = 0
+
+      for (const user of (allUsers || [])) {
+        const compType = user.compensation_type || 'hourly'
+        const compAmount = Number(user.compensation_amount) || 0
+        if (compAmount <= 0) continue
+
+        if (compType === 'monthly') {
+          monthExpense += compAmount
+        } else {
+          // Hourly: sum hours for this user this month
+          const userMonthLogs = (timeLogs || []).filter(
+            l => l.user_id === user.id && l.date?.startsWith(`${year}-${mStr}`)
+          )
+          const totalMins = userMonthLogs.reduce((s, l) => s + ((l.hours || 0) * 60 + (l.minutes || 0)), 0)
+          monthExpense += (totalMins / 60) * compAmount
+        }
+      }
+
+      monthlyExpenses.push(Math.round(monthExpense))
+    }
+
+    const totalExpensesYTD = monthlyExpenses.slice(0, currentMonth).reduce((s, e) => s + e, 0)
+    const totalRevenueYTD = monthlyData.slice(0, currentMonth).reduce((s, m) => s + (m.actual || 0), 0)
+
     return NextResponse.json({
       year,
       currentMRR,
@@ -136,6 +179,10 @@ export async function GET(request: NextRequest) {
         netMRR: yearNewMRR - yearChurnedMRR,
       },
       monthlyData,
+      monthlyExpenses,
+      totalExpensesYTD,
+      totalRevenueYTD,
+      estimatedProfit: totalRevenueYTD - totalExpensesYTD,
       recentEvents: (events || []).slice(0, 10),
       goal,
     })
