@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { mapDbRowToInvoice, generateInvoiceNumber } from '@/lib/invoice-utils'
+import { mapDbRowToInvoice, generateInvoiceNumber, getDocumentTypePrefix } from '@/lib/invoice-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,14 +38,28 @@ export async function GET(request: NextRequest) {
         company_id: inv.company_id,
         invoice_number: inv.invoice_number,
         type: row.type,
+        document_type: row.document_type || 'invoice',
         partner_name: row.partner?.name || '',
         partner: row.partner,
+        items: row.items,
         amount: inv.total_with_vat,
+        total_without_vat: inv.total_without_vat,
+        total_vat: inv.total_vat,
         total_with_vat: inv.total_with_vat,
         currency: row.currency || 'CZK',
         issue_date: inv.issue_date,
         due_date: inv.due_date,
         status: inv.status,
+        payment_method: row.payment_method,
+        constant_symbol: inv.constant_symbol,
+        specific_symbol: inv.specific_symbol,
+        variable_symbol: inv.variable_symbol,
+        notes: inv.notes,
+        issued_by: row.issued_by,
+        issued_by_phone: row.issued_by_phone,
+        issued_by_email: row.issued_by_email,
+        converted_from_id: row.converted_from_id,
+        partner_id: row.partner_id,
       }
     })
 
@@ -63,7 +77,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { company_id, partner, items, issue_date, due_date, notes } = body
+    const { company_id, partner, items, issue_date, due_date, notes,
+      document_type, payment_method, constant_symbol, specific_symbol,
+      issued_by, issued_by_phone, issued_by_email, partner_id } = body
 
     if (!company_id || !partner?.name || !items?.length) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -81,10 +97,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Company not found or not owned by user' }, { status: 403 })
     }
 
-    // Generate invoice number
+    // Generate invoice number with correct prefix for document type
     const year = new Date().getFullYear()
+    const docType = document_type || 'invoice'
+    const prefixOverride = docType !== 'invoice' ? getDocumentTypePrefix(docType) : undefined
     const { invoiceNumber, variableSymbol, seriesId } = await generateInvoiceNumber(
-      supabaseAdmin, year
+      supabaseAdmin, year, undefined, prefixOverride
     )
 
     // Calculate totals
@@ -107,6 +125,7 @@ export async function POST(request: NextRequest) {
       company_id,
       company_name: company.name,
       type: 'income',
+      document_type: docType,
       invoice_number: invoiceNumber,
       variable_symbol: variableSymbol,
       issue_date: issue_date || new Date().toISOString().split('T')[0],
@@ -114,12 +133,19 @@ export async function POST(request: NextRequest) {
       tax_date: issue_date || new Date().toISOString().split('T')[0],
       period: (issue_date || new Date().toISOString()).substring(0, 7),
       partner,
+      partner_id: partner_id || null,
       items: invoiceItems,
       total_without_vat: totalWithoutVat,
       total_vat: totalVat,
       total_with_vat: totalWithVat,
       number_series_id: seriesId,
       notes: notes || null,
+      payment_method: payment_method || 'bank_transfer',
+      constant_symbol: constant_symbol || null,
+      specific_symbol: specific_symbol || null,
+      issued_by: issued_by || null,
+      issued_by_phone: issued_by_phone || null,
+      issued_by_email: issued_by_email || null,
       payment_status: 'unpaid',
       created_by: userId,
     }

@@ -71,12 +71,25 @@ export function mapDbRowToInvoice(row: any): Invoice {
   }
 }
 
+// Document type → number prefix mapping
+const DOCUMENT_TYPE_PREFIX: Record<string, string> = {
+  invoice: 'FV',
+  proforma: 'ZF',
+  credit_note: 'D',
+}
+
+export function getDocumentTypePrefix(documentType: string): string {
+  return DOCUMENT_TYPE_PREFIX[documentType] || 'FV'
+}
+
 // Generate invoice number from configurable series
 // Format tokens: {prefix}, {yyyy}, {nnnn} (zero-padded 4 digits)
+// prefixOverride: when provided, uses this prefix instead of the series prefix (for proformas/credit notes)
 export async function generateInvoiceNumber(
   supabase: SupabaseClient,
   year: number,
-  seriesId?: string
+  seriesId?: string,
+  prefixOverride?: string
 ): Promise<{ invoiceNumber: string; variableSymbol: string; seriesId: string }> {
   // Load series config from app_settings
   const { data: settingRow } = await supabase
@@ -97,7 +110,7 @@ export async function generateInvoiceNumber(
     throw new Error(`No active number series found${seriesId ? ` with id "${seriesId}"` : ''}`)
   }
 
-  const prefix = series.prefix || 'FV'
+  const prefix = prefixOverride || series.prefix || 'FV'
   const format: string = series.format || '{prefix}-{yyyy}-{nnnn}'
 
   // Find last used number from DB for this prefix+year combo

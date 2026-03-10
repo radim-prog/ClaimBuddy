@@ -55,7 +55,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Cannot edit sent invoice' }, { status: 400 })
     }
 
-    const allowedFields = ['partner', 'items', 'due_date', 'notes', 'total_without_vat', 'total_vat', 'total_with_vat']
+    const allowedFields = [
+      'partner', 'items', 'due_date', 'notes', 'total_without_vat', 'total_vat', 'total_with_vat',
+      'payment_method', 'constant_symbol', 'specific_symbol',
+      'issued_by', 'issued_by_phone', 'issued_by_email', 'partner_id', 'document_type',
+      'issue_date',
+    ]
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
 
     for (const field of allowedFields) {

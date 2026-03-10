@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { X, Plus, Trash2, Loader2, Star, Download } from 'lucide-react'
 import { toast } from 'sonner'
+import { PartnerSelector } from '@/components/client/partner-selector'
 
 interface InvoiceItem {
   description: string
@@ -18,11 +19,16 @@ interface InvoiceItem {
   vat_rate: number
 }
 
-interface Partner {
+interface PartnerData {
   name: string
   ico?: string
   dic?: string
   address?: string
+  city?: string
+  postal_code?: string
+  email?: string
+  phone?: string
+  partner_id?: string
 }
 
 interface Favorite {
@@ -33,10 +39,30 @@ interface Favorite {
   usage_count: number
 }
 
+type DocumentType = 'invoice' | 'proforma' | 'credit_note'
+
+interface ExistingInvoice {
+  id: string
+  document_type?: string
+  partner?: { name: string; ico?: string; dic?: string; address?: string }
+  items?: InvoiceItem[]
+  issue_date?: string
+  due_date?: string
+  notes?: string
+  payment_method?: string
+  constant_symbol?: string
+  specific_symbol?: string
+  issued_by?: string
+  issued_by_phone?: string
+  issued_by_email?: string
+}
+
 interface ClientInvoiceFormProps {
   companyId: string
   onClose: () => void
   onCreated: () => void
+  editInvoice?: ExistingInvoice
+  duplicateFrom?: ExistingInvoice
 }
 
 function addDays(date: Date, days: number): string {
@@ -45,14 +71,55 @@ function addDays(date: Date, days: number): string {
   return d.toISOString().split('T')[0]
 }
 
-export function ClientInvoiceForm({ companyId, onClose, onCreated }: ClientInvoiceFormProps) {
-  const [partner, setPartner] = useState<Partner>({ name: '' })
-  const [items, setItems] = useState<InvoiceItem[]>([
-    { description: '', quantity: 1, unit: 'ks', unit_price: 0, vat_rate: 21 },
-  ])
-  const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0])
-  const [dueDate, setDueDate] = useState(addDays(new Date(), 14))
-  const [notes, setNotes] = useState('')
+const docTypeLabels: Record<DocumentType, string> = {
+  invoice: 'Faktura',
+  proforma: 'Proforma',
+  credit_note: 'Dobropis',
+}
+
+export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, duplicateFrom }: ClientInvoiceFormProps) {
+  const source = editInvoice || duplicateFrom
+  const isEdit = !!editInvoice
+
+  const [documentType, setDocumentType] = useState<DocumentType>(
+    (source?.document_type as DocumentType) || 'invoice'
+  )
+  const [partner, setPartner] = useState<PartnerData>(() => {
+    if (source?.partner) {
+      return {
+        name: source.partner.name || '',
+        ico: source.partner.ico,
+        dic: source.partner.dic,
+        address: source.partner.address,
+      }
+    }
+    return { name: '' }
+  })
+  const [items, setItems] = useState<InvoiceItem[]>(() => {
+    if (source?.items?.length) {
+      return source.items.map(i => ({
+        description: i.description,
+        quantity: i.quantity,
+        unit: i.unit || 'ks',
+        unit_price: i.unit_price,
+        vat_rate: i.vat_rate ?? 21,
+      }))
+    }
+    return [{ description: '', quantity: 1, unit: 'ks', unit_price: 0, vat_rate: 21 }]
+  })
+  const [issueDate, setIssueDate] = useState(
+    duplicateFrom ? new Date().toISOString().split('T')[0] : (source?.issue_date || new Date().toISOString().split('T')[0])
+  )
+  const [dueDate, setDueDate] = useState(
+    duplicateFrom ? addDays(new Date(), 14) : (source?.due_date || addDays(new Date(), 14))
+  )
+  const [notes, setNotes] = useState(source?.notes || '')
+  const [paymentMethod, setPaymentMethod] = useState(source?.payment_method || 'bank_transfer')
+  const [constantSymbol, setConstantSymbol] = useState(source?.constant_symbol || '0308')
+  const [specificSymbol, setSpecificSymbol] = useState(source?.specific_symbol || '')
+  const [issuedBy, setIssuedBy] = useState(source?.issued_by || '')
+  const [issuedByPhone, setIssuedByPhone] = useState(source?.issued_by_phone || '')
+  const [issuedByEmail, setIssuedByEmail] = useState(source?.issued_by_email || '')
   const [saving, setSaving] = useState(false)
   const [favorites, setFavorites] = useState<Favorite[]>([])
   const [showFavorites, setShowFavorites] = useState(false)
@@ -87,8 +154,9 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated }: ClientInvoi
   }
 
   // Calculations
+  const multiplier = documentType === 'credit_note' ? -1 : 1
   const itemTotals = items.map(item => {
-    const withoutVat = item.quantity * item.unit_price
+    const withoutVat = item.quantity * item.unit_price * multiplier
     const vat = Math.round(withoutVat * (item.vat_rate / 100) * 100) / 100
     return { withoutVat, vat, withVat: withoutVat + vat }
   })
@@ -119,30 +187,48 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated }: ClientInvoi
         total_with_vat: itemTotals[i].withVat,
       }))
 
-      const res = await fetch('/api/client/invoices', {
-        method: 'POST',
+      const payload: any = {
+        company_id: companyId,
+        type: 'income',
+        document_type: documentType,
+        partner: {
+          name: partner.name,
+          ico: partner.ico,
+          dic: partner.dic,
+          address: partner.address,
+        },
+        partner_id: partner.partner_id || null,
+        items: invoiceItems,
+        issue_date: issueDate,
+        due_date: dueDate,
+        total_without_vat: totalWithoutVat,
+        total_vat: totalVat,
+        total_with_vat: totalWithVat,
+        notes,
+        payment_method: paymentMethod,
+        constant_symbol: constantSymbol || null,
+        specific_symbol: specificSymbol || null,
+        issued_by: issuedBy || null,
+        issued_by_phone: issuedByPhone || null,
+        issued_by_email: issuedByEmail || null,
+      }
+
+      const url = isEdit ? `/api/client/invoices/${editInvoice!.id}` : '/api/client/invoices'
+      const method = isEdit ? 'PATCH' : 'POST'
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company_id: companyId,
-          type: 'income',
-          partner,
-          items: invoiceItems,
-          issue_date: issueDate,
-          due_date: dueDate,
-          total_without_vat: totalWithoutVat,
-          total_vat: totalVat,
-          total_with_vat: totalWithVat,
-          notes,
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Vytvoření faktury selhalo')
+        throw new Error(data.error || `${isEdit ? 'Úprava' : 'Vytvoření'} faktury selhalo`)
       }
 
-      // Auto-save favorites
-      saveFavorites()
+      // Auto-save favorites (only for new invoices)
+      if (!isEdit) saveFavorites()
       onCreated()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Chyba')
@@ -153,7 +239,6 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated }: ClientInvoi
 
   const saveFavorites = async () => {
     try {
-      // Save partner as favorite
       if (partner.name && !favorites.some(f => f.type === 'partner' && f.name === partner.name)) {
         await fetch('/api/client/invoice-favorites', {
           method: 'POST',
@@ -166,8 +251,6 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated }: ClientInvoi
           }),
         })
       }
-
-      // Save items as favorites
       for (const item of items) {
         if (item.description && !favorites.some(f => f.type === 'item' && f.name === item.description)) {
           await fetch('/api/client/invoice-favorites', {
@@ -187,20 +270,45 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated }: ClientInvoi
     }
   }
 
-  const partnerFavorites = favorites.filter(f => f.type === 'partner')
   const itemFavorites = favorites.filter(f => f.type === 'item')
+
+  const formTitle = isEdit
+    ? `Upravit ${docTypeLabels[documentType].toLowerCase()}`
+    : duplicateFrom
+      ? `Duplikovat ${docTypeLabels[documentType].toLowerCase()}`
+      : `${docTypeLabels[documentType]}`
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Nová faktura</CardTitle>
+          <CardTitle className="text-lg">{formTitle}</CardTitle>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
+        {/* Document type selector */}
+        {!isEdit && (
+          <div className="flex gap-1 bg-muted p-1 rounded-lg">
+            {(['invoice', 'proforma', 'credit_note'] as DocumentType[]).map(dt => (
+              <button
+                key={dt}
+                type="button"
+                onClick={() => setDocumentType(dt)}
+                className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  documentType === dt
+                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                {docTypeLabels[dt]}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Favorites banner */}
         {favorites.length > 0 && (
           <Button
@@ -216,22 +324,6 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated }: ClientInvoi
 
         {showFavorites && (
           <div className="border rounded-lg p-3 space-y-2 bg-amber-50/50 dark:bg-amber-950/20">
-            {partnerFavorites.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">Odběratelé</p>
-                <div className="flex flex-wrap gap-1">
-                  {partnerFavorites.map(f => (
-                    <button
-                      key={f.id}
-                      onClick={() => applyFavorite(f)}
-                      className="text-xs px-2 py-1 bg-white dark:bg-gray-800 border rounded hover:bg-blue-50 dark:hover:bg-blue-950"
-                    >
-                      {f.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
             {itemFavorites.length > 0 && (
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-1">Položky</p>
@@ -251,28 +343,12 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated }: ClientInvoi
           </div>
         )}
 
-        {/* Partner */}
-        <div className="space-y-3">
-          <h3 className="font-medium text-sm">Odběratel</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Název *</Label>
-              <Input value={partner.name} onChange={e => setPartner(p => ({ ...p, name: e.target.value }))} placeholder="Firma s.r.o." />
-            </div>
-            <div>
-              <Label className="text-xs">IČO</Label>
-              <Input value={partner.ico || ''} onChange={e => setPartner(p => ({ ...p, ico: e.target.value }))} placeholder="12345678" />
-            </div>
-            <div>
-              <Label className="text-xs">DIČ</Label>
-              <Input value={partner.dic || ''} onChange={e => setPartner(p => ({ ...p, dic: e.target.value }))} placeholder="CZ12345678" />
-            </div>
-            <div>
-              <Label className="text-xs">Adresa</Label>
-              <Input value={partner.address || ''} onChange={e => setPartner(p => ({ ...p, address: e.target.value }))} placeholder="Ulice, Město" />
-            </div>
-          </div>
-        </div>
+        {/* Partner selector */}
+        <PartnerSelector
+          companyId={companyId}
+          value={partner}
+          onChange={setPartner}
+        />
 
         {/* Dates */}
         <div className="grid grid-cols-2 gap-3">
@@ -283,6 +359,44 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated }: ClientInvoi
           <div>
             <Label className="text-xs">Datum splatnosti</Label>
             <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+          </div>
+        </div>
+
+        {/* Payment details */}
+        <div className="space-y-3">
+          <h3 className="font-medium text-sm">Platební údaje</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <Label className="text-xs">Způsob platby</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank_transfer">Převodem</SelectItem>
+                  <SelectItem value="cash">Hotově</SelectItem>
+                  <SelectItem value="card">Kartou</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Konstantní symbol</Label>
+              <Input
+                value={constantSymbol}
+                onChange={e => setConstantSymbol(e.target.value)}
+                placeholder="0308"
+                className="font-mono"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Specifický symbol</Label>
+              <Input
+                value={specificSymbol}
+                onChange={e => setSpecificSymbol(e.target.value)}
+                placeholder="volitelný"
+                className="font-mono"
+              />
+            </div>
           </div>
         </div>
 
@@ -360,6 +474,25 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated }: ClientInvoi
           </Button>
         </div>
 
+        {/* Issuer contact */}
+        <div className="space-y-3">
+          <h3 className="font-medium text-sm">Vystavil</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <Label className="text-xs">Jméno</Label>
+              <Input value={issuedBy} onChange={e => setIssuedBy(e.target.value)} placeholder="Jan Novák" />
+            </div>
+            <div>
+              <Label className="text-xs">Telefon</Label>
+              <Input value={issuedByPhone} onChange={e => setIssuedByPhone(e.target.value)} placeholder="+420..." />
+            </div>
+            <div>
+              <Label className="text-xs">Email</Label>
+              <Input value={issuedByEmail} onChange={e => setIssuedByEmail(e.target.value)} placeholder="email@..." />
+            </div>
+          </div>
+        </div>
+
         {/* Notes */}
         <div>
           <Label className="text-xs">Poznámka</Label>
@@ -390,9 +523,9 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated }: ClientInvoi
         {/* Submit */}
         <Button className="w-full h-12 text-lg" onClick={handleSubmit} disabled={saving}>
           {saving ? (
-            <><Loader2 className="w-5 h-5 mr-2 animate-spin" />Vytvářím...</>
+            <><Loader2 className="w-5 h-5 mr-2 animate-spin" />{isEdit ? 'Ukládám...' : 'Vytvářím...'}</>
           ) : (
-            'Vytvořit fakturu'
+            isEdit ? 'Uložit změny' : `Vytvořit ${docTypeLabels[documentType].toLowerCase()}`
           )}
         </Button>
       </CardContent>
