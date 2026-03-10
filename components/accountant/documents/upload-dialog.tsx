@@ -25,6 +25,8 @@ interface UploadDialogProps {
   onUploaded?: () => void
   /** When set, auto-links uploaded documents to this task */
   taskId?: string
+  /** When set, auto-links uploaded documents to this project */
+  projectId?: string
   userId?: string
   userName?: string
 }
@@ -59,7 +61,7 @@ function getPeriodOptions() {
   return options
 }
 
-export function UploadDialog({ open, onOpenChange, companyId, onUploaded, taskId, userId, userName }: UploadDialogProps) {
+export function UploadDialog({ open, onOpenChange, companyId, onUploaded, taskId, projectId, userId, userName }: UploadDialogProps) {
   const [files, setFiles] = useState<File[]>([])
   const [docType, setDocType] = useState('expense_invoice')
   const [period, setPeriod] = useState(getCurrentPeriod())
@@ -107,14 +109,20 @@ export function UploadDialog({ open, onOpenChange, companyId, onUploaded, taskId
         })
         if (res.ok) {
           successCount++
-          // Auto-link to task if taskId is provided
-          if (taskId) {
-            const data = await res.json().catch(() => null)
-            if (data?.document?.id) {
+          // Auto-link to task or project if ID is provided
+          const data = await res.json().catch(() => null)
+          if (data?.document?.id) {
+            if (taskId) {
               await fetch(`/api/tasks/${taskId}/documents`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...headers },
-                body: JSON.stringify({ documentIds: [data.document.id] }),
+                body: JSON.stringify({ document_ids: [data.document.id], link_type: 'reference' }),
+              }).catch(() => {})
+            } else if (projectId) {
+              await fetch('/api/document-links', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...headers },
+                body: JSON.stringify({ entity_type: 'project', entity_id: projectId, document_id: data.document.id, link_type: 'reference' }),
               }).catch(() => {})
             }
           }

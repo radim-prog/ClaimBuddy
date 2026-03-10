@@ -244,30 +244,39 @@ export function GTDCaptureFlow() {
       const isProject = isMultiStep === true
 
       if (isProject) {
-        // Create project
-        const projectRes = await fetch('/api/projects', {
+        // Create GTD task-project (is_project=true in tasks table)
+        const priority = quickPriority || scores?.priority || 'medium'
+        const totalScore = scores?.total_score ?? (quickPriority === 'high' ? 10 : quickPriority === 'medium' ? 7 : 3)
+
+        const projectRes = await fetch('/api/tasks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title,
             description: description || undefined,
-            outcome: projectOutcome || undefined,
-            status: 'active',
+            is_project: true,
+            project_outcome: projectOutcome || undefined,
+            status: 'in_progress',
             company_id: companyId || undefined,
+            company_name: companyName || undefined,
             due_date: dueDate || undefined,
-            estimated_hours: estimatedMinutes ? Math.round(estimatedMinutes / 60) : undefined,
+            estimated_minutes: estimatedMinutes || undefined,
+            gtd_context: contexts.length > 0 ? contexts : undefined,
+            gtd_energy_level: energyLevel || undefined,
             score_money: scores?.score_money,
             score_fire: scores?.score_fire,
             score_time: scores?.score_time,
             score_distance: scores?.score_distance,
             score_personal: scores?.score_personal,
+            total_score: totalScore,
+            priority,
           }),
         })
         if (!projectRes.ok) throw new Error()
         const projectData = await projectRes.json()
-        const projectId = projectData.project?.id
+        const projectId = projectData.task?.id
 
-        // Create subtasks
+        // Create subtasks with parent_project_id
         if (projectId && subtasks.filter(s => s.trim()).length > 0) {
           for (let i = 0; i < subtasks.length; i++) {
             if (!subtasks[i].trim()) continue
@@ -277,7 +286,7 @@ export function GTDCaptureFlow() {
               body: JSON.stringify({
                 title: subtasks[i].trim(),
                 status: shouldDelegate ? 'waiting_for' : 'pending',
-                project_id: projectId,
+                parent_project_id: projectId,
                 company_id: companyId || undefined,
                 company_name: companyName || undefined,
                 assigned_to: delegateTo || undefined,
@@ -296,7 +305,7 @@ export function GTDCaptureFlow() {
 
         fireInboxClearedConfetti()
         toast.success('Projekt vytvořen!')
-        router.push(`/accountant/projects/${projectId}`)
+        router.push(`/accountant/tasks/${projectId}`)
       } else {
         // Create single task
         const priority = quickPriority || scores?.priority || 'medium'

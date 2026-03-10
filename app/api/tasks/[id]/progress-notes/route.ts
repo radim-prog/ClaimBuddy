@@ -13,9 +13,9 @@ export async function GET(
   try {
     const { id: taskId } = await params
     const { data, error } = await supabaseAdmin
-      .from('task_progress_notes')
+      .from('case_progress_notes')
       .select('*')
-      .eq('task_id', taskId)
+      .eq('project_id', taskId)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -47,9 +47,9 @@ export async function POST(
     }
 
     const { data, error } = await supabaseAdmin
-      .from('task_progress_notes')
+      .from('case_progress_notes')
       .insert({
-        task_id: taskId,
+        project_id: taskId,
         author_id: userId,
         author_name: userName || 'Neznamy',
         current_status,
@@ -84,7 +84,7 @@ export async function DELETE(
     if (!noteId) return NextResponse.json({ error: 'noteId is required' }, { status: 400 })
 
     const { error } = await supabaseAdmin
-      .from('task_progress_notes')
+      .from('case_progress_notes')
       .delete()
       .eq('id', noteId)
 

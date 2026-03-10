@@ -982,6 +982,7 @@ function ProjectDokumentyTab({ projectId, companyId, docs, onRefresh, userId }: 
       {companyId && showUpload && (
         <UploadDialog
           companyId={companyId}
+          projectId={projectId}
           open={showUpload}
           onOpenChange={setShowUpload}
           onUploaded={() => {
