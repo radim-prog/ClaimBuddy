@@ -5,7 +5,9 @@ import Link from 'next/link'
 import { ClosureDetailModal } from '@/components/closure-detail-modal'
 // settings context removed — no longer needed on dashboard
 import { useAttention } from '@/lib/contexts/attention-context'
-import { Clock, ArrowRight, AlertTriangle, FileX, MessageCircle, Upload, CheckCircle2, Circle } from 'lucide-react'
+import { Clock, ArrowRight, AlertTriangle, FileX, MessageCircle, Upload, CheckCircle2, Circle, ChevronRight } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { PaymentMatrix } from '@/components/payment-tracking/payment-matrix'
 
 type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
 
@@ -353,18 +355,20 @@ export default function AccountantDashboard() {
   const stats = data?.stats ?? { total: 0, missing: 0, uploaded: 0, approved: 0 }
 
   // Exclude inactive clients and those without monthly reporting from dashboard matrix
-  // Sort by group_name (groups first alphabetically, then ungrouped)
+  // Fully alphabetical sort: group_name takes priority over company name
   const companies = useMemo(() => {
     const filtered = allCompanies.filter(c => c.status !== 'inactive' && c.monthly_reporting !== false)
     return filtered.sort((a, b) => {
-      const aGroup = a.group_name || ''
-      const bGroup = b.group_name || ''
-      if (aGroup && !bGroup) return -1
-      if (!aGroup && bGroup) return 1
-      if (aGroup !== bGroup) return aGroup.localeCompare(bGroup, 'cs')
+      const aKey = (a.group_name || a.name).toLowerCase()
+      const bKey = (b.group_name || b.name).toLowerCase()
+      if (aKey !== bKey) return aKey.localeCompare(bKey, 'cs')
+      // Within same group, sort by company name
       return a.name.localeCompare(b.name, 'cs')
     })
   }, [allCompanies])
+
+  // Collapsible groups state
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
 
   // Filter companies based on selected filter
   const filteredCompanies = useMemo(() => companies.filter(company => {
@@ -397,33 +401,12 @@ export default function AccountantDashboard() {
   const renderMatrix = useCallback(() => {
     return (
       <>
-            {/* Header with year selector */}
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-gray-900 dark:text-white">Master Matice {selectedYear}</h1>
-                <p className="mt-1 text-gray-600 dark:text-gray-400">
-                  Přehled všech klientů a stavu jejich měsíčních uzávěrek
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setSelectedYear(y => y - 1)}
-                  className="p-2 rounded-xl bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={selectedYear <= 2020}
-                >
-                  ←
-                </button>
-                <span className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-bold rounded-xl min-w-[80px] text-center">
-                  {selectedYear}
-                </span>
-                <button
-                  onClick={() => setSelectedYear(y => y + 1)}
-                  className="p-2 rounded-xl bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={selectedYear >= currentYear + 1}
-                >
-                  →
-                </button>
-              </div>
+            {/* Header */}
+            <div className="mb-6">
+              <h1 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-gray-900 dark:text-white">Master Matice {selectedYear}</h1>
+              <p className="mt-1 text-gray-600 dark:text-gray-400">
+                Přehled všech klientů a stavu jejich měsíčních uzávěrek
+              </p>
             </div>
 
             {/* Stats + Legend + Filter */}
@@ -546,17 +529,33 @@ export default function AccountantDashboard() {
                       const prevCompany = companyIndex > 0 ? filteredCompanies[companyIndex - 1] : null
                       const currentGroup = company.group_name || null
                       const prevGroup = prevCompany?.group_name || null
-                      const showGroupHeader = currentGroup !== prevGroup
+                      const showGroupHeader = currentGroup && currentGroup !== prevGroup
+                      const isCollapsed = currentGroup ? collapsedGroups.has(currentGroup) : false
+
+                      // Skip collapsed group members (but not the first one that triggers the header)
+                      if (currentGroup && isCollapsed && !showGroupHeader) return null
 
                       return (
                         <React.Fragment key={company.id}>
                           {showGroupHeader && (
-                            <tr className="bg-purple-50 dark:bg-purple-900/20">
-                              <td colSpan={13} className="px-2 sm:px-4 py-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300 sticky left-0 z-10 bg-purple-50 dark:bg-purple-900/20">
-                                {currentGroup || 'Bez skupiny'}
+                            <tr
+                              className="bg-purple-50 dark:bg-purple-900/20 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                              onClick={() => setCollapsedGroups(prev => {
+                                const next = new Set(prev)
+                                if (next.has(currentGroup!)) next.delete(currentGroup!)
+                                else next.add(currentGroup!)
+                                return next
+                              })}
+                            >
+                              <td colSpan={13} className="px-2 sm:px-4 py-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300 sticky left-0 z-10 bg-purple-50 dark:bg-purple-900/20 select-none">
+                                <span className="inline-flex items-center gap-1">
+                                  <ChevronRight className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
+                                  {currentGroup}
+                                </span>
                               </td>
                             </tr>
                           )}
+                          {!isCollapsed && (
                           <tr className={companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}>
                             <td className={`px-2 sm:px-4 py-2 sm:py-3 text-sm font-medium text-gray-900 dark:text-white sticky left-0 z-10 max-w-[100px] sm:max-w-none ${companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
                               <Link href={`/accountant/clients/${company.id}`} className="hover:text-purple-600 transition-colors">
@@ -578,6 +577,7 @@ export default function AccountantDashboard() {
                           />
                         ))}
                           </tr>
+                          )}
                         </React.Fragment>
                       )
                     })
@@ -587,7 +587,7 @@ export default function AccountantDashboard() {
             </div>
           </>
         )
-  }, [companies, closures, selectedYear, filter, filteredCompanies, stats, data, handleCellClick])
+  }, [companies, closures, selectedYear, filter, filteredCompanies, stats, data, handleCellClick, collapsedGroups])
 
   if (loading) {
     return (
@@ -717,8 +717,48 @@ export default function AccountantDashboard() {
         </Link>
       </div>
 
-      {/* Master Matrix */}
-      {renderMatrix()}
+      {/* Year selector — shared for both tabs */}
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => setSelectedYear(y => y - 1)}
+          className="p-2 rounded-xl bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={selectedYear <= 2020}
+        >
+          ←
+        </button>
+        <span className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-bold rounded-xl min-w-[80px] text-center">
+          {selectedYear}
+        </span>
+        <button
+          onClick={() => setSelectedYear(y => y + 1)}
+          className="p-2 rounded-xl bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={selectedYear >= currentYear + 1}
+        >
+          →
+        </button>
+      </div>
+
+      {/* Tabs: Uzávěrky | Platby */}
+      <Tabs defaultValue="closures">
+        <TabsList className="mb-4">
+          <TabsTrigger value="closures">Uzávěrky</TabsTrigger>
+          <TabsTrigger value="payments">Platby</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="closures">
+          {renderMatrix()}
+        </TabsContent>
+
+        <TabsContent value="payments">
+          <div className="mb-6">
+            <h1 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-gray-900 dark:text-white">Platby klientů {selectedYear}</h1>
+            <p className="mt-1 text-gray-600 dark:text-gray-400">
+              Evidence měsíčních plateb paušálů
+            </p>
+          </div>
+          <PaymentMatrix selectedYear={selectedYear} />
+        </TabsContent>
+      </Tabs>
 
       {/* Closure Detail Modal */}
       <ClosureDetailModal
