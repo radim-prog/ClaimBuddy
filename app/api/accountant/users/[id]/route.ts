@@ -52,13 +52,15 @@ export async function PUT(
 
   try {
     const body = await request.json()
-    const { name, email, loginName, role, newPassword, permissions } = body as {
+    const { name, email, loginName, role, newPassword, permissions, compensationType, compensationAmount } = body as {
       name?: string
       email?: string
       loginName?: string
       role?: UserRole
       newPassword?: string
       permissions?: UserPermissions
+      compensationType?: 'hourly' | 'monthly'
+      compensationAmount?: number
     }
 
     // Check: cannot demote the last admin
@@ -86,6 +88,8 @@ export async function PUT(
       }
     }
     if (permissions) updates.permissions = permissions
+    if (compensationType) updates.compensation_type = compensationType
+    if (compensationAmount !== undefined) updates.compensation_amount = compensationAmount
     if (newPassword) {
       if (newPassword.length < 6) {
         return NextResponse.json(

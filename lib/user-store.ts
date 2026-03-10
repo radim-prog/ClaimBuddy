@@ -14,6 +14,8 @@ export interface StoredUser {
   login_name: string
   password_hash: string
   permissions: UserPermissions
+  compensation_type: 'hourly' | 'monthly'
+  compensation_amount: number
   created_at: string
   updated_at: string
 }
@@ -27,7 +29,7 @@ export type SafeUser = Omit<StoredUser, 'password_hash'>
 export async function getAllUsers(): Promise<SafeUser[]> {
   const { data, error } = await supabase
     .from('users')
-    .select('id, name, email, role, login_name, permissions, created_at, updated_at')
+    .select('id, name, email, role, login_name, permissions, compensation_type, compensation_amount, created_at, updated_at')
     .order('created_at', { ascending: true })
 
   if (error) throw new Error(`Failed to fetch users: ${error.message}`)
@@ -69,6 +71,8 @@ export async function createUser(userData: {
   role: UserRole
   password_hash: string
   permissions: UserPermissions
+  compensation_type?: 'hourly' | 'monthly'
+  compensation_amount?: number
 }): Promise<SafeUser> {
   const { data, error } = await supabase
     .from('users')
@@ -76,7 +80,7 @@ export async function createUser(userData: {
       ...userData,
       login_name: userData.login_name.toLowerCase().trim(),
     })
-    .select('id, name, email, role, login_name, permissions, created_at, updated_at')
+    .select('id, name, email, role, login_name, permissions, compensation_type, compensation_amount, created_at, updated_at')
     .single()
 
   if (error) throw new Error(`Failed to create user: ${error.message}`)
@@ -92,6 +96,8 @@ export async function updateUser(
     login_name: string
     password_hash: string
     permissions: UserPermissions
+    compensation_type: 'hourly' | 'monthly'
+    compensation_amount: number
   }>
 ): Promise<SafeUser | null> {
   const updateData: Record<string, unknown> = { ...updates, updated_at: new Date().toISOString() }
@@ -103,7 +109,7 @@ export async function updateUser(
     .from('users')
     .update(updateData)
     .eq('id', id)
-    .select('id, name, email, role, login_name, permissions, created_at, updated_at')
+    .select('id, name, email, role, login_name, permissions, compensation_type, compensation_amount, created_at, updated_at')
     .single()
 
   if (error) {

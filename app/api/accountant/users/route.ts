@@ -29,13 +29,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { name, email, loginName, role, password, permissions } = body as {
+    const { name, email, loginName, role, password, permissions, compensationType, compensationAmount } = body as {
       name: string
       email: string
       loginName: string
       role: UserRole
       password: string
       permissions?: UserPermissions
+      compensationType?: 'hourly' | 'monthly'
+      compensationAmount?: number
     }
 
     // Validation
@@ -70,6 +72,8 @@ export async function POST(request: NextRequest) {
       role,
       password_hash: passwordHash,
       permissions: userPermissions,
+      compensation_type: compensationType,
+      compensation_amount: compensationAmount,
     })
 
     return NextResponse.json(user, { status: 201 })

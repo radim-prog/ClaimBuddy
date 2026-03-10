@@ -18,6 +18,7 @@ type TimeEntry = {
   billable: boolean
   in_tariff: boolean
   hourly_rate: number
+  user_name?: string
   created_at: string
 }
 
@@ -328,6 +329,11 @@ export function QuickTimeLog({ companyId, companyName, onTimeLogged }: QuickTime
                   <span className="text-gray-400 dark:text-gray-500 text-xs w-16 shrink-0">
                     {new Date(entry.date).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' })}
                   </span>
+                  {entry.user_name && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500 w-16 shrink-0 truncate" title={entry.user_name}>
+                      {entry.user_name}
+                    </span>
+                  )}
                   <span className="font-medium text-gray-900 dark:text-white w-12 shrink-0">
                     {formatMinutes(mins)}
                   </span>

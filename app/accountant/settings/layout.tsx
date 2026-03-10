@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { DollarSign, Settings as SettingsIcon, Users as UsersIcon, Building2, Repeat, MapPin, HardDrive, Receipt } from 'lucide-react'
-import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { Settings as SettingsIcon, Building2, MapPin } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
 
 export default function SettingsLayout({
   children,
@@ -11,95 +11,72 @@ export default function SettingsLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const { userRole, permissions } = useAccountantUser()
-
-  const isAdmin = userRole === 'admin' || permissions?.users_manage === true
 
   const tabs = [
     {
       name: 'Obecné nastavení',
       href: '/accountant/settings',
       icon: SettingsIcon,
-      show: true
     },
     {
       name: 'Firma',
       href: '/accountant/settings/company',
       icon: Building2,
-      show: true
-    },
-    {
-      name: 'Fakturace',
-      href: '/accountant/settings/invoicing',
-      icon: Receipt,
-      show: true
-    },
-    {
-      name: 'Ceník a Sazby',
-      href: '/accountant/settings/pricing',
-      icon: DollarSign,
-      show: true
-    },
-    {
-      name: 'Šablony úkolů',
-      href: '/accountant/settings/templates',
-      icon: Repeat,
-      show: true
     },
     {
       name: 'Místa',
       href: '/accountant/settings/locations',
       icon: MapPin,
-      show: true
     },
-    {
-      name: 'Google Drive',
-      href: '/accountant/settings/drive',
-      icon: HardDrive,
-      show: isAdmin
-    },
-    {
-      name: 'Správa uživatelů',
-      href: '/accountant/settings/users',
-      icon: UsersIcon,
-      show: isAdmin
-    }
   ]
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-bold">Nastavení</h1>
+    <div>
+      {/* Header Banner */}
+      <div className="bg-gray-100 dark:bg-gray-800/50 text-gray-900 dark:text-white px-4 py-3 mb-6 rounded-lg">
+        <div className="flex items-center gap-3">
+          <SettingsIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+          <div>
+            <h2 className="font-bold text-lg">Nastavení</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Osobní a firemní nastavení
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-700 pb-px">
-        {tabs.filter(tab => tab.show).map((tab) => {
-          const isActive = pathname === tab.href
-          const Icon = tab.icon
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={`px-3 py-1.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                isActive
-                  ? 'border-purple-600 text-purple-600'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <div className="flex items-center gap-1.5">
-                <Icon className="h-3.5 w-3.5" />
-                {tab.name}
-              </div>
-            </Link>
-          )
-        })}
-      </div>
+      {/* Tab Navigation - pill buttons in Card */}
+      <Card className="mb-6">
+        <CardContent className="pt-4 pb-4">
+          <nav className="flex items-center gap-2 flex-wrap">
+            {tabs.map((tab) => {
+              const Icon = tab.icon
+              const isActive = pathname === tab.href ||
+                (tab.href !== '/accountant/settings' && pathname.startsWith(tab.href))
 
-      {/* Page Content */}
-      <div className="max-w-3xl">
-        {children}
-      </div>
+              return (
+                <Link key={tab.href} href={tab.href}>
+                  <div
+                    className={`
+                      flex items-center gap-2 px-4 py-2 rounded-lg transition-colors
+                      ${isActive
+                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }
+                    `}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{tab.name}</span>
+                  </div>
+                </Link>
+              )
+            })}
+          </nav>
+        </CardContent>
+      </Card>
+
+      {/* Page Content - full width */}
+      {children}
     </div>
   )
 }

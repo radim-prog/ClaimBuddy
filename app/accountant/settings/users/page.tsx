@@ -41,6 +41,8 @@ interface AppUser {
   role: UserRole
   login_name: string
   permissions: UserPermissions
+  compensation_type: 'hourly' | 'monthly'
+  compensation_amount: number
   created_at: string
   updated_at: string
 }
@@ -54,6 +56,8 @@ const DEFAULT_FORM = {
   role: 'accountant' as FormRole,
   password: '',
   permissions: { ...ROLE_PRESETS.accountant },
+  compensationType: 'hourly' as 'hourly' | 'monthly',
+  compensationAmount: 0,
 }
 
 export default function UserManagementPage() {
@@ -73,6 +77,8 @@ export default function UserManagementPage() {
     newPassword: '',
     permissions: { ...ROLE_PRESETS.accountant },
     showPasswordReset: false,
+    compensationType: 'hourly' as 'hourly' | 'monthly',
+    compensationAmount: 0,
   })
 
   useEffect(() => {
@@ -115,6 +121,8 @@ export default function UserManagementPage() {
           role: newUser.role,
           password: newUser.password,
           permissions: newUser.permissions,
+          compensationType: newUser.compensationType,
+          compensationAmount: newUser.compensationAmount,
         }),
       })
 
@@ -144,6 +152,8 @@ export default function UserManagementPage() {
       newPassword: '',
       permissions: { ...user.permissions },
       showPasswordReset: false,
+      compensationType: user.compensation_type || 'hourly',
+      compensationAmount: user.compensation_amount || 0,
     })
     setEditDialogOpen(true)
   }
@@ -159,6 +169,8 @@ export default function UserManagementPage() {
         loginName: editForm.loginName,
         role: editForm.role,
         permissions: editForm.permissions,
+        compensationType: editForm.compensationType,
+        compensationAmount: editForm.compensationAmount,
       }
       if (editForm.newPassword) {
         if (editForm.newPassword.length < 6) {
@@ -367,6 +379,35 @@ export default function UserManagementPage() {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label>Kompenzace</Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={newUser.compensationType}
+                    onValueChange={(v: 'hourly' | 'monthly') => setNewUser({ ...newUser, compensationType: v })}
+                  >
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hourly">Hodinová</SelectItem>
+                      <SelectItem value="monthly">Měsíční</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-2 flex-1">
+                    <Input
+                      type="number"
+                      value={newUser.compensationAmount || ''}
+                      onChange={(e) => setNewUser({ ...newUser, compensationAmount: Number(e.target.value) || 0 })}
+                      placeholder="0"
+                      className="text-right"
+                    />
+                    <span className="text-sm text-gray-500 whitespace-nowrap">
+                      {newUser.compensationType === 'hourly' ? 'Kč/h' : 'Kč/měs'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
                 <Label>Oprávnění</Label>
                 <PermissionsEditor
                   permissions={newUser.permissions}
@@ -414,6 +455,11 @@ export default function UserManagementPage() {
                       <p className="text-xs text-gray-400">login: {user.login_name}</p>
                     </div>
                     {getRoleBadge(user.role)}
+                    {user.compensation_amount > 0 && (
+                      <Badge variant="outline" className="text-xs text-gray-600 dark:text-gray-300">
+                        {user.compensation_amount.toLocaleString('cs-CZ')} Kč{user.compensation_type === 'hourly' ? '/h' : '/měs'}
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -512,6 +558,36 @@ export default function UserManagementPage() {
                   onChange={(e) => setEditForm({ ...editForm, newPassword: e.target.value })}
                 />
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Kompenzace</Label>
+              <div className="flex gap-2">
+                <Select
+                  value={editForm.compensationType}
+                  onValueChange={(v: 'hourly' | 'monthly') => setEditForm({ ...editForm, compensationType: v })}
+                >
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hourly">Hodinová</SelectItem>
+                    <SelectItem value="monthly">Měsíční</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-2 flex-1">
+                  <Input
+                    type="number"
+                    value={editForm.compensationAmount || ''}
+                    onChange={(e) => setEditForm({ ...editForm, compensationAmount: Number(e.target.value) || 0 })}
+                    placeholder="0"
+                    className="text-right"
+                  />
+                  <span className="text-sm text-gray-500 whitespace-nowrap">
+                    {editForm.compensationType === 'hourly' ? 'Kč/h' : 'Kč/měs'}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
