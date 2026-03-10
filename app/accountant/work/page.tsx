@@ -106,6 +106,18 @@ export default function WorkPage() {
     return 'tasks'
   })
 
+  // Sync typeFilter with URL on client-side navigation (e.g. back from project)
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const urlType = new URLSearchParams(window.location.search).get('type')
+      if (urlType === 'projects' || urlType === 'all') setTypeFilter(urlType)
+    }
+    window.addEventListener('popstate', syncFromUrl)
+    // Also check on mount in case Next.js router.push changed the URL
+    syncFromUrl()
+    return () => window.removeEventListener('popstate', syncFromUrl)
+  }, [])
+
   useEffect(() => {
     Promise.all([
       fetch('/api/tasks?page_size=500').then(r => r.json()),
