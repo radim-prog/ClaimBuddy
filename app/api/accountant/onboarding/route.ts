@@ -157,12 +157,31 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update onboarding checklist' }, { status: 500 })
     }
 
-    // If status changed to 'active', also update company status
+    // If status changed to 'active', also update company status + create onboarded event
     if (status === 'active') {
       await supabaseAdmin
         .from('companies')
         .update({ status: 'active', updated_at: new Date().toISOString() })
         .eq('id', company_id)
+
+      // Get company billing info for the event snapshot
+      const { data: companyData } = await supabaseAdmin
+        .from('companies')
+        .select('billing_settings')
+        .eq('id', company_id)
+        .single()
+
+      const monthlyFee = companyData?.billing_settings?.monthly_fee || 0
+
+      await supabaseAdmin
+        .from('client_events')
+        .insert({
+          company_id,
+          event_type: 'onboarded',
+          event_date: new Date().toISOString().split('T')[0],
+          monthly_fee: monthlyFee,
+          created_by: userId,
+        })
     }
 
     return NextResponse.json({ success: true, checklist: data })

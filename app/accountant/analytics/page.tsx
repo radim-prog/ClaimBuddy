@@ -59,8 +59,8 @@ interface RevenueData {
 }
 
 const EVENT_LABELS: Record<string, string> = {
-  onboarded: 'Onboarding',
-  churned: 'Odchod',
+  onboarded: 'Novy klient',
+  churned: 'Odchod klienta',
   paused: 'Pozastaveno',
   fee_changed: 'Zmena pausalu',
 }
@@ -71,7 +71,7 @@ const EVENT_COLORS: Record<string, string> = {
   fee_changed: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400',
 }
 
-function formatCurrency(n: number) {
+function formatKc(n: number) {
   return n.toLocaleString('cs', { maximumFractionDigits: 0 }) + ' Kc'
 }
 
@@ -106,25 +106,25 @@ export default function AnalyticsDashboard() {
   }
 
   if (!data) {
-    return <p className="text-center text-gray-500 py-20">Nepodařilo se nacist data.</p>
+    return <p className="text-center text-gray-500 py-20">Nepodarilo se nacist data.</p>
   }
 
   const hasGoal = data.annualTarget > 0
-  const maxMRR = Math.max(
+  const maxBar = Math.max(
     ...data.monthlyData.map(m => Math.max(m.actual || 0, m.target || 0)),
     1
   )
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Hlavicka */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white">
-            Revenue Growth {year}
+            Rust firmy {year}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Prehled rustu a plneni cilu
+            Kolik vydelavame, kolik klientu prichazi a odchazi
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -133,27 +133,27 @@ export default function AnalyticsDashboard() {
           <Button variant="outline" size="sm" onClick={() => setYear(y => y + 1)}>&rarr;</Button>
           <Link href="/accountant/analytics/goals">
             <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-1" /> Cile
+              <Settings className="h-4 w-4 mr-1" /> Nastavit cile
             </Button>
           </Link>
           <Link href="/accountant/analytics/clients">
             <Button variant="outline" size="sm">
-              <Users className="h-4 w-4 mr-1" /> Klienti
+              <Users className="h-4 w-4 mr-1" /> Prehled klientu
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Top KPIs */}
+      {/* Plneni rocniho cile */}
       {hasGoal && (
         <Card className="rounded-xl shadow-soft border-purple-200 dark:border-purple-800/50 bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-purple-600" />
-                <span className="font-semibold text-purple-900 dark:text-purple-200">Rocni cil: {formatCurrency(data.annualTarget)}</span>
+                <span className="font-semibold text-purple-900 dark:text-purple-200">Rocni cil: {formatKc(data.annualTarget)}</span>
               </div>
-              <span className="text-2xl font-bold text-purple-700 dark:text-purple-300">{data.fulfillmentPct}%</span>
+              <span className="text-2xl font-bold text-purple-700 dark:text-purple-300">{data.fulfillmentPct} %</span>
             </div>
             <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-3 overflow-hidden">
               <div
@@ -162,7 +162,7 @@ export default function AnalyticsDashboard() {
               />
             </div>
             <p className="text-sm text-purple-600 dark:text-purple-400 mt-2">
-              Projekce na konec roku: {formatCurrency(data.annualProjection)} ({data.fulfillmentPct}%)
+              Odhad na konec roku: {formatKc(data.annualProjection)}
             </p>
           </CardContent>
         </Card>
@@ -171,7 +171,7 @@ export default function AnalyticsDashboard() {
       {!hasGoal && (
         <Card className="rounded-xl shadow-soft border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20">
           <CardContent className="pt-6 flex items-center justify-between">
-            <p className="text-amber-800 dark:text-amber-300">Neni nastaven rocni cil. Nastavte ho pro sledovani plneni.</p>
+            <p className="text-amber-800 dark:text-amber-300">Neni nastaven rocni cil obratu. Nastavte ho, at vidite jak si vedete.</p>
             <Link href="/accountant/analytics/goals">
               <Button size="sm">Nastavit cil</Button>
             </Link>
@@ -179,38 +179,39 @@ export default function AnalyticsDashboard() {
         </Card>
       )}
 
-      {/* KPI cards */}
+      {/* 4 hlavni cisla */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Aktualni MRR"
-          value={formatCurrency(data.currentMRR)}
+          title="Mesicni prijem"
+          value={formatKc(data.currentMRR)}
+          subtitle="Soucet pausalu vsech aktivnich klientu"
           icon={DollarSign}
           color="purple"
         />
         <KPICard
           title="Aktivni klienti"
           value={String(data.totalActiveClients)}
-          subtitle={`Prumerny pausal: ${formatCurrency(data.avgFee)}`}
+          subtitle={`Prumerny pausal: ${formatKc(data.avgFee)}`}
           icon={Users}
           color="blue"
         />
         <KPICard
-          title="Churn rate"
-          value={`${data.churnRate}%`}
-          subtitle={`${data.thisYear.churned} klientu letos`}
+          title="Odchod klientu"
+          value={`${data.churnRate} %`}
+          subtitle={`Letos odeslo ${data.thisYear.churned} klientu`}
           icon={TrendingDown}
           color="red"
         />
         <KPICard
-          title="Net MRR letos"
-          value={formatCurrency(data.thisYear.netMRR)}
-          subtitle={`+${formatCurrency(data.thisYear.newMRR)} / -${formatCurrency(data.thisYear.churnedMRR)}`}
+          title="Cisty rust letos"
+          value={formatKc(data.thisYear.netMRR)}
+          subtitle={`Prislo +${formatKc(data.thisYear.newMRR)}, odeslo -${formatKc(data.thisYear.churnedMRR)}`}
           icon={TrendingUp}
           color="green"
         />
       </div>
 
-      {/* This month + This year */}
+      {/* Tento mesic + Letos celkem */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="rounded-xl shadow-soft">
           <CardContent className="pt-6">
@@ -222,7 +223,7 @@ export default function AnalyticsDashboard() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">+{data.thisMonth.onboarded}</p>
-                  <p className="text-xs text-gray-500">klientu</p>
+                  <p className="text-xs text-gray-500">novych klientu</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -231,16 +232,16 @@ export default function AnalyticsDashboard() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{data.thisMonth.churned}</p>
-                  <p className="text-xs text-gray-500">odchodu</p>
+                  <p className="text-xs text-gray-500">odeslych klientu</p>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Novy MRR</p>
-                <p className="text-lg font-semibold text-green-600">+{formatCurrency(data.thisMonth.newMRR)}</p>
+                <p className="text-xs text-gray-500">Pribylo na pausalech</p>
+                <p className="text-lg font-semibold text-green-600">+{formatKc(data.thisMonth.newMRR)}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Ztraceny MRR</p>
-                <p className="text-lg font-semibold text-red-600">-{formatCurrency(data.thisMonth.churnedMRR)}</p>
+                <p className="text-xs text-gray-500">Ubylo odchodem</p>
+                <p className="text-lg font-semibold text-red-600">-{formatKc(data.thisMonth.churnedMRR)}</p>
               </div>
             </div>
           </CardContent>
@@ -256,7 +257,7 @@ export default function AnalyticsDashboard() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">+{data.thisYear.onboarded}</p>
-                  <p className="text-xs text-gray-500">klientu</p>
+                  <p className="text-xs text-gray-500">novych klientu</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -265,29 +266,29 @@ export default function AnalyticsDashboard() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{data.thisYear.churned}</p>
-                  <p className="text-xs text-gray-500">odchodu</p>
+                  <p className="text-xs text-gray-500">odeslych klientu</p>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Novy MRR</p>
-                <p className="text-lg font-semibold text-green-600">+{formatCurrency(data.thisYear.newMRR)}</p>
+                <p className="text-xs text-gray-500">Pribylo na pausalech</p>
+                <p className="text-lg font-semibold text-green-600">+{formatKc(data.thisYear.newMRR)}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Ztraceny MRR</p>
-                <p className="text-lg font-semibold text-red-600">-{formatCurrency(data.thisYear.churnedMRR)}</p>
+                <p className="text-xs text-gray-500">Ubylo odchodem</p>
+                <p className="text-lg font-semibold text-red-600">-{formatKc(data.thisYear.churnedMRR)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* MRR Chart (simple CSS bars) */}
+      {/* Graf mesicnich prijmu */}
       <Card className="rounded-xl shadow-soft">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold font-display flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-purple-600" />
-              MRR po mesicich
+              Mesicni prijmy z pausalu
             </h3>
             <div className="flex items-center gap-4 text-xs text-gray-500">
               <span className="flex items-center gap-1">
@@ -302,8 +303,8 @@ export default function AnalyticsDashboard() {
           </div>
           <div className="flex items-end gap-2 h-48">
             {data.monthlyData.map((m) => {
-              const actualPct = m.actual != null ? (m.actual / maxMRR) * 100 : 0
-              const targetPct = m.target ? (m.target / maxMRR) * 100 : 0
+              const actualPct = m.actual != null ? (m.actual / maxBar) * 100 : 0
+              const targetPct = m.target ? (m.target / maxBar) * 100 : 0
               const isCurrent = m.month === new Date().getMonth() + 1 && year === new Date().getFullYear()
 
               return (
@@ -312,10 +313,10 @@ export default function AnalyticsDashboard() {
                   <div className="absolute bottom-full mb-2 hidden group-hover:block z-10">
                     <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
                       <p className="font-semibold">{m.label} {year}</p>
-                      {m.actual != null && <p>MRR: {formatCurrency(m.actual)}</p>}
-                      {hasGoal && <p>Cil: {formatCurrency(m.target)}</p>}
-                      {m.onboarded > 0 && <p className="text-green-400">+{m.onboarded} novych</p>}
-                      {m.churned > 0 && <p className="text-red-400">-{m.churned} odchodu</p>}
+                      {m.actual != null && <p>Prijem: {formatKc(m.actual)}</p>}
+                      {hasGoal && <p>Cil: {formatKc(m.target)}</p>}
+                      {m.onboarded > 0 && <p className="text-green-400">+{m.onboarded} novych klientu</p>}
+                      {m.churned > 0 && <p className="text-red-400">-{m.churned} odeslych</p>}
                     </div>
                   </div>
                   <div className="w-full flex items-end gap-0.5 h-40">
@@ -346,17 +347,17 @@ export default function AnalyticsDashboard() {
         </CardContent>
       </Card>
 
-      {/* Recent events */}
+      {/* Posledni udalosti */}
       <Card className="rounded-xl shadow-soft">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold font-display">Posledni udalosti</h3>
             <Link href="/accountant/analytics/clients" className="text-sm text-purple-600 hover:underline flex items-center gap-1">
-              Vsechny <ArrowUpRight className="h-3.5 w-3.5" />
+              Zobrazit vse <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>
           {data.recentEvents.length === 0 ? (
-            <p className="text-sm text-gray-500 py-4 text-center">Zatim zadne udalosti</p>
+            <p className="text-sm text-gray-500 py-4 text-center">Zatim zadne udalosti. Zaznamenejte prvniho klienta v sekci Prehled klientu.</p>
           ) : (
             <div className="space-y-2">
               {data.recentEvents.map(event => (
@@ -372,7 +373,7 @@ export default function AnalyticsDashboard() {
                   <div className="flex items-center gap-3 text-sm">
                     {event.monthly_fee != null && (
                       <span className={event.event_type === 'churned' ? 'text-red-600' : 'text-green-600'}>
-                        {event.event_type === 'churned' ? '-' : '+'}{formatCurrency(Number(event.monthly_fee))}
+                        {event.event_type === 'churned' ? '-' : '+'}{formatKc(Number(event.monthly_fee))}/mes.
                       </span>
                     )}
                     <span className="text-gray-400 text-xs">

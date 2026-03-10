@@ -131,21 +131,35 @@ export default function WorkPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Compute stats
-  const inboxCount = useMemo(() =>
-    tasks.filter(t => t.status === 'pending' && !t.is_project).length
-  , [tasks])
-
+  // Compute stats — filtered by typeFilter
   const todayStr = new Date().toISOString().slice(0, 10)
-  const todayCompleted = useMemo(() =>
-    tasks.filter(t => t.status === 'completed' && t.completed_at?.startsWith(todayStr)).length
-  , [tasks, todayStr])
 
-  const activeCount = useMemo(() =>
-    tasks.filter(t => !['completed', 'cancelled', 'someday_maybe', 'invoiced'].includes(t.status) && !t.is_project).length
-  , [tasks])
+  const activeStatuses = ['pending', 'clarifying', 'accepted', 'in_progress', 'waiting_for', 'waiting_client', 'awaiting_approval']
+  const projectStatuses = ['planning', 'active', 'on_hold', 'review']
 
-  const streak = useMemo(() => calculateStreak(tasks), [tasks])
+  const inboxCount = useMemo(() => {
+    if (typeFilter === 'projects') return 0
+    return tasks.filter(t => t.status === 'pending' && !t.is_project).length
+  }, [tasks, typeFilter])
+
+  const todayCompleted = useMemo(() => {
+    if (typeFilter === 'projects') return 0
+    return tasks.filter(t => t.status === 'completed' && t.completed_at?.startsWith(todayStr) && !t.is_project).length
+  }, [tasks, todayStr, typeFilter])
+
+  const activeCount = useMemo(() => {
+    if (typeFilter === 'projects') {
+      const taskProjects = tasks.filter(t => t.is_project && activeStatuses.includes(t.status)).length
+      const legacyProjects = projects.filter(p => projectStatuses.includes(p.status)).length
+      return taskProjects + legacyProjects
+    }
+    return tasks.filter(t => !['completed', 'cancelled', 'someday_maybe', 'invoiced'].includes(t.status) && !t.is_project).length
+  }, [tasks, projects, typeFilter])
+
+  const streak = useMemo(() => {
+    if (typeFilter === 'projects') return 0
+    return calculateStreak(tasks.filter(t => !t.is_project))
+  }, [tasks, typeFilter])
 
   // Merge tasks and projects into WorkItems
   const workItems: WorkItem[] = useMemo(() => {
@@ -252,24 +266,28 @@ export default function WorkPage() {
 
       {/* Quick Stats inline */}
       <div className="flex items-center gap-4 mb-5 flex-wrap">
-        <div className="flex items-center gap-1.5 text-sm">
-          <Flame className={`h-4 w-4 ${streak > 0 ? 'text-orange-500' : 'text-gray-300'}`} />
-          <span className="font-bold">{streak}</span>
-          <span className="text-muted-foreground">streak</span>
-        </div>
-        <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
-        <div className="flex items-center gap-1.5 text-sm">
-          <CheckCircle className="h-4 w-4 text-green-500" />
-          <span className="font-bold">{todayCompleted}</span>
-          <span className="text-muted-foreground">dnes</span>
-        </div>
-        <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+        {typeFilter !== 'projects' && (
+          <>
+            <div className="flex items-center gap-1.5 text-sm">
+              <Flame className={`h-4 w-4 ${streak > 0 ? 'text-orange-500' : 'text-gray-300'}`} />
+              <span className="font-bold">{streak}</span>
+              <span className="text-muted-foreground">série</span>
+            </div>
+            <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+            <div className="flex items-center gap-1.5 text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <span className="font-bold">{todayCompleted}</span>
+              <span className="text-muted-foreground">dnes</span>
+            </div>
+            <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+          </>
+        )}
         <div className="flex items-center gap-1.5 text-sm">
           <Trophy className="h-4 w-4 text-purple-500" />
           <span className="font-bold">{activeCount}</span>
-          <span className="text-muted-foreground">aktivních</span>
+          <span className="text-muted-foreground">{typeFilter === 'projects' ? 'projektů' : 'aktivních'}</span>
         </div>
-        {inboxCount > 0 && (
+        {inboxCount > 0 && typeFilter !== 'projects' && (
           <>
             <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
             <Link

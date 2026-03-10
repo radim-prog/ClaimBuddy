@@ -235,7 +235,7 @@ export default function ClientsRevenuePage() {
       setShowOnboardModal(false)
       setSelectedCompanyForOnboard('')
       setOnboardFee('')
-      toast.success('Onboarding zaznamena')
+      toast.success('Novy klient zaznamena')
     } catch {
       toast.error('Chyba')
     }
@@ -258,12 +258,12 @@ export default function ClientsRevenuePage() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white">Klienti - Revenue</h1>
-            <p className="text-sm text-gray-500">Prehled klientu s pausaly a MRR</p>
+            <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white">Prehled klientu a pausalu</h1>
+            <p className="text-sm text-gray-500">Kolik nam ktery klient mesicne plati</p>
           </div>
         </div>
         <Button onClick={() => setShowOnboardModal(true)} className="gap-1">
-          <UserPlus className="h-4 w-4" /> Onboarding
+          <UserPlus className="h-4 w-4" /> Novy klient
         </Button>
       </div>
 
@@ -296,7 +296,7 @@ export default function ClientsRevenuePage() {
       <div className="flex items-center gap-4 text-sm text-gray-500">
         <span>{filtered.length} klientu</span>
         <span>|</span>
-        <span className="font-semibold text-gray-900 dark:text-white">MRR: {formatCurrency(totalMRR)}</span>
+        <span className="font-semibold text-gray-900 dark:text-white">Mesicni prijem celkem: {formatCurrency(totalMRR)}</span>
       </div>
 
       {loading ? (
@@ -433,7 +433,7 @@ export default function ClientsRevenuePage() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-green-600" />
-              Zaznamenat onboarding
+              Zaznamenat noveho klienta
             </h3>
             <div className="space-y-4">
               <div>
@@ -463,7 +463,7 @@ export default function ClientsRevenuePage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium block mb-1">Datum onboardingu</label>
+                <label className="text-sm font-medium block mb-1">Klientem od</label>
                 <Input
                   type="date"
                   value={onboardDate}

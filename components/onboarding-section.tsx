@@ -55,6 +55,8 @@ export function OnboardingSection({
   const [stepNotes, setStepNotes] = useState<Record<string, string>>({})
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set())
   const [showStepsEditor, setShowStepsEditor] = useState(false)
+  const [showFeePrompt, setShowFeePrompt] = useState(false)
+  const [feeValue, setFeeValue] = useState('')
 
   const progress = calculateOnboardingProgress(onboarding.steps)
   const isComplete = isOnboardingComplete(onboarding.steps)
@@ -144,9 +146,33 @@ export function OnboardingSection({
 
   const completeOnboarding = () => {
     if (!isComplete) {
-      toast.error('Nejprve dokončete všechny povinné kroky')
+      toast.error('Nejprve dokoncete vsechny povinne kroky')
       return
     }
+
+    // Show fee prompt before completing
+    setShowFeePrompt(true)
+  }
+
+  const confirmComplete = async () => {
+    // Save monthly fee if entered
+    const fee = Number(feeValue)
+    if (fee > 0) {
+      try {
+        await fetch(`/api/accountant/companies/${companyId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            billing_settings: { monthly_fee: fee, client_since: new Date().toISOString().split('T')[0] },
+          }),
+        })
+      } catch {
+        // Non-critical, continue with completion
+      }
+    }
+
+    setShowFeePrompt(false)
+    setFeeValue('')
 
     onOnboardingChange({
       ...onboarding,
@@ -155,7 +181,7 @@ export function OnboardingSection({
       last_activity_at: new Date().toISOString(),
     })
 
-    toast.success(`Onboarding klienta ${companyName} byl úspěšně dokončen!`)
+    toast.success(`Onboarding klienta ${companyName} byl uspesne dokoncen!`)
   }
 
   const handleStepsUpdate = (newSteps: OnboardingStep[]) => {
@@ -544,6 +570,36 @@ export function OnboardingSection({
         onConfirm={handleStepsUpdate}
         title="Upravit kroky onboardingu"
       />
+
+      {/* Fee prompt before completing onboarding */}
+      {showFeePrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowFeePrompt(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-2">Dokonceni onboardingu</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Kolik bude <strong>{companyName}</strong> mesicne platit? Muzete vyplnit ted nebo pozdeji v profilu klienta.
+            </p>
+            <div className="mb-4">
+              <label className="text-sm font-medium block mb-1">Mesicni pausal (Kc)</label>
+              <Input
+                type="number"
+                value={feeValue}
+                onChange={e => setFeeValue(e.target.value)}
+                placeholder="napr. 8000"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => { setFeeValue(''); confirmComplete() }}>
+                Preskocit
+              </Button>
+              <Button onClick={confirmComplete}>
+                Dokoncit onboarding
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </CollapsibleSection>
   )
 }
