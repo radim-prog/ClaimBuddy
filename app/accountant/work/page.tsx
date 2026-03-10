@@ -135,11 +135,12 @@ export default function WorkPage() {
     const projectStatuses = ['planning', 'active', 'on_hold', 'review']
 
     const taskItems: WorkItem[] = tasks
-      .filter(t => activeStatuses.includes(t.status) && !t.is_project)
+      .filter(t => activeStatuses.includes(t.status))
       .map(t => ({
         id: t.id,
         title: t.title,
-        type: 'task' as const,
+        type: t.is_project ? 'project' as const : 'task' as const,
+        is_project: t.is_project,
         status: t.status,
         priority: derivePriority(t),
         total_score: t.total_score,
@@ -148,6 +149,7 @@ export default function WorkPage() {
         assigned_to_name: t.assigned_to_name,
         is_next_action: t.is_next_action,
         updated_at: t.updated_at,
+        source: 'tasks' as const,
       }))
 
     const projectItems: WorkItem[] = projects
@@ -162,6 +164,7 @@ export default function WorkPage() {
         due_date: p.due_date,
         progress_percentage: p.progress_percentage,
         is_project: true,
+        source: 'projects' as const,
       }))
 
     let combined = [...taskItems, ...projectItems]

@@ -33,6 +33,8 @@ export interface WorkItem {
   is_project?: boolean
   updated_at?: string
   status_label?: string
+  /** 'projects' = legacy project from projects table, 'tasks' = task/task-project from tasks table */
+  source?: 'tasks' | 'projects'
 }
 
 // Status display config
@@ -109,7 +111,7 @@ function PrioritySection({ label, emoji, items, defaultOpen = true, color, borde
 }
 
 function WorkItemRow({ item }: { item: WorkItem }) {
-  const href = item.type === 'project' || item.is_project
+  const href = item.source === 'projects'
     ? `/accountant/projects/${item.id}`
     : `/accountant/tasks/${item.id}`
 
