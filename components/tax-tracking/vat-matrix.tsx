@@ -1,16 +1,12 @@
 'use client'
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react'
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import { ChevronRight, Save, Check, Loader2, Plus, X } from 'lucide-react'
+import { ChevronRight, Save, Check, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { TaxPeriodData, TaxCompany } from '@/lib/types/tax'
 
-const monthsShort = ['Led', 'Uno', 'Bre', 'Dub', 'Kve', 'Cer', 'Cec', 'Srp', 'Zar', 'Rij', 'Lis', 'Pro']
-const monthsFull = [
-  'Leden', 'Unor', 'Brezen', 'Duben', 'Kveten', 'Cerven',
-  'Cervenec', 'Srpen', 'Zari', 'Rijen', 'Listopad', 'Prosinec'
-]
+const monthsShort = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čer', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro']
 
 const currentMonth = new Date().getMonth()
 const currentYear = new Date().getFullYear()
@@ -27,208 +23,126 @@ type BillingUnit = {
   companies: TaxCompany[]
 }
 
-type SelectedCell = {
-  companyId: string
-  companyName: string
-  monthIndex: number
-} | null
-
 function isQuarterEnd(monthIndex: number): boolean {
   return (monthIndex + 1) % 3 === 0
-}
-
-function formatCompact(n: number): string {
-  if (n === 0) return '0'
-  if (Math.abs(n) >= 1000) {
-    const k = n / 1000
-    return (k % 1 === 0 ? k.toFixed(0) : k.toFixed(1)) + 'k'
-  }
-  return Math.round(n).toLocaleString('cs-CZ')
 }
 
 function formatCZK(n: number): string {
   return Math.round(n).toLocaleString('cs-CZ')
 }
 
-// Single cell in the 12-month matrix
-function VatDphCell({
-  data,
-  monthIndex,
-  year,
-  companyId,
-  companyName,
-  isQuarterlyInterim,
-  isFuture,
-  isSelected,
-  onSelect,
-}: {
-  data: TaxPeriodData | null
-  monthIndex: number
-  year: number
-  companyId: string
-  companyName: string
-  isQuarterlyInterim: boolean
-  isFuture: boolean
-  isSelected: boolean
-  onSelect: (cell: SelectedCell) => void
-}) {
-  if (isFuture) {
-    return (
-      <td className="px-0.5 py-1 text-center">
-        <div className="text-xs text-gray-300 dark:text-gray-600">—</div>
-      </td>
-    )
-  }
-
-  const hasData = data && (data.vat_output > 0 || data.vat_input > 0)
-  const vatResult = hasData ? (data.vat_output - data.vat_input) : 0
-
-  if (!hasData) {
-    return (
-      <td className={`px-0.5 py-1 text-center ${isQuarterlyInterim ? 'opacity-40' : ''}`}>
-        <button
-          onClick={() => onSelect({ companyId, companyName, monthIndex })}
-          className={`w-full min-h-[42px] rounded border border-dashed transition-all flex items-center justify-center ${
-            isSelected
-              ? 'border-purple-400 bg-purple-50 dark:bg-purple-900/20'
-              : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 hover:bg-purple-50/50 dark:hover:bg-purple-900/10'
-          }`}
-          title={`Pridat DPH - ${monthsFull[monthIndex]} ${year}`}
-        >
-          <Plus className="h-3 w-3 text-gray-400" />
-        </button>
-      </td>
-    )
-  }
-
-  return (
-    <td className={`px-0.5 py-1 ${isQuarterlyInterim ? 'opacity-50' : ''}`}>
-      <button
-        onClick={() => onSelect({ companyId, companyName, monthIndex })}
-        className={`w-full min-h-[42px] rounded px-1 py-0.5 transition-all text-left ${
-          isSelected
-            ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20'
-            : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer'
-        }`}
-      >
-        <div className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight truncate">
-          <span className="mr-0.5">{'\u2191'}</span>{formatCompact(data.vat_output)}
-        </div>
-        <div className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight truncate">
-          <span className="mr-0.5">{'\u2193'}</span>{formatCompact(data.vat_input)}
-        </div>
-        <div className={`text-xs font-bold leading-tight truncate ${
-          vatResult > 0 ? 'text-red-600 dark:text-red-400' : vatResult < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'
-        }`}>
-          {vatResult > 0 ? '+' : ''}{formatCompact(vatResult)}
-        </div>
-      </button>
-    </td>
-  )
+type RowData = {
+  vat_output: number
+  vat_input: number
+  notes: string
 }
 
-// Inline edit panel (appears under company row)
-function InlineEditPanel({
-  cell,
+function CompanyRow({
+  company,
   data,
-  year,
+  period,
+  isQuarterlyInterim,
   onSave,
-  onClose,
 }: {
-  cell: NonNullable<SelectedCell>
+  company: TaxCompany
   data: TaxPeriodData | null
-  year: number
-  onSave: (companyId: string, period: string, values: { vat_output: number; vat_input: number; notes: string }) => Promise<void>
-  onClose: () => void
+  period: string
+  isQuarterlyInterim: boolean
+  onSave: (companyId: string, values: RowData) => Promise<void>
 }) {
-  const [vatOutput, setVatOutput] = useState(data?.vat_output ?? 0)
-  const [vatInput, setVatInput] = useState(data?.vat_input ?? 0)
-  const [notes, setNotes] = useState(data?.notes ?? '')
+  const [values, setValues] = useState<RowData>({
+    vat_output: data?.vat_output ?? 0,
+    vat_input: data?.vat_input ?? 0,
+    notes: data?.notes ?? '',
+  })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const initialRef = useRef(JSON.stringify(values))
 
-  const period = `${year}-${String(cell.monthIndex + 1).padStart(2, '0')}`
-  const vatResult = vatOutput - vatInput
+  // Reset when data/period changes
+  useEffect(() => {
+    const newVals: RowData = {
+      vat_output: data?.vat_output ?? 0,
+      vat_input: data?.vat_input ?? 0,
+      notes: data?.notes ?? '',
+    }
+    setValues(newVals)
+    initialRef.current = JSON.stringify(newVals)
+    setSaved(false)
+  }, [data, period])
+
+  const vatResult = values.vat_output - values.vat_input
+  const isDirty = JSON.stringify(values) !== initialRef.current
 
   const handleSave = async () => {
     setSaving(true)
     try {
-      await onSave(cell.companyId, period, { vat_output: vatOutput, vat_input: vatInput, notes })
+      await onSave(company.id, values)
+      initialRef.current = JSON.stringify(values)
       setSaved(true)
-      setTimeout(() => {
-        setSaved(false)
-        onClose()
-      }, 800)
+      setTimeout(() => setSaved(false), 2000)
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <tr>
-      <td colSpan={14} className="px-3 py-2 bg-purple-50/80 dark:bg-purple-900/10 border-b border-purple-200 dark:border-purple-800/30">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="text-sm font-semibold text-purple-700 dark:text-purple-300">
-            {cell.companyName} — {monthsFull[cell.monthIndex]} {year}
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div>
-              <label className="text-[10px] text-gray-500 block mb-0.5">DPH vystup</label>
-              <input
-                type="number"
-                value={vatOutput || ''}
-                onChange={e => setVatOutput(parseFloat(e.target.value) || 0)}
-                className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                placeholder="0"
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-gray-500 block mb-0.5">DPH vstup</label>
-              <input
-                type="number"
-                value={vatInput || ''}
-                onChange={e => setVatInput(parseFloat(e.target.value) || 0)}
-                className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-gray-500 block mb-0.5">DPH vysledek</label>
-              <div className={`h-8 flex items-center px-2 text-sm font-bold rounded ${
-                vatResult > 0 ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20' : vatResult < 0 ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20' : 'text-gray-500 bg-gray-50 dark:bg-gray-800'
-              }`}>
-                {vatResult > 0 ? '+' : ''}{formatCZK(vatResult)} Kc
-              </div>
-            </div>
-            <div className="flex-1 min-w-[150px]">
-              <label className="text-[10px] text-gray-500 block mb-0.5">Poznamka</label>
-              <input
-                type="text"
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500"
-                placeholder="Poznamka..."
-              />
-            </div>
-            <div className="flex items-end gap-1">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="h-8 px-4 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
-              >
-                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : saved ? <Check className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
-                Ulozit
-              </button>
-              <button
-                onClick={onClose}
-                className="h-8 px-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
+    <tr className={`border-b border-gray-100 dark:border-gray-700/50 ${isQuarterlyInterim ? 'opacity-60' : ''}`}>
+      <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
+        <Link href={`/accountant/clients/${company.id}`} className="hover:text-purple-600 transition-colors">
+          <span className="font-semibold">{company.name}</span>
+        </Link>
+        {company.vat_period === 'quarterly' && (
+          <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">Q</span>
+        )}
+      </td>
+      <td className="px-2 py-2">
+        <input
+          type="number"
+          value={values.vat_output || ''}
+          onChange={e => setValues(prev => ({ ...prev, vat_output: parseFloat(e.target.value) || 0 }))}
+          className="w-full h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-right"
+          placeholder="0"
+        />
+      </td>
+      <td className="px-2 py-2">
+        <input
+          type="number"
+          value={values.vat_input || ''}
+          onChange={e => setValues(prev => ({ ...prev, vat_input: parseFloat(e.target.value) || 0 }))}
+          className="w-full h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-right"
+          placeholder="0"
+        />
+      </td>
+      <td className="px-3 py-2 text-sm font-semibold text-right whitespace-nowrap">
+        <span className={vatResult > 0 ? 'text-red-600 dark:text-red-400' : vatResult < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}>
+          {vatResult > 0 ? '+' : ''}{formatCZK(vatResult)} Kč
+        </span>
+      </td>
+      <td className="px-2 py-2">
+        <input
+          type="text"
+          value={values.notes}
+          onChange={e => setValues(prev => ({ ...prev, notes: e.target.value }))}
+          className="w-full h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          placeholder="Poznámka..."
+        />
+      </td>
+      <td className="px-2 py-2 text-center">
+        <button
+          onClick={handleSave}
+          disabled={!isDirty || saving}
+          className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-all ${
+            saved
+              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+              : isDirty
+                ? 'bg-purple-100 text-purple-600 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400'
+                : 'bg-gray-100 text-gray-400 dark:bg-gray-800 cursor-not-allowed'
+          }`}
+          title="Uložit"
+        >
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+        </button>
       </td>
     </tr>
   )
@@ -241,7 +155,9 @@ export function VatMatrix({ selectedYear }: { selectedYear: number }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
-  const [selectedCell, setSelectedCell] = useState<SelectedCell>(null)
+  const [selectedMonth, setSelectedMonth] = useState(() =>
+    selectedYear === currentYear ? currentMonth : 0
+  )
 
   const fetchData = useCallback(async () => {
     try {
@@ -262,6 +178,11 @@ export function VatMatrix({ selectedYear }: { selectedYear: number }) {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  // Reset month when year changes
+  useEffect(() => {
+    setSelectedMonth(selectedYear === currentYear ? currentMonth : 0)
+  }, [selectedYear])
+
   const vatCompanies = useMemo(() =>
     companies.filter(c => c.vat_payer),
     [companies]
@@ -274,6 +195,8 @@ export function VatMatrix({ selectedYear }: { selectedYear: number }) {
     }
     return map
   }, [taxData])
+
+  const period = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`
 
   // Build billing units
   const billingUnits = useMemo(() => {
@@ -313,9 +236,8 @@ export function VatMatrix({ selectedYear }: { selectedYear: number }) {
     return units.sort((a, b) => a.sortKey.localeCompare(b.sortKey, 'cs'))
   }, [vatCompanies])
 
-  // Group sum for a specific month
-  const getGroupMonthSum = useCallback((companyIds: string[], monthIndex: number) => {
-    const period = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}`
+  // Group sum for the current month
+  const getGroupSum = useCallback((companyIds: string[]) => {
     let vatOutput = 0, vatInput = 0
     for (const cId of companyIds) {
       const d = taxDataMap.get(`${cId}:${period}`)
@@ -324,34 +246,10 @@ export function VatMatrix({ selectedYear }: { selectedYear: number }) {
         vatInput += d.vat_input
       }
     }
-    return vatOutput - vatInput
-  }, [taxDataMap, selectedYear])
+    return { vatOutput, vatInput, vatResult: vatOutput - vatInput }
+  }, [taxDataMap, period])
 
-  // Group yearly sum
-  const getGroupYearSum = useCallback((companyIds: string[]) => {
-    let total = 0
-    for (const cId of companyIds) {
-      for (let m = 0; m < 12; m++) {
-        const p = `${selectedYear}-${String(m + 1).padStart(2, '0')}`
-        const d = taxDataMap.get(`${cId}:${p}`)
-        if (d) total += (d.vat_result ?? (d.vat_output - d.vat_input))
-      }
-    }
-    return total
-  }, [taxDataMap, selectedYear])
-
-  // Company yearly sum
-  const getCompanyYearSum = useCallback((companyId: string) => {
-    let total = 0
-    for (let m = 0; m < 12; m++) {
-      const p = `${selectedYear}-${String(m + 1).padStart(2, '0')}`
-      const d = taxDataMap.get(`${companyId}:${p}`)
-      if (d) total += (d.vat_result ?? (d.vat_output - d.vat_input))
-    }
-    return total
-  }, [taxDataMap, selectedYear])
-
-  const handleCellSave = useCallback(async (companyId: string, period: string, values: { vat_output: number; vat_input: number; notes: string }) => {
+  const handleRowSave = useCallback(async (companyId: string, values: RowData) => {
     const res = await fetch('/api/accountant/tax-data', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -379,8 +277,8 @@ export function VatMatrix({ selectedYear }: { selectedYear: number }) {
       }
       return [...prev, saved]
     })
-    toast.success('Ulozeno')
-  }, [])
+    toast.success('Uloženo')
+  }, [period])
 
   // Stats
   const stats = useMemo(() => {
@@ -401,6 +299,17 @@ export function VatMatrix({ selectedYear }: { selectedYear: number }) {
       }
     }
     return { totalVat, filled, empty }
+  }, [vatCompanies, taxDataMap, selectedYear])
+
+  // Per-month indicator: has any data for that month?
+  const monthHasData = useMemo(() => {
+    return Array.from({ length: 12 }, (_, m) => {
+      const p = `${selectedYear}-${String(m + 1).padStart(2, '0')}`
+      return vatCompanies.some(c => {
+        const d = taxDataMap.get(`${c.id}:${p}`)
+        return d && (d.vat_output > 0 || d.vat_input > 0)
+      })
+    })
   }, [vatCompanies, taxDataMap, selectedYear])
 
   if (loading) {
@@ -430,7 +339,7 @@ export function VatMatrix({ selectedYear }: { selectedYear: number }) {
               <span className="text-sm text-white font-bold">{vatCompanies.length}</span>
             </div>
             <div className="text-left hidden sm:block">
-              <div className="text-xs text-gray-500 dark:text-gray-400">Platcu DPH</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Plátců DPH</div>
               <div className="text-lg font-bold text-purple-700 dark:text-purple-400">{vatCompanies.length}</div>
             </div>
           </div>
@@ -439,7 +348,7 @@ export function VatMatrix({ selectedYear }: { selectedYear: number }) {
               <span className="text-sm text-white font-bold">{stats.filled}</span>
             </div>
             <div className="text-left hidden sm:block">
-              <div className="text-xs text-gray-500 dark:text-gray-400">Vyplneno</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Vyplněno</div>
               <div className="text-lg font-bold text-green-700 dark:text-green-400">{stats.filled}</div>
             </div>
           </div>
@@ -448,38 +357,69 @@ export function VatMatrix({ selectedYear }: { selectedYear: number }) {
               <span className="text-sm text-white font-bold">{stats.empty}</span>
             </div>
             <div className="text-left hidden sm:block">
-              <div className="text-xs text-gray-500 dark:text-gray-400">Prazdne</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Prázdné</div>
               <div className="text-lg font-bold text-gray-500 dark:text-gray-400">{stats.empty}</div>
             </div>
           </div>
           <div className="border-l pl-3 ml-1 hidden sm:block">
-            <div className="text-xs text-gray-500 dark:text-gray-400">Celkove DPH {selectedYear}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">Celkové DPH {selectedYear}</div>
             <div className={`text-lg font-bold ${stats.totalVat > 0 ? 'text-red-600 dark:text-red-400' : stats.totalVat < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-              {stats.totalVat > 0 ? '+' : ''}{Math.round(stats.totalVat).toLocaleString('cs-CZ')} Kc
+              {stats.totalVat > 0 ? '+' : ''}{Math.round(stats.totalVat).toLocaleString('cs-CZ')} Kč
             </div>
           </div>
         </div>
       </div>
 
-      {/* 12-month matrix */}
+      {/* Month selector bar */}
+      <div className="mb-4 bg-white dark:bg-gray-800 rounded-xl shadow-soft-sm overflow-hidden">
+        <div className="flex">
+          {monthsShort.map((m, i) => {
+            const isSelected = selectedMonth === i
+            const isFuture = selectedYear > currentYear || (selectedYear === currentYear && i > currentMonth)
+            const hasData = monthHasData[i]
+
+            return (
+              <button
+                key={i}
+                onClick={() => !isFuture && setSelectedMonth(i)}
+                disabled={isFuture}
+                className={`flex-1 py-2.5 text-center text-xs font-medium transition-all relative ${
+                  isSelected
+                    ? 'bg-purple-600 text-white'
+                    : isFuture
+                      ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-purple-50 dark:hover:bg-purple-900/10 hover:text-purple-600 dark:hover:text-purple-400'
+                }`}
+              >
+                {m}
+                {/* Dot indicator for months with data */}
+                {hasData && !isSelected && !isFuture && (
+                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-purple-400"></span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft-sm overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gradient-to-r from-purple-600 to-blue-600">
             <tr>
-              <th className="px-3 py-2.5 text-left text-[11px] font-medium text-white uppercase tracking-wider sticky left-0 bg-gradient-to-r from-purple-600 to-purple-600 z-10 min-w-[140px]">Firma</th>
-              {monthsShort.map((m, i) => (
-                <th key={i} className="px-0.5 py-2.5 text-center text-[11px] font-medium text-white uppercase tracking-wider min-w-[72px]">
-                  {m}
-                </th>
-              ))}
-              <th className="px-2 py-2.5 text-center text-[11px] font-medium text-white uppercase tracking-wider min-w-[72px]">Celk.</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider min-w-[160px]">Firma</th>
+              <th className="px-2 py-3 text-right text-xs font-medium text-white uppercase tracking-wider min-w-[110px]">DPH výstup</th>
+              <th className="px-2 py-3 text-right text-xs font-medium text-white uppercase tracking-wider min-w-[110px]">DPH vstup</th>
+              <th className="px-3 py-3 text-right text-xs font-medium text-white uppercase tracking-wider min-w-[120px]">DPH výsledek</th>
+              <th className="px-2 py-3 text-left text-xs font-medium text-white uppercase tracking-wider min-w-[130px]">Poznámka</th>
+              <th className="px-2 py-3 text-center text-xs font-medium text-white uppercase tracking-wider w-12"></th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700/50">
+          <tbody className="bg-white dark:bg-gray-800">
             {billingUnits.length === 0 ? (
               <tr>
-                <td colSpan={14} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                  Zadni platci DPH k zobrazeni
+                <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                  Žádní plátci DPH k zobrazení
                 </td>
               </tr>
             ) : (
@@ -487,119 +427,64 @@ export function VatMatrix({ selectedYear }: { selectedYear: number }) {
                 const isGroup = unit.type === 'group'
                 const groupName = unit.groupName
                 const isCollapsed = groupName ? collapsedGroups.has(groupName) : false
-                const companyIds = unit.companies.map(c => c.id)
 
                 return (
                   <React.Fragment key={isGroup ? `g-${groupName}` : `s-${unit.companies[0].id}`}>
                     {/* Group header */}
-                    {isGroup && (
-                      <tr
-                        className="bg-purple-50 dark:bg-purple-900/20 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
-                        onClick={() => setCollapsedGroups(prev => {
-                          const next = new Set(prev)
-                          if (next.has(groupName!)) next.delete(groupName!)
-                          else next.add(groupName!)
-                          return next
-                        })}
-                      >
-                        <td className="px-3 py-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300 select-none sticky left-0 bg-purple-50 dark:bg-purple-900/20 z-10">
-                          <span className="inline-flex items-center gap-1">
-                            <ChevronRight className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
-                            {groupName}
-                            <span className="ml-1 text-[10px] font-normal text-purple-500 dark:text-purple-400">
-                              ({unit.companies.length})
+                    {isGroup && (() => {
+                      const sum = getGroupSum(unit.companies.map(c => c.id))
+                      const hasData = sum.vatOutput > 0 || sum.vatInput > 0
+                      return (
+                        <tr
+                          className="bg-purple-50 dark:bg-purple-900/20 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                          onClick={() => setCollapsedGroups(prev => {
+                            const next = new Set(prev)
+                            if (next.has(groupName!)) next.delete(groupName!)
+                            else next.add(groupName!)
+                            return next
+                          })}
+                        >
+                          <td className="px-3 py-2 text-xs font-semibold text-purple-700 dark:text-purple-300 select-none">
+                            <span className="inline-flex items-center gap-1">
+                              <ChevronRight className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
+                              {groupName}
+                              <span className="ml-1 text-[10px] font-normal text-purple-500 dark:text-purple-400">
+                                ({unit.companies.length} firem)
+                              </span>
                             </span>
-                          </span>
-                        </td>
-                        {Array.from({ length: 12 }, (_, i) => {
-                          const sum = getGroupMonthSum(companyIds, i)
-                          const isFuture = selectedYear > currentYear || (selectedYear === currentYear && i > currentMonth)
-                          if (isFuture || sum === 0) {
-                            return <td key={i} className="px-0.5 py-1.5"></td>
-                          }
-                          return (
-                            <td key={i} className="px-0.5 py-1.5 text-center">
-                              <span className={`text-[10px] font-bold ${
-                                sum > 0 ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'
-                              }`}>
-                                {'\u03A3'} {sum > 0 ? '+' : ''}{formatCompact(sum)}
-                              </span>
-                            </td>
-                          )
-                        })}
-                        <td className="px-2 py-1.5 text-center">
-                          {(() => {
-                            const yearSum = getGroupYearSum(companyIds)
-                            if (yearSum === 0) return null
-                            return (
-                              <span className={`text-[10px] font-bold ${
-                                yearSum > 0 ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'
-                              }`}>
-                                {'\u03A3'} {yearSum > 0 ? '+' : ''}{formatCompact(yearSum)}
-                              </span>
-                            )
-                          })()}
-                        </td>
-                      </tr>
-                    )}
+                          </td>
+                          {hasData ? (
+                            <>
+                              <td className="px-2 py-2 text-right text-xs font-medium text-purple-600 dark:text-purple-400">Σ {formatCZK(sum.vatOutput)}</td>
+                              <td className="px-2 py-2 text-right text-xs font-medium text-purple-600 dark:text-purple-400">Σ {formatCZK(sum.vatInput)}</td>
+                              <td className="px-3 py-2 text-right text-xs font-bold">
+                                <span className={sum.vatResult > 0 ? 'text-red-600 dark:text-red-400' : sum.vatResult < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}>
+                                  Σ {sum.vatResult > 0 ? '+' : ''}{formatCZK(sum.vatResult)} Kč
+                                </span>
+                              </td>
+                            </>
+                          ) : (
+                            <td colSpan={3}></td>
+                          )}
+                          <td colSpan={2}></td>
+                        </tr>
+                      )
+                    })()}
 
-                    {/* Company rows */}
+                    {/* Individual company rows */}
                     {(!isGroup || !isCollapsed) && unit.companies.map((company) => {
-                      const yearSum = getCompanyYearSum(company.id)
-                      const isSelectedCompany = selectedCell?.companyId === company.id
+                      const cellData = taxDataMap.get(`${company.id}:${period}`) || null
+                      const isQuarterlyInterim = company.vat_period === 'quarterly' && !isQuarterEnd(selectedMonth)
 
                       return (
-                        <React.Fragment key={company.id}>
-                          <tr className={`hover:bg-gray-50/50 dark:hover:bg-gray-700/20 ${isSelectedCompany ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''}`}>
-                            <td className="px-3 py-1 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800 z-10">
-                              <Link href={`/accountant/clients/${company.id}`} className="hover:text-purple-600 transition-colors">
-                                <span className="font-semibold text-xs">{company.name}</span>
-                              </Link>
-                              {company.vat_period === 'quarterly' && (
-                                <span className="ml-1 text-[9px] px-0.5 py-0 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">Q</span>
-                              )}
-                            </td>
-                            {Array.from({ length: 12 }, (_, i) => {
-                              const period = `${selectedYear}-${String(i + 1).padStart(2, '0')}`
-                              const data = taxDataMap.get(`${company.id}:${period}`) || null
-                              const isFuture = selectedYear > currentYear || (selectedYear === currentYear && i > currentMonth)
-                              const isQuarterlyInterim = company.vat_period === 'quarterly' && !isQuarterEnd(i)
-                              const isCellSelected = selectedCell?.companyId === company.id && selectedCell?.monthIndex === i
-
-                              return (
-                                <VatDphCell
-                                  key={i}
-                                  data={data}
-                                  monthIndex={i}
-                                  year={selectedYear}
-                                  companyId={company.id}
-                                  companyName={company.name}
-                                  isQuarterlyInterim={isQuarterlyInterim}
-                                  isFuture={isFuture}
-                                  isSelected={isCellSelected}
-                                  onSelect={setSelectedCell}
-                                />
-                              )
-                            })}
-                            <td className="px-2 py-1 text-center">
-                              <span className={`text-xs font-bold ${
-                                yearSum > 0 ? 'text-red-600 dark:text-red-400' : yearSum < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-400'
-                              }`}>
-                                {yearSum !== 0 ? ((yearSum > 0 ? '+' : '') + formatCompact(yearSum)) : '—'}
-                              </span>
-                            </td>
-                          </tr>
-                          {/* Inline edit panel */}
-                          {isSelectedCompany && selectedCell && (
-                            <InlineEditPanel
-                              cell={selectedCell}
-                              data={taxDataMap.get(`${company.id}:${selectedYear}-${String(selectedCell.monthIndex + 1).padStart(2, '0')}`) || null}
-                              year={selectedYear}
-                              onSave={handleCellSave}
-                              onClose={() => setSelectedCell(null)}
-                            />
-                          )}
-                        </React.Fragment>
+                        <CompanyRow
+                          key={`${company.id}-${period}`}
+                          company={company}
+                          data={cellData}
+                          period={period}
+                          isQuarterlyInterim={isQuarterlyInterim}
+                          onSave={handleRowSave}
+                        />
                       )
                     })}
                   </React.Fragment>
