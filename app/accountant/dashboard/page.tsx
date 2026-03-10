@@ -401,13 +401,6 @@ export default function AccountantDashboard() {
   const renderMatrix = useCallback(() => {
     return (
       <>
-            {/* Header */}
-            <div className="mb-6">
-              <h1 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-gray-900 dark:text-white">Master Matice {selectedYear}</h1>
-              <p className="mt-1 text-gray-600 dark:text-gray-400">
-                Přehled všech klientů a stavu jejich měsíčních uzávěrek
-              </p>
-            </div>
 
             {/* Stats + Legend + Filter */}
             <div className="mb-6 bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-xl shadow-soft-sm">
@@ -717,45 +710,47 @@ export default function AccountantDashboard() {
         </Link>
       </div>
 
-      {/* Year selector — shared for both tabs */}
-      <div className="flex items-center gap-2 mb-4">
-        <button
-          onClick={() => setSelectedYear(y => y - 1)}
-          className="p-2 rounded-xl bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={selectedYear <= 2020}
-        >
-          ←
-        </button>
-        <span className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-bold rounded-xl min-w-[80px] text-center">
-          {selectedYear}
-        </span>
-        <button
-          onClick={() => setSelectedYear(y => y + 1)}
-          className="p-2 rounded-xl bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={selectedYear >= currentYear + 1}
-        >
-          →
-        </button>
-      </div>
-
-      {/* Tabs: Uzávěrky | Platby */}
+      {/* Header row: title | tabs | year selector */}
       <Tabs defaultValue="closures">
-        <TabsList className="mb-4">
-          <TabsTrigger value="closures">Uzávěrky</TabsTrigger>
-          <TabsTrigger value="payments">Platby</TabsTrigger>
-        </TabsList>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-gray-900 dark:text-white">Master Matice {selectedYear}</h1>
+            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+              Přehled uzávěrek a plateb klientů
+            </p>
+          </div>
+
+          <TabsList>
+            <TabsTrigger value="closures">Uzávěrky</TabsTrigger>
+            <TabsTrigger value="payments">Platby</TabsTrigger>
+          </TabsList>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => setSelectedYear(y => y - 1)}
+              className="p-1.5 rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={selectedYear <= 2020}
+            >
+              ←
+            </button>
+            <span className="px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-bold rounded-lg min-w-[64px] text-center text-sm">
+              {selectedYear}
+            </span>
+            <button
+              onClick={() => setSelectedYear(y => y + 1)}
+              className="p-1.5 rounded-lg bg-white dark:bg-gray-800 border hover:bg-gray-50 dark:hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={selectedYear >= currentYear + 1}
+            >
+              →
+            </button>
+          </div>
+        </div>
 
         <TabsContent value="closures">
           {renderMatrix()}
         </TabsContent>
 
         <TabsContent value="payments">
-          <div className="mb-6">
-            <h1 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-gray-900 dark:text-white">Platby klientů {selectedYear}</h1>
-            <p className="mt-1 text-gray-600 dark:text-gray-400">
-              Evidence měsíčních plateb paušálů
-            </p>
-          </div>
           <PaymentMatrix selectedYear={selectedYear} />
         </TabsContent>
       </Tabs>
