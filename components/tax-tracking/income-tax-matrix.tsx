@@ -168,18 +168,26 @@ export function IncomeTaxMatrix({ selectedYear }: { selectedYear: number }) {
     [taxDataMap, modalCompanyId, modalPeriod]
   )
 
-  // Stats
+  // For past years, use full year (Dec); for current year, use current month
+  const lastApplicableMonth = selectedYear < currentYear ? 11 : currentMonth
+
+  // Full year total per company (always all 12 months for annual tax perspective)
+  const getFullYearTotal = useCallback((companyId: string): number => {
+    return getYtd(companyId, 11)
+  }, [getYtd])
+
+  // Stats — use lastApplicableMonth for "how far we are", full year for annual view
   const stats = useMemo(() => {
     let totalProfit = 0
     let profitable = 0
     let lossmaking = 0
     for (const c of companies) {
-      const ytd = getYtd(c.id, currentMonth)
-      if (ytd > 0) { profitable++; totalProfit += ytd }
-      else if (ytd < 0) { lossmaking++; totalProfit += ytd }
+      const yearTotal = getYtd(c.id, lastApplicableMonth)
+      if (yearTotal > 0) { profitable++; totalProfit += yearTotal }
+      else if (yearTotal < 0) { lossmaking++; totalProfit += yearTotal }
     }
     return { totalProfit, profitable, lossmaking }
-  }, [companies, getYtd])
+  }, [companies, getYtd, lastApplicableMonth])
 
   if (loading) {
     return (
@@ -231,7 +239,7 @@ export function IncomeTaxMatrix({ selectedYear }: { selectedYear: number }) {
             </div>
           </div>
           <div className="border-l pl-3 ml-1 hidden sm:block">
-            <div className="text-xs text-gray-500 dark:text-gray-400">Celkový základ daně YTD</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">Celkový základ daně {selectedYear}</div>
             <div className={`text-lg font-bold ${stats.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {stats.totalProfit >= 0 ? '+' : ''}{Math.round(stats.totalProfit).toLocaleString('cs-CZ')} Kč
             </div>
@@ -263,12 +271,15 @@ export function IncomeTaxMatrix({ selectedYear }: { selectedYear: number }) {
                   )}
                 </th>
               ))}
+              <th className="px-2 py-3 text-center text-xs font-bold text-white uppercase tracking-wider bg-purple-700 min-w-[100px]">
+                ROK {selectedYear}
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {billingUnits.length === 0 ? (
               <tr>
-                <td colSpan={13} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={14} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                   Žádné firmy k zobrazení
                 </td>
               </tr>
@@ -318,6 +329,17 @@ export function IncomeTaxMatrix({ selectedYear }: { selectedYear: number }) {
                             </td>
                           )
                         })}
+                        {/* Group annual total */}
+                        <td className="px-1 py-1.5 text-center bg-purple-50/50 dark:bg-purple-900/10">
+                          {(() => {
+                            const groupTotal = getGroupYtd(unit.companies.map(c => c.id), 11)
+                            return groupTotal !== 0 ? (
+                              <div className={`text-xs font-bold ${groupTotal >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                                Σ {groupTotal >= 0 ? '+' : ''}{Math.round(groupTotal).toLocaleString('cs-CZ')}
+                              </div>
+                            ) : null
+                          })()}
+                        </td>
                       </tr>
                     )}
 
@@ -366,6 +388,29 @@ export function IncomeTaxMatrix({ selectedYear }: { selectedYear: number }) {
                             />
                           )
                         })}
+                        {/* Annual total column */}
+                        {(() => {
+                          const yearTotal = getFullYearTotal(company.id)
+                          const yearRevenue = (() => { let s = 0; for (let m = 0; m < 12; m++) { const d = taxDataMap.get(`${company.id}:${selectedYear}-${String(m+1).padStart(2,'0')}`); if (d) s += d.revenue } return s })()
+                          const yearExpenses = (() => { let s = 0; for (let m = 0; m < 12; m++) { const d = taxDataMap.get(`${company.id}:${selectedYear}-${String(m+1).padStart(2,'0')}`); if (d) s += d.expenses } return s })()
+                          const isEmpty = yearRevenue === 0 && yearExpenses === 0
+                          return (
+                            <td className="px-1 py-1.5 text-center bg-purple-50/50 dark:bg-purple-900/10">
+                              {isEmpty ? (
+                                <div className="text-xs text-gray-400">—</div>
+                              ) : (
+                                <div className="text-[10px] leading-tight">
+                                  <div className="text-gray-500 dark:text-gray-400">
+                                    {Math.round(yearRevenue).toLocaleString('cs-CZ')} / {Math.round(yearExpenses).toLocaleString('cs-CZ')}
+                                  </div>
+                                  <div className={`text-sm font-bold ${yearTotal >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                                    {yearTotal >= 0 ? '+' : ''}{Math.round(yearTotal).toLocaleString('cs-CZ')}
+                                  </div>
+                                </div>
+                              )}
+                            </td>
+                          )
+                        })()}
                       </tr>
                     ))}
                   </React.Fragment>
