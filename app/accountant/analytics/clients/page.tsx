@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import {
   ArrowLeft,
   Search,
-  UserPlus,
   UserMinus,
   Save,
   X,
@@ -55,20 +54,27 @@ export default function ClientsRevenuePage() {
   const [editFee, setEditFee] = useState('')
   const [showChurnModal, setShowChurnModal] = useState<string | null>(null)
   const [churnNotes, setChurnNotes] = useState('')
-  const [showOnboardModal, setShowOnboardModal] = useState(false)
-  const [selectedCompanyForOnboard, setSelectedCompanyForOnboard] = useState('')
-  const [onboardFee, setOnboardFee] = useState('')
-  const [onboardDate, setOnboardDate] = useState(new Date().toISOString().split('T')[0])
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+  const [billingEntityMap, setBillingEntityMap] = useState<Map<string, string | null>>(new Map())
 
   useEffect(() => { fetchData() }, [])
 
   async function fetchData() {
     setLoading(true)
     try {
-      const res = await fetch('/api/accountant/companies')
-      const data = await res.json()
-      setCompanies(data.companies || [])
+      const [compRes, groupsRes] = await Promise.all([
+        fetch('/api/accountant/companies'),
+        fetch(`/api/accountant/payments?year=${new Date().getFullYear()}`),
+      ])
+      const compData = await compRes.json()
+      setCompanies(compData.companies || [])
+
+      const payData = await groupsRes.json()
+      const map = new Map<string, string | null>()
+      for (const g of (payData.groups || [])) {
+        map.set(g.group_name, g.billing_company_id)
+      }
+      setBillingEntityMap(map)
     } catch {
       toast.error('Chyba při načítání dat')
     } finally {
@@ -178,55 +184,6 @@ export default function ClientsRevenuePage() {
     }
   }
 
-  async function handleOnboard() {
-    if (!selectedCompanyForOnboard || !onboardFee) {
-      toast.error('Vyplňte všechna pole')
-      return
-    }
-
-    const company = companies.find(c => c.id === selectedCompanyForOnboard)
-    const fee = Number(onboardFee)
-
-    try {
-      await fetch(`/api/accountant/companies/${selectedCompanyForOnboard}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          billing_settings: {
-            ...(company?.billing_settings || {}),
-            monthly_fee: fee,
-            client_since: onboardDate,
-          },
-          status: 'active',
-        }),
-      })
-
-      await fetch('/api/analytics/events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company_id: selectedCompanyForOnboard,
-          event_type: 'onboarded',
-          event_date: onboardDate,
-          monthly_fee: fee,
-        }),
-      })
-
-      setCompanies(prev => prev.map(c =>
-        c.id === selectedCompanyForOnboard
-          ? { ...c, status: 'active', billing_settings: { ...(c.billing_settings || {}), monthly_fee: fee, client_since: onboardDate } }
-          : c
-      ))
-
-      setShowOnboardModal(false)
-      setSelectedCompanyForOnboard('')
-      setOnboardFee('')
-      toast.success('Nový klient zaznamenán')
-    } catch {
-      toast.error('Chyba')
-    }
-  }
-
   const filterCounts = useMemo(() => {
     const counts: Record<string, number> = { all: companies.length }
     companies.forEach(c => {
@@ -257,9 +214,7 @@ export default function ClientsRevenuePage() {
             <p className="text-sm text-gray-500">Kolik nám který klient měsíčně platí</p>
           </div>
         </div>
-        <Button onClick={() => setShowOnboardModal(true)} className="gap-1">
-          <UserPlus className="h-4 w-4" /> Nový klient
-        </Button>
+        {/* Klienti se přidávají přes standardní onboarding, ne zde */}
       </div>
 
       {/* Filters */}
@@ -321,7 +276,11 @@ export default function ClientsRevenuePage() {
                   const showGroupHeader = currentGroup && currentGroup !== prevGroup
                   const isCollapsed = currentGroup ? collapsedGroups.has(currentGroup) : false
 
-                  if (currentGroup && isCollapsed && !showGroupHeader) return null
+                  // When collapsed: show only billing entity (or first company if no billing entity set)
+                  const isBillingEntity = currentGroup
+                    ? (billingEntityMap.get(currentGroup) === c.id || (!billingEntityMap.get(currentGroup) && index === filtered.findIndex(f => f.group_name === currentGroup)))
+                    : false
+                  if (currentGroup && isCollapsed && !showGroupHeader && !isBillingEntity) return null
 
                   return (
                     <Fragment key={c.id}>
@@ -441,57 +400,7 @@ export default function ClientsRevenuePage() {
         </div>
       )}
 
-      {/* Onboard modal */}
-      {showOnboardModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowOnboardModal(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <UserPlus className="h-5 w-5 text-green-600" />
-              Zaznamenat nového klienta
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium block mb-1">Firma</label>
-                <select
-                  value={selectedCompanyForOnboard}
-                  onChange={e => setSelectedCompanyForOnboard(e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                >
-                  <option value="">Vyberte firmu...</option>
-                  {companies
-                    .filter(c => c.status !== 'active' || !(c.billing_settings?.monthly_fee))
-                    .sort((a, b) => a.name.localeCompare(b.name, 'cs'))
-                    .map(c => (
-                      <option key={c.id} value={c.id}>{c.name} ({c.ico})</option>
-                    ))
-                  }
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium block mb-1">Měsíční paušál (Kč)</label>
-                <Input
-                  type="number"
-                  value={onboardFee}
-                  onChange={e => setOnboardFee(e.target.value)}
-                  placeholder="např. 8000"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium block mb-1">Klientem od</label>
-                <Input
-                  type="date"
-                  value={onboardDate}
-                  onChange={e => setOnboardDate(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="flex gap-2 justify-end mt-6">
-              <Button variant="outline" onClick={() => setShowOnboardModal(false)}>Zrušit</Button>
-              <Button onClick={handleOnboard}>Zaznamenat</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Klienti se přidávají přes standardní onboarding flow */}
     </div>
   )
 }
