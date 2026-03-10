@@ -24,3 +24,25 @@ export type TaxCompany = {
   status: string
   monthly_reporting: boolean
 }
+
+export type TaxAnnualConfigRow = {
+  id?: string
+  company_id: string
+  year: number
+  mortgage_interest: number
+  savings_contributions: number
+  other_deductions: number
+  taxpayer_discount: boolean
+  children_count: number
+  children_details: Array<{ order: number; ztpp: boolean }>
+  other_credits: number
+  social_advances_paid: number
+  health_advances_paid: number
+  initial_tax_base: number | null
+  annual_revenue: number | null
+  annual_expenses: number | null
+  notes: string | null
+  updated_by: string | null
+  created_at?: string
+  updated_at?: string
+}

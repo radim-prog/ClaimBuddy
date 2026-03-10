@@ -1,27 +1,12 @@
 'use client'
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react'
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import { ChevronRight, Calculator } from 'lucide-react'
-import { IncomeTaxCell } from './income-tax-cell'
-import { TaxEditModal } from './tax-edit-modal'
-import { IncomeTaxDetailModal } from './income-tax-detail-modal'
-import type { TaxPeriodData, TaxCompany } from '@/lib/types/tax'
+import { ChevronRight, ChevronDown, Save, Check, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { calculateIncomeTax, DEFAULT_TAX_RATES, type TaxRates, type TaxAnnualConfig, type IncomeTaxCalculation } from '@/lib/tax-calculator'
+import type { TaxCompany, TaxAnnualConfigRow } from '@/lib/types/tax'
 
-const months = [
-  'Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čer',
-  'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro'
-]
-const monthsShort = [
-  'Le', 'Ún', 'Bř', 'Du', 'Kv', 'Čn',
-  'Čc', 'Sr', 'Zá', 'Ří', 'Li', 'Pr'
-]
-const monthsFull = [
-  'leden', 'únor', 'březen', 'duben', 'květen', 'červen',
-  'červenec', 'srpen', 'září', 'říjen', 'listopad', 'prosinec'
-]
-
-const currentMonth = new Date().getMonth()
 const currentYear = new Date().getFullYear()
 
 type GroupInfo = {
@@ -36,34 +21,436 @@ type BillingUnit = {
   companies: TaxCompany[]
 }
 
+function formatCZK(n: number): string {
+  return Math.round(n).toLocaleString('cs-CZ')
+}
+
+function CZK(n: number): string {
+  return Math.round(n).toLocaleString('cs-CZ') + ' Kč'
+}
+
+type ExpandedDetailProps = {
+  config: Partial<TaxAnnualConfigRow>
+  rates: TaxRates
+  onConfigChange: (field: string, value: any) => void
+  onSave: () => Promise<void>
+  saving: boolean
+  isFO: boolean
+}
+
+function ExpandedDetail({ config, rates, onConfigChange, onSave, saving, isFO }: ExpandedDetailProps) {
+  if (!isFO) {
+    return (
+      <tr>
+        <td colSpan={9} className="px-4 py-3 bg-gray-50/80 dark:bg-gray-800/80">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div>
+              <label className="text-[10px] text-gray-500 block mb-0.5">Poznámka</label>
+              <input
+                type="text"
+                value={config.notes || ''}
+                onChange={e => onConfigChange('notes', e.target.value)}
+                className="h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 w-64"
+                placeholder="Poznámka..."
+              />
+            </div>
+            <button
+              onClick={onSave}
+              disabled={saving}
+              className="h-8 px-4 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              Uložit
+            </button>
+          </div>
+        </td>
+      </tr>
+    )
+  }
+
+  return (
+    <tr>
+      <td colSpan={9} className="px-4 py-3 bg-gray-50/80 dark:bg-gray-800/80">
+        <div className="max-w-3xl space-y-3">
+          {/* Odpočty */}
+          <div>
+            <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Odpočty</div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div>
+                <label className="text-[10px] text-gray-500 block mb-0.5">Hypotéka</label>
+                <input
+                  type="number"
+                  value={config.mortgage_interest || ''}
+                  onChange={e => onConfigChange('mortgage_interest', parseFloat(e.target.value) || 0)}
+                  className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 block mb-0.5">Spoření</label>
+                <input
+                  type="number"
+                  value={config.savings_contributions || ''}
+                  onChange={e => onConfigChange('savings_contributions', parseFloat(e.target.value) || 0)}
+                  className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 block mb-0.5">Ostatní</label>
+                <input
+                  type="number"
+                  value={config.other_deductions || ''}
+                  onChange={e => onConfigChange('other_deductions', parseFloat(e.target.value) || 0)}
+                  className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Slevy */}
+          <div>
+            <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Slevy</div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <label className="flex items-center gap-1.5 text-sm">
+                <input
+                  type="checkbox"
+                  checked={config.taxpayer_discount ?? true}
+                  onChange={e => onConfigChange('taxpayer_discount', e.target.checked)}
+                  className="rounded"
+                />
+                Poplatník ({CZK(rates.taxpayer_discount)})
+              </label>
+              <div>
+                <label className="text-[10px] text-gray-500 block mb-0.5">Děti</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={config.children_count || ''}
+                  onChange={e => onConfigChange('children_count', parseInt(e.target.value) || 0)}
+                  className="h-8 w-16 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 block mb-0.5">Ostatní slevy</label>
+                <input
+                  type="number"
+                  value={config.other_credits || ''}
+                  onChange={e => onConfigChange('other_credits', parseFloat(e.target.value) || 0)}
+                  className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Zálohy */}
+          <div>
+            <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Zálohy pojistné</div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div>
+                <label className="text-[10px] text-gray-500 block mb-0.5">Sociální</label>
+                <input
+                  type="number"
+                  value={config.social_advances_paid || ''}
+                  onChange={e => onConfigChange('social_advances_paid', parseFloat(e.target.value) || 0)}
+                  className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 block mb-0.5">Zdravotní</label>
+                <input
+                  type="number"
+                  value={config.health_advances_paid || ''}
+                  onChange={e => onConfigChange('health_advances_paid', parseFloat(e.target.value) || 0)}
+                  className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Poznámka + save */}
+          <div className="flex items-end gap-3 pt-1 border-t dark:border-gray-700">
+            <div className="flex-1">
+              <label className="text-[10px] text-gray-500 block mb-0.5">Poznámka</label>
+              <input
+                type="text"
+                value={config.notes || ''}
+                onChange={e => onConfigChange('notes', e.target.value)}
+                className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500"
+                placeholder="Poznámka k roční kalkulaci..."
+              />
+            </div>
+            <button
+              onClick={onSave}
+              disabled={saving}
+              className="h-8 px-4 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+            >
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              Uložit
+            </button>
+          </div>
+        </div>
+      </td>
+    </tr>
+  )
+}
+
+function CompanyRow({
+  company,
+  annualConfig,
+  monthlyTotals,
+  rates,
+  year,
+  onSave,
+}: {
+  company: TaxCompany
+  annualConfig: Partial<TaxAnnualConfigRow> | null
+  monthlyTotals: { revenue: number; expenses: number } | null
+  rates: TaxRates
+  year: number
+  onSave: (companyId: string, data: any) => Promise<void>
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [savedMain, setSavedMain] = useState(false)
+
+  // Local state for revenue/expenses (editable inline)
+  const [revenue, setRevenue] = useState<number>(
+    annualConfig?.annual_revenue ?? monthlyTotals?.revenue ?? 0
+  )
+  const [expenses, setExpenses] = useState<number>(
+    annualConfig?.annual_expenses ?? monthlyTotals?.expenses ?? 0
+  )
+
+  // Local state for expanded detail config
+  const [config, setConfig] = useState<Partial<TaxAnnualConfigRow>>({
+    mortgage_interest: annualConfig?.mortgage_interest ?? 0,
+    savings_contributions: annualConfig?.savings_contributions ?? 0,
+    other_deductions: annualConfig?.other_deductions ?? 0,
+    taxpayer_discount: annualConfig?.taxpayer_discount ?? true,
+    children_count: annualConfig?.children_count ?? 0,
+    other_credits: annualConfig?.other_credits ?? 0,
+    social_advances_paid: annualConfig?.social_advances_paid ?? 0,
+    health_advances_paid: annualConfig?.health_advances_paid ?? 0,
+    notes: annualConfig?.notes ?? '',
+  })
+
+  const initialRevRef = useRef(revenue)
+  const initialExpRef = useRef(expenses)
+
+  // Reset on prop change
+  useEffect(() => {
+    const rev = annualConfig?.annual_revenue ?? monthlyTotals?.revenue ?? 0
+    const exp = annualConfig?.annual_expenses ?? monthlyTotals?.expenses ?? 0
+    setRevenue(rev)
+    setExpenses(exp)
+    initialRevRef.current = rev
+    initialExpRef.current = exp
+    setConfig({
+      mortgage_interest: annualConfig?.mortgage_interest ?? 0,
+      savings_contributions: annualConfig?.savings_contributions ?? 0,
+      other_deductions: annualConfig?.other_deductions ?? 0,
+      taxpayer_discount: annualConfig?.taxpayer_discount ?? true,
+      children_count: annualConfig?.children_count ?? 0,
+      other_credits: annualConfig?.other_credits ?? 0,
+      social_advances_paid: annualConfig?.social_advances_paid ?? 0,
+      health_advances_paid: annualConfig?.health_advances_paid ?? 0,
+      notes: annualConfig?.notes ?? '',
+    })
+  }, [annualConfig, monthlyTotals])
+
+  const isFO = company.legal_form === 'fyzicka_osoba'
+  const taxBase = revenue - expenses
+
+  // Calculate DPFO for FO companies
+  const calc: IncomeTaxCalculation | null = useMemo(() => {
+    if (!isFO) return null
+    const taxConfig: TaxAnnualConfig = {
+      mortgage_interest: config.mortgage_interest ?? 0,
+      savings_contributions: config.savings_contributions ?? 0,
+      other_deductions: config.other_deductions ?? 0,
+      taxpayer_discount: config.taxpayer_discount ?? true,
+      children_count: config.children_count ?? 0,
+      children_details: [],
+      other_credits: config.other_credits ?? 0,
+      social_advances_paid: config.social_advances_paid ?? 0,
+      health_advances_paid: config.health_advances_paid ?? 0,
+      initial_tax_base: null,
+    }
+    return calculateIncomeTax({ revenue, expenses }, taxConfig, rates)
+  }, [revenue, expenses, config, rates, isFO])
+
+  // s.r.o. simplified: just tax base * 21% (CIT)
+  const sroTax = !isFO ? Math.max(0, Math.round(taxBase * 0.21)) : 0
+
+  const netTax = isFO ? Math.max(0, calc?.netTax ?? 0) : sroTax
+  const socialDue = isFO ? Math.max(0, calc?.socialDue ?? 0) : 0
+  const healthDue = isFO ? Math.max(0, calc?.healthDue ?? 0) : 0
+  const totalDue = isFO ? (calc?.totalDue ?? 0) : sroTax
+
+  const isMainDirty = revenue !== initialRevRef.current || expenses !== initialExpRef.current
+
+  const handleSaveAll = async () => {
+    setSaving(true)
+    try {
+      await onSave(company.id, {
+        company_id: company.id,
+        year,
+        annual_revenue: revenue,
+        annual_expenses: expenses,
+        ...config,
+        children_details: [],
+        initial_tax_base: null,
+      })
+      initialRevRef.current = revenue
+      initialExpRef.current = expenses
+      setSavedMain(true)
+      setTimeout(() => setSavedMain(false), 2000)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSaveMainRow = async () => {
+    setSaving(true)
+    try {
+      await onSave(company.id, {
+        company_id: company.id,
+        year,
+        annual_revenue: revenue,
+        annual_expenses: expenses,
+      })
+      initialRevRef.current = revenue
+      initialExpRef.current = expenses
+      setSavedMain(true)
+      setTimeout(() => setSavedMain(false), 2000)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleConfigChange = (field: string, value: any) => {
+    setConfig(prev => ({ ...prev, [field]: value }))
+  }
+
+  return (
+    <>
+      <tr className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
+        <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
+          <Link href={`/accountant/clients/${company.id}`} className="hover:text-purple-600 transition-colors">
+            <span className="font-semibold">{company.name}</span>
+          </Link>
+          {isFO && (
+            <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium">FO</span>
+          )}
+        </td>
+        <td className="px-2 py-2">
+          <input
+            type="number"
+            value={revenue || ''}
+            onChange={e => setRevenue(parseFloat(e.target.value) || 0)}
+            className="w-full h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-right"
+            placeholder="0"
+          />
+        </td>
+        <td className="px-2 py-2">
+          <input
+            type="number"
+            value={expenses || ''}
+            onChange={e => setExpenses(parseFloat(e.target.value) || 0)}
+            className="w-full h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-right"
+            placeholder="0"
+          />
+        </td>
+        <td className="px-3 py-2 text-sm text-right whitespace-nowrap">
+          <span className={taxBase >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
+            {formatCZK(taxBase)}
+          </span>
+        </td>
+        <td className="px-3 py-2 text-sm text-right whitespace-nowrap text-gray-700 dark:text-gray-300">
+          {formatCZK(netTax)}
+        </td>
+        {isFO ? (
+          <>
+            <td className="px-3 py-2 text-sm text-right whitespace-nowrap text-gray-700 dark:text-gray-300">{formatCZK(socialDue)}</td>
+            <td className="px-3 py-2 text-sm text-right whitespace-nowrap text-gray-700 dark:text-gray-300">{formatCZK(healthDue)}</td>
+          </>
+        ) : (
+          <>
+            <td className="px-3 py-2 text-sm text-right text-gray-400">—</td>
+            <td className="px-3 py-2 text-sm text-right text-gray-400">—</td>
+          </>
+        )}
+        <td className="px-3 py-2 text-sm text-right whitespace-nowrap font-bold">
+          <span className={totalDue > 0 ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}>
+            {formatCZK(totalDue)}
+          </span>
+        </td>
+        <td className="px-2 py-2 text-center">
+          <div className="flex items-center gap-1 justify-center">
+            {isMainDirty && (
+              <button
+                onClick={handleSaveMainRow}
+                disabled={saving}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400 transition-all"
+                title="Uložit příjmy/výdaje"
+              >
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : savedMain ? <Check className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
+              </button>
+            )}
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-500"
+              title="Detail"
+            >
+              <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+        </td>
+      </tr>
+      {expanded && (
+        <ExpandedDetail
+          config={config}
+          rates={rates}
+          onConfigChange={handleConfigChange}
+          onSave={handleSaveAll}
+          saving={saving}
+          isFO={isFO}
+        />
+      )}
+    </>
+  )
+}
+
 export function IncomeTaxMatrix({ selectedYear }: { selectedYear: number }) {
   const [companies, setCompanies] = useState<TaxCompany[]>([])
-  const [taxData, setTaxData] = useState<TaxPeriodData[]>([])
+  const [configs, setConfigs] = useState<Record<string, Partial<TaxAnnualConfigRow>>>({})
+  const [monthlyTotals, setMonthlyTotals] = useState<Record<string, { revenue: number; expenses: number }>>({})
+  const [rates, setRates] = useState<TaxRates>(DEFAULT_TAX_RATES)
   const [groups, setGroups] = useState<GroupInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
 
-  // Modal state
-  const [modalOpen, setModalOpen] = useState(false)
-  const [modalCompanyId, setModalCompanyId] = useState('')
-  const [modalCompanyName, setModalCompanyName] = useState('')
-  const [modalPeriod, setModalPeriod] = useState('')
-
-  // DPFO modal
-  const [dpfoOpen, setDpfoOpen] = useState(false)
-  const [dpfoCompanyId, setDpfoCompanyId] = useState('')
-  const [dpfoCompanyName, setDpfoCompanyName] = useState('')
-
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch(`/api/accountant/tax-data?year=${selectedYear}`)
-      if (!res.ok) throw new Error('Failed to fetch tax data')
+      const res = await fetch(`/api/accountant/tax-annual?year=${selectedYear}`)
+      if (!res.ok) throw new Error('Failed to fetch')
       const json = await res.json()
       setCompanies(json.companies || [])
-      setTaxData(json.taxData || [])
+      setConfigs(json.configs || {})
+      setMonthlyTotals(json.monthlyTotals || {})
       setGroups(json.groups || [])
+      if (json.rates) {
+        setRates({ ...DEFAULT_TAX_RATES, ...json.rates })
+      }
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -74,29 +461,7 @@ export function IncomeTaxMatrix({ selectedYear }: { selectedYear: number }) {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  // Tax data lookup
-  const taxDataMap = useMemo(() => {
-    const map = new Map<string, TaxPeriodData>()
-    for (const d of taxData) {
-      map.set(`${d.company_id}:${d.period}`, d)
-    }
-    return map
-  }, [taxData])
-
-  // YTD calculation for a company up to a given month
-  const getYtd = useCallback((companyId: string, upToMonth: number): number => {
-    let total = 0
-    for (let m = 0; m <= upToMonth; m++) {
-      const period = `${selectedYear}-${String(m + 1).padStart(2, '0')}`
-      const d = taxDataMap.get(`${companyId}:${period}`)
-      if (d) {
-        total += (d.tax_base_override ?? (d.revenue - d.expenses))
-      }
-    }
-    return total
-  }, [selectedYear, taxDataMap])
-
-  // Build billing units (ALL companies, not just VAT payers)
+  // Build billing units (ALL companies)
   const billingUnits = useMemo(() => {
     const groupMap = new Map<string, TaxCompany[]>()
     const standalone: TaxCompany[] = []
@@ -134,60 +499,56 @@ export function IncomeTaxMatrix({ selectedYear }: { selectedYear: number }) {
     return units.sort((a, b) => a.sortKey.localeCompare(b.sortKey, 'cs'))
   }, [companies])
 
-  // Group YTD sum
-  const getGroupYtd = useCallback((companyIds: string[], upToMonth: number): number => {
-    let total = 0
-    for (const cId of companyIds) {
-      total += getYtd(cId, upToMonth)
+  // Get revenue/expenses for a company
+  const getCompanyTotals = useCallback((companyId: string) => {
+    const cfg = configs[companyId]
+    const mt = monthlyTotals[companyId]
+    return {
+      revenue: cfg?.annual_revenue ?? mt?.revenue ?? 0,
+      expenses: cfg?.annual_expenses ?? mt?.expenses ?? 0,
     }
-    return total
-  }, [getYtd])
+  }, [configs, monthlyTotals])
 
-  const handleCellClick = useCallback((companyId: string, companyName: string, monthIndex: number) => {
-    const period = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}`
-    setModalCompanyId(companyId)
-    setModalCompanyName(companyName)
-    setModalPeriod(period)
-    setModalOpen(true)
-  }, [selectedYear])
+  // Group sums
+  const getGroupSum = useCallback((companyIds: string[]) => {
+    let revenue = 0, expenses = 0, taxBase = 0
+    for (const cId of companyIds) {
+      const t = getCompanyTotals(cId)
+      revenue += t.revenue
+      expenses += t.expenses
+      taxBase += t.revenue - t.expenses
+    }
+    return { revenue, expenses, taxBase }
+  }, [getCompanyTotals])
 
-  const handleSave = useCallback((updated: TaxPeriodData) => {
-    setTaxData(prev => {
-      const idx = prev.findIndex(d => d.company_id === updated.company_id && d.period === updated.period)
-      if (idx >= 0) {
-        const next = [...prev]
-        next[idx] = updated
-        return next
-      }
-      return [...prev, updated]
+  const handleSave = useCallback(async (companyId: string, data: any) => {
+    const res = await fetch('/api/accountant/tax-annual', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     })
+
+    if (!res.ok) throw new Error('Save failed')
+
+    const saved = await res.json()
+    // Update local state
+    setConfigs(prev => ({ ...prev, [companyId]: saved }))
+    toast.success('Uloženo')
   }, [])
 
-  const modalData = useMemo(() =>
-    taxDataMap.get(`${modalCompanyId}:${modalPeriod}`) || null,
-    [taxDataMap, modalCompanyId, modalPeriod]
-  )
-
-  // For past years, use full year (Dec); for current year, use current month
-  const lastApplicableMonth = selectedYear < currentYear ? 11 : currentMonth
-
-  // Full year total per company (always all 12 months for annual tax perspective)
-  const getFullYearTotal = useCallback((companyId: string): number => {
-    return getYtd(companyId, 11)
-  }, [getYtd])
-
-  // Stats — use lastApplicableMonth for "how far we are", full year for annual view
+  // Stats
   const stats = useMemo(() => {
-    let totalProfit = 0
+    let totalBase = 0
     let profitable = 0
     let lossmaking = 0
     for (const c of companies) {
-      const yearTotal = getYtd(c.id, lastApplicableMonth)
-      if (yearTotal > 0) { profitable++; totalProfit += yearTotal }
-      else if (yearTotal < 0) { lossmaking++; totalProfit += yearTotal }
+      const t = getCompanyTotals(c.id)
+      const base = t.revenue - t.expenses
+      if (base > 0) { profitable++; totalBase += base }
+      else if (base < 0) { lossmaking++; totalBase += base }
     }
-    return { totalProfit, profitable, lossmaking }
-  }, [companies, getYtd, lastApplicableMonth])
+    return { totalBase, profitable, lossmaking }
+  }, [companies, getCompanyTotals])
 
   if (loading) {
     return (
@@ -209,7 +570,7 @@ export function IncomeTaxMatrix({ selectedYear }: { selectedYear: number }) {
   return (
     <>
       {/* Stats */}
-      <div className="mb-6 bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-xl shadow-soft-sm">
+      <div className="mb-4 bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-xl shadow-soft-sm">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2 px-3 py-2">
             <div className="w-8 h-8 rounded bg-purple-500 border-2 border-purple-600 flex items-center justify-center">
@@ -240,46 +601,33 @@ export function IncomeTaxMatrix({ selectedYear }: { selectedYear: number }) {
           </div>
           <div className="border-l pl-3 ml-1 hidden sm:block">
             <div className="text-xs text-gray-500 dark:text-gray-400">Celkový základ daně {selectedYear}</div>
-            <div className={`text-lg font-bold ${stats.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-              {stats.totalProfit >= 0 ? '+' : ''}{Math.round(stats.totalProfit).toLocaleString('cs-CZ')} Kč
+            <div className={`text-lg font-bold ${stats.totalBase >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              {stats.totalBase >= 0 ? '+' : ''}{Math.round(stats.totalBase).toLocaleString('cs-CZ')} Kč
             </div>
           </div>
         </div>
       </div>
 
-      {/* Matrix Table */}
+      {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft-sm overflow-x-auto">
-        <table className="w-full divide-y divide-gray-200 dark:divide-gray-700" style={{ minWidth: '1200px' }}>
+        <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gradient-to-r from-purple-600 to-blue-600">
             <tr>
-              <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider sticky left-0 bg-purple-600 z-10 min-w-[160px]">
-                Firma
-              </th>
-              {months.map((month, index) => (
-                <th
-                  key={index}
-                  className={`px-0.5 py-3 text-center text-xs font-medium uppercase tracking-wider ${
-                    index === currentMonth && selectedYear === currentYear
-                      ? 'bg-white/20 text-white font-bold ring-2 ring-white/50 rounded'
-                      : 'text-white'
-                  }`}
-                >
-                  <span className="hidden sm:inline">{month}</span>
-                  <span className="sm:hidden">{monthsShort[index]}</span>
-                  {index === currentMonth && selectedYear === currentYear && (
-                    <div className="text-xs font-normal">●</div>
-                  )}
-                </th>
-              ))}
-              <th className="px-2 py-3 text-center text-xs font-bold text-white uppercase tracking-wider bg-purple-700 min-w-[100px]">
-                ROK {selectedYear}
-              </th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider min-w-[160px]">Firma</th>
+              <th className="px-2 py-3 text-right text-xs font-medium text-white uppercase tracking-wider min-w-[110px]">Příjmy</th>
+              <th className="px-2 py-3 text-right text-xs font-medium text-white uppercase tracking-wider min-w-[110px]">Výdaje</th>
+              <th className="px-3 py-3 text-right text-xs font-medium text-white uppercase tracking-wider min-w-[90px]">Základ</th>
+              <th className="px-3 py-3 text-right text-xs font-medium text-white uppercase tracking-wider min-w-[80px]">Daň</th>
+              <th className="px-3 py-3 text-right text-xs font-medium text-white uppercase tracking-wider min-w-[80px]">Soc.</th>
+              <th className="px-3 py-3 text-right text-xs font-medium text-white uppercase tracking-wider min-w-[80px]">Zdrav.</th>
+              <th className="px-3 py-3 text-right text-xs font-medium text-white uppercase tracking-wider min-w-[90px]">CELKEM</th>
+              <th className="px-2 py-3 text-center text-xs font-medium text-white uppercase tracking-wider w-16"></th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="bg-white dark:bg-gray-800">
             {billingUnits.length === 0 ? (
               <tr>
-                <td colSpan={14} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={9} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                   Žádné firmy k zobrazení
                 </td>
               </tr>
@@ -292,126 +640,58 @@ export function IncomeTaxMatrix({ selectedYear }: { selectedYear: number }) {
                 return (
                   <React.Fragment key={isGroup ? `g-${groupName}` : `s-${unit.companies[0].id}`}>
                     {/* Group header */}
-                    {isGroup && (
-                      <tr
-                        className="bg-purple-50 dark:bg-purple-900/20 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
-                        onClick={() => setCollapsedGroups(prev => {
-                          const next = new Set(prev)
-                          if (next.has(groupName!)) next.delete(groupName!)
-                          else next.add(groupName!)
-                          return next
-                        })}
-                      >
-                        <td className="px-2 sm:px-4 py-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300 sticky left-0 z-10 bg-purple-50 dark:bg-purple-900/20 select-none">
-                          <span className="inline-flex items-center gap-1">
-                            <ChevronRight className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
-                            {groupName}
-                            <span className="ml-1 text-[10px] font-normal text-purple-500 dark:text-purple-400">
-                              ({unit.companies.length} firem)
+                    {isGroup && (() => {
+                      const sum = getGroupSum(unit.companies.map(c => c.id))
+                      const hasData = sum.revenue > 0 || sum.expenses > 0
+                      return (
+                        <tr
+                          className="bg-purple-50 dark:bg-purple-900/20 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                          onClick={() => setCollapsedGroups(prev => {
+                            const next = new Set(prev)
+                            if (next.has(groupName!)) next.delete(groupName!)
+                            else next.add(groupName!)
+                            return next
+                          })}
+                        >
+                          <td className="px-3 py-2 text-xs font-semibold text-purple-700 dark:text-purple-300 select-none">
+                            <span className="inline-flex items-center gap-1">
+                              <ChevronRight className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
+                              {groupName}
+                              <span className="ml-1 text-[10px] font-normal text-purple-500 dark:text-purple-400">
+                                ({unit.companies.length} firem)
+                              </span>
                             </span>
-                          </span>
-                        </td>
-                        {/* Group aggregate cells */}
-                        {months.map((_, monthIndex) => {
-                          const isFuture = selectedYear > currentYear || (selectedYear === currentYear && monthIndex > currentMonth)
-                          if (isFuture) {
-                            return <td key={monthIndex} className="px-0.5 py-1.5 text-center"><div className="w-[88px] h-6 mx-auto" /></td>
-                          }
-                          const groupYtd = getGroupYtd(unit.companies.map(c => c.id), monthIndex)
-                          if (groupYtd === 0) {
-                            return <td key={monthIndex} className="px-0.5 py-1.5 text-center"><div className="w-[88px] h-6 mx-auto" /></td>
-                          }
-                          return (
-                            <td key={monthIndex} className="px-0.5 py-1.5 text-center">
-                              <div className={`text-[9px] leading-tight font-medium ${groupYtd >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                Σ {groupYtd >= 0 ? '+' : ''}{Math.round(groupYtd).toLocaleString('cs-CZ')}
-                              </div>
-                            </td>
-                          )
-                        })}
-                        {/* Group annual total */}
-                        <td className="px-1 py-1.5 text-center bg-purple-50/50 dark:bg-purple-900/10">
-                          {(() => {
-                            const groupTotal = getGroupYtd(unit.companies.map(c => c.id), 11)
-                            return groupTotal !== 0 ? (
-                              <div className={`text-xs font-bold ${groupTotal >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-                                Σ {groupTotal >= 0 ? '+' : ''}{Math.round(groupTotal).toLocaleString('cs-CZ')}
-                              </div>
-                            ) : null
-                          })()}
-                        </td>
-                      </tr>
-                    )}
+                          </td>
+                          {hasData ? (
+                            <>
+                              <td className="px-2 py-2 text-right text-xs font-medium text-purple-600 dark:text-purple-400">Σ {formatCZK(sum.revenue)}</td>
+                              <td className="px-2 py-2 text-right text-xs font-medium text-purple-600 dark:text-purple-400">Σ {formatCZK(sum.expenses)}</td>
+                              <td className="px-3 py-2 text-right text-xs font-bold">
+                                <span className={sum.taxBase >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                                  Σ {formatCZK(sum.taxBase)}
+                                </span>
+                              </td>
+                              <td colSpan={4}></td>
+                            </>
+                          ) : (
+                            <td colSpan={7}></td>
+                          )}
+                          <td></td>
+                        </tr>
+                      )
+                    })()}
 
                     {/* Individual company rows */}
-                    {(!isGroup || !isCollapsed) && unit.companies.map((company, cIndex) => (
-                      <tr
-                        key={company.id}
-                        className={cIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}
-                      >
-                        <td className={`px-2 sm:px-4 py-1.5 text-sm font-medium text-gray-900 dark:text-white sticky left-0 z-10 ${cIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
-                          <div className="flex items-center gap-1">
-                            <Link href={`/accountant/clients/${company.id}`} className="hover:text-purple-600 transition-colors min-w-0">
-                              <div className="truncate max-w-[130px]">
-                                <span className="font-semibold">{company.name}</span>
-                                <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-1.5">
-                                  {company.legal_form === 'fyzicka_osoba' ? 'FO' : company.legal_form.toUpperCase()}
-                                </span>
-                              </div>
-                            </Link>
-                            {company.legal_form === 'fyzicka_osoba' && (
-                              <button
-                                onClick={() => { setDpfoCompanyId(company.id); setDpfoCompanyName(company.name); setDpfoOpen(true) }}
-                                className="shrink-0 p-0.5 rounded hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-500 dark:text-purple-400 transition-colors"
-                                title="DPFO kalkulátor"
-                              >
-                                <Calculator className="h-3.5 w-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                        {months.map((_, monthIndex) => {
-                          const period = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}`
-                          const isFuture = selectedYear > currentYear || (selectedYear === currentYear && monthIndex > currentMonth)
-                          const cellData = taxDataMap.get(`${company.id}:${period}`) || null
-                          const ytd = getYtd(company.id, monthIndex)
-
-                          return (
-                            <IncomeTaxCell
-                              key={monthIndex}
-                              data={cellData}
-                              ytdResult={ytd}
-                              companyName={company.name}
-                              monthLabel={`${monthsFull[monthIndex]} ${selectedYear}`}
-                              isFuture={isFuture}
-                              onClick={() => handleCellClick(company.id, company.name, monthIndex)}
-                            />
-                          )
-                        })}
-                        {/* Annual total column */}
-                        {(() => {
-                          const yearTotal = getFullYearTotal(company.id)
-                          const yearRevenue = (() => { let s = 0; for (let m = 0; m < 12; m++) { const d = taxDataMap.get(`${company.id}:${selectedYear}-${String(m+1).padStart(2,'0')}`); if (d) s += d.revenue } return s })()
-                          const yearExpenses = (() => { let s = 0; for (let m = 0; m < 12; m++) { const d = taxDataMap.get(`${company.id}:${selectedYear}-${String(m+1).padStart(2,'0')}`); if (d) s += d.expenses } return s })()
-                          const isEmpty = yearRevenue === 0 && yearExpenses === 0
-                          return (
-                            <td className="px-1 py-1.5 text-center bg-purple-50/50 dark:bg-purple-900/10">
-                              {isEmpty ? (
-                                <div className="text-xs text-gray-400">—</div>
-                              ) : (
-                                <div className="text-[10px] leading-tight">
-                                  <div className="text-gray-500 dark:text-gray-400">
-                                    {Math.round(yearRevenue).toLocaleString('cs-CZ')} / {Math.round(yearExpenses).toLocaleString('cs-CZ')}
-                                  </div>
-                                  <div className={`text-sm font-bold ${yearTotal >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-                                    {yearTotal >= 0 ? '+' : ''}{Math.round(yearTotal).toLocaleString('cs-CZ')}
-                                  </div>
-                                </div>
-                              )}
-                            </td>
-                          )
-                        })()}
-                      </tr>
+                    {(!isGroup || !isCollapsed) && unit.companies.map((company) => (
+                      <CompanyRow
+                        key={`${company.id}-${selectedYear}`}
+                        company={company}
+                        annualConfig={configs[company.id] || null}
+                        monthlyTotals={monthlyTotals[company.id] || null}
+                        rates={rates}
+                        year={selectedYear}
+                        onSave={handleSave}
+                      />
                     ))}
                   </React.Fragment>
                 )
@@ -420,26 +700,6 @@ export function IncomeTaxMatrix({ selectedYear }: { selectedYear: number }) {
           </tbody>
         </table>
       </div>
-
-      {/* Edit Modal */}
-      <TaxEditModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        companyId={modalCompanyId}
-        companyName={modalCompanyName}
-        period={modalPeriod}
-        data={modalData}
-        onSave={handleSave}
-      />
-
-      {/* DPFO Calculator Modal */}
-      <IncomeTaxDetailModal
-        open={dpfoOpen}
-        onOpenChange={setDpfoOpen}
-        companyId={dpfoCompanyId}
-        companyName={dpfoCompanyName}
-        year={selectedYear}
-      />
     </>
   )
 }
