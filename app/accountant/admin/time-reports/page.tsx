@@ -30,7 +30,12 @@ import {
   Briefcase,
   CheckCircle2,
   Loader2,
+  Wallet,
 } from 'lucide-react'
+import { CapacityOverview } from '@/components/capacity/capacity-overview'
+import type { UserCapacity } from '@/lib/types/project'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { UserScheduleEditor } from '@/components/capacity/user-schedule-editor'
 
 type TimeLogEntry = {
   id: string
@@ -55,16 +60,29 @@ type ApiSummary = {
   total_minutes: number
 }
 
+type UserCompensation = {
+  id: string
+  name: string
+  compensation_type: 'hourly' | 'monthly'
+  compensation_amount: number
+}
+
 function formatHoursMinutes(hours: number, minutes: number): string {
   return `${hours}h ${minutes}m`
 }
 
 export default function TimeReportsPage() {
+  const [activeTab, setActiveTab] = useState<'time' | 'capacity'>('time')
   const [logs, setLogs] = useState<TimeLogEntry[]>([])
   const [summary, setSummary] = useState<ApiSummary>({ total_entries: 0, total_hours: 0, total_minutes: 0 })
   const [loading, setLoading] = useState(true)
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([])
   const [users, setUsers] = useState<{ id: string; name: string }[]>([])
+  const [userCompensations, setUserCompensations] = useState<UserCompensation[]>([])
+
+  // Capacity state
+  const [capacities, setCapacities] = useState<UserCapacity[]>([])
+  const [selectedCapUser, setSelectedCapUser] = useState<UserCapacity | null>(null)
 
   const [filterUser, setFilterUser] = useState<string>('all')
   const [filterCompany, setFilterCompany] = useState<string>('all')
@@ -73,7 +91,6 @@ export default function TimeReportsPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
 
-  // Generate month options (last 12 months)
   const monthOptions = useMemo(() => {
     const months: string[] = []
     const now = new Date()
@@ -84,11 +101,20 @@ export default function TimeReportsPage() {
     return months
   }, [])
 
-  // Fetch users and companies on mount
+  // Fetch users (with compensation) and companies on mount
   useEffect(() => {
     fetch('/api/accountant/users')
       .then(r => r.json())
-      .then(data => setUsers((data.users ?? []).map((u: any) => ({ id: u.id, name: u.name || u.full_name || 'Neznámý' }))))
+      .then(data => {
+        const allUsers = data.users ?? []
+        setUsers(allUsers.map((u: any) => ({ id: u.id, name: u.name || u.full_name || 'Neznámý' })))
+        setUserCompensations(allUsers.map((u: any) => ({
+          id: u.id,
+          name: u.name || 'Neznámý',
+          compensation_type: u.compensation_type || 'hourly',
+          compensation_amount: Number(u.compensation_amount) || 0,
+        })))
+      })
       .catch(() => {})
 
     fetch('/api/accountant/admin/companies')
@@ -97,12 +123,24 @@ export default function TimeReportsPage() {
       .catch(() => {})
   }, [])
 
+  // Fetch capacities
+  const fetchCapacities = useCallback(async () => {
+    try {
+      const res = await fetch('/api/accountant/capacity')
+      const data = await res.json()
+      setCapacities(data.capacities || [])
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    fetchCapacities()
+  }, [fetchCapacities])
+
   // Fetch time logs
   const fetchLogs = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      // Date range for selected month
       const dateFrom = `${selectedMonth}-01`
       const [year, month] = selectedMonth.split('-').map(Number)
       const lastDay = new Date(year, month, 0).getDate()
@@ -130,7 +168,14 @@ export default function TimeReportsPage() {
     fetchLogs()
   }, [fetchLogs])
 
-  // Compute stats by user
+  // Compensation map for quick lookup
+  const compensationMap = useMemo(() => {
+    const map = new Map<string, UserCompensation>()
+    userCompensations.forEach(u => map.set(u.id, u))
+    return map
+  }, [userCompensations])
+
+  // Compute stats by user (with compensation)
   const statsByUser = useMemo(() => {
     const map = new Map<string, { userName: string; totalMinutes: number; billableMinutes: number; entries: number }>()
     logs.forEach(log => {
@@ -142,8 +187,16 @@ export default function TimeReportsPage() {
       existing.entries += 1
       map.set(key, existing)
     })
-    return Array.from(map.entries()).map(([userId, stats]) => ({ userId, ...stats })).sort((a, b) => b.totalMinutes - a.totalMinutes)
-  }, [logs])
+    return Array.from(map.entries()).map(([userId, stats]) => {
+      const comp = compensationMap.get(userId)
+      const estimatedPay = comp
+        ? comp.compensation_type === 'hourly'
+          ? (stats.totalMinutes / 60) * comp.compensation_amount
+          : comp.compensation_amount
+        : 0
+      return { userId, ...stats, compensation: comp, estimatedPay }
+    }).sort((a, b) => b.totalMinutes - a.totalMinutes)
+  }, [logs, compensationMap])
 
   // Compute stats by company
   const statsByCompany = useMemo(() => {
@@ -162,8 +215,10 @@ export default function TimeReportsPage() {
 
   const totalMinutesAll = logs.reduce((sum, l) => sum + (l.hours || 0) * 60 + (l.minutes || 0), 0)
   const billableMinutesAll = logs.filter(l => l.billable).reduce((sum, l) => sum + (l.hours || 0) * 60 + (l.minutes || 0), 0)
+  const totalEstimatedCost = statsByUser.reduce((sum, s) => sum + s.estimatedPay, 0)
 
   const fmtMin = (m: number) => `${Math.floor(m / 60)}h ${m % 60}m`
+  const fmtKc = (n: number) => Math.round(n).toLocaleString('cs-CZ') + ' Kč'
 
   const exportToCsv = () => {
     const headers = ['Datum', 'Uživatel', 'Klient', 'Popis', 'Hodiny', 'Minuty', 'Fakturovatelné']
@@ -176,7 +231,6 @@ export default function TimeReportsPage() {
       String(log.minutes || 0),
       log.billable ? 'Ano' : 'Ne',
     ])
-
     const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
@@ -185,7 +239,7 @@ export default function TimeReportsPage() {
     link.click()
   }
 
-  if (loading && logs.length === 0) {
+  if (loading && logs.length === 0 && activeTab === 'time') {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -203,258 +257,358 @@ export default function TimeReportsPage() {
             Time Reports
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mt-1">
-            Přehled odpracovaného času
+            Přehled odpracovaného času a kapacit
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[180px]">
-              <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {monthOptions.map(month => (
-                <SelectItem key={month} value={month}>
-                  {new Date(month + '-01').toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' })}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={exportToCsv}>
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
+          {/* Sub-tab toggle */}
+          <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab('time')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'time'
+                  ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+              }`}
+            >
+              Odpracováno
+            </button>
+            <button
+              onClick={() => setActiveTab('capacity')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'capacity'
+                  ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+              }`}
+            >
+              Kapacity
+            </button>
+          </div>
+
+          {activeTab === 'time' && (
+            <>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-[180px]">
+                  <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map(month => (
+                    <SelectItem key={month} value={month}>
+                      {new Date(month + '-01').toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={exportToCsv}>
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Celkem odpracováno</p>
-                <p className="text-2xl font-bold font-display text-gray-900 dark:text-white">{fmtMin(totalMinutesAll)}</p>
-              </div>
-              <Clock className="h-10 w-10 text-blue-100 dark:text-blue-900/50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Fakturovatelné</p>
-                <p className="text-2xl font-bold font-display text-green-600">{fmtMin(billableMinutesAll)}</p>
-              </div>
-              <TrendingUp className="h-10 w-10 text-green-100 dark:text-green-900/50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Záznamy</p>
-                <p className="text-2xl font-bold font-display text-blue-600">{summary.total_entries}</p>
-              </div>
-              <Briefcase className="h-10 w-10 text-blue-100 dark:text-blue-900/50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Nefakturovatelné</p>
-                <p className="text-2xl font-bold font-display text-orange-600">{fmtMin(totalMinutesAll - billableMinutesAll)}</p>
-              </div>
-              <Timer className="h-10 w-10 text-orange-100 dark:text-orange-900/50" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* === CAPACITY TAB === */}
+      {activeTab === 'capacity' && (
+        <div className="space-y-6">
+          <CapacityOverview />
 
-      {/* By User */}
-      {statsByUser.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display">
-              <Users className="h-5 w-5" />
-              Podle účetních
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Účetní</TableHead>
-                  <TableHead className="text-right">Celkem</TableHead>
-                  <TableHead className="text-right">Fakturovatelné</TableHead>
-                  <TableHead className="text-right">Využití</TableHead>
-                  <TableHead className="text-right">Záznamy</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {statsByUser.map(stat => {
-                  const utilPct = stat.totalMinutes > 0 ? Math.round((stat.billableMinutes / stat.totalMinutes) * 100) : 0
-                  return (
-                    <TableRow key={stat.userId}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
-                            {stat.userName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                          </div>
-                          <span className="font-medium text-gray-900 dark:text-white">{stat.userName}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-gray-900 dark:text-white">{fmtMin(stat.totalMinutes)}</TableCell>
-                      <TableCell className="text-right text-green-600">{fmtMin(stat.billableMinutes)}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant="secondary" className={
-                          utilPct >= 80 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                          utilPct >= 60 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                          'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        }>
-                          {utilPct}%
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right text-gray-600 dark:text-gray-300">{stat.entries}</TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* By Company */}
-      {statsByCompany.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display">
-              <Building2 className="h-5 w-5" />
-              Podle klientů
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Klient</TableHead>
-                  <TableHead className="text-right">Celkem</TableHead>
-                  <TableHead className="text-right">Fakturovatelné</TableHead>
-                  <TableHead className="text-right">Záznamy</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {statsByCompany.map(stat => (
-                  <TableRow key={stat.companyId}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-5 w-5 text-gray-400" />
-                        <span className="font-medium text-gray-900 dark:text-white">{stat.companyName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold text-gray-900 dark:text-white">{fmtMin(stat.totalMinutes)}</TableCell>
-                    <TableCell className="text-right text-green-600">{fmtMin(stat.billableMinutes)}</TableCell>
-                    <TableCell className="text-right text-gray-600 dark:text-gray-300">{stat.entries}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Detailed Records */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="font-display">Detailní záznamy</CardTitle>
-              <CardDescription>Všechny záznamy za vybraný měsíc</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Select value={filterUser} onValueChange={setFilterUser}>
-                <SelectTrigger className="w-[180px]">
-                  <Users className="h-4 w-4 mr-2 text-gray-400" />
-                  <SelectValue placeholder="Všichni" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Všichni účetní</SelectItem>
-                  {users.map(u => (
-                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={filterCompany} onValueChange={setFilterCompany}>
-                <SelectTrigger className="w-[180px]">
-                  <Building2 className="h-4 w-4 mr-2 text-gray-400" />
-                  <SelectValue placeholder="Všichni" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Všichni klienti</SelectItem>
-                  {companies.slice(0, 30).map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {capacities.map(cap => (
+              <div
+                key={cap.user_id}
+                className="border rounded-xl p-4 cursor-pointer hover:shadow-soft-md hover:-translate-y-0.5 transition-all"
+                onClick={() => setSelectedCapUser(cap)}
+              >
+                <div className="font-medium">{cap.user_name}</div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {cap.weekly_hours_capacity}h/týden
+                  {cap.overrides.length > 0 && (
+                    <span className="ml-2 text-yellow-600">
+                      {cap.overrides.length} plánovaných výjimek
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Datum</TableHead>
-                <TableHead>Uživatel</TableHead>
-                <TableHead>Klient</TableHead>
-                <TableHead>Popis</TableHead>
-                <TableHead className="text-right">Čas</TableHead>
-                <TableHead className="text-center">Faktur.</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {logs.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-500 dark:text-gray-400 py-8">
-                    Žádné záznamy pro vybraný měsíc a filtry
-                  </TableCell>
-                </TableRow>
-              ) : (
-                logs.map(log => (
-                  <TableRow key={log.id}>
-                    <TableCell className="text-gray-600 dark:text-gray-300">
-                      {log.date ? new Date(log.date).toLocaleDateString('cs-CZ') : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-medium text-gray-900 dark:text-white">{log.user_name || '-'}</span>
-                    </TableCell>
-                    <TableCell className="text-gray-700 dark:text-gray-200">
-                      {log.company_name || <span className="text-gray-400">-</span>}
-                    </TableCell>
-                    <TableCell className="max-w-[200px] truncate text-gray-700 dark:text-gray-200" title={log.description || ''}>
-                      {log.description || log.task_title || '-'}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold text-gray-900 dark:text-white">
-                      {formatHoursMinutes(log.hours || 0, log.minutes || 0)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {log.billable ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-500 mx-auto" />
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
+
+          <Dialog open={!!selectedCapUser} onOpenChange={(open) => !open && setSelectedCapUser(null)}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="font-display">Úprava kapacity</DialogTitle>
+              </DialogHeader>
+              {selectedCapUser && (
+                <UserScheduleEditor
+                  capacity={selectedCapUser}
+                  onUpdated={() => {
+                    fetchCapacities()
+                    setSelectedCapUser(null)
+                  }}
+                />
               )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
+
+      {/* === TIME TAB === */}
+      {activeTab === 'time' && (
+        <>
+          {/* Summary Cards */}
+          <div className="grid gap-4 md:grid-cols-5">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Celkem odpracováno</p>
+                    <p className="text-2xl font-bold font-display text-gray-900 dark:text-white">{fmtMin(totalMinutesAll)}</p>
+                  </div>
+                  <Clock className="h-10 w-10 text-blue-100 dark:text-blue-900/50" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Fakturovatelné</p>
+                    <p className="text-2xl font-bold font-display text-green-600">{fmtMin(billableMinutesAll)}</p>
+                  </div>
+                  <TrendingUp className="h-10 w-10 text-green-100 dark:text-green-900/50" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Záznamy</p>
+                    <p className="text-2xl font-bold font-display text-blue-600">{summary.total_entries}</p>
+                  </div>
+                  <Briefcase className="h-10 w-10 text-blue-100 dark:text-blue-900/50" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Nefakturovatelné</p>
+                    <p className="text-2xl font-bold font-display text-orange-600">{fmtMin(totalMinutesAll - billableMinutesAll)}</p>
+                  </div>
+                  <Timer className="h-10 w-10 text-orange-100 dark:text-orange-900/50" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">Celkové náklady</p>
+                    <p className="text-2xl font-bold font-display text-purple-600">{fmtKc(totalEstimatedCost)}</p>
+                  </div>
+                  <Wallet className="h-10 w-10 text-purple-100 dark:text-purple-900/50" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* By User - with compensation columns */}
+          {statsByUser.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-display">
+                  <Users className="h-5 w-5" />
+                  Podle účetních
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Účetní</TableHead>
+                      <TableHead className="text-right">Celkem</TableHead>
+                      <TableHead className="text-right">Fakturovatelné</TableHead>
+                      <TableHead className="text-right">Využití</TableHead>
+                      <TableHead className="text-right">Sazba</TableHead>
+                      <TableHead className="text-right">Odhadovaná odměna</TableHead>
+                      <TableHead className="text-right">Záznamy</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {statsByUser.map(stat => {
+                      const utilPct = stat.totalMinutes > 0 ? Math.round((stat.billableMinutes / stat.totalMinutes) * 100) : 0
+                      const comp = stat.compensation
+                      return (
+                        <TableRow key={stat.userId}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
+                                {stat.userName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                              </div>
+                              <span className="font-medium text-gray-900 dark:text-white">{stat.userName}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-gray-900 dark:text-white">{fmtMin(stat.totalMinutes)}</TableCell>
+                          <TableCell className="text-right text-green-600">{fmtMin(stat.billableMinutes)}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant="secondary" className={
+                              utilPct >= 80 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                              utilPct >= 60 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                              'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            }>
+                              {utilPct}%
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right text-gray-500">
+                            {comp && comp.compensation_amount > 0
+                              ? `${comp.compensation_amount.toLocaleString('cs-CZ')} Kč${comp.compensation_type === 'hourly' ? '/h' : '/měs'}`
+                              : '-'
+                            }
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-purple-600">
+                            {stat.estimatedPay > 0 ? fmtKc(stat.estimatedPay) : '-'}
+                          </TableCell>
+                          <TableCell className="text-right text-gray-600 dark:text-gray-300">{stat.entries}</TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* By Company */}
+          {statsByCompany.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-display">
+                  <Building2 className="h-5 w-5" />
+                  Podle klientů
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Klient</TableHead>
+                      <TableHead className="text-right">Celkem</TableHead>
+                      <TableHead className="text-right">Fakturovatelné</TableHead>
+                      <TableHead className="text-right">Záznamy</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {statsByCompany.map(stat => (
+                      <TableRow key={stat.companyId}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-5 w-5 text-gray-400" />
+                            <span className="font-medium text-gray-900 dark:text-white">{stat.companyName}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-gray-900 dark:text-white">{fmtMin(stat.totalMinutes)}</TableCell>
+                        <TableCell className="text-right text-green-600">{fmtMin(stat.billableMinutes)}</TableCell>
+                        <TableCell className="text-right text-gray-600 dark:text-gray-300">{stat.entries}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Detailed Records */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="font-display">Detailní záznamy</CardTitle>
+                  <CardDescription>Všechny záznamy za vybraný měsíc</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select value={filterUser} onValueChange={setFilterUser}>
+                    <SelectTrigger className="w-[180px]">
+                      <Users className="h-4 w-4 mr-2 text-gray-400" />
+                      <SelectValue placeholder="Všichni" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Všichni účetní</SelectItem>
+                      {users.map(u => (
+                        <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterCompany} onValueChange={setFilterCompany}>
+                    <SelectTrigger className="w-[180px]">
+                      <Building2 className="h-4 w-4 mr-2 text-gray-400" />
+                      <SelectValue placeholder="Všichni" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Všichni klienti</SelectItem>
+                      {companies.slice(0, 30).map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Datum</TableHead>
+                    <TableHead>Uživatel</TableHead>
+                    <TableHead>Klient</TableHead>
+                    <TableHead>Popis</TableHead>
+                    <TableHead className="text-right">Čas</TableHead>
+                    <TableHead className="text-center">Faktur.</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {logs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                        Žádné záznamy pro vybraný měsíc a filtry
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    logs.map(log => (
+                      <TableRow key={log.id}>
+                        <TableCell className="text-gray-600 dark:text-gray-300">
+                          {log.date ? new Date(log.date).toLocaleDateString('cs-CZ') : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium text-gray-900 dark:text-white">{log.user_name || '-'}</span>
+                        </TableCell>
+                        <TableCell className="text-gray-700 dark:text-gray-200">
+                          {log.company_name || <span className="text-gray-400">-</span>}
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate text-gray-700 dark:text-gray-200" title={log.description || ''}>
+                          {log.description || log.task_title || '-'}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-gray-900 dark:text-white">
+                          {formatHoursMinutes(log.hours || 0, log.minutes || 0)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {log.billable ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-500 mx-auto" />
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   )
 }
