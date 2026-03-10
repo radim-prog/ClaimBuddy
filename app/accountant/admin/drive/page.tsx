@@ -1,5 +1,5 @@
-import { CompanyDriveMapper } from '@/components/drive/company-drive-mapper'
+import { redirect } from 'next/navigation'
 
-export default function AdminDrivePage() {
-  return <CompanyDriveMapper />
+export default function DriveRedirect() {
+  redirect('/accountant/admin/operations')
 }

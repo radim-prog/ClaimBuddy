@@ -1,5 +1,5 @@
-import { InvoicingSettings } from '@/components/admin/invoicing-settings'
+import { redirect } from 'next/navigation'
 
-export default function AdminInvoicingPage() {
-  return <InvoicingSettings />
+export default function InvoicingRedirect() {
+  redirect('/accountant/admin/operations')
 }

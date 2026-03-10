@@ -1,5 +1,5 @@
-import { PricingSettings } from '@/components/admin/pricing-settings'
+import { redirect } from 'next/navigation'
 
-export default function AdminPricingPage() {
-  return <PricingSettings />
+export default function PricingRedirect() {
+  redirect('/accountant/admin/operations')
 }

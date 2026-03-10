@@ -1,5 +1,5 @@
-import { TaskTemplates } from '@/components/admin/task-templates'
+import { redirect } from 'next/navigation'
 
-export default function AdminTemplatesPage() {
-  return <TaskTemplates />
+export default function TemplatesRedirect() {
+  redirect('/accountant/admin/operations')
 }
