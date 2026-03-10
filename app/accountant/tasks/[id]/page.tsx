@@ -34,9 +34,9 @@ export default function TaskDetailPage() {
           const base = fromType === 'legacy'
             ? `/accountant/projects/${fromProject}?tab=ukoly`
             : `/accountant/tasks/${fromProject}?tab=ukoly`
-          router.push(base)
+          window.location.href = base
         } else {
-          router.back()
+          window.location.href = '/accountant/work'
         }
       }}
     />
