@@ -125,9 +125,6 @@ export function PaymentMatrix({ selectedYear }: { selectedYear: number }) {
         arr.push(c)
         groupMap.set(c.group_name, arr)
       } else {
-        // Skip zero-fee companies without group (unless onboarding)
-        const fee = c.billing_settings?.monthly_fee || 0
-        if (fee === 0 && c.status !== 'onboarding') continue
         standalone.push(c)
       }
     }
