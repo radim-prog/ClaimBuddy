@@ -24,6 +24,7 @@ export interface RaynetBC {
 export interface RaynetMapping {
   company_id: string
   company_name: string
+  group_name: string | null
   raynet_company_id: number | null
   raynet_company_name: string | null
   last_sync_at: string | null

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Link2,
   Loader2,
@@ -11,18 +11,11 @@ import {
   CheckCircle2,
   Clock,
   ExternalLink,
+  ChevronRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   Dialog,
   DialogContent,
@@ -40,6 +33,22 @@ type RaynetCompanyOption = {
   id: number
   name: string
   regNumber: string | null
+}
+
+type GroupData = {
+  group_name: string
+  billing_company_id: string | null
+}
+
+// A display unit: either a standalone company or a group
+type DisplayUnit = {
+  type: 'standalone'
+  mapping: RaynetMapping
+} | {
+  type: 'group'
+  groupName: string
+  billingMapping: RaynetMapping
+  members: RaynetMapping[]
 }
 
 function getSyncBadge(status: SyncStatus) {
@@ -92,20 +101,24 @@ function formatSyncDate(dateStr: string | null): string {
 
 export function CompanyRaynetMapper() {
   const [mappings, setMappings] = useState<RaynetMapping[]>([])
+  const [groups, setGroups] = useState<GroupData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
 
   // Map dialog state
   const [mapDialogOpen, setMapDialogOpen] = useState(false)
-  const [mapTarget, setMapTarget] = useState<RaynetMapping | null>(null)
+  const [mapTarget, setMapTarget] = useState<{ type: 'company' | 'group'; companyId?: string; groupName?: string; displayName: string } | null>(null)
   const [raynetSearch, setRaynetSearch] = useState('')
   const [raynetCompanies, setRaynetCompanies] = useState<RaynetCompanyOption[]>([])
   const [raynetLoading, setRaynetLoading] = useState(false)
   const [mapping, setMapping] = useState(false)
 
   // Disconnect dialog state
-  const [disconnectTarget, setDisconnectTarget] = useState<RaynetMapping | null>(null)
+  const [disconnectTarget, setDisconnectTarget] = useState<{ type: 'company' | 'group'; companyId?: string; groupName?: string; displayName: string } | null>(null)
+
+  // Collapse state for groups
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
 
   // Sync state
   const [syncing, setSyncing] = useState(false)
@@ -120,6 +133,7 @@ export function CompanyRaynetMapper() {
       const data = await res.json()
       const list: RaynetMapping[] = Array.isArray(data) ? data : data.mappings ?? []
       setMappings(list)
+      setGroups(data.groups ?? [])
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Nepodařilo se načíst mapování'
       setError(message)
@@ -132,6 +146,93 @@ export function CompanyRaynetMapper() {
   useEffect(() => {
     fetchMappings()
   }, [fetchMappings])
+
+  // Build display units: groups + standalone companies
+  const displayUnits = useMemo((): DisplayUnit[] => {
+    const groupMap = new Map<string, GroupData>()
+    for (const g of groups) {
+      groupMap.set(g.group_name, g)
+    }
+
+    // Group mappings by group_name
+    const grouped = new Map<string, RaynetMapping[]>()
+    const standalone: RaynetMapping[] = []
+
+    for (const m of mappings) {
+      if (m.group_name) {
+        const arr = grouped.get(m.group_name) || []
+        arr.push(m)
+        grouped.set(m.group_name, arr)
+      } else {
+        standalone.push(m)
+      }
+    }
+
+    const units: DisplayUnit[] = []
+
+    // Add groups
+    for (const [groupName, members] of grouped) {
+      const gData = groupMap.get(groupName)
+      const billingId = gData?.billing_company_id
+      const billingMapping = (billingId ? members.find(m => m.company_id === billingId) : null) || members[0]
+
+      units.push({
+        type: 'group',
+        groupName,
+        billingMapping,
+        members: members.sort((a, b) => a.company_name.localeCompare(b.company_name, 'cs')),
+      })
+    }
+
+    // Add standalone
+    for (const m of standalone) {
+      units.push({ type: 'standalone', mapping: m })
+    }
+
+    // Sort: groups by name, standalone by name, intermixed alphabetically
+    units.sort((a, b) => {
+      const aName = a.type === 'group' ? a.groupName : a.mapping.company_name
+      const bName = b.type === 'group' ? b.groupName : b.mapping.company_name
+      return aName.localeCompare(bName, 'cs')
+    })
+
+    return units
+  }, [mappings, groups])
+
+  // Filter by search
+  const filteredUnits = useMemo(() => {
+    if (!search) return displayUnits
+    const q = search.toLowerCase()
+    return displayUnits.filter(unit => {
+      if (unit.type === 'standalone') {
+        return unit.mapping.company_name.toLowerCase().includes(q)
+      }
+      // Group: match on group name or any member
+      return unit.groupName.toLowerCase().includes(q) ||
+        unit.members.some(m => m.company_name.toLowerCase().includes(q))
+    })
+  }, [displayUnits, search])
+
+  // Stats
+  const stats = useMemo(() => {
+    let totalUnits = 0
+    let mapped = 0
+    let unmapped = 0
+
+    for (const unit of filteredUnits) {
+      totalUnits++
+      if (unit.type === 'standalone') {
+        if (unit.mapping.raynet_company_id) mapped++
+        else unmapped++
+      } else {
+        // Group counts as 1 unit
+        if (unit.billingMapping.raynet_company_id) mapped++
+        else unmapped++
+      }
+    }
+
+    return { total: totalUnits, mapped, unmapped }
+  }, [filteredUnits])
 
   // Search Raynet companies for mapping
   const searchRaynetCompanies = useCallback(async (query: string) => {
@@ -169,19 +270,12 @@ export function CompanyRaynetMapper() {
     return () => clearTimeout(timer)
   }, [raynetSearch, mapDialogOpen, searchRaynetCompanies])
 
-  // Filter by search
-  const filtered = mappings.filter((m) =>
-    m.company_name.toLowerCase().includes(search.toLowerCase())
-  )
-
-  const mappedCount = filtered.filter((m) => m.raynet_company_id).length
-  const unmappedCount = filtered.filter((m) => !m.raynet_company_id).length
-
   // -- Handlers --
 
-  const openMapDialog = (row: RaynetMapping) => {
-    setMapTarget(row)
-    setRaynetSearch(row.company_name)
+  const openMapDialog = (target: typeof mapTarget) => {
+    if (!target) return
+    setMapTarget(target)
+    setRaynetSearch(target.displayName)
     setRaynetCompanies([])
     setMapDialogOpen(true)
   }
@@ -191,14 +285,20 @@ export function CompanyRaynetMapper() {
     setMapping(true)
 
     try {
+      const body: Record<string, any> = {
+        raynetCompanyId: raynetCompany.id,
+        raynetCompanyName: raynetCompany.name,
+      }
+      if (mapTarget.type === 'group') {
+        body.groupName = mapTarget.groupName
+      } else {
+        body.companyId = mapTarget.companyId
+      }
+
       const res = await fetch('/api/raynet/map-company', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyId: mapTarget.company_id,
-          raynetCompanyId: raynetCompany.id,
-          raynetCompanyName: raynetCompany.name,
-        }),
+        body: JSON.stringify(body),
       })
 
       if (!res.ok) {
@@ -206,7 +306,7 @@ export function CompanyRaynetMapper() {
         throw new Error(data.error || 'Nepodařilo se propojit')
       }
 
-      toast.success(`"${mapTarget.company_name}" propojeno s "${raynetCompany.name}"`)
+      toast.success(`"${mapTarget.displayName}" propojeno s "${raynetCompany.name}"`)
       setMapDialogOpen(false)
       setMapTarget(null)
       fetchMappings()
@@ -221,10 +321,17 @@ export function CompanyRaynetMapper() {
     if (!disconnectTarget) return
 
     try {
+      const body: Record<string, any> = {}
+      if (disconnectTarget.type === 'group') {
+        body.groupName = disconnectTarget.groupName
+      } else {
+        body.companyId = disconnectTarget.companyId
+      }
+
       const res = await fetch('/api/raynet/map-company', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId: disconnectTarget.company_id }),
+        body: JSON.stringify(body),
       })
 
       if (!res.ok) {
@@ -232,7 +339,7 @@ export function CompanyRaynetMapper() {
         throw new Error(data.error || 'Nepodařilo se odpojit')
       }
 
-      toast.success(`"${disconnectTarget.company_name}" byla odpojena z Raynetu`)
+      toast.success(`"${disconnectTarget.displayName}" byla odpojena z Raynetu`)
       setDisconnectTarget(null)
       fetchMappings()
     } catch (err) {
@@ -258,6 +365,15 @@ export function CompanyRaynetMapper() {
     } finally {
       setSyncing(false)
     }
+  }
+
+  const toggleGroup = (groupName: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(groupName)) next.delete(groupName)
+      else next.add(groupName)
+      return next
+    })
   }
 
   // -- Render --
@@ -306,13 +422,13 @@ export function CompanyRaynetMapper() {
       {!loading && !error && (
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span>
-            Celkem: <span className="font-medium text-foreground">{filtered.length}</span>
+            Celkem: <span className="font-medium text-foreground">{stats.total}</span>
           </span>
           <span>
-            Propojeno: <span className="font-medium text-green-600 dark:text-green-400">{mappedCount}</span>
+            Propojeno: <span className="font-medium text-green-600 dark:text-green-400">{stats.mapped}</span>
           </span>
           <span>
-            Nepropojeno: <span className="font-medium text-gray-500">{unmappedCount}</span>
+            Nepropojeno: <span className="font-medium text-gray-500">{stats.unmapped}</span>
           </span>
         </div>
       )}
@@ -331,7 +447,7 @@ export function CompanyRaynetMapper() {
             Zkusit znovu
           </Button>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : filteredUnits.length === 0 ? (
         <div className="text-center py-12">
           <Link2 className="h-8 w-8 mx-auto text-gray-400 mb-2" />
           <p className="text-sm text-muted-foreground">
@@ -340,57 +456,53 @@ export function CompanyRaynetMapper() {
         </div>
       ) : (
         <div className="rounded-xl border shadow-sm overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50 dark:bg-gray-800/50">
-                <TableHead>Firma (naše)</TableHead>
-                <TableHead className="hidden md:table-cell">Raynet firma</TableHead>
-                <TableHead>Stav</TableHead>
-                <TableHead className="hidden lg:table-cell">Poslední sync</TableHead>
-                <TableHead className="text-right">Akce</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((row) => {
-                const isMapped = !!row.raynet_company_id
-
-                return (
-                  <TableRow key={row.company_id}>
-                    <TableCell className="font-medium">{row.company_name}</TableCell>
-
-                    <TableCell className="hidden md:table-cell">
-                      {isMapped ? (
-                        <span className="text-sm flex items-center gap-1.5">
-                          {row.raynet_company_name || `ID: ${row.raynet_company_id}`}
-                          <a
-                            href={`https://app.raynet.cz/app/company/${row.raynet_company_id}/`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:text-blue-600"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-
-                    <TableCell>
-                      {isMapped ? getSyncBadge(row.sync_status) : getSyncBadge(null)}
-                    </TableCell>
-
-                    <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                      {formatSyncDate(row.last_sync_at)}
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50 dark:bg-gray-800/50 border-b text-sm text-muted-foreground">
+                <th className="px-4 py-3 text-left font-medium">Firma / Skupina</th>
+                <th className="px-4 py-3 text-left font-medium hidden md:table-cell">Raynet firma</th>
+                <th className="px-4 py-3 text-left font-medium">Stav</th>
+                <th className="px-4 py-3 text-left font-medium hidden lg:table-cell">Poslední sync</th>
+                <th className="px-4 py-3 text-right font-medium">Akce</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {filteredUnits.map((unit) => {
+                if (unit.type === 'standalone') {
+                  const row = unit.mapping
+                  const isMapped = !!row.raynet_company_id
+                  return (
+                    <tr key={row.company_id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                      <td className="px-4 py-3 font-medium text-sm">{row.company_name}</td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        {isMapped ? (
+                          <span className="text-sm flex items-center gap-1.5">
+                            {row.raynet_company_name || `ID: ${row.raynet_company_id}`}
+                            <a
+                              href={`https://app.raynet.cz/app/company/${row.raynet_company_id}/`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-500 hover:text-blue-600"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isMapped ? getSyncBadge(row.sync_status) : getSyncBadge(null)}
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell text-sm text-muted-foreground">
+                        {formatSyncDate(row.last_sync_at)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
                         {isMapped ? (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setDisconnectTarget(row)}
+                            onClick={() => setDisconnectTarget({ type: 'company', companyId: row.company_id, displayName: row.company_name })}
                             className="h-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                           >
                             <Unlink className="h-3.5 w-3.5 mr-1" />
@@ -399,20 +511,122 @@ export function CompanyRaynetMapper() {
                         ) : (
                           <Button
                             size="sm"
-                            onClick={() => openMapDialog(row)}
+                            onClick={() => openMapDialog({ type: 'company', companyId: row.company_id, displayName: row.company_name })}
                             className="h-8"
                           >
                             <Link2 className="h-3.5 w-3.5 mr-1" />
                             Mapovat
                           </Button>
                         )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                      </td>
+                    </tr>
+                  )
+                }
+
+                // Group
+                const { groupName, billingMapping, members } = unit
+                const isMapped = !!billingMapping.raynet_company_id
+                const isExpanded = expandedGroups.has(groupName)
+
+                // Best sync status from group
+                const bestSync = members.find(m => m.sync_status === 'synced')?.sync_status
+                  || members.find(m => m.sync_status === 'error')?.sync_status
+                  || members.find(m => m.sync_status === 'never_synced')?.sync_status
+                  || null
+
+                const latestSyncDate = members.reduce<string | null>((latest, m) => {
+                  if (!m.last_sync_at) return latest
+                  if (!latest) return m.last_sync_at
+                  return m.last_sync_at > latest ? m.last_sync_at : latest
+                }, null)
+
+                return (
+                  <tbody key={groupName}>
+                    {/* Group header row */}
+                    <tr className="bg-purple-50/50 dark:bg-purple-900/10 hover:bg-purple-50 dark:hover:bg-purple-900/20">
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => toggleGroup(groupName)}
+                          className="flex items-center gap-2 text-sm font-semibold text-purple-700 dark:text-purple-300 select-none"
+                        >
+                          <ChevronRight className={`h-3.5 w-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                          {groupName}
+                          <span className="text-[10px] font-normal text-purple-500 dark:text-purple-400">
+                            ({members.length} firem)
+                          </span>
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        {isMapped ? (
+                          <span className="text-sm flex items-center gap-1.5">
+                            {billingMapping.raynet_company_name || `ID: ${billingMapping.raynet_company_id}`}
+                            <a
+                              href={`https://app.raynet.cz/app/company/${billingMapping.raynet_company_id}/`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-500 hover:text-blue-600"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isMapped ? getSyncBadge(bestSync) : getSyncBadge(null)}
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell text-sm text-muted-foreground">
+                        {formatSyncDate(latestSyncDate)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {isMapped ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDisconnectTarget({ type: 'group', groupName, displayName: groupName })}
+                            className="h-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            <Unlink className="h-3.5 w-3.5 mr-1" />
+                            Odpojit
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => openMapDialog({ type: 'group', groupName, displayName: groupName })}
+                            className="h-8"
+                          >
+                            <Link2 className="h-3.5 w-3.5 mr-1" />
+                            Mapovat
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+
+                    {/* Expanded: show member rows (read-only) */}
+                    {isExpanded && members.map(m => (
+                      <tr key={m.company_id} className="bg-gray-50/50 dark:bg-gray-800/30">
+                        <td className="px-4 py-2 pl-10 text-sm text-muted-foreground">
+                          <span className="text-gray-400 mr-1.5">├</span>
+                          {m.company_name}
+                        </td>
+                        <td className="px-4 py-2 hidden md:table-cell text-sm text-muted-foreground">
+                          {m.raynet_company_id ? `ID: ${m.raynet_company_id}` : '—'}
+                        </td>
+                        <td className="px-4 py-2">
+                          {m.raynet_company_id ? getSyncBadge(m.sync_status) : getSyncBadge(null)}
+                        </td>
+                        <td className="px-4 py-2 hidden lg:table-cell text-sm text-muted-foreground">
+                          {formatSyncDate(m.last_sync_at)}
+                        </td>
+                        <td className="px-4 py-2"></td>
+                      </tr>
+                    ))}
+                  </tbody>
                 )
               })}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -425,8 +639,11 @@ export function CompanyRaynetMapper() {
               Propojit s Raynet CRM
             </DialogTitle>
             <DialogDescription>
-              Vyberte firmu z Raynetu pro{' '}
-              <span className="font-semibold">{mapTarget?.company_name}</span>
+              {mapTarget?.type === 'group' ? (
+                <>Propojit skupinu <span className="font-semibold">{mapTarget?.displayName}</span> — všechny firmy ve skupině dostanou stejné propojení</>
+              ) : (
+                <>Vyberte firmu z Raynetu pro <span className="font-semibold">{mapTarget?.displayName}</span></>
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -501,12 +718,14 @@ export function CompanyRaynetMapper() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
               <Unlink className="h-5 w-5" />
-              Odpojit firmu
+              {disconnectTarget?.type === 'group' ? 'Odpojit skupinu' : 'Odpojit firmu'}
             </DialogTitle>
             <DialogDescription>
-              Opravdu chcete odpojit firmu{' '}
-              <span className="font-semibold">{disconnectTarget?.company_name}</span>{' '}
-              od Raynet CRM? Propojení plateb přestane fungovat.
+              {disconnectTarget?.type === 'group' ? (
+                <>Opravdu chcete odpojit celou skupinu <span className="font-semibold">{disconnectTarget?.displayName}</span> od Raynet CRM? Propojení plateb přestane fungovat pro všechny firmy ve skupině.</>
+              ) : (
+                <>Opravdu chcete odpojit firmu <span className="font-semibold">{disconnectTarget?.displayName}</span> od Raynet CRM? Propojení plateb přestane fungovat.</>
+              )}
             </DialogDescription>
           </DialogHeader>
 

@@ -19,7 +19,7 @@ export async function getRaynetMappings(): Promise<RaynetMapping[]> {
   // Get companies with monthly_reporting=true + their raynet mapping + sync state
   const { data: companies, error } = await supabaseAdmin
     .from('companies')
-    .select('id, name, raynet_company_id, status, monthly_reporting')
+    .select('id, name, raynet_company_id, status, monthly_reporting, group_name')
     .eq('monthly_reporting', true)
     .neq('status', 'inactive')
     .order('name')
@@ -60,12 +60,85 @@ export async function getRaynetMappings(): Promise<RaynetMapping[]> {
     return {
       company_id: c.id,
       company_name: c.name,
+      group_name: c.group_name || null,
       raynet_company_id: c.raynet_company_id || null,
       raynet_company_name: raynetNameMap.get(c.raynet_company_id) || null,
       last_sync_at: sync?.last_sync_at || null,
       sync_status: (sync?.sync_status as RaynetMapping['sync_status']) || null,
     }
   })
+}
+
+// Map all companies in a group to a single Raynet company
+export async function mapGroupToRaynet(
+  groupName: string,
+  raynetCompanyId: number,
+): Promise<void> {
+  // Get all company IDs in this group
+  const { data: companies, error: fetchErr } = await supabaseAdmin
+    .from('companies')
+    .select('id')
+    .eq('group_name', groupName)
+    .eq('monthly_reporting', true)
+    .neq('status', 'inactive')
+
+  if (fetchErr) throw new Error(`Failed to get group companies: ${fetchErr.message}`)
+  if (!companies || companies.length === 0) throw new Error(`No companies found in group "${groupName}"`)
+
+  // Update all companies with the raynet_company_id
+  const { error } = await supabaseAdmin
+    .from('companies')
+    .update({ raynet_company_id: raynetCompanyId })
+    .eq('group_name', groupName)
+    .eq('monthly_reporting', true)
+    .neq('status', 'inactive')
+
+  if (error) throw new Error(`Failed to map group: ${error.message}`)
+
+  // Upsert sync state for all companies
+  const upsertRows = companies.map(c => ({
+    company_id: c.id,
+    sync_status: 'never_synced',
+    updated_at: new Date().toISOString(),
+  }))
+
+  await supabaseAdmin
+    .from('raynet_sync_state')
+    .upsert(upsertRows, { onConflict: 'company_id' })
+}
+
+// Unmap all companies in a group from Raynet
+export async function unmapGroupRaynet(groupName: string): Promise<void> {
+  // Get all company IDs in this group
+  const { data: companies, error: fetchErr } = await supabaseAdmin
+    .from('companies')
+    .select('id')
+    .eq('group_name', groupName)
+
+  if (fetchErr) throw new Error(`Failed to get group companies: ${fetchErr.message}`)
+  if (!companies || companies.length === 0) return
+
+  const companyIds = companies.map(c => c.id)
+
+  // Remove raynet_company_id from all
+  const { error } = await supabaseAdmin
+    .from('companies')
+    .update({ raynet_company_id: null })
+    .eq('group_name', groupName)
+
+  if (error) throw new Error(`Failed to unmap group: ${error.message}`)
+
+  // Remove sync states
+  await supabaseAdmin
+    .from('raynet_sync_state')
+    .delete()
+    .in('company_id', companyIds)
+
+  // Remove payment links
+  await supabaseAdmin
+    .from('raynet_payment_links')
+    .delete()
+    .in('company_id', companyIds)
 }
 
 export async function mapCompanyToRaynet(

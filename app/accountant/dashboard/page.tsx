@@ -42,6 +42,11 @@ type TaskItem = {
   company_name?: string | null
 }
 
+type GroupInfo = {
+  group_name: string
+  billing_company_id: string | null
+}
+
 type MatrixData = {
   companies: Company[]
   closures: MonthlyClosure[]
@@ -52,6 +57,7 @@ type MatrixData = {
     uploaded: number
     approved: number
   }
+  groups?: GroupInfo[]
 }
 
 type TimeSummary = {
@@ -154,6 +160,7 @@ const StatusCell = React.memo(function StatusCell({
   closureMap,
   year,
   onCellClick,
+  aggregateCompanyIds,
 }: {
   companyId: string
   companyName: string
@@ -161,6 +168,7 @@ const StatusCell = React.memo(function StatusCell({
   closureMap: Map<string, MonthlyClosure>
   year: number
   onCellClick: (closure: MonthlyClosure, companyName: string) => void
+  aggregateCompanyIds?: string[]
 }) {
   const cellRef = useRef<HTMLTableCellElement>(null)
   const [isHovered, setIsHovered] = useState(false)
@@ -175,16 +183,45 @@ const StatusCell = React.memo(function StatusCell({
     setIsHovered(true)
   }
 
-  const status = getMonthStatus(closureMap, companyId, monthIndex, year)
-  const colors = statusColors[status]
   const period = `${year}-${String(monthIndex + 1).padStart(2, '0')}`
+
+  // Aggregate mode: worst-case across all group members
+  const idsToCheck = aggregateCompanyIds && aggregateCompanyIds.length > 0 ? aggregateCompanyIds : [companyId]
+
+  const aggResult = useMemo(() => {
+    // Priority order: missing > uploaded > approved > future
+    const priorityMap: Record<StatusType, number> = { missing: 3, uploaded: 2, approved: 1, future: 0 }
+    let worstBank: StatusType = 'future'
+    let worstExpense: StatusType = 'future'
+    let worstIncome: StatusType = 'future'
+    let worstOverall: StatusType = 'future'
+
+    for (const cId of idsToCheck) {
+      const st = getMonthStatus(closureMap, cId, monthIndex, year)
+      if (priorityMap[st] > priorityMap[worstOverall]) worstOverall = st
+
+      const cl = closureMap.get(`${cId}:${period}`)
+      const bk = (cl?.bank_statement_status || (st === 'future' ? 'future' : 'missing')) as StatusType
+      const ex = (cl?.expense_documents_status || (st === 'future' ? 'future' : 'missing')) as StatusType
+      const inc = (cl?.income_invoices_status || (st === 'future' ? 'future' : 'missing')) as StatusType
+
+      if (priorityMap[bk] > priorityMap[worstBank]) worstBank = bk
+      if (priorityMap[ex] > priorityMap[worstExpense]) worstExpense = ex
+      if (priorityMap[inc] > priorityMap[worstIncome]) worstIncome = inc
+    }
+
+    return { status: worstOverall, bank: worstBank, expense: worstExpense, income: worstIncome }
+  }, [idsToCheck, closureMap, monthIndex, year, period])
+
+  const status = aggResult.status
+  const colors = statusColors[status]
 
   const closure = closureMap.get(`${companyId}:${period}`)
 
-  // Get individual statuses for the 3 indicators
-  const bankStatus = closure?.bank_statement_status || 'missing'
-  const expenseStatus = closure?.expense_documents_status || 'missing'
-  const incomeStatus = closure?.income_invoices_status || 'missing'
+  // Get individual statuses for the 3 indicators (aggregated if group)
+  const bankStatus = aggResult.bank
+  const expenseStatus = aggResult.expense
+  const incomeStatus = aggResult.income
 
   const getIndicatorColor = (s: StatusType) => {
     if (s === 'approved') return 'bg-green-400'
@@ -247,6 +284,9 @@ const StatusCell = React.memo(function StatusCell({
         >
           <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-xl">
             <div className="font-bold mb-1">{companyName}</div>
+            {aggregateCompanyIds && aggregateCompanyIds.length > 1 && (
+              <div className="text-purple-300 mb-1">Skupina ({aggregateCompanyIds.length} firem)</div>
+            )}
             <div className="text-gray-300 mb-2">{months[monthIndex]} {year}</div>
             {closure && (
               <div className="space-y-1 text-left">
@@ -353,6 +393,37 @@ export default function AccountantDashboard() {
     return map
   }, [closures])
   const stats = data?.stats ?? { total: 0, missing: 0, uploaded: 0, approved: 0 }
+  const groups = data?.groups ?? []
+
+  // Group billing map: group_name → billing_company_id (fallback: first company in group)
+  const groupBillingMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const g of groups) {
+      if (g.billing_company_id) {
+        map.set(g.group_name, g.billing_company_id)
+      }
+    }
+    // Fallback: if no billing entity set, use first company in group
+    for (const c of allCompanies) {
+      if (c.group_name && !map.has(c.group_name)) {
+        map.set(c.group_name, c.id)
+      }
+    }
+    return map
+  }, [groups, allCompanies])
+
+  // Group members map: group_name → all company IDs in that group
+  const groupMembersMap = useMemo(() => {
+    const map = new Map<string, string[]>()
+    for (const c of allCompanies) {
+      if (c.group_name) {
+        const arr = map.get(c.group_name) || []
+        arr.push(c.id)
+        map.set(c.group_name, arr)
+      }
+    }
+    return map
+  }, [allCompanies])
 
   // Exclude inactive clients and those without monthly reporting from dashboard matrix
   // Fully alphabetical sort: group_name takes priority over company name
@@ -371,15 +442,34 @@ export default function AccountantDashboard() {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
 
   // Filter companies based on selected filter
-  const filteredCompanies = useMemo(() => companies.filter(company => {
-    if (filter === 'all') return true
-    for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
-      const status = getMonthStatus(closureMap, company.id, monthIndex, selectedYear)
-      if (filter === 'missing' && status === 'missing') return true
-      if (filter === 'uploaded' && status === 'uploaded') return true
+  const filteredCompanies = useMemo(() => {
+    const passesFilter = (companyId: string) => {
+      for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+        const status = getMonthStatus(closureMap, companyId, monthIndex, selectedYear)
+        if (filter === 'missing' && status === 'missing') return true
+        if (filter === 'uploaded' && status === 'uploaded') return true
+      }
+      return false
     }
-    return false
-  }), [companies, closureMap, filter, selectedYear])
+
+    if (filter === 'all') return companies
+
+    // First pass: find companies that pass filter
+    const passingIds = new Set(companies.filter(c => passesFilter(c.id)).map(c => c.id))
+
+    // Second pass: if any group member passes, include the billing entity too
+    for (const [groupName, memberIds] of groupMembersMap) {
+      const anyPasses = memberIds.some(id => passingIds.has(id))
+      if (anyPasses) {
+        const billingId = groupBillingMap.get(groupName)
+        if (billingId) passingIds.add(billingId)
+        // Also include all members so the group header renders properly
+        memberIds.forEach(id => passingIds.add(id))
+      }
+    }
+
+    return companies.filter(c => passingIds.has(c.id))
+  }, [companies, closureMap, filter, selectedYear, groupMembersMap, groupBillingMap])
 
   const formatMinutes = useCallback((mins: number): string => {
     const h = Math.floor(mins / 60)
@@ -524,9 +614,15 @@ export default function AccountantDashboard() {
                       const prevGroup = prevCompany?.group_name || null
                       const showGroupHeader = currentGroup && currentGroup !== prevGroup
                       const isCollapsed = currentGroup ? collapsedGroups.has(currentGroup) : false
+                      const billingEntityId = currentGroup ? groupBillingMap.get(currentGroup) : null
+                      const isBillingEntity = billingEntityId === company.id
+                      const groupMembers = currentGroup ? (groupMembersMap.get(currentGroup) || []) : []
 
-                      // Skip collapsed group members (but not the first one that triggers the header)
-                      if (currentGroup && isCollapsed && !showGroupHeader) return null
+                      // Collapsed logic:
+                      // - Show group header always
+                      // - Show billing entity row with aggregated data + badge
+                      // - Skip all other group members
+                      if (currentGroup && isCollapsed && !showGroupHeader && !isBillingEntity) return null
 
                       return (
                         <React.Fragment key={company.id}>
@@ -544,16 +640,28 @@ export default function AccountantDashboard() {
                                 <span className="inline-flex items-center gap-1">
                                   <ChevronRight className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
                                   {currentGroup}
+                                  {isCollapsed && (
+                                    <span className="ml-1 text-[10px] font-normal text-purple-500 dark:text-purple-400">
+                                      ({groupMembers.length} firem)
+                                    </span>
+                                  )}
                                 </span>
                               </td>
                             </tr>
                           )}
-                          {!isCollapsed && (
+                          {(!isCollapsed || isBillingEntity) && (
                           <tr className={companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}>
                             <td className={`px-2 sm:px-4 py-2 sm:py-3 text-sm font-medium text-gray-900 dark:text-white sticky left-0 z-10 max-w-[100px] sm:max-w-none ${companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
                               <Link href={`/accountant/clients/${company.id}`} className="hover:text-purple-600 transition-colors">
                                 <div>
-                                  <div className="font-semibold truncate">{company.name}</div>
+                                  <div className="font-semibold truncate">
+                                    {company.name}
+                                    {isCollapsed && isBillingEntity && groupMembers.length > 1 && (
+                                      <span className="ml-1.5 text-[10px] font-normal text-purple-500 dark:text-purple-400 align-middle">
+                                        ({groupMembers.length} firem)
+                                      </span>
+                                    )}
+                                  </div>
                                   <div className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">IČO: {company.ico}</div>
                                 </div>
                               </Link>
@@ -562,11 +670,12 @@ export default function AccountantDashboard() {
                           <StatusCell
                             key={monthIndex}
                             companyId={company.id}
-                            companyName={company.name}
+                            companyName={isCollapsed && isBillingEntity ? (currentGroup || company.name) : company.name}
                             monthIndex={monthIndex}
                             closureMap={closureMap}
                             year={selectedYear}
                             onCellClick={handleCellClick}
+                            aggregateCompanyIds={isCollapsed && isBillingEntity && groupMembers.length > 1 ? groupMembers : undefined}
                           />
                         ))}
                           </tr>
@@ -580,7 +689,7 @@ export default function AccountantDashboard() {
             </div>
           </>
         )
-  }, [companies, closures, selectedYear, filter, filteredCompanies, stats, data, handleCellClick, collapsedGroups])
+  }, [companies, closures, selectedYear, filter, filteredCompanies, stats, data, handleCellClick, collapsedGroups, groupBillingMap, groupMembersMap, closureMap])
 
   if (loading) {
     return (

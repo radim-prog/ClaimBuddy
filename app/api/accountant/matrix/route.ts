@@ -10,9 +10,12 @@ export async function GET(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const [allCompanies, closures] = await Promise.all([
+    const [allCompanies, closures, { data: groupsData }] = await Promise.all([
       getAllCompanies(),
       getClosures(),
+      supabaseAdmin
+        .from('company_groups')
+        .select('group_name, billing_company_id'),
     ])
 
     const companies = allCompanies.map(c => ({
@@ -102,6 +105,10 @@ export async function GET(request: NextRequest) {
       closures,
       tasks,
       stats,
+      groups: (groupsData || []).map((g: any) => ({
+        group_name: g.group_name,
+        billing_company_id: g.billing_company_id,
+      })),
     })
   } catch (error) {
     console.error('Master Matrix API error:', error)
