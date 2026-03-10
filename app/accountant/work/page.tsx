@@ -98,7 +98,13 @@ export default function WorkPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('list')
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('tasks')
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>(() => {
+    if (typeof window !== 'undefined') {
+      const urlType = new URLSearchParams(window.location.search).get('type')
+      if (urlType === 'projects' || urlType === 'all') return urlType
+    }
+    return 'tasks'
+  })
 
   useEffect(() => {
     Promise.all([
