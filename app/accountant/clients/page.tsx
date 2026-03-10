@@ -79,13 +79,14 @@ function Tip({ children, text }: { children: React.ReactNode; text: string }) {
   )
 }
 
-function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelect, attentionCount, isFirst }: {
+function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelect, attentionCount, healthScore, isFirst }: {
   company: Company
   fullStatus: { status: 'ok' | 'missing' | 'uploaded'; missingDocs: number; uploadedDocs: number }
   clientStatus: string
   selected: boolean
   onToggleSelect: (id: string, e: React.MouseEvent) => void
   attentionCount: number
+  healthScore?: number | null
   isFirst?: boolean
 }) {
   const isOnboarding = clientStatus === 'onboarding'
@@ -193,6 +194,19 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
 
               {/* Stav */}
               <div className="col-span-2 text-right flex items-center justify-end gap-2">
+                {healthScore != null && !isInactive && (
+                  <Tip text={`Zdraví klienta: ${healthScore}/100`}>
+                    <span className={`inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-md ${
+                      healthScore >= 80 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                      healthScore >= 60 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
+                      healthScore >= 40 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
+                      'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                    }`}>
+                      {healthScore >= 80 ? 'A' : healthScore >= 60 ? 'B' : healthScore >= 40 ? 'C' : 'D'}
+                      <span className="font-normal text-[10px] opacity-80">{healthScore}</span>
+                    </span>
+                  </Tip>
+                )}
                 {attentionCount > 0 && !isInactive && (
                   <Tip text={`${attentionCount} položek vyžaduje vaši pozornost`}>
                     <span className="inline-flex items-center gap-1 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full">
@@ -245,6 +259,7 @@ function ClientsPageContent() {
   const { getCompanyAttention } = useAttention()
   const [companies, setCompanies] = useState<Company[]>([])
   const [closures, setClosures] = useState<MonthlyClosure[]>([])
+  const [healthScores, setHealthScores] = useState<Map<string, number | null>>(new Map())
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearch = useDebounce(searchQuery, 300)
@@ -343,6 +358,17 @@ function ClientsPageContent() {
 
   useEffect(() => {
     fetchCompanies()
+    // Fetch health scores
+    fetch('/api/accountant/health-scores')
+      .then(res => res.json())
+      .then(data => {
+        const map = new Map<string, number | null>()
+        for (const s of data.scores || []) {
+          map.set(s.company_id, s.score)
+        }
+        setHealthScores(map)
+      })
+      .catch(() => {})
   }, [fetchCompanies])
 
   // Handler for new client creation success
@@ -1026,6 +1052,7 @@ function ClientsPageContent() {
                           selected={selectedIds.has(company.id)}
                           onToggleSelect={toggleSelection}
                           attentionCount={getCompanyAttention(company.id).total}
+                          healthScore={healthScores.get(company.id)}
                         />
                       ))}
                     </div>
@@ -1045,6 +1072,7 @@ function ClientsPageContent() {
               selected={selectedIds.has(company.id)}
               onToggleSelect={toggleSelection}
               attentionCount={getCompanyAttention(company.id).total}
+              healthScore={healthScores.get(company.id)}
               isFirst={idx === 0}
             />
           ))

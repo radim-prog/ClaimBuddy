@@ -36,6 +36,7 @@ import { AssetsSection } from '@/components/assets-section'
 import { InsuranceSection } from '@/components/insurance-section'
 import { AnniversaryCalendar } from '@/components/anniversary-calendar'
 import { CollapsibleSection } from '@/components/collapsible-section'
+import { HealthScoreCard } from '@/components/health-score/health-score-card'
 import { CompanyReports } from '@/components/company/company-reports'
 import { AccountantDeadlineCalendar } from '@/components/accountant/deadline-calendar'
 import { AnnualClosingSection } from '@/components/annual-closing-section'
@@ -60,6 +61,7 @@ const healthInsuranceLabels: Record<string, string> = {
 
 const BASE_TILES: TileDefinition[] = [
   { id: 'company-info', label: 'Údaje o firmě', defaultVisible: true },
+  { id: 'health-score', label: 'Zdraví klienta', defaultVisible: true },
   { id: 'reports', label: 'Reporty', defaultVisible: true },
   { id: 'employees', label: 'Zaměstnanci', defaultVisible: true },
   { id: 'assets', label: 'Majetek', defaultVisible: true },
@@ -208,6 +210,12 @@ export default function ProfilePage() {
                   </div>
                 </CardContent>
               </Card>
+            )
+          case 'health-score':
+            return (
+              <CollapsibleSection id="health-score" title="Zdraví klienta" icon={BarChart3} defaultOpen={true}>
+                <HealthScoreCard companyId={companyId} />
+              </CollapsibleSection>
             )
           case 'reports':
             return (

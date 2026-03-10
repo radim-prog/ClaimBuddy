@@ -20,6 +20,7 @@ import {
   CheckCircle2,
   Calendar,
   Briefcase,
+  Activity,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -141,6 +142,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
   const [urgencyModalOpen, setUrgencyModalOpen] = useState(false)
   const [hubStats, setHubStats] = useState<HubStats | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
+  const [healthScore, setHealthScore] = useState<number | null>(null)
   const attentionCtx = useAttention()
   const attention = attentionCtx.getCompanyAttention(companyId)
 
@@ -185,6 +187,17 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
         // hub stats optional
       } finally {
         setStatsLoading(false)
+      }
+
+      // Fetch health score (cached from companies table)
+      try {
+        const hsRes = await fetch(`/api/accountant/health-scores/${companyId}`)
+        if (hsRes.ok) {
+          const hsData = await hsRes.json()
+          setHealthScore(hsData.score ?? null)
+        }
+      } catch {
+        // health score optional
       }
 
       // Fetch onboarding data if company is in onboarding status
@@ -597,6 +610,28 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                           ) : (
                             <Badge className="text-[10px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0 px-1.5 py-0">Chybí</Badge>
                           )}
+                        </div>
+                      </>
+                    )}
+                    {/* Health Score */}
+                    {healthScore !== null && (
+                      <>
+                        <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                        <div className="flex items-center gap-2">
+                          <Activity className={`h-4 w-4 ${
+                            healthScore >= 80 ? 'text-green-500' :
+                            healthScore >= 60 ? 'text-blue-500' :
+                            healthScore >= 40 ? 'text-yellow-500' : 'text-red-500'
+                          }`} />
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">{healthScore}</span>
+                          <Badge className={`text-[10px] border-0 px-1.5 py-0 ${
+                            healthScore >= 80 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                            healthScore >= 60 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                            healthScore >= 40 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                            'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          }`}>
+                            {healthScore >= 80 ? 'A' : healthScore >= 60 ? 'B' : healthScore >= 40 ? 'C' : 'D'}
+                          </Badge>
                         </div>
                       </>
                     )}
