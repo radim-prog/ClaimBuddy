@@ -4,9 +4,8 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-  X, Camera, Upload, Loader2, CheckCircle2, AlertCircle, RotateCcw, Send,
+  X, Camera, Upload, Loader2, CheckCircle2, AlertCircle, RotateCcw, Send, ArrowLeft,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -40,12 +39,12 @@ interface ScanJob {
 export function ScanOverlay({ open, companyId: initialCompanyId, companies, onClose }: ScanOverlayProps) {
   const [companyId, setCompanyId] = useState(initialCompanyId)
   const [documentType, setDocumentType] = useState<ExtractionDocumentType>('receipt')
+  const [typeSelected, setTypeSelected] = useState(false)
   const [job, setJob] = useState<ScanJob | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
 
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const autoTriggered = useRef(false)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
   // Keep companyId in sync with prop
@@ -53,28 +52,14 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
     setCompanyId(initialCompanyId)
   }, [initialCompanyId])
 
-  // Auto-trigger camera on open
-  useEffect(() => {
-    if (open && !autoTriggered.current && !job) {
-      autoTriggered.current = true
-      const timer = setTimeout(() => {
-        cameraInputRef.current?.click()
-      }, 150)
-      return () => clearTimeout(timer)
-    }
-    if (!open) {
-      autoTriggered.current = false
-    }
-  }, [open, job])
-
   // Reset state when closing
   useEffect(() => {
     if (!open) {
-      // Delay reset to allow close animation
       const timer = setTimeout(() => {
         setJob(null)
         setShowSuccess(false)
         setDocumentType('receipt')
+        setTypeSelected(false)
       }, 350)
       return () => clearTimeout(timer)
     }
@@ -232,6 +217,11 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
     if (job) processExtraction(job)
   }
 
+  const handleTypeSelect = (type: ExtractionDocumentType) => {
+    setDocumentType(type)
+    setTypeSelected(true)
+  }
+
   const isDataReady = job && (job.status === 'extracted' || job.status === 'corrected' || job.status === 'validated')
 
   return (
@@ -278,16 +268,15 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
         {companies.length > 1 && (
           <div>
             <Label className="mb-1.5 block text-sm">Firma</Label>
-            <Select value={companyId} onValueChange={setCompanyId}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {companies.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              value={companyId}
+              onChange={e => setCompanyId(e.target.value)}
+              className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+            >
+              {companies.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
         )}
 
@@ -302,10 +291,28 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
           </div>
         )}
 
-        {/* No file yet — show capture buttons */}
-        {!job && !showSuccess && (
+        {/* Step 1: Choose document type */}
+        {!job && !showSuccess && !typeSelected && (
+          <div className="space-y-4 pt-4">
+            <h3 className="text-base font-semibold text-center">Co nahráváte?</h3>
+            <DocumentTypeSelector
+              value={documentType}
+              onChange={handleTypeSelect}
+              tileMode
+            />
+          </div>
+        )}
+
+        {/* Step 2: Capture buttons (after type selected) */}
+        {!job && !showSuccess && typeSelected && (
           <div className="space-y-3 pt-4">
-            <DocumentTypeSelector value={documentType} onChange={setDocumentType} />
+            <button
+              onClick={() => { setTypeSelected(false) }}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Změnit typ dokladu
+            </button>
 
             <Button
               className="w-full h-16 text-lg gap-3"

@@ -78,7 +78,7 @@ export default function InvoicesPage() {
       <div>
         <button
           onClick={() => setShowOverlay(true)}
-          className="h-14 w-full sm:w-auto px-8 flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-medium text-base shadow-md hover:shadow-lg hover:from-green-600 hover:to-green-700 transition-all active:scale-[0.98]"
+          className="h-14 w-full flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-medium text-base shadow-md hover:shadow-lg hover:from-green-600 hover:to-green-700 transition-all active:scale-[0.98]"
         >
           <Receipt className="h-5 w-5 flex-shrink-0" />
           Vystavit fakturu

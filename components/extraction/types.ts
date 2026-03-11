@@ -4,13 +4,14 @@
  */
 
 // Document types supported
-export type ExtractionDocumentType = 
-  | 'invoice' 
-  | 'receipt' 
-  | 'bank_statement' 
+export type ExtractionDocumentType =
+  | 'invoice'
+  | 'receipt'
+  | 'bank_statement'
   | 'contract'
   | 'advance_invoice'
   | 'credit_note'
+  | 'other'
 
 // Status flow for extraction
 export type ExtractionStatus = 

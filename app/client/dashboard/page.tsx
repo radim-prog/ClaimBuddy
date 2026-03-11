@@ -21,6 +21,8 @@ import { generateDeadlinesForCompany } from '@/lib/statutory-deadlines'
 import { TaxImpactSummary } from '@/components/client/tax-impact-summary'
 import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
 import { TripOverlay } from '@/components/client/action-hub/trip-overlay'
+import { InvoiceOverlay } from '@/components/client/action-hub/invoice-overlay'
+import { BankUploadOverlay } from '@/components/client/action-hub/bank-upload-overlay'
 import { QuickActionOverlay } from '@/components/client/action-hub/quick-action-overlay'
 
 const monthNames = [
@@ -29,7 +31,7 @@ const monthNames = [
 ]
 
 type ClosureStatus = 'missing' | 'uploaded' | 'approved'
-type OverlayType = 'scan' | 'trip' | null
+type OverlayType = 'scan' | 'invoice' | 'trip' | 'bank_upload' | null
 
 function getMonthDotColor(closure: { bank_statement_status: ClosureStatus; expense_documents_status: ClosureStatus; income_invoices_status: ClosureStatus } | undefined, isFuture: boolean): string {
   if (isFuture || !closure) return 'bg-gray-300 dark:bg-gray-600'
@@ -113,11 +115,7 @@ export default function ClientDashboard() {
 
   const handleQuickAction = (action: 'scan' | 'invoice' | 'trip') => {
     setShowQuickActions(false)
-    if (action === 'invoice') {
-      router.push('/client/invoices')
-    } else {
-      setActiveOverlay(action)
-    }
+    setActiveOverlay(action)
   }
 
   if (loading) {
@@ -183,7 +181,7 @@ export default function ClientDashboard() {
           </button>
           <button
             className="h-12 flex items-center justify-center gap-2 text-sm rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-medium shadow-sm hover:shadow-md hover:from-green-600 hover:to-green-700 transition-all active:scale-[0.98]"
-            onClick={() => router.push('/client/invoices')}
+            onClick={() => setActiveOverlay('invoice')}
           >
             <Receipt className="h-4 w-4 flex-shrink-0" />
             Faktura
@@ -204,7 +202,7 @@ export default function ClientDashboard() {
           </button>
           <button
             className="h-12 flex items-center justify-center gap-2 text-sm rounded-xl bg-gradient-to-r from-slate-400/80 to-slate-500/80 text-white font-medium shadow-sm hover:shadow-md hover:from-slate-500/80 hover:to-slate-600/80 transition-all active:scale-[0.98]"
-            onClick={() => setActiveOverlay('scan')}
+            onClick={() => setActiveOverlay('bank_upload')}
           >
             <FileText className="h-4 w-4 flex-shrink-0" />
             <span className="hidden sm:inline">Nahrát</span> výpis
@@ -404,6 +402,17 @@ export default function ClientDashboard() {
           />
           <TripOverlay
             open={activeOverlay === 'trip'}
+            onClose={() => setActiveOverlay(null)}
+          />
+          <InvoiceOverlay
+            open={activeOverlay === 'invoice'}
+            companyId={selectedCompany.id}
+            onClose={() => setActiveOverlay(null)}
+          />
+          <BankUploadOverlay
+            open={activeOverlay === 'bank_upload'}
+            companyId={selectedCompany.id}
+            companies={companies}
             onClose={() => setActiveOverlay(null)}
           />
         </>

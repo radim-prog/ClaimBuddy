@@ -61,10 +61,10 @@ function TravelPageInner() {
   const [showFuelForm, setShowFuelForm] = useState(false)
 
   const tabs: { id: Tab; label: string; icon: typeof Car }[] = [
-    { id: 'trips', label: 'Jizdy', icon: Route },
+    { id: 'trips', label: 'Jízdy', icon: Route },
     { id: 'vehicles', label: 'Vozidla', icon: Car },
-    { id: 'places', label: 'Mista', icon: MapPin },
-    { id: 'stats', label: 'Prehled', icon: BarChart3 },
+    { id: 'places', label: 'Místa', icon: MapPin },
+    { id: 'stats', label: 'Přehled', icon: BarChart3 },
   ]
 
   const loadData = useCallback(async () => {
@@ -108,7 +108,7 @@ function TravelPageInner() {
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error('Failed to create trip')
-    toast.success('Jizda zapsana')
+    toast.success('Jízda zapsána')
     setShowTripForm(false)
     loadData()
   }
@@ -121,15 +121,15 @@ function TravelPageInner() {
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error('Failed to update trip')
-    toast.success('Jizda aktualizovana')
+    toast.success('Jízda aktualizována')
     setEditingTrip(undefined)
     loadData()
   }
 
   const handleDeleteTrip = async (id: string) => {
-    if (!confirm('Opravdu smazat tuto jizdu?')) return
+    if (!confirm('Opravdu smazat tuto jízdu?')) return
     await fetch(`/api/client/travel/trips/${id}`, { method: 'DELETE' })
-    toast.success('Jizda smazana')
+    toast.success('Jízda smazána')
     loadData()
   }
 
@@ -141,7 +141,7 @@ function TravelPageInner() {
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error('Failed to create vehicle')
-    toast.success('Vozidlo pridano')
+    toast.success('Vozidlo přidáno')
     setShowVehicleForm(false)
     loadData()
   }
@@ -154,7 +154,7 @@ function TravelPageInner() {
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error('Failed to update vehicle')
-    toast.success('Vozidlo aktualizovano')
+    toast.success('Vozidlo aktualizováno')
     setEditingVehicle(undefined)
     setShowVehicleForm(false)
     loadData()
@@ -163,7 +163,7 @@ function TravelPageInner() {
   const handleDeleteVehicle = async (id: string) => {
     if (!confirm('Opravdu odebrat vozidlo?')) return
     await fetch(`/api/client/travel/vehicles/${id}`, { method: 'DELETE' })
-    toast.success('Vozidlo odebrano')
+    toast.success('Vozidlo odebráno')
     loadData()
   }
 
@@ -186,24 +186,26 @@ function TravelPageInner() {
       }),
     })
     if (!res.ok) throw new Error('Failed')
-    toast.success('Tankovani zapsano')
+    toast.success('Tankování zapsáno')
     setShowFuelForm(false)
     loadData()
   }
 
   return (
     <div className="space-y-6 min-w-0 overflow-hidden">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold font-display">Kniha jizd</h1>
-          <p className="text-muted-foreground">Evidence sluzebních jizd</p>
-        </div>
-        <Button onClick={() => { setShowTripForm(true); setEditingTrip(undefined) }}>
-          <Plus className="h-4 w-4 mr-1" />
-          <span className="hidden sm:inline">Zapsat jizdu</span>
-          <span className="sm:hidden">Nova</span>
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold font-display">Kniha jízd</h1>
+        <p className="text-muted-foreground">Evidence služebních jízd</p>
       </div>
+
+      {/* Big action button */}
+      <button
+        onClick={() => { setShowTripForm(true); setEditingTrip(undefined) }}
+        className="h-14 w-full flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium text-base shadow-md hover:shadow-lg hover:from-amber-600 hover:to-amber-700 transition-all active:scale-[0.98]"
+      >
+        <Plus className="h-5 w-5" />
+        Zapsat jízdu
+      </button>
 
       {/* Tab navigation */}
       <div className="flex gap-1 bg-muted p-1 rounded-lg overflow-x-auto">
@@ -240,7 +242,7 @@ function TravelPageInner() {
               {(showTripForm || editingTrip) && (
                 <Card className="rounded-xl border-blue-200 dark:border-blue-800">
                   <CardContent className="p-4 sm:p-6">
-                    <h2 className="text-lg font-semibold font-display mb-4">{editingTrip ? 'Upravit jizdu' : 'Nova jizda'}</h2>
+                    <h2 className="text-lg font-semibold font-display mb-4">{editingTrip ? 'Upravit jízdu' : 'Nová jízda'}</h2>
                     <TripForm
                       trip={editingTrip}
                       vehicles={vehicles}
@@ -258,7 +260,7 @@ function TravelPageInner() {
                 <>
                   <div className="flex gap-3 items-end flex-wrap">
                     <div>
-                      <Label className="text-xs">Mesic</Label>
+                      <Label className="text-xs">Měsíc</Label>
                       <Input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-40 h-11" />
                     </div>
                     {vehicles.length > 0 && (
@@ -269,7 +271,7 @@ function TravelPageInner() {
                           onChange={e => setVehicleFilter(e.target.value === 'all' ? '' : e.target.value)}
                           className="flex h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm w-44"
                         >
-                          <option value="all">Vse</option>
+                          <option value="all">Vše</option>
                           {vehicles.map(v => (
                             <option key={v.id} value={v.id}>{v.license_plate}</option>
                           ))}
@@ -294,7 +296,7 @@ function TravelPageInner() {
               {(showVehicleForm || editingVehicle) ? (
                 <Card className="rounded-xl">
                   <CardContent className="p-4 sm:p-6">
-                    <h2 className="text-lg font-semibold font-display mb-4">{editingVehicle ? 'Upravit vozidlo' : 'Nove vozidlo'}</h2>
+                    <h2 className="text-lg font-semibold font-display mb-4">{editingVehicle ? 'Upravit vozidlo' : 'Nové vozidlo'}</h2>
                     <VehicleForm
                       vehicle={editingVehicle}
                       onSubmit={editingVehicle ? handleUpdateVehicle : handleCreateVehicle}
@@ -315,7 +317,7 @@ function TravelPageInner() {
                       )}
                       <Button size="sm" onClick={() => setShowVehicleForm(true)}>
                         <Plus className="h-4 w-4 mr-1" />
-                        Pridat
+                        Přidat
                       </Button>
                     </div>
                   </div>
@@ -323,7 +325,7 @@ function TravelPageInner() {
                   {showFuelForm && (
                     <Card className="rounded-xl border-orange-200 dark:border-orange-800">
                       <CardContent className="p-4">
-                        <h3 className="font-semibold font-display mb-3">Zaznamenat tankovani</h3>
+                        <h3 className="font-semibold font-display mb-3">Zaznamenat tankování</h3>
                         <form onSubmit={handleCreateFuelLog} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div>
                             <Label className="text-xs">Vozidlo *</Label>
@@ -344,7 +346,7 @@ function TravelPageInner() {
                             <Input type="number" step="0.01" name="price_per_liter" placeholder="38.90" className="h-11" />
                           </div>
                           <div>
-                            <Label className="text-xs">Celkem Kc</Label>
+                            <Label className="text-xs">Celkem Kč</Label>
                             <Input type="number" step="0.01" name="total_price" className="h-11" />
                           </div>
                           <div>
@@ -352,7 +354,7 @@ function TravelPageInner() {
                             <Input type="number" name="odometer" className="h-11" />
                           </div>
                           <div>
-                            <Label className="text-xs">Cerp. stanice</Label>
+                            <Label className="text-xs">Čerp. stanice</Label>
                             <Input type="text" name="station_name" className="h-11" />
                           </div>
                           <div className="flex items-end gap-2">
@@ -362,8 +364,8 @@ function TravelPageInner() {
                             </label>
                           </div>
                           <div className="flex items-end gap-2">
-                            <Button type="submit" size="sm">Ulozit</Button>
-                            <Button type="button" variant="outline" size="sm" onClick={() => setShowFuelForm(false)}>Zrusit</Button>
+                            <Button type="submit" size="sm">Uložit</Button>
+                            <Button type="button" variant="outline" size="sm" onClick={() => setShowFuelForm(false)}>Zrušit</Button>
                           </div>
                         </form>
                       </CardContent>
@@ -373,8 +375,8 @@ function TravelPageInner() {
                   {vehicles.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <Car className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                      <p className="font-medium">Zadna vozidla</p>
-                      <p className="text-sm mt-1">Pridejte sve prvni vozidlo</p>
+                      <p className="font-medium">Žádná vozidla</p>
+                      <p className="text-sm mt-1">Přidejte své první vozidlo</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -397,14 +399,14 @@ function TravelPageInner() {
           {activeTab === 'places' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold font-display">Mista ({places.length})</h2>
+                <h2 className="text-lg font-semibold font-display">Místa ({places.length})</h2>
               </div>
 
               {places.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <MapPin className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">Zatim zadna mista</p>
-                  <p className="text-sm mt-1">Mista se automaticky ukladaji pri zapisu jizd</p>
+                  <p className="font-medium">Zatím žádná místa</p>
+                  <p className="text-sm mt-1">Místa se automaticky ukládají při zápisu jízd</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -422,7 +424,7 @@ function TravelPageInner() {
                             {place.address && <p className="text-xs text-muted-foreground truncate">{place.address}</p>}
                           </div>
                         </div>
-                        <span className="text-xs text-muted-foreground shrink-0 ml-2">{place.visit_count}x navstiveno</span>
+                        <span className="text-xs text-muted-foreground shrink-0 ml-2">{place.visit_count}x navštíveno</span>
                       </CardContent>
                     </Card>
                   ))}
@@ -436,7 +438,7 @@ function TravelPageInner() {
             <div className="space-y-6">
               {stats && (
                 <>
-                  <TravelStatsCards stats={stats} label={`Prehled za ${monthFilter}`} />
+                  <TravelStatsCards stats={stats} label={`Přehled za ${monthFilter}`} />
                 </>
               )}
             </div>
