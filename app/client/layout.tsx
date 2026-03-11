@@ -11,6 +11,7 @@ import {
   UserCircle,
   FileText,
   Car,
+  Receipt,
   ChevronRight,
   ChevronLeft,
 } from 'lucide-react'
@@ -40,6 +41,7 @@ import { MissingDocsBar } from '@/components/client/missing-docs-bar'
 const navigation = [
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard },
   { name: 'Doklady', href: '/client/documents', icon: FileText },
+  { name: 'Faktury', href: '/client/invoices', icon: Receipt },
   { name: 'Cesťák', href: '/client/travel', icon: Car },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
   { name: 'Účet', href: '/client/account', icon: UserCircle },
@@ -239,7 +241,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <div className={`flex flex-col min-h-screen overflow-hidden transition-all duration-300 ease-in-out ${collapsed ? 'md:pl-[72px]' : 'md:pl-64'}`}>
-        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-20 md:pb-6 min-w-0 page-enter">
+        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-20 md:pb-6 min-w-0 page-enter max-w-5xl">
           {children}
         </main>
       </div>

@@ -1,53 +1,34 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Camera,
-  Upload,
   FileText,
   Landmark,
   Receipt,
-  CheckCircle2,
-  AlertCircle,
   Loader2,
-  X,
-  Send,
-  Edit3,
-  RotateCcw,
   RefreshCw,
   Download,
   Eye,
   ChevronRight,
-  Plus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useClientUser } from '@/lib/contexts/client-user-context'
-import {
-  DocumentTypeSelector,
-  ExtractedDataDisplay,
-  ExtractionDocumentType,
-  ExtractedData,
-  ExtractionStatus,
-} from '@/components/extraction'
 import { DocumentComments } from '@/components/documents/document-comments'
 import { BankStatementUpload } from '@/components/client/bank-statement-upload'
 import { TransactionList, type BankTransaction } from '@/components/client/transaction-list'
 import { TransactionMatchDialog } from '@/components/client/transaction-match-dialog'
 import { TaxImpactSummary } from '@/components/client/tax-impact-summary'
-import { ClientInvoiceForm } from '@/components/client/invoice-form'
-import { InvoiceDetailDialog } from '@/components/client/invoice-detail-dialog'
+import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
 import { toast } from 'sonner'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 
-type Tab = 'upload' | 'list' | 'bank' | 'invoices'
+type Tab = 'documents' | 'bank'
 
 export default function DocumentsPage() {
   return (
@@ -59,21 +40,43 @@ export default function DocumentsPage() {
 
 function DocumentsPageInner() {
   const searchParams = useSearchParams()
-  const initialTab = (searchParams.get('tab') as Tab) || 'upload'
+  const router = useRouter()
+  const rawTab = searchParams.get('tab')
+  const initialTab: Tab = rawTab === 'bank' ? 'bank' : 'documents'
   const [activeTab, setActiveTab] = useState<Tab>(initialTab)
+  const [showScanOverlay, setShowScanOverlay] = useState(false)
+
+  const { companies } = useClientUser()
+  const companyId = companies[0]?.id || ''
 
   const tabs: { id: Tab; label: string; icon: typeof Camera }[] = [
-    { id: 'upload', label: 'Nahrát', icon: Camera },
-    { id: 'list', label: 'Přehled', icon: FileText },
+    { id: 'documents', label: 'Doklady', icon: FileText },
     { id: 'bank', label: 'Banka', icon: Landmark },
-    { id: 'invoices', label: 'Faktury', icon: Receipt },
   ]
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold font-display">Doklady</h1>
-        <p className="text-muted-foreground">Nahrajte doklady, spravujte výpisy a vystavujte faktury</p>
+        <p className="text-muted-foreground">Nahrajte doklady a spravujte bankovní výpisy</p>
+      </div>
+
+      {/* Action buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => setShowScanOverlay(true)}
+          className="h-14 flex items-center justify-center gap-3 px-5 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium text-base shadow-md hover:shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all active:scale-[0.98]"
+        >
+          <Camera className="h-5 w-5 flex-shrink-0" />
+          Nahrát doklad
+        </button>
+        <button
+          onClick={() => router.push('/client/invoices')}
+          className="h-14 flex items-center justify-center gap-3 px-5 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-medium text-base shadow-md hover:shadow-lg hover:from-green-600 hover:to-green-700 transition-all active:scale-[0.98]"
+        >
+          <Receipt className="h-5 w-5 flex-shrink-0" />
+          Vystavit fakturu
+        </button>
       </div>
 
       {/* Tab navigation */}
@@ -99,510 +102,20 @@ function DocumentsPageInner() {
         })}
       </div>
 
-      {activeTab === 'upload' && <UploadTab />}
-      {activeTab === 'list' && <DocumentListTab />}
+      {activeTab === 'documents' && <DocumentListTab />}
       {activeTab === 'bank' && <BankTab />}
-      {activeTab === 'invoices' && <InvoicesTab />}
+
+      {/* Overlays */}
+      <ScanOverlay
+        open={showScanOverlay}
+        companyId={companyId}
+        companies={companies}
+        onClose={() => setShowScanOverlay(false)}
+      />
     </div>
   )
 }
 
-// ===== UPLOAD TAB =====
-
-interface ExtractionJob {
-  id: string
-  file: File
-  previewUrl: string
-  documentType: ExtractionDocumentType
-  status: ExtractionStatus
-  extractedData?: ExtractedData
-  confidenceScore?: number
-  corrections: Array<{ field: string; original: unknown; corrected: unknown }>
-  notes?: string
-  draftId?: string // ID from DB after auto-save
-}
-
-function UploadTab() {
-  const { companies, loading: companiesLoading } = useClientUser()
-
-  const [selectedCompany, setSelectedCompany] = useState<string>('')
-  const [documentType, setDocumentType] = useState<ExtractionDocumentType>('receipt')
-  const [jobs, setJobs] = useState<ExtractionJob[]>([])
-  const [currentJobIndex, setCurrentJobIndex] = useState<number>(-1)
-  const [isExtracting, setIsExtracting] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
-
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const cameraInputRef = useRef<HTMLInputElement>(null)
-  const debounceRef = useRef<NodeJS.Timeout | null>(null)
-
-  const currentJob = currentJobIndex >= 0 ? jobs[currentJobIndex] : null
-
-  // Auto-select company if only 1
-  useEffect(() => {
-    if (companies.length === 1 && !selectedCompany) {
-      setSelectedCompany(companies[0].id)
-    }
-  }, [companies, selectedCompany])
-
-  // Handle file selection
-  const handleFileSelect = useCallback((files: FileList | null) => {
-    if (!files || files.length === 0) return
-
-    const newJobs: ExtractionJob[] = Array.from(files).map((file, index) => ({
-      id: `temp-${Date.now()}-${index}`,
-      file,
-      previewUrl: URL.createObjectURL(file),
-      documentType,
-      status: 'uploaded' as ExtractionStatus,
-      corrections: [],
-    }))
-
-    setJobs(prev => [...prev, ...newJobs])
-    if (currentJobIndex < 0) {
-      setCurrentJobIndex(0)
-    }
-
-    // Auto-start extraction for each file
-    newJobs.forEach(job => processExtraction(job))
-  }, [documentType, currentJobIndex])
-
-  // Process OCR extraction via API
-  const processExtraction = async (job: ExtractionJob) => {
-    setIsExtracting(true)
-    updateJobStatus(job.id, 'extracting')
-
-    try {
-      const formData = new FormData()
-      formData.append('file', job.file)
-      formData.append('documentType', job.documentType)
-      formData.append('companyId', selectedCompany)
-
-      const response = await fetch('/api/client/extract', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) throw new Error('Extrakce selhala')
-
-      const data = await response.json()
-
-      updateJobData(job.id, {
-        status: 'extracted',
-        extractedData: data.extractedData,
-        confidenceScore: data.confidenceScore,
-        corrections: (data.corrections || []).map((c: any) => ({
-          field: c.field,
-          original: c.originalValue,
-          corrected: c.correctedValue,
-        })),
-      })
-
-      // Auto-save draft after extraction
-      saveDraft(job.id, data.extractedData, selectedCompany, job.file.name, job.documentType)
-    } catch (error) {
-      console.error('Extraction error:', error)
-      updateJobStatus(job.id, 'error')
-    } finally {
-      setIsExtracting(false)
-    }
-  }
-
-  // Save draft to DB
-  const saveDraft = async (
-    jobId: string,
-    extractedData: ExtractedData,
-    companyId: string,
-    fileName: string,
-    docType: ExtractionDocumentType
-  ) => {
-    try {
-      const res = await fetch('/api/client/drafts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company_id: companyId,
-          file_name: fileName,
-          document_type: docType,
-          extracted_data: extractedData,
-        }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.id) {
-          updateJobData(jobId, { draftId: data.id })
-          toast.success('Automaticky uloženo', { duration: 2000 })
-        }
-      }
-    } catch {
-      // Silent fail for auto-save
-    }
-  }
-
-  // Debounced update of draft
-  const debouncedUpdateDraft = useCallback((draftId: string, extractedData: ExtractedData, notes?: string) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(async () => {
-      try {
-        await fetch(`/api/client/drafts/${draftId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ extracted_data: extractedData, notes }),
-        })
-      } catch {
-        // Silent
-      }
-    }, 3000)
-  }, [])
-
-  const updateJobStatus = (jobId: string, status: ExtractionStatus) => {
-    setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status } : j))
-  }
-
-  const updateJobData = (jobId: string, updates: Partial<ExtractionJob>) => {
-    setJobs(prev => prev.map(j => j.id === jobId ? { ...j, ...updates } : j))
-  }
-
-  // Handle field correction
-  const handleFieldCorrection = (field: string, value: string | number) => {
-    if (!currentJob) return
-
-    const originalValue = (currentJob.extractedData as unknown as Record<string, unknown>)?.[field]
-    const newData = { ...currentJob.extractedData, [field]: value } as ExtractedData
-    const correction = { field, original: originalValue, corrected: value }
-
-    updateJobData(currentJob.id, {
-      extractedData: newData,
-      corrections: [...currentJob.corrections, correction],
-      status: 'corrected',
-    })
-
-    // Auto-save correction
-    if (currentJob.draftId) {
-      debouncedUpdateDraft(currentJob.draftId, newData, currentJob.notes)
-    }
-  }
-
-  // Submit to accountant
-  const handleSubmit = async () => {
-    if (!selectedCompany || jobs.length === 0) return
-    setIsSubmitting(true)
-
-    try {
-      // For jobs with draft IDs, update status to submitted
-      const draftJobs = jobs.filter(j => j.draftId)
-      const nonDraftJobs = jobs.filter(j => !j.draftId)
-
-      // Update drafts to submitted
-      for (const job of draftJobs) {
-        await fetch(`/api/client/drafts/${job.draftId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            status: 'submitted',
-            extracted_data: job.extractedData,
-            notes: job.notes,
-          }),
-        })
-      }
-
-      // Submit non-draft jobs via submissions API
-      if (nonDraftJobs.length > 0) {
-        const submissionData = nonDraftJobs.map(job => ({
-          company_id: selectedCompany,
-          file_name: job.file.name,
-          document_type: job.documentType,
-          extracted_data: job.extractedData,
-          corrections: job.corrections,
-          notes: job.notes,
-        }))
-
-        await fetch('/api/client/submissions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ submissions: submissionData }),
-        })
-      }
-
-      setShowSuccess(true)
-      setTimeout(() => {
-        setJobs([])
-        setCurrentJobIndex(-1)
-        setShowSuccess(false)
-      }, 3000)
-    } catch {
-      toast.error('Odeslání selhalo. Zkuste to prosím znovu.')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleRemoveJob = (jobId: string) => {
-    setJobs(prev => {
-      const filtered = prev.filter(j => j.id !== jobId)
-      if (filtered.length === 0) setCurrentJobIndex(-1)
-      else if (currentJobIndex >= filtered.length) setCurrentJobIndex(filtered.length - 1)
-      return filtered
-    })
-  }
-
-  const handleRetry = () => {
-    if (currentJob) processExtraction(currentJob)
-  }
-
-  const getStatusIcon = (status: ExtractionStatus) => {
-    switch (status) {
-      case 'approved':
-      case 'submitted':
-        return <CheckCircle2 className="w-4 h-4 text-green-500" />
-      case 'extracted':
-      case 'validated':
-        return <CheckCircle2 className="w-4 h-4 text-blue-500" />
-      case 'corrected':
-        return <Edit3 className="w-4 h-4 text-amber-500" />
-      case 'error':
-        return <AlertCircle className="w-4 h-4 text-red-500" />
-      case 'extracting':
-        return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-      default:
-        return <Upload className="w-4 h-4 text-gray-400" />
-    }
-  }
-
-  if (companiesLoading) {
-    return (
-      <div className="flex items-center justify-center h-32">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    )
-  }
-
-  if (showSuccess) {
-    return (
-      <Card className="text-center">
-        <CardContent className="p-6">
-          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-8 h-8 text-green-600" />
-          </div>
-          <h2 className="text-xl font-semibold font-display mb-2">Doklady odeslány!</h2>
-          <p className="text-muted-foreground">
-            Vaše doklady byly úspěšně odeslány k účetnímu zpracování.
-          </p>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Company selector (only if multiple) */}
-      {companies.length > 1 && (
-        <Card>
-          <CardContent className="p-4">
-            <Label className="mb-2 block">Firma</Label>
-            <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Vyberte firmu..." />
-              </SelectTrigger>
-              <SelectContent>
-                {companies.map(company => (
-                  <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Upload buttons — camera primary */}
-      <div className="space-y-3">
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => { handleFileSelect(e.target.files); e.target.value = '' }}
-        />
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,.pdf"
-          multiple
-          className="hidden"
-          onChange={(e) => { handleFileSelect(e.target.files); e.target.value = '' }}
-        />
-
-        <Button
-          className="w-full h-16 text-lg gap-3"
-          onClick={() => cameraInputRef.current?.click()}
-          disabled={!selectedCompany}
-        >
-          <Camera className="w-6 h-6" />
-          Vyfotit doklad
-        </Button>
-
-        <Button
-          variant="outline"
-          className="w-full h-12 gap-2"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={!selectedCompany}
-        >
-          <Upload className="w-5 h-5" />
-          Nahrát ze souboru
-        </Button>
-      </div>
-
-      {!selectedCompany && companies.length > 1 && (
-        <p className="text-center text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-lg">
-          Nejprve vyberte firmu
-        </p>
-      )}
-
-      {/* Current job display */}
-      {currentJob && (
-        <Card className="overflow-hidden">
-          {/* Preview */}
-          <div className="aspect-video bg-muted relative max-h-64">
-            {currentJob.file.type.startsWith('image/') ? (
-              <img
-                src={currentJob.previewUrl}
-                alt="Náhled"
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <FileText className="w-16 h-16 text-muted-foreground" />
-              </div>
-            )}
-            <div className="absolute top-2 right-2 bg-white dark:bg-gray-800 rounded-full p-1 shadow-soft-sm">
-              {getStatusIcon(currentJob.status)}
-            </div>
-          </div>
-
-          <CardContent className="p-6 space-y-4">
-            {currentJob.status === 'extracting' && (
-              <div className="flex items-center gap-2 text-blue-600">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Probíhá vytěžování...</span>
-              </div>
-            )}
-
-            {currentJob.status === 'error' && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3">
-                <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
-                  <AlertCircle className="w-4 h-4" />
-                  <span className="text-sm font-medium">Vytěžování selhalo</span>
-                </div>
-                <Button variant="outline" size="sm" className="mt-2" onClick={handleRetry}>
-                  <RotateCcw className="w-4 h-4 mr-1" />
-                  Zkusit znovu
-                </Button>
-              </div>
-            )}
-
-            {(currentJob.status === 'extracted' ||
-              currentJob.status === 'corrected' ||
-              currentJob.status === 'validated') && (
-              <>
-                {currentJob.draftId && (
-                  <div className="flex items-center gap-2 text-green-600 text-sm">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Automaticky uloženo
-                  </div>
-                )}
-
-                <ExtractedDataDisplay
-                  data={currentJob.extractedData!}
-                  documentType={currentJob.documentType}
-                  confidenceScore={currentJob.confidenceScore}
-                  editable={true}
-                  onFieldChange={handleFieldCorrection}
-                  corrections={currentJob.corrections}
-                />
-
-                <div>
-                  <Label className="text-sm">Poznámka pro účetní</Label>
-                  <Textarea
-                    placeholder="Např.: Souvisí s projektem X, služební cesta..."
-                    value={currentJob.notes || ''}
-                    onChange={(e) => {
-                      updateJobData(currentJob.id, { notes: e.target.value })
-                      if (currentJob.draftId) {
-                        debouncedUpdateDraft(currentJob.draftId, currentJob.extractedData!, e.target.value)
-                      }
-                    }}
-                    className="mt-1"
-                  />
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Multi-job thumbnails */}
-      {jobs.length > 1 && (
-        <div className="space-y-2">
-          <Label>Nahrané doklady ({jobs.length})</Label>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {jobs.map((job, idx) => (
-              <button
-                key={job.id}
-                onClick={() => setCurrentJobIndex(idx)}
-                className={cn(
-                  'flex-shrink-0 w-20 h-20 rounded-xl border-2 overflow-hidden relative',
-                  idx === currentJobIndex
-                    ? 'border-blue-500 ring-2 ring-blue-200'
-                    : 'border-gray-200 dark:border-gray-700'
-                )}
-              >
-                {job.file.type.startsWith('image/') ? (
-                  <img src={job.previewUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-muted">
-                    <FileText className="w-6 h-6 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="absolute top-0.5 right-0.5">{getStatusIcon(job.status)}</div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleRemoveJob(job.id) }}
-                  className="absolute top-0.5 left-0.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Submit button */}
-      {jobs.length > 0 && (
-        <Button
-          className="w-full h-12 text-lg"
-          disabled={isSubmitting || isExtracting}
-          onClick={handleSubmit}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              Odesílání...
-            </>
-          ) : (
-            <>
-              <Send className="w-5 h-5 mr-2" />
-              Potvrdit a odeslat ({jobs.length})
-            </>
-          )}
-        </Button>
-      )}
-    </div>
-  )
-}
-
-// ===== DOCUMENT LIST TAB =====
 
 interface Document {
   id: string
@@ -902,12 +415,14 @@ function BankTab() {
         <Card>
           <CardContent className="p-4">
             <Label className="mb-2 block">Firma</Label>
-            <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-              <SelectTrigger className="h-11"><SelectValue placeholder="Vyberte firmu..." /></SelectTrigger>
-              <SelectContent>
-                {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <select
+              className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              value={selectedCompany}
+              onChange={e => setSelectedCompany(e.target.value)}
+            >
+              <option value="">Vyberte firmu...</option>
+              {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           </CardContent>
         </Card>
       )}
@@ -952,387 +467,6 @@ function BankTab() {
           companyId={selectedCompany}
           onMatch={handleMatch}
           onClose={() => setMatchingTx(null)}
-        />
-      )}
-    </div>
-  )
-}
-
-// ===== INVOICES TAB =====
-
-type FormMode = { type: 'new' } | { type: 'edit'; invoice: any } | { type: 'duplicate'; invoice: any }
-
-function InvoicesTab() {
-  const { companies, loading: companiesLoading } = useClientUser()
-  const [selectedCompany, setSelectedCompany] = useState<string>('')
-  const [formMode, setFormMode] = useState<FormMode | null>(null)
-
-  useEffect(() => {
-    if (companies.length === 1 && !selectedCompany) {
-      setSelectedCompany(companies[0].id)
-    }
-  }, [companies, selectedCompany])
-
-  const [refreshKey, setRefreshKey] = useState(0)
-  const handleCreated = () => {
-    setFormMode(null)
-    setRefreshKey(k => k + 1)
-    toast.success(formMode?.type === 'edit' ? 'Faktura uložena' : 'Faktura vytvořena')
-  }
-
-  if (companiesLoading) {
-    return <div className="flex items-center justify-center h-32"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
-  }
-
-  return (
-    <div className="space-y-4">
-      {companies.length > 1 && (
-        <Card>
-          <CardContent className="p-4">
-            <Label className="mb-2 block">Firma</Label>
-            <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-              <SelectTrigger className="h-11"><SelectValue placeholder="Vyberte firmu..." /></SelectTrigger>
-              <SelectContent>
-                {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-      )}
-
-      {selectedCompany && !formMode && (
-        <Button className="w-full h-12 text-lg gap-2" onClick={() => setFormMode({ type: 'new' })}>
-          <Plus className="w-5 h-5" />
-          Vystavit nový doklad
-        </Button>
-      )}
-
-      {formMode && selectedCompany && (
-        <ClientInvoiceForm
-          companyId={selectedCompany}
-          onClose={() => setFormMode(null)}
-          onCreated={handleCreated}
-          editInvoice={formMode.type === 'edit' ? formMode.invoice : undefined}
-          duplicateFrom={formMode.type === 'duplicate' ? formMode.invoice : undefined}
-        />
-      )}
-
-      {selectedCompany && (
-        <ClientInvoiceListView
-          key={refreshKey}
-          companyId={selectedCompany}
-          onEdit={(inv) => setFormMode({ type: 'edit', invoice: inv })}
-          onDuplicate={(inv) => setFormMode({ type: 'duplicate', invoice: inv })}
-          onRefresh={() => setRefreshKey(k => k + 1)}
-        />
-      )}
-    </div>
-  )
-}
-
-type StatusFilter = 'all' | 'draft' | 'sent' | 'paid' | 'overdue'
-type DocTypeFilter = 'all' | 'invoice' | 'proforma' | 'credit_note'
-
-const docTypeLabelsFilter: Record<string, string> = {
-  all: 'Vše',
-  invoice: 'Faktury',
-  proforma: 'Proformy',
-  credit_note: 'Dobropisy',
-}
-
-const docTypeBadgeLabel: Record<string, string> = {
-  invoice: 'Faktura',
-  proforma: 'Proforma',
-  credit_note: 'Dobropis',
-}
-
-function isInvoiceOverdue(inv: any): boolean {
-  if (inv.status === 'paid') return false
-  if (!inv.due_date) return false
-  return new Date(inv.due_date) < new Date()
-}
-
-function ClientInvoiceListView({
-  companyId,
-  onEdit,
-  onDuplicate,
-  onRefresh,
-}: {
-  companyId: string
-  onEdit: (inv: any) => void
-  onDuplicate: (inv: any) => void
-  onRefresh: () => void
-}) {
-  const [invoices, setInvoices] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [docTypeFilter, setDocTypeFilter] = useState<DocTypeFilter>('all')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [detailInvoice, setDetailInvoice] = useState<any | null>(null)
-
-  const fetchInvoices = () => {
-    setLoading(true)
-    fetch('/api/client/invoices')
-      .then(r => r.ok ? r.json() : { invoices: [] })
-      .then(data => setInvoices(data.invoices || []))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { fetchInvoices() }, [companyId])
-
-  const handleDelete = async (inv: any) => {
-    if (!confirm('Opravdu chcete smazat tento doklad?')) return
-    try {
-      const res = await fetch(`/api/client/invoices/${inv.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deleted_at: new Date().toISOString() }),
-      })
-      if (res.ok) {
-        toast.success('Doklad smazán')
-        setDetailInvoice(null)
-        fetchInvoices()
-        onRefresh()
-      }
-    } catch {
-      toast.error('Smazání selhalo')
-    }
-  }
-
-  const handleConvert = async (inv: any, targetType: string) => {
-    try {
-      const res = await fetch(`/api/client/invoices/${inv.id}/convert`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target_type: targetType }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Konverze selhala')
-      }
-      toast.success(targetType === 'credit_note' ? 'Dobropis vytvořen' : 'Faktura vytvořena z proformy')
-      setDetailInvoice(null)
-      fetchInvoices()
-      onRefresh()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Konverze selhala')
-    }
-  }
-
-  // Filter invoices
-  const filtered = invoices.filter(inv => {
-    // Status filter
-    const overdue = isInvoiceOverdue(inv)
-    if (statusFilter === 'overdue' && !overdue) return false
-    if (statusFilter === 'draft' && inv.status !== 'draft') return false
-    if (statusFilter === 'sent' && inv.status !== 'sent') return false
-    if (statusFilter === 'paid' && inv.status !== 'paid') return false
-
-    // Document type filter
-    const invDocType = inv.document_type || 'invoice'
-    if (docTypeFilter !== 'all' && invDocType !== docTypeFilter) return false
-
-    // Search
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      const matchesNumber = inv.invoice_number?.toLowerCase().includes(q)
-      const matchesPartner = (inv.partner?.name || inv.partner_name || '').toLowerCase().includes(q)
-      if (!matchesNumber && !matchesPartner) return false
-    }
-
-    return true
-  })
-
-  // Summary stats
-  const totalCount = invoices.length
-  const unpaidAmount = invoices
-    .filter(inv => inv.status !== 'paid' && (inv.document_type || 'invoice') !== 'credit_note')
-    .reduce((s, inv) => s + (inv.total_with_vat || inv.amount || 0), 0)
-  const overdueCount = invoices.filter(isInvoiceOverdue).length
-  const paidAmount = invoices
-    .filter(inv => inv.status === 'paid')
-    .reduce((s, inv) => s + (inv.total_with_vat || inv.amount || 0), 0)
-
-  if (loading) {
-    return <div className="flex items-center justify-center h-32"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Summary cards */}
-      {invoices.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <Card><CardContent className="p-3 text-center">
-            <p className="text-xs text-muted-foreground">Celkem</p>
-            <p className="text-lg font-bold">{totalCount}</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
-            <p className="text-xs text-muted-foreground">Nezaplaceno</p>
-            <p className="text-lg font-bold text-amber-600">{unpaidAmount.toLocaleString('cs-CZ')} Kč</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
-            <p className="text-xs text-muted-foreground">Po splatnosti</p>
-            <p className={cn('text-lg font-bold', overdueCount > 0 ? 'text-red-600' : '')}>{overdueCount}</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
-            <p className="text-xs text-muted-foreground">Zaplaceno</p>
-            <p className="text-lg font-bold text-green-600">{paidAmount.toLocaleString('cs-CZ')} Kč</p>
-          </CardContent></Card>
-        </div>
-      )}
-
-      {/* Filters */}
-      {invoices.length > 0 && (
-        <div className="space-y-2">
-          {/* Status filter */}
-          <div className="flex items-center gap-1 flex-wrap">
-            {(['all', 'draft', 'sent', 'paid', 'overdue'] as StatusFilter[]).map(f => (
-              <button
-                key={f}
-                onClick={() => setStatusFilter(f)}
-                className={cn(
-                  'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
-                  statusFilter === f
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                )}
-              >
-                {f === 'all' ? 'Vše' : f === 'draft' ? 'Koncept' : f === 'sent' ? 'Odesláno' : f === 'paid' ? 'Zaplaceno' : `Po splatnosti${overdueCount > 0 ? ` (${overdueCount})` : ''}`}
-              </button>
-            ))}
-          </div>
-          {/* Doc type + search */}
-          <div className="flex items-center gap-2">
-            <Select value={docTypeFilter} onValueChange={(v) => setDocTypeFilter(v as DocTypeFilter)}>
-              <SelectTrigger className="h-8 w-32 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(docTypeLabelsFilter).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="Hledat číslo, partner..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="h-8 text-xs flex-1"
-            />
-          </div>
-        </div>
-      )}
-
-      {invoices.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Receipt className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
-            <p className="text-muted-foreground">Zatím nemáte žádné vydané doklady</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Invoice list */}
-      {filtered.length > 0 && (
-        <div className="space-y-2">
-          {filtered.map((inv: any) => {
-            const overdue = isInvoiceOverdue(inv)
-            const invDocType = inv.document_type || 'invoice'
-            const total = inv.total_with_vat || inv.amount || 0
-
-            return (
-              <Card
-                key={inv.id}
-                className={cn(
-                  'cursor-pointer transition-colors hover:bg-muted/50',
-                  overdue && 'border-red-300 dark:border-red-700'
-                )}
-                onClick={() => setDetailInvoice(inv)}
-              >
-                <CardContent className="py-3 px-4">
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      'p-2 rounded-lg shrink-0',
-                      invDocType === 'credit_note' ? 'bg-red-50 dark:bg-red-950/30' :
-                      invDocType === 'proforma' ? 'bg-amber-50 dark:bg-amber-950/30' :
-                      'bg-green-50 dark:bg-green-950/30'
-                    )}>
-                      <Receipt className={cn(
-                        'h-4 w-4',
-                        invDocType === 'credit_note' ? 'text-red-600' :
-                        invDocType === 'proforma' ? 'text-amber-600' :
-                        'text-green-600'
-                      )} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-medium truncate">
-                          {inv.invoice_number} — {inv.partner?.name || inv.partner_name || 'Neuvedeno'}
-                        </p>
-                        {invDocType !== 'invoice' && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
-                            {docTypeBadgeLabel[invDocType] || invDocType}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{new Date(inv.issue_date).toLocaleDateString('cs-CZ')}</span>
-                        {inv.due_date && (
-                          <><span>·</span><span>Spl. {new Date(inv.due_date).toLocaleDateString('cs-CZ')}</span></>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <a
-                        href={`/api/client/invoices/${inv.id}/pdf`}
-                        target="_blank"
-                        rel="noopener"
-                        onClick={e => e.stopPropagation()}
-                        className="p-1 text-muted-foreground hover:text-blue-600 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                        title="Stáhnout PDF"
-                      >
-                        <Download className="h-4 w-4" />
-                      </a>
-                      <span className={cn(
-                        'text-sm font-semibold',
-                        invDocType === 'credit_note' ? 'text-red-600' : 'text-green-600'
-                      )}>
-                        {total.toLocaleString('cs-CZ')} Kč
-                      </span>
-                      <Badge className={cn(
-                        'rounded-md',
-                        overdue ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
-                        inv.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                        inv.status === 'sent' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                        'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
-                      )}>
-                        {overdue ? 'Po splatnosti' : inv.status === 'paid' ? 'Zaplaceno' : inv.status === 'sent' ? 'Odesláno' : 'Koncept'}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      )}
-
-      {filtered.length === 0 && invoices.length > 0 && (
-        <div className="text-center py-8 text-sm text-muted-foreground">
-          Žádné doklady neodpovídají filtru
-        </div>
-      )}
-
-      {/* Detail dialog */}
-      {detailInvoice && (
-        <InvoiceDetailDialog
-          invoice={detailInvoice}
-          open={!!detailInvoice}
-          onOpenChange={(open) => { if (!open) setDetailInvoice(null) }}
-          onEdit={() => { setDetailInvoice(null); onEdit(detailInvoice) }}
-          onDuplicate={() => { setDetailInvoice(null); onDuplicate(detailInvoice) }}
-          onDelete={() => handleDelete(detailInvoice)}
-          onConvert={(targetType) => handleConvert(detailInvoice, targetType)}
         />
       )}
     </div>

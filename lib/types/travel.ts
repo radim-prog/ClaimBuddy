@@ -8,7 +8,7 @@ export type VehicleCategory = 'car' | 'motorcycle' | 'truck'
 export const TRIP_TYPE_LABELS: Record<TripType, string> = {
   business: 'Služební',
   private: 'Soukromá',
-  commute: 'Dojíždění',
+  commute: 'Dojíždění do práce',
 }
 
 export const VEHICLE_CATEGORY_LABELS: Record<VehicleCategory, string> = {
@@ -19,15 +19,15 @@ export const VEHICLE_CATEGORY_LABELS: Record<VehicleCategory, string> = {
 
 export const PURPOSE_SUGGESTIONS = [
   'Jednání s klientem',
-  'Návštěva finančního úřadu',
-  'Dodání dokladů',
+  'Obchodní schůzka',
+  'Nákup materiálu',
   'Pracovní cesta',
   'Návštěva dodavatele',
   'Školení',
   'Přeprava materiálu',
   'Servis vozidla',
-  'Obchodní schůzka',
-  'Kontrola na pobočce',
+  'Návštěva úřadu',
+  'Přeprava zboží',
 ]
 
 // ============================================================

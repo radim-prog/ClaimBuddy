@@ -20,7 +20,6 @@ import { useClientUser } from '@/lib/contexts/client-user-context'
 import { generateDeadlinesForCompany } from '@/lib/statutory-deadlines'
 import { TaxImpactSummary } from '@/components/client/tax-impact-summary'
 import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
-import { InvoiceOverlay } from '@/components/client/action-hub/invoice-overlay'
 import { TripOverlay } from '@/components/client/action-hub/trip-overlay'
 import { QuickActionOverlay } from '@/components/client/action-hub/quick-action-overlay'
 
@@ -30,7 +29,7 @@ const monthNames = [
 ]
 
 type ClosureStatus = 'missing' | 'uploaded' | 'approved'
-type OverlayType = 'scan' | 'invoice' | 'trip' | null
+type OverlayType = 'scan' | 'trip' | null
 
 function getMonthDotColor(closure: { bank_statement_status: ClosureStatus; expense_documents_status: ClosureStatus; income_invoices_status: ClosureStatus } | undefined, isFuture: boolean): string {
   if (isFuture || !closure) return 'bg-gray-300 dark:bg-gray-600'
@@ -48,7 +47,7 @@ export default function ClientDashboard() {
   const [casesCount, setCasesCount] = useState(0)
   const [lastCaseActivity, setLastCaseActivity] = useState<string | null>(null)
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null)
-  const [showQuickActions, setShowQuickActions] = useState(true)
+  const [showQuickActions, setShowQuickActions] = useState(false)
 
   // Fetch draft count + cases
   useEffect(() => {
@@ -114,7 +113,11 @@ export default function ClientDashboard() {
 
   const handleQuickAction = (action: 'scan' | 'invoice' | 'trip') => {
     setShowQuickActions(false)
-    setActiveOverlay(action)
+    if (action === 'invoice') {
+      router.push('/client/invoices')
+    } else {
+      setActiveOverlay(action)
+    }
   }
 
   if (loading) {
@@ -171,30 +174,27 @@ export default function ClientDashboard() {
 
         {/* === COMPACT ACTION ROW === */}
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-          <Button
-            variant="outline"
-            className="h-12 flex items-center justify-center gap-2 text-sm"
+          <button
+            className="h-12 flex items-center justify-center gap-2 text-sm rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium shadow-sm hover:shadow-md hover:from-blue-600 hover:to-blue-700 transition-all active:scale-[0.98]"
             onClick={() => setActiveOverlay('scan')}
           >
             <Camera className="h-4 w-4 flex-shrink-0" />
             <span className="hidden sm:inline">Nahrát</span> doklad
-          </Button>
-          <Button
-            variant="outline"
-            className="h-12 flex items-center justify-center gap-2 text-sm"
-            onClick={() => setActiveOverlay('invoice')}
+          </button>
+          <button
+            className="h-12 flex items-center justify-center gap-2 text-sm rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-medium shadow-sm hover:shadow-md hover:from-green-600 hover:to-green-700 transition-all active:scale-[0.98]"
+            onClick={() => router.push('/client/invoices')}
           >
             <Receipt className="h-4 w-4 flex-shrink-0" />
             Faktura
-          </Button>
-          <Button
-            variant="outline"
-            className="h-12 flex items-center justify-center gap-2 text-sm"
+          </button>
+          <button
+            className="h-12 flex items-center justify-center gap-2 text-sm rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium shadow-sm hover:shadow-md hover:from-amber-600 hover:to-amber-700 transition-all active:scale-[0.98]"
             onClick={() => setActiveOverlay('trip')}
           >
             <Car className="h-4 w-4 flex-shrink-0" />
             Jízda
-          </Button>
+          </button>
           <Button
             variant="outline"
             className="h-12 flex items-center justify-center gap-2 text-sm col-span-1"
@@ -403,11 +403,6 @@ export default function ClientDashboard() {
             companyId={selectedCompany.id}
             companies={companies}
             onClose={handleScanClose}
-          />
-          <InvoiceOverlay
-            open={activeOverlay === 'invoice'}
-            companyId={selectedCompany.id}
-            onClose={() => setActiveOverlay(null)}
           />
           <TripOverlay
             open={activeOverlay === 'trip'}
