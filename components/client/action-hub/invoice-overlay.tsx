@@ -24,14 +24,16 @@ export function InvoiceOverlay({ open, companyId, onClose }: InvoiceOverlayProps
           <X className="h-5 w-5" />
         </Button>
       </div>
-      <div className="flex-1 overflow-y-auto p-4">
-        {open && (
-          <ClientInvoiceForm
-            companyId={companyId}
-            onClose={onClose}
-            onCreated={onClose}
-          />
-        )}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto p-4">
+          {open && (
+            <ClientInvoiceForm
+              companyId={companyId}
+              onClose={onClose}
+              onCreated={onClose}
+            />
+          )}
+        </div>
       </div>
     </div>
   )

@@ -35,6 +35,7 @@ import { ClientUserProvider, useClientUser } from '@/lib/contexts/client-user-co
 import { NotificationModal } from '@/components/client/notification-modal'
 import { NotificationBanner } from '@/components/client/notification-banner'
 import { ImpersonationBanner } from '@/components/client/impersonation-banner'
+import { MissingDocsBar } from '@/components/client/missing-docs-bar'
 
 const navigation = [
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard },
@@ -69,6 +70,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <ImpersonationBanner />
+      <MissingDocsBar />
       <NotificationModal onDismissed={() => setNotificationsDismissed(true)} />
       <NotificationBanner dismissed={notificationsDismissed} />
 

@@ -59,22 +59,24 @@ export function TripOverlay({ open, onClose }: TripOverlayProps) {
           <X className="h-5 w-5" />
         </Button>
       </div>
-      <div className="flex-1 overflow-y-auto p-4">
-        {open && (
-          loading ? (
-            <div className="flex items-center justify-center h-32">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            </div>
-          ) : (
-            <TripForm
-              vehicles={vehicles}
-              drivers={drivers}
-              places={places}
-              onSubmit={handleSubmit}
-              onCancel={onClose}
-            />
-          )
-        )}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto p-4">
+          {open && (
+            loading ? (
+              <div className="flex items-center justify-center h-32">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              </div>
+            ) : (
+              <TripForm
+                vehicles={vehicles}
+                drivers={drivers}
+                places={places}
+                onSubmit={handleSubmit}
+                onCancel={onClose}
+              />
+            )
+          )}
+        </div>
       </div>
     </div>
   )

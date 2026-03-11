@@ -2,11 +2,9 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Camera,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
   MessageCircle,
   CalendarDays,
   Mail,
@@ -21,10 +19,10 @@ import { Button } from '@/components/ui/button'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { generateDeadlinesForCompany } from '@/lib/statutory-deadlines'
 import { TaxImpactSummary } from '@/components/client/tax-impact-summary'
-import { ActionTile } from '@/components/client/action-hub/action-tile'
 import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
 import { InvoiceOverlay } from '@/components/client/action-hub/invoice-overlay'
 import { TripOverlay } from '@/components/client/action-hub/trip-overlay'
+import { QuickActionOverlay } from '@/components/client/action-hub/quick-action-overlay'
 
 const monthNames = [
   'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
@@ -34,28 +32,23 @@ const monthNames = [
 type ClosureStatus = 'missing' | 'uploaded' | 'approved'
 type OverlayType = 'scan' | 'invoice' | 'trip' | null
 
-function getOverallStatus(closure: { bank_statement_status: ClosureStatus; expense_documents_status: ClosureStatus; income_invoices_status: ClosureStatus }): 'action' | 'waiting' | 'ok' {
-  const statuses = [closure.bank_statement_status, closure.expense_documents_status, closure.income_invoices_status]
-  if (statuses.some(s => s === 'missing')) return 'action'
-  if (statuses.some(s => s === 'uploaded')) return 'waiting'
-  return 'ok'
-}
-
 function getMonthDotColor(closure: { bank_statement_status: ClosureStatus; expense_documents_status: ClosureStatus; income_invoices_status: ClosureStatus } | undefined, isFuture: boolean): string {
   if (isFuture || !closure) return 'bg-gray-300 dark:bg-gray-600'
-  const status = getOverallStatus(closure)
-  if (status === 'action') return 'bg-red-500'
-  if (status === 'waiting') return 'bg-yellow-500'
+  const statuses = [closure.bank_statement_status, closure.expense_documents_status, closure.income_invoices_status]
+  if (statuses.some(s => s === 'missing')) return 'bg-red-500'
+  if (statuses.some(s => s === 'uploaded')) return 'bg-yellow-500'
   return 'bg-green-500'
 }
 
 export default function ClientDashboard() {
+  const router = useRouter()
   const { userName, companies, closures, loading, error } = useClientUser()
   const [selectedCompanyIndex, setSelectedCompanyIndex] = useState(0)
   const [draftCount, setDraftCount] = useState(0)
   const [casesCount, setCasesCount] = useState(0)
   const [lastCaseActivity, setLastCaseActivity] = useState<string | null>(null)
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null)
+  const [showQuickActions, setShowQuickActions] = useState(true)
 
   // Fetch draft count + cases
   useEffect(() => {
@@ -83,7 +76,6 @@ export default function ClientDashboard() {
   const now = new Date()
   const currentMonth = now.getMonth()
   const currentYear = now.getFullYear()
-  const currentPeriod = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
 
   const selectedCompany = companies[selectedCompanyIndex]
 
@@ -91,18 +83,6 @@ export default function ClientDashboard() {
     if (!selectedCompany) return []
     return closures.filter(c => c.company_id === selectedCompany.id)
   }, [selectedCompany, closures])
-
-  const currentClosure = companyClosures.find(c => c.period === currentPeriod)
-  const currentStatus = currentClosure ? getOverallStatus(currentClosure as any) : 'action'
-
-  const missingDocs = useMemo(() => {
-    if (!currentClosure) return ['Výpis z účtu', 'Nákladové doklady', 'Příjmové faktury']
-    const missing: string[] = []
-    if ((currentClosure as any).bank_statement_status === 'missing') missing.push('Výpis z účtu')
-    if ((currentClosure as any).expense_documents_status === 'missing') missing.push('Nákladové doklady')
-    if ((currentClosure as any).income_invoices_status === 'missing') missing.push('Příjmové faktury')
-    return missing
-  }, [currentClosure])
 
   const deadlines = useMemo(() => {
     if (!selectedCompany) return []
@@ -126,11 +106,15 @@ export default function ClientDashboard() {
   // Refresh draft count when scan overlay closes
   const handleScanClose = () => {
     setActiveOverlay(null)
-    // Refresh draft count
     fetch('/api/client/drafts')
       .then(r => r.json())
       .then(data => setDraftCount(data.count || 0))
       .catch(() => {})
+  }
+
+  const handleQuickAction = (action: 'scan' | 'invoice' | 'trip') => {
+    setShowQuickActions(false)
+    setActiveOverlay(action)
   }
 
   if (loading) {
@@ -185,36 +169,48 @@ export default function ClientDashboard() {
           </div>
         )}
 
-        {/* === ACTION HUB === */}
-        <div className="space-y-3">
-          {/* Primary tile: Scan */}
-          <ActionTile
-            icon={Camera}
-            label="Nahrát doklad"
-            subtitle="Vyfotit nebo nahrát"
-            badge={draftCount}
-            variant="primary"
-            color="blue"
+        {/* === COMPACT ACTION ROW === */}
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+          <Button
+            variant="outline"
+            className="h-12 flex items-center justify-center gap-2 text-sm"
             onClick={() => setActiveOverlay('scan')}
-          />
-
-          {/* Secondary tiles: Invoice + Trip */}
-          <div className="grid grid-cols-2 gap-3">
-            <ActionTile
-              icon={Receipt}
-              label="Vystavit fakturu"
-              variant="secondary"
-              color="green"
-              onClick={() => setActiveOverlay('invoice')}
-            />
-            <ActionTile
-              icon={Car}
-              label="Zapsat jízdu"
-              variant="secondary"
-              color="amber"
-              onClick={() => setActiveOverlay('trip')}
-            />
-          </div>
+          >
+            <Camera className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Nahrát</span> doklad
+          </Button>
+          <Button
+            variant="outline"
+            className="h-12 flex items-center justify-center gap-2 text-sm"
+            onClick={() => setActiveOverlay('invoice')}
+          >
+            <Receipt className="h-4 w-4 flex-shrink-0" />
+            Faktura
+          </Button>
+          <Button
+            variant="outline"
+            className="h-12 flex items-center justify-center gap-2 text-sm"
+            onClick={() => setActiveOverlay('trip')}
+          >
+            <Car className="h-4 w-4 flex-shrink-0" />
+            Jízda
+          </Button>
+          <Button
+            variant="outline"
+            className="h-12 flex items-center justify-center gap-2 text-sm col-span-1"
+            onClick={() => router.push('/client/messages')}
+          >
+            <MessageCircle className="h-4 w-4 flex-shrink-0" />
+            Zprávy
+          </Button>
+          <Button
+            variant="outline"
+            className="h-12 flex items-center justify-center gap-2 text-sm col-span-2 sm:col-span-1"
+            onClick={() => setActiveOverlay('scan')}
+          >
+            <FileText className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Nahrát</span> výpis
+          </Button>
         </div>
 
         {/* Draft badge */}
@@ -232,79 +228,6 @@ export default function ClientDashboard() {
                 </div>
                 <ChevronRight className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               </Link>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Current Month Card - Adaptive */}
-        {currentStatus === 'action' && (
-          <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-full">
-                  <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-lg font-semibold font-display text-red-900 dark:text-red-100">
-                    {monthNames[currentMonth]} {currentYear} — Chybí podklady
-                  </h2>
-                  <ul className="mt-2 space-y-1">
-                    {missingDocs.map(doc => (
-                      <li key={doc} className="text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0" />
-                        {doc}
-                      </li>
-                    ))}
-                  </ul>
-                  <Button
-                    className="mt-4 bg-red-600 hover:bg-red-700"
-                    onClick={() => setActiveOverlay('scan')}
-                  >
-                    <Camera className="mr-2 h-4 w-4" />
-                    Nahrát doklady
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {currentStatus === 'waiting' && (
-          <Card className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950/30">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-full">
-                  <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold font-display text-yellow-900 dark:text-yellow-100">
-                    {monthNames[currentMonth]} {currentYear} — Zpracovává se
-                  </h2>
-                  <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
-                    Vaše podklady účetní zpracovává. Není potřeba nic dělat.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {currentStatus === 'ok' && (
-          <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-full">
-                  <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold font-display text-green-900 dark:text-green-100">
-                    {monthNames[currentMonth]} {currentYear} — Vše v pořádku
-                  </h2>
-                  <p className="mt-1 text-sm text-green-700 dark:text-green-300">
-                    Všechny doklady jsou zpracované.
-                  </p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         )}
@@ -464,6 +387,13 @@ export default function ClientDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* === QUICK ACTION OVERLAY === */}
+      <QuickActionOverlay
+        open={showQuickActions}
+        onClose={() => setShowQuickActions(false)}
+        onAction={handleQuickAction}
+      />
 
       {/* === OVERLAYS === */}
       {selectedCompany && (
