@@ -4,19 +4,46 @@ import { mapDbRowToInvoice, generateInvoiceNumber, getDocumentTypePrefix } from 
 
 export const dynamic = 'force-dynamic'
 
+// Helper: get accessible company IDs (respects admin/impersonation)
+async function getCompanyIds(request: NextRequest): Promise<string[]> {
+  const userId = request.headers.get('x-user-id')!
+  const userRole = request.headers.get('x-user-role')
+  const impersonateCompany = request.headers.get('x-impersonate-company')
+  const isStaff = ['admin', 'accountant', 'assistant'].includes(userRole || '')
+
+  if (impersonateCompany) return [impersonateCompany]
+
+  if (isStaff) {
+    const { data } = await supabaseAdmin.from('companies').select('id').is('deleted_at', null)
+    return (data ?? []).map(c => c.id)
+  }
+
+  const { data } = await supabaseAdmin.from('companies').select('id').eq('owner_id', userId).is('deleted_at', null)
+  return (data ?? []).map(c => c.id)
+}
+
+// Helper: verify company access
+async function verifyCompanyAccess(request: NextRequest, companyId: string): Promise<{ id: string; name: string } | null> {
+  const userId = request.headers.get('x-user-id')!
+  const userRole = request.headers.get('x-user-role')
+  const impersonateCompany = request.headers.get('x-impersonate-company')
+  const isStaff = ['admin', 'accountant', 'assistant'].includes(userRole || '')
+
+  if (isStaff || impersonateCompany === companyId) {
+    const { data } = await supabaseAdmin.from('companies').select('id, name').eq('id', companyId).single()
+    return data
+  }
+
+  const { data } = await supabaseAdmin.from('companies').select('id, name').eq('id', companyId).eq('owner_id', userId).single()
+  return data
+}
+
 export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    // Get user's companies
-    const { data: companies } = await supabaseAdmin
-      .from('companies')
-      .select('id')
-      .eq('owner_id', userId)
-      .is('deleted_at', null)
-
-    const companyIds = (companies ?? []).map(c => c.id)
+    const companyIds = await getCompanyIds(request)
     if (companyIds.length === 0) {
       return NextResponse.json({ invoices: [], count: 0 })
     }
@@ -85,16 +112,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Verify user owns this company
-    const { data: company } = await supabaseAdmin
-      .from('companies')
-      .select('id, name')
-      .eq('id', company_id)
-      .eq('owner_id', userId)
-      .single()
-
+    // Verify access to this company (admin/accountant can access all)
+    const company = await verifyCompanyAccess(request, company_id)
     if (!company) {
-      return NextResponse.json({ error: 'Company not found or not owned by user' }, { status: 403 })
+      return NextResponse.json({ error: 'Company not found or not authorized' }, { status: 403 })
     }
 
     // Generate invoice number with correct prefix for document type

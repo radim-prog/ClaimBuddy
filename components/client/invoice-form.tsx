@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { X, Plus, Trash2, Loader2, Star, Download } from 'lucide-react'
+import { X, Plus, Trash2, Loader2, Download, ChevronDown, ChevronRight, FileText, Hash } from 'lucide-react'
 import { toast } from 'sonner'
 import { PartnerSelector } from '@/components/client/partner-selector'
+import { useClientUser } from '@/lib/contexts/client-user-context'
 
 interface InvoiceItem {
   description: string
@@ -44,6 +44,8 @@ type DocumentType = 'invoice' | 'proforma' | 'credit_note'
 interface ExistingInvoice {
   id: string
   document_type?: string
+  invoice_number?: string
+  variable_symbol?: string
   partner?: { name: string; ico?: string; dic?: string; address?: string }
   items?: InvoiceItem[]
   issue_date?: string
@@ -73,13 +75,113 @@ function addDays(date: Date, days: number): string {
 
 const docTypeLabels: Record<DocumentType, string> = {
   invoice: 'Faktura',
-  proforma: 'Proforma',
+  proforma: 'Zálohová faktura',
   credit_note: 'Dobropis',
+}
+
+// Date badge helper
+function getDateBadge(dateStr: string, type: 'issue' | 'due'): { text: string; colorClass: string } | null {
+  if (!dateStr) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const date = new Date(dateStr)
+  date.setHours(0, 0, 0, 0)
+  const diffDays = Math.round((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+  if (type === 'issue') {
+    if (diffDays === 0) return null
+    if (diffDays < 0) return { text: `${diffDays} dní`, colorClass: 'text-red-600 bg-red-50 dark:bg-red-950/30' }
+    return { text: `+${diffDays} dní`, colorClass: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30' }
+  }
+
+  // due date
+  if (diffDays < 0) return { text: 'po splatnosti', colorClass: 'text-red-600 bg-red-50 dark:bg-red-950/30' }
+  if (diffDays <= 14) return { text: `za ${diffDays} dní`, colorClass: 'text-green-600 bg-green-50 dark:bg-green-950/30' }
+  return { text: `za ${diffDays} dní`, colorClass: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30' }
+}
+
+const paymentMethodOptions = [
+  { value: 'bank_transfer', label: 'Převodem' },
+  { value: 'cash', label: 'Hotově' },
+  { value: 'card', label: 'Kartou' },
+]
+
+const unitOptions = ['ks', 'hod', 'den', 'měsíc', 'km', 'm', 'm²', 'komplet']
+
+// Autocomplete dropdown for item description
+function ItemDescriptionInput({
+  value,
+  onChange,
+  onSelectFavorite,
+  favorites,
+}: {
+  value: string
+  onChange: (val: string) => void
+  onSelectFavorite: (fav: Favorite) => void
+  favorites: Favorite[]
+}) {
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  const filtered = value.length >= 2
+    ? favorites.filter(f => f.name.toLowerCase().includes(value.toLowerCase())).slice(0, 5)
+    : []
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative flex-1">
+      <Input
+        placeholder="Popis položky"
+        value={value}
+        onChange={e => {
+          onChange(e.target.value)
+          setShowSuggestions(true)
+        }}
+        onFocus={() => { setFocused(true); setShowSuggestions(true) }}
+        onBlur={() => setFocused(false)}
+      />
+      {showSuggestions && filtered.length > 0 && (
+        <div className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+          {filtered.map(f => (
+            <button
+              key={f.id}
+              type="button"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => {
+                onSelectFavorite(f)
+                setShowSuggestions(false)
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-muted/50 text-sm border-b last:border-0"
+            >
+              <span className="font-medium">{f.name}</span>
+              {f.data?.unit_price != null && (
+                <span className="text-muted-foreground ml-2">
+                  {f.data.unit_price.toLocaleString('cs-CZ')} Kč/{f.data.unit || 'ks'}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, duplicateFrom }: ClientInvoiceFormProps) {
   const source = editInvoice || duplicateFrom
   const isEdit = !!editInvoice
+
+  const { userName } = useClientUser()
 
   const [documentType, setDocumentType] = useState<DocumentType>(
     (source?.document_type as DocumentType) || 'invoice'
@@ -117,12 +219,12 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
   const [paymentMethod, setPaymentMethod] = useState(source?.payment_method || 'bank_transfer')
   const [constantSymbol, setConstantSymbol] = useState(source?.constant_symbol || '0308')
   const [specificSymbol, setSpecificSymbol] = useState(source?.specific_symbol || '')
-  const [issuedBy, setIssuedBy] = useState(source?.issued_by || '')
+  const [issuedBy, setIssuedBy] = useState(source?.issued_by || userName || '')
   const [issuedByPhone, setIssuedByPhone] = useState(source?.issued_by_phone || '')
   const [issuedByEmail, setIssuedByEmail] = useState(source?.issued_by_email || '')
   const [saving, setSaving] = useState(false)
   const [favorites, setFavorites] = useState<Favorite[]>([])
-  const [showFavorites, setShowFavorites] = useState(false)
+  const [showExtra, setShowExtra] = useState(false)
 
   // Load favorites
   useEffect(() => {
@@ -144,13 +246,28 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
     setItems(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item))
   }
 
-  const applyFavorite = (fav: Favorite) => {
-    if (fav.type === 'partner') {
-      setPartner(fav.data)
-    } else if (fav.type === 'item') {
-      setItems(prev => [...prev, fav.data])
+  const applyItemFavorite = (index: number, fav: Favorite) => {
+    if (fav.type === 'item' && fav.data) {
+      setItems(prev => prev.map((item, i) => i === index ? {
+        description: fav.data.description || fav.name,
+        quantity: fav.data.quantity || 1,
+        unit: fav.data.unit || 'ks',
+        unit_price: fav.data.unit_price || 0,
+        vat_rate: fav.data.vat_rate ?? 21,
+      } : item))
     }
-    setShowFavorites(false)
+  }
+
+  const addFromFavorite = (fav: Favorite) => {
+    if (fav.type === 'item' && fav.data) {
+      setItems(prev => [...prev, {
+        description: fav.data.description || fav.name,
+        quantity: fav.data.quantity || 1,
+        unit: fav.data.unit || 'ks',
+        unit_price: fav.data.unit_price || 0,
+        vat_rate: fav.data.vat_rate ?? 21,
+      }])
+    }
   }
 
   // Calculations
@@ -271,6 +388,12 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
   }
 
   const itemFavorites = favorites.filter(f => f.type === 'item')
+  const topItemFavorites = itemFavorites
+    .sort((a, b) => (b.usage_count || 0) - (a.usage_count || 0))
+    .slice(0, 5)
+
+  const issueDateBadge = getDateBadge(issueDate, 'issue')
+  const dueDateBadge = getDateBadge(dueDate, 'due')
 
   const formTitle = isEdit
     ? `Upravit ${docTypeLabels[documentType].toLowerCase()}`
@@ -289,55 +412,46 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
-        {/* Document type selector */}
+        {/* Document type selector — only invoice & proforma in creation */}
         {!isEdit && (
-          <div className="flex gap-1 bg-muted p-1 rounded-lg">
-            {(['invoice', 'proforma', 'credit_note'] as DocumentType[]).map(dt => (
-              <button
-                key={dt}
-                type="button"
-                onClick={() => setDocumentType(dt)}
-                className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  documentType === dt
-                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                {docTypeLabels[dt]}
-              </button>
-            ))}
+          <div>
+            <div className="flex gap-1 bg-muted p-1 rounded-lg">
+              {(['invoice', 'proforma'] as DocumentType[]).map(dt => (
+                <button
+                  key={dt}
+                  type="button"
+                  onClick={() => setDocumentType(dt)}
+                  className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    documentType === dt
+                      ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  {docTypeLabels[dt]}
+                </button>
+              ))}
+            </div>
+            {/* Document number / VS info */}
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+              <Hash className="h-3 w-3" />
+              Číslo dokladu a variabilní symbol budou přiřazeny automaticky
+            </p>
           </div>
         )}
 
-        {/* Favorites banner */}
-        {favorites.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => setShowFavorites(!showFavorites)}
-          >
-            <Star className="h-4 w-4 mr-1 text-amber-500" />
-            Oblíbené ({favorites.length})
-          </Button>
-        )}
-
-        {showFavorites && (
-          <div className="border rounded-lg p-3 space-y-2 bg-amber-50/50 dark:bg-amber-950/20">
-            {itemFavorites.length > 0 && (
+        {/* Edit mode: show invoice number and VS */}
+        {isEdit && (editInvoice?.invoice_number || editInvoice?.variable_symbol) && (
+          <div className="flex gap-4 text-sm">
+            {editInvoice?.invoice_number && (
               <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">Položky</p>
-                <div className="flex flex-wrap gap-1">
-                  {itemFavorites.map(f => (
-                    <button
-                      key={f.id}
-                      onClick={() => applyFavorite(f)}
-                      className="text-xs px-2 py-1 bg-white dark:bg-gray-800 border rounded hover:bg-blue-50 dark:hover:bg-blue-950"
-                    >
-                      {f.name}
-                    </button>
-                  ))}
-                </div>
+                <span className="text-muted-foreground">Číslo: </span>
+                <span className="font-mono font-medium">{editInvoice.invoice_number}</span>
+              </div>
+            )}
+            {editInvoice?.variable_symbol && (
+              <div>
+                <span className="text-muted-foreground">VS: </span>
+                <span className="font-mono font-medium">{editInvoice.variable_symbol}</span>
               </div>
             )}
           </div>
@@ -350,98 +464,159 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
           onChange={setPartner}
         />
 
-        {/* Dates */}
+        {/* Dates with badges */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-xs">Datum vystavení</Label>
+            <div className="flex items-center gap-2 mb-1">
+              <Label className="text-xs">Datum vystavení</Label>
+              {issueDateBadge && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${issueDateBadge.colorClass}`}>
+                  {issueDateBadge.text}
+                </span>
+              )}
+            </div>
             <Input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} />
           </div>
           <div>
-            <Label className="text-xs">Datum splatnosti</Label>
+            <div className="flex items-center gap-2 mb-1">
+              <Label className="text-xs">Datum splatnosti</Label>
+              {dueDateBadge && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${dueDateBadge.colorClass}`}>
+                  {dueDateBadge.text}
+                </span>
+              )}
+            </div>
             <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
           </div>
         </div>
 
-        {/* Payment details */}
+        {/* Payment method (native select, always visible) + collapsible extra */}
         <div className="space-y-3">
-          <h3 className="font-medium text-sm">Platební údaje</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <Label className="text-xs">Způsob platby</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bank_transfer">Převodem</SelectItem>
-                  <SelectItem value="cash">Hotově</SelectItem>
-                  <SelectItem value="card">Kartou</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">Konstantní symbol</Label>
-              <Input
-                value={constantSymbol}
-                onChange={e => setConstantSymbol(e.target.value)}
-                placeholder="0308"
-                className="font-mono"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Specifický symbol</Label>
-              <Input
-                value={specificSymbol}
-                onChange={e => setSpecificSymbol(e.target.value)}
-                placeholder="volitelný"
-                className="font-mono"
-              />
-            </div>
+          <div>
+            <Label className="text-xs">Způsob platby</Label>
+            <select
+              value={paymentMethod}
+              onChange={e => setPaymentMethod(e.target.value)}
+              className="w-full h-9 rounded-md border px-2 text-sm bg-background"
+            >
+              {paymentMethodOptions.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
           </div>
+
+          {/* Collapsible "Další údaje" */}
+          <button
+            type="button"
+            onClick={() => setShowExtra(!showExtra)}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showExtra ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            Další údaje
+          </button>
+
+          {showExtra && (
+            <div className="space-y-3 pl-1 border-l-2 border-muted ml-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Konstantní symbol</Label>
+                  <Input
+                    value={constantSymbol}
+                    onChange={e => setConstantSymbol(e.target.value)}
+                    placeholder="0308"
+                    className="font-mono"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Specifický symbol</Label>
+                  <Input
+                    value={specificSymbol}
+                    onChange={e => setSpecificSymbol(e.target.value)}
+                    placeholder="volitelný"
+                    className="font-mono"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs">Vystavil</Label>
+                  <Input value={issuedBy} onChange={e => setIssuedBy(e.target.value)} placeholder="Jan Novák" />
+                </div>
+                <div>
+                  <Label className="text-xs">Telefon</Label>
+                  <Input value={issuedByPhone} onChange={e => setIssuedByPhone(e.target.value)} placeholder="+420..." />
+                </div>
+                <div>
+                  <Label className="text-xs">Email</Label>
+                  <Input value={issuedByEmail} onChange={e => setIssuedByEmail(e.target.value)} placeholder="email@..." />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Items */}
         <div className="space-y-3">
           <h3 className="font-medium text-sm">Položky</h3>
+
+          {/* Quick-add chips from favorites */}
+          {topItemFavorites.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] text-muted-foreground">Časté:</span>
+              {topItemFavorites.map(f => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => addFromFavorite(f)}
+                  className="text-[11px] px-2 py-0.5 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-full hover:bg-blue-100 dark:hover:bg-blue-950/50 transition-colors"
+                >
+                  {f.name}
+                </button>
+              ))}
+            </div>
+          )}
+
           {items.map((item, idx) => (
             <div key={idx} className="border rounded-lg p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">Položka {idx + 1}</span>
+              {/* Row 1: Description + delete */}
+              <div className="flex items-start gap-2">
+                <ItemDescriptionInput
+                  value={item.description}
+                  onChange={val => updateItem(idx, 'description', val)}
+                  onSelectFavorite={fav => applyItemFavorite(idx, fav)}
+                  favorites={itemFavorites}
+                />
                 {items.length > 1 && (
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeItem(idx)}>
-                    <Trash2 className="h-3 w-3 text-red-500" />
+                  <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => removeItem(idx)}>
+                    <Trash2 className="h-3.5 w-3.5 text-red-500" />
                   </Button>
                 )}
               </div>
-              <Input
-                placeholder="Popis položky"
-                value={item.description}
-                onChange={e => updateItem(idx, 'description', e.target.value)}
-              />
-              <div className="grid grid-cols-4 gap-2">
-                <div>
+              {/* Row 2: Quantity, Unit, Price, VAT */}
+              <div className="flex gap-2 items-end">
+                <div className="w-16 shrink-0">
                   <Label className="text-[10px]">Počet</Label>
                   <Input
                     type="number"
                     value={item.quantity}
                     onChange={e => updateItem(idx, 'quantity', Number(e.target.value))}
                     min={1}
+                    className="text-center"
                   />
                 </div>
-                <div>
+                <div className="w-20 shrink-0">
                   <Label className="text-[10px]">Jednotka</Label>
                   <select
                     value={item.unit}
                     onChange={e => updateItem(idx, 'unit', e.target.value)}
-                    className="w-full h-9 rounded-md border px-2 text-sm bg-background"
+                    className="w-full h-9 rounded-md border px-1.5 text-sm bg-background"
                   >
-                    <option value="ks">ks</option>
-                    <option value="hod">hod</option>
-                    <option value="den">den</option>
-                    <option value="m">m</option>
+                    {unitOptions.map(u => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
                   </select>
                 </div>
-                <div>
+                <div className="flex-1">
                   <Label className="text-[10px]">Cena/ks</Label>
                   <Input
                     type="number"
@@ -450,12 +625,12 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
                     min={0}
                   />
                 </div>
-                <div>
-                  <Label className="text-[10px]">DPH %</Label>
+                <div className="w-20 shrink-0">
+                  <Label className="text-[10px]">DPH</Label>
                   <select
                     value={item.vat_rate}
                     onChange={e => updateItem(idx, 'vat_rate', Number(e.target.value))}
-                    className="w-full h-9 rounded-md border px-2 text-sm bg-background"
+                    className="w-full h-9 rounded-md border px-1.5 text-sm bg-background"
                   >
                     <option value={0}>0%</option>
                     <option value={12}>12%</option>
@@ -463,8 +638,9 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
                   </select>
                 </div>
               </div>
-              <div className="text-right text-sm text-muted-foreground">
-                = {itemTotals[idx]?.withVat.toLocaleString('cs-CZ')} Kč
+              {/* Row 3: Item total */}
+              <div className="text-right text-sm font-medium text-muted-foreground">
+                = {itemTotals[idx]?.withVat.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Kč
               </div>
             </div>
           ))}
@@ -472,25 +648,6 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
             <Plus className="h-4 w-4 mr-1" />
             Přidat položku
           </Button>
-        </div>
-
-        {/* Issuer contact */}
-        <div className="space-y-3">
-          <h3 className="font-medium text-sm">Vystavil</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <Label className="text-xs">Jméno</Label>
-              <Input value={issuedBy} onChange={e => setIssuedBy(e.target.value)} placeholder="Jan Novák" />
-            </div>
-            <div>
-              <Label className="text-xs">Telefon</Label>
-              <Input value={issuedByPhone} onChange={e => setIssuedByPhone(e.target.value)} placeholder="+420..." />
-            </div>
-            <div>
-              <Label className="text-xs">Email</Label>
-              <Input value={issuedByEmail} onChange={e => setIssuedByEmail(e.target.value)} placeholder="email@..." />
-            </div>
-          </div>
         </div>
 
         {/* Notes */}

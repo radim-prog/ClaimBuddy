@@ -29,7 +29,7 @@ export const SUPPLIER: SupplierInfo = {
   email: 'info@zajcon.cz',
   phone: '+420 777 888 999',
   bankAccount: '2702078793/2010',
-  iban: 'CZ5320100000002702078793',
+  iban: 'CZ8920100000002702078793',
   registration: 'C 335789 vedená u Městského soudu v Praze',
   web: 'https://app.zajcon.cz',
 }

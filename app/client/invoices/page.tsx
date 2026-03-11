@@ -4,12 +4,11 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Receipt, Loader2, Download } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { ClientInvoiceForm } from '@/components/client/invoice-form'
-import { InvoiceDetailDialog } from '@/components/client/invoice-detail-dialog'
+import { InvoiceDetailOverlay } from '@/components/client/invoice-detail-overlay'
 import { InvoiceOverlay } from '@/components/client/action-hub/invoice-overlay'
 import { toast } from 'sonner'
 
@@ -17,12 +16,10 @@ type FormMode = { type: 'new' } | { type: 'edit'; invoice: any } | { type: 'dupl
 type StatusFilter = 'all' | 'draft' | 'sent' | 'paid' | 'overdue'
 type DocTypeFilter = 'all' | 'invoice' | 'proforma' | 'credit_note'
 
-const nativeSelectClass = 'flex h-8 rounded-lg border border-input bg-background px-3 py-1 text-xs'
-
-const docTypeLabelsFilter: Record<string, string> = {
+const docTypeTabLabels: Record<string, string> = {
   all: 'Vše',
   invoice: 'Faktury',
-  proforma: 'Zálohové faktury',
+  proforma: 'Zálohové',
   credit_note: 'Dobropisy',
 }
 
@@ -32,6 +29,13 @@ const docTypeBadgeLabel: Record<string, string> = {
   credit_note: 'Dobropis',
 }
 
+const statusRowBg: Record<string, string> = {
+  paid: 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800',
+  sent: 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800',
+  draft: '',
+  overdue: 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800',
+}
+
 function isInvoiceOverdue(inv: any): boolean {
   if (inv.status === 'paid') return false
   if (!inv.due_date) return false
@@ -39,16 +43,10 @@ function isInvoiceOverdue(inv: any): boolean {
 }
 
 export default function InvoicesPage() {
-  const { companies, loading: companiesLoading } = useClientUser()
-  const [selectedCompany, setSelectedCompany] = useState<string>('')
+  const { companies, loading: companiesLoading, selectedCompanyId } = useClientUser()
   const [formMode, setFormMode] = useState<FormMode | null>(null)
   const [showOverlay, setShowOverlay] = useState(false)
-
-  useEffect(() => {
-    if (companies.length === 1 && !selectedCompany) {
-      setSelectedCompany(companies[0].id)
-    }
-  }, [companies, selectedCompany])
+  const selectedCompany = selectedCompanyId
 
   const [refreshKey, setRefreshKey] = useState(0)
   const handleCreated = () => {
@@ -85,22 +83,6 @@ export default function InvoicesPage() {
         </button>
       </div>
 
-      {/* Company selector */}
-      {companies.length > 1 && (
-        <Card>
-          <CardContent className="p-4">
-            <Label className="mb-2 block">Firma</Label>
-            <select
-              className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-              value={selectedCompany}
-              onChange={e => setSelectedCompany(e.target.value)}
-            >
-              <option value="">Vyberte firmu...</option>
-              {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </CardContent>
-        </Card>
-      )}
 
       {formMode && selectedCompany && (
         <ClientInvoiceForm
@@ -166,16 +148,14 @@ function ClientInvoiceListView({
   const handleDelete = async (inv: any) => {
     if (!confirm('Opravdu chcete smazat tento doklad?')) return
     try {
-      const res = await fetch(`/api/client/invoices/${inv.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deleted_at: new Date().toISOString() }),
-      })
+      const res = await fetch(`/api/client/invoices/${inv.id}`, { method: 'DELETE' })
       if (res.ok) {
         toast.success('Doklad smazán')
         setDetailInvoice(null)
         fetchInvoices()
         onRefresh()
+      } else {
+        toast.error('Smazání selhalo')
       }
     } catch {
       toast.error('Smazání selhalo')
@@ -200,6 +180,14 @@ function ClientInvoiceListView({
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Konverze selhala')
     }
+  }
+
+  // Count by document type (for tab badges)
+  const docTypeCounts = {
+    all: invoices.length,
+    invoice: invoices.filter(i => (i.document_type || 'invoice') === 'invoice').length,
+    proforma: invoices.filter(i => (i.document_type || 'invoice') === 'proforma').length,
+    credit_note: invoices.filter(i => (i.document_type || 'invoice') === 'credit_note').length,
   }
 
   // Filter invoices
@@ -261,40 +249,57 @@ function ClientInvoiceListView({
         </div>
       )}
 
-      {/* Filters */}
+      {/* Document type tabs */}
       {invoices.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1 flex-wrap">
-            {(['all', 'draft', 'sent', 'paid', 'overdue'] as StatusFilter[]).map(f => (
+        <div className="space-y-3">
+          <div className="flex border-b">
+            {(['all', 'invoice', 'proforma', 'credit_note'] as DocTypeFilter[]).map(tab => (
               <button
-                key={f}
-                onClick={() => setStatusFilter(f)}
+                key={tab}
+                onClick={() => setDocTypeFilter(tab)}
                 className={cn(
-                  'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
-                  statusFilter === f
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  'px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px',
+                  docTypeFilter === tab
+                    ? 'border-violet-600 text-violet-600'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 )}
               >
-                {f === 'all' ? 'Vše' : f === 'draft' ? 'Koncept' : f === 'sent' ? 'Odesláno' : f === 'paid' ? 'Zaplaceno' : `Po splatnosti${overdueCount > 0 ? ` (${overdueCount})` : ''}`}
+                {docTypeTabLabels[tab]}
+                {docTypeCounts[tab] > 0 && (
+                  <span className={cn(
+                    'ml-1.5 text-xs px-1.5 py-0.5 rounded-full',
+                    docTypeFilter === tab ? 'bg-violet-100 text-violet-700' : 'bg-muted text-muted-foreground'
+                  )}>
+                    {docTypeCounts[tab]}
+                  </span>
+                )}
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2">
-            <select
-              className={nativeSelectClass + ' w-32'}
-              value={docTypeFilter}
-              onChange={e => setDocTypeFilter(e.target.value as DocTypeFilter)}
-            >
-              {Object.entries(docTypeLabelsFilter).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
+
+          {/* Status filter + search */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1">
+              {(['all', 'draft', 'sent', 'paid', 'overdue'] as StatusFilter[]).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setStatusFilter(f)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
+                    statusFilter === f
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  )}
+                >
+                  {f === 'all' ? 'Vše' : f === 'draft' ? 'Koncept' : f === 'sent' ? 'Odesláno' : f === 'paid' ? 'Zaplaceno' : `Po splatnosti${overdueCount > 0 ? ` (${overdueCount})` : ''}`}
+                </button>
               ))}
-            </select>
+            </div>
             <Input
               placeholder="Hledat číslo, partner..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="h-8 text-xs flex-1"
+              className="h-8 text-xs flex-1 min-w-[120px]"
             />
           </div>
         </div>
@@ -309,20 +314,22 @@ function ClientInvoiceListView({
         </Card>
       )}
 
-      {/* Invoice list */}
+      {/* Invoice list with colored rows */}
       {filtered.length > 0 && (
         <div className="space-y-2">
           {filtered.map((inv: any) => {
             const overdue = isInvoiceOverdue(inv)
             const invDocType = inv.document_type || 'invoice'
             const total = inv.total_with_vat || inv.amount || 0
+            const rowStatus = overdue ? 'overdue' : inv.status
+            const rowBg = statusRowBg[rowStatus] || ''
 
             return (
               <Card
                 key={inv.id}
                 className={cn(
-                  'cursor-pointer transition-colors hover:bg-muted/50',
-                  overdue && 'border-red-300 dark:border-red-700'
+                  'cursor-pointer transition-colors hover:shadow-md',
+                  rowBg
                 )}
                 onClick={() => setDetailInvoice(inv)}
               >
@@ -400,16 +407,17 @@ function ClientInvoiceListView({
         </div>
       )}
 
-      {/* Detail dialog */}
+      {/* Detail overlay */}
       {detailInvoice && (
-        <InvoiceDetailDialog
+        <InvoiceDetailOverlay
           invoice={detailInvoice}
           open={!!detailInvoice}
-          onOpenChange={(open) => { if (!open) setDetailInvoice(null) }}
+          onClose={() => setDetailInvoice(null)}
           onEdit={() => { setDetailInvoice(null); onEdit(detailInvoice) }}
           onDuplicate={() => { setDetailInvoice(null); onDuplicate(detailInvoice) }}
           onDelete={() => handleDelete(detailInvoice)}
           onConvert={(targetType) => handleConvert(detailInvoice, targetType)}
+          onStatusChange={() => { setDetailInvoice(null); fetchInvoices(); onRefresh() }}
         />
       )}
     </div>

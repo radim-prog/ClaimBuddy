@@ -24,6 +24,7 @@ import { TripOverlay } from '@/components/client/action-hub/trip-overlay'
 import { InvoiceOverlay } from '@/components/client/action-hub/invoice-overlay'
 import { BankUploadOverlay } from '@/components/client/action-hub/bank-upload-overlay'
 import { QuickActionOverlay } from '@/components/client/action-hub/quick-action-overlay'
+import { DashboardCharts } from '@/components/client/dashboard-charts'
 
 const monthNames = [
   'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
@@ -43,8 +44,7 @@ function getMonthDotColor(closure: { bank_statement_status: ClosureStatus; expen
 
 export default function ClientDashboard() {
   const router = useRouter()
-  const { userName, companies, closures, loading, error } = useClientUser()
-  const [selectedCompanyIndex, setSelectedCompanyIndex] = useState(0)
+  const { userName, companies, closures, loading, error, selectedCompany } = useClientUser()
   const [draftCount, setDraftCount] = useState(0)
   const [casesCount, setCasesCount] = useState(0)
   const [lastCaseActivity, setLastCaseActivity] = useState<string | null>(null)
@@ -55,7 +55,7 @@ export default function ClientDashboard() {
     last_message_at: string | null; unread_count: number; status: string;
   }>>([])
 
-  // Fetch draft count + cases + messages
+  // Fetch draft count + cases
   useEffect(() => {
     fetch('/api/client/drafts')
       .then(r => r.json())
@@ -81,8 +81,6 @@ export default function ClientDashboard() {
   const now = new Date()
   const currentMonth = now.getMonth()
   const currentYear = now.getFullYear()
-
-  const selectedCompany = companies[selectedCompanyIndex]
 
   // Fetch messages when company changes
   useEffect(() => {
@@ -161,27 +159,6 @@ export default function ClientDashboard() {
             {now.toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
-
-        {/* Multi-company tabs */}
-        {companies.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {companies.map((company, index) => (
-              <button
-                key={company.id}
-                onClick={() => setSelectedCompanyIndex(index)}
-                className={`
-                  px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors
-                  ${index === selectedCompanyIndex
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }
-                `}
-              >
-                {company.name}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* === COMPACT ACTION ROW === */}
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
@@ -278,6 +255,9 @@ export default function ClientDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Dashboard Charts */}
+        {selectedCompany && <DashboardCharts companyId={selectedCompany.id} />}
 
         {/* Cases Widget */}
         {casesCount > 0 && (

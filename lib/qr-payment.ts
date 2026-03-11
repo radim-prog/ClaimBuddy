@@ -125,7 +125,8 @@ export function toIBAN(account: string): string {
 }
 
 function legacyToIBAN(account: string, bankCode: string): string {
-  const paddedAccount = account.padStart(10, '0');
+  // Czech BBAN = 4-digit bank code + 16-digit account (6-digit prefix + 10-digit number)
+  const paddedAccount = account.padStart(16, '0');
   const paddedBank = bankCode.padStart(4, '0');
   const bban = paddedBank + paddedAccount;
 

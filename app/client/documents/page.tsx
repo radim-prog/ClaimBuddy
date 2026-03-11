@@ -46,8 +46,8 @@ function DocumentsPageInner() {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab)
   const [showScanOverlay, setShowScanOverlay] = useState(false)
 
-  const { companies } = useClientUser()
-  const companyId = companies[0]?.id || ''
+  const { companies, selectedCompanyId } = useClientUser()
+  const companyId = selectedCompanyId || companies[0]?.id || ''
 
   const tabs: { id: Tab; label: string; icon: typeof Camera }[] = [
     { id: 'documents', label: 'Doklady', icon: FileText },

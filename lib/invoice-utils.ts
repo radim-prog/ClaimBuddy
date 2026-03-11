@@ -22,17 +22,24 @@ export function mapDbRowToInvoice(row: any): Invoice {
     expense: 'client_to_customer',
   }
 
-  const items: InvoiceItem[] = (row.items || []).map((item: any, i: number) => ({
-    id: item.id || `item-${i}`,
-    description: item.description || '',
-    quantity: item.quantity || 0,
-    unit: item.unit || 'hod',
-    unit_price: item.unit_price || 0,
-    vat_rate: item.vat_rate || 0,
-    total_without_vat: item.total_without_vat || 0,
-    total_with_vat: item.total_with_vat || 0,
-    task_id: item.task_id,
-  }))
+  const items: InvoiceItem[] = (row.items || []).map((item: any, i: number) => {
+    const qty = Number(item.quantity) || 0
+    const price = Number(item.unit_price) || 0
+    const rate = Number(item.vat_rate) || 0
+    const base = Number(item.total_without_vat) || qty * price
+    const withVat = Number(item.total_with_vat) || Number(item.total) || Math.round(base * (1 + rate / 100) * 100) / 100
+    return {
+      id: item.id || `item-${i}`,
+      description: item.description || '',
+      quantity: qty,
+      unit: item.unit || 'ks',
+      unit_price: price,
+      vat_rate: rate,
+      total_without_vat: base,
+      total_with_vat: withVat,
+      task_id: item.task_id,
+    }
+  })
 
   return {
     id: row.id,

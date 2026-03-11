@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { generatePaymentQR, generateSPAYD } from '@/lib/qr-payment';
+import { generatePaymentQR } from '@/lib/qr-payment';
 import type { QRCodeOptions } from '@/lib/qr-payment';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = request.headers.get('x-user-id');
@@ -15,7 +15,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: invoiceId } = params;
+    const { id: invoiceId } = await params;
 
     const { searchParams } = new URL(request.url);
     const size = Math.min(Math.max(parseInt(searchParams.get('size') || '300', 10), 100), 800);
@@ -23,32 +23,19 @@ export async function GET(
     // Fetch invoice from Supabase
     const { data: invoice, error: invoiceError } = await supabaseAdmin
       .from('invoices')
-      .select('id, invoice_number, total_amount, variable_symbol, specific_symbol, constant_symbol, due_date, company_id')
+      .select('id, invoice_number, total_with_vat, variable_symbol, specific_symbol, constant_symbol, due_date, company_id')
       .eq('id', invoiceId)
+      .is('deleted_at', null)
       .single();
 
     if (invoiceError || !invoice) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
-    // Fetch company bank account
-    const { data: company, error: companyError } = await supabaseAdmin
-      .from('companies')
-      .select('id, name, bank_account, iban')
-      .eq('id', invoice.company_id)
-      .single();
-
-    if (companyError || !company) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
-    }
-
-    const bankAccount = company.iban || company.bank_account;
-    if (!bankAccount) {
-      return NextResponse.json(
-        { error: 'Company has no bank account configured' },
-        { status: 400 }
-      );
-    }
+    // Use hardcoded supplier bank account (same as PDF generation)
+    // Company-specific bank accounts can be added later
+    const { SUPPLIER } = await import('@/lib/invoice-config');
+    const bankAccount = SUPPLIER.iban || SUPPLIER.bankAccount;
 
     const qrOptions: QRCodeOptions = {
       size,
@@ -56,9 +43,14 @@ export async function GET(
       margin: 2,
     };
 
+    const amount = Number(invoice.total_with_vat) || 0;
+    if (amount <= 0) {
+      return NextResponse.json({ error: 'Invoice has no amount' }, { status: 400 });
+    }
+
     const result = await generatePaymentQR(
       {
-        amount: invoice.total_amount,
+        amount,
         bankAccount,
         variableSymbol: invoice.variable_symbol || invoice.invoice_number?.replace(/\D/g, '') || invoiceId,
         specificSymbol: invoice.specific_symbol,
@@ -77,7 +69,7 @@ export async function GET(
       invoice: {
         id: invoice.id,
         number: invoice.invoice_number,
-        amount: invoice.total_amount,
+        amount,
         variableSymbol: invoice.variable_symbol,
       },
     });

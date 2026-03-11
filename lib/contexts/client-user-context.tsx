@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react'
 
 type Company = {
   id: string
@@ -33,9 +33,14 @@ type ClientUserContextType = {
   loading: boolean
   error: string | null
   refetch: () => void
+  selectedCompanyId: string
+  setSelectedCompanyId: (id: string) => void
+  selectedCompany: Company | undefined
 }
 
 const ClientUserContext = createContext<ClientUserContextType | undefined>(undefined)
+
+const STORAGE_KEY = 'selected_company_id'
 
 export function ClientUserProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState('')
@@ -45,6 +50,14 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
   const [closures, setClosures] = useState<MonthClosure[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedCompanyId, setSelectedCompanyIdState] = useState('')
+
+  const setSelectedCompanyId = useCallback((id: string) => {
+    setSelectedCompanyIdState(id)
+    try {
+      localStorage.setItem(STORAGE_KEY, id)
+    } catch {}
+  }, [])
 
   const fetchData = async () => {
     try {
@@ -54,7 +67,8 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
       if (!response.ok) throw new Error('Failed to fetch companies')
       const data = await response.json()
 
-      setCompanies(data.companies || [])
+      const companiesList: Company[] = data.companies || []
+      setCompanies(companiesList)
       setClosures(data.closures || [])
       if (data.user_id) setUserId(data.user_id)
 
@@ -68,6 +82,14 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
           .toUpperCase()
         setUserInitials(initials)
       }
+
+      // Initialize selected company from localStorage or default to first
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved && companiesList.some(c => c.id === saved)) {
+        setSelectedCompanyIdState(saved)
+      } else if (companiesList.length > 0) {
+        setSelectedCompanyIdState(companiesList[0].id)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
@@ -79,6 +101,11 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
     fetchData()
   }, [])
 
+  const selectedCompany = useMemo(
+    () => companies.find(c => c.id === selectedCompanyId),
+    [companies, selectedCompanyId]
+  )
+
   const value = useMemo(() => ({
     userId,
     userName,
@@ -88,7 +115,10 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
     loading,
     error,
     refetch: fetchData,
-  }), [userId, userName, userInitials, companies, closures, loading, error])
+    selectedCompanyId,
+    setSelectedCompanyId,
+    selectedCompany,
+  }), [userId, userName, userInitials, companies, closures, loading, error, selectedCompanyId, setSelectedCompanyId, selectedCompany])
 
   return (
     <ClientUserContext.Provider value={value}>

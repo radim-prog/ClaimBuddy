@@ -12,6 +12,7 @@ import {
   FileText,
   Car,
   Receipt,
+  Users,
   ChevronRight,
   ChevronLeft,
 } from 'lucide-react'
@@ -37,11 +38,13 @@ import { NotificationModal } from '@/components/client/notification-modal'
 import { NotificationBanner } from '@/components/client/notification-banner'
 import { ImpersonationBanner } from '@/components/client/impersonation-banner'
 import { MissingDocsBar } from '@/components/client/missing-docs-bar'
+import { CompanySwitcher } from '@/components/client/company-switcher'
 
 const navigation = [
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard },
   { name: 'Doklady', href: '/client/documents', icon: FileText },
   { name: 'Faktury', href: '/client/invoices', icon: Receipt },
+  { name: 'Adresář', href: '/client/partners', icon: Users },
   { name: 'Cesťák', href: '/client/travel', icon: Car },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
   { name: 'Účet', href: '/client/account', icon: UserCircle },
@@ -107,6 +110,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               )}
             </div>
           </div>
+
+          {/* Company Switcher */}
+          <CompanySwitcher collapsed={collapsed} />
 
           {/* Navigation */}
           <TooltipProvider delayDuration={0}>
@@ -249,7 +255,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom tab bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-border/50 z-50">
         <nav className="flex justify-around">
-          {navigation.slice(0, 5).map((item) => {
+          {navigation.filter(n => ['Přehled', 'Doklady', 'Faktury', 'Adresář', 'Zprávy'].includes(n.name)).map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
             const Icon = item.icon
             return (

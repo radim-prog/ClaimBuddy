@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent } from '@/components/ui/card'
 import { PlaceAutocomplete } from './place-autocomplete'
@@ -19,6 +18,8 @@ import {
   VEHICLE_CATEGORY_LABELS,
   calculateReimbursement,
 } from '@/lib/types/travel'
+
+const nativeSelectClass = 'flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm'
 
 interface TripFormProps {
   trip?: TravelTrip
@@ -50,8 +51,6 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
     is_round_trip: trip?.is_round_trip || false,
     odometer_start: trip?.odometer_start?.toString() || '',
     odometer_end: trip?.odometer_end?.toString() || '',
-    use_actual_fuel_price: false,
-    actual_fuel_price: '',
     notes: trip?.notes || '',
   })
 
@@ -70,12 +69,16 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
     }
   }, [selectedVehicle, trip])
 
-  // Auto-calculate odometer end
+  // Auto-calculate odometer end (guard against negative values)
   useEffect(() => {
     if (form.odometer_start && form.distance_km) {
-      const effectiveKm = form.is_round_trip ? Number(form.distance_km) * 2 : Number(form.distance_km)
-      const newEnd = Number(form.odometer_start) + effectiveKm
-      setForm(f => ({ ...f, odometer_end: Math.round(newEnd).toString() }))
+      const startNum = Number(form.odometer_start)
+      const distNum = Number(form.distance_km)
+      if (startNum > 0 && distNum > 0) {
+        const effectiveKm = form.is_round_trip ? distNum * 2 : distNum
+        const newEnd = startNum + effectiveKm
+        setForm(f => ({ ...f, odometer_end: Math.round(newEnd).toString() }))
+      }
     }
   }, [form.odometer_start, form.distance_km, form.is_round_trip])
 
@@ -93,11 +96,8 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
       vehicleCategory,
       fuelConsumptionPer100km: fuelConsumption,
       fuelType,
-      actualFuelPrice: form.use_actual_fuel_price && form.actual_fuel_price
-        ? Number(form.actual_fuel_price)
-        : null,
     })
-  }, [effectiveKm, selectedVehicle, form.use_actual_fuel_price, form.actual_fuel_price])
+  }, [effectiveKm, selectedVehicle])
 
   // Calculate fuel consumption
   const fuelConsumed = useMemo(() => {
@@ -106,6 +106,19 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
   }, [selectedVehicle, effectiveKm])
 
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
+
+  // Click-outside to close suggestions
+  useEffect(() => {
+    if (!showSuggestions) return
+    const handler = (e: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showSuggestions])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -158,37 +171,41 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
           <Input type="time" value={form.departure_time} onChange={e => setForm(f => ({ ...f, departure_time: e.target.value }))} />
         </div>
         <div>
-          <Label>Prijezd</Label>
+          <Label>Příjezd</Label>
           <Input type="time" value={form.arrival_time} onChange={e => setForm(f => ({ ...f, arrival_time: e.target.value }))} />
         </div>
       </div>
 
-      {/* Vehicle & Driver */}
+      {/* Vehicle & Driver — native selects */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {vehicles.length > 0 && (
           <div>
             <Label>Vozidlo</Label>
-            <Select value={form.vehicle_id} onValueChange={v => setForm(f => ({ ...f, vehicle_id: v }))}>
-              <SelectTrigger><SelectValue placeholder="Vyberte vozidlo" /></SelectTrigger>
-              <SelectContent>
-                {vehicles.map(v => (
-                  <SelectItem key={v.id} value={v.id}>{v.name} ({v.license_plate})</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              value={form.vehicle_id}
+              onChange={e => setForm(f => ({ ...f, vehicle_id: e.target.value }))}
+              className={nativeSelectClass}
+            >
+              <option value="">Vyberte vozidlo</option>
+              {vehicles.map(v => (
+                <option key={v.id} value={v.id}>{v.name} ({v.license_plate})</option>
+              ))}
+            </select>
           </div>
         )}
         {drivers.length > 0 && (
           <div>
-            <Label>Ridic</Label>
-            <Select value={form.driver_id} onValueChange={v => setForm(f => ({ ...f, driver_id: v }))}>
-              <SelectTrigger><SelectValue placeholder="Vyberte ridice" /></SelectTrigger>
-              <SelectContent>
-                {drivers.map(d => (
-                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Řidič</Label>
+            <select
+              value={form.driver_id}
+              onChange={e => setForm(f => ({ ...f, driver_id: e.target.value }))}
+              className={nativeSelectClass}
+            >
+              <option value="">Vyberte řidiče</option>
+              {drivers.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
           </div>
         )}
       </div>
@@ -209,13 +226,13 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
       </div>
 
       {/* Purpose */}
-      <div className="relative">
-        <Label>Ucel jizdy *</Label>
+      <div className="relative" ref={suggestionsRef}>
+        <Label>Účel jízdy *</Label>
         <Input
           value={form.purpose}
           onChange={e => { setForm(f => ({ ...f, purpose: e.target.value })); setShowSuggestions(false) }}
           onFocus={() => setShowSuggestions(!form.purpose)}
-          placeholder="Napr. Jednani s klientem"
+          placeholder="Např. Jednání s klientem"
           required
         />
         {showSuggestions && (
@@ -230,23 +247,24 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
         )}
       </div>
 
-      {/* Trip type */}
+      {/* Trip type — native select */}
       <div>
-        <Label>Typ jizdy</Label>
-        <Select value={form.trip_type} onValueChange={v => setForm(f => ({ ...f, trip_type: v as TripType }))}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {Object.entries(TRIP_TYPE_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Label>Typ jízdy</Label>
+        <select
+          value={form.trip_type}
+          onChange={e => setForm(f => ({ ...f, trip_type: e.target.value as TripType }))}
+          className={nativeSelectClass}
+        >
+          {Object.entries(TRIP_TYPE_LABELS).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
+        </select>
       </div>
 
       {/* Distance */}
       <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
         <div>
-          <Label>Vzdalenost (km) *</Label>
+          <Label>Vzdálenost (km) *</Label>
           <Input type="number" step="0.1" value={form.distance_km}
             onChange={e => setForm(f => ({ ...f, distance_km: e.target.value }))}
             placeholder="25" required />
@@ -255,21 +273,21 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
           <Switch checked={form.is_round_trip} onCheckedChange={v => setForm(f => ({ ...f, is_round_trip: v }))} />
           <Label className="flex items-center gap-1 whitespace-nowrap">
             <RotateCcw className="h-3.5 w-3.5" />
-            Zpet
+            Zpáteční
           </Label>
         </div>
       </div>
 
       {form.is_round_trip && form.distance_km && (
         <p className="text-sm text-muted-foreground -mt-3">
-          Celkem: {effectiveKm} km (zpateční)
+          Celkem: {effectiveKm} km (zpáteční)
         </p>
       )}
 
       {/* Odometer */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label>Tachometr start</Label>
+          <Label>Tachometr začátek</Label>
           <Input type="number" value={form.odometer_start}
             onChange={e => setForm(f => ({ ...f, odometer_start: e.target.value }))} />
         </div>
@@ -286,28 +304,28 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-3">
               <Scale className="h-4 w-4 text-blue-600" />
-              <span className="font-medium text-sm">Cestovni nahrada (§ 157 ZP)</span>
+              <span className="font-medium text-sm">Cestovní náhrada (§ 157 ZP)</span>
             </div>
 
             {/* Component 1: Basic rate */}
             <div className="flex items-center justify-between text-sm mb-1">
               <span className="text-muted-foreground">
-                Zakladni nahrada: {effectiveKm} km × {reimbursementCalc.basicRate.toFixed(2)} Kc
+                Základní náhrada: {effectiveKm} km × {reimbursementCalc.basicRate.toFixed(2)} Kč
               </span>
-              <span className="font-medium">{reimbursementCalc.basicReimbursement.toFixed(2)} Kc</span>
+              <span className="font-medium">{reimbursementCalc.basicReimbursement.toFixed(2)} Kč</span>
             </div>
 
             {/* Component 2: Fuel reimbursement */}
             {selectedVehicle?.fuel_consumption ? (
               <div className="flex items-center justify-between text-sm mb-1">
                 <span className="text-muted-foreground">
-                  PHM: {effectiveKm} km × {selectedVehicle.fuel_consumption}/100 l × {reimbursementCalc.fuelPriceUsed.toFixed(2)} Kc
+                  PHM: {effectiveKm} km × {selectedVehicle.fuel_consumption}/100 l × {reimbursementCalc.fuelPriceUsed.toFixed(2)} Kč
                 </span>
-                <span className="font-medium">{reimbursementCalc.fuelReimbursement.toFixed(2)} Kc</span>
+                <span className="font-medium">{reimbursementCalc.fuelReimbursement.toFixed(2)} Kč</span>
               </div>
             ) : (
               <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">
-                Doplnte spotrebu v nastaveni vozidla pro vypocet nahrady za PHM
+                Doplňte spotřebu v nastavení vozidla pro výpočet náhrady za PHM
               </p>
             )}
 
@@ -315,37 +333,15 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
             <div className="flex items-center justify-between text-sm pt-2 border-t border-blue-200 dark:border-blue-700 mt-2">
               <span className="font-semibold">Celkem</span>
               <span className="font-bold text-lg text-blue-700 dark:text-blue-400">
-                {reimbursementCalc.totalReimbursement.toFixed(2)} Kc
+                {reimbursementCalc.totalReimbursement.toFixed(2)} Kč
               </span>
-            </div>
-
-            {/* Fuel price toggle */}
-            <div className="mt-3 pt-2 border-t border-blue-200 dark:border-blue-700">
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={form.use_actual_fuel_price}
-                  onCheckedChange={v => setForm(f => ({ ...f, use_actual_fuel_price: v }))}
-                />
-                <Label className="text-xs">Cena PHM z dokladu (misto vyhlasky)</Label>
-              </div>
-              {form.use_actual_fuel_price && (
-                <div className="mt-2">
-                  <Input
-                    type="number" step="0.01"
-                    value={form.actual_fuel_price}
-                    onChange={e => setForm(f => ({ ...f, actual_fuel_price: e.target.value }))}
-                    placeholder={`Vyhlaška: ${decreeFuelInfo.price} ${decreeFuelInfo.unit}`}
-                    className="bg-white dark:bg-gray-800"
-                  />
-                </div>
-              )}
             </div>
 
             {/* Legal reference */}
             <div className="flex items-start gap-1.5 mt-2 text-xs text-muted-foreground">
               <Info className="h-3 w-3 mt-0.5 shrink-0" />
               <span>
-                Sazby dle vyhl. 573/2025 Sb. Zakladni: {BASIC_RATES_PER_KM[selectedVehicle?.vehicle_category || 'car']} Kc/km.
+                Sazby dle vyhl. 573/2025 Sb. Základní: {BASIC_RATES_PER_KM[selectedVehicle?.vehicle_category || 'car']} Kč/km.
                 {' '}PHM ({decreeFuelInfo.label}): {decreeFuelInfo.price} {decreeFuelInfo.unit}.
               </span>
             </div>
@@ -355,16 +351,16 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
 
       {/* Notes */}
       <div>
-        <Label>Poznamka</Label>
-        <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Volitelna poznamka..." rows={2} />
+        <Label>Poznámka</Label>
+        <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Volitelná poznámka..." rows={2} />
       </div>
 
       {/* Actions */}
       <div className="flex gap-2 justify-end pt-2">
-        <Button type="button" variant="outline" onClick={onCancel}>Zrusit</Button>
+        <Button type="button" variant="outline" onClick={onCancel}>Zrušit</Button>
         <Button type="submit" disabled={loading || !form.origin || !form.destination || !form.purpose || !form.distance_km}>
           {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {trip ? 'Ulozit zmeny' : 'Zapsat jizdu'}
+          {trip ? 'Uložit změny' : 'Zapsat jízdu'}
         </Button>
       </div>
     </form>

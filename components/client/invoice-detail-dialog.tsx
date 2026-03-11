@@ -62,7 +62,7 @@ interface InvoiceDetailDialogProps {
 
 const docTypeLabels: Record<string, string> = {
   invoice: 'Faktura',
-  proforma: 'Proforma',
+  proforma: 'Zálohová faktura',
   credit_note: 'Dobropis',
 }
 

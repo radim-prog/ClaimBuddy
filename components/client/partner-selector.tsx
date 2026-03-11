@@ -26,6 +26,8 @@ interface PartnerSelectorProps {
   onChange: (data: PartnerData) => void
 }
 
+const FREQUENT_THRESHOLD = 3
+
 export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorProps) {
   const [partners, setPartners] = useState<InvoicePartner[]>([])
   const [loading, setLoading] = useState(false)
@@ -54,6 +56,13 @@ export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorP
       p.city?.toLowerCase().includes(q)
     )
   }, [partners, searchText])
+
+  // Split into frequent and all
+  const { frequent, all } = useMemo(() => {
+    const freq = filtered.filter(p => (p.usage_count || 0) >= FREQUENT_THRESHOLD)
+    const sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name, 'cs'))
+    return { frequent: freq, all: sorted }
+  }, [filtered])
 
   const selectPartner = (p: InvoicePartner) => {
     onChange({
@@ -142,6 +151,22 @@ export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorP
     onChange({ ...value, [key]: val })
   }
 
+  const renderPartnerRow = (p: InvoicePartner) => (
+    <button
+      key={p.id}
+      type="button"
+      onClick={() => selectPartner(p)}
+      className="w-full text-left px-3 py-2 hover:bg-muted/50 text-sm"
+    >
+      <div className="flex items-center justify-between">
+        <span className="font-medium">{p.name}</span>
+      </div>
+      <div className="text-xs text-muted-foreground">
+        {[p.ico && `IČO: ${p.ico}`, p.city].filter(Boolean).join(' · ')}
+      </div>
+    </button>
+  )
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -161,7 +186,7 @@ export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorP
             className={`text-xs px-2 py-1 rounded ${mode === 'manual' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'text-muted-foreground hover:bg-muted'}`}
           >
             <Plus className="h-3 w-3 inline mr-1" />
-            Ručně
+            Nový partner
           </button>
         </div>
       </div>
@@ -181,7 +206,7 @@ export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorP
           </button>
 
           {showDropdown && (
-            <div className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-64 overflow-hidden">
+            <div className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-80 overflow-hidden">
               <div className="p-2 border-b">
                 <Input
                   placeholder="Hledat partnera..."
@@ -191,25 +216,28 @@ export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorP
                   autoFocus
                 />
               </div>
-              <div className="overflow-y-auto max-h-48">
-                {filtered.length === 0 ? (
+              <div className="overflow-y-auto max-h-56">
+                {all.length === 0 ? (
                   <div className="p-3 text-center text-sm text-muted-foreground">
                     {partners.length === 0 ? 'Zatím nemáte žádné partnery' : 'Nic nenalezeno'}
                   </div>
                 ) : (
-                  filtered.map(p => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => selectPartner(p)}
-                      className="w-full text-left px-3 py-2 hover:bg-muted/50 text-sm border-b last:border-0"
-                    >
-                      <div className="font-medium">{p.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {[p.ico && `IČO: ${p.ico}`, p.city].filter(Boolean).join(' · ')}
-                      </div>
-                    </button>
-                  ))
+                  <>
+                    {/* Frequent partners section */}
+                    {frequent.length > 0 && (
+                      <>
+                        <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                          Často používaní
+                        </div>
+                        {frequent.map(p => renderPartnerRow(p))}
+                        <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 border-t">
+                          Všichni
+                        </div>
+                      </>
+                    )}
+                    {/* All partners alphabetically */}
+                    {all.map(p => renderPartnerRow(p))}
+                  </>
                 )}
               </div>
               <div className="p-2 border-t">
