@@ -11,6 +11,8 @@ export async function GET(request: NextRequest) {
   const userName = request.headers.get('x-user-name') || 'Klient'
   const impersonateCompany = request.headers.get('x-impersonate-company')
 
+  const userRole = request.headers.get('x-user-role')
+
   try {
     let companies: any[] = []
 
@@ -27,6 +29,19 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Company not found' }, { status: 404 })
       }
       companies = [data]
+    } else if (userRole === 'admin' || userRole === 'accountant') {
+      // Admin/accountant browsing client portal without impersonation — show all active companies
+      const { data, error } = await supabaseAdmin
+        .from('companies')
+        .select('id, name, ico, dic, legal_form, vat_payer, has_employees, status, address')
+        .is('deleted_at', null)
+        .eq('status', 'active')
+        .order('name')
+
+      if (error) {
+        return NextResponse.json({ error: 'Failed to fetch companies' }, { status: 500 })
+      }
+      companies = data ?? []
     } else {
       // Real client - load by owner_id
       const { data, error } = await supabaseAdmin
