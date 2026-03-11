@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -265,15 +264,16 @@ function TravelPageInner() {
                     {vehicles.length > 0 && (
                       <div>
                         <Label className="text-xs">Vozidlo</Label>
-                        <Select value={vehicleFilter || 'all'} onValueChange={v => setVehicleFilter(v === 'all' ? '' : v)}>
-                          <SelectTrigger className="w-44 h-11"><SelectValue placeholder="Vse" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Vse</SelectItem>
-                            {vehicles.map(v => (
-                              <SelectItem key={v.id} value={v.id}>{v.license_plate}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <select
+                          value={vehicleFilter || 'all'}
+                          onChange={e => setVehicleFilter(e.target.value === 'all' ? '' : e.target.value)}
+                          className="flex h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm w-44"
+                        >
+                          <option value="all">Vse</option>
+                          {vehicles.map(v => (
+                            <option key={v.id} value={v.id}>{v.license_plate}</option>
+                          ))}
+                        </select>
                       </div>
                     )}
                   </div>

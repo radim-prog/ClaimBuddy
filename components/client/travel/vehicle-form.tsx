@@ -66,7 +66,7 @@ export function VehicleForm({ vehicle, onSubmit, onCancel }: VehicleFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label>SPZ *</Label>

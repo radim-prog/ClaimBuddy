@@ -195,22 +195,20 @@ export default function ClientDashboard() {
             <Car className="h-4 w-4 flex-shrink-0" />
             Jízda
           </button>
-          <Button
-            variant="outline"
-            className="h-12 flex items-center justify-center gap-2 text-sm col-span-1"
+          <button
+            className="h-12 flex items-center justify-center gap-2 text-sm rounded-xl bg-gradient-to-r from-purple-400/80 to-purple-500/80 text-white font-medium shadow-sm hover:shadow-md hover:from-purple-500/80 hover:to-purple-600/80 transition-all active:scale-[0.98]"
             onClick={() => router.push('/client/messages')}
           >
             <MessageCircle className="h-4 w-4 flex-shrink-0" />
             Zprávy
-          </Button>
-          <Button
-            variant="outline"
-            className="h-12 flex items-center justify-center gap-2 text-sm col-span-2 sm:col-span-1"
+          </button>
+          <button
+            className="h-12 flex items-center justify-center gap-2 text-sm rounded-xl bg-gradient-to-r from-slate-400/80 to-slate-500/80 text-white font-medium shadow-sm hover:shadow-md hover:from-slate-500/80 hover:to-slate-600/80 transition-all active:scale-[0.98]"
             onClick={() => setActiveOverlay('scan')}
           >
             <FileText className="h-4 w-4 flex-shrink-0" />
             <span className="hidden sm:inline">Nahrát</span> výpis
-          </Button>
+          </button>
         </div>
 
         {/* Draft badge */}

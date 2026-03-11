@@ -8,7 +8,7 @@ export type VehicleCategory = 'car' | 'motorcycle' | 'truck'
 export const TRIP_TYPE_LABELS: Record<TripType, string> = {
   business: 'Služební',
   private: 'Soukromá',
-  commute: 'Dojíždění do práce',
+  commute: 'Dojíždění do práce a domů',
 }
 
 export const VEHICLE_CATEGORY_LABELS: Record<VehicleCategory, string> = {
