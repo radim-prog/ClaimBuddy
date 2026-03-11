@@ -50,8 +50,12 @@ export default function ClientDashboard() {
   const [lastCaseActivity, setLastCaseActivity] = useState<string | null>(null)
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null)
   const [showQuickActions, setShowQuickActions] = useState(false)
+  const [recentMessages, setRecentMessages] = useState<Array<{
+    id: string; subject: string; last_message_preview: string | null;
+    last_message_at: string | null; unread_count: number; status: string;
+  }>>([])
 
-  // Fetch draft count + cases
+  // Fetch draft count + cases + messages
   useEffect(() => {
     fetch('/api/client/drafts')
       .then(r => r.json())
@@ -79,6 +83,15 @@ export default function ClientDashboard() {
   const currentYear = now.getFullYear()
 
   const selectedCompany = companies[selectedCompanyIndex]
+
+  // Fetch messages when company changes
+  useEffect(() => {
+    if (!selectedCompany) return
+    fetch(`/api/client/messages?company_id=${selectedCompany.id}`)
+      .then(r => r.json())
+      .then(data => setRecentMessages((data.conversations || []).slice(0, 3)))
+      .catch(() => {})
+  }, [selectedCompany])
 
   const companyClosures = useMemo(() => {
     if (!selectedCompany) return []
@@ -314,10 +327,40 @@ export default function ClientDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-6 text-gray-500 dark:text-gray-400">
-                <MessageCircle className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">Zatím žádné zprávy od účetního</p>
-              </div>
+              {recentMessages.length === 0 ? (
+                <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                  <MessageCircle className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">Zatím žádné zprávy od účetního</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {recentMessages.map(conv => (
+                    <Link
+                      key={conv.id}
+                      href="/client/messages"
+                      className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="relative mt-0.5">
+                        <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                        {conv.unread_count > 0 && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{conv.subject}</p>
+                        {conv.last_message_preview && (
+                          <p className="text-xs text-muted-foreground truncate">{conv.last_message_preview}</p>
+                        )}
+                      </div>
+                      {conv.last_message_at && (
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {new Date(conv.last_message_at).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short' })}
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
