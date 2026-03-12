@@ -24,11 +24,10 @@ import { TransactionList, type BankTransaction } from '@/components/client/trans
 import { TransactionMatchDialog } from '@/components/client/transaction-match-dialog'
 import { TaxImpactSummary } from '@/components/client/tax-impact-summary'
 import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
+import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { toast } from 'sonner'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Suspense } from 'react'
-
-type Tab = 'documents' | 'bank'
 
 export default function DocumentsPage() {
   return (
@@ -39,20 +38,25 @@ export default function DocumentsPage() {
 }
 
 function DocumentsPageInner() {
-  const searchParams = useSearchParams()
   const router = useRouter()
-  const rawTab = searchParams.get('tab')
-  const initialTab: Tab = rawTab === 'bank' ? 'bank' : 'documents'
-  const [activeTab, setActiveTab] = useState<Tab>(initialTab)
   const [showScanOverlay, setShowScanOverlay] = useState(false)
+  const [bankExpanded, setBankExpanded] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('documents-bank-expanded') === 'true'
+    }
+    return false
+  })
+
+  const toggleBank = useCallback(() => {
+    setBankExpanded(prev => {
+      const next = !prev
+      localStorage.setItem('documents-bank-expanded', String(next))
+      return next
+    })
+  }, [])
 
   const { companies, selectedCompanyId } = useClientUser()
   const companyId = selectedCompanyId || companies[0]?.id || ''
-
-  const tabs: { id: Tab; label: string; icon: typeof Camera }[] = [
-    { id: 'documents', label: 'Doklady', icon: FileText },
-    { id: 'bank', label: 'Banka', icon: Landmark },
-  ]
 
   return (
     <div className="space-y-6">
@@ -79,31 +83,19 @@ function DocumentsPageInner() {
         </button>
       </div>
 
-      {/* Tab navigation */}
-      <div className="flex gap-1 bg-muted p-1 rounded-lg overflow-x-auto">
-        {tabs.map(tab => {
-          const Icon = tab.icon
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors flex-1 justify-center whitespace-nowrap',
-                activeTab === tab.id
-                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-soft-sm'
-                  : 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
-              <span className="sm:hidden">{tab.label}</span>
-            </button>
-          )
-        })}
-      </div>
+      {/* Document list - always visible */}
+      <DocumentListTab />
 
-      {activeTab === 'documents' && <DocumentListTab />}
-      {activeTab === 'bank' && <BankTab />}
+      {/* Bank section - collapsible */}
+      <CollapsibleSection
+        id="documents-bank"
+        label="Bankovní výpisy"
+        icon={Landmark}
+        expanded={bankExpanded}
+        onToggle={toggleBank}
+      >
+        <BankTab />
+      </CollapsibleSection>
 
       {/* Overlays */}
       <ScanOverlay

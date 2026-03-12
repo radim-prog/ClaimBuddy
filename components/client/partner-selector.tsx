@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Search, Loader2, Plus, Users, ChevronDown } from 'lucide-react'
+import { Search, Loader2, Plus, Users, ChevronDown, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import type { InvoicePartner } from '@/lib/types/invoice-partners'
 
@@ -34,7 +34,7 @@ export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorP
   const [aresLoading, setAresLoading] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [searchText, setSearchText] = useState('')
-  const [mode, setMode] = useState<'select' | 'manual'>('select')
+  const [mode, setMode] = useState<'select' | 'onetime' | 'addressbook'>('select')
 
   // Load partners
   useEffect(() => {
@@ -151,6 +151,14 @@ export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorP
     onChange({ ...value, [key]: val })
   }
 
+  const clearManualData = () => {
+    onChange({ name: '', ico: '', dic: '', address: '', city: '', postal_code: '', email: '', phone: '' })
+  }
+
+  const clearPartnerSelection = () => {
+    onChange({ name: '', ico: '', dic: '', address: '', city: '', postal_code: '', email: '', phone: '' })
+  }
+
   const renderPartnerRow = (p: InvoicePartner) => (
     <button
       key={p.id}
@@ -174,7 +182,7 @@ export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorP
         <div className="flex gap-1">
           <button
             type="button"
-            onClick={() => setMode('select')}
+            onClick={() => { setMode('select'); clearManualData() }}
             className={`text-xs px-2 py-1 rounded ${mode === 'select' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'text-muted-foreground hover:bg-muted'}`}
           >
             <Users className="h-3 w-3 inline mr-1" />
@@ -182,11 +190,11 @@ export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorP
           </button>
           <button
             type="button"
-            onClick={() => setMode('manual')}
-            className={`text-xs px-2 py-1 rounded ${mode === 'manual' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'text-muted-foreground hover:bg-muted'}`}
+            onClick={() => { setMode('onetime'); clearPartnerSelection() }}
+            className={`text-xs px-2 py-1 rounded ${mode === 'onetime' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'text-muted-foreground hover:bg-muted'}`}
           >
-            <Plus className="h-3 w-3 inline mr-1" />
-            Nový partner
+            <FileText className="h-3 w-3 inline mr-1" />
+            Jednorázový
           </button>
         </div>
       </div>
@@ -243,10 +251,10 @@ export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorP
               <div className="p-2 border-t">
                 <button
                   type="button"
-                  onClick={() => { setMode('manual'); setShowDropdown(false) }}
+                  onClick={() => { setMode('addressbook'); setShowDropdown(false) }}
                   className="w-full text-center text-xs text-blue-600 hover:text-blue-700 py-1"
                 >
-                  + Zadat nového partnera ručně
+                  + Přidat do adresáře
                 </button>
               </div>
             </div>
@@ -254,56 +262,67 @@ export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorP
         </div>
       )}
 
-      {/* Manual input fields */}
-      {(mode === 'manual' || value.name) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <Label className="text-xs">Název *</Label>
-            <Input value={value.name} onChange={e => update('name', e.target.value)} placeholder="Firma s.r.o." />
-          </div>
-          <div>
-            <Label className="text-xs">IČO</Label>
-            <div className="flex gap-1">
-              <Input
-                value={value.ico || ''}
-                onChange={e => update('ico', e.target.value.replace(/\D/g, '').slice(0, 8))}
-                placeholder="12345678"
-                className="font-mono"
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={handleAresLookup}
-                disabled={aresLoading || (value.ico?.replace(/\s/g, '').length || 0) !== 8}
-                className="shrink-0"
-                title="Vyhledat v ARES"
-              >
-                {aresLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              </Button>
+      {/* Form fields for onetime/addressbook modes, or when partner selected */}
+      {(mode === 'onetime' || mode === 'addressbook' || value.name) && (
+        <div className="space-y-3">
+          {/* Helper text */}
+          {mode === 'onetime' && (
+            <p className="text-xs text-muted-foreground">Údaje se uloží jen k této faktuře</p>
+          )}
+          {mode === 'addressbook' && (
+            <p className="text-xs text-muted-foreground">Partner se uloží do adresáře pro příští použití</p>
+          )}
+
+          {/* Form grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Název *</Label>
+              <Input value={value.name} onChange={e => update('name', e.target.value)} placeholder="Firma s.r.o." />
             </div>
-          </div>
-          <div>
-            <Label className="text-xs">DIČ</Label>
-            <Input value={value.dic || ''} onChange={e => update('dic', e.target.value)} placeholder="CZ12345678" />
-          </div>
-          <div>
-            <Label className="text-xs">Adresa</Label>
-            <Input value={value.address || ''} onChange={e => update('address', e.target.value)} placeholder="Ulice 123" />
-          </div>
-          <div>
-            <Label className="text-xs">Město</Label>
-            <Input value={value.city || ''} onChange={e => update('city', e.target.value)} placeholder="Praha" />
-          </div>
-          <div>
-            <Label className="text-xs">PSČ</Label>
-            <Input value={value.postal_code || ''} onChange={e => update('postal_code', e.target.value)} placeholder="110 00" />
+            <div>
+              <Label className="text-xs">IČO</Label>
+              <div className="flex gap-1">
+                <Input
+                  value={value.ico || ''}
+                  onChange={e => update('ico', e.target.value.replace(/\D/g, '').slice(0, 8))}
+                  placeholder="12345678"
+                  className="font-mono"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAresLookup}
+                  disabled={aresLoading || (value.ico?.replace(/\s/g, '').length || 0) !== 8}
+                  className="shrink-0"
+                  title="Vyhledat v ARES"
+                >
+                  {aresLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">DIČ</Label>
+              <Input value={value.dic || ''} onChange={e => update('dic', e.target.value)} placeholder="CZ12345678" />
+            </div>
+            <div>
+              <Label className="text-xs">Adresa</Label>
+              <Input value={value.address || ''} onChange={e => update('address', e.target.value)} placeholder="Ulice 123" />
+            </div>
+            <div>
+              <Label className="text-xs">Město</Label>
+              <Input value={value.city || ''} onChange={e => update('city', e.target.value)} placeholder="Praha" />
+            </div>
+            <div>
+              <Label className="text-xs">PSČ</Label>
+              <Input value={value.postal_code || ''} onChange={e => update('postal_code', e.target.value)} placeholder="110 00" />
+            </div>
           </div>
         </div>
       )}
 
-      {/* Save to address book button */}
-      {mode === 'manual' && value.name && !value.partner_id && (
+      {/* Save to address book button - only in addressbook mode */}
+      {mode === 'addressbook' && value.name && !value.partner_id && (
         <Button type="button" variant="outline" size="sm" onClick={saveAsPartner} className="w-full">
           <Plus className="h-3 w-3 mr-1" />
           Uložit do adresáře

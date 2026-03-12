@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Receipt, Loader2, Download } from 'lucide-react'
+import { Receipt, Loader2, Download, ArrowUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { ClientInvoiceForm } from '@/components/client/invoice-form'
@@ -13,7 +13,9 @@ import { InvoiceOverlay } from '@/components/client/action-hub/invoice-overlay'
 import { toast } from 'sonner'
 
 type FormMode = { type: 'new' } | { type: 'edit'; invoice: any } | { type: 'duplicate'; invoice: any }
-type StatusFilter = 'all' | 'draft' | 'sent' | 'paid' | 'overdue'
+type StatusFilter = 'all' | 'draft' | 'sent' | 'unpaid' | 'paid' | 'overdue'
+type DateFilter = 'all' | 'this_month' | 'this_year'
+type SortOrder = 'newest' | 'oldest' | 'amount_desc' | 'amount_asc'
 type DocTypeFilter = 'all' | 'invoice' | 'proforma' | 'credit_note'
 
 const docTypeTabLabels: Record<string, string> = {
@@ -132,6 +134,8 @@ function ClientInvoiceListView({
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [docTypeFilter, setDocTypeFilter] = useState<DocTypeFilter>('all')
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all')
+  const [sortOrder, setSortOrder] = useState<SortOrder>('newest')
   const [searchQuery, setSearchQuery] = useState('')
   const [detailInvoice, setDetailInvoice] = useState<any | null>(null)
 
@@ -190,26 +194,55 @@ function ClientInvoiceListView({
     credit_note: invoices.filter(i => (i.document_type || 'invoice') === 'credit_note').length,
   }
 
+  // Unpaid count for badge
+  const unpaidCount = invoices.filter(inv => inv.status !== 'paid' && inv.status !== 'draft').length
+
   // Filter invoices
-  const filtered = invoices.filter(inv => {
-    const overdue = isInvoiceOverdue(inv)
-    if (statusFilter === 'overdue' && !overdue) return false
-    if (statusFilter === 'draft' && inv.status !== 'draft') return false
-    if (statusFilter === 'sent' && inv.status !== 'sent') return false
-    if (statusFilter === 'paid' && inv.status !== 'paid') return false
+  const filtered = useMemo(() => {
+    const now = new Date()
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const thisYear = String(now.getFullYear())
 
-    const invDocType = inv.document_type || 'invoice'
-    if (docTypeFilter !== 'all' && invDocType !== docTypeFilter) return false
+    const result = invoices.filter(inv => {
+      const overdue = isInvoiceOverdue(inv)
+      if (statusFilter === 'overdue' && !overdue) return false
+      if (statusFilter === 'draft' && inv.status !== 'draft') return false
+      if (statusFilter === 'sent' && inv.status !== 'sent') return false
+      if (statusFilter === 'paid' && inv.status !== 'paid') return false
+      if (statusFilter === 'unpaid' && (inv.status === 'paid' || inv.status === 'draft')) return false
 
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      const matchesNumber = inv.invoice_number?.toLowerCase().includes(q)
-      const matchesPartner = (inv.partner?.name || inv.partner_name || '').toLowerCase().includes(q)
-      if (!matchesNumber && !matchesPartner) return false
-    }
+      const invDocType = inv.document_type || 'invoice'
+      if (docTypeFilter !== 'all' && invDocType !== docTypeFilter) return false
 
-    return true
-  })
+      // Date filter
+      if (dateFilter !== 'all' && inv.issue_date) {
+        if (dateFilter === 'this_month' && !inv.issue_date.startsWith(thisMonth)) return false
+        if (dateFilter === 'this_year' && !inv.issue_date.startsWith(thisYear)) return false
+      }
+
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase()
+        const matchesNumber = inv.invoice_number?.toLowerCase().includes(q)
+        const matchesPartner = (inv.partner?.name || inv.partner_name || '').toLowerCase().includes(q)
+        if (!matchesNumber && !matchesPartner) return false
+      }
+
+      return true
+    })
+
+    // Sort
+    result.sort((a, b) => {
+      switch (sortOrder) {
+        case 'newest': return new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime()
+        case 'oldest': return new Date(a.issue_date).getTime() - new Date(b.issue_date).getTime()
+        case 'amount_desc': return (b.total_with_vat || b.amount || 0) - (a.total_with_vat || a.amount || 0)
+        case 'amount_asc': return (a.total_with_vat || a.amount || 0) - (b.total_with_vat || b.amount || 0)
+        default: return 0
+      }
+    })
+
+    return result
+  }, [invoices, statusFilter, docTypeFilter, dateFilter, sortOrder, searchQuery])
 
   // Summary stats
   const totalCount = invoices.length
@@ -277,10 +310,13 @@ function ClientInvoiceListView({
             ))}
           </div>
 
-          {/* Status filter + search */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1">
-              {(['all', 'draft', 'sent', 'paid', 'overdue'] as StatusFilter[]).map(f => (
+          {/* Status filter */}
+          <div className="flex items-center gap-1 flex-wrap">
+            {(['all', 'draft', 'sent', 'unpaid', 'paid', 'overdue'] as StatusFilter[]).map(f => {
+              const label = f === 'all' ? 'Vše' : f === 'draft' ? 'Koncept' : f === 'sent' ? 'Odesláno'
+                : f === 'unpaid' ? `Nezaplaceno${unpaidCount > 0 ? ` (${unpaidCount})` : ''}`
+                : f === 'paid' ? 'Zaplaceno' : `Po splatnosti${overdueCount > 0 ? ` (${overdueCount})` : ''}`
+              return (
                 <button
                   key={f}
                   onClick={() => setStatusFilter(f)}
@@ -291,15 +327,45 @@ function ClientInvoiceListView({
                       : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   )}
                 >
-                  {f === 'all' ? 'Vše' : f === 'draft' ? 'Koncept' : f === 'sent' ? 'Odesláno' : f === 'paid' ? 'Zaplaceno' : `Po splatnosti${overdueCount > 0 ? ` (${overdueCount})` : ''}`}
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Date filter + sort + search */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1">
+              {(['all', 'this_month', 'this_year'] as DateFilter[]).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setDateFilter(f)}
+                  className={cn(
+                    'px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors border',
+                    dateFilter === f
+                      ? 'bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700'
+                      : 'bg-transparent text-muted-foreground border-transparent hover:bg-muted'
+                  )}
+                >
+                  {f === 'all' ? 'Vše' : f === 'this_month' ? 'Tento měsíc' : 'Tento rok'}
                 </button>
               ))}
             </div>
+            <select
+              value={sortOrder}
+              onChange={e => setSortOrder(e.target.value as SortOrder)}
+              className="h-7 px-2 rounded-md border border-input bg-background text-xs cursor-pointer"
+            >
+              <option value="newest">Nejnovější</option>
+              <option value="oldest">Nejstarší</option>
+              <option value="amount_desc">Částka ↓</option>
+              <option value="amount_asc">Částka ↑</option>
+            </select>
             <Input
               placeholder="Hledat číslo, partner..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="h-8 text-xs flex-1 min-w-[120px]"
+              className="h-7 text-xs flex-1 min-w-[120px]"
             />
           </div>
         </div>

@@ -8,18 +8,16 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent } from '@/components/ui/card'
 import { PlaceAutocomplete } from './place-autocomplete'
-import { Loader2, ArrowRight, RotateCcw, Calculator, Info, Scale } from 'lucide-react'
+import { Loader2, ArrowRight, Calculator } from 'lucide-react'
 import type { TravelVehicle, TravelDriver, TravelPlace, TravelTrip, TripType } from '@/lib/types/travel'
 import {
   TRIP_TYPE_LABELS,
   PURPOSE_SUGGESTIONS,
   BASIC_RATES_PER_KM,
-  DECREE_FUEL_PRICES,
-  VEHICLE_CATEGORY_LABELS,
   calculateReimbursement,
 } from '@/lib/types/travel'
 
-const nativeSelectClass = 'flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm'
+const nativeSelectClass = 'flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm cursor-pointer hover:border-blue-400 transition-colors'
 
 interface TripFormProps {
   trip?: TravelTrip
@@ -71,6 +69,7 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
 
   // Auto-calculate odometer end (guard against negative values)
   useEffect(() => {
+    if (!form.vehicle_id) return
     if (form.odometer_start && form.distance_km) {
       const startNum = Number(form.odometer_start)
       const distNum = Number(form.distance_km)
@@ -80,7 +79,14 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
         setForm(f => ({ ...f, odometer_end: Math.round(newEnd).toString() }))
       }
     }
-  }, [form.odometer_start, form.distance_km, form.is_round_trip])
+  }, [form.vehicle_id, form.odometer_start, form.distance_km, form.is_round_trip])
+
+  // Clear odometer when vehicle is deselected
+  useEffect(() => {
+    if (!form.vehicle_id && !trip) {
+      setForm(f => ({ ...f, odometer_start: '', odometer_end: '' }))
+    }
+  }, [form.vehicle_id, trip])
 
   const effectiveKm = form.is_round_trip && form.distance_km ? Number(form.distance_km) * 2 : Number(form.distance_km) || 0
 
@@ -153,10 +159,6 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
       setLoading(false)
     }
   }
-
-  // Fuel price info for display
-  const fuelKey = selectedVehicle?.fuel_type === 'hybrid' ? 'petrol' : (selectedVehicle?.fuel_type || 'petrol')
-  const decreeFuelInfo = DECREE_FUEL_PRICES[fuelKey] || DECREE_FUEL_PRICES.petrol
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 min-w-0">
@@ -271,9 +273,8 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
         </div>
         <div className="flex items-center gap-2 mb-1">
           <Switch checked={form.is_round_trip} onCheckedChange={v => setForm(f => ({ ...f, is_round_trip: v }))} />
-          <Label className="flex items-center gap-1 whitespace-nowrap">
-            <RotateCcw className="h-3.5 w-3.5" />
-            Zpáteční
+          <Label className="whitespace-nowrap cursor-pointer">
+            Zpáteční jízda?
           </Label>
         </div>
       </div>
@@ -298,16 +299,16 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
         </div>
       </div>
 
-      {/* Reimbursement calculation (read-only, based on Czech law) */}
+      {/* Reimbursement calculation (read-only) */}
       {reimbursementCalc && effectiveKm > 0 && (
         <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 mb-3">
-              <Scale className="h-4 w-4 text-blue-600" />
-              <span className="font-medium text-sm">Cestovní náhrada (§ 157 ZP)</span>
+              <Calculator className="h-4 w-4 text-blue-600" />
+              <span className="font-medium text-sm">Náhrada za jízdu</span>
             </div>
 
-            {/* Component 1: Basic rate */}
+            {/* Basic rate */}
             <div className="flex items-center justify-between text-sm mb-1">
               <span className="text-muted-foreground">
                 Základní náhrada: {effectiveKm} km × {reimbursementCalc.basicRate.toFixed(2)} Kč
@@ -315,11 +316,11 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
               <span className="font-medium">{reimbursementCalc.basicReimbursement.toFixed(2)} Kč</span>
             </div>
 
-            {/* Component 2: Fuel reimbursement */}
+            {/* Fuel reimbursement */}
             {selectedVehicle?.fuel_consumption ? (
               <div className="flex items-center justify-between text-sm mb-1">
                 <span className="text-muted-foreground">
-                  PHM: {effectiveKm} km × {selectedVehicle.fuel_consumption}/100 l × {reimbursementCalc.fuelPriceUsed.toFixed(2)} Kč
+                  Náhrada za PHM: {effectiveKm} km × {selectedVehicle.fuel_consumption}/100 l × {reimbursementCalc.fuelPriceUsed.toFixed(2)} Kč
                 </span>
                 <span className="font-medium">{reimbursementCalc.fuelReimbursement.toFixed(2)} Kč</span>
               </div>
@@ -334,15 +335,6 @@ export function TripForm({ trip, vehicles, drivers, places, onSubmit, onCancel }
               <span className="font-semibold">Celkem</span>
               <span className="font-bold text-lg text-blue-700 dark:text-blue-400">
                 {reimbursementCalc.totalReimbursement.toFixed(2)} Kč
-              </span>
-            </div>
-
-            {/* Legal reference */}
-            <div className="flex items-start gap-1.5 mt-2 text-xs text-muted-foreground">
-              <Info className="h-3 w-3 mt-0.5 shrink-0" />
-              <span>
-                Sazby dle vyhl. 573/2025 Sb. Základní: {BASIC_RATES_PER_KM[selectedVehicle?.vehicle_category || 'car']} Kč/km.
-                {' '}PHM ({decreeFuelInfo.label}): {decreeFuelInfo.price} {decreeFuelInfo.unit}.
               </span>
             </div>
           </CardContent>
