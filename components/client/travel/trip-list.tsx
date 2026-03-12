@@ -34,7 +34,7 @@ export function TripList({ trips, onEdit, onDelete, readOnly }: TripListProps) {
   return (
     <div className="space-y-2">
       {trips.map(trip => (
-        <Card key={trip.id} className="rounded-xl hover:shadow-md transition-shadow">
+        <Card key={trip.id} className="rounded-2xl hover:shadow-md transition-shadow">
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">

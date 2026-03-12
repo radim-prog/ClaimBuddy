@@ -201,7 +201,7 @@ function TravelPageInner() {
       {/* Big action button */}
       <button
         onClick={() => { setShowTripForm(true); setEditingTrip(undefined) }}
-        className="h-14 w-full flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium text-base shadow-md hover:shadow-lg hover:from-amber-600 hover:to-amber-700 transition-all active:scale-[0.98]"
+        className="action-btn h-14 w-full flex items-center justify-center gap-3 rounded-2xl bg-amber-500 text-white font-medium text-base shadow-md hover:shadow-lg hover:bg-amber-600 transition-all active:scale-[0.98]"
       >
         <Plus className="h-5 w-5" />
         Zapsat jízdu
@@ -240,7 +240,7 @@ function TravelPageInner() {
             <div className="space-y-4">
               {/* New/Edit trip form */}
               {(showTripForm || editingTrip) && (
-                <Card className="rounded-xl border-blue-200 dark:border-blue-800">
+                <Card className="rounded-2xl border-blue-200 dark:border-blue-800">
                   <CardContent className="p-4 sm:p-6">
                     <h2 className="text-lg font-semibold font-display mb-4">{editingTrip ? 'Upravit jízdu' : 'Nová jízda'}</h2>
                     <TripForm
@@ -294,7 +294,7 @@ function TravelPageInner() {
           {activeTab === 'vehicles' && (
             <div className="space-y-4">
               {(showVehicleForm || editingVehicle) ? (
-                <Card className="rounded-xl">
+                <Card className="rounded-2xl">
                   <CardContent className="p-4 sm:p-6">
                     <h2 className="text-lg font-semibold font-display mb-4">{editingVehicle ? 'Upravit vozidlo' : 'Nové vozidlo'}</h2>
                     <VehicleForm
@@ -323,7 +323,7 @@ function TravelPageInner() {
                   </div>
 
                   {showFuelForm && (
-                    <Card className="rounded-xl border-orange-200 dark:border-orange-800">
+                    <Card className="rounded-2xl border-orange-200 dark:border-orange-800">
                       <CardContent className="p-4">
                         <h3 className="font-semibold font-display mb-3">Zaznamenat tankování</h3>
                         <form onSubmit={handleCreateFuelLog} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -411,7 +411,7 @@ function TravelPageInner() {
               ) : (
                 <div className="space-y-2">
                   {places.map(place => (
-                    <Card key={place.id} className="rounded-xl">
+                    <Card key={place.id} className="rounded-2xl">
                       <CardContent className="p-3 flex items-center justify-between">
                         <div className="flex items-center gap-3 min-w-0">
                           {place.is_favorite ? (

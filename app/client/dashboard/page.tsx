@@ -149,49 +149,51 @@ export default function ClientDashboard() {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white">
-            Dobrý den, {userName.split(' ')[0]}
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            {now.toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
+              Dobrý den, {userName.split(' ')[0]}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {now.toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
         </div>
 
-        {/* === COMPACT ACTION ROW === */}
+        {/* === ACTION ROW === */}
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
           <button
-            className="h-12 flex items-center justify-center gap-2 text-sm rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium shadow-sm hover:shadow-md hover:from-blue-600 hover:to-blue-700 transition-all active:scale-[0.98]"
+            className="action-btn h-12 flex items-center justify-center gap-2 text-sm bg-blue-600 hover:bg-blue-700 text-white"
             onClick={() => setActiveOverlay('scan')}
           >
             <Camera className="h-4 w-4 flex-shrink-0" />
             <span className="hidden sm:inline">Nahrát</span> doklad
           </button>
           <button
-            className="h-12 flex items-center justify-center gap-2 text-sm rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-medium shadow-sm hover:shadow-md hover:from-green-600 hover:to-green-700 transition-all active:scale-[0.98]"
+            className="action-btn h-12 flex items-center justify-center gap-2 text-sm bg-emerald-600 hover:bg-emerald-700 text-white"
             onClick={() => setActiveOverlay('invoice')}
           >
             <Receipt className="h-4 w-4 flex-shrink-0" />
             Faktura
           </button>
           <button
-            className="h-12 flex items-center justify-center gap-2 text-sm rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium shadow-sm hover:shadow-md hover:from-amber-600 hover:to-amber-700 transition-all active:scale-[0.98]"
+            className="action-btn h-12 flex items-center justify-center gap-2 text-sm bg-amber-500 hover:bg-amber-600 text-white"
             onClick={() => setActiveOverlay('trip')}
           >
             <Car className="h-4 w-4 flex-shrink-0" />
             Jízda
           </button>
           <button
-            className="h-12 flex items-center justify-center gap-2 text-sm rounded-xl bg-gradient-to-r from-purple-400/80 to-purple-500/80 text-white font-medium shadow-sm hover:shadow-md hover:from-purple-500/80 hover:to-purple-600/80 transition-all active:scale-[0.98]"
+            className="action-btn h-12 flex items-center justify-center gap-2 text-sm bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 dark:hover:bg-gray-600 text-white"
             onClick={() => router.push('/client/messages')}
           >
             <MessageCircle className="h-4 w-4 flex-shrink-0" />
             Zprávy
           </button>
           <button
-            className="h-12 flex items-center justify-center gap-2 text-sm rounded-xl bg-gradient-to-r from-slate-400/80 to-slate-500/80 text-white font-medium shadow-sm hover:shadow-md hover:from-slate-500/80 hover:to-slate-600/80 transition-all active:scale-[0.98]"
+            className="action-btn h-12 flex items-center justify-center gap-2 text-sm bg-slate-500 hover:bg-slate-600 text-white"
             onClick={() => setActiveOverlay('bank_upload')}
           >
             <FileText className="h-4 w-4 flex-shrink-0" />
@@ -201,7 +203,7 @@ export default function ClientDashboard() {
 
         {/* Draft badge */}
         {draftCount > 0 && (
-          <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 card-hover">
+          <Card className="rounded-2xl border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 card-hover">
             <CardContent className="py-3 px-4">
               <Link href="/client/documents" className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -219,7 +221,7 @@ export default function ClientDashboard() {
         )}
 
         {/* Year Matrix */}
-        <Card>
+        <Card className="rounded-2xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-display">Přehled roku {currentYear}</CardTitle>
           </CardHeader>
@@ -231,8 +233,8 @@ export default function ClientDashboard() {
                   className={`
                     text-center p-2 rounded-lg transition-colors
                     ${month === currentMonth + 1
-                      ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950/30'
-                      : 'bg-gray-50 dark:bg-gray-800'
+                      ? 'ring-2 ring-primary/50 bg-primary/5'
+                      : 'bg-muted/50'
                     }
                     ${isFuture ? 'opacity-40' : ''}
                   `}
@@ -241,7 +243,7 @@ export default function ClientDashboard() {
                     {name.slice(0, 3)}
                   </div>
                   <div className={`
-                    w-3 h-3 rounded-full mx-auto
+                    w-2.5 h-2.5 rounded-full mx-auto
                     ${getMonthDotColor(closure as any, isFuture)}
                   `} />
                 </div>
@@ -261,7 +263,7 @@ export default function ClientDashboard() {
 
         {/* Cases Widget */}
         {casesCount > 0 && (
-          <Card className="border-purple-200 dark:border-purple-800 card-hover">
+          <Card className="rounded-2xl border-purple-200 dark:border-purple-800 card-hover">
             <CardContent className="py-4 px-5">
               <Link href="/client/cases" className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -292,7 +294,7 @@ export default function ClientDashboard() {
         {/* Two column layout: Messages + Deadlines */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Messages Widget */}
-          <Card>
+          <Card className="rounded-2xl">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-display flex items-center gap-2">
@@ -345,7 +347,7 @@ export default function ClientDashboard() {
           </Card>
 
           {/* Deadlines Widget */}
-          <Card>
+          <Card className="rounded-2xl">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-display flex items-center gap-2">
                 <CalendarDays className="h-4 w-4" />
@@ -387,8 +389,8 @@ export default function ClientDashboard() {
         </div>
 
         {/* Contact Card */}
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="rounded-2xl">
+          <CardContent className="py-5 px-5">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Vaše účetní</p>

@@ -103,7 +103,7 @@ function ProfileTab() {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-display">
             <User className="h-5 w-5" />
@@ -131,7 +131,7 @@ function ProfileTab() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-display">
             <Lock className="h-5 w-5" />
@@ -175,7 +175,7 @@ function CompanyTab() {
 
   if (companies.length === 0) {
     return (
-      <Card>
+      <Card className="rounded-2xl">
         <CardContent className="py-12">
           <div className="text-center text-muted-foreground">
             <Building2 className="h-16 w-16 mx-auto mb-4 opacity-30" />
@@ -190,7 +190,7 @@ function CompanyTab() {
   return (
     <div className="space-y-4">
       {companies.map((company) => (
-        <Card key={company.id}>
+        <Card key={company.id} className="rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display">
               <Building2 className="h-5 w-5 text-blue-600" />
@@ -314,7 +314,7 @@ function NotificationsTab() {
   return (
     <div className="space-y-6">
       {/* Channels */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-display">
             <Bell className="h-5 w-5" />
@@ -369,7 +369,7 @@ function NotificationsTab() {
       </Card>
 
       {/* Notification types */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="text-lg font-display">Typy upozornění</CardTitle>
           <CardDescription>Zvolte o čem chcete být informováni</CardDescription>

@@ -91,15 +91,10 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         </button>
 
         <div className="flex flex-col flex-grow sidebar-blue shadow-sidebar overflow-y-auto custom-scrollbar">
-          {/* Subtle texture overlay */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Cpath d=\'M0 40L40 0H20L0 20M40 40V20L20 40\'/%3E%3C/g%3E%3C/svg%3E")' }}
-          />
-
           {/* Logo */}
           <div className={`relative flex items-center h-16 flex-shrink-0 border-b border-white/[0.06] transition-all duration-300 ${collapsed ? 'justify-center px-3' : 'px-5'}`}>
             <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center shadow-soft-sm flex-shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-soft-sm flex-shrink-0">
                 <span className="text-sm font-bold text-white font-display">U</span>
               </div>
               {!collapsed && (
@@ -126,16 +121,16 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                     className={`
                       group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
                       ${isActive
-                        ? 'bg-white/[0.08] text-white nav-active-indicator'
-                        : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
+                        ? 'bg-white/[0.10] text-white nav-active-indicator backdrop-blur-sm'
+                        : 'text-white/50 hover:bg-white/[0.06] hover:text-white/90'
                       }
                     `}
                   >
                     <span className="flex items-center">
-                      <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-blue-400' : 'text-white/40 group-hover:text-white/65'}`} />
+                      <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-blue-300' : 'text-white/35 group-hover:text-white/70'}`} />
                       {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
                     </span>
-                    {!collapsed && isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
+                    {!collapsed && isActive && <ChevronRight className="h-3.5 w-3.5 text-white/25" />}
                   </Link>
                 )
 
@@ -247,14 +242,14 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <div className={`flex flex-col min-h-screen overflow-hidden transition-all duration-300 ease-in-out ${collapsed ? 'md:pl-[72px]' : 'md:pl-64'}`}>
-        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-20 md:pb-6 min-w-0 page-enter max-w-5xl">
+        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-20 md:pb-8 min-w-0 page-enter max-w-5xl mx-auto w-full">
           {children}
         </main>
       </div>
 
       {/* Mobile bottom tab bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-border/50 z-50">
-        <nav className="flex justify-around">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-950/90 backdrop-blur-2xl border-t border-gray-200/60 dark:border-gray-800/60 z-50 safe-area-bottom">
+        <nav className="flex justify-around px-1 pt-1 pb-1">
           {navigation.filter(n => ['Přehled', 'Doklady', 'Faktury', 'Adresář', 'Zprávy'].includes(n.name)).map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
             const Icon = item.icon
@@ -263,16 +258,17 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                 key={item.name}
                 href={item.href}
                 className={`
-                  flex flex-col items-center py-2 px-3 min-w-0 flex-1 transition-colors
+                  relative flex flex-col items-center py-2 px-3 min-w-0 flex-1 rounded-xl transition-all duration-200
                   ${isActive
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-gray-400 dark:text-gray-500'
+                    ? 'text-primary'
+                    : 'text-gray-400 dark:text-gray-500 active:scale-95'
                   }
                 `}
               >
-                <Icon className="h-5 w-5" />
-                <span className="text-[10px] mt-0.5 truncate">{item.name}</span>
-                {isActive && <div className="absolute bottom-1 w-5 h-0.5 rounded-full bg-blue-600 dark:bg-blue-400" />}
+                <div className={`${isActive ? 'bg-primary/10 dark:bg-primary/20 rounded-xl px-3 py-1' : 'px-3 py-1'} transition-all duration-200`}>
+                  <Icon className={`h-5 w-5 ${isActive ? 'scale-105' : ''} transition-transform`} />
+                </div>
+                <span className={`text-[10px] mt-0.5 truncate ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.name}</span>
               </Link>
             )
           })}

@@ -22,7 +22,7 @@ export function TravelStatsCards({ stats, label }: TravelStatsCardsProps) {
       {label && <h3 className="text-sm font-medium text-muted-foreground mb-2">{label}</h3>}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {cards.map(c => (
-          <Card key={c.label} className="rounded-xl">
+          <Card key={c.label} className="rounded-2xl">
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
                 <div className={`flex items-center justify-center h-8 w-8 rounded-lg ${c.color}`}>

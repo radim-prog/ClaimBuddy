@@ -17,7 +17,7 @@ interface VehicleCardProps {
 
 export function VehicleCard({ vehicle, onEdit, onDelete }: VehicleCardProps) {
   return (
-    <Card className="rounded-xl">
+    <Card className="rounded-2xl">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">

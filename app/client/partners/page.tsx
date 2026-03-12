@@ -163,7 +163,7 @@ export default function PartnersPage() {
       <div>
         <button
           onClick={openNew}
-          className="h-14 w-full flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium text-base shadow-md hover:shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all active:scale-[0.98]"
+          className="action-btn h-14 w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-medium text-base"
         >
           <Plus className="h-5 w-5 flex-shrink-0" />
           Přidat partnera
@@ -172,7 +172,7 @@ export default function PartnersPage() {
 
       {/* Form overlay */}
       {showForm && (
-        <Card className="border-blue-200 dark:border-blue-800">
+        <Card className="rounded-2xl border-blue-200 dark:border-blue-800">
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">{editPartner ? 'Upravit partnera' : 'Nový partner'}</h3>
@@ -268,7 +268,7 @@ export default function PartnersPage() {
       {loading ? (
         <div className="flex items-center justify-center h-32"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
       ) : partners.length === 0 ? (
-        <Card>
+        <Card className="rounded-2xl">
           <CardContent className="py-12 text-center">
             <Users className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
             <p className="text-muted-foreground">Zatím nemáte žádné partnery</p>
@@ -278,7 +278,7 @@ export default function PartnersPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map(p => (
-            <Card key={p.id} className="hover:shadow-md transition-shadow">
+            <Card key={p.id} className="rounded-2xl hover:shadow-md transition-shadow">
               <CardContent className="py-3 px-4">
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 shrink-0 mt-0.5">

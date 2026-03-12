@@ -69,14 +69,14 @@ function DocumentsPageInner() {
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => setShowScanOverlay(true)}
-          className="h-14 flex items-center justify-center gap-3 px-5 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium text-base shadow-md hover:shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all active:scale-[0.98]"
+          className="action-btn h-14 flex items-center justify-center gap-3 px-5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-base"
         >
           <Camera className="h-5 w-5 flex-shrink-0" />
           Nahrát doklad
         </button>
         <button
           onClick={() => router.push('/client/invoices')}
-          className="h-14 flex items-center justify-center gap-3 px-5 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-medium text-base shadow-md hover:shadow-lg hover:from-green-600 hover:to-green-700 transition-all active:scale-[0.98]"
+          className="action-btn h-14 flex items-center justify-center gap-3 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-base"
         >
           <Receipt className="h-5 w-5 flex-shrink-0" />
           Vystavit fakturu
@@ -194,10 +194,8 @@ function DocumentListTab() {
             key={f}
             onClick={() => setFilter(f)}
             className={cn(
-              'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-              filter === f
-                ? 'bg-blue-600 text-white'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              'filter-pill',
+              filter === f ? 'filter-pill-active' : 'filter-pill-inactive'
             )}
           >
             {f === 'all' ? 'Vše' : f === 'draft' ? `Nepotvrzeno (${draftCount})` : f === 'submitted' ? 'Odesláno' : 'Schváleno'}
@@ -215,7 +213,7 @@ function DocumentListTab() {
       )}
 
       {!loading && documents.length === 0 && (
-        <Card>
+        <Card className="rounded-2xl">
           <CardContent className="py-12 text-center">
             <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
             <p className="text-muted-foreground">Zatím nemáte žádné dokumenty</p>
@@ -235,7 +233,7 @@ function DocumentListTab() {
               <Card
                 key={doc.id}
                 className={cn(
-                  'cursor-pointer transition-colors',
+                  'rounded-2xl cursor-pointer transition-colors',
                   isSelected ? 'ring-2 ring-blue-500' : 'hover:bg-muted/50',
                   docStatus === 'draft' && 'border-amber-300 dark:border-amber-700'
                 )}
@@ -404,7 +402,7 @@ function BankTab() {
   return (
     <div className="space-y-4">
       {companies.length > 1 && (
-        <Card>
+        <Card className="rounded-2xl">
           <CardContent className="p-4">
             <Label className="mb-2 block">Firma</Label>
             <select
@@ -432,8 +430,8 @@ function BankTab() {
               key={f}
               onClick={() => setFilter(f)}
               className={cn(
-                'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                filter === f ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                'filter-pill',
+                filter === f ? 'filter-pill-active' : 'filter-pill-inactive'
               )}
             >
               {f === 'all' ? 'Vše' : f === 'unmatched' ? 'Nespárované' : 'Spárované'}

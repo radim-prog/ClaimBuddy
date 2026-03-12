@@ -44,10 +44,10 @@ export default function MessagesPage() {
               key={company.id}
               onClick={() => setSelectedCompanyIndex(index)}
               className={`
-                px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors
+                filter-pill whitespace-nowrap
                 ${index === selectedCompanyIndex
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  ? 'filter-pill-active'
+                  : 'filter-pill-inactive'
                 }
               `}
             >

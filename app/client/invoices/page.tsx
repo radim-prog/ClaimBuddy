@@ -78,7 +78,7 @@ export default function InvoicesPage() {
       <div>
         <button
           onClick={() => setShowOverlay(true)}
-          className="h-14 w-full flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-medium text-base shadow-md hover:shadow-lg hover:from-green-600 hover:to-green-700 transition-all active:scale-[0.98]"
+          className="action-btn h-14 w-full flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-base"
         >
           <Receipt className="h-5 w-5 flex-shrink-0" />
           Vystavit fakturu
@@ -263,19 +263,19 @@ function ClientInvoiceListView({
       {/* Summary cards */}
       {invoices.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <Card><CardContent className="p-3 text-center">
+          <Card className="rounded-2xl"><CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">Celkem</p>
             <p className="text-lg font-bold">{totalCount}</p>
           </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
+          <Card className="rounded-2xl"><CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">Nezaplaceno</p>
             <p className="text-lg font-bold text-amber-600">{unpaidAmount.toLocaleString('cs-CZ')} Kč</p>
           </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
+          <Card className="rounded-2xl"><CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">Po splatnosti</p>
             <p className={cn('text-lg font-bold', overdueCount > 0 ? 'text-red-600' : '')}>{overdueCount}</p>
           </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
+          <Card className="rounded-2xl"><CardContent className="p-3 text-center">
             <p className="text-xs text-muted-foreground">Zaplaceno</p>
             <p className="text-lg font-bold text-green-600">{paidAmount.toLocaleString('cs-CZ')} Kč</p>
           </CardContent></Card>
@@ -321,10 +321,8 @@ function ClientInvoiceListView({
                   key={f}
                   onClick={() => setStatusFilter(f)}
                   className={cn(
-                    'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
-                    statusFilter === f
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    'filter-pill',
+                    statusFilter === f ? 'filter-pill-active' : 'filter-pill-inactive'
                   )}
                 >
                   {label}
@@ -341,10 +339,8 @@ function ClientInvoiceListView({
                   key={f}
                   onClick={() => setDateFilter(f)}
                   className={cn(
-                    'px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors border',
-                    dateFilter === f
-                      ? 'bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700'
-                      : 'bg-transparent text-muted-foreground border-transparent hover:bg-muted'
+                    'filter-pill',
+                    dateFilter === f ? 'filter-pill-active' : 'filter-pill-inactive'
                   )}
                 >
                   {f === 'all' ? 'Vše' : f === 'this_month' ? 'Tento měsíc' : 'Tento rok'}
@@ -372,7 +368,7 @@ function ClientInvoiceListView({
       )}
 
       {invoices.length === 0 && (
-        <Card>
+        <Card className="rounded-2xl">
           <CardContent className="py-12 text-center">
             <Receipt className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
             <p className="text-muted-foreground">Zatím nemáte žádné vydané doklady</p>
@@ -394,7 +390,7 @@ function ClientInvoiceListView({
               <Card
                 key={inv.id}
                 className={cn(
-                  'cursor-pointer transition-colors hover:shadow-md',
+                  'rounded-2xl cursor-pointer transition-colors hover:shadow-md',
                   rowBg
                 )}
                 onClick={() => setDetailInvoice(inv)}
