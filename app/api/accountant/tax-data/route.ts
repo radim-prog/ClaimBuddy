@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
         legal_form: c.legal_form,
         status: c.status,
         monthly_reporting: c.monthly_reporting,
+        managing_director: c.managing_director || null,
       }))
 
     return NextResponse.json({

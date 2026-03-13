@@ -209,6 +209,12 @@ function CompanyTab() {
                   <dd className="font-medium">{company.dic}</dd>
                 </div>
               )}
+              {company.managing_director && (
+                <div>
+                  <dt className="text-muted-foreground">Jednatel</dt>
+                  <dd className="font-medium">{company.managing_director}</dd>
+                </div>
+              )}
               <div>
                 <dt className="text-muted-foreground">Právní forma</dt>
                 <dd className="font-medium">{company.legal_form}</dd>
@@ -269,7 +275,17 @@ function NotificationsTab() {
     fetch('/api/client/notification-preferences')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (data?.preferences) setPrefs(data.preferences)
+        if (data?.preferences) {
+          // Merge with defaults — DB may have old flat structure without `types`
+          setPrefs(prev => ({
+            ...prev,
+            ...data.preferences,
+            types: {
+              ...prev.types,
+              ...(data.preferences.types || {}),
+            },
+          }))
+        }
         if (data?.telegram_chat_id) setTelegramChatId(data.telegram_chat_id)
       })
       .catch(() => {})

@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
       monthly_reporting: c.monthly_reporting ?? true,
       billing_settings: c.billing_settings || null,
       raynet_company_id: c.raynet_company_id || null,
+      managing_director: c.managing_director || null,
     }))
 
     // Aggregate extra work by company_id + month

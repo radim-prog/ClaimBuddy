@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       // Impersonation mode - load specific company
       const { data, error } = await supabaseAdmin
         .from('companies')
-        .select('id, name, ico, dic, legal_form, vat_payer, has_employees, status, address')
+        .select('id, name, ico, dic, legal_form, vat_payer, has_employees, status, address, managing_director')
         .eq('id', impersonateCompany)
         .is('deleted_at', null)
         .single()
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       // Admin/accountant browsing client portal without impersonation — show all active companies
       const { data, error } = await supabaseAdmin
         .from('companies')
-        .select('id, name, ico, dic, legal_form, vat_payer, has_employees, status, address')
+        .select('id, name, ico, dic, legal_form, vat_payer, has_employees, status, address, managing_director')
         .is('deleted_at', null)
         .eq('status', 'active')
         .order('name')
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       // Real client - load by owner_id
       const { data, error } = await supabaseAdmin
         .from('companies')
-        .select('id, name, ico, dic, legal_form, vat_payer, has_employees, status, address')
+        .select('id, name, ico, dic, legal_form, vat_payer, has_employees, status, address, managing_director')
         .eq('owner_id', userId)
         .is('deleted_at', null)
         .eq('status', 'active')
@@ -93,6 +93,7 @@ export async function GET(request: NextRequest) {
         has_employees: company.has_employees,
         status: company.status,
         address: company.address,
+        managing_director: company.managing_director || null,
         currentMonthStatus: {
           period: currentPeriod,
           missing_count: missingDocs.length,

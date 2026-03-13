@@ -55,6 +55,7 @@ type Company = {
   employee_count: number
   data_box: { id: string } | null
   status?: string
+  managing_director?: string | null
 }
 
 type MonthlyClosure = {
@@ -123,6 +124,7 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
                 </h3>
                 <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                   {company.ico}{company.dic && ` • ${company.dic}`}
+                  {company.managing_director && ` • ${company.managing_director}`}
                 </div>
               </div>
 

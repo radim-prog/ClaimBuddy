@@ -23,6 +23,7 @@ export type TaxCompany = {
   legal_form: string
   status: string
   monthly_reporting: boolean
+  managing_director?: string | null
 }
 
 export type TaxAnnualConfigRow = {

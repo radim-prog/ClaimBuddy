@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
       status: c.status || 'active',
       monthly_reporting: c.monthly_reporting ?? true,
       billing_settings: c.billing_settings || null,
+      managing_director: c.managing_director || null,
       onboarding: null,
     }))
 

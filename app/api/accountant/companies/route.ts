@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         status: c.status || 'active',
         reliability_score: c.reliability_score ?? 5,
         billing_settings: c.billing_settings || null,
+        managing_director: c.managing_director || null,
         created_at: c.created_at,
       })),
       count: companies.length,
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
       bank_account,
       assigned_accountant_id,
       has_employees,
+      managing_director,
     } = body
 
     // Validation
@@ -128,6 +130,7 @@ export async function POST(request: NextRequest) {
       bank_account: bank_account?.trim() || null,
       assigned_accountant_id: assigned_accountant_id || userId || null,
       has_employees: Boolean(has_employees),
+      managing_director: managing_director?.trim() || null,
       status: 'onboarding', // New clients start in onboarding
     }
 

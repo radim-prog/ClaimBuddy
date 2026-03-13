@@ -43,6 +43,7 @@ type Company = {
   email?: string
   status?: string
   accounting_start_date?: string | null
+  managing_director?: string | null
 }
 
 type EditClientModalProps = {
@@ -162,6 +163,16 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
             </div>
 
 
+
+            <div>
+              <Label htmlFor="managing_director">Jednatel</Label>
+              <Input
+                id="managing_director"
+                value={formData.managing_director || ''}
+                onChange={(e) => setFormData({ ...formData, managing_director: e.target.value || null })}
+                placeholder="Jméno jednatele"
+              />
+            </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div>

@@ -29,6 +29,7 @@ type PaymentCompany = {
     client_since?: string
   } | null
   raynet_company_id: number | null
+  managing_director?: string | null
 }
 
 type Payment = {
@@ -363,6 +364,9 @@ export function PaymentMatrix({ selectedYear }: { selectedYear: number }) {
                           />
                         )}
                       </div>
+                      {unit.companies[0]?.managing_director && unit.type !== 'group' && (
+                        <div className="text-[10px] text-gray-400 font-normal truncate">{unit.companies[0].managing_director}</div>
+                      )}
                     </td>
                     {months.map((monthName, monthIndex) => {
                       const status = getPaymentStatus(billingCompanyId, monthIndex)

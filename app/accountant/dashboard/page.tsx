@@ -20,6 +20,7 @@ type Company = {
   status?: string
   monthly_reporting?: boolean
   group_name?: string | null
+  managing_director?: string | null
 }
 
 type MonthlyClosure = {
@@ -664,7 +665,10 @@ export default function AccountantDashboard() {
                                       </span>
                                     )}
                                   </div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">IČO: {company.ico}</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
+                                    IČO: {company.ico}
+                                    {company.managing_director && ` • ${company.managing_director}`}
+                                  </div>
                                 </div>
                               </Link>
                             </td>

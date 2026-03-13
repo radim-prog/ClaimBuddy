@@ -67,6 +67,7 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
     phone: '',
     assigned_accountant_id: '',
     has_employees: false,
+    managing_director: '',
   })
 
   const [accountants, setAccountants] = useState<Accountant[]>([])
@@ -110,6 +111,7 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
         phone: '',
         assigned_accountant_id: '',
         has_employees: false,
+        managing_director: '',
       })
       setError(null)
       setSuccess(false)
@@ -218,6 +220,7 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
           bank_account: formData.bank_account || null,
           assigned_accountant_id: formData.assigned_accountant_id === 'none' ? null : (formData.assigned_accountant_id || null),
           has_employees: formData.has_employees,
+          managing_director: formData.managing_director || null,
           // Include onboarding steps if provided
           onboarding_steps: onboardingSteps,
         }),
@@ -300,6 +303,18 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               placeholder="např. Nová s.r.o."
+              disabled={loading}
+            />
+          </div>
+
+          {/* Jednatel */}
+          <div>
+            <Label htmlFor="managing_director">Jednatel</Label>
+            <Input
+              id="managing_director"
+              value={formData.managing_director}
+              onChange={(e) => handleInputChange('managing_director', e.target.value)}
+              placeholder="Jméno jednatele"
               disabled={loading}
             />
           </div>

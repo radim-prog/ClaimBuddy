@@ -618,6 +618,9 @@ function CompanyRow({
           {useProfileData && (
             <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">Z profilu</span>
           )}
+          {company.managing_director && (
+            <div className="text-[10px] text-gray-400 font-normal">{company.managing_director}</div>
+          )}
         </td>
         <td className="px-2 py-2">
           <input

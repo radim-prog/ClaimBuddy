@@ -63,6 +63,7 @@ export type Company = {
   phone?: string
   email?: string
   accounting_start_date?: string | null
+  managing_director?: string | null
 }
 
 export type StatusType = 'missing' | 'uploaded' | 'approved'

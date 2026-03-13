@@ -33,6 +33,7 @@ export interface Company {
     invoice_maturity?: number
     client_since?: string
   } | null
+  managing_director: string | null
   raynet_company_id: number | null
   created_at: string
   updated_at: string
@@ -123,6 +124,7 @@ export interface CreateCompanyInput {
   status?: string
   assigned_accountant_id?: string | null
   has_employees?: boolean
+  managing_director?: string | null
 }
 
 export async function createCompany(input: CreateCompanyInput): Promise<Company> {
@@ -142,6 +144,7 @@ export async function createCompany(input: CreateCompanyInput): Promise<Company>
       status: input.status || 'active',
       assigned_accountant_id: input.assigned_accountant_id || null,
       has_employees: input.has_employees || false,
+      managing_director: input.managing_director || null,
       pohoda_years: [],
       invoice_stats: {},
       total_revenue: 0,

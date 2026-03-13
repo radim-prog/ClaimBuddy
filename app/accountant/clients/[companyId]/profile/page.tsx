@@ -116,6 +116,13 @@ export default function ProfilePage() {
                       <div className="font-medium text-gray-900 dark:text-white">{company.dic || '—'}</div>
                     </div>
                     <div>
+                      <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Jednatel</div>
+                      <div className={`font-medium flex items-center gap-1 ${company.managing_director ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
+                        <User className="h-3.5 w-3.5 text-gray-400" />
+                        {company.managing_director || 'Nezadáno'}
+                      </div>
+                    </div>
+                    <div>
                       <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Telefon</div>
                       <div className={`font-medium flex items-center gap-1 ${contactPhone ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
                         <Phone className="h-3.5 w-3.5 text-gray-400" />

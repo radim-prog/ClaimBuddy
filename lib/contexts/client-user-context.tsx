@@ -12,6 +12,7 @@ type Company = {
   has_employees: boolean
   status: string
   address?: string
+  managing_director?: string | null
 }
 
 type ClosureStatus = 'missing' | 'uploaded' | 'approved'
