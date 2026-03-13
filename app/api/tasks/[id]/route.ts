@@ -60,6 +60,7 @@ export async function GET(
       .from('tasks')
       .select('*')
       .eq('parent_project_id', taskId)
+      .order('position', { ascending: true })
       .order('created_at', { ascending: true })
     const subtasks = subtasksData
 
@@ -140,6 +141,7 @@ export async function PATCH(
       'is_billable', 'hourly_rate',
       'gtd_context', 'gtd_energy_level', 'gtd_is_quick_action',
       'tags', 'progress_percentage', 'task_data',
+      'position',
       'project_id', 'phase_id', 'location_id', 'position_in_phase', 'is_next_action',
       'company_id', 'company_name',
       'approved_by', 'approved_by_name', 'approved_at',

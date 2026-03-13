@@ -66,6 +66,7 @@ import {
   Square,
   Eye,
   Download,
+  GripVertical,
 } from 'lucide-react'
 import { GTDWizard } from '@/components/tasks/gtd-wizard'
 import { DocumentPicker } from '@/components/documents/document-picker'
@@ -89,6 +90,10 @@ import { UrgencyBadge } from '@/components/tasks/UrgencyBadge'
 import { UrgencyActions, ManagerActions } from '@/components/tasks/UrgencyActions'
 import { fireTaskConfetti } from '@/components/gtd/confetti'
 import type { Task } from '@/lib/types/tasks'
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
@@ -1634,6 +1639,7 @@ interface SubTask {
   due_date?: string
   assigned_to_name?: string
   is_next_action?: boolean
+  position?: number
 }
 
 function UkolyTab({ task, projectId, companyId, companyName, userId, userName }: {
@@ -1648,6 +1654,12 @@ function UkolyTab({ task, projectId, companyId, companyName, userId, userName }:
   const [loading, setLoading] = useState(true)
   const [newTitle, setNewTitle] = useState('')
   const [adding, setAdding] = useState(false)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  )
 
   const fetchSubtasks = useCallback(async () => {
     try {
@@ -1712,6 +1724,30 @@ function UkolyTab({ task, projectId, companyId, companyName, userId, userName }:
     finally { setAdding(false) }
   }
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = openSubtasks.findIndex(s => s.id === active.id)
+    const newIndex = openSubtasks.findIndex(s => s.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const reordered = arrayMove(openSubtasks, oldIndex, newIndex)
+
+    // Optimistic update: replace open subtasks in original array while keeping done ones
+    setSubtasks([...reordered, ...doneSubtasks])
+
+    // Persist to API
+    fetch('/api/tasks/reorder', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
+      body: JSON.stringify({
+        parent_project_id: projectId,
+        task_ids: reordered.map(s => s.id),
+      }),
+    }).catch(() => fetchSubtasks())
+  }
+
   const completedCount = subtasks.filter(s => s.status === 'completed').length
   const totalCount = subtasks.length
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
@@ -1763,13 +1799,28 @@ function UkolyTab({ task, projectId, companyId, companyName, userId, userName }:
         </Button>
       </div>
 
-      {/* Open subtasks */}
+      {/* Open subtasks with drag & drop */}
       {openSubtasks.length > 0 && (
-        <div className="space-y-1.5">
-          {openSubtasks.map(subtask => (
-            <SubtaskRow key={subtask.id} subtask={subtask} onToggle={() => toggleStatus(subtask)} projectId={projectId} onToggleNextAction={toggleNextAction} />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={openSubtasks.map(s => s.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-1.5">
+              {openSubtasks.map((subtask, index) => (
+                <SortableSubtaskRow
+                  key={subtask.id}
+                  subtask={subtask}
+                  index={index}
+                  onToggle={() => toggleStatus(subtask)}
+                  projectId={projectId}
+                  onToggleNextAction={toggleNextAction}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Done subtasks (collapsible) */}
@@ -1788,7 +1839,80 @@ function UkolyTab({ task, projectId, companyId, companyName, userId, userName }:
   )
 }
 
-function SubtaskRow({ subtask, onToggle, projectId, onToggleNextAction }: { subtask: SubTask; onToggle: () => void; projectId?: string; onToggleNextAction?: (id: string, current: boolean) => void }) {
+function SortableSubtaskRow({ subtask, index, onToggle, projectId, onToggleNextAction }: {
+  subtask: SubTask
+  index: number
+  onToggle: () => void
+  projectId?: string
+  onToggleNextAction?: (id: string, current: boolean) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: subtask.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'flex items-center gap-2 p-3 rounded-lg border transition-colors group',
+        'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-purple-300'
+      )}
+    >
+      <button
+        className="shrink-0 cursor-grab active:cursor-grabbing touch-none text-gray-300 hover:text-gray-500 transition-colors"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <span className="text-xs font-mono text-gray-400 w-5 shrink-0 text-right">{index + 1}.</span>
+      <button onClick={onToggle} className="shrink-0">
+        <Circle className="h-5 w-5 text-gray-300 group-hover:text-purple-400 transition-colors" />
+      </button>
+      <Link
+        href={`/accountant/tasks/${subtask.id}${projectId ? `?from_project=${projectId}&from_type=task` : ''}`}
+        className="flex-1 min-w-0 text-sm font-medium truncate hover:text-purple-600 transition-colors"
+      >
+        {subtask.title}
+      </Link>
+      <div className="flex items-center gap-2 shrink-0">
+        {subtask.due_date && (
+          <span className="text-xs text-gray-500">{new Date(subtask.due_date).toLocaleDateString('cs-CZ')}</span>
+        )}
+        {subtask.assigned_to_name && (
+          <span className="text-xs text-gray-400">{subtask.assigned_to_name}</span>
+        )}
+        {onToggleNextAction && (
+          <button
+            onClick={() => onToggleNextAction(subtask.id, !!subtask.is_next_action)}
+            className={cn(
+              'text-[10px] px-2 py-0.5 rounded-full border',
+              subtask.is_next_action
+                ? 'bg-yellow-100 text-yellow-700 border-yellow-300 font-semibold'
+                : 'text-gray-400 border-gray-200 hover:border-yellow-300'
+            )}
+          >
+            {subtask.is_next_action ? 'Dalsi akce' : 'Nastavit'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SubtaskRow({ subtask, onToggle, projectId }: { subtask: SubTask; onToggle: () => void; projectId?: string }) {
   const isDone = subtask.status === 'completed'
 
   return (
@@ -1818,19 +1942,6 @@ function SubtaskRow({ subtask, onToggle, projectId, onToggleNextAction }: { subt
         )}
         {subtask.assigned_to_name && (
           <span className="text-xs text-gray-400">{subtask.assigned_to_name}</span>
-        )}
-        {onToggleNextAction && !isDone && (
-          <button
-            onClick={() => onToggleNextAction(subtask.id, !!subtask.is_next_action)}
-            className={cn(
-              'text-[10px] px-2 py-0.5 rounded-full border',
-              subtask.is_next_action
-                ? 'bg-yellow-100 text-yellow-700 border-yellow-300 font-semibold'
-                : 'text-gray-400 border-gray-200 hover:border-yellow-300'
-            )}
-          >
-            {subtask.is_next_action ? 'Dalsi akce' : 'Nastavit'}
-          </button>
         )}
       </div>
     </div>

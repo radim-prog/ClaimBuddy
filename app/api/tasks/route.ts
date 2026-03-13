@@ -155,10 +155,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply sorting with whitelist validation
-    const allowedSortColumns = ['created_at', 'updated_at', 'due_date', 'title', 'status', 'priority', 'energy_level', 'estimated_minutes']
+    const allowedSortColumns = ['created_at', 'updated_at', 'due_date', 'title', 'status', 'priority', 'energy_level', 'estimated_minutes', 'position']
     const safeSortBy = allowedSortColumns.includes(sortBy) ? sortBy : 'created_at'
     const ascending = sortOrder === 'asc'
-    query = query.order(safeSortBy, { ascending })
+
+    // When fetching subtasks, sort by position first, then by created_at
+    if (filters.parent_project_id) {
+      query = query.order('position', { ascending: true }).order('created_at', { ascending: true })
+    } else {
+      query = query.order(safeSortBy, { ascending })
+    }
 
     // Apply pagination
     const from = (page - 1) * pageSize
@@ -257,6 +263,18 @@ export async function POST(request: NextRequest) {
       taskData.score_time = body.score_time ?? (isSubtask ? 0 : 1)
       taskData.score_distance = body.score_distance ?? (isSubtask ? 0 : 2)
       taskData.score_personal = body.score_personal ?? 0
+    }
+
+    // Set position for subtasks (append to end)
+    if (taskData.parent_project_id) {
+      const { data: maxPos } = await supabase
+        .from('tasks')
+        .select('position')
+        .eq('parent_project_id', taskData.parent_project_id)
+        .order('position', { ascending: false })
+        .limit(1)
+        .single()
+      taskData.position = (maxPos?.position ?? -1) + 1
     }
 
     // Create task
