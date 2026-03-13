@@ -37,6 +37,8 @@ export type ConversationWithContext = Conversation & {
   task_title?: string | null
   source_type: 'company' | 'task'
   source_url: string
+  waiting_since: string | null
+  last_responder: string | null
 }
 
 // Get all conversations for a company with unread counts
@@ -186,13 +188,30 @@ export async function addMessage(data: {
 
   if (error) throw new Error(`Failed to add message: ${error.message}`)
 
-  // Update chat last_message
+  // Update chat last_message + waiting_since tracking
+  const chatUpdate: Record<string, unknown> = {
+    last_message_at: row.created_at,
+    last_message_preview: data.content.substring(0, 100),
+    last_responder: data.sender_type,
+  }
+  if (data.sender_type === 'client') {
+    // Client sent a message — set waiting_since if not already waiting
+    // Use raw SQL to only set if null (keep earliest waiting time)
+    const { data: chat } = await supabaseAdmin
+      .from('chats')
+      .select('waiting_since')
+      .eq('id', data.chat_id)
+      .single()
+    if (!chat?.waiting_since) {
+      chatUpdate.waiting_since = row.created_at
+    }
+  } else {
+    // Accountant replied — clear waiting_since
+    chatUpdate.waiting_since = null
+  }
   await supabaseAdmin
     .from('chats')
-    .update({
-      last_message_at: row.created_at,
-      last_message_preview: data.content.substring(0, 100),
-    })
+    .update(chatUpdate)
     .eq('id', data.chat_id)
 
   return {
@@ -593,6 +612,8 @@ export async function getAllOpenConversations(
         task_title: taskTitle,
         source_type: sourceType as 'company' | 'task',
         source_url: sourceUrl,
+        waiting_since: chat.waiting_since || null,
+        last_responder: chat.last_responder || null,
       }
     })
   )
