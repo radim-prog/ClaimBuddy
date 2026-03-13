@@ -92,149 +92,20 @@ function InsuranceBreakdown({
 }
 
 function ExpandedDetail({ config, rates, calc, onConfigChange, onSave, saving, isFO }: ExpandedDetailProps) {
+  const [detailOpen, setDetailOpen] = useState(false)
+
   if (!isFO) {
     return (
       <tr>
         <td colSpan={9} className="px-4 py-3 bg-gray-50/80 dark:bg-gray-800/80">
-          <div className="flex items-center gap-4 flex-wrap">
-            <div>
+          <div className="flex items-end gap-4">
+            <div className="flex-1 max-w-md">
               <label className="text-[10px] text-gray-500 block mb-0.5">Poznamka</label>
-              <input
-                type="text"
+              <textarea
+                rows={3}
                 value={config.notes || ''}
                 onChange={e => onConfigChange('notes', e.target.value)}
-                className="h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 w-64"
-                placeholder="Poznamka..."
-              />
-            </div>
-            <button
-              onClick={onSave}
-              disabled={saving}
-              className="h-8 px-4 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
-            >
-              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-              Ulozit
-            </button>
-          </div>
-        </td>
-      </tr>
-    )
-  }
-
-  return (
-    <tr>
-      <td colSpan={9} className="px-4 py-3 bg-gray-50/80 dark:bg-gray-800/80">
-        <div className="max-w-3xl space-y-3">
-          {/* Odpocty */}
-          <div>
-            <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Odpocty</div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <div>
-                <label className="text-[10px] text-gray-500 block mb-0.5">Hypoteka</label>
-                <input
-                  type="number"
-                  value={config.mortgage_interest || ''}
-                  onChange={e => onConfigChange('mortgage_interest', parseFloat(e.target.value) || 0)}
-                  className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500 block mb-0.5">Sporeni</label>
-                <input
-                  type="number"
-                  value={config.savings_contributions || ''}
-                  onChange={e => onConfigChange('savings_contributions', parseFloat(e.target.value) || 0)}
-                  className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500 block mb-0.5">Ostatni</label>
-                <input
-                  type="number"
-                  value={config.other_deductions || ''}
-                  onChange={e => onConfigChange('other_deductions', parseFloat(e.target.value) || 0)}
-                  className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Slevy */}
-          <div>
-            <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Slevy</div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <label className="flex items-center gap-1.5 text-sm">
-                <input
-                  type="checkbox"
-                  checked={config.taxpayer_discount ?? true}
-                  onChange={e => onConfigChange('taxpayer_discount', e.target.checked)}
-                  className="rounded"
-                />
-                Poplatnik ({CZK(rates.taxpayer_discount)})
-              </label>
-              <div>
-                <label className="text-[10px] text-gray-500 block mb-0.5">Deti</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={config.children_count || ''}
-                  onChange={e => onConfigChange('children_count', parseInt(e.target.value) || 0)}
-                  className="h-8 w-16 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500 block mb-0.5">Ostatni slevy</label>
-                <input
-                  type="number"
-                  value={config.other_credits || ''}
-                  onChange={e => onConfigChange('other_credits', parseFloat(e.target.value) || 0)}
-                  className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Socialni pojisteni - breakdown */}
-          {calc && (
-            <InsuranceBreakdown
-              label="Socialni pojisteni"
-              base={calc.socialBase}
-              calculated={calc.socialCalculated}
-              rateLabel={`${(rates.social_insurance_rate * 100).toFixed(1)}%`}
-              advancesPaid={config.social_advances_paid ?? 0}
-              onAdvancesChange={v => onConfigChange('social_advances_paid', v)}
-              due={calc.socialDue}
-            />
-          )}
-
-          {/* Zdravotni pojisteni - breakdown */}
-          {calc && (
-            <InsuranceBreakdown
-              label="Zdravotni pojisteni"
-              base={calc.healthBase}
-              calculated={calc.healthCalculated}
-              rateLabel={`${(rates.health_insurance_rate * 100).toFixed(1)}%`}
-              advancesPaid={config.health_advances_paid ?? 0}
-              onAdvancesChange={v => onConfigChange('health_advances_paid', v)}
-              due={calc.healthDue}
-            />
-          )}
-
-          {/* Poznamka + save */}
-          <div className="flex items-end gap-3 pt-1 border-t dark:border-gray-700">
-            <div className="flex-1">
-              <label className="text-[10px] text-gray-500 block mb-0.5">Poznamka</label>
-              <input
-                type="text"
-                value={config.notes || ''}
-                onChange={e => onConfigChange('notes', e.target.value)}
-                className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500"
+                className="w-full px-2 py-1.5 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 resize-none"
                 placeholder="Poznamka k rocni kalkulaci..."
               />
             </div>
@@ -246,6 +117,208 @@ function ExpandedDetail({ config, rates, calc, onConfigChange, onSave, saving, i
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
               Ulozit
             </button>
+          </div>
+        </td>
+      </tr>
+    )
+  }
+
+  const socialDue = calc?.socialDue ?? 0
+  const healthDue = calc?.healthDue ?? 0
+
+  return (
+    <tr>
+      <td colSpan={9} className="px-4 py-3 bg-gray-50/80 dark:bg-gray-800/80">
+        <div className="space-y-3">
+          {/* TOP ROW: Poznámka vlevo, Zálohy + doplatky vpravo */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Levý sloupec — Poznámka */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase block mb-1">Poznamka</label>
+              <textarea
+                rows={3}
+                value={config.notes || ''}
+                onChange={e => onConfigChange('notes', e.target.value)}
+                className="w-full px-2 py-1.5 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 resize-none"
+                placeholder="Poznamka k rocni kalkulaci..."
+              />
+            </div>
+
+            {/* Pravý sloupec — Zálohy a doplatky */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase block mb-1">Zalohy a doplatky</label>
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800/50 space-y-2">
+                {/* Zálohy inputs */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] text-gray-400 block mb-0.5">Zalohy socialni</label>
+                    <input
+                      type="number"
+                      value={config.social_advances_paid || ''}
+                      onChange={e => onConfigChange('social_advances_paid', parseFloat(e.target.value) || 0)}
+                      className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-400 block mb-0.5">Zalohy zdravotni</label>
+                    <input
+                      type="number"
+                      value={config.health_advances_paid || ''}
+                      onChange={e => onConfigChange('health_advances_paid', parseFloat(e.target.value) || 0)}
+                      className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+                {/* Doplatky computed */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-[10px] text-gray-400 mb-0.5">Doplatek SP</div>
+                    <div className={`text-sm font-bold ${
+                      socialDue > 0 ? 'text-red-600 dark:text-red-400' : socialDue < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-400'
+                    }`}>
+                      {socialDue > 0 ? `Doplatek: +${CZK(socialDue)}` : socialDue < 0 ? `Preplatek: ${CZK(socialDue)}` : '0 Kc'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-gray-400 mb-0.5">Doplatek ZP</div>
+                    <div className={`text-sm font-bold ${
+                      healthDue > 0 ? 'text-red-600 dark:text-red-400' : healthDue < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-400'
+                    }`}>
+                      {healthDue > 0 ? `Doplatek: +${CZK(healthDue)}` : healthDue < 0 ? `Preplatek: ${CZK(healthDue)}` : '0 Kc'}
+                    </div>
+                  </div>
+                </div>
+                {/* Uložit */}
+                <div className="flex justify-end pt-1">
+                  <button
+                    onClick={onSave}
+                    disabled={saving}
+                    className="h-8 px-4 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                    Ulozit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* DETAIL — collapsible */}
+          <div className="border-t dark:border-gray-700 pt-2">
+            <button
+              onClick={() => setDetailOpen(!detailOpen)}
+              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            >
+              <ChevronRight className={`h-3.5 w-3.5 transition-transform ${detailOpen ? 'rotate-90' : ''}`} />
+              Detailni nastaveni
+            </button>
+
+            {detailOpen && (
+              <div className="mt-3 max-w-3xl space-y-3">
+                {/* Odpocty */}
+                <div>
+                  <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Odpocty</div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div>
+                      <label className="text-[10px] text-gray-500 block mb-0.5">Hypoteka</label>
+                      <input
+                        type="number"
+                        value={config.mortgage_interest || ''}
+                        onChange={e => onConfigChange('mortgage_interest', parseFloat(e.target.value) || 0)}
+                        className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-500 block mb-0.5">Sporeni</label>
+                      <input
+                        type="number"
+                        value={config.savings_contributions || ''}
+                        onChange={e => onConfigChange('savings_contributions', parseFloat(e.target.value) || 0)}
+                        className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-500 block mb-0.5">Ostatni</label>
+                      <input
+                        type="number"
+                        value={config.other_deductions || ''}
+                        onChange={e => onConfigChange('other_deductions', parseFloat(e.target.value) || 0)}
+                        className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Slevy */}
+                <div>
+                  <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Slevy</div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <label className="flex items-center gap-1.5 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={config.taxpayer_discount ?? true}
+                        onChange={e => onConfigChange('taxpayer_discount', e.target.checked)}
+                        className="rounded"
+                      />
+                      Poplatnik ({CZK(rates.taxpayer_discount)})
+                    </label>
+                    <div>
+                      <label className="text-[10px] text-gray-500 block mb-0.5">Deti</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={config.children_count || ''}
+                        onChange={e => onConfigChange('children_count', parseInt(e.target.value) || 0)}
+                        className="h-8 w-16 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-500 block mb-0.5">Ostatni slevy</label>
+                      <input
+                        type="number"
+                        value={config.other_credits || ''}
+                        onChange={e => onConfigChange('other_credits', parseFloat(e.target.value) || 0)}
+                        className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Socialni pojisteni - full breakdown */}
+                {calc && (
+                  <InsuranceBreakdown
+                    label="Socialni pojisteni"
+                    base={calc.socialBase}
+                    calculated={calc.socialCalculated}
+                    rateLabel={`${(rates.social_insurance_rate * 100).toFixed(1)}%`}
+                    advancesPaid={config.social_advances_paid ?? 0}
+                    onAdvancesChange={v => onConfigChange('social_advances_paid', v)}
+                    due={calc.socialDue}
+                  />
+                )}
+
+                {/* Zdravotni pojisteni - full breakdown */}
+                {calc && (
+                  <InsuranceBreakdown
+                    label="Zdravotni pojisteni"
+                    base={calc.healthBase}
+                    calculated={calc.healthCalculated}
+                    rateLabel={`${(rates.health_insurance_rate * 100).toFixed(1)}%`}
+                    advancesPaid={config.health_advances_paid ?? 0}
+                    onAdvancesChange={v => onConfigChange('health_advances_paid', v)}
+                    due={calc.healthDue}
+                  />
+                )}
+              </div>
+            )}
           </div>
         </div>
       </td>
