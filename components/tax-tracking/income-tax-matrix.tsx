@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import { ChevronRight, ChevronDown, Save, Check, Loader2 } from 'lucide-react'
+import { ChevronRight, ChevronDown, Save, Check, Loader2, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { calculateIncomeTax, DEFAULT_TAX_RATES, type TaxRates, type TaxAnnualConfig, type IncomeTaxCalculation } from '@/lib/tax-calculator'
+import { calculateIncomeTax, calculateFlatTax, DEFAULT_TAX_RATES, type TaxRates, type TaxAnnualConfig, type IncomeTaxCalculation } from '@/lib/tax-calculator'
 import type { TaxCompany, TaxAnnualConfigRow } from '@/lib/types/tax'
 
 const currentYear = new Date().getFullYear()
@@ -37,6 +37,7 @@ type ExpandedDetailProps = {
   onSave: () => Promise<void>
   saving: boolean
   isFO: boolean
+  revenue: number
 }
 
 function InsuranceBreakdown({
@@ -47,6 +48,7 @@ function InsuranceBreakdown({
   advancesPaid,
   onAdvancesChange,
   due,
+  minimumApplied,
 }: {
   label: string
   base: number
@@ -55,6 +57,7 @@ function InsuranceBreakdown({
   advancesPaid: number
   onAdvancesChange: (v: number) => void
   due: number
+  minimumApplied?: boolean
 }) {
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800/50">
@@ -66,7 +69,12 @@ function InsuranceBreakdown({
         </div>
         <div>
           <div className="text-[10px] text-gray-400 mb-0.5">Pojistne ({rateLabel})</div>
-          <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{CZK(calculated)}</div>
+          <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {CZK(calculated)}
+            {minimumApplied && (
+              <span className="ml-1 text-[9px] px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium">min.</span>
+            )}
+          </div>
         </div>
         <div>
           <div className="text-[10px] text-gray-400 mb-0.5">Zaplacene zalohy</div>
@@ -91,7 +99,7 @@ function InsuranceBreakdown({
   )
 }
 
-function ExpandedDetail({ config, rates, calc, onConfigChange, onSave, saving, isFO }: ExpandedDetailProps) {
+function ExpandedDetail({ config, rates, calc, onConfigChange, onSave, saving, isFO, revenue }: ExpandedDetailProps) {
   const [detailOpen, setDetailOpen] = useState(false)
 
   if (!isFO) {
@@ -123,6 +131,14 @@ function ExpandedDetail({ config, rates, calc, onConfigChange, onSave, saving, i
     )
   }
 
+  const isFlatTax = config.is_flat_tax ?? false
+  const flatTaxBand = config.flat_tax_band ?? null
+  const isSecondary = config.is_secondary_activity ?? false
+
+  // Check revenue limit for flat tax warning
+  const flatTaxCalc = isFlatTax && flatTaxBand ? calculateFlatTax(flatTaxBand, rates) : null
+  const revenueExceedsBand = flatTaxCalc && revenue > flatTaxCalc.revenueLimit
+
   const socialDue = calc?.socialDue ?? 0
   const healthDue = calc?.healthDue ?? 0
 
@@ -148,48 +164,91 @@ function ExpandedDetail({ config, rates, calc, onConfigChange, onSave, saving, i
             <div>
               <label className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase block mb-1">Zalohy a doplatky</label>
               <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800/50 space-y-2">
-                {/* Zálohy inputs */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] text-gray-400 block mb-0.5">Zalohy socialni</label>
-                    <input
-                      type="number"
-                      value={config.social_advances_paid || ''}
-                      onChange={e => onConfigChange('social_advances_paid', parseFloat(e.target.value) || 0)}
-                      className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-400 block mb-0.5">Zalohy zdravotni</label>
-                    <input
-                      type="number"
-                      value={config.health_advances_paid || ''}
-                      onChange={e => onConfigChange('health_advances_paid', parseFloat(e.target.value) || 0)}
-                      className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-                {/* Doplatky computed */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="text-[10px] text-gray-400 mb-0.5">Doplatek SP</div>
-                    <div className={`text-sm font-bold ${
-                      socialDue > 0 ? 'text-red-600 dark:text-red-400' : socialDue < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-400'
-                    }`}>
-                      {socialDue > 0 ? `Doplatek: +${CZK(socialDue)}` : socialDue < 0 ? `Preplatek: ${CZK(socialDue)}` : '0 Kc'}
+                {isFlatTax && flatTaxCalc ? (
+                  /* Flat tax summary */
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 font-bold uppercase">
+                        Pausalni dan — pasmo {flatTaxBand}
+                      </span>
                     </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-gray-400 mb-0.5">Doplatek ZP</div>
-                    <div className={`text-sm font-bold ${
-                      healthDue > 0 ? 'text-red-600 dark:text-red-400' : healthDue < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-400'
-                    }`}>
-                      {healthDue > 0 ? `Doplatek: +${CZK(healthDue)}` : healthDue < 0 ? `Preplatek: ${CZK(healthDue)}` : '0 Kc'}
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      <div>
+                        <div className="text-[10px] text-gray-400">Dan</div>
+                        <div className="font-medium">{CZK(flatTaxCalc.annualTax)}/rok</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-gray-400">Socialni</div>
+                        <div className="font-medium">{CZK(flatTaxCalc.annualSocial)}/rok</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-gray-400">Zdravotni</div>
+                        <div className="font-medium">{CZK(flatTaxCalc.annualHealth)}/rok</div>
+                      </div>
                     </div>
+                    <div className="text-sm font-bold text-purple-700 dark:text-purple-400">
+                      Celkem: {CZK(flatTaxCalc.annualTotal)}/rok ({CZK(flatTaxCalc.monthlyTotal)}/mes)
+                    </div>
+                    {revenueExceedsBand && (
+                      <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1.5 rounded">
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                        Prijmy ({CZK(revenue)}) prekracuji limit pasma ({CZK(flatTaxCalc.revenueLimit)})!
+                      </div>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  /* Normal mode — zálohy + doplatky */
+                  <>
+                    {/* Zálohy inputs */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] text-gray-400 block mb-0.5">Zalohy socialni</label>
+                        <input
+                          type="number"
+                          value={config.social_advances_paid || ''}
+                          onChange={e => onConfigChange('social_advances_paid', parseFloat(e.target.value) || 0)}
+                          className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-gray-400 block mb-0.5">Zalohy zdravotni</label>
+                        <input
+                          type="number"
+                          value={config.health_advances_paid || ''}
+                          onChange={e => onConfigChange('health_advances_paid', parseFloat(e.target.value) || 0)}
+                          className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                    {/* Doplatky computed */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-[10px] text-gray-400 mb-0.5">Doplatek SP</div>
+                        <div className={`text-sm font-bold ${
+                          socialDue > 0 ? 'text-red-600 dark:text-red-400' : socialDue < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-400'
+                        }`}>
+                          {socialDue > 0 ? `Doplatek: +${CZK(socialDue)}` : socialDue < 0 ? `Preplatek: ${CZK(socialDue)}` : '0 Kc'}
+                          {calc?.socialMinimumApplied && (
+                            <span className="ml-1 text-[9px] text-amber-600 dark:text-amber-400">(min. pojistne)</span>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-gray-400 mb-0.5">Doplatek ZP</div>
+                        <div className={`text-sm font-bold ${
+                          healthDue > 0 ? 'text-red-600 dark:text-red-400' : healthDue < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-400'
+                        }`}>
+                          {healthDue > 0 ? `Doplatek: +${CZK(healthDue)}` : healthDue < 0 ? `Preplatek: ${CZK(healthDue)}` : '0 Kc'}
+                          {calc?.healthMinimumApplied && (
+                            <span className="ml-1 text-[9px] text-amber-600 dark:text-amber-400">(min. pojistne)</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
                 {/* Uložit */}
                 <div className="flex justify-end pt-1">
                   <button
@@ -217,105 +276,158 @@ function ExpandedDetail({ config, rates, calc, onConfigChange, onSave, saving, i
 
             {detailOpen && (
               <div className="mt-3 max-w-3xl space-y-3">
-                {/* Odpocty */}
+                {/* Režim — paušální daň + vedlejší činnost */}
                 <div>
-                  <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Odpocty</div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <div>
-                      <label className="text-[10px] text-gray-500 block mb-0.5">Hypoteka</label>
-                      <input
-                        type="number"
-                        value={config.mortgage_interest || ''}
-                        onChange={e => onConfigChange('mortgage_interest', parseFloat(e.target.value) || 0)}
-                        className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-500 block mb-0.5">Sporeni</label>
-                      <input
-                        type="number"
-                        value={config.savings_contributions || ''}
-                        onChange={e => onConfigChange('savings_contributions', parseFloat(e.target.value) || 0)}
-                        className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-500 block mb-0.5">Ostatni</label>
-                      <input
-                        type="number"
-                        value={config.other_deductions || ''}
-                        onChange={e => onConfigChange('other_deductions', parseFloat(e.target.value) || 0)}
-                        className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Slevy */}
-                <div>
-                  <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Slevy</div>
-                  <div className="flex items-center gap-3 flex-wrap">
+                  <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Rezim</div>
+                  <div className="flex items-center gap-4 flex-wrap">
                     <label className="flex items-center gap-1.5 text-sm">
                       <input
                         type="checkbox"
-                        checked={config.taxpayer_discount ?? true}
-                        onChange={e => onConfigChange('taxpayer_discount', e.target.checked)}
+                        checked={isFlatTax}
+                        onChange={e => {
+                          onConfigChange('is_flat_tax', e.target.checked)
+                          if (e.target.checked && !flatTaxBand) {
+                            onConfigChange('flat_tax_band', 1)
+                          }
+                        }}
                         className="rounded"
                       />
-                      Poplatnik ({CZK(rates.taxpayer_discount)})
+                      Pausalni dan
                     </label>
-                    <div>
-                      <label className="text-[10px] text-gray-500 block mb-0.5">Deti</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={config.children_count || ''}
-                        onChange={e => onConfigChange('children_count', parseInt(e.target.value) || 0)}
-                        className="h-8 w-16 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-500 block mb-0.5">Ostatni slevy</label>
-                      <input
-                        type="number"
-                        value={config.other_credits || ''}
-                        onChange={e => onConfigChange('other_credits', parseFloat(e.target.value) || 0)}
-                        className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-                        placeholder="0"
-                      />
-                    </div>
+                    {isFlatTax && (
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-[10px] text-gray-500">Pasmo</label>
+                        <select
+                          value={flatTaxBand ?? 1}
+                          onChange={e => onConfigChange('flat_tax_band', parseInt(e.target.value))}
+                          className="h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500"
+                        >
+                          <option value={1}>1 (do 1M)</option>
+                          <option value={2}>2 (do 1,5M)</option>
+                          <option value={3}>3 (do 2M)</option>
+                        </select>
+                      </div>
+                    )}
+                    {!isFlatTax && (
+                      <label className="flex items-center gap-1.5 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={isSecondary}
+                          onChange={e => onConfigChange('is_secondary_activity', e.target.checked)}
+                          className="rounded"
+                        />
+                        Vedlejsi cinnost
+                      </label>
+                    )}
                   </div>
                 </div>
 
-                {/* Socialni pojisteni - full breakdown */}
-                {calc && (
-                  <InsuranceBreakdown
-                    label="Socialni pojisteni"
-                    base={calc.socialBase}
-                    calculated={calc.socialCalculated}
-                    rateLabel={`${(rates.social_insurance_rate * 100).toFixed(1)}%`}
-                    advancesPaid={config.social_advances_paid ?? 0}
-                    onAdvancesChange={v => onConfigChange('social_advances_paid', v)}
-                    due={calc.socialDue}
-                  />
-                )}
+                {/* Odpočty + slevy — skryto při paušálu */}
+                {!isFlatTax && (
+                  <>
+                    {/* Odpocty */}
+                    <div>
+                      <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Odpocty</div>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div>
+                          <label className="text-[10px] text-gray-500 block mb-0.5">Hypoteka</label>
+                          <input
+                            type="number"
+                            value={config.mortgage_interest || ''}
+                            onChange={e => onConfigChange('mortgage_interest', parseFloat(e.target.value) || 0)}
+                            className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-gray-500 block mb-0.5">Sporeni</label>
+                          <input
+                            type="number"
+                            value={config.savings_contributions || ''}
+                            onChange={e => onConfigChange('savings_contributions', parseFloat(e.target.value) || 0)}
+                            className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-gray-500 block mb-0.5">Ostatni</label>
+                          <input
+                            type="number"
+                            value={config.other_deductions || ''}
+                            onChange={e => onConfigChange('other_deductions', parseFloat(e.target.value) || 0)}
+                            className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                    </div>
 
-                {/* Zdravotni pojisteni - full breakdown */}
-                {calc && (
-                  <InsuranceBreakdown
-                    label="Zdravotni pojisteni"
-                    base={calc.healthBase}
-                    calculated={calc.healthCalculated}
-                    rateLabel={`${(rates.health_insurance_rate * 100).toFixed(1)}%`}
-                    advancesPaid={config.health_advances_paid ?? 0}
-                    onAdvancesChange={v => onConfigChange('health_advances_paid', v)}
-                    due={calc.healthDue}
-                  />
+                    {/* Slevy */}
+                    <div>
+                      <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Slevy</div>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <label className="flex items-center gap-1.5 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={config.taxpayer_discount ?? true}
+                            onChange={e => onConfigChange('taxpayer_discount', e.target.checked)}
+                            className="rounded"
+                          />
+                          Poplatnik ({CZK(rates.taxpayer_discount)})
+                        </label>
+                        <div>
+                          <label className="text-[10px] text-gray-500 block mb-0.5">Deti</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={config.children_count || ''}
+                            onChange={e => onConfigChange('children_count', parseInt(e.target.value) || 0)}
+                            className="h-8 w-16 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-gray-500 block mb-0.5">Ostatni slevy</label>
+                          <input
+                            type="number"
+                            value={config.other_credits || ''}
+                            onChange={e => onConfigChange('other_credits', parseFloat(e.target.value) || 0)}
+                            className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Socialni pojisteni - full breakdown */}
+                    {calc && (
+                      <InsuranceBreakdown
+                        label="Socialni pojisteni"
+                        base={calc.socialBase}
+                        calculated={calc.socialCalculated}
+                        rateLabel={`${(rates.social_insurance_rate * 100).toFixed(1)}%`}
+                        advancesPaid={config.social_advances_paid ?? 0}
+                        onAdvancesChange={v => onConfigChange('social_advances_paid', v)}
+                        due={calc.socialDue}
+                        minimumApplied={calc.socialMinimumApplied}
+                      />
+                    )}
+
+                    {/* Zdravotni pojisteni - full breakdown */}
+                    {calc && (
+                      <InsuranceBreakdown
+                        label="Zdravotni pojisteni"
+                        base={calc.healthBase}
+                        calculated={calc.healthCalculated}
+                        rateLabel={`${(rates.health_insurance_rate * 100).toFixed(1)}%`}
+                        advancesPaid={config.health_advances_paid ?? 0}
+                        onAdvancesChange={v => onConfigChange('health_advances_paid', v)}
+                        due={calc.healthDue}
+                        minimumApplied={calc.healthMinimumApplied}
+                      />
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -364,6 +476,9 @@ function CompanyRow({
     social_advances_paid: annualConfig?.social_advances_paid ?? 0,
     health_advances_paid: annualConfig?.health_advances_paid ?? 0,
     notes: annualConfig?.notes ?? '',
+    is_flat_tax: annualConfig?.is_flat_tax ?? false,
+    flat_tax_band: annualConfig?.flat_tax_band ?? null,
+    is_secondary_activity: annualConfig?.is_secondary_activity ?? false,
   })
 
   const initialRevRef = useRef(revenue)
@@ -387,6 +502,9 @@ function CompanyRow({
       social_advances_paid: annualConfig?.social_advances_paid ?? 0,
       health_advances_paid: annualConfig?.health_advances_paid ?? 0,
       notes: annualConfig?.notes ?? '',
+      is_flat_tax: annualConfig?.is_flat_tax ?? false,
+      flat_tax_band: annualConfig?.flat_tax_band ?? null,
+      is_secondary_activity: annualConfig?.is_secondary_activity ?? false,
     })
   }, [annualConfig, monthlyTotals])
 
@@ -407,6 +525,9 @@ function CompanyRow({
       social_advances_paid: config.social_advances_paid ?? 0,
       health_advances_paid: config.health_advances_paid ?? 0,
       initial_tax_base: null,
+      is_flat_tax: config.is_flat_tax ?? false,
+      flat_tax_band: config.flat_tax_band ?? null,
+      is_secondary_activity: config.is_secondary_activity ?? false,
     }
     return calculateIncomeTax({ revenue, expenses }, taxConfig, rates)
   }, [revenue, expenses, config, rates, isFO])
@@ -464,6 +585,8 @@ function CompanyRow({
     setConfig(prev => ({ ...prev, [field]: value }))
   }
 
+  const isFlatTax = config.is_flat_tax ?? false
+
   return (
     <>
       <tr className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
@@ -473,6 +596,9 @@ function CompanyRow({
           </Link>
           {isFO && (
             <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium">FO</span>
+          )}
+          {isFO && isFlatTax && (
+            <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium">P{config.flat_tax_band}</span>
           )}
         </td>
         <td className="px-2 py-2">
@@ -548,6 +674,7 @@ function CompanyRow({
           onSave={handleSaveAll}
           saving={saving}
           isFO={isFO}
+          revenue={revenue}
         />
       )}
     </>

@@ -1,5 +1,12 @@
 // Pure functions for Czech income tax (DPFO) calculation
 
+export type FlatTaxBand = {
+  revenue_limit: number
+  monthly_tax: number
+  monthly_social: number
+  monthly_health: number
+}
+
 export type TaxRates = {
   income_tax_rate_1: number       // 0.15
   income_tax_rate_2: number       // 0.23
@@ -11,9 +18,14 @@ export type TaxRates = {
   child_ztpp_multiplier: number   // 2
   social_insurance_rate: number   // 0.292
   health_insurance_rate: number   // 0.135
-  social_minimum_advance: number  // 3852
-  health_minimum_advance: number  // 2968
+  social_base_percentage: number  // 0.55 (since 2024)
+  health_base_percentage: number  // 0.50
+  social_minimum_advance: number  // 5720 (main activity)
+  health_minimum_advance: number  // 3306 (main activity)
+  social_minimum_advance_secondary: number  // 1574
+  health_minimum_advance_secondary: number  // 0
   social_max_assessment_base: number // 2110416
+  flat_tax_bands?: Record<number, FlatTaxBand>
 }
 
 export const DEFAULT_TAX_RATES: TaxRates = {
@@ -27,9 +39,18 @@ export const DEFAULT_TAX_RATES: TaxRates = {
   child_ztpp_multiplier: 2,
   social_insurance_rate: 0.292,
   health_insurance_rate: 0.135,
-  social_minimum_advance: 3852,
-  health_minimum_advance: 2968,
+  social_base_percentage: 0.55,
+  health_base_percentage: 0.50,
+  social_minimum_advance: 5720,
+  health_minimum_advance: 3306,
+  social_minimum_advance_secondary: 1574,
+  health_minimum_advance_secondary: 0,
   social_max_assessment_base: 2110416,
+  flat_tax_bands: {
+    1: { revenue_limit: 1000000, monthly_tax: 100, monthly_social: 6578, monthly_health: 3306 },
+    2: { revenue_limit: 1500000, monthly_tax: 4963, monthly_social: 8191, monthly_health: 3591 },
+    3: { revenue_limit: 2000000, monthly_tax: 9320, monthly_social: 12527, monthly_health: 5292 },
+  },
 }
 
 export type TaxAnnualConfig = {
@@ -43,6 +64,19 @@ export type TaxAnnualConfig = {
   social_advances_paid: number
   health_advances_paid: number
   initial_tax_base: number | null
+  is_flat_tax: boolean
+  flat_tax_band: number | null
+  is_secondary_activity: boolean
+}
+
+export type FlatTaxCalculation = {
+  band: number
+  revenueLimit: number
+  monthlyTotal: number
+  annualTax: number
+  annualSocial: number
+  annualHealth: number
+  annualTotal: number
 }
 
 export type IncomeTaxCalculation = {
@@ -71,12 +105,18 @@ export type IncomeTaxCalculation = {
 
   // Step 5: Social insurance
   socialBase: number
+  socialFromRate: number
+  socialMinimumAnnual: number
+  socialMinimumApplied: boolean
   socialCalculated: number
   socialAdvancesPaid: number
   socialDue: number
 
   // Step 6: Health insurance
   healthBase: number
+  healthFromRate: number
+  healthMinimumAnnual: number
+  healthMinimumApplied: boolean
   healthCalculated: number
   healthAdvancesPaid: number
   healthDue: number
@@ -87,6 +127,25 @@ export type IncomeTaxCalculation = {
   // Step 8: Savings
   initialTaxBase: number | null
   taxSavings: number | null
+
+  // Step 9: Flat tax
+  flatTax: FlatTaxCalculation | null
+}
+
+export function calculateFlatTax(band: number, rates: TaxRates): FlatTaxCalculation | null {
+  const bands = rates.flat_tax_bands
+  if (!bands || !bands[band]) return null
+  const b = bands[band]
+  const monthlyTotal = b.monthly_tax + b.monthly_social + b.monthly_health
+  return {
+    band,
+    revenueLimit: b.revenue_limit,
+    monthlyTotal,
+    annualTax: b.monthly_tax * 12,
+    annualSocial: b.monthly_social * 12,
+    annualHealth: b.monthly_health * 12,
+    annualTotal: monthlyTotal * 12,
+  }
 }
 
 export function calculateIncomeTax(
@@ -97,6 +156,36 @@ export function calculateIncomeTax(
 ): IncomeTaxCalculation {
   const { revenue, expenses } = yearTotals
   const rawTaxBase = revenue - expenses
+
+  // Flat tax early return
+  if (config.is_flat_tax && config.flat_tax_band) {
+    const flatTax = calculateFlatTax(config.flat_tax_band, rates)
+    if (flatTax) {
+      return {
+        revenue, expenses, rawTaxBase,
+        taxBaseOverride: null,
+        totalDeductions: 0, adjustedBase: 0, roundedBase: 0,
+        taxRate1Amount: 0, taxRate2Amount: 0, grossTax: 0,
+        taxpayerCredit: 0, childrenCredit: 0, otherCredits: 0, totalCredits: 0,
+        netTax: flatTax.annualTax,
+        socialBase: 0, socialFromRate: 0,
+        socialMinimumAnnual: 0, socialMinimumApplied: false,
+        socialCalculated: flatTax.annualSocial,
+        socialAdvancesPaid: config.social_advances_paid,
+        socialDue: flatTax.annualSocial - config.social_advances_paid,
+        healthBase: 0, healthFromRate: 0,
+        healthMinimumAnnual: 0, healthMinimumApplied: false,
+        healthCalculated: flatTax.annualHealth,
+        healthAdvancesPaid: config.health_advances_paid,
+        healthDue: flatTax.annualHealth - config.health_advances_paid,
+        totalDue: flatTax.annualTotal - config.social_advances_paid - config.health_advances_paid,
+        initialTaxBase: null,
+        taxSavings: null,
+        flatTax,
+      }
+    }
+  }
+
   const effectiveBase = taxBaseOverride ?? rawTaxBase
 
   // Deductions
@@ -144,15 +233,31 @@ export function calculateIncomeTax(
   // Tax after credits can go negative (bonus for children)
   const netTax = grossTax - totalCredits
 
-  // Social insurance: profit × 50% × rate
+  // Social insurance: profit × base_percentage × rate, enforce minimum
   const profit = Math.max(0, effectiveBase)
-  const socialBase = Math.min(profit * 0.5, rates.social_max_assessment_base)
-  const socialCalculated = Math.round(socialBase * rates.social_insurance_rate)
+  const socialBase = Math.min(profit * rates.social_base_percentage, rates.social_max_assessment_base)
+  const socialFromRate = Math.round(socialBase * rates.social_insurance_rate)
+
+  const socialMinMonthly = config.is_secondary_activity
+    ? rates.social_minimum_advance_secondary
+    : rates.social_minimum_advance
+  const socialMinimumAnnual = socialMinMonthly * 12
+  const socialMinimumApplied = socialFromRate < socialMinimumAnnual && !config.is_secondary_activity
+  const socialCalculated = config.is_secondary_activity
+    ? socialFromRate  // secondary: no minimum enforcement
+    : Math.max(socialFromRate, socialMinimumAnnual)
   const socialDue = socialCalculated - config.social_advances_paid
 
-  // Health insurance: profit × 50% × rate
-  const healthBase = profit * 0.5
-  const healthCalculated = Math.round(healthBase * rates.health_insurance_rate)
+  // Health insurance: profit × base_percentage × rate, enforce minimum
+  const healthBase = profit * rates.health_base_percentage
+  const healthFromRate = Math.round(healthBase * rates.health_insurance_rate)
+
+  const healthMinMonthly = config.is_secondary_activity
+    ? rates.health_minimum_advance_secondary
+    : rates.health_minimum_advance
+  const healthMinimumAnnual = healthMinMonthly * 12
+  const healthMinimumApplied = healthFromRate < healthMinimumAnnual && healthMinimumAnnual > 0
+  const healthCalculated = Math.max(healthFromRate, healthMinimumAnnual)
   const healthDue = healthCalculated - config.health_advances_paid
 
   // Total
@@ -163,7 +268,7 @@ export function calculateIncomeTax(
   if (config.initial_tax_base !== null && config.initial_tax_base !== undefined) {
     const initialCalc = calculateIncomeTax(
       { revenue: config.initial_tax_base + expenses, expenses },
-      { ...config, mortgage_interest: 0, savings_contributions: 0, other_deductions: 0 },
+      { ...config, mortgage_interest: 0, savings_contributions: 0, other_deductions: 0, is_flat_tax: false },
       rates,
       config.initial_tax_base
     )
@@ -187,15 +292,22 @@ export function calculateIncomeTax(
     totalCredits,
     netTax,
     socialBase,
+    socialFromRate,
+    socialMinimumAnnual,
+    socialMinimumApplied,
     socialCalculated,
     socialAdvancesPaid: config.social_advances_paid,
     socialDue,
     healthBase,
+    healthFromRate,
+    healthMinimumAnnual,
+    healthMinimumApplied,
     healthCalculated,
     healthAdvancesPaid: config.health_advances_paid,
     healthDue,
     totalDue,
     initialTaxBase: config.initial_tax_base,
     taxSavings,
+    flatTax: null,
   }
 }

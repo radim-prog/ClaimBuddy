@@ -39,6 +39,9 @@ export type TaxAnnualConfigRow = {
   social_advances_paid: number
   health_advances_paid: number
   initial_tax_base: number | null
+  is_flat_tax: boolean
+  flat_tax_band: number | null
+  is_secondary_activity: boolean
   annual_revenue: number | null
   annual_expenses: number | null
   notes: string | null
