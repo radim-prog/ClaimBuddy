@@ -109,16 +109,20 @@ const paymentMethodOptions = [
 const unitOptions = ['ks', 'hod', 'den', 'měsíc', 'km', 'm', 'm²', 'komplet']
 
 // Autocomplete dropdown for item description
+const validationErrorClass = 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-700'
+
 function ItemDescriptionInput({
   value,
   onChange,
   onSelectFavorite,
   favorites,
+  hasError,
 }: {
   value: string
   onChange: (val: string) => void
   onSelectFavorite: (fav: Favorite) => void
   favorites: Favorite[]
+  hasError?: boolean
 }) {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [focused, setFocused] = useState(false)
@@ -149,6 +153,7 @@ function ItemDescriptionInput({
         }}
         onFocus={() => { setFocused(true); setShowSuggestions(true) }}
         onBlur={() => setFocused(false)}
+        className={hasError ? validationErrorClass : ''}
       />
       {showSuggestions && filtered.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-40 overflow-y-auto">
@@ -225,6 +230,9 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
   const [saving, setSaving] = useState(false)
   const [favorites, setFavorites] = useState<Favorite[]>([])
   const [showExtra, setShowExtra] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<Set<string>>(new Set())
+
+  const fieldError = (key: string) => validationErrors.has(key) ? validationErrorClass : ''
 
   // Load favorites
   useEffect(() => {
@@ -244,6 +252,12 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
 
   const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
     setItems(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item))
+    setValidationErrors(prev => {
+      const next = new Set(prev)
+      next.delete(`item_${index}_description`)
+      next.delete(`item_${index}_price`)
+      return next
+    })
   }
 
   const applyItemFavorite = (index: number, fav: Favorite) => {
@@ -283,14 +297,18 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
   const totalWithVat = totalWithoutVat + totalVat
 
   const handleSubmit = async () => {
-    if (!partner.name) {
-      toast.error('Vyplňte jméno odběratele')
+    const errors = new Set<string>()
+    if (!partner.name) errors.add('partner_name')
+    items.forEach((item, idx) => {
+      if (!item.description) errors.add(`item_${idx}_description`)
+      if (item.unit_price <= 0) errors.add(`item_${idx}_price`)
+    })
+    if (errors.size > 0) {
+      setValidationErrors(errors)
+      toast.error('Vyplňte zvýrazněná pole')
       return
     }
-    if (items.some(i => !i.description || i.unit_price <= 0)) {
-      toast.error('Vyplňte všechny položky')
-      return
-    }
+    setValidationErrors(new Set())
 
     setSaving(true)
     try {
@@ -461,7 +479,11 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
         <PartnerSelector
           companyId={companyId}
           value={partner}
-          onChange={setPartner}
+          onChange={(data) => {
+            setPartner(data)
+            setValidationErrors(prev => { const next = new Set(prev); next.delete('partner_name'); return next })
+          }}
+          hasError={validationErrors.has('partner_name')}
         />
 
         {/* Dates with badges */}
@@ -585,6 +607,7 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
                   onChange={val => updateItem(idx, 'description', val)}
                   onSelectFavorite={fav => applyItemFavorite(idx, fav)}
                   favorites={itemFavorites}
+                  hasError={validationErrors.has(`item_${idx}_description`)}
                 />
                 {items.length > 1 && (
                   <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => removeItem(idx)}>
@@ -623,6 +646,7 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
                     value={item.unit_price}
                     onChange={e => updateItem(idx, 'unit_price', Number(e.target.value))}
                     min={0}
+                    className={fieldError(`item_${idx}_price`)}
                   />
                 </div>
                 <div className="w-20 shrink-0">

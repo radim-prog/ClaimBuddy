@@ -24,11 +24,14 @@ interface PartnerSelectorProps {
   companyId: string
   value: PartnerData
   onChange: (data: PartnerData) => void
+  hasError?: boolean
 }
 
 const FREQUENT_THRESHOLD = 3
 
-export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorProps) {
+const errorClass = 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-700'
+
+export function PartnerSelector({ companyId, value, onChange, hasError }: PartnerSelectorProps) {
   const [partners, setPartners] = useState<InvoicePartner[]>([])
   const [loading, setLoading] = useState(false)
   const [aresLoading, setAresLoading] = useState(false)
@@ -205,7 +208,7 @@ export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorP
           <button
             type="button"
             onClick={() => setShowDropdown(!showDropdown)}
-            className="w-full flex items-center justify-between h-9 rounded-md border px-3 text-sm bg-background hover:bg-muted/50"
+            className={`w-full flex items-center justify-between h-9 rounded-md border px-3 text-sm bg-background hover:bg-muted/50 ${hasError ? errorClass : ''}`}
           >
             <span className={value.partner_id ? 'text-foreground' : 'text-muted-foreground'}>
               {value.partner_id ? `${value.name}${value.ico ? ` (${value.ico})` : ''}` : 'Vyberte partnera...'}
@@ -277,7 +280,7 @@ export function PartnerSelector({ companyId, value, onChange }: PartnerSelectorP
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Název *</Label>
-              <Input value={value.name} onChange={e => update('name', e.target.value)} placeholder="Firma s.r.o." />
+              <Input value={value.name} onChange={e => update('name', e.target.value)} placeholder="Firma s.r.o." className={hasError ? errorClass : ''} />
             </div>
             <div>
               <Label className="text-xs">IČO</Label>
