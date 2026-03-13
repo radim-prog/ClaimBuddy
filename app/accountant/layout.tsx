@@ -20,6 +20,7 @@ import {
   ChevronRight,
   ChevronLeft,
   BarChart3,
+  MessageCircle,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -45,6 +46,7 @@ import { AccountantUserProvider, useAccountantUser } from '@/lib/contexts/accoun
 import { AttentionProvider, useAttention } from '@/lib/contexts/attention-context'
 import { QuickCaptureButton } from '@/components/quick-capture'
 import { useInboxCount } from '@/components/gtd/use-inbox-count'
+import { useUnreadMessages } from '@/hooks/use-unread-messages'
 import { KeyboardShortcuts } from '@/components/keyboard-shortcuts'
 import { WelcomeModal } from '@/components/accountant/welcome-modal'
 import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
@@ -55,6 +57,7 @@ import { Logo } from '@/components/ui/logo'
 const navigation = [
   { name: 'Přehled', href: '/accountant/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
   { name: 'Klienti', href: '/accountant/clients', icon: Users, badge: 'attention' as const, tourId: 'nav-clients' },
+  { name: 'Komunikace', href: '/accountant/komunikace', icon: MessageCircle, badge: 'messages' as const },
   { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'] },
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
 ]
@@ -94,6 +97,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const { startTour } = useTutorialContext()
   const inboxCount = useInboxCount()
   const { totals: attentionTotals } = useAttention()
+  const { unreadCount: messagesUnread } = useUnreadMessages()
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
@@ -185,6 +189,11 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                           {attentionTotals.total}
                         </span>
                       )}
+                      {collapsed && item.badge === 'messages' && messagesUnread > 0 && (
+                        <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                          {messagesUnread}
+                        </span>
+                      )}
                     </span>
                     {!collapsed && (
                       <span className="flex items-center gap-1.5">
@@ -196,6 +205,11 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                         {item.badge === 'attention' && attentionTotals.total > 0 && (
                           <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">
                             {attentionTotals.total}
+                          </span>
+                        )}
+                        {item.badge === 'messages' && messagesUnread > 0 && (
+                          <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">
+                            {messagesUnread}
                           </span>
                         )}
                         {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
@@ -212,6 +226,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                         {item.name}
                         {item.badge === 'dynamic' && inboxCount > 0 && ` (${inboxCount})`}
                         {item.badge === 'attention' && attentionTotals.total > 0 && ` (${attentionTotals.total})`}
+                        {item.badge === 'messages' && messagesUnread > 0 && ` (${messagesUnread})`}
                       </TooltipContent>
                     </Tooltip>
                   )
@@ -450,6 +465,11 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                   {item.badge === 'attention' && attentionTotals.total > 0 && (
                     <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">
                       {attentionTotals.total}
+                    </span>
+                  )}
+                  {item.badge === 'messages' && messagesUnread > 0 && (
+                    <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                      {messagesUnread}
                     </span>
                   )}
                 </div>

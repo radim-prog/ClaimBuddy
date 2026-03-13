@@ -56,6 +56,7 @@ import {
   Paperclip,
   Trash2,
 } from 'lucide-react'
+import { ChatPanel } from '@/components/chat/chat-panel'
 
 type Project = {
   id: string
@@ -151,7 +152,7 @@ const SCORE_OPTIONS = {
   ],
 }
 
-type TabKey = 'spis' | 'ukoly' | 'dokumenty' | 'vykaz'
+type TabKey = 'spis' | 'komunikace' | 'ukoly' | 'dokumenty' | 'vykaz'
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -159,7 +160,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const { userId, userName } = useAccountantUser()
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
     const urlTab = searchParams.get('tab')
-    if (urlTab && ['spis', 'ukoly', 'dokumenty', 'vykaz'].includes(urlTab)) return urlTab as TabKey
+    if (urlTab && ['spis', 'komunikace', 'ukoly', 'dokumenty', 'vykaz'].includes(urlTab)) return urlTab as TabKey
     return 'spis'
   })
   const [project, setProject] = useState<Project | null>(null)
@@ -197,6 +198,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [editDesc, setEditDesc] = useState('')
   const [editingOutcome, setEditingOutcome] = useState(false)
   const [editOutcome, setEditOutcome] = useState('')
+  const [projectChatUnread, setProjectChatUnread] = useState(0)
 
   useEffect(() => {
     if (!userId) return
@@ -234,6 +236,24 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   }, [params.id, userId])
 
   useEffect(() => { refreshCaseCounts() }, [refreshCaseCounts, activeTab])
+
+  // Fetch project chat unread count
+  useEffect(() => {
+    if (!userId) return
+    const fetchUnread = () => {
+      fetch(`/api/tasks/${params.id}/messages`, { headers: { 'x-user-id': userId } })
+        .then(r => r.json())
+        .then(data => {
+          const convs = data.conversations || []
+          const total = convs.reduce((sum: number, c: any) => sum + (c.unread_count || 0), 0)
+          setProjectChatUnread(total)
+        })
+        .catch(() => {})
+    }
+    fetchUnread()
+    const interval = setInterval(fetchUnread, 60_000)
+    return () => clearInterval(interval)
+  }, [params.id, userId])
 
   const fetchAggDocs = useCallback(() => {
     fetch(`/api/projects/${params.id}/aggregated-docs`, { headers: { 'x-user-id': userId || '' } })
@@ -577,6 +597,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto">
         {[
           { id: 'spis' as TabKey, label: 'Spis' },
+          { id: 'komunikace' as TabKey, label: `Komunikace${projectChatUnread > 0 ? ` (${projectChatUnread})` : ''}` },
           { id: 'ukoly' as TabKey, label: `Ukoly (${completedTasks.length}/${tasks.length})` },
           { id: 'dokumenty' as TabKey, label: `Dokumenty (${aggDocs.length})` },
           { id: 'vykaz' as TabKey, label: `Vykaz${aggTime.totals.total_minutes ? ` (${Math.round(aggTime.totals.total_minutes / 60 * 10) / 10}h)` : ''}` },
@@ -618,6 +639,22 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             refreshCaseCounts={refreshCaseCounts}
             isCase={project.is_case}
           />
+        )}
+
+        {activeTab === 'komunikace' && (
+          <div className="pt-2">
+            <ChatPanel
+              apiBase={`/api/tasks/${params.id}/messages`}
+              userId={userId || ''}
+              senderName={userName || 'Ucetni'}
+              senderType="accountant"
+              accentColor="blue"
+              height="450px"
+              contextId={params.id}
+              contextType="task"
+              placeholder="Napiste zpravu kolegum..."
+            />
+          </div>
         )}
 
         {activeTab === 'ukoly' && (

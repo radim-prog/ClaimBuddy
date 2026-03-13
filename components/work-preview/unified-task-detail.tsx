@@ -86,6 +86,7 @@ interface TimeTrackingEntry {
   prepaid_project_id?: string | null
   created_at: string
 }
+import { ChatPanel } from '@/components/chat/chat-panel'
 import { UrgencyBadge } from '@/components/tasks/UrgencyBadge'
 import { UrgencyActions, ManagerActions } from '@/components/tasks/UrgencyActions'
 import { fireTaskConfetti } from '@/components/gtd/confetti'
@@ -251,7 +252,7 @@ interface SpisEntry {
 
 type UnifiedEntryType = 'note' | 'communication' | 'document'
 
-type TabKey = 'spis' | 'ukoly' | 'dokumenty' | 'vykaz'
+type TabKey = 'spis' | 'komunikace' | 'ukoly' | 'dokumenty' | 'vykaz'
 
 // ============================================
 // HELPERS
@@ -308,7 +309,7 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
     const urlTab = urlSearchParams.get('tab')
-    if (urlTab && ['spis', 'ukoly', 'dokumenty', 'vykaz'].includes(urlTab)) return urlTab as TabKey
+    if (urlTab && ['spis', 'komunikace', 'ukoly', 'dokumenty', 'vykaz'].includes(urlTab)) return urlTab as TabKey
     return 'spis'
   })
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([])
@@ -345,6 +346,7 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
   const [spisTimeSpent, setSpisTimeSpent] = useState('')
   // Spis filter
   const [spisFilter, setSpisFilter] = useState<SpisFilterKey>('all')
+  const [taskChatUnread, setTaskChatUnread] = useState(0)
   const [showDocPicker, setShowDocPicker] = useState(false)
   const [autoOpenUpload, setAutoOpenUpload] = useState(0)
   const [editingTitle, setEditingTitle] = useState(false)
@@ -471,6 +473,24 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
         setProgressNotes(notes)
       })
       .catch(() => setProgressNotes([]))
+  }, [taskId, userId])
+
+  // Fetch task chat unread count
+  useEffect(() => {
+    if (!userId) return
+    const fetchUnread = () => {
+      fetch(`/api/tasks/${taskId}/messages`, { headers: { 'x-user-id': userId } })
+        .then(r => r.json())
+        .then(data => {
+          const convs = data.conversations || []
+          const total = convs.reduce((sum: number, c: any) => sum + (c.unread_count || 0), 0)
+          setTaskChatUnread(total)
+        })
+        .catch(() => {})
+    }
+    fetchUnread()
+    const interval = setInterval(fetchUnread, 60_000)
+    return () => clearInterval(interval)
   }, [taskId, userId])
 
   // ============================================
@@ -1042,6 +1062,7 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto">
         {[
           { id: 'spis' as TabKey, label: `Spis${(progressNotes.length + comments.length + timeline.length) ? ` (${progressNotes.length + comments.length + timeline.length})` : ''}` },
+          { id: 'komunikace' as TabKey, label: `Komunikace${taskChatUnread > 0 ? ` (${taskChatUnread})` : ''}` },
           ...((task.is_project || (task.subtasks && task.subtasks.length > 0)) ? [{ id: 'ukoly' as TabKey, label: `Ukoly${task.subtasks?.length ? ` (${task.subtasks.length})` : ''}` }] : []),
           { id: 'dokumenty' as TabKey, label: `Dokumenty (${linkedDocs.length})` },
           { id: 'vykaz' as TabKey, label: `Vykaz prace${timeEntries.length ? ` (${timeEntries.length})` : ''}` },
@@ -1081,6 +1102,21 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
             setNewComment={setNewComment}
             onAddComment={handleAddComment}
           />
+        )}
+        {activeTab === 'komunikace' && (
+          <div className="pt-2">
+            <ChatPanel
+              apiBase={`/api/tasks/${taskId}/messages`}
+              userId={userId}
+              senderName={userName || 'Ucetni'}
+              senderType="accountant"
+              accentColor="blue"
+              height="450px"
+              contextId={taskId}
+              contextType="task"
+              placeholder="Napiste zpravu kolegum..."
+            />
+          </div>
         )}
         {activeTab === 'ukoly' && (
           <UkolyTab
@@ -1580,6 +1616,22 @@ function SpisTab({ progressNotes, comments, timeline, linkedDocs, timeEntries, f
         </Button>
       </div>
 
+      {/* Quick comment — above timeline */}
+      <div className="border-b border-gray-100 dark:border-gray-800 pb-3 mb-2">
+        <div className="flex gap-2">
+          <Input
+            value={newComment}
+            onChange={e => setNewComment(e.target.value)}
+            placeholder="Rychly komentar..."
+            onKeyDown={e => { if (e.key === 'Enter' && newComment.trim()) onAddComment() }}
+            className="flex-1 rounded-lg"
+          />
+          <Button onClick={onAddComment} disabled={!newComment.trim()} size="sm" className="bg-blue-600 hover:bg-blue-700 rounded-lg">
+            <Send className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
       {/* Chronological feed */}
       {groupedDays.length === 0 ? (
         <div className="text-center py-12 text-gray-400 dark:text-gray-500">
@@ -1609,21 +1661,6 @@ function SpisTab({ progressNotes, comments, timeline, linkedDocs, timeEntries, f
         </div>
       )}
 
-      {/* Quick comment at bottom */}
-      <div className="border-t border-gray-100 dark:border-gray-800 pt-3 mt-2">
-        <div className="flex gap-2">
-          <Input
-            value={newComment}
-            onChange={e => setNewComment(e.target.value)}
-            placeholder="Rychly komentar..."
-            onKeyDown={e => { if (e.key === 'Enter' && newComment.trim()) onAddComment() }}
-            className="flex-1 rounded-lg"
-          />
-          <Button onClick={onAddComment} disabled={!newComment.trim()} size="sm" className="bg-blue-600 hover:bg-blue-700 rounded-lg">
-            <Send className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </div>
     </div>
   )
 }

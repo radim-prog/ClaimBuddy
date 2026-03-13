@@ -19,7 +19,9 @@ export type Message = {
 
 export type Conversation = {
   id: string
-  company_id: string
+  company_id: string | null
+  task_id?: string | null
+  type?: 'company_chat' | 'task_chat'
   subject: string
   status: 'open' | 'completed'
   last_message_at: string | null
@@ -28,6 +30,13 @@ export type Conversation = {
   started_by: 'client' | 'accountant'
   completed_at: string | null
   created_at: string
+}
+
+export type ConversationWithContext = Conversation & {
+  company_name?: string | null
+  task_title?: string | null
+  source_type: 'company' | 'task'
+  source_url: string
 }
 
 // Get all conversations for a company with unread counts
@@ -346,4 +355,253 @@ export async function markAsRead(messageId: string): Promise<void> {
     .update({ read: true, read_at: new Date().toISOString() })
     .eq('id', messageId)
   if (error) throw new Error(`Failed to mark message as read: ${error.message}`)
+}
+
+// ============================================
+// TASK CHAT FUNCTIONS
+// ============================================
+
+// Get all conversations for a task
+export async function getConversationsByTask(
+  taskId: string,
+  forUserId: string
+): Promise<Conversation[]> {
+  const { data: chats, error } = await supabaseAdmin
+    .from('chats')
+    .select('*')
+    .eq('task_id', taskId)
+    .eq('type', 'task_chat')
+    .order('last_message_at', { ascending: false, nullsFirst: false })
+
+  if (error) throw new Error(`Failed to fetch task conversations: ${error.message}`)
+  if (!chats || chats.length === 0) return []
+
+  const conversations: Conversation[] = await Promise.all(
+    chats.map(async (chat) => {
+      const { count } = await supabaseAdmin
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('chat_id', chat.id)
+        .neq('sender_id', forUserId)
+        .eq('read', false)
+
+      return {
+        id: chat.id,
+        company_id: chat.company_id,
+        task_id: chat.task_id,
+        type: 'task_chat' as const,
+        subject: chat.subject || 'Diskuze',
+        status: (chat.status || 'open') as 'open' | 'completed',
+        last_message_at: chat.last_message_at,
+        last_message_preview: chat.last_message_preview,
+        unread_count: count || 0,
+        started_by: (chat.started_by || 'accountant') as 'client' | 'accountant',
+        completed_at: chat.completed_at,
+        created_at: chat.created_at,
+      }
+    })
+  )
+
+  return conversations.sort((a, b) => {
+    if (a.status !== b.status) return a.status === 'open' ? -1 : 1
+    const aTime = a.last_message_at || a.created_at
+    const bTime = b.last_message_at || b.created_at
+    return new Date(bTime).getTime() - new Date(aTime).getTime()
+  })
+}
+
+// Create a new task conversation
+export async function createTaskConversation(data: {
+  task_id: string
+  subject: string
+  started_by: 'client' | 'accountant'
+}): Promise<Conversation> {
+  const { data: chat, error } = await supabaseAdmin
+    .from('chats')
+    .insert({
+      type: 'task_chat',
+      task_id: data.task_id,
+      company_id: null,
+      subject: data.subject,
+      status: 'open',
+      started_by: data.started_by,
+      participants: [],
+    })
+    .select('*')
+    .single()
+
+  if (error) throw new Error(`Failed to create task conversation: ${error.message}`)
+
+  return {
+    id: chat.id,
+    company_id: null,
+    task_id: chat.task_id,
+    type: 'task_chat',
+    subject: chat.subject,
+    status: 'open',
+    last_message_at: null,
+    last_message_preview: null,
+    unread_count: 0,
+    started_by: data.started_by,
+    completed_at: null,
+    created_at: chat.created_at,
+  }
+}
+
+// Get unread count for task chats
+export async function getUnreadCountByTask(
+  taskId: string,
+  forUserId: string
+): Promise<number> {
+  const { data: chats } = await supabaseAdmin
+    .from('chats')
+    .select('id')
+    .eq('task_id', taskId)
+    .eq('type', 'task_chat')
+
+  if (!chats || chats.length === 0) return 0
+
+  const chatIds = chats.map(c => c.id)
+  const { count, error } = await supabaseAdmin
+    .from('chat_messages')
+    .select('*', { count: 'exact', head: true })
+    .in('chat_id', chatIds)
+    .neq('sender_id', forUserId)
+    .eq('read', false)
+
+  if (error) return 0
+  return count || 0
+}
+
+// Mark all as read in a task chat (by user id, not role)
+export async function markAllAsReadInTaskChat(
+  chatId: string,
+  forUserId: string
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('chat_messages')
+    .update({ read: true, read_at: new Date().toISOString() })
+    .eq('chat_id', chatId)
+    .neq('sender_id', forUserId)
+    .eq('read', false)
+
+  if (error) throw new Error(`Failed to mark task messages as read: ${error.message}`)
+}
+
+// ============================================
+// AGGREGATED CONVERSATIONS (for overview page)
+// ============================================
+
+export async function getAllOpenConversations(
+  forUserId: string,
+  options?: { status?: 'open' | 'completed'; unread_only?: boolean; limit?: number; count_only?: boolean }
+): Promise<{ conversations: ConversationWithContext[]; total_unread: number }> {
+  let query = supabaseAdmin
+    .from('chats')
+    .select('*')
+    .order('last_message_at', { ascending: false, nullsFirst: false })
+
+  if (options?.status) {
+    query = query.eq('status', options.status)
+  }
+
+  if (options?.limit) {
+    query = query.limit(options.limit)
+  }
+
+  const { data: chats, error } = await query
+
+  if (error) throw new Error(`Failed to fetch conversations: ${error.message}`)
+  if (!chats || chats.length === 0) return { conversations: [], total_unread: 0 }
+
+  // Fetch company names for company_chat
+  const companyIds = [...new Set(chats.filter(c => c.company_id).map(c => c.company_id))]
+  let companyMap: Record<string, string> = {}
+  if (companyIds.length > 0) {
+    const { data: companies } = await supabaseAdmin
+      .from('companies')
+      .select('id, name')
+      .in('id', companyIds)
+    if (companies) {
+      companyMap = Object.fromEntries(companies.map(c => [c.id, c.name]))
+    }
+  }
+
+  // Fetch task titles for task_chat
+  const taskIds = [...new Set(chats.filter(c => c.task_id).map(c => c.task_id))]
+  let taskMap: Record<string, string> = {}
+  if (taskIds.length > 0) {
+    const { data: tasks } = await supabaseAdmin
+      .from('tasks')
+      .select('id, title')
+      .in('id', taskIds)
+    if (tasks) {
+      taskMap = Object.fromEntries(tasks.map(t => [t.id, t.title]))
+    }
+  }
+
+  let totalUnread = 0
+
+  const conversations: ConversationWithContext[] = await Promise.all(
+    chats.map(async (chat) => {
+      const isTaskChat = chat.type === 'task_chat'
+
+      // Unread: for task_chat use sender_id, for company_chat use sender_type
+      let unreadCount = 0
+      if (isTaskChat) {
+        const { count } = await supabaseAdmin
+          .from('chat_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('chat_id', chat.id)
+          .neq('sender_id', forUserId)
+          .eq('read', false)
+        unreadCount = count || 0
+      } else {
+        const { count } = await supabaseAdmin
+          .from('chat_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('chat_id', chat.id)
+          .eq('sender_type', 'client')
+          .eq('read', false)
+        unreadCount = count || 0
+      }
+
+      totalUnread += unreadCount
+
+      const companyName = chat.company_id ? (companyMap[chat.company_id] || null) : null
+      const taskTitle = chat.task_id ? (taskMap[chat.task_id] || null) : null
+
+      const sourceType = isTaskChat ? 'task' : 'company'
+      const sourceUrl = isTaskChat
+        ? `/accountant/tasks/${chat.task_id}?tab=komunikace`
+        : `/accountant/clients/${chat.company_id}?tab=messages`
+
+      return {
+        id: chat.id,
+        company_id: chat.company_id,
+        task_id: chat.task_id,
+        type: chat.type as 'company_chat' | 'task_chat',
+        subject: chat.subject || (isTaskChat ? 'Diskuze' : 'Obecna konverzace'),
+        status: (chat.status || 'open') as 'open' | 'completed',
+        last_message_at: chat.last_message_at,
+        last_message_preview: chat.last_message_preview,
+        unread_count: unreadCount,
+        started_by: (chat.started_by || 'accountant') as 'client' | 'accountant',
+        completed_at: chat.completed_at,
+        created_at: chat.created_at,
+        company_name: companyName,
+        task_title: taskTitle,
+        source_type: sourceType as 'company' | 'task',
+        source_url: sourceUrl,
+      }
+    })
+  )
+
+  // Filter unread_only after counting
+  let filtered = conversations
+  if (options?.unread_only) {
+    filtered = conversations.filter(c => c.unread_count > 0)
+  }
+
+  return { conversations: filtered, total_unread: totalUnread }
 }

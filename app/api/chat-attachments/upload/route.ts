@@ -13,11 +13,15 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
-    const companyId = formData.get('companyId') as string
+    const companyId = formData.get('companyId') as string | null
+    const taskId = formData.get('taskId') as string | null
     const chatId = formData.get('chatId') as string
 
-    if (!file || !companyId || !chatId) {
-      return NextResponse.json({ error: 'Missing required fields (file, companyId, chatId)' }, { status: 400 })
+    if (!file || !chatId) {
+      return NextResponse.json({ error: 'Missing required fields (file, chatId)' }, { status: 400 })
+    }
+    if (!companyId && !taskId) {
+      return NextResponse.json({ error: 'Either companyId or taskId is required' }, { status: 400 })
     }
 
     if (file.size > 20 * 1024 * 1024) {
@@ -27,7 +31,8 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer())
     const timestamp = Date.now()
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-    const storagePath = `chat-attachments/${companyId}/${timestamp}_${safeName}`
+    const folder = companyId || `task-${taskId}`
+    const storagePath = `chat-attachments/${folder}/${timestamp}_${safeName}`
 
     const { error: storageError } = await supabaseAdmin.storage
       .from('documents')
