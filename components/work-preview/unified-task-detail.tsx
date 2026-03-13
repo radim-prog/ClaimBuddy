@@ -64,6 +64,8 @@ import {
   ChevronDown,
   ChevronRight,
   Square,
+  Eye,
+  Download,
 } from 'lucide-react'
 import { GTDWizard } from '@/components/tasks/gtd-wizard'
 import { DocumentPicker } from '@/components/documents/document-picker'
@@ -161,6 +163,8 @@ interface LinkedDoc {
   id: string
   document_id: string
   link_type: string
+  created_at?: string
+  created_by_name?: string | null
   document: {
     id: string
     file_name: string
@@ -413,8 +417,21 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
         setTask(data.task)
         if (data.task.checklist_items) setChecklistItems(data.task.checklist_items)
         if (Array.isArray(data.task.task_data?.comments)) setComments(data.task.task_data.comments)
-        if (Array.isArray(data.task.task_data?.timeline)) {
-          setTimeline(data.task.task_data.timeline.sort((a: TimelineEvent, b: TimelineEvent) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
+        {
+          const existing: TimelineEvent[] = Array.isArray(data.task.task_data?.timeline) ? data.task.task_data.timeline : []
+          // Auto-inject "created" event if missing
+          const hasCreated = existing.some((e: TimelineEvent) => e.event_type === 'created')
+          if (!hasCreated && data.task.created_at) {
+            existing.unshift({
+              id: `tl-created-${data.task.id}`,
+              task_id: data.task.id,
+              event_type: 'created',
+              user_name: data.task.assigned_to_name || data.task.created_by_name || '',
+              description: data.task.is_project ? 'Projekt vytvoren' : 'Ukol vytvoren',
+              created_at: data.task.created_at,
+            })
+          }
+          setTimeline(existing.sort((a: TimelineEvent, b: TimelineEvent) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
         }
         if (data.task.time_entries) {
           setTimeEntries(data.task.time_entries.map((te: any) => ({
@@ -465,7 +482,24 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
         method: 'POST', headers: { 'Content-Type': 'application/json', 'x-user-id': userId, 'x-user-name': userName || 'Ucetni' },
         body: JSON.stringify({ document_ids: docIds, link_type: 'reference' }),
       })
-      if (res.ok) { toast.success(`Pripojeno ${docIds.length} dokumentu`); fetchLinkedDocs() }
+      if (res.ok) {
+        toast.success(`Pripojeno ${docIds.length} dokumentu`)
+        fetchLinkedDocs()
+        // Add timeline event for document attachment
+        setTimeline(prev => {
+          const newEvent: TimelineEvent = {
+            id: `tl-doc-${Date.now()}`,
+            task_id: taskId,
+            event_type: 'document',
+            user_name: userName,
+            description: `Pripojen${docIds.length > 1 ? 'o' : ''} ${docIds.length} dokument${docIds.length > 1 ? 'u' : ''}`,
+            created_at: new Date().toISOString(),
+          }
+          const next = [...prev, newEvent]
+          persistTaskData(taskData => ({ ...taskData, timeline: next }))
+          return next
+        })
+      }
       else toast.error('Chyba pri pripojovani')
     } catch { toast.error('Chyba pri pripojovani') }
   }
@@ -515,8 +549,32 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
     })
   }
 
-  const handleAcceptTask = () => { updateTask(prev => ({ ...prev, status: 'accepted' })); toast.success('Ukol prijat') }
-  const handleStartTask = () => { updateTask(prev => ({ ...prev, status: 'in_progress' })); toast.success('Ukol zahajen') }
+  const handleAcceptTask = () => {
+    updateTask(prev => ({ ...prev, status: 'accepted' }))
+    setTimeline(prev => {
+      const newEvent: TimelineEvent = {
+        id: `tl-acc-${Date.now()}`, task_id: taskId, event_type: 'accepted',
+        user_name: userName, description: 'Ukol prijat', created_at: new Date().toISOString(),
+      }
+      const next = [...prev, newEvent]
+      persistTaskData(taskData => ({ ...taskData, timeline: next }))
+      return next
+    })
+    toast.success('Ukol prijat')
+  }
+  const handleStartTask = () => {
+    updateTask(prev => ({ ...prev, status: 'in_progress' }))
+    setTimeline(prev => {
+      const newEvent: TimelineEvent = {
+        id: `tl-start-${Date.now()}`, task_id: taskId, event_type: 'started',
+        user_name: userName, description: 'Prace zahajena', created_at: new Date().toISOString(),
+      }
+      const next = [...prev, newEvent]
+      persistTaskData(taskData => ({ ...taskData, timeline: next }))
+      return next
+    })
+    toast.success('Ukol zahajen')
+  }
 
   const handleDelegateSubmit = () => {
     if (!delegateTo) { toast.error('Vyberte osobu'); return }
@@ -978,8 +1036,8 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
       {/* View Tabs */}
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto">
         {[
-          { id: 'spis' as TabKey, label: 'Spis' },
-          ...((task.is_project || (task.subtasks && task.subtasks.length > 0)) ? [{ id: 'ukoly' as TabKey, label: 'Ukoly' }] : []),
+          { id: 'spis' as TabKey, label: `Spis${(progressNotes.length + comments.length + timeline.length) ? ` (${progressNotes.length + comments.length + timeline.length})` : ''}` },
+          ...((task.is_project || (task.subtasks && task.subtasks.length > 0)) ? [{ id: 'ukoly' as TabKey, label: `Ukoly${checklistItems.length ? ` (${checklistItems.length})` : ''}` }] : []),
           { id: 'dokumenty' as TabKey, label: `Dokumenty (${linkedDocs.length})` },
           { id: 'vykaz' as TabKey, label: `Vykaz prace${timeEntries.length ? ` (${timeEntries.length})` : ''}` },
         ].map(tab => {
@@ -1317,7 +1375,7 @@ function buildSpisEntries(
     })
   }
   for (const d of linkedDocs) {
-    entries.push({ id: `doc-${d.id}`, type: 'document_added', user_name: '', created_at: '', data: d })
+    entries.push({ id: `doc-${d.id}`, type: 'document_added', user_name: d.created_by_name || '', created_at: d.created_at || '', data: d })
   }
   for (const te of timeEntries) {
     if (te.duration_minutes && te.duration_minutes > 0) {
@@ -1365,7 +1423,7 @@ function SpisTab({ progressNotes, comments, timeline, linkedDocs, timeEntries, f
   }, {})
   const groupedDays = Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a))
 
-  const renderEntry = (entry: SpisEntry) => {
+  const renderEntry = (entry: SpisEntry, isLast: boolean) => {
     const iconConfig = SPIS_ENTRY_ICON[entry.type]
     const Icon = entry.type === 'timeline_event'
       ? (TIMELINE_EVENT_CONFIG[(entry.data as TimelineEvent).event_type]?.icon || iconConfig.icon)
@@ -1378,76 +1436,117 @@ function SpisTab({ progressNotes, comments, timeline, linkedDocs, timeEntries, f
       : iconConfig.bg
 
     return (
-      <div key={entry.id} className="flex gap-3 py-2">
-        <div className={cn('w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5', iconBg)}>
+      <div key={entry.id} className="relative flex gap-3 group">
+        {/* Vertical connector line */}
+        {!isLast && (
+          <div className="absolute left-[13px] top-8 bottom-0 w-px bg-gray-200 dark:bg-gray-700/60" />
+        )}
+        {/* Icon node */}
+        <div className={cn('relative z-10 w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-1 ring-2 ring-white dark:ring-gray-900', iconBg)}>
           <Icon className={cn('h-3.5 w-3.5', iconColor)} />
         </div>
-        <div className="flex-1 min-w-0">
-          {/* Progress note */}
-          {entry.type === 'progress_note' && (() => {
-            const note = entry.data as ProgressNote
-            return (
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-emerald-700">Stav</span>
-                  {entry.duration_minutes && <Badge variant="outline" className="text-[10px]"><Timer className="h-3 w-3 mr-0.5" />{entry.duration_minutes} min</Badge>}
+        {/* Content card */}
+        <div className="flex-1 min-w-0 pb-5">
+          <div className="rounded-lg border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/40 px-3.5 py-2.5 shadow-sm hover:shadow-md transition-shadow">
+            {/* Progress note */}
+            {entry.type === 'progress_note' && (() => {
+              const note = entry.data as ProgressNote
+              return (
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Stav</span>
+                    {entry.duration_minutes && <Badge variant="outline" className="text-[10px] h-5"><Timer className="h-3 w-3 mr-0.5" />{entry.duration_minutes} min</Badge>}
+                  </div>
+                  <p className="text-sm text-gray-800 dark:text-gray-200">{note.current_status}</p>
+                  {note.problems && (
+                    <div className="flex items-start gap-1.5 text-sm text-orange-700 dark:text-orange-400">
+                      <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      <span>{note.problems}</span>
+                    </div>
+                  )}
+                  {note.next_steps && (
+                    <div className="flex items-start gap-1.5 text-sm text-blue-700 dark:text-blue-400">
+                      <ArrowRight className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      <span>{note.next_steps}</span>
+                    </div>
+                  )}
                 </div>
-                <p className="text-sm text-gray-800 dark:text-gray-200">{note.current_status}</p>
-                {note.problems && <p className="text-sm text-orange-700"><span className="font-medium">Problemy:</span> {note.problems}</p>}
-                {note.next_steps && <p className="text-sm text-blue-700"><span className="font-medium">Dalsi kroky:</span> {note.next_steps}</p>}
-              </div>
-            )
-          })()}
+              )
+            })()}
 
-          {/* Comment */}
-          {entry.type === 'comment' && (
-            <p className="text-sm text-gray-700 dark:text-gray-200">{(entry.data as Comment).text}</p>
-          )}
+            {/* Comment */}
+            {entry.type === 'comment' && (
+              <p className="text-sm text-gray-700 dark:text-gray-200">{(entry.data as Comment).text}</p>
+            )}
 
-          {/* Timeline event */}
-          {entry.type === 'timeline_event' && (() => {
-            const ev = entry.data as TimelineEvent
-            const config = TIMELINE_EVENT_CONFIG[ev.event_type]
-            return (
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className={cn('text-[10px]', config?.bgColor, config?.color)}>{config?.label}</Badge>
-                  {ev.duration_minutes && <Badge variant="outline" className="text-[10px]"><Timer className="h-3 w-3 mr-0.5" />{ev.duration_minutes} min</Badge>}
+            {/* Timeline event */}
+            {entry.type === 'timeline_event' && (() => {
+              const ev = entry.data as TimelineEvent
+              const config = TIMELINE_EVENT_CONFIG[ev.event_type]
+              return (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className={cn('text-[10px] h-5', config?.bgColor, config?.color)}>{config?.label}</Badge>
+                    {ev.duration_minutes && <Badge variant="outline" className="text-[10px] h-5"><Timer className="h-3 w-3 mr-0.5" />{ev.duration_minutes} min</Badge>}
+                    {ev.contact_name && (
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <Building2 className="h-3 w-3" />{ev.contact_name}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-800 dark:text-gray-200">{ev.description}</p>
                 </div>
-                <p className="text-sm font-medium">{ev.description}</p>
-                {ev.contact_name && <p className="text-xs text-gray-500 flex items-center gap-1"><Building2 className="h-3 w-3" />{ev.contact_name}</p>}
-              </div>
-            )
-          })()}
+              )
+            })()}
 
-          {/* Document added */}
-          {entry.type === 'document_added' && (() => {
-            const doc = entry.data as LinkedDoc
-            return (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium truncate">{doc.document?.file_name}</span>
-                <Badge variant="outline" className="text-[10px] shrink-0">{doc.document?.type}</Badge>
-              </div>
-            )
-          })()}
+            {/* Document added */}
+            {entry.type === 'document_added' && (() => {
+              const doc = entry.data as LinkedDoc
+              return (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium truncate text-gray-800 dark:text-gray-200">{doc.document?.file_name}</span>
+                  <Badge variant="outline" className="text-[10px] h-5 shrink-0">{doc.document?.type}</Badge>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); window.open(`/api/documents/${doc.document_id}/download?inline=true`, '_blank') }}
+                    className="ml-auto p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    title="Zobrazit"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      fetch(`/api/documents/${doc.document_id}/download`).then(r => r.json()).then(data => {
+                        if (data.url) { const a = document.createElement('a'); a.href = data.url; a.download = data.file_name || doc.document?.file_name || ''; a.click() }
+                      })
+                    }}
+                    className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    title="Stahnout"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )
+            })()}
 
-          {/* Work session */}
-          {entry.type === 'work_session' && (() => {
-            const te = entry.data as TimeTrackingEntry
-            return (
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-700"><Timer className="h-3 w-3 mr-0.5" />{te.duration_minutes} min</Badge>
-                {te.note && <span className="text-sm text-gray-600 dark:text-gray-300 italic truncate">{te.note}</span>}
-                {te.billable && <Badge className="bg-green-600 text-white text-[10px] px-1.5 py-0">Faktur.</Badge>}
-              </div>
-            )
-          })()}
+            {/* Work session */}
+            {entry.type === 'work_session' && (() => {
+              const te = entry.data as TimeTrackingEntry
+              return (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className="text-[10px] h-5 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300"><Timer className="h-3 w-3 mr-0.5" />{te.duration_minutes} min</Badge>
+                  {te.note && <span className="text-sm text-gray-600 dark:text-gray-300 italic truncate">{te.note}</span>}
+                  {te.billable && <Badge className="bg-green-600 text-white text-[10px] px-1.5 h-5">Faktur.</Badge>}
+                </div>
+              )
+            })()}
 
-          {/* Footer: user + time */}
-          <p className="text-xs text-gray-400 mt-0.5" suppressHydrationWarning>
-            {entry.user_name && <>{entry.user_name} &bull; </>}
-            {new Date(entry.created_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
-          </p>
+            {/* Footer: user + time */}
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5" suppressHydrationWarning>
+              {entry.user_name && <>{entry.user_name} &middot; </>}
+              {new Date(entry.created_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
         </div>
       </div>
     )
@@ -1456,46 +1555,49 @@ function SpisTab({ progressNotes, comments, timeline, linkedDocs, timeEntries, f
   return (
     <div className="space-y-4">
       {/* Filter chips + add button */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-1.5 flex-wrap">
         {SPIS_FILTER_CHIPS.map(chip => (
           <button
             key={chip.key}
             onClick={() => onFilterChange(chip.key)}
             className={cn(
-              'text-xs px-3 py-1.5 rounded-full border transition-colors',
+              'text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors',
               filter === chip.key
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                : 'bg-white dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:text-blue-600 dark:hover:text-blue-400'
             )}
           >
             {chip.label}
           </button>
         ))}
-        <Button size="sm" className="ml-auto bg-purple-600 hover:bg-purple-700 h-7 text-xs" onClick={onAddEntry}>
+        <Button size="sm" className="ml-auto bg-purple-600 hover:bg-purple-700 h-7 text-xs rounded-lg" onClick={onAddEntry}>
           <Plus className="h-3.5 w-3.5 mr-1" />Pridat zaznam
         </Button>
       </div>
 
       {/* Chronological feed */}
       {groupedDays.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-gray-400 dark:text-gray-500">
           <History className="h-10 w-10 mx-auto mb-3 opacity-30" />
           <p className="text-sm">Zatim zadne zaznamy v tomto filtru</p>
-          <Button size="sm" variant="outline" className="mt-3" onClick={onAddEntry}>
+          <Button size="sm" variant="outline" className="mt-3 rounded-lg" onClick={onAddEntry}>
             <Plus className="h-3.5 w-3.5 mr-1" />Pridat prvni zaznam
           </Button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {groupedDays.map(([day, dayEntries]) => (
             <div key={day}>
-              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-2">
-                <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
-                <span suppressHydrationWarning>{new Date(day).toLocaleDateString('cs-CZ', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+              {/* Day label */}
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider whitespace-nowrap" suppressHydrationWarning>
+                  {new Date(day).toLocaleDateString('cs-CZ', { weekday: 'short', day: 'numeric', month: 'short' })}
+                </span>
+                <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
               </div>
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {dayEntries.map(renderEntry)}
+              {/* Timeline entries */}
+              <div className="ml-0">
+                {dayEntries.map((entry, idx) => renderEntry(entry, idx === dayEntries.length - 1))}
               </div>
             </div>
           ))}
@@ -1503,16 +1605,16 @@ function SpisTab({ progressNotes, comments, timeline, linkedDocs, timeEntries, f
       )}
 
       {/* Quick comment at bottom */}
-      <div className="border-t pt-3 mt-4">
+      <div className="border-t border-gray-100 dark:border-gray-800 pt-3 mt-2">
         <div className="flex gap-2">
           <Input
             value={newComment}
             onChange={e => setNewComment(e.target.value)}
             placeholder="Rychly komentar..."
             onKeyDown={e => { if (e.key === 'Enter' && newComment.trim()) onAddComment() }}
-            className="flex-1"
+            className="flex-1 rounded-lg"
           />
-          <Button onClick={onAddComment} disabled={!newComment.trim()} size="sm" className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={onAddComment} disabled={!newComment.trim()} size="sm" className="bg-blue-600 hover:bg-blue-700 rounded-lg">
             <Send className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -1806,13 +1908,13 @@ function DokumentyTab({ linkedDocs, companyId, taskId, userId, userName, onAttac
         {linkedDocs.length === 0 ? (
           <div className="text-center py-8 text-gray-400"><FileText className="h-8 w-8 mx-auto mb-2 opacity-30" /><p className="text-sm">Zadne pripojene dokumenty</p></div>
         ) : (
-          <div className="divide-y">
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
             {linkedDocs.map(link => (
-              <div key={link.id} className="flex items-center gap-3 py-2.5">
+              <div key={link.id} className="flex items-center gap-3 py-2.5 group">
                 <FileText className="h-4 w-4 text-gray-400 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{link.document.file_name}</div>
-                  <div className="text-xs text-gray-500 flex gap-2">
+                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => window.open(`/api/documents/${link.document_id}/download?inline=true`, '_blank')}>
+                  <div className="text-sm font-medium truncate text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{link.document.file_name}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 flex gap-2">
                     <span>{link.document.period}</span>
                     {link.document.supplier_name && <span>{link.document.supplier_name}</span>}
                     {link.document.total_with_vat != null && <span>{link.document.total_with_vat.toLocaleString('cs-CZ')} Kc</span>}
@@ -1821,7 +1923,22 @@ function DokumentyTab({ linkedDocs, companyId, taskId, userId, userName, onAttac
                 <Badge variant="outline" className="text-[10px] shrink-0">
                   {link.document.type === 'bank_statement' ? 'Vypis' : link.document.type === 'expense_invoice' ? 'Naklad' : link.document.type === 'income_invoice' ? 'Prijem' : link.document.type}
                 </Badge>
-                <Button variant="ghost" size="sm" onClick={() => onDetach(link.document_id)} className="h-7 w-7 p-0 text-gray-400 hover:text-red-600">
+                <Button variant="ghost" size="sm" onClick={() => window.open(`/api/documents/${link.document_id}/download?inline=true`, '_blank')} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-600" title="Zobrazit">
+                  <Eye className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={async () => {
+                  const res = await fetch(`/api/documents/${link.document_id}/download`)
+                  if (res.ok) {
+                    const data = await res.json()
+                    const a = document.createElement('a')
+                    a.href = data.url
+                    a.download = data.file_name || link.document.file_name
+                    a.click()
+                  }
+                }} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-600" title="Stahnout">
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => onDetach(link.document_id)} className="h-7 w-7 p-0 text-gray-400 hover:text-red-600" title="Odpojit">
                   <X className="h-3 w-3" />
                 </Button>
               </div>
