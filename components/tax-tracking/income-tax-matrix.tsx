@@ -390,7 +390,7 @@ function CompanyRow({
     })
   }, [annualConfig, monthlyTotals])
 
-  const isFO = company.legal_form === 'fyzicka_osoba'
+  const isFO = company.legal_form === 'OSVČ'
   const taxBase = revenue - expenses
 
   // Calculate DPFO for FO companies
