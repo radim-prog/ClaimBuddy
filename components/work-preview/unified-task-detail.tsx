@@ -1042,7 +1042,7 @@ export function UnifiedTaskDetail({ taskId, userId, userName, onBack }: UnifiedT
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto">
         {[
           { id: 'spis' as TabKey, label: `Spis${(progressNotes.length + comments.length + timeline.length) ? ` (${progressNotes.length + comments.length + timeline.length})` : ''}` },
-          ...((task.is_project || (task.subtasks && task.subtasks.length > 0)) ? [{ id: 'ukoly' as TabKey, label: `Ukoly${checklistItems.length ? ` (${checklistItems.length})` : ''}` }] : []),
+          ...((task.is_project || (task.subtasks && task.subtasks.length > 0)) ? [{ id: 'ukoly' as TabKey, label: `Ukoly${task.subtasks?.length ? ` (${task.subtasks.length})` : ''}` }] : []),
           { id: 'dokumenty' as TabKey, label: `Dokumenty (${linkedDocs.length})` },
           { id: 'vykaz' as TabKey, label: `Vykaz prace${timeEntries.length ? ` (${timeEntries.length})` : ''}` },
         ].map(tab => {
