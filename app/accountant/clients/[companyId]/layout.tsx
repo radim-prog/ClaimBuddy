@@ -14,6 +14,7 @@ import {
   FolderOpen,
   Clock,
   Car,
+  Calculator,
   ClipboardList,
   MessageCircle,
   AlertTriangle,
@@ -297,6 +298,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
             { href: `${basePath}/documents`, label: 'Doklady', icon: FileText, match: (p: string) => p.includes('/documents'), badge: documentsBadge },
             { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files'), badge: filesBadge },
             { href: `${basePath}/travel`, label: 'Jízdy', icon: Car, match: (p: string) => p.includes('/travel') },
+            { href: `${basePath}/taxes`, label: 'Daně', icon: Calculator, match: (p: string) => p.includes('/taxes') },
             { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile'), badge: notificationsBadge },
           ]
 

@@ -16,7 +16,6 @@ import {
   Bell,
   CalendarDays,
   BarChart3,
-  BookOpen,
   Clock,
   DollarSign,
   Save,
@@ -39,7 +38,6 @@ import { CollapsibleSection } from '@/components/collapsible-section'
 import { HealthScoreCard } from '@/components/health-score/health-score-card'
 import { CompanyReports } from '@/components/company/company-reports'
 import { AccountantDeadlineCalendar } from '@/components/accountant/deadline-calendar'
-import { AnnualClosingSection } from '@/components/annual-closing-section'
 import { NotificationPanel } from '@/components/accountant/notification-panel'
 import { NotificationSettings } from '@/components/accountant/notification-settings'
 import { ActivityFeed } from '@/components/accountant/activity-feed'
@@ -68,7 +66,6 @@ const BASE_TILES: TileDefinition[] = [
   { id: 'insurance', label: 'Pojištění', defaultVisible: true },
   { id: 'travel-diary', label: 'Kniha jízd', defaultVisible: true },
   { id: 'deadlines', label: 'Termíny a výročí', defaultVisible: true },
-  { id: 'annual-closing', label: 'Roční uzávěrka', defaultVisible: true },
   { id: 'notifications', label: 'Notifikace klienta', defaultVisible: true },
   { id: 'activity', label: 'Historie aktivit', defaultVisible: true },
 ]
@@ -247,12 +244,6 @@ export default function ProfilePage() {
                   <h4 className="text-sm font-medium font-display text-gray-700 dark:text-gray-200 mb-4">Výročí z pojištění a majetku</h4>
                   <AnniversaryCalendar insurances={insurances} assets={assets} employees={employees} />
                 </div>
-              </CollapsibleSection>
-            )
-          case 'annual-closing':
-            return (
-              <CollapsibleSection id="annual-closing" title="Roční uzávěrka" icon={BookOpen} defaultOpen={false}>
-                <AnnualClosingSection companyId={companyId} companyName={company.name} />
               </CollapsibleSection>
             )
           case 'notifications':

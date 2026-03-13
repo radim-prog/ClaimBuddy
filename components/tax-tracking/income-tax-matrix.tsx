@@ -340,6 +340,16 @@ function ExpandedDetail({ config, rates, calc, onConfigChange, onSave, saving, i
                           />
                         </div>
                         <div>
+                          <label className="text-[10px] text-gray-500 block mb-0.5">DIP</label>
+                          <input
+                            type="number"
+                            value={config.dip_contributions || ''}
+                            onChange={e => onConfigChange('dip_contributions', parseFloat(e.target.value) || 0)}
+                            className="h-8 w-28 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div>
                           <label className="text-[10px] text-gray-500 block mb-0.5">Sporeni</label>
                           <input
                             type="number"
@@ -465,9 +475,12 @@ function CompanyRow({
     annualConfig?.annual_expenses ?? monthlyTotals?.expenses ?? 0
   )
 
+  const useProfileData = annualConfig?.use_profile_data ?? false
+
   // Local state for expanded detail config
   const [config, setConfig] = useState<Partial<TaxAnnualConfigRow>>({
     mortgage_interest: annualConfig?.mortgage_interest ?? 0,
+    dip_contributions: annualConfig?.dip_contributions ?? 0,
     savings_contributions: annualConfig?.savings_contributions ?? 0,
     other_deductions: annualConfig?.other_deductions ?? 0,
     taxpayer_discount: annualConfig?.taxpayer_discount ?? true,
@@ -494,6 +507,7 @@ function CompanyRow({
     initialExpRef.current = exp
     setConfig({
       mortgage_interest: annualConfig?.mortgage_interest ?? 0,
+      dip_contributions: annualConfig?.dip_contributions ?? 0,
       savings_contributions: annualConfig?.savings_contributions ?? 0,
       other_deductions: annualConfig?.other_deductions ?? 0,
       taxpayer_discount: annualConfig?.taxpayer_discount ?? true,
@@ -516,6 +530,7 @@ function CompanyRow({
     if (!isFO) return null
     const taxConfig: TaxAnnualConfig = {
       mortgage_interest: config.mortgage_interest ?? 0,
+      dip_contributions: config.dip_contributions ?? 0,
       savings_contributions: config.savings_contributions ?? 0,
       other_deductions: config.other_deductions ?? 0,
       taxpayer_discount: config.taxpayer_discount ?? true,
@@ -589,9 +604,9 @@ function CompanyRow({
 
   return (
     <>
-      <tr className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
+      <tr className={`border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 ${useProfileData ? 'border-l-3 border-l-purple-500' : ''}`}>
         <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
-          <Link href={`/accountant/clients/${company.id}`} className="hover:text-purple-600 transition-colors">
+          <Link href={`/accountant/clients/${company.id}${useProfileData ? '/taxes' : ''}`} className="hover:text-purple-600 transition-colors">
             <span className="font-semibold">{company.name}</span>
           </Link>
           {isFO && (
@@ -600,13 +615,17 @@ function CompanyRow({
           {isFO && isFlatTax && (
             <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-medium">P{config.flat_tax_band}</span>
           )}
+          {useProfileData && (
+            <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 font-medium">Z profilu</span>
+          )}
         </td>
         <td className="px-2 py-2">
           <input
             type="number"
             value={revenue || ''}
             onChange={e => setRevenue(parseFloat(e.target.value) || 0)}
-            className="w-full h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-right"
+            disabled={useProfileData}
+            className={`w-full h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-right ${useProfileData ? 'opacity-60 cursor-not-allowed' : ''}`}
             placeholder="0"
           />
         </td>
@@ -615,7 +634,8 @@ function CompanyRow({
             type="number"
             value={expenses || ''}
             onChange={e => setExpenses(parseFloat(e.target.value) || 0)}
-            className="w-full h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-right"
+            disabled={useProfileData}
+            className={`w-full h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent text-right ${useProfileData ? 'opacity-60 cursor-not-allowed' : ''}`}
             placeholder="0"
           />
         </td>

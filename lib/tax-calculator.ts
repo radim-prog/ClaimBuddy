@@ -25,6 +25,10 @@ export type TaxRates = {
   social_minimum_advance_secondary: number  // 1574
   health_minimum_advance_secondary: number  // 0
   social_max_assessment_base: number // 2110416
+  disability_credit_1: number     // 2520
+  disability_credit_2: number     // 5040
+  disability_credit_3: number     // 16140
+  student_credit: number          // 4020
   flat_tax_bands?: Record<number, FlatTaxBand>
 }
 
@@ -46,6 +50,10 @@ export const DEFAULT_TAX_RATES: TaxRates = {
   social_minimum_advance_secondary: 1574,
   health_minimum_advance_secondary: 0,
   social_max_assessment_base: 2110416,
+  disability_credit_1: 2520,
+  disability_credit_2: 5040,
+  disability_credit_3: 16140,
+  student_credit: 4020,
   flat_tax_bands: {
     1: { revenue_limit: 1000000, monthly_tax: 100, monthly_social: 6578, monthly_health: 3306 },
     2: { revenue_limit: 1500000, monthly_tax: 4963, monthly_social: 8191, monthly_health: 3591 },
@@ -55,6 +63,7 @@ export const DEFAULT_TAX_RATES: TaxRates = {
 
 export type TaxAnnualConfig = {
   mortgage_interest: number
+  dip_contributions: number
   savings_contributions: number
   other_deductions: number
   taxpayer_discount: boolean
@@ -189,7 +198,7 @@ export function calculateIncomeTax(
   const effectiveBase = taxBaseOverride ?? rawTaxBase
 
   // Deductions
-  const totalDeductions = config.mortgage_interest + config.savings_contributions + config.other_deductions
+  const totalDeductions = config.mortgage_interest + (config.dip_contributions || 0) + config.savings_contributions + config.other_deductions
   const adjustedBase = Math.max(0, effectiveBase - totalDeductions)
   // Round down to hundreds
   const roundedBase = Math.floor(adjustedBase / 100) * 100
@@ -268,7 +277,7 @@ export function calculateIncomeTax(
   if (config.initial_tax_base !== null && config.initial_tax_base !== undefined) {
     const initialCalc = calculateIncomeTax(
       { revenue: config.initial_tax_base + expenses, expenses },
-      { ...config, mortgage_interest: 0, savings_contributions: 0, other_deductions: 0, is_flat_tax: false },
+      { ...config, mortgage_interest: 0, dip_contributions: 0, savings_contributions: 0, other_deductions: 0, is_flat_tax: false },
       rates,
       config.initial_tax_base
     )
@@ -309,5 +318,121 @@ export function calculateIncomeTax(
     initialTaxBase: config.initial_tax_base,
     taxSavings,
     flatTax: null,
+  }
+}
+
+// Employee annual tax settlement (roční zúčtování zaměstnance)
+
+export type EmployeeTaxConfig = {
+  gross_income: number
+  mortgage_interest: number
+  dip_contributions: number
+  savings_contributions: number
+  life_insurance: number
+  other_deductions: number
+  taxpayer_discount: boolean
+  children_count: number
+  children_details: Array<{ order: number; ztpp: boolean }>
+  disability_credit: number // 0 = none, 1/2/3 = level
+  student: boolean
+  other_credits: number
+  tax_advances_paid: number
+}
+
+export type EmployeeTaxCalculation = {
+  grossIncome: number
+  totalDeductions: number
+  adjustedBase: number
+  roundedBase: number
+  taxRate1Amount: number
+  taxRate2Amount: number
+  grossTax: number
+  taxpayerCredit: number
+  childrenCredit: number
+  disabilityCredit: number
+  studentCredit: number
+  otherCredits: number
+  totalCredits: number
+  netTax: number
+  taxAdvancesPaid: number
+  taxDue: number
+}
+
+export function calculateEmployeeTax(
+  config: EmployeeTaxConfig,
+  rates: TaxRates
+): EmployeeTaxCalculation {
+  const grossIncome = config.gross_income
+
+  // Deductions
+  const totalDeductions = config.mortgage_interest + config.dip_contributions
+    + config.savings_contributions + config.life_insurance + config.other_deductions
+
+  const adjustedBase = Math.max(0, grossIncome - totalDeductions)
+  const roundedBase = Math.floor(adjustedBase / 100) * 100
+
+  // Progressive tax 15%/23%
+  let taxRate1Amount: number
+  let taxRate2Amount: number
+  if (roundedBase <= rates.income_tax_threshold) {
+    taxRate1Amount = roundedBase * rates.income_tax_rate_1
+    taxRate2Amount = 0
+  } else {
+    taxRate1Amount = rates.income_tax_threshold * rates.income_tax_rate_1
+    taxRate2Amount = (roundedBase - rates.income_tax_threshold) * rates.income_tax_rate_2
+  }
+  const grossTax = Math.round(taxRate1Amount + taxRate2Amount)
+
+  // Credits
+  const taxpayerCredit = config.taxpayer_discount ? rates.taxpayer_discount : 0
+
+  let childrenCredit = 0
+  if (config.children_details && config.children_details.length > 0) {
+    for (const child of config.children_details) {
+      let discount: number
+      if (child.order === 1) discount = rates.child_discount_1
+      else if (child.order === 2) discount = rates.child_discount_2
+      else discount = rates.child_discount_3_plus
+      if (child.ztpp) discount *= rates.child_ztpp_multiplier
+      childrenCredit += discount
+    }
+  } else if (config.children_count > 0) {
+    const count = Math.floor(config.children_count)
+    for (let i = 1; i <= count; i++) {
+      if (i === 1) childrenCredit += rates.child_discount_1
+      else if (i === 2) childrenCredit += rates.child_discount_2
+      else childrenCredit += rates.child_discount_3_plus
+    }
+  }
+
+  // Disability credit based on level
+  let disabilityCredit = 0
+  if (config.disability_credit === 1) disabilityCredit = rates.disability_credit_1
+  else if (config.disability_credit === 2) disabilityCredit = rates.disability_credit_2
+  else if (config.disability_credit === 3) disabilityCredit = rates.disability_credit_3
+
+  const studentCredit = config.student ? rates.student_credit : 0
+
+  const totalCredits = taxpayerCredit + childrenCredit + disabilityCredit + studentCredit + config.other_credits
+  const netTax = grossTax - totalCredits
+  const taxDue = netTax - config.tax_advances_paid
+
+  return {
+    grossIncome,
+    totalDeductions,
+    adjustedBase,
+    roundedBase,
+    taxRate1Amount: Math.round(taxRate1Amount),
+    taxRate2Amount: Math.round(taxRate2Amount),
+    grossTax,
+    taxpayerCredit,
+    childrenCredit,
+    disabilityCredit,
+    studentCredit,
+    otherCredits: config.other_credits,
+    totalCredits,
+    netTax,
+    taxAdvancesPaid: config.tax_advances_paid,
+    taxDue,
   }
 }
