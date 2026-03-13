@@ -186,7 +186,7 @@ export default function AnalyticsDashboard() {
       )}
 
       {/* KPI cisla */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         <KPICard
           title="Mesicni prijem"
           value={formatKc(data.currentMRR)}
@@ -236,26 +236,26 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Tento mesic + Letos celkem */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         <Card className="rounded-xl shadow-soft">
-          <CardContent className="pt-6">
-            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">Tento mesic</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                  <UserPlus className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <CardContent className="pt-4 pb-3">
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Tento mesic</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <UserPlus className="h-4 w-4 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">+{data.thisMonth.onboarded}</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">+{data.thisMonth.onboarded}</p>
                   <p className="text-xs text-gray-500">novych klientu</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                  <UserMinus className="h-5 w-5 text-red-600 dark:text-red-400" />
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <UserMinus className="h-4 w-4 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{data.thisMonth.churned}</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">{data.thisMonth.churned}</p>
                   <p className="text-xs text-gray-500">odeslych klientu</p>
                 </div>
               </div>
@@ -272,24 +272,24 @@ export default function AnalyticsDashboard() {
         </Card>
 
         <Card className="rounded-xl shadow-soft">
-          <CardContent className="pt-6">
-            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">Letos celkem</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                  <UserPlus className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <CardContent className="pt-4 pb-3">
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Letos celkem</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <UserPlus className="h-4 w-4 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">+{data.thisYear.onboarded}</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">+{data.thisYear.onboarded}</p>
                   <p className="text-xs text-gray-500">novych klientu</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                  <UserMinus className="h-5 w-5 text-red-600 dark:text-red-400" />
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <UserMinus className="h-4 w-4 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{data.thisYear.churned}</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">{data.thisYear.churned}</p>
                   <p className="text-xs text-gray-500">odeslych klientu</p>
                 </div>
               </div>
@@ -444,15 +444,15 @@ function KPICard({ title, value, subtitle, icon: Icon, color }: {
   }
   return (
     <Card className="rounded-xl shadow-soft">
-      <CardContent className="pt-5 pb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colorMap[color]}`}>
-            <Icon className="h-4 w-4" />
+      <CardContent className="pt-3 pb-3 px-4">
+        <div className="flex items-center gap-1.5 mb-1">
+          <div className={`w-6 h-6 rounded-md flex items-center justify-center ${colorMap[color]}`}>
+            <Icon className="h-3.5 w-3.5" />
           </div>
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{title}</span>
+          <span className="text-[11px] leading-tight font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{title}</span>
         </div>
-        <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-        {subtitle && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>}
+        <p className="text-lg font-bold text-gray-900 dark:text-white">{value}</p>
+        {subtitle && <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>}
       </CardContent>
     </Card>
   )

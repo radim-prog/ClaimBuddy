@@ -43,7 +43,7 @@ import { logout } from '@/app/auth/login/actions'
 import { SettingsProvider } from '@/lib/contexts/settings-context'
 import { AccountantUserProvider, useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { AttentionProvider, useAttention } from '@/lib/contexts/attention-context'
-import { QuickAddButton } from '@/components/gtd/quick-add-button'
+import { QuickCaptureButton } from '@/components/quick-capture'
 import { useInboxCount } from '@/components/gtd/use-inbox-count'
 import { KeyboardShortcuts } from '@/components/keyboard-shortcuts'
 import { WelcomeModal } from '@/components/accountant/welcome-modal'
@@ -613,10 +613,10 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           <GlobalDeadlineAlert />
         )}
 
-        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-24 md:pb-6 page-enter">
+        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-24 md:pb-6 page-enter max-w-screen-2xl mx-auto w-full">
           {children}
         </main>
-        <QuickAddButton />
+        <QuickCaptureButton />
         <KeyboardShortcuts />
         <WelcomeModal />
 
