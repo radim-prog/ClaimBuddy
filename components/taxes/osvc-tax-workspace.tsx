@@ -228,6 +228,18 @@ export function OsvcTaxWorkspace({ companyId, year, config, yearTotals, rates: r
               <span className="text-gray-300 dark:text-gray-600">→</span>
               <span>Upravený základ: <strong>{CZK(calc.adjustedBase)}</strong></span>
             </div>
+            {((taxConfig.dip_contributions + taxConfig.savings_contributions) > (rates.deduction_limit_savings ?? 48000)) && (
+              <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                DIP + Spoření ({CZK(taxConfig.dip_contributions + taxConfig.savings_contributions)}) překračuje limit {CZK(rates.deduction_limit_savings ?? 48000)}!
+              </div>
+            )}
+            {(taxConfig.mortgage_interest > (rates.deduction_limit_mortgage ?? 150000)) && (
+              <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                Hypotéka ({CZK(taxConfig.mortgage_interest)}) překračuje limit {CZK(rates.deduction_limit_mortgage ?? 150000)}!
+              </div>
+            )}
           </div>
 
           {/* SLEVY NA DANI */}

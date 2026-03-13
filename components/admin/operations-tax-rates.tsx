@@ -28,6 +28,13 @@ const RATE_LABELS: Record<string, string> = {
   social_minimum_advance_secondary: 'Min. záloha SP vedlejší (Kč)',
   health_minimum_advance_secondary: 'Min. záloha ZP vedlejší (Kč)',
   social_max_assessment_base: 'Max. vyměřovací základ soc. (Kč)',
+  disability_credit_1: 'Sleva invalidita 1./2. st. (Kč)',
+  disability_credit_2: 'Sleva invalidita 3. st. (Kč)',
+  disability_credit_3: 'Sleva ZTP/P (Kč)',
+  student_credit: 'Sleva na studenta (Kč)',
+  dppo_rate: 'Sazba DPPO',
+  deduction_limit_savings: 'Limit DIP+penzijko+živ.poj. (Kč)',
+  deduction_limit_mortgage: 'Limit hypotéka (Kč)',
 }
 
 const RATE_TYPES: Record<string, 'rate' | 'amount' | 'number'> = {
@@ -48,6 +55,13 @@ const RATE_TYPES: Record<string, 'rate' | 'amount' | 'number'> = {
   social_minimum_advance_secondary: 'amount',
   health_minimum_advance_secondary: 'amount',
   social_max_assessment_base: 'amount',
+  disability_credit_1: 'amount',
+  disability_credit_2: 'amount',
+  disability_credit_3: 'amount',
+  student_credit: 'amount',
+  dppo_rate: 'rate',
+  deduction_limit_savings: 'amount',
+  deduction_limit_mortgage: 'amount',
 }
 
 const CORE_RATE_KEYS = Object.keys(RATE_LABELS)

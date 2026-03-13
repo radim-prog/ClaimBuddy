@@ -67,6 +67,7 @@ export type EmployeeTaxReturnRow = {
   children_count: number
   children_details: Array<{ order: number; ztpp: boolean }>
   disability_credit: number
+  ztpp: boolean
   student: boolean
   other_credits: number
   tax_advances_paid: number

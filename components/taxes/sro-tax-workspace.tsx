@@ -23,8 +23,6 @@ type Props = {
   onConfigUpdate: (c: Partial<TaxAnnualConfigRow>) => void
 }
 
-const DPPO_RATE = 0.21
-
 export function SroTaxWorkspace({ companyId, company, year, config, yearTotals, rates: ratesProp, employees, onConfigUpdate }: Props) {
   const rates = ratesProp || DEFAULT_TAX_RATES
   const [localConfig, setLocalConfig] = useState<Partial<TaxAnnualConfigRow>>(config)
@@ -33,10 +31,11 @@ export function SroTaxWorkspace({ companyId, company, year, config, yearTotals, 
   const [employeeReturns, setEmployeeReturns] = useState<Record<string, Partial<EmployeeTaxReturnRow>>>({})
   const [returnsLoaded, setReturnsLoaded] = useState(false)
 
+  const dppoRate = rates.dppo_rate ?? 0.21
   const revenue = localConfig.annual_revenue ?? yearTotals.revenue
   const expenses = localConfig.annual_expenses ?? yearTotals.expenses
   const taxBase = revenue - expenses
-  const dppoTax = Math.round(Math.max(0, taxBase) * DPPO_RATE)
+  const dppoTax = Math.round(Math.max(0, taxBase) * dppoRate)
 
   // Load employee tax returns
   useEffect(() => {
@@ -151,7 +150,7 @@ export function SroTaxWorkspace({ companyId, company, year, config, yearTotals, 
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Základ ({(DPPO_RATE * 100).toFixed(0)}%)</label>
+            <label className="text-xs text-gray-500 block mb-1">Základ (sazba {(dppoRate * 100).toFixed(0)}%)</label>
             <div className="h-9 flex items-center text-sm font-semibold">{CZK(taxBase)}</div>
           </div>
           <div>

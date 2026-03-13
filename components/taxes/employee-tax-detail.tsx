@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Save, Loader2, Plus, X } from 'lucide-react'
+import { Save, Loader2, Plus, X, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { calculateEmployeeTax, DEFAULT_TAX_RATES, type TaxRates, type EmployeeTaxConfig } from '@/lib/tax-calculator'
 import type { EmployeeTaxReturnRow } from '@/lib/types/tax'
@@ -40,6 +40,7 @@ export function EmployeeTaxDetail({ companyId, employeeId, employeeName, year, d
     children_count: local.children_count || 0,
     children_details: local.children_details || [],
     disability_credit: local.disability_credit || 0,
+    ztpp: local.ztpp ?? false,
     student: local.student ?? false,
     other_credits: local.other_credits || 0,
     tax_advances_paid: local.tax_advances_paid || 0,
@@ -150,6 +151,18 @@ export function EmployeeTaxDetail({ companyId, employeeId, employeeName, year, d
             </div>
           ))}
         </div>
+        {((taxConfig.dip_contributions + taxConfig.savings_contributions + taxConfig.life_insurance) > (rates.deduction_limit_savings ?? 48000)) && (
+          <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg mt-2">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            DIP + Spoření + Živ. poj. ({CZK(taxConfig.dip_contributions + taxConfig.savings_contributions + taxConfig.life_insurance)}) překračuje limit {CZK(rates.deduction_limit_savings ?? 48000)}!
+          </div>
+        )}
+        {(taxConfig.mortgage_interest > (rates.deduction_limit_mortgage ?? 150000)) && (
+          <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg mt-1">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            Hypotéka ({CZK(taxConfig.mortgage_interest)}) překračuje limit {CZK(rates.deduction_limit_mortgage ?? 150000)}!
+          </div>
+        )}
       </div>
 
       {/* Slevy */}
@@ -160,10 +173,12 @@ export function EmployeeTaxDetail({ companyId, employeeId, employeeName, year, d
             <input type="checkbox" checked={local.taxpayer_discount ?? true} onChange={e => updateField('taxpayer_discount', e.target.checked)} className="rounded border-gray-300" />
             Poplatník
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={local.student ?? false} onChange={e => updateField('student', e.target.checked)} className="rounded border-gray-300" />
-            Student
-          </label>
+          {rates.student_credit > 0 && (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={local.student ?? false} onChange={e => updateField('student', e.target.checked)} className="rounded border-gray-300" />
+              Student ({CZK(rates.student_credit)})
+            </label>
+          )}
           <div>
             <label className="text-xs text-gray-500 block mb-1">Invalidita</label>
             <select
@@ -172,11 +187,14 @@ export function EmployeeTaxDetail({ companyId, employeeId, employeeName, year, d
               className="h-8 px-2 text-sm rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
             >
               <option value={0}>Žádná</option>
-              <option value={1}>1. stupeň ({CZK(rates.disability_credit_1)})</option>
-              <option value={2}>2. stupeň ({CZK(rates.disability_credit_2)})</option>
-              <option value={3}>3. stupeň ({CZK(rates.disability_credit_3)})</option>
+              <option value={1}>Invalidita 1./2. stupně ({CZK(rates.disability_credit_1)})</option>
+              <option value={2}>Invalidita 3. stupně ({CZK(rates.disability_credit_2)})</option>
             </select>
           </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={local.ztpp ?? false} onChange={e => updateField('ztpp', e.target.checked)} className="rounded border-gray-300" />
+            ZTP/P ({CZK(rates.disability_credit_3)})
+          </label>
           <div>
             <label className="text-xs text-gray-500 block mb-1">Ostatní slevy</label>
             <input type="number" value={local.other_credits || ''} onChange={e => updateField('other_credits', parseFloat(e.target.value) || 0)}
@@ -239,6 +257,7 @@ export function EmployeeTaxDetail({ companyId, employeeId, employeeName, year, d
         </div>
         <div className="text-xs text-gray-500 pt-1">
           Daň 15%: {CZK(calc.taxRate1Amount)} | 23%: {CZK(calc.taxRate2Amount)} | Slevy: -{CZK(calc.totalCredits)}
+          {calc.ztppCredit > 0 && ` (ZTP/P: ${CZK(calc.ztppCredit)})`}
         </div>
         <div className="grid grid-cols-3 gap-3 text-sm pt-2 border-t border-gray-100 dark:border-gray-700">
           <div>

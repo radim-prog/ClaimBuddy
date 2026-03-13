@@ -10,7 +10,7 @@ export type FlatTaxBand = {
 export type TaxRates = {
   income_tax_rate_1: number       // 0.15
   income_tax_rate_2: number       // 0.23
-  income_tax_threshold: number    // 1935552 (48x average salary)
+  income_tax_threshold: number    // 48× průměrná mzda (pro 2024: 48×40324 = 1935552)
   taxpayer_discount: number       // 30840
   child_discount_1: number        // 15204
   child_discount_2: number        // 22320
@@ -25,10 +25,13 @@ export type TaxRates = {
   social_minimum_advance_secondary: number  // 1574
   health_minimum_advance_secondary: number  // 0
   social_max_assessment_base: number // 2110416
-  disability_credit_1: number     // 2520
-  disability_credit_2: number     // 5040
-  disability_credit_3: number     // 16140
-  student_credit: number          // 4020
+  disability_credit_1: number     // Invalidita 1./2. stupně (2520)
+  disability_credit_2: number     // Invalidita 3. stupně (5040)
+  disability_credit_3: number     // ZTP/P (16140)
+  student_credit: number          // 0 (zrušeno od 2024, konfigurovatelné per-year pro starší roky)
+  dppo_rate: number               // 0.21 (21% od 2024, dříve 0.19)
+  deduction_limit_savings: number // 48000 (DIP+penzijko+živ.poj. celkem)
+  deduction_limit_mortgage: number // 150000 (hypotéka, smlouvy od 2021)
   flat_tax_bands?: Record<number, FlatTaxBand>
 }
 
@@ -53,7 +56,10 @@ export const DEFAULT_TAX_RATES: TaxRates = {
   disability_credit_1: 2520,
   disability_credit_2: 5040,
   disability_credit_3: 16140,
-  student_credit: 4020,
+  student_credit: 0,
+  dppo_rate: 0.21,
+  deduction_limit_savings: 48000,
+  deduction_limit_mortgage: 150000,
   flat_tax_bands: {
     1: { revenue_limit: 1000000, monthly_tax: 100, monthly_social: 6578, monthly_health: 3306 },
     2: { revenue_limit: 1500000, monthly_tax: 4963, monthly_social: 8191, monthly_health: 3591 },
@@ -333,7 +339,8 @@ export type EmployeeTaxConfig = {
   taxpayer_discount: boolean
   children_count: number
   children_details: Array<{ order: number; ztpp: boolean }>
-  disability_credit: number // 0 = none, 1/2/3 = level
+  disability_credit: number // 0 = none, 1 = invalidita 1./2. st., 2 = invalidita 3. st.
+  ztpp: boolean             // průkaz ZTP/P (nezávislý na disability_credit)
   student: boolean
   other_credits: number
   tax_advances_paid: number
@@ -350,6 +357,7 @@ export type EmployeeTaxCalculation = {
   taxpayerCredit: number
   childrenCredit: number
   disabilityCredit: number
+  ztppCredit: number
   studentCredit: number
   otherCredits: number
   totalCredits: number
@@ -405,15 +413,17 @@ export function calculateEmployeeTax(
     }
   }
 
-  // Disability credit based on level
+  // Disability credit: 1 = invalidita 1./2. st., 2 = invalidita 3. st.
   let disabilityCredit = 0
   if (config.disability_credit === 1) disabilityCredit = rates.disability_credit_1
   else if (config.disability_credit === 2) disabilityCredit = rates.disability_credit_2
-  else if (config.disability_credit === 3) disabilityCredit = rates.disability_credit_3
+
+  // ZTP/P: separate from disability, can combine
+  const ztppCredit = config.ztpp ? rates.disability_credit_3 : 0
 
   const studentCredit = config.student ? rates.student_credit : 0
 
-  const totalCredits = taxpayerCredit + childrenCredit + disabilityCredit + studentCredit + config.other_credits
+  const totalCredits = taxpayerCredit + childrenCredit + disabilityCredit + ztppCredit + studentCredit + config.other_credits
   const netTax = grossTax - totalCredits
   const taxDue = netTax - config.tax_advances_paid
 
@@ -428,6 +438,7 @@ export function calculateEmployeeTax(
     taxpayerCredit,
     childrenCredit,
     disabilityCredit,
+    ztppCredit,
     studentCredit,
     otherCredits: config.other_credits,
     totalCredits,
