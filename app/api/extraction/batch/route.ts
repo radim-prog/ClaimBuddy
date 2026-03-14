@@ -6,18 +6,36 @@ export const dynamic = 'force-dynamic'
 
 /**
  * POST /api/extraction/batch
- * Batch extract documents by IDs
- * Body: { documentIds: string[], fastMode?: boolean }
+ * Batch extract documents
+ * Body: { documentIds?: string[], companyIds?: string[], fastMode?: boolean }
+ * - documentIds: extract specific documents
+ * - companyIds: extract all unextracted documents for given companies
  */
 export async function POST(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { documentIds, fastMode } = await request.json()
+    const body = await request.json()
+    const { fastMode } = body
+    let { documentIds } = body
+    const { companyIds } = body
+
+    // If companyIds provided, resolve to unextracted document IDs
+    if (Array.isArray(companyIds) && companyIds.length > 0 && (!documentIds || documentIds.length === 0)) {
+      const { data: companyDocs } = await supabaseAdmin
+        .from('documents')
+        .select('id')
+        .in('company_id', companyIds)
+        .eq('status', 'uploaded')
+        .is('deleted_at', null)
+        .limit(50)
+
+      documentIds = (companyDocs || []).map((d: { id: string }) => d.id)
+    }
 
     if (!Array.isArray(documentIds) || documentIds.length === 0) {
-      return NextResponse.json({ error: 'documentIds array required' }, { status: 400 })
+      return NextResponse.json({ error: 'No documents to extract' }, { status: 400 })
     }
 
     if (documentIds.length > 50) {
