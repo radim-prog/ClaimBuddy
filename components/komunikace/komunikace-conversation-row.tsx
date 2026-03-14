@@ -17,6 +17,7 @@ export interface ConversationWithContext {
   last_message_preview: string | null
   unread_count: number
   company_name?: string | null
+  group_name?: string | null
   task_title?: string | null
   source_type: 'company' | 'task'
   source_url: string
@@ -131,53 +132,86 @@ export function groupByClient(convs: ConversationWithContext[]): ClientGroup[] {
   return groups
 }
 
-// ─── Conversation Row Component ───
+// ─── Display name helper ───
+
+function getDisplayName(conv: ConversationWithContext): string {
+  if (conv.source_type === 'task') return conv.task_title || 'Ukol'
+  if (conv.group_name) return conv.group_name
+  return conv.company_name || 'Neznamy klient'
+}
+
+function getSubName(conv: ConversationWithContext): string | null {
+  if (conv.source_type === 'task') return null
+  if (conv.group_name && conv.company_name) return conv.company_name
+  return null
+}
+
+// ─── Conversation Row Component — Email-like ───
 
 interface ConversationRowProps {
   conversation: ConversationWithContext
   isSelected?: boolean
   showSla?: boolean
-  compact?: boolean
   onClick: (id: string) => void
 }
 
-export function KomunikaceConversationRow({ conversation: conv, isSelected, showSla, compact, onClick }: ConversationRowProps) {
+export function KomunikaceConversationRow({ conversation: conv, isSelected, showSla, onClick }: ConversationRowProps) {
   const hasUnread = conv.unread_count > 0
   const sla = conv.waiting_since ? getWaitingDuration(conv.waiting_since) : null
+  const displayName = getDisplayName(conv)
+  const subName = getSubName(conv)
 
   return (
     <button
       onClick={() => onClick(conv.id)}
-      className={`w-full text-left px-3 ${compact ? 'py-2' : 'py-2.5'} border-b border-gray-50 dark:border-gray-800/50 transition-all ${
+      className={`w-full text-left px-4 py-2.5 border-b border-gray-100 dark:border-gray-800/50 transition-all ${
         isSelected
           ? 'bg-purple-50 dark:bg-purple-900/20 border-l-2 border-l-purple-600 dark:border-l-purple-400'
           : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-l-2 border-l-transparent'
       }`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          {!compact && conv.company_name && (
-            <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">
-              {conv.company_name}
+      <div className="flex items-start justify-between gap-3">
+        {/* Left: Client name, subject, preview */}
+        <div className="min-w-0 flex-1">
+          {/* Line 1: Client/group name + company sub-name */}
+          <div className="flex items-center gap-2">
+            <span className={`text-sm truncate ${hasUnread ? 'font-bold text-gray-900 dark:text-white' : 'font-semibold text-gray-700 dark:text-gray-300'}`}>
+              {displayName}
             </span>
-          )}
-          <span className={`text-sm truncate ${hasUnread ? 'font-semibold text-gray-900 dark:text-white' : 'font-medium text-gray-600 dark:text-gray-400'}`}>
+            {subName && (
+              <span className="text-xs text-gray-400 dark:text-gray-500 truncate shrink-0">
+                — {subName}
+              </span>
+            )}
+          </div>
+          {/* Line 2: Subject */}
+          <p className={`text-xs truncate mt-0.5 ${hasUnread ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
             {conv.subject}
-          </span>
+          </p>
+          {/* Line 3: Message preview */}
+          {conv.last_message_preview && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
+              {conv.last_message_preview}
+            </p>
+          )}
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          {showSla && sla && (
-            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${SLA_DOT[sla.level]}`} />
-          )}
-          {hasUnread && (
-            <Badge className="h-4 min-w-[16px] text-[10px] px-1 bg-red-500 hover:bg-red-500">{conv.unread_count}</Badge>
-          )}
-          <span className="text-[10px] text-gray-400">{formatTime(conv.last_message_at || conv.created_at)}</span>
+
+        {/* Right: SLA, unread, date */}
+        <div className="flex flex-col items-end gap-1 flex-shrink-0 pt-0.5">
+          <span className="text-[11px] text-gray-400">{formatTime(conv.last_message_at || conv.created_at)}</span>
+          <div className="flex items-center gap-1.5">
+            {showSla && sla && (
+              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${SLA_COLORS[sla.level]}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${SLA_DOT[sla.level]}`} />
+                {sla.text}
+              </span>
+            )}
+            {hasUnread && (
+              <Badge className="h-4 min-w-[16px] text-[10px] px-1 bg-red-500 hover:bg-red-500">{conv.unread_count}</Badge>
+            )}
+          </div>
         </div>
       </div>
-      {conv.last_message_preview && !compact && (
-        <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">{conv.last_message_preview}</p>
-      )}
     </button>
   )
 }

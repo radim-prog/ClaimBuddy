@@ -13,7 +13,7 @@ interface SwimlanesProps {
 
 export function KomunikaceSwimlanes({ needsResponse, awaitingClient, completed, onConversationClick, onShowAll }: SwimlanesProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="space-y-4 max-w-4xl">
       <KomunikaceSwimlaineTile
         category="needs_response"
         conversations={needsResponse}

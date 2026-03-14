@@ -536,13 +536,15 @@ export async function getAllOpenConversations(
   // Fetch company names for company_chat
   const companyIds = [...new Set(chats.filter(c => c.company_id).map(c => c.company_id))]
   let companyMap: Record<string, string> = {}
+  let companyGroupMap: Record<string, string | null> = {}
   if (companyIds.length > 0) {
     const { data: companies } = await supabaseAdmin
       .from('companies')
-      .select('id, name')
+      .select('id, name, group_name')
       .in('id', companyIds)
     if (companies) {
       companyMap = Object.fromEntries(companies.map(c => [c.id, c.name]))
+      companyGroupMap = Object.fromEntries(companies.map(c => [c.id, c.group_name || null]))
     }
   }
 
@@ -609,6 +611,7 @@ export async function getAllOpenConversations(
         completed_at: chat.completed_at,
         created_at: chat.created_at,
         company_name: companyName,
+        group_name: chat.company_id ? (companyGroupMap[chat.company_id] || null) : null,
         task_title: taskTitle,
         source_type: sourceType as 'company' | 'task',
         source_url: sourceUrl,
