@@ -164,54 +164,46 @@ export function KomunikaceConversationRow({ conversation: conv, isSelected, show
   return (
     <button
       onClick={() => onClick(conv.id)}
-      className={`w-full text-left px-4 py-2.5 border-b border-gray-100 dark:border-gray-800/50 transition-all ${
+      className={`w-full text-left px-4 py-2 border-b border-gray-100 dark:border-gray-800/50 transition-all ${
         isSelected
           ? 'bg-purple-50 dark:bg-purple-900/20 border-l-2 border-l-purple-600 dark:border-l-purple-400'
           : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 border-l-2 border-l-transparent'
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        {/* Left: Client name, subject, preview */}
-        <div className="min-w-0 flex-1">
-          {/* Line 1: Client/group name + company sub-name */}
-          <div className="flex items-center gap-2">
-            <span className={`text-sm truncate ${hasUnread ? 'font-bold text-gray-900 dark:text-white' : 'font-semibold text-gray-700 dark:text-gray-300'}`}>
-              {displayName}
+      {/* Line 1: Client · Company · Subject ··· SLA | unread | date */}
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span className={`shrink-0 text-sm ${hasUnread ? 'font-bold text-gray-900 dark:text-white' : 'font-semibold text-gray-700 dark:text-gray-300'}`}>
+          {displayName}
+        </span>
+        {subName && (
+          <>
+            <span className="text-gray-300 dark:text-gray-600 text-xs shrink-0">·</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{subName}</span>
+          </>
+        )}
+        <span className="text-gray-300 dark:text-gray-600 text-xs shrink-0">·</span>
+        <span className={`text-xs truncate min-w-0 ${hasUnread ? 'text-gray-600 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'}`}>
+          {conv.subject}
+        </span>
+        <div className="ml-auto flex items-center gap-1.5 shrink-0 pl-2">
+          {showSla && sla && (
+            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${SLA_COLORS[sla.level]}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${SLA_DOT[sla.level]}`} />
+              {sla.text}
             </span>
-            {subName && (
-              <span className="text-xs text-gray-400 dark:text-gray-500 truncate shrink-0">
-                — {subName}
-              </span>
-            )}
-          </div>
-          {/* Line 2: Subject */}
-          <p className={`text-xs truncate mt-0.5 ${hasUnread ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-            {conv.subject}
-          </p>
-          {/* Line 3: Message preview */}
-          {conv.last_message_preview && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
-              {conv.last_message_preview}
-            </p>
           )}
-        </div>
-
-        {/* Right: SLA, unread, date */}
-        <div className="flex flex-col items-end gap-1 flex-shrink-0 pt-0.5">
-          <span className="text-[11px] text-gray-400">{formatTime(conv.last_message_at || conv.created_at)}</span>
-          <div className="flex items-center gap-1.5">
-            {showSla && sla && (
-              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${SLA_COLORS[sla.level]}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${SLA_DOT[sla.level]}`} />
-                {sla.text}
-              </span>
-            )}
-            {hasUnread && (
-              <Badge className="h-4 min-w-[16px] text-[10px] px-1 bg-red-500 hover:bg-red-500">{conv.unread_count}</Badge>
-            )}
-          </div>
+          {hasUnread && (
+            <Badge className="h-4 min-w-[16px] text-[10px] px-1 bg-red-500 hover:bg-red-500">{conv.unread_count}</Badge>
+          )}
+          <span className="text-[11px] text-gray-400 w-10 text-right">{formatTime(conv.last_message_at || conv.created_at)}</span>
         </div>
       </div>
+      {/* Line 2: Message preview */}
+      {conv.last_message_preview && (
+        <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
+          {conv.last_message_preview}
+        </p>
+      )}
     </button>
   )
 }
