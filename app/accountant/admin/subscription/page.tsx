@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -17,10 +17,14 @@ import {
   Mail,
   ArrowRight,
   Star,
+  CreditCard,
+  Gift,
+  ExternalLink,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 
-type PlanTier = 'starter' | 'professional' | 'enterprise'
+type PlanTier = 'free' | 'starter' | 'professional' | 'enterprise'
 
 const PLANS: {
   id: PlanTier
@@ -36,6 +40,24 @@ const PLANS: {
   popular?: boolean
 }[] = [
   {
+    id: 'free',
+    name: 'Free',
+    price: 0,
+    yearlyPrice: 0,
+    icon: Gift,
+    description: 'Pro vyzkoušení a jednoduché účetnictví',
+    maxCompanies: 5,
+    maxUsers: 1,
+    features: [
+      'Seznam klientů',
+      'Časové výkazy',
+      'Přehled plateb',
+      'Termíny',
+      'Základní úkoly',
+    ],
+    support: 'Komunita',
+  },
+  {
     id: 'starter',
     name: 'Starter',
     price: 990,
@@ -45,12 +67,11 @@ const PLANS: {
     maxCompanies: 15,
     maxUsers: 2,
     features: [
+      'Vše z Free',
+      'Komunikace',
       'Matice měsíčních uzávěrek',
-      'Správa dokumentů',
-      'Základní úkoly',
       'Přehled DPH',
       'E-mail notifikace',
-      'Export CSV',
     ],
     support: 'E-mail (48h)',
   },
@@ -61,17 +82,15 @@ const PLANS: {
     yearlyPrice: 24900,
     icon: Crown,
     description: 'Pro profesionální účetní kanceláře',
-    maxCompanies: 60,
+    maxCompanies: 100,
     maxUsers: 5,
     features: [
       'Vše ze Starter',
-      'GTD s R-Tasks skóring',
-      'Fakturace klientů',
-      'Týmová spolupráce',
-      'Pokročilé reporty',
-      'Kimi AI vytěžování',
-      'Klávesové zkratky',
+      'Daň z příjmu',
+      'Skupiny klientů',
       'Projekty a fáze',
+      'Klientská fakturace',
+      'Klávesové zkratky',
     ],
     support: 'E-mail (24h) + telefon',
     popular: true,
@@ -87,12 +106,11 @@ const PLANS: {
     maxUsers: null,
     features: [
       'Vše z Professional',
-      'Neomezené firmy',
-      'Neomezení uživatelé',
+      'Vytěžování dokumentů (100/měs)',
+      'Případy a řízení',
+      'Pokročilá analytika',
       'API přístup',
-      'White-label branding',
       'SLA garance 99.9%',
-      'Dedikovaný onboarding',
       'Prioritní podpora',
     ],
     support: 'Prioritní (4h)',
@@ -107,11 +125,32 @@ const ADDONS = [
 
 export default function SubscriptionPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
-  const [currentPlan] = useState<PlanTier>('professional') // Simulated current plan
+  const { planTier, subscription, loading, refreshFeatures } = usePlanFeatures()
+  const currentPlan = (planTier || 'free') as PlanTier
+
+  // Handle success/cancel URL params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('success') === 'true') {
+      toast.success('Předplatné úspěšně aktivováno!')
+      refreshFeatures()
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+    if (params.get('cancelled') === 'true') {
+      toast.info('Platba byla zrušena.')
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [refreshFeatures])
 
   const handleSelectPlan = async (planId: PlanTier) => {
     if (planId === currentPlan) {
       toast.info('Toto je váš aktuální tarif.')
+      return
+    }
+
+    if (planId === 'free') {
+      toast.info('Pro přechod na Free kontaktujte podporu.')
       return
     }
 
@@ -126,12 +165,32 @@ export default function SubscriptionPage() {
       if (data.url) {
         window.location.href = data.url
       } else {
-        toast.info(data.error || `Tarif ${PLANS.find(p => p.id === planId)?.name} bude brzy k dispozici. Kontaktujte nás pro aktivaci.`)
+        toast.info(data.error || `Tarif ${PLANS.find(p => p.id === planId)?.name} bude brzy k dispozici.`)
       }
     } catch {
-      toast.info(`Tarif ${PLANS.find(p => p.id === planId)?.name} bude brzy k dispozici. Kontaktujte nás pro aktivaci.`)
+      toast.error('Chyba při vytváření platby. Zkuste to znovu.')
     }
   }
+
+  const handleManageSubscription = async () => {
+    try {
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST',
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        toast.info(data.error || 'Správa předplatného není k dispozici.')
+      }
+    } catch {
+      toast.error('Chyba při otevírání správy předplatného.')
+    }
+  }
+
+  const currentPlanData = PLANS.find(p => p.id === currentPlan)
+  const statusLabel = subscription?.status === 'trialing' ? 'Zkušební verze' : subscription?.status === 'past_due' ? 'Po splatnosti' : 'Aktivní'
+  const statusColor = subscription?.status === 'past_due' ? 'bg-red-500/20 text-red-100 border-red-400/50' : 'bg-green-500/20 text-green-100 border-green-400/50'
 
   return (
     <div className="space-y-8">
@@ -145,29 +204,52 @@ export default function SubscriptionPage() {
       {/* Current plan banner */}
       <Card className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-0">
         <CardContent className="py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-white/20 rounded-xl">
-                <Crown className="h-8 w-8" />
+                {currentPlanData?.icon ? <currentPlanData.icon className="h-8 w-8" /> : <Crown className="h-8 w-8" />}
               </div>
               <div>
                 <p className="text-sm text-white/80">Aktuální tarif</p>
-                <h3 className="text-2xl font-bold font-display">Professional</h3>
-                <p className="text-sm text-white/80 mt-1">
-                  Trial verze - 30 dní zdarma
-                </p>
+                <h3 className="text-2xl font-bold font-display">
+                  {loading ? 'Načítání...' : currentPlanData?.name || currentPlan}
+                </h3>
+                {subscription?.trial_end && (
+                  <p className="text-sm text-white/80 mt-1">
+                    Trial do {new Date(subscription.trial_end).toLocaleDateString('cs-CZ')}
+                  </p>
+                )}
+                {subscription?.current_period_end && !subscription?.trial_end && (
+                  <p className="text-sm text-white/80 mt-1">
+                    Další platba: {new Date(subscription.current_period_end).toLocaleDateString('cs-CZ')}
+                  </p>
+                )}
               </div>
             </div>
-            <div className="text-right">
-              <div className="flex items-center gap-2">
-                <Badge className="bg-green-500/20 text-green-100 border-green-400/50">
-                  <Zap className="h-3 w-3 mr-1" />
-                  Aktivní
-                </Badge>
-              </div>
-              <p className="text-sm text-white/80 mt-2">
-                60 firem · 5 uživatelů
-              </p>
+            <div className="text-right flex flex-col items-end gap-2">
+              <Badge className={statusColor}>
+                <Zap className="h-3 w-3 mr-1" />
+                {statusLabel}
+              </Badge>
+              {currentPlanData && (
+                <p className="text-sm text-white/80">
+                  {currentPlanData.maxCompanies ? `${currentPlanData.maxCompanies} firem` : 'Neomezeno firem'}
+                  {' · '}
+                  {currentPlanData.maxUsers ? `${currentPlanData.maxUsers} uživatelů` : 'Neomezeno uživatelů'}
+                </p>
+              )}
+              {currentPlan !== 'free' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleManageSubscription}
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-xs"
+                >
+                  <CreditCard className="h-3 w-3 mr-1" />
+                  Spravovat
+                  <ExternalLink className="h-3 w-3 ml-1" />
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>
@@ -201,11 +283,12 @@ export default function SubscriptionPage() {
       </div>
 
       {/* Pricing cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {PLANS.map((plan) => {
           const Icon = plan.icon
           const isCurrent = plan.id === currentPlan
-          const price = billingCycle === 'monthly' ? plan.price : Math.round(plan.yearlyPrice / 12)
+          const price = billingCycle === 'monthly' ? plan.price : (plan.yearlyPrice > 0 ? Math.round(plan.yearlyPrice / 12) : 0)
+          const isDowngrade = PLANS.findIndex(p => p.id === plan.id) < PLANS.findIndex(p => p.id === currentPlan)
 
           return (
             <Card
@@ -240,22 +323,20 @@ export default function SubscriptionPage() {
               </CardHeader>
 
               <CardContent className="flex-1 flex flex-col">
-                {/* Price */}
                 <div className="text-center mb-6">
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                      {price.toLocaleString('cs-CZ')}
+                      {price > 0 ? price.toLocaleString('cs-CZ') : 'Zdarma'}
                     </span>
-                    <span className="text-gray-500 dark:text-gray-400">Kč/měs</span>
+                    {price > 0 && <span className="text-gray-500 dark:text-gray-400">Kč/měs</span>}
                   </div>
-                  {billingCycle === 'yearly' && (
+                  {billingCycle === 'yearly' && plan.yearlyPrice > 0 && (
                     <p className="text-sm text-green-600 mt-1">
                       {plan.yearlyPrice.toLocaleString('cs-CZ')} Kč/rok
                     </p>
                   )}
                 </div>
 
-                {/* Limits */}
                 <div className="flex justify-center gap-4 mb-6 text-sm">
                   <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
                     <FolderOpen className="h-4 w-4" />
@@ -267,7 +348,6 @@ export default function SubscriptionPage() {
                   </div>
                 </div>
 
-                {/* Features */}
                 <ul className="space-y-2 mb-6 flex-1">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2 text-sm">
@@ -277,13 +357,11 @@ export default function SubscriptionPage() {
                   ))}
                 </ul>
 
-                {/* Support */}
                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-4">
                   <Shield className="h-3 w-3" />
                   Podpora: {plan.support}
                 </div>
 
-                {/* CTA */}
                 <Button
                   onClick={() => handleSelectPlan(plan.id)}
                   variant={isCurrent ? 'outline' : plan.popular ? 'default' : 'outline'}
@@ -292,14 +370,16 @@ export default function SubscriptionPage() {
                       ? 'bg-purple-600 hover:bg-purple-700 text-white'
                       : ''
                   }`}
-                  disabled={isCurrent}
+                  disabled={isCurrent || plan.id === 'free'}
                 >
                   {isCurrent ? (
                     'Aktuální tarif'
+                  ) : isDowngrade ? (
+                    'Kontaktovat podporu'
                   ) : (
                     <>
-                      Vybrat tarif
-                      <ArrowRight className="h-4 w-4 ml-2" />
+                      {plan.id === 'free' ? 'Free' : 'Vybrat tarif'}
+                      {plan.id !== 'free' && <ArrowRight className="h-4 w-4 ml-2" />}
                     </>
                   )}
                 </Button>

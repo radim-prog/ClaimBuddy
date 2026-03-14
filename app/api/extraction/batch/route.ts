@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { extractionQueue } from '@/lib/extraction-queue'
+import { checkFeatureAccess } from '@/lib/plan-gate'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,12 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Plan gate: extraction feature
+  const gate = await checkFeatureAccess(userId, 'extraction')
+  if (!gate.allowed) {
+    return NextResponse.json({ error: gate.reason }, { status: 403 })
+  }
 
   try {
     const body = await request.json()

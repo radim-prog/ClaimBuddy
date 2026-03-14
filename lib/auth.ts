@@ -62,6 +62,7 @@ export interface TokenPayload {
   id: string
   name: string
   role: UserRole
+  plan: string
   exp: number
 }
 
@@ -120,6 +121,7 @@ export async function authenticate(
     id: user.id,
     name: user.name,
     role: user.role,
+    plan: user.plan_tier || 'free',
   })
 
   return {

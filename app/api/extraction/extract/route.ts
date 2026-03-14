@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { extractionQueue } from '@/lib/extraction-queue'
+import { checkFeatureAccess } from '@/lib/plan-gate'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +14,12 @@ const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image
 export async function POST(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Plan gate: extraction feature
+  const gate = await checkFeatureAccess(userId, 'extraction')
+  if (!gate.allowed) {
+    return NextResponse.json({ error: gate.reason }, { status: 403 })
+  }
 
   try {
     const formData = await request.formData()

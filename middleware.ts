@@ -55,6 +55,7 @@ interface TokenPayload {
   id: string
   name: string
   role: string
+  plan?: string
   exp: number
 }
 
@@ -202,6 +203,7 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-user-id', user.id)
   requestHeaders.set('x-user-name', user.name)
   requestHeaders.set('x-user-role', user.role)
+  requestHeaders.set('x-user-plan', user.plan || 'free')
 
   // Forward impersonation context if active
   const impersonateCookie = request.cookies.get('impersonate_company')?.value

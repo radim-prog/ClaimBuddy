@@ -52,21 +52,22 @@ import { KeyboardShortcuts } from '@/components/keyboard-shortcuts'
 import { WelcomeModal } from '@/components/accountant/welcome-modal'
 import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
 import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-context'
-import { BookOpen } from 'lucide-react'
+import { BookOpen, Lock } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
+import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 
 const navigation = [
   { name: 'Přehled', href: '/accountant/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
   { name: 'Klienti', href: '/accountant/clients', icon: Users, badge: 'attention' as const, tourId: 'nav-clients' },
-  { name: 'Komunikace', href: '/accountant/komunikace', icon: MessageCircle, badge: 'messages' as const },
+  { name: 'Komunikace', href: '/accountant/komunikace', icon: MessageCircle, badge: 'messages' as const, feature: 'messages' },
   { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'] },
-  { name: 'Vytěžování', href: '/accountant/extraction', icon: ScanLine, activeMatch: ['/accountant/extraction'] },
+  { name: 'Vytěžování', href: '/accountant/extraction', icon: ScanLine, activeMatch: ['/accountant/extraction'], feature: 'extraction' },
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
 ]
 
 const adminNavigation = [
-  { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics'] },
-  { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices'], tourId: 'nav-invoicing' },
+  { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics'], feature: 'analytics' },
+  { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices'], tourId: 'nav-invoicing', feature: 'client_invoicing' },
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings, tourId: 'nav-settings' },
   { name: 'Administrace', href: '/accountant/admin', icon: Shield },
 ]
@@ -100,6 +101,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const inboxCount = useInboxCount()
   const { totals: attentionTotals } = useAttention()
   const { needsResponseCount } = useUnreadMessages()
+  const { isLocked } = usePlanFeatures()
   // Attention for Klienti badge: exclude unread_messages (shown on Komunikace instead)
   const clientsAttentionCount = attentionTotals.total - attentionTotals.unread_messages
   const [collapsed, setCollapsed] = useState(false)
@@ -167,21 +169,25 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                   ? item.activeMatch.some(p => pathname.startsWith(p))
                   : pathname === item.href || pathname.startsWith(item.href + '/')
                 const Icon = item.icon
+                const locked = item.feature ? isLocked(item.feature) : false
                 const linkEl = (
                   <Link
-                    href={item.href}
+                    href={locked ? '/accountant/admin/subscription' : item.href}
                     data-tour={item.tourId}
                     className={`
                       group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
-                      ${isActive
-                        ? 'bg-white/[0.08] text-white nav-active-indicator'
-                        : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
+                      ${locked
+                        ? 'text-white/30 hover:bg-white/[0.03] cursor-default'
+                        : isActive
+                          ? 'bg-white/[0.08] text-white nav-active-indicator'
+                          : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
                       }
                     `}
                   >
                     <span className={`flex items-center ${collapsed ? 'relative' : ''}`}>
-                      <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-violet-300' : 'text-white/40 group-hover:text-white/65'}`} />
+                      <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${locked ? 'text-white/20' : isActive ? 'text-violet-300' : 'text-white/40 group-hover:text-white/65'}`} />
                       {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+                      {!collapsed && locked && <Lock className="ml-1.5 h-3 w-3 text-white/25" />}
                       {/* Badges on icon when collapsed */}
                       {collapsed && item.badge === 'dynamic' && inboxCount > 0 && (
                         <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-violet-400 text-white rounded-full">
@@ -252,21 +258,25 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                       ? item.activeMatch.some(p => pathname.startsWith(p))
                       : pathname === item.href || pathname.startsWith(item.href + '/')
                     const Icon = item.icon
+                    const adminLocked = item.feature ? isLocked(item.feature) : false
                     const adminLink = (
                       <Link
-                        href={item.href}
+                        href={adminLocked ? '/accountant/admin/subscription' : item.href}
                         data-tour={item.tourId}
                         className={`
                           group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
-                          ${isActive
-                            ? 'bg-white/[0.08] text-white nav-active-indicator'
-                            : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
+                          ${adminLocked
+                            ? 'text-white/30 hover:bg-white/[0.03]'
+                            : isActive
+                              ? 'bg-white/[0.08] text-white nav-active-indicator'
+                              : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
                           }
                         `}
                       >
                         <span className="flex items-center">
-                          <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 ${isActive ? 'text-violet-300' : 'text-white/40'}`} />
+                          <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 ${adminLocked ? 'text-white/20' : isActive ? 'text-violet-300' : 'text-white/40'}`} />
                           {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+                          {!collapsed && adminLocked && <Lock className="ml-1.5 h-3 w-3 text-white/25" />}
                         </span>
                         {!collapsed && isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
                       </Link>

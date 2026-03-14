@@ -16,6 +16,8 @@ export interface StoredUser {
   permissions: UserPermissions
   compensation_type: 'hourly' | 'monthly'
   compensation_amount: number
+  plan_tier: string
+  stripe_customer_id: string | null
   created_at: string
   updated_at: string
 }
