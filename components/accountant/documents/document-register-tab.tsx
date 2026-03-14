@@ -19,7 +19,6 @@ import {
   TrendingUp,
   Download,
   ScanLine,
-  Zap,
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type {
@@ -40,8 +39,8 @@ import {
 import { DocumentRegisterFilters } from './document-register-filters'
 import { DocumentDetailPanel } from './document-detail-panel'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
-import type { ExtractionStep } from '@/lib/extraction-queue'
-import { STEP_LABELS } from '@/lib/extraction-queue'
+import type { ExtractionStep } from '@/lib/extraction-types'
+import { STEP_LABELS } from '@/lib/extraction-types'
 
 type QueueJobInfo = {
   documentId: string

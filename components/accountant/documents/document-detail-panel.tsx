@@ -22,8 +22,8 @@ import {
   Eye,
   Clock,
 } from 'lucide-react'
-import type { ExtractionStep } from '@/lib/extraction-queue'
-import { STEP_LABELS } from '@/lib/extraction-queue'
+import type { ExtractionStep } from '@/lib/extraction-types'
+import { STEP_LABELS } from '@/lib/extraction-types'
 import { cn, formatCurrency, formatDate } from '@/lib/utils'
 import type { DocumentRegisterEntry } from '@/lib/types/document-register'
 import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS, DOCUMENT_STATUS_COLORS } from '@/lib/types/document-register'
