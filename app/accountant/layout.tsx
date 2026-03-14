@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   BarChart3,
   MessageCircle,
+  ScanLine,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -59,6 +60,7 @@ const navigation = [
   { name: 'Klienti', href: '/accountant/clients', icon: Users, badge: 'attention' as const, tourId: 'nav-clients' },
   { name: 'Komunikace', href: '/accountant/komunikace', icon: MessageCircle, badge: 'messages' as const },
   { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'] },
+  { name: 'Vytěžování', href: '/accountant/extraction', icon: ScanLine, activeMatch: ['/accountant/extraction'] },
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
 ]
 
@@ -442,7 +444,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-border/50 safe-area-bottom">
         <nav className="flex items-center justify-around px-1 py-1">
-          {navigation.slice(0, 4).map((item) => {
+          {navigation.slice(0, 5).map((item) => {
             const isActive = item.activeMatch
               ? item.activeMatch.some(p => pathname.startsWith(p))
               : pathname === item.href || pathname.startsWith(item.href + '/')

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { extractInvoiceFromFile, isKimiAIAvailable } from '@/lib/kimi-ai'
+import { extractInvoiceFast } from '@/lib/ai-extractor'
 import { mapKimiToExtractedData } from '@/components/extraction/types'
 
 export const dynamic = 'force-dynamic'
@@ -14,13 +14,6 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    if (!isKimiAIAvailable()) {
-      return NextResponse.json(
-        { error: 'OCR not configured', message: 'MOONSHOT_API_KEY not set' },
-        { status: 503 }
-      )
-    }
-
     const formData = await request.formData()
     const file = formData.get('file') as File | null
 
@@ -37,8 +30,8 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // 3-round extraction
-    const invoice = await extractInvoiceFromFile(buffer, file.name, file.type)
+    // Fast extraction (rounds 1+2 only, no verification) for client self-service
+    const { invoice } = await extractInvoiceFast(buffer, file.name, file.type)
 
     // Map to frontend ExtractedData format
     const extractedData = mapKimiToExtractedData(invoice)

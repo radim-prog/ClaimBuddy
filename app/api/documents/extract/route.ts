@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { extractInvoiceFromFile, ExtractedInvoice, isKimiAIAvailable } from '@/lib/kimi-ai'
+import { extractInvoice, type ExtractedInvoice } from '@/lib/ai-extractor'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,16 +19,6 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now()
 
   try {
-    if (!isKimiAIAvailable()) {
-      return NextResponse.json(
-        {
-          error: 'Kimi AI not configured',
-          message: 'MOONSHOT_API_KEY not configured. Set the environment variable to enable OCR extraction.'
-        },
-        { status: 503 }
-      )
-    }
-
     let formData: FormData
     try {
       formData = await request.formData()
@@ -78,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Extract API] Processing file: ${file.name} (${file.type}, ${file.size} bytes)`)
 
-    const invoice: ExtractedInvoice = await extractInvoiceFromFile(
+    const invoice: ExtractedInvoice = await extractInvoice(
       buffer,
       file.name,
       file.type
@@ -100,16 +90,6 @@ export async function POST(request: NextRequest) {
     console.error('[Extract API] Extraction failed:', error)
 
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-
-    if (errorMessage.includes('MOONSHOT_API_KEY')) {
-      return NextResponse.json(
-        {
-          error: 'Kimi AI not configured',
-          message: errorMessage
-        },
-        { status: 503 }
-      )
-    }
 
     return NextResponse.json(
       {
