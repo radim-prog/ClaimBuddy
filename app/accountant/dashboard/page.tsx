@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { PaymentMatrix } from '@/components/payment-tracking/payment-matrix'
 import { VatMatrix } from '@/components/tax-tracking/vat-matrix'
 import { IncomeTaxMatrix } from '@/components/tax-tracking/income-tax-matrix'
+import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
 
 type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
 
@@ -317,55 +318,43 @@ const StatusCell = React.memo(function StatusCell({
 
 // Dashboard tiles removed — using direct compact layout
 
+type DashboardData = {
+  matrix: MatrixData
+  todayTasks: GtdTask[]
+  timeSummary: TimeSummary | null
+}
+
 export default function AccountantDashboard() {
-  const [data, setData] = useState<MatrixData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [selectedYear, setSelectedYear] = useState(currentYear)
   const [filter, setFilter] = useState<'all' | 'missing' | 'uploaded'>('all')
   const [closureModalOpen, setClosureModalOpen] = useState(false)
   const [selectedClosure, setSelectedClosure] = useState<MonthlyClosure | null>(null)
   const [selectedCompanyName, setSelectedCompanyName] = useState('')
-  const [todayTasks, setTodayTasks] = useState<GtdTask[]>([])
-  const [timeSummary, setTimeSummary] = useState<TimeSummary | null>(null)
-  // settings removed — closureDeadlineDay no longer used here
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await fetch('/api/accountant/matrix')
-        if (!response.ok) {
-          throw new Error('Failed to fetch data')
-        }
-        const json = await response.json()
-        setData(json)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [])
-
-  // Fetch today's tasks
-  useEffect(() => {
+  const fetchDashboard = useCallback(async (): Promise<DashboardData> => {
     const today = new Date().toISOString().split('T')[0]
-    fetch(`/api/tasks?status=inbox,next_action,waiting_for&due_date_to=${today}&sort_by=due_date&sort_order=asc&page_size=20`)
-      .then(r => r.ok ? r.json() : null)
-      .then(json => { if (json?.tasks) setTodayTasks(json.tasks) })
-      .catch(() => {})
+    const period = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
+    const [matrixRes, tasksRes, timeRes] = await Promise.all([
+      fetch('/api/accountant/matrix'),
+      fetch(`/api/tasks?status=inbox,next_action,waiting_for&due_date_to=${today}&sort_by=due_date&sort_order=asc&page_size=20`),
+      fetch(`/api/time-entries/summary?period=${period}`),
+    ])
+    const [matrix, tasksJson, timeJson] = await Promise.all([
+      matrixRes.ok ? matrixRes.json() : null,
+      tasksRes.ok ? tasksRes.json() : null,
+      timeRes.ok ? timeRes.json() : null,
+    ])
+    return {
+      matrix: matrix || { companies: [], closures: [], stats: { total: 0, missing: 0, uploaded: 0, approved: 0 } },
+      todayTasks: tasksJson?.tasks || [],
+      timeSummary: timeJson || null,
+    }
   }, [])
 
-  // Fetch time summary for current month
-  useEffect(() => {
-    const period = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
-    fetch(`/api/time-entries/summary?period=${period}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(json => { if (json) setTimeSummary(json) })
-      .catch(() => {})
-  }, [])
+  const { data: dashboardData, loading, refresh } = useCachedFetch('dashboard', fetchDashboard)
+  const data = dashboardData?.matrix ?? null
+  const todayTasks = dashboardData?.todayTasks ?? []
+  const timeSummary = dashboardData?.timeSummary ?? null
 
   const handleCellClick = useCallback((closure: MonthlyClosure, companyName: string) => {
     setSelectedClosure(closure)
@@ -373,17 +362,9 @@ export default function AccountantDashboard() {
     setClosureModalOpen(true)
   }, [])
 
-  const handleClosureSave = useCallback((updated: any) => {
-    if (!data) return
-    setData({
-      ...data,
-      closures: data.closures.map(c =>
-        c.id === updated.id
-          ? { ...c, ...updated }
-          : c
-      ),
-    })
-  }, [data])
+  const handleClosureSave = useCallback(() => {
+    refresh()
+  }, [refresh])
 
   // Derived data - MUST be before conditional returns to keep hook order stable
   const allCompanies = data?.companies ?? []
@@ -700,35 +681,7 @@ export default function AccountantDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Načítám Master Matici...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error || !data) {
-    return (
-      <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 p-4">
-        <div className="flex items-start">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3">
-            <p className="text-sm text-red-700 dark:text-red-400">
-              Nepodařilo se načíst data: {error || 'Neznámá chyba'}
-            </p>
-            <button
-              onClick={() => { setError(null); setLoading(true); fetch('/api/accountant/matrix').then(r => r.json()).then(setData).catch(e => setError(e.message)).finally(() => setLoading(false)) }}
-              className="mt-2 text-sm text-red-600 dark:text-red-400 underline hover:text-red-800 dark:hover:text-red-300"
-            >
-              Zkusit znovu
-            </button>
-          </div>
-        </div>
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
       </div>
     )
   }

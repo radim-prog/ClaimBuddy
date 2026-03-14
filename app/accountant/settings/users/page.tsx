@@ -247,15 +247,15 @@ export default function UserManagementPage() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'admin':
-        return <Badge className="bg-purple-600 text-white"><Shield className="h-3 w-3 mr-1" />Admin</Badge>
+        return <Badge className="bg-purple-600 text-white text-[10px] h-5 shrink-0">Admin</Badge>
       case 'accountant':
-        return <Badge className="bg-purple-600 text-white"><User className="h-3 w-3 mr-1" />Účetní</Badge>
+        return <Badge className="bg-purple-600 text-white text-[10px] h-5 shrink-0">Účetní</Badge>
       case 'assistant':
-        return <Badge className="bg-gray-600 text-white"><User className="h-3 w-3 mr-1" />Asistent</Badge>
+        return <Badge className="bg-gray-600 text-white text-[10px] h-5 shrink-0">Asistent</Badge>
       case 'client':
-        return <Badge className="bg-green-600 text-white"><User className="h-3 w-3 mr-1" />Klient</Badge>
+        return <Badge className="bg-green-600 text-white text-[10px] h-5 shrink-0">Klient</Badge>
       default:
-        return <Badge>{role}</Badge>
+        return <Badge className="text-[10px] h-5 shrink-0">{role}</Badge>
     }
   }
 
@@ -304,18 +304,15 @@ export default function UserManagementPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold font-display">Správa uživatelů</h2>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">Spravujte přístup uživatelů k systému</p>
-        </div>
+        <h2 className="text-lg font-semibold font-display">Správa uživatelů</h2>
 
         {/* CREATE DIALOG */}
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="">
-              <UserPlus className="h-4 w-4 mr-2" />
+            <Button size="sm" className="h-8 text-xs">
+              <UserPlus className="h-3.5 w-3.5 mr-1.5" />
               Přidat uživatele
             </Button>
           </DialogTrigger>
@@ -431,60 +428,53 @@ export default function UserManagementPage() {
 
       {/* USER LIST */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <UsersIcon className="h-5 w-5" />
-            Seznam uživatelů
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display flex items-center gap-2">
+            <UsersIcon className="h-3.5 w-3.5" />
+            Seznam uživatelů ({users.length})
           </CardTitle>
-          <CardDescription>
-            {users.length} {users.length === 1 ? 'uživatel' : users.length < 5 ? 'uživatelé' : 'uživatelů'} v systému
-          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="px-4 pb-4">
+          <div className="space-y-1.5">
             {users.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between p-4 border rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50"
+                className="flex items-center gap-3 px-3 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-800/50"
               >
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <p className="font-semibold">{user.name}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">{user.email}</p>
-                      <p className="text-xs text-gray-400">login: {user.login_name}</p>
-                    </div>
-                    {getRoleBadge(user.role)}
-                    {user.compensation_amount > 0 && (
-                      <Badge variant="outline" className="text-xs text-gray-600 dark:text-gray-300">
-                        {user.compensation_amount.toLocaleString('cs-CZ')} Kč{user.compensation_type === 'hourly' ? '/h' : '/měs'}
-                      </Badge>
-                    )}
-                  </div>
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <span className="font-medium text-sm truncate">{user.name}</span>
+                  <span className="text-xs text-gray-400 shrink-0">({user.login_name})</span>
+                  {getRoleBadge(user.role)}
+                  <span className="text-xs text-gray-400 truncate hidden sm:inline">{user.email}</span>
+                  {user.compensation_amount > 0 && (
+                    <Badge variant="outline" className="text-[10px] h-5 shrink-0">
+                      {user.compensation_amount.toLocaleString('cs-CZ')} Kč{user.compensation_type === 'hourly' ? '/h' : '/měs'}
+                    </Badge>
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => openEditDialog(user)}>
-                    <Pencil className="h-4 w-4" />
+                <div className="flex gap-1 shrink-0">
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEditDialog(user)}>
+                    <Pencil className="h-3.5 w-3.5" />
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    className="h-7 w-7 p-0 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                     onClick={() => {
                       setSelectedUser(user)
                       setDeleteDialogOpen(true)
                     }}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>
             ))}
 
             {users.length === 0 && (
-              <div className="text-center py-12">
-                <UsersIcon className="h-12 w-12 mx-auto text-gray-400" />
-                <p className="mt-4 text-gray-600 dark:text-gray-300">Zatím nemáte žádné uživatele</p>
+              <div className="text-center py-8">
+                <UsersIcon className="h-8 w-8 mx-auto text-gray-400" />
+                <p className="mt-2 text-sm text-gray-500">Zatím nemáte žádné uživatele</p>
               </div>
             )}
           </div>
@@ -635,34 +625,11 @@ export default function UserManagementPage() {
       </Dialog>
 
       {/* ROLE INFO */}
-      <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-        <CardHeader>
-          <CardTitle className="text-sm font-display">Informace o rolích</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="flex items-start gap-2">
-            <Shield className="h-4 w-4 mt-0.5 text-purple-600" />
-            <div>
-              <p className="font-semibold">Admin</p>
-              <p className="text-gray-700 dark:text-gray-300">Plný přístup včetně správy uživatelů a nastavení</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-2">
-            <User className="h-4 w-4 mt-0.5 text-purple-600" />
-            <div>
-              <p className="font-semibold">Účetní</p>
-              <p className="text-gray-700 dark:text-gray-300">Standardní přístup k účetnictví a klientům</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-2">
-            <User className="h-4 w-4 mt-0.5 text-gray-600" />
-            <div>
-              <p className="font-semibold">Asistent</p>
-              <p className="text-gray-700 dark:text-gray-300">Omezený přístup pouze k prohlížení</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex gap-4 text-xs text-gray-500 px-1">
+        <span><Shield className="h-3 w-3 inline mr-1 text-purple-600" />Admin — plný přístup</span>
+        <span><User className="h-3 w-3 inline mr-1 text-purple-600" />Účetní — standardní přístup</span>
+        <span><User className="h-3 w-3 inline mr-1 text-gray-500" />Asistent — jen prohlížení</span>
+      </div>
     </div>
   )
 }

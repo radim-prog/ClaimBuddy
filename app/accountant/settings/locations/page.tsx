@@ -102,33 +102,26 @@ export default function LocationsSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold font-display">Místa</h2>
-        <p className="text-sm text-muted-foreground">
-          Správa míst pro location-based úkoly. Výchozí místa nelze smazat.
-        </p>
-      </div>
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold font-display">Místa</h2>
 
       {/* Add new location */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-display">Přidat nové místo</CardTitle>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display">Přidat místo</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-end gap-3">
+        <CardContent className="px-4 pb-4">
+          <div className="flex items-center gap-3">
             <div className="flex-1">
-              <label className="text-sm font-medium mb-1 block">Název</label>
               <Input
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
                 placeholder="např. Kavárna, Sklad..."
                 onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
+                className="h-8 text-sm"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Ikona</label>
-              <div className="flex gap-1">
+            <div className="flex gap-1">
                 {ICON_OPTIONS.map(opt => {
                   const Icon = opt.Icon
                   return (
@@ -146,11 +139,10 @@ export default function LocationsSettingsPage() {
                     </button>
                   )
                 })}
-              </div>
             </div>
-            <Button onClick={handleAdd} disabled={!newName.trim() || adding}>
-              <Plus className="h-4 w-4 mr-1" />
-              {adding ? 'Přidávám...' : 'Přidat'}
+            <Button size="sm" className="h-8 text-xs" onClick={handleAdd} disabled={!newName.trim() || adding}>
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              {adding ? '...' : 'Přidat'}
             </Button>
           </div>
         </CardContent>
@@ -158,22 +150,20 @@ export default function LocationsSettingsPage() {
 
       {/* Locations list */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-display">Existující místa ({locations.length})</CardTitle>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display">Místa ({locations.length})</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="px-4 pb-4 space-y-1.5">
           {locations.map(loc => {
             const Icon = getIcon(loc.icon)
             return (
               <div
                 key={loc.id}
-                className="flex items-center justify-between p-3 rounded-xl border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="flex items-center justify-between px-3 py-2 rounded-lg border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                    <Icon className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <span className="font-medium">{loc.name}</span>
+                <div className="flex items-center gap-2">
+                  <Icon className="h-4 w-4 text-purple-600" />
+                  <span className="text-sm font-medium">{loc.name}</span>
                   {loc.is_default && (
                     <Badge variant="secondary" className="text-xs">Výchozí</Badge>
                   )}

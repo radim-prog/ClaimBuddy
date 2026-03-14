@@ -519,7 +519,7 @@ export async function markAllAsReadInTaskChat(
 export async function getAllOpenConversations(
   forUserId: string,
   options?: { status?: 'open' | 'completed'; unread_only?: boolean; limit?: number; count_only?: boolean; company_id?: string }
-): Promise<{ conversations: ConversationWithContext[]; total_unread: number }> {
+): Promise<{ conversations: ConversationWithContext[]; total_unread: number; needs_response?: number }> {
   let query = supabaseAdmin
     .from('chats')
     .select('*')
@@ -566,7 +566,13 @@ export async function getAllOpenConversations(
     ])
 
     totalUnread = (companyResult.count || 0) + (taskResult.count || 0)
-    return { conversations: [], total_unread: totalUnread }
+
+    // Count conversations needing response (client wrote last, not completed)
+    const needsResponse = chats.filter(c =>
+      c.last_responder === 'client' && c.waiting_since && (c.status || 'open') !== 'completed'
+    ).length
+
+    return { conversations: [], total_unread: totalUnread, needs_response: needsResponse }
   }
 
   // Fetch company names for company_chat

@@ -23,6 +23,7 @@ interface ClientRow {
   status: string
   billing_settings: { monthly_fee?: number; client_since?: string } | null
   created_at: string
+  managing_director?: string | null
 }
 
 type FilterStatus = 'all' | 'active' | 'churned' | 'paused' | 'onboarding'
@@ -303,6 +304,9 @@ export default function ClientsRevenuePage() {
                             <Link href={`/accountant/clients/${c.id}/profile`} className="font-medium text-gray-900 dark:text-white hover:text-purple-600 transition-colors">
                               {c.name}
                             </Link>
+                            {c.managing_director && (
+                              <div className="text-[10px] text-gray-400 font-normal">{c.managing_director}</div>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-gray-500 font-mono text-xs">{c.ico}</td>
                           <td className="px-4 py-3">

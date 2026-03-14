@@ -178,46 +178,33 @@ export default function InvoicingSettingsPage() {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="space-y-4">
       {/* Default settings */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <Hash className="h-5 w-5" />
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display flex items-center gap-2">
+            <Hash className="h-3.5 w-3.5" />
             Výchozí nastavení faktur
           </CardTitle>
-          <CardDescription>Výchozí hodnoty pro nové faktury</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Výchozí DPH (%)</Label>
-              <Input
-                type="number"
-                value={defaults.default_vat_rate}
-                onChange={e => setDefaults(d => ({ ...d, default_vat_rate: Number(e.target.value) }))}
-              />
+        <CardContent className="px-4 pb-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-xs text-gray-500 whitespace-nowrap">DPH</Label>
+              <Input type="number" value={defaults.default_vat_rate} onChange={e => setDefaults(d => ({ ...d, default_vat_rate: Number(e.target.value) }))} className="h-8 w-16 text-sm" />
+              <span className="text-xs text-gray-400">%</span>
             </div>
-            <div className="space-y-2">
-              <Label>Splatnost (dní)</Label>
-              <Input
-                type="number"
-                value={defaults.default_invoice_maturity}
-                onChange={e => setDefaults(d => ({ ...d, default_invoice_maturity: Number(e.target.value) }))}
-              />
+            <div className="flex items-center gap-1.5">
+              <Label className="text-xs text-gray-500 whitespace-nowrap">Splatnost</Label>
+              <Input type="number" value={defaults.default_invoice_maturity} onChange={e => setDefaults(d => ({ ...d, default_invoice_maturity: Number(e.target.value) }))} className="h-8 w-16 text-sm" />
+              <span className="text-xs text-gray-400">dní</span>
             </div>
-            <div className="space-y-2">
-              <Label>Konstantní symbol</Label>
-              <Input
-                value={defaults.default_constant_symbol}
-                onChange={e => setDefaults(d => ({ ...d, default_constant_symbol: e.target.value }))}
-                placeholder="0308"
-              />
+            <div className="flex items-center gap-1.5">
+              <Label className="text-xs text-gray-500 whitespace-nowrap">KS</Label>
+              <Input value={defaults.default_constant_symbol} onChange={e => setDefaults(d => ({ ...d, default_constant_symbol: e.target.value }))} placeholder="0308" className="h-8 w-20 text-sm" />
             </div>
-          </div>
-          <div className="flex justify-end">
-            <Button size="sm" onClick={handleSaveDefaults}>
-              <Save className="h-4 w-4 mr-1" />
+            <Button size="sm" variant="outline" className="h-8 text-xs ml-auto" onClick={handleSaveDefaults}>
+              <Save className="h-3.5 w-3.5 mr-1" />
               Uložit
             </Button>
           </div>
@@ -226,18 +213,15 @@ export default function InvoicingSettingsPage() {
 
       {/* Number Series */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2 font-display">
-                <ListOrdered className="h-5 w-5" />
-                Číselné řady
-              </CardTitle>
-              <CardDescription>Správa číselných řad pro faktury</CardDescription>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setAddingSeries(true)} disabled={addingSeries}>
-              <Plus className="h-4 w-4 mr-1" />
-              Přidat řadu
+            <CardTitle className="text-sm font-display flex items-center gap-2">
+              <ListOrdered className="h-3.5 w-3.5" />
+              Číselné řady
+            </CardTitle>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAddingSeries(true)} disabled={addingSeries}>
+              <Plus className="h-3 w-3 mr-1" />
+              Přidat
             </Button>
           </div>
         </CardHeader>
@@ -300,15 +284,12 @@ export default function InvoicingSettingsPage() {
 
       {/* Item Templates / Ceník */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="font-display">Ceník / Oblíbené položky</CardTitle>
-              <CardDescription>Šablony položek pro rychlé přidání na fakturu</CardDescription>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setAddingTemplate(true)} disabled={addingTemplate}>
-              <Plus className="h-4 w-4 mr-1" />
-              Přidat položku
+            <CardTitle className="text-sm font-display">Ceník / Oblíbené položky</CardTitle>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAddingTemplate(true)} disabled={addingTemplate}>
+              <Plus className="h-3 w-3 mr-1" />
+              Přidat
             </Button>
           </div>
         </CardHeader>

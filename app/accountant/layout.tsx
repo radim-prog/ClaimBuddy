@@ -97,7 +97,9 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const { startTour } = useTutorialContext()
   const inboxCount = useInboxCount()
   const { totals: attentionTotals } = useAttention()
-  const { unreadCount: messagesUnread } = useUnreadMessages()
+  const { needsResponseCount } = useUnreadMessages()
+  // Attention for Klienti badge: exclude unread_messages (shown on Komunikace instead)
+  const clientsAttentionCount = attentionTotals.total - attentionTotals.unread_messages
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
@@ -184,14 +186,14 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                           {inboxCount}
                         </span>
                       )}
-                      {collapsed && item.badge === 'attention' && attentionTotals.total > 0 && (
+                      {collapsed && item.badge === 'attention' && clientsAttentionCount > 0 && (
                         <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">
-                          {attentionTotals.total}
+                          {clientsAttentionCount}
                         </span>
                       )}
-                      {collapsed && item.badge === 'messages' && messagesUnread > 0 && (
+                      {collapsed && item.badge === 'messages' && needsResponseCount > 0 && (
                         <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">
-                          {messagesUnread}
+                          {needsResponseCount}
                         </span>
                       )}
                     </span>
@@ -202,14 +204,14 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                             {inboxCount}
                           </span>
                         )}
-                        {item.badge === 'attention' && attentionTotals.total > 0 && (
+                        {item.badge === 'attention' && clientsAttentionCount > 0 && (
                           <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">
-                            {attentionTotals.total}
+                            {clientsAttentionCount}
                           </span>
                         )}
-                        {item.badge === 'messages' && messagesUnread > 0 && (
+                        {item.badge === 'messages' && needsResponseCount > 0 && (
                           <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">
-                            {messagesUnread}
+                            {needsResponseCount}
                           </span>
                         )}
                         {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
@@ -225,8 +227,8 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                       <TooltipContent side="right" className="font-medium">
                         {item.name}
                         {item.badge === 'dynamic' && inboxCount > 0 && ` (${inboxCount})`}
-                        {item.badge === 'attention' && attentionTotals.total > 0 && ` (${attentionTotals.total})`}
-                        {item.badge === 'messages' && messagesUnread > 0 && ` (${messagesUnread})`}
+                        {item.badge === 'attention' && clientsAttentionCount > 0 && ` (${clientsAttentionCount})`}
+                        {item.badge === 'messages' && needsResponseCount > 0 && ` (${needsResponseCount})`}
                       </TooltipContent>
                     </Tooltip>
                   )
@@ -462,14 +464,14 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                       {inboxCount}
                     </span>
                   )}
-                  {item.badge === 'attention' && attentionTotals.total > 0 && (
+                  {item.badge === 'attention' && clientsAttentionCount > 0 && (
                     <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">
-                      {attentionTotals.total}
+                      {clientsAttentionCount}
                     </span>
                   )}
-                  {item.badge === 'messages' && messagesUnread > 0 && (
+                  {item.badge === 'messages' && needsResponseCount > 0 && (
                     <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">
-                      {messagesUnread}
+                      {needsResponseCount}
                     </span>
                   )}
                 </div>

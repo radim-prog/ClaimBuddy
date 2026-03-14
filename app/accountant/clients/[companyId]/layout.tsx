@@ -478,6 +478,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                       <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">ICO: {company.ico}</span>
                     )}
                     {company.dic && <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">DIC: {company.dic}</span>}
+                    {company.managing_director && <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Jednatel: {company.managing_director}</span>}
                   </div>
                 </div>
               </div>

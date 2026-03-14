@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,35 @@ import { Switch } from '@/components/ui/switch'
 import { useSettings, AlertSettings } from '@/lib/contexts/settings-context'
 import { Check, RotateCcw, Calendar, Banknote } from 'lucide-react'
 import { toast } from 'sonner'
+
+function InlineField({ label, id, children, className }: { label: string; id?: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`flex items-center gap-3 ${className || ''}`}>
+      <Label htmlFor={id} className="text-xs text-gray-500 whitespace-nowrap shrink-0">{label}</Label>
+      {children}
+    </div>
+  )
+}
+
+function CompactInput({ id, value, onChange, min, max, step, unit, width }: {
+  id: string; value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number | string; unit?: string; width?: string
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Input
+        id={id}
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value) || 0)}
+        className={`h-8 text-sm ${width || 'w-20'}`}
+      />
+      {unit && <span className="text-xs text-gray-400 whitespace-nowrap">{unit}</span>}
+    </div>
+  )
+}
 
 export default function AccountantSettingsPage() {
   const { settings, updateSettings, resetSettings, isLoaded } = useSettings()
@@ -21,7 +50,6 @@ export default function AccountantSettingsPage() {
   const [wastedTimeRate, setWastedTimeRate] = useState(350)
   const [ratesSaving, setRatesSaving] = useState(false)
 
-  // Fetch global settings from DB
   useEffect(() => {
     fetch('/api/accountant/settings')
       .then(r => r.json())
@@ -46,16 +74,10 @@ export default function AccountantSettingsPage() {
           default_wasted_time_rate: wastedTimeRate,
         }),
       })
-      if (res.ok) {
-        toast.success('Sazby uloženy')
-      } else {
-        toast.error('Chyba při ukládání')
-      }
-    } catch {
-      toast.error('Chyba při ukládání')
-    } finally {
-      setRatesSaving(false)
-    }
+      if (res.ok) toast.success('Sazby uloženy')
+      else toast.error('Chyba při ukládání')
+    } catch { toast.error('Chyba při ukládání') }
+    finally { setRatesSaving(false) }
   }
 
   const handleDeadlineDaySave = async () => {
@@ -66,23 +88,14 @@ export default function AccountantSettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ deadline_day: deadlineDay }),
       })
-      if (res.ok) {
-        toast.success('Deadline den uložen')
-      } else {
-        toast.error('Chyba při ukládání')
-      }
-    } catch {
-      toast.error('Chyba při ukládání')
-    } finally {
-      setDeadlineSaving(false)
-    }
+      if (res.ok) toast.success('Deadline den uložen')
+      else toast.error('Chyba při ukládání')
+    } catch { toast.error('Chyba při ukládání') }
+    finally { setDeadlineSaving(false) }
   }
 
-  // Sync local state with context when loaded
   useEffect(() => {
-    if (isLoaded) {
-      setLocalSettings(settings)
-    }
+    if (isLoaded) setLocalSettings(settings)
   }, [isLoaded, settings])
 
   const handleChange = (key: keyof AlertSettings, value: number | boolean) => {
@@ -109,141 +122,110 @@ export default function AccountantSettingsPage() {
     <div className="space-y-4">
       {/* Deadline + Sazby */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-display flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display flex items-center gap-2">
+            <Calendar className="h-3.5 w-3.5" />
             Deadline a sazby
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-end gap-3">
-            <div className="space-y-1.5 flex-1 max-w-[200px]">
-              <Label htmlFor="deadlineDay" className="text-xs">Deadline podkladů (den v měsíci)</Label>
-              <Input
-                id="deadlineDay"
-                type="number"
-                min="1"
-                max="28"
-                value={deadlineDay}
-                onChange={(e) => setDeadlineDay(Math.min(28, Math.max(1, parseInt(e.target.value) || 1)))}
-                className="h-11"
-              />
-            </div>
-            <Button size="sm" onClick={handleDeadlineDaySave} disabled={deadlineSaving}>
-              {deadlineSaving ? 'Ukládám...' : 'Uložit'}
+        <CardContent className="px-4 pb-4 space-y-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <InlineField label="Deadline podkladů" id="deadlineDay">
+              <CompactInput id="deadlineDay" value={deadlineDay} onChange={(v) => setDeadlineDay(Math.min(28, Math.max(1, v)))} min={1} max={28} unit="den v měsíci" />
+            </InlineField>
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleDeadlineDaySave} disabled={deadlineSaving}>
+              {deadlineSaving ? '...' : 'Uložit'}
             </Button>
           </div>
-          <div className="border-t pt-3">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="hourlyRate" className="text-xs">Kč/hod</Label>
-                <Input id="hourlyRate" type="number" min="0" step="50" value={hourlyRate} onChange={(e) => setHourlyRate(Number(e.target.value) || 0)} className="h-11" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="kmRate" className="text-xs">Kč/km</Label>
-                <Input id="kmRate" type="number" min="0" step="0.5" value={kmRate} onChange={(e) => setKmRate(Number(e.target.value) || 0)} className="h-11" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="wastedTimeRate" className="text-xs">Kč/hod cesta</Label>
-                <Input id="wastedTimeRate" type="number" min="0" step="50" value={wastedTimeRate} onChange={(e) => setWastedTimeRate(Number(e.target.value) || 0)} className="h-11" />
-              </div>
-            </div>
-            <div className="flex justify-end mt-3">
-              <Button size="sm" onClick={handleRatesSave} disabled={ratesSaving}>
-                {ratesSaving ? 'Ukládám...' : 'Uložit sazby'}
-              </Button>
-            </div>
+          <div className="border-t pt-3 flex items-center gap-4 flex-wrap">
+            <InlineField label="Práce" id="hourlyRate">
+              <CompactInput id="hourlyRate" value={hourlyRate} onChange={setHourlyRate} min={0} step={50} unit="Kč/hod" />
+            </InlineField>
+            <InlineField label="Cesta" id="wastedTimeRate">
+              <CompactInput id="wastedTimeRate" value={wastedTimeRate} onChange={setWastedTimeRate} min={0} step={50} unit="Kč/hod" />
+            </InlineField>
+            <InlineField label="Kilometry" id="kmRate">
+              <CompactInput id="kmRate" value={kmRate} onChange={setKmRate} min={0} step={0.5} unit="Kč/km" />
+            </InlineField>
+            <Button size="sm" variant="outline" className="h-8 text-xs ml-auto" onClick={handleRatesSave} disabled={ratesSaving}>
+              {ratesSaving ? '...' : 'Uložit sazby'}
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Notifikace */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-display">Notifikace</CardTitle>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display">Notifikace</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
+        <CardContent className="px-4 pb-4 space-y-2">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
               <Label className="text-sm">Email notifikace</Label>
-              <p className="text-xs text-muted-foreground">Upozornění o nových dokumentech</p>
+              <span className="text-xs text-muted-foreground">— nové dokumenty</span>
             </div>
-            <Switch
-              checked={localSettings.emailNotifications}
-              onCheckedChange={(checked) => handleChange('emailNotifications', checked)}
-            />
+            <Switch checked={localSettings.emailNotifications} onCheckedChange={(checked) => handleChange('emailNotifications', checked)} />
           </div>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
               <Label className="text-sm">SMS notifikace</Label>
-              <p className="text-xs text-muted-foreground">SMS o urgentních záležitostech</p>
+              <span className="text-xs text-muted-foreground">— urgentní záležitosti</span>
             </div>
-            <Switch
-              checked={localSettings.smsNotifications}
-              onCheckedChange={(checked) => handleChange('smsNotifications', checked)}
-            />
+            <Switch checked={localSettings.smsNotifications} onCheckedChange={(checked) => handleChange('smsNotifications', checked)} />
           </div>
         </CardContent>
       </Card>
 
       {/* Prahy upozornění */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-display">Prahy upozornění</CardTitle>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display">Prahy upozornění</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dokumenty</p>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="documentCriticalDays" className="text-xs">Kritický (dní)</Label>
-              <Input id="documentCriticalDays" type="number" min="0" max="30" value={localSettings.documentCriticalDays} onChange={(e) => handleChange('documentCriticalDays', parseInt(e.target.value) || 0)} className="h-11" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="documentUrgentDays" className="text-xs">Urgentní (dní)</Label>
-              <Input id="documentUrgentDays" type="number" min="0" max="30" value={localSettings.documentUrgentDays} onChange={(e) => handleChange('documentUrgentDays', parseInt(e.target.value) || 0)} className="h-11" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="closureDeadlineDay" className="text-xs">Deadline uzávěrky (den)</Label>
-              <Input id="closureDeadlineDay" type="number" min="1" max="28" value={localSettings.closureDeadlineDay} onChange={(e) => handleChange('closureDeadlineDay', parseInt(e.target.value) || 10)} className="h-11" />
-            </div>
+        <CardContent className="px-4 pb-4 space-y-3">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-16 shrink-0">Doklady</span>
+            <InlineField label="Kritický" id="documentCriticalDays">
+              <CompactInput id="documentCriticalDays" value={localSettings.documentCriticalDays} onChange={(v) => handleChange('documentCriticalDays', v)} min={0} max={30} unit="dní" />
+            </InlineField>
+            <InlineField label="Urgentní" id="documentUrgentDays">
+              <CompactInput id="documentUrgentDays" value={localSettings.documentUrgentDays} onChange={(v) => handleChange('documentUrgentDays', v)} min={0} max={30} unit="dní" />
+            </InlineField>
+            <InlineField label="Deadline uzávěrky" id="closureDeadlineDay">
+              <CompactInput id="closureDeadlineDay" value={localSettings.closureDeadlineDay} onChange={(v) => handleChange('closureDeadlineDay', v)} min={1} max={28} unit="den" />
+            </InlineField>
           </div>
-          <div className="border-t pt-3">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Úkoly</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="taskOverdueCriticalDays" className="text-xs">Kritický (dní po termínu)</Label>
-                <Input id="taskOverdueCriticalDays" type="number" min="0" max="30" value={localSettings.taskOverdueCriticalDays} onChange={(e) => handleChange('taskOverdueCriticalDays', parseInt(e.target.value) || 0)} className="h-11" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="taskOverdueUrgentDays" className="text-xs">Urgentní (dní před termínem)</Label>
-                <Input id="taskOverdueUrgentDays" type="number" min="0" max="30" value={localSettings.taskOverdueUrgentDays} onChange={(e) => handleChange('taskOverdueUrgentDays', parseInt(e.target.value) || 0)} className="h-11" />
-              </div>
-            </div>
+          <div className="border-t pt-3 flex items-center gap-4 flex-wrap">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide w-16 shrink-0">Úkoly</span>
+            <InlineField label="Kritický" id="taskOverdueCriticalDays">
+              <CompactInput id="taskOverdueCriticalDays" value={localSettings.taskOverdueCriticalDays} onChange={(v) => handleChange('taskOverdueCriticalDays', v)} min={0} max={30} unit="dní po termínu" />
+            </InlineField>
+            <InlineField label="Urgentní" id="taskOverdueUrgentDays">
+              <CompactInput id="taskOverdueUrgentDays" value={localSettings.taskOverdueUrgentDays} onChange={(v) => handleChange('taskOverdueUrgentDays', v)} min={0} max={30} unit="dní před" />
+            </InlineField>
           </div>
         </CardContent>
       </Card>
 
       {/* Onboarding */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-display">Onboarding klientů</CardTitle>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display">Onboarding klientů</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="onboardingStalledDays" className="text-xs">Dní bez aktivity = zaseklý</Label>
-              <Input id="onboardingStalledDays" type="number" min="1" max="60" value={localSettings.onboardingStalledDays} onChange={(e) => handleChange('onboardingStalledDays', parseInt(e.target.value) || 7)} className="h-11" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="onboardingLowProgressPercent" className="text-xs">Práh nízkého postupu (%)</Label>
-              <Input id="onboardingLowProgressPercent" type="number" min="10" max="90" value={localSettings.onboardingLowProgressPercent} onChange={(e) => handleChange('onboardingLowProgressPercent', parseInt(e.target.value) || 50)} className="h-11" />
-            </div>
+        <CardContent className="px-4 pb-4 space-y-2">
+          <div className="flex items-center gap-4 flex-wrap">
+            <InlineField label="Bez aktivity = zaseklý" id="onboardingStalledDays">
+              <CompactInput id="onboardingStalledDays" value={localSettings.onboardingStalledDays} onChange={(v) => handleChange('onboardingStalledDays', v)} min={1} max={60} unit="dní" />
+            </InlineField>
+            <InlineField label="Práh nízkého postupu" id="onboardingLowProgressPercent">
+              <CompactInput id="onboardingLowProgressPercent" value={localSettings.onboardingLowProgressPercent} onChange={(v) => handleChange('onboardingLowProgressPercent', v)} min={10} max={90} unit="%" />
+            </InlineField>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <Label className="text-sm">Upozornění na zaseklé klienty</Label>
             <Switch checked={localSettings.onboardingShowStalled} onCheckedChange={(checked) => handleChange('onboardingShowStalled', checked)} />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <Label className="text-sm">Email při zaseknutí klienta</Label>
             <Switch checked={localSettings.onboardingEmailOnStalled} onCheckedChange={(checked) => handleChange('onboardingEmailOnStalled', checked)} />
           </div>
@@ -252,32 +234,30 @@ export default function AccountantSettingsPage() {
 
       {/* Výchozí + Automatizace */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-display">Výchozí nastavení a automatizace</CardTitle>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display">Výchozí nastavení a automatizace</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="defaultVatRate" className="text-xs">Výchozí DPH (%)</Label>
-              <Input id="defaultVatRate" type="number" min="0" max="100" value={localSettings.defaultVatRate} onChange={(e) => handleChange('defaultVatRate', parseInt(e.target.value) || 21)} className="h-11" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="reminderDays" className="text-xs">Dní před urgováním</Label>
-              <Input id="reminderDays" type="number" min="1" max="30" value={localSettings.reminderDays} onChange={(e) => handleChange('reminderDays', parseInt(e.target.value) || 7)} className="h-11" />
-            </div>
+        <CardContent className="px-4 pb-4 space-y-2">
+          <div className="flex items-center gap-4 flex-wrap">
+            <InlineField label="Výchozí DPH" id="defaultVatRate">
+              <CompactInput id="defaultVatRate" value={localSettings.defaultVatRate} onChange={(v) => handleChange('defaultVatRate', v)} min={0} max={100} unit="%" />
+            </InlineField>
+            <InlineField label="Dní před urgováním" id="reminderDays">
+              <CompactInput id="reminderDays" value={localSettings.reminderDays} onChange={(v) => handleChange('reminderDays', v)} min={1} max={30} unit="dní" />
+            </InlineField>
           </div>
-          <div className="border-t pt-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm">Automatické připomínky klientům</Label>
-                <p className="text-xs text-muted-foreground">Před deadlinem</p>
+          <div className="border-t pt-2 space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">Auto připomínky klientům</Label>
+                <span className="text-xs text-muted-foreground">— před deadlinem</span>
               </div>
               <Switch checked={localSettings.autoReminders} onCheckedChange={(checked) => handleChange('autoReminders', checked)} />
             </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm">Automatické schvalování AI</Label>
-                <p className="text-xs text-muted-foreground">Dokumenty po kontrole AI</p>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">Auto schvalování AI</Label>
+                <span className="text-xs text-muted-foreground">— po kontrole AI</span>
               </div>
               <Switch checked={localSettings.autoApproveAI} onCheckedChange={(checked) => handleChange('autoApproveAI', checked)} />
             </div>
@@ -287,19 +267,12 @@ export default function AccountantSettingsPage() {
 
       {/* Akce */}
       <div className="flex justify-between">
-        <Button variant="outline" size="sm" onClick={handleReset} className="text-gray-600 dark:text-gray-400">
-          <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+        <Button variant="outline" size="sm" onClick={handleReset} className="text-gray-600 dark:text-gray-400 h-8 text-xs">
+          <RotateCcw className="mr-1.5 h-3 w-3" />
           Obnovit výchozí
         </Button>
-        <Button size="sm" onClick={handleSave}>
-          {saved ? (
-            <>
-              <Check className="mr-1.5 h-3.5 w-3.5" />
-              Uloženo
-            </>
-          ) : (
-            'Uložit změny'
-          )}
+        <Button size="sm" onClick={handleSave} className="h-8 text-xs">
+          {saved ? <><Check className="mr-1.5 h-3 w-3" />Uloženo</> : 'Uložit změny'}
         </Button>
       </div>
     </div>

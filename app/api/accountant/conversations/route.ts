@@ -26,7 +26,10 @@ export async function GET(request: NextRequest) {
     })
 
     if (countOnly) {
-      return NextResponse.json({ total_unread: result.total_unread })
+      return NextResponse.json({
+        total_unread: result.total_unread,
+        needs_response: (result as any).needs_response ?? 0,
+      })
     }
 
     return NextResponse.json(result)

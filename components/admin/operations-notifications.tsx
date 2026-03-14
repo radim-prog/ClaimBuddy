@@ -193,30 +193,27 @@ export function OperationsNotifications() {
   }, [events])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Search/Filter Bar */}
-      <Card>
-        <CardContent className="pt-4 pb-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Hledat události..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-11"
-              />
-            </div>
-            <Select
-              value={selectedCategory}
-              onValueChange={(v) =>
-                setSelectedCategory(v as NotificationEventCategory | 'all')
-              }
-            >
-              <SelectTrigger className="w-full sm:w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Kategorie" />
-              </SelectTrigger>
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+          <Input
+            placeholder="Hledat události..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
+        <Select
+          value={selectedCategory}
+          onValueChange={(v) =>
+            setSelectedCategory(v as NotificationEventCategory | 'all')
+          }
+        >
+          <SelectTrigger className="w-40 h-8 text-sm">
+            <SelectValue placeholder="Kategorie" />
+          </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Všechny kategorie</SelectItem>
                 {Object.entries(categoryLabels).map(([key, label]) => (
@@ -226,13 +223,11 @@ export function OperationsNotifications() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        </CardContent>
-      </Card>
+      </div>
 
       {/* Flat Events List */}
       <Card>
-        <CardContent className="pt-4">
+        <CardContent className="pt-3 pb-3">
           {filteredEvents.length === 0 ? (
             <div className="py-8 text-center">
               <Bell className="h-10 w-10 text-gray-300 mx-auto mb-3" />
@@ -245,23 +240,19 @@ export function OperationsNotifications() {
               {filteredEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="flex items-center justify-between py-3"
+                  className="flex items-center justify-between py-2"
                 >
-                  <div className="flex-1 min-w-0 pr-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{event.name}</span>
-                      {event.is_system && (
-                        <Badge variant="outline" className="text-xs">
-                          Systémová
-                        </Badge>
-                      )}
-                      <Badge variant="secondary" className="text-xs">
-                        {categoryLabels[event.category]}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                  <div className="flex items-center gap-2 flex-1 min-w-0 pr-4">
+                    <span className="text-sm font-medium">{event.name}</span>
+                    {event.is_system && (
+                      <Badge variant="outline" className="text-[10px] h-4">Sys</Badge>
+                    )}
+                    <Badge variant="secondary" className="text-[10px] h-4">
+                      {categoryLabels[event.category]}
+                    </Badge>
+                    <span className="text-xs text-gray-400 truncate hidden sm:inline">
                       {event.description}
-                    </p>
+                    </span>
                   </div>
                   <Switch
                     checked={event.is_active}
@@ -276,12 +267,12 @@ export function OperationsNotifications() {
 
       {/* Rules List */}
       <Card>
-        <CardContent className="pt-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-lg">Pravidla notifikací</h3>
-            <Button onClick={() => setIsAddRuleOpen(true)} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Přidat pravidlo
+        <CardContent className="pt-3 pb-3">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium text-sm">Pravidla notifikací</h3>
+            <Button onClick={() => setIsAddRuleOpen(true)} size="sm" className="h-7 text-xs">
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Přidat
             </Button>
           </div>
 
@@ -363,27 +354,6 @@ export function OperationsNotifications() {
                 )
               })
             )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Channel Legend */}
-      <Card className="bg-gray-50 dark:bg-gray-800/50">
-        <CardContent className="py-4">
-          <h4 className="font-medium mb-3">Dostupné kanály</h4>
-          <div className="flex flex-wrap gap-4">
-            {Object.entries(channelLabels).map(([channel, label]) => {
-              const ChannelIcon = channelIcons[channel as NotificationChannel]
-              return (
-                <div
-                  key={channel}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <ChannelIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                  <span>{label}</span>
-                </div>
-              )
-            })}
           </div>
         </CardContent>
       </Card>

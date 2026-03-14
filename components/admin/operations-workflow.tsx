@@ -184,26 +184,26 @@ export function OperationsWorkflow() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Search and Add */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
+      <div className="flex gap-3 justify-between">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
           <Input
             placeholder="Hledat klienta..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-11"
+            className="pl-8 h-8 text-sm"
           />
         </div>
-        <Button onClick={() => setIsAddRuleOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Přidat pravidlo
+        <Button size="sm" className="h-8 text-xs" onClick={() => setIsAddRuleOpen(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Přidat
         </Button>
       </div>
 
       {/* Rules List */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         {filteredRules.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
@@ -225,107 +225,44 @@ export function OperationsWorkflow() {
           filteredRules.map((rule) => {
             const ActionIcon = actionIcons[rule.action]
             return (
-              <Card
+              <div
                 key={rule.id}
-                className={!rule.is_active ? 'opacity-60' : ''}
+                className={`flex items-center gap-3 px-3 py-2 border rounded-lg ${!rule.is_active ? 'opacity-60' : ''}`}
               >
-                <CardContent className="py-4">
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                      <Building2 className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-semibold">
-                          {rule.company_name}
-                        </span>
-                        {!rule.is_active && (
-                          <Badge variant="secondary">Vypnuto</Badge>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <Badge variant="outline">
-                          <FileText className="h-3 w-3 mr-1" />
-                          {getDocumentTypeName(rule.document_type_id)}
-                        </Badge>
-                        <ArrowRight className="h-4 w-4 text-gray-400" />
-                        <Badge className={actionColors[rule.action]}>
-                          <ActionIcon className="h-3 w-3 mr-1" />
-                          {actionLabels[rule.action]}
-                        </Badge>
-                      </div>
-
-                      <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400">
-                        {rule.approver_id && (
-                          <span className="flex items-center gap-1">
-                            <UserCheck className="h-4 w-4" />
-                            {getApproverName(rule.approver_id)}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Bell className="h-4 w-4" />
-                          {rule.notify_on_upload && 'Při nahrání'}
-                          {rule.notify_on_upload && rule.notify_on_approval && ', '}
-                          {rule.notify_on_approval && 'Při schválení'}
-                          {!rule.notify_on_upload && !rule.notify_on_approval && 'Bez notifikací'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={rule.is_active}
-                        onCheckedChange={() => toggleRuleActive(rule.id)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setEditingRule(rule)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteRule(rule.id)}
-                        className="text-gray-400 hover:text-red-500"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                <Building2 className="h-4 w-4 text-gray-500 shrink-0" />
+                <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+                  <span className="text-sm font-medium">{rule.company_name}</span>
+                  {!rule.is_active && <Badge variant="secondary" className="text-[10px] h-4">Off</Badge>}
+                  <Badge variant="outline" className="text-[10px] h-5">
+                    <FileText className="h-2.5 w-2.5 mr-0.5" />
+                    {getDocumentTypeName(rule.document_type_id)}
+                  </Badge>
+                  <ArrowRight className="h-3 w-3 text-gray-400" />
+                  <Badge className={`text-[10px] h-5 ${actionColors[rule.action]}`}>
+                    <ActionIcon className="h-2.5 w-2.5 mr-0.5" />
+                    {actionLabels[rule.action]}
+                  </Badge>
+                  {rule.approver_id && (
+                    <span className="text-xs text-gray-400">{getApproverName(rule.approver_id)}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Switch
+                    checked={rule.is_active}
+                    onCheckedChange={() => toggleRuleActive(rule.id)}
+                  />
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditingRule(rule)}>
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-red-500" onClick={() => handleDeleteRule(rule.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
             )
           })
         )}
       </div>
-
-      {/* Action Legend */}
-      <Card className="bg-gray-50 dark:bg-gray-800/50">
-        <CardContent className="py-4">
-          <h4 className="font-medium mb-3">Typy akcí</h4>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {Object.entries(actionLabels).map(([action, label]) => {
-              const ActionIcon = actionIcons[action as DocumentWorkflowAction]
-              return (
-                <div
-                  key={action}
-                  className={`
-                    flex items-center gap-2 p-2 rounded-lg text-sm
-                    ${actionColors[action as DocumentWorkflowAction]}
-                  `}
-                >
-                  <ActionIcon className="h-4 w-4" />
-                  <span>{label}</span>
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Add Rule Dialog */}
       <Dialog open={isAddRuleOpen} onOpenChange={setIsAddRuleOpen}>

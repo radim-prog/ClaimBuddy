@@ -79,87 +79,44 @@ export default function PricingSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold font-display">Ceník a Sazby</h2>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">Nastavení hodinových sazeb, dopravy a poplatků pro fakturaci</p>
-        </div>
-        <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
-          <Save className="h-4 w-4 mr-2" />
-          {saved ? 'Uloženo ✓' : 'Uložit změny'}
+        <h2 className="text-lg font-semibold font-display">Ceník a Sazby</h2>
+        <Button size="sm" onClick={handleSave} className="h-8 text-xs bg-green-600 hover:bg-green-700">
+          <Save className="h-3.5 w-3.5 mr-1.5" />
+          {saved ? 'Uloženo' : 'Uložit změny'}
         </Button>
       </div>
 
       {/* Hodinové sazby */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <Clock className="h-5 w-5" />
-            Hodinové Sazby
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display flex items-center gap-2">
+            <Clock className="h-3.5 w-3.5" />
+            Hodinové sazby
           </CardTitle>
-          <CardDescription>Sazby za odpracované hodiny podle typu práce</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="standard">Standardní práce</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="standard"
-                  type="number"
-                  value={settings.hourlyRates.standard}
-                  onChange={(e) => updateHourlyRate('standard', e.target.value)}
-                  className="text-right"
-                />
-                <span className="text-gray-600 dark:text-gray-300">Kč/hod</span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Běžné účetní práce, uzávěrky</p>
+        <CardContent className="px-4 pb-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="standard" className="text-xs text-gray-500 whitespace-nowrap">Standardní</Label>
+              <Input id="standard" type="number" value={settings.hourlyRates.standard} onChange={(e) => updateHourlyRate('standard', e.target.value)} className="h-8 w-20 text-sm text-right" />
+              <span className="text-xs text-gray-400">Kč/h</span>
             </div>
-
-            <div>
-              <Label htmlFor="expert">Expert / Daňová kontrola</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="expert"
-                  type="number"
-                  value={settings.hourlyRates.expert}
-                  onChange={(e) => updateHourlyRate('expert', e.target.value)}
-                  className="text-right"
-                />
-                <span className="text-gray-600 dark:text-gray-300">Kč/hod</span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Náročné případy, kontroly FÚ</p>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="expert" className="text-xs text-gray-500 whitespace-nowrap">Expert</Label>
+              <Input id="expert" type="number" value={settings.hourlyRates.expert} onChange={(e) => updateHourlyRate('expert', e.target.value)} className="h-8 w-20 text-sm text-right" />
+              <span className="text-xs text-gray-400">Kč/h</span>
             </div>
-
-            <div>
-              <Label htmlFor="urgent">Urgentní práce</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="urgent"
-                  type="number"
-                  value={settings.hourlyRates.urgent}
-                  onChange={(e) => updateHourlyRate('urgent', e.target.value)}
-                  className="text-right"
-                />
-                <span className="text-gray-600 dark:text-gray-300">Kč/hod</span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Práce mimo pracovní dobu, urgence</p>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="urgent" className="text-xs text-gray-500 whitespace-nowrap">Urgentní</Label>
+              <Input id="urgent" type="number" value={settings.hourlyRates.urgent} onChange={(e) => updateHourlyRate('urgent', e.target.value)} className="h-8 w-20 text-sm text-right" />
+              <span className="text-xs text-gray-400">Kč/h</span>
             </div>
-
-            <div>
-              <Label htmlFor="partner">Práce partnera</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="partner"
-                  type="number"
-                  value={settings.hourlyRates.partner}
-                  onChange={(e) => updateHourlyRate('partner', e.target.value)}
-                  className="text-right"
-                />
-                <span className="text-gray-600 dark:text-gray-300">Kč/hod</span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Senior partner, konzultace</p>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="partner" className="text-xs text-gray-500 whitespace-nowrap">Partner</Label>
+              <Input id="partner" type="number" value={settings.hourlyRates.partner} onChange={(e) => updateHourlyRate('partner', e.target.value)} className="h-8 w-20 text-sm text-right" />
+              <span className="text-xs text-gray-400">Kč/h</span>
             </div>
           </div>
         </CardContent>
@@ -167,88 +124,44 @@ export default function PricingSettingsPage() {
 
       {/* Doprava */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <Car className="h-5 w-5" />
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display flex items-center gap-2">
+            <Car className="h-3.5 w-3.5" />
             Doprava
           </CardTitle>
-          <CardDescription>Účtování dopravy ke klientovi</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label>Typ účtování</Label>
-            <div className="flex gap-2 mt-2">
-              <Button
-                variant={settings.travel.type === 'fixed' ? 'default' : 'outline'}
-                onClick={() => updateTravel('type', 'fixed')}
-                size="sm"
-                className={settings.travel.type === 'fixed' ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}
-              >
-                Fixní sazba
-              </Button>
-              <Button
-                variant={settings.travel.type === 'per-km' ? 'default' : 'outline'}
-                onClick={() => updateTravel('type', 'per-km')}
-                size="sm"
-                className={settings.travel.type === 'per-km' ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}
-              >
-                Na kilometry
-              </Button>
-              <Button
-                variant={settings.travel.type === 'both' ? 'default' : 'outline'}
-                onClick={() => updateTravel('type', 'both')}
-                size="sm"
-                className={settings.travel.type === 'both' ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}
-              >
-                Obojí
-              </Button>
+        <CardContent className="px-4 pb-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-gray-500 whitespace-nowrap shrink-0">Typ</Label>
+            <div className="flex gap-1">
+              {(['fixed', 'per-km', 'both'] as const).map(t => (
+                <Button
+                  key={t}
+                  variant={settings.travel.type === t ? 'default' : 'outline'}
+                  onClick={() => updateTravel('type', t)}
+                  size="sm"
+                  className={`h-7 text-xs ${settings.travel.type === t ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}`}
+                >
+                  {t === 'fixed' ? 'Fixní' : t === 'per-km' ? 'Na km' : 'Obojí'}
+                </Button>
+              ))}
             </div>
           </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="fixedRate">Fixní sazba za cestu</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="fixedRate"
-                  type="number"
-                  value={settings.travel.fixedRate}
-                  onChange={(e) => updateTravel('fixedRate', parseFloat(e.target.value) || 0)}
-                  disabled={settings.travel.type === 'per-km'}
-                  className="text-right"
-                />
-                <span className="text-gray-600 dark:text-gray-300">Kč</span>
-              </div>
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="fixedRate" className="text-xs text-gray-500 whitespace-nowrap">Fixní/cestu</Label>
+              <Input id="fixedRate" type="number" value={settings.travel.fixedRate} onChange={(e) => updateTravel('fixedRate', parseFloat(e.target.value) || 0)} disabled={settings.travel.type === 'per-km'} className="h-8 w-20 text-sm text-right" />
+              <span className="text-xs text-gray-400">Kč</span>
             </div>
-
-            <div>
-              <Label htmlFor="perKmRate">Sazba na km</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="perKmRate"
-                  type="number"
-                  value={settings.travel.perKmRate}
-                  onChange={(e) => updateTravel('perKmRate', parseFloat(e.target.value) || 0)}
-                  disabled={settings.travel.type === 'fixed'}
-                  className="text-right"
-                />
-                <span className="text-gray-600 dark:text-gray-300">Kč/km</span>
-              </div>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="perKmRate" className="text-xs text-gray-500 whitespace-nowrap">Na km</Label>
+              <Input id="perKmRate" type="number" value={settings.travel.perKmRate} onChange={(e) => updateTravel('perKmRate', parseFloat(e.target.value) || 0)} disabled={settings.travel.type === 'fixed'} className="h-8 w-20 text-sm text-right" />
+              <span className="text-xs text-gray-400">Kč/km</span>
             </div>
-
-            <div>
-              <Label htmlFor="minDistance">Min. vzdálenost</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="minDistance"
-                  type="number"
-                  value={settings.travel.minDistance}
-                  onChange={(e) => updateTravel('minDistance', parseFloat(e.target.value) || 0)}
-                  className="text-right"
-                />
-                <span className="text-gray-600 dark:text-gray-300">km</span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Neúčtuje se pod tuto vzdálenost</p>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="minDistance" className="text-xs text-gray-500 whitespace-nowrap">Min. vzd.</Label>
+              <Input id="minDistance" type="number" value={settings.travel.minDistance} onChange={(e) => updateTravel('minDistance', parseFloat(e.target.value) || 0)} className="h-8 w-20 text-sm text-right" />
+              <span className="text-xs text-gray-400">km</span>
             </div>
           </div>
         </CardContent>
@@ -256,137 +169,80 @@ export default function PricingSettingsPage() {
 
       {/* Poplatky */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <FileText className="h-5 w-5" />
-            Poplatky
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display flex items-center gap-2">
+            <FileText className="h-3.5 w-3.5" />
+            Poplatky (přirážky)
           </CardTitle>
-          <CardDescription>Přirážky k nákladům klienta</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="court">Soudní poplatky</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="court"
-                  type="number"
-                  value={settings.fees.court}
-                  onChange={(e) => updateFees('court', e.target.value)}
-                  className="text-right"
-                />
-                <span className="text-gray-600 dark:text-gray-300">%</span>
-              </div>
+        <CardContent className="px-4 pb-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="court" className="text-xs text-gray-500 whitespace-nowrap">Soudní</Label>
+              <Input id="court" type="number" value={settings.fees.court} onChange={(e) => updateFees('court', e.target.value)} className="h-8 w-16 text-sm text-right" />
+              <span className="text-xs text-gray-400">%</span>
             </div>
-
-            <div>
-              <Label htmlFor="administrative">Úřední poplatky</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="administrative"
-                  type="number"
-                  value={settings.fees.administrative}
-                  onChange={(e) => updateFees('administrative', e.target.value)}
-                  className="text-right"
-                />
-                <span className="text-gray-600 dark:text-gray-300">%</span>
-              </div>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="administrative" className="text-xs text-gray-500 whitespace-nowrap">Úřední</Label>
+              <Input id="administrative" type="number" value={settings.fees.administrative} onChange={(e) => updateFees('administrative', e.target.value)} className="h-8 w-16 text-sm text-right" />
+              <span className="text-xs text-gray-400">%</span>
             </div>
-
-            <div>
-              <Label htmlFor="other">Ostatní poplatky</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="other"
-                  type="number"
-                  value={settings.fees.other}
-                  onChange={(e) => updateFees('other', e.target.value)}
-                  className="text-right"
-                />
-                <span className="text-gray-600 dark:text-gray-300">%</span>
-              </div>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="other" className="text-xs text-gray-500 whitespace-nowrap">Ostatní</Label>
+              <Input id="other" type="number" value={settings.fees.other} onChange={(e) => updateFees('other', e.target.value)} className="h-8 w-16 text-sm text-right" />
+              <span className="text-xs text-gray-400">%</span>
             </div>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            💡 Tip: 0% = poplatky účtujeme v plné výši, 10% = přidáme 10% k poplatku jako marži
-          </p>
+          <p className="text-[10px] text-gray-400 mt-2">0% = plná výše, 10% = přidáme 10% marži k poplatku</p>
         </CardContent>
       </Card>
 
       {/* Penalties */}
-      <Card className="border-orange-200 bg-orange-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display text-orange-900">
-            <AlertTriangle className="h-5 w-5" />
-            Poplatky za Promeškání
+      <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/10">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display flex items-center gap-2 text-orange-900 dark:text-orange-400">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            Penalizace
           </CardTitle>
-          <CardDescription>Penalizace za zpožděné platby a zmešk ané deadlines</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="latePayment">Úrok z prodlení</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="latePayment"
-                  type="number"
-                  step="0.01"
-                  value={settings.penalties.latePayment * 100}
-                  onChange={(e) => updatePenalties('latePayment', (parseFloat(e.target.value) / 100).toString())}
-                  className="text-right"
-                />
-                <span className="text-gray-600 dark:text-gray-300">% měsíčně</span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Např. 0.05 = 0.05% za každý měsíc prodlení</p>
+        <CardContent className="px-4 pb-4 space-y-2">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="latePayment" className="text-xs text-gray-500 whitespace-nowrap">Úrok z prodlení</Label>
+              <Input id="latePayment" type="number" step="0.01" value={settings.penalties.latePayment * 100} onChange={(e) => updatePenalties('latePayment', (parseFloat(e.target.value) / 100).toString())} className="h-8 w-20 text-sm text-right" />
+              <span className="text-xs text-gray-400">%/měs</span>
             </div>
-
-            <div>
-              <Label htmlFor="missedDeadline">Zmeškaný deadline klienta</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="missedDeadline"
-                  type="number"
-                  value={settings.penalties.missedDeadline}
-                  onChange={(e) => updatePenalties('missedDeadline', e.target.value)}
-                  className="text-right"
-                />
-                <span className="text-gray-600 dark:text-gray-300">Kč</span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Fixní poplatek pokud klient nestihl dodať podklady</p>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="missedDeadline" className="text-xs text-gray-500 whitespace-nowrap">Zmeškaný deadline</Label>
+              <Input id="missedDeadline" type="number" value={settings.penalties.missedDeadline} onChange={(e) => updatePenalties('missedDeadline', e.target.value)} className="h-8 w-24 text-sm text-right" />
+              <span className="text-xs text-gray-400">Kč</span>
             </div>
           </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-orange-200">
-            <p className="text-xs text-orange-800">
-              ⚠️ <strong>Upozornění:</strong> Penalizace musí být smluvně ošetřeny v mandátní smlouvě s klientem.
-              Automatické připočítání penalty bez právního základu může být neplatné.
-            </p>
-          </div>
+          <p className="text-[10px] text-orange-700 dark:text-orange-400">Penalizace musí být smluvně ošetřeny v mandátní smlouvě.</p>
         </CardContent>
       </Card>
 
       {/* Preview */}
-      <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-display">
-            <DollarSign className="h-5 w-5" />
-            Příklad Fakturace
+      <Card className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-display flex items-center gap-2">
+            <DollarSign className="h-3.5 w-3.5" />
+            Příklad fakturace
           </CardTitle>
-          <CardDescription>Ukázka výpočtu pro typickou daňovou kontrolu</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2 text-sm">
+        <CardContent className="px-4 pb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-3 space-y-1 text-xs">
             <div className="flex justify-between">
-              <span>Expert práce (10h × {settings.hourlyRates.expert} Kč)</span>
+              <span>Expert 10h × {settings.hourlyRates.expert} Kč</span>
               <span className="font-semibold">{(10 * settings.hourlyRates.expert).toLocaleString()} Kč</span>
             </div>
             <div className="flex justify-between">
-              <span>Urgentní práce (2h × {settings.hourlyRates.urgent} Kč)</span>
+              <span>Urgentní 2h × {settings.hourlyRates.urgent} Kč</span>
               <span className="font-semibold">{(2 * settings.hourlyRates.urgent).toLocaleString()} Kč</span>
             </div>
             {settings.travel.type !== 'fixed' && (
               <div className="flex justify-between">
-                <span>Doprava (50 km × {settings.travel.perKmRate} Kč)</span>
+                <span>Doprava 50 km × {settings.travel.perKmRate} Kč</span>
                 <span className="font-semibold">{(50 * settings.travel.perKmRate).toLocaleString()} Kč</span>
               </div>
             )}
@@ -397,7 +253,7 @@ export default function PricingSettingsPage() {
               </div>
             )}
             <Separator />
-            <div className="flex justify-between text-lg font-bold">
+            <div className="flex justify-between text-sm font-bold">
               <span>Celkem bez DPH:</span>
               <span>
                 {(
