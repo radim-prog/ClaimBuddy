@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     // Get document counts by OCR status
     const { data: documents } = await supabaseAdmin
       .from('documents')
-      .select('id, ocr_status, ocr_processed, status, company_id, updated_at')
+      .select('id, ocr_status, ocr_processed, status, company_id, ocr_data')
       .is('deleted_at', null)
 
     const docs = documents || []
@@ -31,35 +31,26 @@ export async function GET(request: NextRequest) {
     // Queue status
     const queueStatus = extractionQueue.getStatus()
 
-    // Recent activity — last 10 extractions
-    const { data: recentDocs } = await supabaseAdmin
-      .from('documents')
-      .select('id, file_name, company_id, ocr_status, status, updated_at, ocr_data')
-      .eq('ocr_processed', true)
-      .is('deleted_at', null)
-      .order('updated_at', { ascending: false })
-      .limit(10)
+    // Confidence breakdown for extracted (non-approved) documents
+    const extractedDocs = docs.filter(d => d.ocr_processed && d.status === 'extracted')
+    let okCount = 0
+    let warningsCount = 0
+    let errorsCount = 0
 
-    // Get company names for recent docs
-    const companyIds = [...new Set((recentDocs || []).map(d => d.company_id).filter(Boolean))]
-    const { data: companies } = companyIds.length > 0
-      ? await supabaseAdmin
-          .from('companies')
-          .select('id, name')
-          .in('id', companyIds)
-      : { data: [] }
-
-    const companyMap = new Map((companies || []).map(c => [c.id, c.name]))
-
-    const recentActivity = (recentDocs || []).map(d => ({
-      id: d.id,
-      fileName: d.file_name,
-      companyName: companyMap.get(d.company_id) || 'Neznámý',
-      status: d.status,
-      ocrStatus: d.ocr_status,
-      confidence: d.ocr_data?.confidence_score || null,
-      updatedAt: d.updated_at,
-    }))
+    for (const d of extractedDocs) {
+      if (d.ocr_status === 'error') {
+        errorsCount++
+      } else {
+        const score = d.ocr_data?.confidence_score
+        if (score === undefined || score === null || score < 50) {
+          errorsCount++
+        } else if (score < 80) {
+          warningsCount++
+        } else {
+          okCount++
+        }
+      }
+    }
 
     return NextResponse.json({
       stats: {
@@ -74,7 +65,11 @@ export async function GET(request: NextRequest) {
         length: queueStatus.queueLength,
         active: queueStatus.activeCount,
       },
-      recentActivity,
+      by_confidence: {
+        ok: okCount,
+        warnings: warningsCount,
+        errors: errorsCount,
+      },
     })
   } catch (error) {
     console.error('[Extraction Stats] Error:', error)

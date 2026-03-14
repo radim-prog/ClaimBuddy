@@ -1,14 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, Download } from 'lucide-react'
+import { FileText, Download, Brain } from 'lucide-react'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { SystemAudit } from '@/components/admin/system-audit'
 import { SystemExport } from '@/components/admin/system-export'
+import { SystemExtraction } from '@/components/admin/system-extraction'
 
 const sections = [
   { id: 'audit', label: 'Audit logy', icon: FileText, Component: SystemAudit },
   { id: 'export', label: 'Export dat', icon: Download, Component: SystemExport },
+  { id: 'extraction', label: 'AI Vytěžování', icon: Brain, Component: SystemExtraction },
 ] as const
 
 export default function SystemPage() {

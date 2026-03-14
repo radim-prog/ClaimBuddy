@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import {
@@ -11,10 +10,12 @@ import {
   Clock,
   AlertCircle,
   Loader2,
-  RefreshCw,
   TrendingUp,
+  ShieldCheck,
+  AlertTriangle,
+  XCircle,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 type Stats = {
   total: number
@@ -30,21 +31,17 @@ type QueueInfo = {
   active: number
 }
 
-type RecentItem = {
-  id: string
-  fileName: string
-  companyName: string
-  status: string
-  ocrStatus: string
-  confidence: number | null
-  updatedAt: string
+type ByConfidence = {
+  ok: number
+  warnings: number
+  errors: number
 }
 
 export default function ExtractionDashboardPage() {
   const { userId } = useAccountantUser()
   const [stats, setStats] = useState<Stats | null>(null)
   const [queue, setQueue] = useState<QueueInfo | null>(null)
-  const [recent, setRecent] = useState<RecentItem[]>([])
+  const [byConfidence, setByConfidence] = useState<ByConfidence | null>(null)
   const [loading, setLoading] = useState(true)
 
   const fetchStats = useCallback(async () => {
@@ -57,7 +54,7 @@ export default function ExtractionDashboardPage() {
         const data = await res.json()
         setStats(data.stats)
         setQueue(data.queue)
-        setRecent(data.recentActivity || [])
+        setByConfidence(data.by_confidence || null)
       }
     } catch {
       // silent
@@ -68,7 +65,7 @@ export default function ExtractionDashboardPage() {
 
   useEffect(() => {
     fetchStats()
-    const interval = setInterval(fetchStats, 15_000) // Poll every 15s
+    const interval = setInterval(fetchStats, 15_000)
     return () => clearInterval(interval)
   }, [fetchStats])
 
@@ -118,6 +115,36 @@ export default function ExtractionDashboardPage() {
     },
   ]
 
+  const confidenceCards = [
+    {
+      label: 'OK',
+      value: byConfidence?.ok ?? 0,
+      icon: ShieldCheck,
+      color: 'text-green-600',
+      bg: 'bg-green-50 dark:bg-green-950/30',
+      border: 'border-green-200 dark:border-green-800 hover:border-green-400',
+      href: '/accountant/extraction/verify?category=ok',
+    },
+    {
+      label: 'Varování',
+      value: byConfidence?.warnings ?? 0,
+      icon: AlertTriangle,
+      color: 'text-amber-600',
+      bg: 'bg-amber-50 dark:bg-amber-950/30',
+      border: 'border-amber-200 dark:border-amber-800 hover:border-amber-400',
+      href: '/accountant/extraction/verify?category=warnings',
+    },
+    {
+      label: 'Chyby',
+      value: byConfidence?.errors ?? 0,
+      icon: XCircle,
+      color: 'text-red-600',
+      bg: 'bg-red-50 dark:bg-red-950/30',
+      border: 'border-red-200 dark:border-red-800 hover:border-red-400',
+      href: '/accountant/extraction/verify?category=errors',
+    },
+  ]
+
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
@@ -160,57 +187,34 @@ export default function ExtractionDashboardPage() {
         </Card>
       )}
 
-      {/* Recent Activity */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="font-medium">Poslední aktivita</h3>
-            <Button variant="ghost" size="sm" onClick={fetchStats}>
-              <RefreshCw className="h-4 w-4 mr-1" />
-              Obnovit
-            </Button>
+      {/* Confidence Summary Cards */}
+      {byConfidence && (byConfidence.ok > 0 || byConfidence.warnings > 0 || byConfidence.errors > 0) && (
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">Kvalita vytěžení</h3>
+          <div className="grid grid-cols-3 gap-3">
+            {confidenceCards.map((card) => {
+              const Icon = card.icon
+              return (
+                <Link key={card.label} href={card.href}>
+                  <Card className={`relative overflow-hidden cursor-pointer transition-colors ${card.border}`}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg ${card.bg} flex items-center justify-center flex-shrink-0`}>
+                          <Icon className={`h-5 w-5 ${card.color}`} />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">{card.value}</p>
+                          <p className="text-xs text-muted-foreground">{card.label}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )
+            })}
           </div>
-          {recent.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Zatím žádná vytěžená data</p>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {recent.map((item) => (
-                <div key={item.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
-                  <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.fileName}</p>
-                    <p className="text-xs text-muted-foreground">{item.companyName}</p>
-                  </div>
-                  <StatusBadge status={item.status} ocrStatus={item.ocrStatus} />
-                  {item.confidence !== null && (
-                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                      item.confidence >= 90 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
-                      item.confidence >= 70 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' :
-                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                    }`}>
-                      {item.confidence}%
-                    </span>
-                  )}
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {new Date(item.updatedAt).toLocaleDateString('cs-CZ')}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   )
-}
-
-function StatusBadge({ status, ocrStatus }: { status: string; ocrStatus: string }) {
-  if (ocrStatus === 'error') return <Badge variant="destructive" className="text-xs">Chyba</Badge>
-  if (status === 'approved') return <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">Schváleno</Badge>
-  if (status === 'extracted') return <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">Vytěženo</Badge>
-  if (ocrStatus === 'processing') return <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">Zpracovává se</Badge>
-  return <Badge variant="outline" className="text-xs">{status}</Badge>
 }

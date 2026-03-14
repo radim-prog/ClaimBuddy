@@ -2,14 +2,13 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, Users, CheckSquare, Settings, ScanLine } from 'lucide-react'
+import { LayoutDashboard, Users, CheckSquare, ScanLine } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = [
   { name: 'Dashboard', href: '/accountant/extraction', icon: LayoutDashboard, exact: true },
   { name: 'Klienti', href: '/accountant/extraction/clients', icon: Users },
   { name: 'Verifikace', href: '/accountant/extraction/verify', icon: CheckSquare },
-  { name: 'Nastavení', href: '/accountant/extraction/settings', icon: Settings },
 ]
 
 export default function ExtractionLayout({ children }: { children: React.ReactNode }) {

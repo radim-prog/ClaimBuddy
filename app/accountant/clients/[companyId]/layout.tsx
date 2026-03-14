@@ -382,7 +382,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                     <Users className="h-4 w-4 sm:mr-1" />
                     <span className="hidden sm:inline">Pohled klienta</span>
                   </Button>
-                  <Link href={`/accountant/extraction?company=${companyId}`}>
+                  <Link href={`/accountant/extraction/clients/${companyId}`}>
                     <Button variant="outline" size="sm" className="rounded-xl border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 transition-colors">
                       <FileText className="h-4 w-4 sm:mr-1" />
                       <span className="hidden sm:inline">Vytěžování</span>
