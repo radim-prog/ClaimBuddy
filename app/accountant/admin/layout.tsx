@@ -25,7 +25,7 @@ export default function AdminLayout({
   const pathname = usePathname()
 
   return (
-    <div>
+    <div className="max-w-4xl">
       {/* Slim Admin Banner */}
       <div className="flex items-center gap-2 px-3 py-1.5 mb-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800 text-sm">
         <Shield className="h-3.5 w-3.5 text-purple-600" />

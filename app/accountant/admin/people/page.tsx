@@ -1,20 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Network, Calendar, Clock, Gauge } from 'lucide-react'
+import { Users, Network, Calendar } from 'lucide-react'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { PeopleUsers } from '@/components/admin/people-users'
 import { PeopleHierarchy } from '@/components/admin/people-hierarchy'
 import { PeopleSubstitutions } from '@/components/admin/people-substitutions'
-import { PeopleTime } from '@/components/admin/people-time'
-import { PeopleCapacity } from '@/components/admin/people-capacity'
 
 const sections = [
   { id: 'users', label: 'Uživatelé', icon: Users, Component: PeopleUsers },
   { id: 'hierarchy', label: 'Organizační struktura', icon: Network, Component: PeopleHierarchy },
   { id: 'substitutions', label: 'Zastupování', icon: Calendar, Component: PeopleSubstitutions },
-  { id: 'time', label: 'Odpracováno', icon: Clock, Component: PeopleTime },
-  { id: 'capacity', label: 'Kapacity', icon: Gauge, Component: PeopleCapacity },
 ] as const
 
 type QuickStats = {

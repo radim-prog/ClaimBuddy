@@ -31,7 +31,7 @@ export default function SettingsLayout({
   ]
 
   return (
-    <div>
+    <div className="max-w-3xl">
       {/* Header Banner */}
       <div className="bg-gray-100 dark:bg-gray-800/50 text-gray-900 dark:text-white px-4 py-3 mb-6 rounded-lg">
         <div className="flex items-center gap-3">

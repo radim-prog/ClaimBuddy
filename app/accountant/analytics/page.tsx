@@ -9,7 +9,6 @@ import {
   TrendingDown,
   Users,
   Target,
-  Settings,
   UserPlus,
   UserMinus,
   ArrowUpRight,
@@ -137,16 +136,6 @@ export default function AnalyticsDashboard() {
           <Button variant="outline" size="sm" onClick={() => setYear(y => y - 1)}>&larr;</Button>
           <span className="text-lg font-bold px-2">{year}</span>
           <Button variant="outline" size="sm" onClick={() => setYear(y => y + 1)}>&rarr;</Button>
-          <Link href="/accountant/analytics/goals">
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-1" /> Nastavit cile
-            </Button>
-          </Link>
-          <Link href="/accountant/analytics/clients">
-            <Button variant="outline" size="sm">
-              <Users className="h-4 w-4 mr-1" /> Prehled klientu
-            </Button>
-          </Link>
         </div>
       </div>
 
