@@ -58,30 +58,32 @@ export async function getConversationsByCompany(
 
   const otherSide = forRole === 'client' ? 'accountant' : 'client'
 
-  // Get unread counts for each chat
-  const conversations: Conversation[] = await Promise.all(
-    chats.map(async (chat) => {
-      const { count } = await supabaseAdmin
-        .from('chat_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('chat_id', chat.id)
-        .eq('sender_type', otherSide)
-        .eq('read', false)
+  // Batch unread counts: 1 query instead of N per-chat queries
+  const chatIds = chats.map(c => c.id)
+  const { data: unreadMessages } = await supabaseAdmin
+    .from('chat_messages')
+    .select('chat_id')
+    .in('chat_id', chatIds)
+    .eq('sender_type', otherSide)
+    .eq('read', false)
 
-      return {
-        id: chat.id,
-        company_id: chat.company_id,
-        subject: chat.subject || 'Obecná konverzace',
-        status: (chat.status || 'open') as 'open' | 'completed',
-        last_message_at: chat.last_message_at,
-        last_message_preview: chat.last_message_preview,
-        unread_count: count || 0,
-        started_by: (chat.started_by || 'accountant') as 'client' | 'accountant',
-        completed_at: chat.completed_at,
-        created_at: chat.created_at,
-      }
-    })
-  )
+  const unreadMap = new Map<string, number>()
+  for (const msg of unreadMessages || []) {
+    unreadMap.set(msg.chat_id, (unreadMap.get(msg.chat_id) || 0) + 1)
+  }
+
+  const conversations: Conversation[] = chats.map((chat) => ({
+    id: chat.id,
+    company_id: chat.company_id,
+    subject: chat.subject || 'Obecná konverzace',
+    status: (chat.status || 'open') as 'open' | 'completed',
+    last_message_at: chat.last_message_at,
+    last_message_preview: chat.last_message_preview,
+    unread_count: unreadMap.get(chat.id) || 0,
+    started_by: (chat.started_by || 'accountant') as 'client' | 'accountant',
+    completed_at: chat.completed_at,
+    created_at: chat.created_at,
+  }))
 
   // Sort: open first (by last_message_at desc), then completed
   return conversations.sort((a, b) => {
@@ -395,31 +397,34 @@ export async function getConversationsByTask(
   if (error) throw new Error(`Failed to fetch task conversations: ${error.message}`)
   if (!chats || chats.length === 0) return []
 
-  const conversations: Conversation[] = await Promise.all(
-    chats.map(async (chat) => {
-      const { count } = await supabaseAdmin
-        .from('chat_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('chat_id', chat.id)
-        .neq('sender_id', forUserId)
-        .eq('read', false)
+  // Batch unread counts: 1 query instead of N per-chat queries
+  const chatIds = chats.map(c => c.id)
+  const { data: unreadMessages } = await supabaseAdmin
+    .from('chat_messages')
+    .select('chat_id')
+    .in('chat_id', chatIds)
+    .neq('sender_id', forUserId)
+    .eq('read', false)
 
-      return {
-        id: chat.id,
-        company_id: chat.company_id,
-        task_id: chat.task_id,
-        type: 'task_chat' as const,
-        subject: chat.subject || 'Diskuze',
-        status: (chat.status || 'open') as 'open' | 'completed',
-        last_message_at: chat.last_message_at,
-        last_message_preview: chat.last_message_preview,
-        unread_count: count || 0,
-        started_by: (chat.started_by || 'accountant') as 'client' | 'accountant',
-        completed_at: chat.completed_at,
-        created_at: chat.created_at,
-      }
-    })
-  )
+  const unreadMap = new Map<string, number>()
+  for (const msg of unreadMessages || []) {
+    unreadMap.set(msg.chat_id, (unreadMap.get(msg.chat_id) || 0) + 1)
+  }
+
+  const conversations: Conversation[] = chats.map((chat) => ({
+    id: chat.id,
+    company_id: chat.company_id,
+    task_id: chat.task_id,
+    type: 'task_chat' as const,
+    subject: chat.subject || 'Diskuze',
+    status: (chat.status || 'open') as 'open' | 'completed',
+    last_message_at: chat.last_message_at,
+    last_message_preview: chat.last_message_preview,
+    unread_count: unreadMap.get(chat.id) || 0,
+    started_by: (chat.started_by || 'accountant') as 'client' | 'accountant',
+    completed_at: chat.completed_at,
+    created_at: chat.created_at,
+  }))
 
   return conversations.sort((a, b) => {
     if (a.status !== b.status) return a.status === 'open' ? -1 : 1
@@ -513,7 +518,7 @@ export async function markAllAsReadInTaskChat(
 
 export async function getAllOpenConversations(
   forUserId: string,
-  options?: { status?: 'open' | 'completed'; unread_only?: boolean; limit?: number; count_only?: boolean }
+  options?: { status?: 'open' | 'completed'; unread_only?: boolean; limit?: number; count_only?: boolean; company_id?: string }
 ): Promise<{ conversations: ConversationWithContext[]; total_unread: number }> {
   let query = supabaseAdmin
     .from('chats')
@@ -524,6 +529,10 @@ export async function getAllOpenConversations(
     query = query.eq('status', options.status)
   }
 
+  if (options?.company_id) {
+    query = query.eq('company_id', options.company_id)
+  }
+
   if (options?.limit) {
     query = query.limit(options.limit)
   }
@@ -532,6 +541,33 @@ export async function getAllOpenConversations(
 
   if (error) throw new Error(`Failed to fetch conversations: ${error.message}`)
   if (!chats || chats.length === 0) return { conversations: [], total_unread: 0 }
+
+  // Fast path for count_only: 2 batch queries instead of N per-chat queries
+  if (options?.count_only) {
+    const companyChatIds = chats.filter(c => c.type === 'company_chat').map(c => c.id)
+    const taskChatIds = chats.filter(c => c.type === 'task_chat').map(c => c.id)
+    let totalUnread = 0
+
+    const [companyResult, taskResult] = await Promise.all([
+      companyChatIds.length > 0
+        ? supabaseAdmin.from('chat_messages')
+            .select('*', { count: 'exact', head: true })
+            .in('chat_id', companyChatIds)
+            .eq('sender_type', 'client')
+            .eq('read', false)
+        : Promise.resolve({ count: 0 }),
+      taskChatIds.length > 0
+        ? supabaseAdmin.from('chat_messages')
+            .select('*', { count: 'exact', head: true })
+            .in('chat_id', taskChatIds)
+            .neq('sender_id', forUserId)
+            .eq('read', false)
+        : Promise.resolve({ count: 0 }),
+    ])
+
+    totalUnread = (companyResult.count || 0) + (taskResult.count || 0)
+    return { conversations: [], total_unread: totalUnread }
+  }
 
   // Fetch company names for company_chat
   const companyIds = [...new Set(chats.filter(c => c.company_id).map(c => c.company_id))]
@@ -561,65 +597,62 @@ export async function getAllOpenConversations(
     }
   }
 
+  // Batch unread counts: 2 queries instead of N per-chat queries
+  const companyChatIds = chats.filter(c => c.type === 'company_chat').map(c => c.id)
+  const taskChatIds = chats.filter(c => c.type === 'task_chat').map(c => c.id)
+
+  const [companyUnreads, taskUnreads] = await Promise.all([
+    companyChatIds.length > 0
+      ? supabaseAdmin.from('chat_messages').select('chat_id')
+          .in('chat_id', companyChatIds).eq('sender_type', 'client').eq('read', false)
+      : Promise.resolve({ data: [] as { chat_id: string }[] }),
+    taskChatIds.length > 0
+      ? supabaseAdmin.from('chat_messages').select('chat_id')
+          .in('chat_id', taskChatIds).neq('sender_id', forUserId).eq('read', false)
+      : Promise.resolve({ data: [] as { chat_id: string }[] }),
+  ])
+
+  const unreadMap = new Map<string, number>()
+  for (const msg of [...(companyUnreads.data || []), ...(taskUnreads.data || [])]) {
+    unreadMap.set(msg.chat_id, (unreadMap.get(msg.chat_id) || 0) + 1)
+  }
+
   let totalUnread = 0
+  const conversations: ConversationWithContext[] = chats.map((chat) => {
+    const isTaskChat = chat.type === 'task_chat'
+    const unreadCount = unreadMap.get(chat.id) || 0
+    totalUnread += unreadCount
 
-  const conversations: ConversationWithContext[] = await Promise.all(
-    chats.map(async (chat) => {
-      const isTaskChat = chat.type === 'task_chat'
+    const companyName = chat.company_id ? (companyMap[chat.company_id] || null) : null
+    const taskTitle = chat.task_id ? (taskMap[chat.task_id] || null) : null
 
-      // Unread: for task_chat use sender_id, for company_chat use sender_type
-      let unreadCount = 0
-      if (isTaskChat) {
-        const { count } = await supabaseAdmin
-          .from('chat_messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('chat_id', chat.id)
-          .neq('sender_id', forUserId)
-          .eq('read', false)
-        unreadCount = count || 0
-      } else {
-        const { count } = await supabaseAdmin
-          .from('chat_messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('chat_id', chat.id)
-          .eq('sender_type', 'client')
-          .eq('read', false)
-        unreadCount = count || 0
-      }
+    const sourceType = isTaskChat ? 'task' : 'company'
+    const sourceUrl = isTaskChat
+      ? `/accountant/tasks/${chat.task_id}?tab=komunikace`
+      : `/accountant/clients/${chat.company_id}?tab=messages`
 
-      totalUnread += unreadCount
-
-      const companyName = chat.company_id ? (companyMap[chat.company_id] || null) : null
-      const taskTitle = chat.task_id ? (taskMap[chat.task_id] || null) : null
-
-      const sourceType = isTaskChat ? 'task' : 'company'
-      const sourceUrl = isTaskChat
-        ? `/accountant/tasks/${chat.task_id}?tab=komunikace`
-        : `/accountant/clients/${chat.company_id}?tab=messages`
-
-      return {
-        id: chat.id,
-        company_id: chat.company_id,
-        task_id: chat.task_id,
-        type: chat.type as 'company_chat' | 'task_chat',
-        subject: chat.subject || (isTaskChat ? 'Diskuze' : 'Obecna konverzace'),
-        status: (chat.status || 'open') as 'open' | 'completed',
-        last_message_at: chat.last_message_at,
-        last_message_preview: chat.last_message_preview,
-        unread_count: unreadCount,
-        started_by: (chat.started_by || 'accountant') as 'client' | 'accountant',
-        completed_at: chat.completed_at,
-        created_at: chat.created_at,
-        company_name: companyName,
-        group_name: chat.company_id ? (companyGroupMap[chat.company_id] || null) : null,
-        task_title: taskTitle,
-        source_type: sourceType as 'company' | 'task',
-        source_url: sourceUrl,
-        waiting_since: chat.waiting_since || null,
-        last_responder: chat.last_responder || null,
-      }
-    })
-  )
+    return {
+      id: chat.id,
+      company_id: chat.company_id,
+      task_id: chat.task_id,
+      type: chat.type as 'company_chat' | 'task_chat',
+      subject: chat.subject || (isTaskChat ? 'Diskuze' : 'Obecna konverzace'),
+      status: (chat.status || 'open') as 'open' | 'completed',
+      last_message_at: chat.last_message_at,
+      last_message_preview: chat.last_message_preview,
+      unread_count: unreadCount,
+      started_by: (chat.started_by || 'accountant') as 'client' | 'accountant',
+      completed_at: chat.completed_at,
+      created_at: chat.created_at,
+      company_name: companyName,
+      group_name: chat.company_id ? (companyGroupMap[chat.company_id] || null) : null,
+      task_title: taskTitle,
+      source_type: sourceType as 'company' | 'task',
+      source_url: sourceUrl,
+      waiting_since: chat.waiting_since || null,
+      last_responder: chat.last_responder || null,
+    }
+  })
 
   // Filter unread_only after counting
   let filtered = conversations

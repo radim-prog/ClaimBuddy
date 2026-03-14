@@ -100,7 +100,9 @@ export function KomunikaceChatDetail({ conversation, onBack, onConversationChang
         headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
         body: JSON.stringify({ action: 'mark_read', chat_id: conversation.id }),
       }).then(() => onConversationChange?.()).catch(() => {})
-      const interval = setInterval(fetchMessages, 15_000)
+      const interval = setInterval(() => {
+        if (!document.hidden) fetchMessages()
+      }, 15_000)
       return () => clearInterval(interval)
     }
   }, [conversation.id, conversation.company_id, userId, fetchMessages, onConversationChange])

@@ -67,6 +67,17 @@ export async function getDemoCompanyIds(): Promise<string[]> {
   return all.filter(c => c.status === 'active').slice(0, 3).map(c => c.id)
 }
 
+export async function getCompanyBasics(): Promise<{ id: string; name: string; status: string }[]> {
+  const { data, error } = await supabaseAdmin
+    .from('companies')
+    .select('id, name, status')
+    .is('deleted_at', null)
+    .order('name')
+
+  if (error) throw new Error(`Failed to fetch company basics: ${error.message}`)
+  return data ?? []
+}
+
 export async function getCompanyById(id: string): Promise<Company | null> {
   const { data, error } = await supabaseAdmin
     .from('companies')

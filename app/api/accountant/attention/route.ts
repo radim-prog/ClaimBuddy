@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getAllCompanies } from '@/lib/company-store'
+import { getCompanyBasics } from '@/lib/company-store'
 import { getClosures } from '@/lib/closure-store-db'
 
 export const dynamic = 'force-dynamic'
@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
     const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
     const [allCompanies, allClosures, chatsResult, notificationsResult, tasksResult] = await Promise.all([
-      getAllCompanies(),
-      getClosures(),
+      getCompanyBasics(),
+      getClosures({ period: currentPeriod }),
       supabaseAdmin.from('chats').select('id, company_id').eq('type', 'company_chat'),
       supabaseAdmin.from('client_notifications').select('company_id').eq('status', 'active'),
       supabaseAdmin.from('tasks').select('company_id').in('status', ['pending', 'in_progress', 'accepted']).not('company_id', 'is', null),
@@ -64,11 +64,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 3. Missing/uploaded documents from current month closures
+    // 3. Missing/uploaded documents from current month closures (already filtered by period)
     const missingByCompany = new Map<string, number>()
     const uploadedByCompany = new Map<string, number>()
     for (const closure of allClosures) {
-      if (closure.period !== currentPeriod) continue
       if (!companyMap.has(closure.company_id)) continue
 
       let missing = 0

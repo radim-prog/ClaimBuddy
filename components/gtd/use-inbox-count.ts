@@ -24,7 +24,9 @@ export function useInboxCount(): number {
     }
 
     fetchCount()
-    const interval = setInterval(fetchCount, 60_000)
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchCount()
+    }, 120_000)
 
     return () => {
       mounted = false

@@ -112,7 +112,9 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
   useEffect(() => {
     setLoadingConversations(true)
     fetchConversations()
-    const interval = setInterval(fetchConversations, 30_000)
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchConversations()
+    }, 60_000)
     return () => clearInterval(interval)
   }, [fetchConversations])
 
@@ -122,7 +124,9 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
       initialLoadRef.current = true
       prevMessageCountRef.current = 0
       fetchMessages()
-      const interval = setInterval(fetchMessages, 15_000)
+      const interval = setInterval(() => {
+        if (!document.hidden) fetchMessages()
+      }, 15_000)
       return () => clearInterval(interval)
     } else {
       setMessages([])

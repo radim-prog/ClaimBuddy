@@ -251,7 +251,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         .catch(() => {})
     }
     fetchUnread()
-    const interval = setInterval(fetchUnread, 60_000)
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchUnread()
+    }, 120_000)
     return () => clearInterval(interval)
   }, [params.id, userId])
 

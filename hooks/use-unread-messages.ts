@@ -23,7 +23,9 @@ export function useUnreadMessages() {
 
   useEffect(() => {
     fetchUnread()
-    const interval = setInterval(fetchUnread, 60_000)
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchUnread()
+    }, 120_000)
     return () => clearInterval(interval)
   }, [fetchUnread])
 

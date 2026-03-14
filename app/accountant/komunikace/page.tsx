@@ -46,7 +46,9 @@ function KomunikaceOrchestrator() {
 
   useEffect(() => {
     fetchConversations()
-    const interval = setInterval(fetchConversations, 30_000)
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchConversations()
+    }, 60_000)
     return () => clearInterval(interval)
   }, [fetchConversations])
 

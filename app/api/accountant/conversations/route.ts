@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get('status') as 'open' | 'completed' | null
   const unreadOnly = searchParams.get('unread_only') === 'true'
   const countOnly = searchParams.get('count_only') === 'true'
+  const companyId = searchParams.get('company_id')
   const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
 
   try {
@@ -21,6 +22,7 @@ export async function GET(request: NextRequest) {
       unread_only: unreadOnly,
       limit: limit || 100,
       count_only: countOnly,
+      company_id: companyId || undefined,
     })
 
     if (countOnly) {

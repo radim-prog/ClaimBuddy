@@ -31,18 +31,12 @@ export function MessagePopupDialog({ open, onOpenChange, companyId, companyName 
   const fetchConversations = useCallback(async () => {
     if (!userId || !open) return
     try {
-      const res = await fetch('/api/accountant/conversations?limit=200', {
+      const res = await fetch(`/api/accountant/conversations?company_id=${companyId}&status=open`, {
         headers: { 'x-user-id': userId },
       })
       if (!res.ok) return
       const data = await res.json()
-      const all: ConversationWithContext[] = data.conversations || []
-      const filtered = all.filter(c => c.company_id === companyId && c.status === 'open')
-      filtered.sort((a, b) => {
-        const aTime = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
-        const bTime = b.last_message_at ? new Date(b.last_message_at).getTime() : 0
-        return bTime - aTime
-      })
+      const filtered: ConversationWithContext[] = data.conversations || []
       setConversations(filtered)
       if (filtered.length > 0 && !selectedConv) {
         setSelectedConv(filtered[0])

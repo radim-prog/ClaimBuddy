@@ -34,7 +34,7 @@ const EMPTY_TOTALS: AttentionTotals = {
   companies_needing_attention: 0,
 }
 
-export function useAttentionSummary(pollInterval = 60_000) {
+export function useAttentionSummary(pollInterval = 90_000) {
   const [byCompany, setByCompany] = useState<Map<string, AttentionCounts>>(new Map())
   const [companiesList, setCompaniesList] = useState<CompanyAttention[]>([])
   const [totals, setTotals] = useState<AttentionTotals>(EMPTY_TOTALS)
@@ -73,7 +73,9 @@ export function useAttentionSummary(pollInterval = 60_000) {
   useEffect(() => {
     mountedRef.current = true
     fetchAttention()
-    const interval = setInterval(fetchAttention, pollInterval)
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchAttention()
+    }, pollInterval)
     return () => {
       mountedRef.current = false
       clearInterval(interval)
