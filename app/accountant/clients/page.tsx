@@ -30,9 +30,10 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Bell } from 'lucide-react'
+import { Bell, MessageCircle } from 'lucide-react'
 // Company data fetched from API (Supabase-backed)
 import { NewClientForm } from '@/components/new-client-form'
+import { MessagePopupDialog } from '@/components/komunikace/message-popup-dialog'
 import { useAttention } from '@/lib/contexts/attention-context'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 
@@ -80,7 +81,7 @@ function Tip({ children, text }: { children: React.ReactNode; text: string }) {
   )
 }
 
-function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelect, attentionCount, healthScore, isFirst }: {
+function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelect, attentionCount, healthScore, isFirst, unreadMessages, onMessageClick }: {
   company: Company
   fullStatus: { status: 'ok' | 'missing' | 'uploaded'; missingDocs: number; uploadedDocs: number }
   clientStatus: string
@@ -89,6 +90,8 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
   attentionCount: number
   healthScore?: number | null
   isFirst?: boolean
+  unreadMessages?: number
+  onMessageClick?: (companyId: string, companyName: string) => void
 }) {
   const isOnboarding = clientStatus === 'onboarding'
   const isInactive = clientStatus === 'inactive'
@@ -196,6 +199,17 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
 
               {/* Stav */}
               <div className="col-span-2 text-right flex items-center justify-end gap-2">
+                {(unreadMessages ?? 0) > 0 && !isInactive && onMessageClick && (
+                  <Tip text={`${unreadMessages} neprectenych zprav`}>
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMessageClick(company.id, company.name) }}
+                      className="inline-flex items-center gap-1 text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded-full hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                    >
+                      <MessageCircle className="h-3 w-3" />
+                      <span className="font-semibold">{unreadMessages}</span>
+                    </button>
+                  </Tip>
+                )}
                 {healthScore != null && !isInactive && (
                   <Tip text={`Zdraví klienta: ${healthScore}/100`}>
                     <span className={`inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-md ${
@@ -268,6 +282,12 @@ function ClientsPageContent() {
 
   // New client modal
   const [showNewClient, setShowNewClient] = useState(false)
+
+  // Message popup
+  const [messagePopup, setMessagePopup] = useState<{ companyId: string; companyName: string } | null>(null)
+  const handleMessageClick = useCallback((companyId: string, companyName: string) => {
+    setMessagePopup({ companyId, companyName })
+  }, [])
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -1055,6 +1075,8 @@ function ClientsPageContent() {
                           onToggleSelect={toggleSelection}
                           attentionCount={getCompanyAttention(company.id).total}
                           healthScore={healthScores.get(company.id)}
+                          unreadMessages={getCompanyAttention(company.id).unread_messages}
+                          onMessageClick={handleMessageClick}
                         />
                       ))}
                     </div>
@@ -1076,11 +1098,21 @@ function ClientsPageContent() {
               attentionCount={getCompanyAttention(company.id).total}
               healthScore={healthScores.get(company.id)}
               isFirst={idx === 0}
+              unreadMessages={getCompanyAttention(company.id).unread_messages}
+              onMessageClick={handleMessageClick}
             />
           ))
         )}
       </div>
     </div>
+    {messagePopup && (
+      <MessagePopupDialog
+        open={!!messagePopup}
+        onOpenChange={(open) => { if (!open) setMessagePopup(null) }}
+        companyId={messagePopup.companyId}
+        companyName={messagePopup.companyName}
+      />
+    )}
     </TooltipProvider>
   )
 }

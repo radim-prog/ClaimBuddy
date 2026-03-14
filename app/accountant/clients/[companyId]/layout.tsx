@@ -37,6 +37,7 @@ import type { Task } from '@/lib/types/tasks'
 import { useAttention } from '@/lib/contexts/attention-context'
 import type { HubStats } from '@/lib/types/drive'
 import { czechPlural } from '@/lib/utils'
+import { MessagePopupDialog } from '@/components/komunikace/message-popup-dialog'
 
 // ============================================
 // TYPES (shared across sub-pages)
@@ -142,6 +143,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
   const [error, setError] = useState<string | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [urgencyModalOpen, setUrgencyModalOpen] = useState(false)
+  const [messagePopupOpen, setMessagePopupOpen] = useState(false)
   const [hubStats, setHubStats] = useState<HubStats | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
   const [healthScore, setHealthScore] = useState<number | null>(null)
@@ -350,6 +352,20 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                   </Button>
                 </Link>
                 <div className="flex gap-1.5 sm:gap-2">
+                  {attention.unread_messages > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-700 dark:text-purple-400 transition-colors relative"
+                      onClick={() => setMessagePopupOpen(true)}
+                    >
+                      <MessageCircle className="h-4 w-4 sm:mr-1" />
+                      <span className="hidden sm:inline">Zpravy</span>
+                      <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center h-4 min-w-[16px] px-1 text-[10px] font-bold rounded-full bg-red-500 text-white">
+                        {attention.unread_messages}
+                      </span>
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -665,6 +681,13 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
         onOpenChange={setEditModalOpen}
         company={company}
         onSave={handleCompanySave}
+      />
+
+      <MessagePopupDialog
+        open={messagePopupOpen}
+        onOpenChange={setMessagePopupOpen}
+        companyId={companyId}
+        companyName={company.name}
       />
 
       {selectedClosure && (
