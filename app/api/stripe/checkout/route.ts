@@ -48,14 +48,23 @@ export async function POST(request: NextRequest) {
   }
 
   const origin = request.headers.get('origin') || 'https://app.zajcon.cz'
+  const userRole = request.headers.get('x-user-role')
+  const isClient = userRole === 'client' || tier === 'basic' || tier === 'premium'
+  const portalType = isClient ? 'client' : 'accountant'
+  const successUrl = isClient
+    ? `${origin}/client/subscription?success=true`
+    : `${origin}/accountant/admin/subscription?success=true`
+  const cancelUrl = isClient
+    ? `${origin}/client/subscription?cancelled=true`
+    : `${origin}/accountant/admin/subscription?cancelled=true`
 
   const sessionParams: Record<string, unknown> = {
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${origin}/accountant/admin/subscription?success=true`,
-    cancel_url: `${origin}/accountant/admin/subscription?cancelled=true`,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
     locale: 'cs',
-    metadata: { user_id: userId, plan_tier: tier },
+    metadata: { user_id: userId, plan_tier: tier, portal_type: portalType },
   }
 
   if (customerId) {

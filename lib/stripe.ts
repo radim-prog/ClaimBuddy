@@ -31,11 +31,15 @@ export const STRIPE_PRICES = {
   client_premium_yearly: process.env.STRIPE_PRICE_CLIENT_PREMIUM_YEARLY || '',
 } as const
 
-export type PlanTier = 'starter' | 'professional' | 'enterprise'
+export type PlanTier = 'starter' | 'professional' | 'enterprise' | 'basic' | 'premium'
 export type BillingCycle = 'monthly' | 'yearly'
 
 export function getStripePriceId(tier: PlanTier, cycle: BillingCycle): string {
-  const key = `${tier}_${cycle}` as keyof typeof STRIPE_PRICES
+  // Client tiers use client_ prefix
+  const isClientTier = tier === 'basic' || tier === 'premium'
+  const key = isClientTier
+    ? `client_${tier}_${cycle}` as keyof typeof STRIPE_PRICES
+    : `${tier}_${cycle}` as keyof typeof STRIPE_PRICES
   return STRIPE_PRICES[key]
 }
 

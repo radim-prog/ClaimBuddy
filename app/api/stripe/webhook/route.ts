@@ -53,10 +53,11 @@ export async function POST(request: NextRequest) {
         const subId = typeof session.subscription === 'string' ? session.subscription : (session.subscription as { id: string } | null)?.id
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const stripeSubscription: any = subId ? await stripe.subscriptions.retrieve(subId) : null
+        const portalType = (session.metadata?.portal_type === 'client' ? 'client' : 'accountant') as 'accountant' | 'client'
 
         await upsertSubscription({
           user_id: userId,
-          portal_type: 'accountant',
+          portal_type: portalType,
           plan_tier: planTier,
           status: stripeSubscription?.status === 'trialing' ? 'trialing' : 'active',
           stripe_customer_id: customerId || undefined,

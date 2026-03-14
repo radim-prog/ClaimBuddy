@@ -33,12 +33,16 @@ interface UpgradeBannerProps {
   feature: string
   currentTier?: string
   inline?: boolean
+  portalType?: 'accountant' | 'client'
 }
 
-export function UpgradeBanner({ feature, currentTier, inline }: UpgradeBannerProps) {
+export function UpgradeBanner({ feature, currentTier, inline, portalType = 'accountant' }: UpgradeBannerProps) {
   const featureInfo = FEATURE_LABELS[feature]
   const featureName = featureInfo?.name ?? feature
   const requiredTier = featureInfo?.tier ?? 'vyšší tarif'
+  const subscriptionUrl = portalType === 'client'
+    ? '/client/subscription'
+    : '/accountant/admin/subscription'
 
   if (inline) {
     return (
@@ -47,7 +51,7 @@ export function UpgradeBanner({ feature, currentTier, inline }: UpgradeBannerPro
         <span className="text-amber-800 dark:text-amber-200">
           {featureName} vyžaduje tarif <strong>{requiredTier}</strong>
         </span>
-        <Link href="/accountant/admin/subscription" className="ml-auto">
+        <Link href={subscriptionUrl} className="ml-auto">
           <Button size="sm" variant="outline" className="h-7 text-xs border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300">
             Upgrade
             <ArrowRight className="h-3 w-3 ml-1" />
@@ -74,7 +78,7 @@ export function UpgradeBanner({ feature, currentTier, inline }: UpgradeBannerPro
             Aktuálně: {TIER_LABELS[currentTier] || currentTier}
           </p>
         )}
-        <Link href="/accountant/admin/subscription">
+        <Link href={subscriptionUrl}>
           <Button className="bg-purple-600 hover:bg-purple-700 text-white">
             Zobrazit tarify
             <ArrowRight className="h-4 w-4 ml-2" />

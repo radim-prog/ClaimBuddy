@@ -15,6 +15,8 @@ import {
   Users,
   ChevronRight,
   ChevronLeft,
+  Lock,
+  Crown,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -39,12 +41,13 @@ import { NotificationBanner } from '@/components/client/notification-banner'
 import { ImpersonationBanner } from '@/components/client/impersonation-banner'
 import { MissingDocsBar } from '@/components/client/missing-docs-bar'
 import { CompanySwitcher } from '@/components/client/company-switcher'
+import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 
-const navigation = [
+const navigation: { name: string; href: string; icon: typeof LayoutDashboard; feature?: string }[] = [
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard },
   { name: 'Doklady', href: '/client/documents', icon: FileText },
   { name: 'Faktury', href: '/client/invoices', icon: Receipt },
-  { name: 'Adresář', href: '/client/partners', icon: Users },
+  { name: 'Adresář', href: '/client/partners', icon: Users, feature: 'address_book' },
   { name: 'Cesťák', href: '/client/travel', icon: Car },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
   { name: 'Účet', href: '/client/account', icon: UserCircle },
@@ -53,6 +56,7 @@ const navigation = [
 function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { userName, userInitials } = useClientUser()
+  const { isLocked, planTier } = usePlanFeatures()
   const [notificationsDismissed, setNotificationsDismissed] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
@@ -115,22 +119,26 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               {navigation.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                 const Icon = item.icon
+                const locked = item.feature ? isLocked(item.feature) : false
                 const linkEl = (
                   <Link
-                    href={item.href}
+                    href={locked ? '/client/subscription' : item.href}
                     className={`
                       group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
-                      ${isActive
-                        ? 'bg-white/[0.10] text-white nav-active-indicator backdrop-blur-sm'
-                        : 'text-white/50 hover:bg-white/[0.06] hover:text-white/90'
+                      ${locked
+                        ? 'text-white/25 hover:bg-white/[0.03]'
+                        : isActive
+                          ? 'bg-white/[0.10] text-white nav-active-indicator backdrop-blur-sm'
+                          : 'text-white/50 hover:bg-white/[0.06] hover:text-white/90'
                       }
                     `}
                   >
                     <span className="flex items-center">
-                      <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-blue-300' : 'text-white/35 group-hover:text-white/70'}`} />
+                      <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${locked ? 'text-white/15' : isActive ? 'text-blue-300' : 'text-white/35 group-hover:text-white/70'}`} />
                       {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+                      {!collapsed && locked && <Lock className="ml-1.5 h-3 w-3 text-white/20" />}
                     </span>
-                    {!collapsed && isActive && <ChevronRight className="h-3.5 w-3.5 text-white/25" />}
+                    {!collapsed && isActive && !locked && <ChevronRight className="h-3.5 w-3.5 text-white/25" />}
                   </Link>
                 )
 
@@ -149,6 +157,19 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               })}
             </nav>
           </TooltipProvider>
+
+          {/* Upgrade CTA for free users */}
+          {planTier === 'free' && !collapsed && (
+            <div className="relative px-3 pb-2">
+              <Link
+                href="/client/subscription"
+                className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-200 hover:from-amber-500/30 hover:to-orange-500/30 transition-all duration-200 border border-amber-400/20"
+              >
+                <Crown className="h-4 w-4 text-amber-300" />
+                <span>Upgradovat</span>
+              </Link>
+            </div>
+          )}
 
           {/* Theme Toggle */}
           <div className={`relative px-3 pb-2 ${collapsed ? 'flex justify-center' : ''}`}>
@@ -183,6 +204,12 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                   <Link href="/client/account" className="cursor-pointer">
                     <UserCircle className="mr-2 h-4 w-4" />
                     Nastavení účtu
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/client/subscription" className="cursor-pointer">
+                    <Crown className="mr-2 h-4 w-4" />
+                    Předplatné
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
