@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState, useMemo, useCallback } from 'react'
 import { useDebounce } from '@/lib/hooks/use-debounce'
+import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -273,10 +274,14 @@ function ClientsPageContent() {
   const router = useRouter()
   const pathname = usePathname()
   const { getCompanyAttention } = useAttention()
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [closures, setClosures] = useState<MonthlyClosure[]>([])
-  const [healthScores, setHealthScores] = useState<Map<string, number | null>>(new Map())
-  const [loading, setLoading] = useState(true)
+  const [healthScores, setHealthScores] = useState<Map<string, number | null>>(() => {
+    if (typeof window === 'undefined') return new Map()
+    try {
+      const cached = sessionStorage.getItem('cache:health-scores')
+      if (cached) return new Map(JSON.parse(cached))
+    } catch {}
+    return new Map()
+  })
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearch = useDebounce(searchQuery, 300)
 
@@ -344,6 +349,16 @@ function ClientsPageContent() {
     setFilterClientStatus(status)
   }, [pathname, router, searchParams])
 
+  const matrixFetcher = useCallback(async () => {
+    const res = await fetch('/api/accountant/matrix')
+    if (!res.ok) throw new Error('fetch failed')
+    return await res.json() as { companies: Company[]; closures: MonthlyClosure[] }
+  }, [])
+
+  const { data: matrixData, loading, refresh: fetchCompanies } = useCachedFetch('clients-matrix', matrixFetcher)
+  const companies = matrixData?.companies ?? []
+  const closures = matrixData?.closures ?? []
+
   // Helper to get client status from fetched companies data
   const getClientStatus = useCallback((companyId: string) => {
     const company = companies.find(c => c.id === companyId)
@@ -363,35 +378,19 @@ function ClientsPageContent() {
     return now.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' })
   }, [])
 
-  const fetchCompanies = useCallback(() => {
-    setLoading(true)
-    fetch('/api/accountant/matrix')
-      .then(res => res.json())
-      .then(data => {
-        setCompanies(data.companies || [])
-        setClosures(data.closures || [])
-        setLoading(false)
-      })
-      .catch(error => {
-        console.error('Error loading clients:', error)
-        setLoading(false)
-      })
-  }, [])
-
   useEffect(() => {
-    fetchCompanies()
-    // Fetch health scores
     fetch('/api/accountant/health-scores')
       .then(res => res.json())
       .then(data => {
-        const map = new Map<string, number | null>()
+        const entries: [string, number | null][] = []
         for (const s of data.scores || []) {
-          map.set(s.company_id, s.score)
+          entries.push([s.company_id, s.score])
         }
-        setHealthScores(map)
+        setHealthScores(new Map(entries))
+        try { sessionStorage.setItem('cache:health-scores', JSON.stringify(entries)) } catch {}
       })
       .catch(() => {})
-  }, [fetchCompanies])
+  }, [])
 
   // Handler for new client creation success
   const handleNewClientSuccess = useCallback((companyId: string) => {

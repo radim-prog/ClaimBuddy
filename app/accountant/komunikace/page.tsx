@@ -8,6 +8,7 @@ import { type ConversationWithContext, type ViewMode } from '@/components/komuni
 import { KomunikaceSwimlanes } from '@/components/komunikace/komunikace-swimlanes'
 import { KomunikaceListView } from '@/components/komunikace/komunikace-list-view'
 import { KomunikaceChatDetail } from '@/components/komunikace/komunikace-chat-detail'
+import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
 
 export default function KomunikacePage() {
   return (
@@ -21,36 +22,28 @@ function KomunikaceOrchestrator() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { userId } = useAccountantUser()
-  const [conversations, setConversations] = useState<ConversationWithContext[]>([])
-  const [loading, setLoading] = useState(true)
 
   // URL-driven state
   const currentView = searchParams.get('view') as ViewMode | null
   const currentChatId = searchParams.get('chat')
 
-  // ─── Data fetching ───
+  // ─── Data fetching with cache ───
 
   const fetchConversations = useCallback(async () => {
-    if (!userId) return
-    try {
-      const res = await fetch('/api/accountant/conversations?limit=200', {
-        headers: { 'x-user-id': userId },
-      })
-      if (!res.ok) return
-      const data = await res.json()
-      setConversations(data.conversations || [])
-    } catch { /* silent */ } finally {
-      setLoading(false)
-    }
+    if (!userId) return { conversations: [] as ConversationWithContext[], total_unread: 0 }
+    const res = await fetch('/api/accountant/conversations?limit=200', {
+      headers: { 'x-user-id': userId },
+    })
+    if (!res.ok) throw new Error('fetch failed')
+    return await res.json() as { conversations: ConversationWithContext[]; total_unread: number }
   }, [userId])
 
-  useEffect(() => {
-    fetchConversations()
-    const interval = setInterval(() => {
-      if (!document.hidden) fetchConversations()
-    }, 60_000)
-    return () => clearInterval(interval)
-  }, [fetchConversations])
+  const { data: convData, loading, refresh: refreshConversations } = useCachedFetch(
+    `komunikace-${userId}`,
+    fetchConversations,
+    { pollInterval: 60_000, enabled: !!userId }
+  )
+  const conversations = convData?.conversations ?? []
 
   // ─── Categorize conversations ───
 
@@ -160,7 +153,7 @@ function KomunikaceOrchestrator() {
           <KomunikaceChatDetail
             conversation={selectedConv}
             onBack={currentView ? handleBackToList : handleBackToOverview}
-            onConversationChange={fetchConversations}
+            onConversationChange={refreshConversations}
             breadcrumbLabel={currentView ? `Zpet na seznam` : 'Zpet na prehled'}
           />
         </div>

@@ -1,28 +1,22 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   Plus,
   Search,
   Inbox,
-  List,
-  Columns3,
   Flame,
-  Trophy,
   CheckCircle,
   Loader2,
   FolderKanban,
   CheckSquare,
-  LayoutGrid,
 } from 'lucide-react'
 import { PrioritySwimlanes, WorkItem } from '@/components/gtd/priority-swimlanes'
+import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
 
-type ViewMode = 'inbox' | 'list' | 'kanban'
 type TypeFilter = 'all' | 'tasks' | 'projects'
 
 type TaskFromAPI = {
@@ -93,11 +87,7 @@ function calculateStreak(tasks: TaskFromAPI[]): number {
 }
 
 export default function WorkPage() {
-  const [tasks, setTasks] = useState<TaskFromAPI[]>([])
-  const [projects, setProjects] = useState<ProjectFromAPI[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [typeFilter, setTypeFilter] = useState<TypeFilter>(() => {
     if (typeof window !== 'undefined') {
       const urlType = new URLSearchParams(window.location.search).get('type')
@@ -106,36 +96,41 @@ export default function WorkPage() {
     return 'tasks'
   })
 
-  // Sync typeFilter with URL on client-side navigation (e.g. back from project)
+  const fetchWorkData = useCallback(async () => {
+    const [tasksData, projectsData] = await Promise.all([
+      fetch('/api/tasks?page_size=500').then(r => r.json()),
+      fetch('/api/projects').then(r => r.json()),
+    ])
+    return { tasks: (tasksData.tasks || []) as TaskFromAPI[], projects: (projectsData.projects || []) as ProjectFromAPI[] }
+  }, [])
+
+  const { data: workData, loading } = useCachedFetch('work-page', fetchWorkData)
+  const tasks = workData?.tasks ?? []
+  const projects = workData?.projects ?? []
+
   useEffect(() => {
     const syncFromUrl = () => {
       const urlType = new URLSearchParams(window.location.search).get('type')
       if (urlType === 'projects' || urlType === 'all') setTypeFilter(urlType)
     }
     window.addEventListener('popstate', syncFromUrl)
-    // Also check on mount in case Next.js router.push changed the URL
     syncFromUrl()
     return () => window.removeEventListener('popstate', syncFromUrl)
   }, [])
 
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/tasks?page_size=500').then(r => r.json()),
-      fetch('/api/projects').then(r => r.json()),
-    ])
-      .then(([tasksData, projectsData]) => {
-        setTasks(tasksData.tasks || [])
-        setProjects(projectsData.projects || [])
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
-
-  // Compute stats — filtered by typeFilter
   const todayStr = new Date().toISOString().slice(0, 10)
-
   const activeStatuses = ['pending', 'clarifying', 'accepted', 'in_progress', 'waiting_for', 'waiting_client', 'awaiting_approval']
   const projectStatuses = ['planning', 'active', 'on_hold', 'review']
+
+  const taskCount = useMemo(() => {
+    return tasks.filter(t => !['completed', 'cancelled', 'someday_maybe', 'invoiced'].includes(t.status) && !t.is_project).length
+  }, [tasks])
+
+  const projectCount = useMemo(() => {
+    const taskProjects = tasks.filter(t => t.is_project && activeStatuses.includes(t.status)).length
+    const legacyProjects = projects.filter(p => projectStatuses.includes(p.status)).length
+    return taskProjects + legacyProjects
+  }, [tasks, projects])
 
   const inboxCount = useMemo(() => {
     if (typeFilter === 'projects') return 0
@@ -147,25 +142,14 @@ export default function WorkPage() {
     return tasks.filter(t => t.status === 'completed' && t.completed_at?.startsWith(todayStr) && !t.is_project).length
   }, [tasks, todayStr, typeFilter])
 
-  const activeCount = useMemo(() => {
-    if (typeFilter === 'projects') {
-      const taskProjects = tasks.filter(t => t.is_project && activeStatuses.includes(t.status)).length
-      const legacyProjects = projects.filter(p => projectStatuses.includes(p.status)).length
-      return taskProjects + legacyProjects
-    }
-    return tasks.filter(t => !['completed', 'cancelled', 'someday_maybe', 'invoiced'].includes(t.status) && !t.is_project).length
-  }, [tasks, projects, typeFilter])
+  const activeCount = typeFilter === 'projects' ? projectCount : taskCount
 
   const streak = useMemo(() => {
     if (typeFilter === 'projects') return 0
     return calculateStreak(tasks.filter(t => !t.is_project))
   }, [tasks, typeFilter])
 
-  // Merge tasks and projects into WorkItems
   const workItems: WorkItem[] = useMemo(() => {
-    const activeStatuses = ['pending', 'clarifying', 'accepted', 'in_progress', 'waiting_for', 'waiting_client', 'awaiting_approval']
-    const projectStatuses = ['planning', 'active', 'on_hold', 'review']
-
     const taskItems: WorkItem[] = tasks
       .filter(t => activeStatuses.includes(t.status))
       .map(t => ({
@@ -201,14 +185,12 @@ export default function WorkPage() {
 
     let combined = [...taskItems, ...projectItems]
 
-    // Type filter
     if (typeFilter === 'tasks') {
       combined = combined.filter(i => i.type === 'task')
     } else if (typeFilter === 'projects') {
       combined = combined.filter(i => i.type === 'project' || i.is_project)
     }
 
-    // Search filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
       combined = combined.filter(i => i.title.toLowerCase().includes(q) || i.company_name?.toLowerCase().includes(q))
@@ -226,110 +208,108 @@ export default function WorkPage() {
   }
 
   return (
-    <div className="max-w-5xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold font-display text-gray-900 dark:text-white">Práce</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {workItems.length} aktivních položek
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex border-2 rounded-xl overflow-hidden">
-            {[
-              { mode: 'tasks' as TypeFilter, icon: CheckSquare, label: 'Úkoly' },
-              { mode: 'projects' as TypeFilter, icon: FolderKanban, label: 'Projekty' },
-            ].map(v => (
-              <button
-                key={v.mode}
-                onClick={() => setTypeFilter(v.mode)}
-                className={`px-5 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors ${
-                  typeFilter === v.mode
-                    ? 'bg-purple-500 text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                <v.icon className="h-4 w-4" />
-                {v.label}
-              </button>
-            ))}
+    <div className="min-w-0 overflow-hidden space-y-4">
+      {/* Header row: title + switcher + button */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-semibold font-display tracking-tight text-gray-900 dark:text-white">Práce</h1>
+          <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <span>{activeCount} {typeFilter === 'projects' ? 'projektů' : 'aktivních'}</span>
+            {typeFilter !== 'projects' && todayCompleted > 0 && (
+              <>
+                <span className="text-gray-300 dark:text-gray-600">·</span>
+                <span className="flex items-center gap-1">
+                  <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                  {todayCompleted} dnes
+                </span>
+              </>
+            )}
+            {typeFilter !== 'projects' && streak > 0 && (
+              <>
+                <span className="text-gray-300 dark:text-gray-600">·</span>
+                <span className="flex items-center gap-1">
+                  <Flame className="h-3.5 w-3.5 text-orange-500" />
+                  {streak}d série
+                </span>
+              </>
+            )}
+            {inboxCount > 0 && typeFilter !== 'projects' && (
+              <>
+                <span className="text-gray-300 dark:text-gray-600">·</span>
+                <Link
+                  href="/accountant/tasks/clarify"
+                  className="flex items-center gap-1 text-amber-600 dark:text-amber-400 hover:underline underline-offset-2"
+                >
+                  <Inbox className="h-3.5 w-3.5" />
+                  {inboxCount} v inboxu
+                </Link>
+              </>
+            )}
           </div>
-          <Button asChild className="bg-purple-500 hover:bg-purple-600">
-            <Link href="/accountant/work/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Nová práce
-            </Link>
-          </Button>
         </div>
-      </div>
 
-      {/* Quick Stats inline */}
-      <div className="flex items-center gap-4 mb-5 flex-wrap">
-        {typeFilter !== 'projects' && (
-          <>
-            <div className="flex items-center gap-1.5 text-sm">
-              <Flame className={`h-4 w-4 ${streak > 0 ? 'text-orange-500' : 'text-gray-300'}`} />
-              <span className="font-bold">{streak}</span>
-              <span className="text-muted-foreground">série</span>
-            </div>
-            <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
-            <div className="flex items-center gap-1.5 text-sm">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <span className="font-bold">{todayCompleted}</span>
-              <span className="text-muted-foreground">dnes</span>
-            </div>
-            <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
-          </>
-        )}
-        <div className="flex items-center gap-1.5 text-sm">
-          <Trophy className="h-4 w-4 text-purple-500" />
-          <span className="font-bold">{activeCount}</span>
-          <span className="text-muted-foreground">{typeFilter === 'projects' ? 'projektů' : 'aktivních'}</span>
-        </div>
-        {inboxCount > 0 && typeFilter !== 'projects' && (
-          <>
-            <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
-            <Link
-              href="/accountant/tasks/clarify"
-              className="flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 hover:underline"
+        {/* Type switcher — same row, TabsList style */}
+        <div className="inline-flex items-center rounded-lg bg-muted p-1">
+          {[
+            { mode: 'tasks' as TypeFilter, icon: CheckSquare, label: 'Úkoly', count: taskCount },
+            { mode: 'projects' as TypeFilter, icon: FolderKanban, label: 'Projekty', count: projectCount },
+          ].map(v => (
+            <button
+              key={v.mode}
+              onClick={() => setTypeFilter(v.mode)}
+              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-all ${
+                typeFilter === v.mode
+                  ? 'bg-background text-foreground shadow-soft-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
             >
-              <Inbox className="h-4 w-4" />
-              <span className="font-bold">{inboxCount}</span>
-              <span>v inboxu</span>
-            </Link>
-          </>
-        )}
+              <v.icon className="h-4 w-4" />
+              {v.label}
+              <span className={`text-xs tabular-nums ${
+                typeFilter === v.mode
+                  ? 'text-purple-600 dark:text-purple-400 font-bold'
+                  : 'text-muted-foreground'
+              }`}>
+                {v.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700 text-white shrink-0 self-start sm:self-auto">
+          <Link href="/accountant/work/new">
+            <Plus className="mr-1.5 h-4 w-4" />
+            Nová práce
+          </Link>
+        </Button>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex items-center gap-2 flex-1 bg-white dark:bg-gray-900 border rounded-xl px-3 shadow-sm">
-          <Search className="h-4 w-4 text-gray-400" />
+      {/* Search bar */}
+      <div className="bg-white dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-700/60 shadow-soft-sm p-3">
+        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/60 rounded-lg px-3">
+          <Search className="h-4 w-4 text-gray-400 shrink-0" />
           <Input
             placeholder="Hledat úkoly a projekty..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-0 shadow-none focus-visible:ring-0 px-0"
+            className="border-0 shadow-none focus-visible:ring-0 px-0 h-9 text-sm bg-transparent"
           />
         </div>
       </div>
 
       {/* Content */}
       {workItems.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <CheckCircle className="mx-auto h-16 w-16 text-green-400 mb-4" />
-            <h3 className="text-lg font-semibold font-display mb-2">
-              {searchQuery ? 'Nic nenalezeno' : 'Všechno hotovo!'}
-            </h3>
-            <p className="text-muted-foreground">
-              {searchQuery
-                ? 'Zkuste jiný vyhledávací dotaz'
-                : 'Žádné aktivní úkoly ani projekty. Skvělá práce!'}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="py-16 text-center">
+          <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold font-display mb-1 text-gray-900 dark:text-white">
+            {searchQuery ? 'Nic nenalezeno' : 'Všechno hotovo!'}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {searchQuery
+              ? 'Zkuste jiný vyhledávací dotaz'
+              : 'Žádné aktivní úkoly ani projekty.'}
+          </p>
+        </div>
       ) : (
         <PrioritySwimlanes items={workItems} />
       )}

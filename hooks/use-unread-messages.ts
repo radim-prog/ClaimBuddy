@@ -1,33 +1,26 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
 
 export function useUnreadMessages() {
   const { userId } = useAccountantUser()
-  const [unreadCount, setUnreadCount] = useState(0)
 
-  const fetchUnread = useCallback(async () => {
-    if (!userId) return
-    try {
-      const res = await fetch('/api/accountant/conversations?count_only=true', {
-        headers: { 'x-user-id': userId },
-      })
-      if (!res.ok) return
-      const data = await res.json()
-      setUnreadCount(data.total_unread || 0)
-    } catch {
-      // silent
-    }
+  const fetcher = useCallback(async () => {
+    if (!userId) return { total_unread: 0 }
+    const res = await fetch('/api/accountant/conversations?count_only=true', {
+      headers: { 'x-user-id': userId },
+    })
+    if (!res.ok) throw new Error('fetch failed')
+    return await res.json() as { total_unread: number }
   }, [userId])
 
-  useEffect(() => {
-    fetchUnread()
-    const interval = setInterval(() => {
-      if (!document.hidden) fetchUnread()
-    }, 120_000)
-    return () => clearInterval(interval)
-  }, [fetchUnread])
+  const { data, refresh } = useCachedFetch(
+    `unread-${userId}`,
+    fetcher,
+    { pollInterval: 120_000, enabled: !!userId }
+  )
 
-  return { unreadCount, refresh: fetchUnread }
+  return { unreadCount: data?.total_unread ?? 0, refresh }
 }

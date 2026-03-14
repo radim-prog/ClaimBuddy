@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useCallback, useMemo } from 'react'
+import { useCachedFetch } from './use-cached-fetch'
 
 export type AttentionCounts = {
   unread_messages: number
@@ -34,58 +35,46 @@ const EMPTY_TOTALS: AttentionTotals = {
   companies_needing_attention: 0,
 }
 
+type AttentionData = {
+  companies: CompanyAttention[]
+  totals: AttentionTotals
+}
+
 export function useAttentionSummary(pollInterval = 90_000) {
-  const [byCompany, setByCompany] = useState<Map<string, AttentionCounts>>(new Map())
-  const [companiesList, setCompaniesList] = useState<CompanyAttention[]>([])
-  const [totals, setTotals] = useState<AttentionTotals>(EMPTY_TOTALS)
-  const [loading, setLoading] = useState(true)
-  const mountedRef = useRef(true)
-
-  const fetchAttention = useCallback(async () => {
-    try {
-      const res = await fetch('/api/accountant/attention')
-      if (!res.ok) return
-      const data = await res.json()
-      if (!mountedRef.current) return
-
-      const map = new Map<string, AttentionCounts>()
-      for (const company of data.companies || []) {
-        map.set(company.company_id, {
-          unread_messages: company.unread_messages,
-          active_notifications: company.active_notifications,
-          missing_documents: company.missing_documents,
-          pending_uploads: company.pending_uploads,
-          active_tasks: company.active_tasks,
-          total: company.total,
-        })
-      }
-
-      setByCompany(map)
-      setCompaniesList(data.companies || [])
-      setTotals(data.totals || EMPTY_TOTALS)
-    } catch {
-      // Silently ignore - attention badges are non-critical
-    } finally {
-      if (mountedRef.current) setLoading(false)
-    }
+  const fetcher = useCallback(async (): Promise<AttentionData> => {
+    const res = await fetch('/api/accountant/attention')
+    if (!res.ok) throw new Error('fetch failed')
+    return await res.json()
   }, [])
 
-  useEffect(() => {
-    mountedRef.current = true
-    fetchAttention()
-    const interval = setInterval(() => {
-      if (!document.hidden) fetchAttention()
-    }, pollInterval)
-    return () => {
-      mountedRef.current = false
-      clearInterval(interval)
+  const { data, loading, refresh } = useCachedFetch<AttentionData>(
+    'attention-summary',
+    fetcher,
+    { pollInterval }
+  )
+
+  const companiesList = data?.companies ?? []
+  const totals = data?.totals ?? EMPTY_TOTALS
+
+  const byCompany = useMemo(() => {
+    const map = new Map<string, AttentionCounts>()
+    for (const company of companiesList) {
+      map.set(company.company_id, {
+        unread_messages: company.unread_messages,
+        active_notifications: company.active_notifications,
+        missing_documents: company.missing_documents,
+        pending_uploads: company.pending_uploads,
+        active_tasks: company.active_tasks,
+        total: company.total,
+      })
     }
-  }, [fetchAttention, pollInterval])
+    return map
+  }, [companiesList])
 
   const getCompanyAttention = useCallback(
     (companyId: string): AttentionCounts => byCompany.get(companyId) || EMPTY_COUNTS,
     [byCompany]
   )
 
-  return { byCompany, companiesList, totals, loading, getCompanyAttention, refresh: fetchAttention }
+  return { byCompany, companiesList, totals, loading, getCompanyAttention, refresh }
 }
