@@ -109,7 +109,7 @@ const paymentMethodOptions = [
 const unitOptions = ['ks', 'hod', 'den', 'měsíc', 'km', 'm', 'm²', 'komplet']
 
 // Autocomplete dropdown for item description
-const validationErrorClass = 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-700'
+const validationErrorClass = 'bg-red-100 dark:bg-red-950/40 border-red-400 dark:border-red-600 ring-1 ring-red-300 dark:ring-red-700'
 
 function ItemDescriptionInput({
   value,
@@ -154,6 +154,7 @@ function ItemDescriptionInput({
         onFocus={() => { setFocused(true); setShowSuggestions(true) }}
         onBlur={() => setFocused(false)}
         className={hasError ? validationErrorClass : ''}
+        {...(hasError ? { 'data-validation-error': true } : {})}
       />
       {showSuggestions && filtered.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-40 overflow-y-auto">
@@ -231,6 +232,7 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
   const [favorites, setFavorites] = useState<Favorite[]>([])
   const [showExtra, setShowExtra] = useState(false)
   const [validationErrors, setValidationErrors] = useState<Set<string>>(new Set())
+  const formRef = useRef<HTMLDivElement>(null)
 
   const fieldError = (key: string) => validationErrors.has(key) ? validationErrorClass : ''
 
@@ -305,7 +307,12 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
     })
     if (errors.size > 0) {
       setValidationErrors(errors)
-      toast.error('Vyplňte zvýrazněná pole')
+      toast.error('Vyplňte červeně zvýrazněná pole')
+      // Scroll to first error field
+      setTimeout(() => {
+        const el = formRef.current?.querySelector('[data-validation-error]')
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 50)
       return
     }
     setValidationErrors(new Set())
@@ -420,7 +427,7 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
       : `${docTypeLabels[documentType]}`
 
   return (
-    <Card>
+    <Card ref={formRef}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">{formTitle}</CardTitle>
@@ -647,6 +654,7 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
                     onChange={e => updateItem(idx, 'unit_price', Number(e.target.value))}
                     min={0}
                     className={fieldError(`item_${idx}_price`)}
+                    {...(validationErrors.has(`item_${idx}_price`) ? { 'data-validation-error': true } : {})}
                   />
                 </div>
                 <div className="w-20 shrink-0">

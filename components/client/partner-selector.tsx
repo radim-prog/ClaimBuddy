@@ -29,7 +29,7 @@ interface PartnerSelectorProps {
 
 const FREQUENT_THRESHOLD = 3
 
-const errorClass = 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-700'
+const errorClass = 'bg-red-100 dark:bg-red-950/40 border-red-400 dark:border-red-600 ring-1 ring-red-300 dark:ring-red-700'
 
 export function PartnerSelector({ companyId, value, onChange, hasError }: PartnerSelectorProps) {
   const [partners, setPartners] = useState<InvoicePartner[]>([])
@@ -209,6 +209,7 @@ export function PartnerSelector({ companyId, value, onChange, hasError }: Partne
             type="button"
             onClick={() => setShowDropdown(!showDropdown)}
             className={`w-full flex items-center justify-between h-9 rounded-md border px-3 text-sm bg-background hover:bg-muted/50 ${hasError ? errorClass : ''}`}
+            {...(hasError ? { 'data-validation-error': true } : {})}
           >
             <span className={value.partner_id ? 'text-foreground' : 'text-muted-foreground'}>
               {value.partner_id ? `${value.name}${value.ico ? ` (${value.ico})` : ''}` : 'Vyberte partnera...'}
@@ -280,7 +281,7 @@ export function PartnerSelector({ companyId, value, onChange, hasError }: Partne
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Název *</Label>
-              <Input value={value.name} onChange={e => update('name', e.target.value)} placeholder="Firma s.r.o." className={hasError ? errorClass : ''} />
+              <Input value={value.name} onChange={e => update('name', e.target.value)} placeholder="Firma s.r.o." className={hasError ? errorClass : ''} {...(hasError ? { 'data-validation-error': true } : {})} />
             </div>
             <div>
               <Label className="text-xs">IČO</Label>
