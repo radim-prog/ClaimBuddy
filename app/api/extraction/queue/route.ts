@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/extraction/queue
- * Get current extraction queue status
+ * Get current extraction queue status with step-level progress
  */
 export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
@@ -26,6 +26,9 @@ export async function GET(request: NextRequest) {
       progress: j.progress,
       priority: j.priority,
       error: j.error,
+      currentStep: j.currentStep,
+      stepStartedAt: j.stepStartedAt,
+      steps: j.steps,
       createdAt: j.createdAt,
       startedAt: j.startedAt,
       completedAt: j.completedAt,

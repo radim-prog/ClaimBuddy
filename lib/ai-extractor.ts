@@ -24,6 +24,7 @@ import {
   type InvoiceItem,
 } from './kimi-ai'
 import { supabaseAdmin } from './supabase-admin'
+import { decrypt, isEncrypted } from './crypto'
 
 // Re-export types consumers need
 export type {
@@ -227,6 +228,7 @@ export class AIExtractor {
     buffer: Buffer,
     filename: string,
     mimeType: string,
+    onProgress?: (step: string) => void,
   ): Promise<{ invoice: ExtractedInvoice; ocrResult: OcrResult; roundResults: RoundResult[] }> {
     const allCorrections: CorrectionRecord[] = []
     const roundResults: RoundResult[] = []
@@ -234,6 +236,7 @@ export class AIExtractor {
     // ── Round 1: OCR ──
     const r1Start = Date.now()
     console.log(`[AIExtractor] Round 1: OCR reading ${filename}`)
+    onProgress?.('ocr')
 
     let ocrResult: OcrResult
     if (this.ocrClient.isAvailable()) {
@@ -249,6 +252,7 @@ export class AIExtractor {
     // ── Round 2: AI Structured Extraction ──
     const r2Start = Date.now()
     console.log(`[AIExtractor] Round 2: AI extraction from OCR text`)
+    onProgress?.('ai_extraction')
 
     const round2Invoice = await this.aiExtract(ocrResult.text, filename)
 
@@ -271,6 +275,7 @@ export class AIExtractor {
     // ── Round 3: Reverse Verification ──
     const r3Start = Date.now()
     console.log(`[AIExtractor] Round 3: Reverse verification`)
+    onProgress?.('ai_verification')
 
     const { invoice: verifiedInvoice, corrections } = await this.aiVerify(ocrResult.text, round2Invoice)
     allCorrections.push(...corrections)
@@ -311,7 +316,9 @@ export class AIExtractor {
     buffer: Buffer,
     filename: string,
     mimeType: string,
+    onProgress?: (step: string) => void,
   ): Promise<{ invoice: ExtractedInvoice; ocrResult: OcrResult }> {
+    onProgress?.('ocr')
     let ocrResult: OcrResult
     if (this.ocrClient.isAvailable()) {
       ocrResult = await this.ocrClient.processFile(buffer, mimeType)
@@ -319,6 +326,7 @@ export class AIExtractor {
       ocrResult = await this.visionFallback(buffer, mimeType)
     }
 
+    onProgress?.('ai_extraction')
     const invoice = await this.aiExtract(ocrResult.text, filename)
     return { invoice, ocrResult }
   }
@@ -491,11 +499,17 @@ export async function getExtractorConfig(): Promise<AIExtractorConfig> {
 
     if (data) {
       const row = data as ExtractionSettingsRow
+      const apiKey = row.api_key && isEncrypted(row.api_key)
+        ? decrypt(row.api_key)
+        : row.api_key
+      const ocrKey = row.ocr_api_key && isEncrypted(row.ocr_api_key)
+        ? decrypt(row.ocr_api_key)
+        : row.ocr_api_key
       cachedConfig = {
         provider: row.provider,
         model: row.model,
-        apiKey: row.api_key,
-        ocrApiKey: row.ocr_api_key || undefined,
+        apiKey: apiKey,
+        ocrApiKey: ocrKey || undefined,
       }
       configTimestamp = now
       return cachedConfig

@@ -20,8 +20,11 @@ import {
   Pencil,
   Download,
   Eye,
+  Clock,
 } from 'lucide-react'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import type { ExtractionStep } from '@/lib/extraction-queue'
+import { STEP_LABELS } from '@/lib/extraction-queue'
+import { cn, formatCurrency, formatDate } from '@/lib/utils'
 import type { DocumentRegisterEntry } from '@/lib/types/document-register'
 import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS, DOCUMENT_STATUS_COLORS } from '@/lib/types/document-register'
 import { DocumentComments } from '@/components/documents/document-comments'
@@ -44,12 +47,21 @@ type JournalEntry = {
   status: string
 }
 
+type QueueJobInfo = {
+  documentId: string
+  currentStep: ExtractionStep
+  stepStartedAt?: number
+  steps: Array<{ step: ExtractionStep; startedAt: number; completedAt?: number }>
+  status: string
+}
+
 interface DocumentDetailPanelProps {
   document: DocumentRegisterEntry
   companyId: string
   onApprove: (id: string) => void
   onReject: (id: string, reason?: string) => void
   onExtract: (id: string) => void
+  extractionJob?: QueueJobInfo
 }
 
 function ConfidenceBadge({ score }: { score: number | null }) {
@@ -64,7 +76,9 @@ function ConfidenceBadge({ score }: { score: number | null }) {
   )
 }
 
-export function DocumentDetailPanel({ document: doc, companyId, onApprove, onReject, onExtract }: DocumentDetailPanelProps) {
+const PIPELINE_STEPS: ExtractionStep[] = ['downloading', 'ocr', 'ai_extraction', 'ai_verification', 'saving']
+
+export function DocumentDetailPanel({ document: doc, companyId, onApprove, onReject, onExtract, extractionJob }: DocumentDetailPanelProps) {
   const { userId } = useAccountantUser()
   const [extracting, setExtracting] = useState(false)
   const [rejecting, setRejecting] = useState(false)
@@ -239,6 +253,62 @@ export function DocumentDetailPanel({ document: doc, companyId, onApprove, onRej
       {doc.rejection_reason && (
         <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded">
           Zamítnuto: {doc.rejection_reason}
+        </div>
+      )}
+
+      {/* Extraction pipeline progress */}
+      {extractionJob && (doc.status === 'extracting' || doc.ocr_status === 'processing') && (
+        <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase">Pipeline vytěžování</span>
+            {extractionJob.steps.length > 0 && (() => {
+              const first = extractionJob.steps[0]
+              const totalMs = Date.now() - first.startedAt
+              return <span className="text-xs text-blue-600 dark:text-blue-400">Celkem: {Math.floor(totalMs / 1000)}s</span>
+            })()}
+          </div>
+          <div className="space-y-1">
+            {PIPELINE_STEPS.map((step) => {
+              const stepRecord = extractionJob.steps.find(s => s.step === step)
+              const isCurrent = extractionJob.currentStep === step
+              const isCompleted = stepRecord?.completedAt != null
+              const isPending = !stepRecord
+
+              const duration = stepRecord
+                ? ((stepRecord.completedAt || Date.now()) - stepRecord.startedAt) / 1000
+                : 0
+
+              return (
+                <div key={step} className="flex items-center gap-2 text-xs">
+                  {isCompleted ? (
+                    <CheckCircle className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                  ) : isCurrent ? (
+                    <Loader2 className="h-3.5 w-3.5 text-blue-600 animate-spin flex-shrink-0" />
+                  ) : (
+                    <Clock className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 flex-shrink-0" />
+                  )}
+                  <span className={cn(
+                    'flex-1',
+                    isCompleted ? 'text-gray-600 dark:text-gray-400' :
+                    isCurrent ? 'text-blue-700 dark:text-blue-300 font-medium' :
+                    'text-gray-400 dark:text-gray-600'
+                  )}>
+                    {STEP_LABELS[step]}
+                  </span>
+                  {(isCompleted || isCurrent) && (
+                    <span className={cn(
+                      'tabular-nums',
+                      isCurrent && duration > 30 ? 'text-amber-600' :
+                      isCurrent ? 'text-blue-600 dark:text-blue-400' :
+                      'text-gray-400 dark:text-gray-500'
+                    )}>
+                      {Math.floor(duration)}s{isCurrent && '...'}
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

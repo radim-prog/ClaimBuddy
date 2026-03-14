@@ -18,6 +18,8 @@ import {
   FileText,
   TrendingUp,
   Download,
+  ScanLine,
+  Zap,
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type {
@@ -37,6 +39,17 @@ import {
 } from '@/lib/types/document-register'
 import { DocumentRegisterFilters } from './document-register-filters'
 import { DocumentDetailPanel } from './document-detail-panel'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import type { ExtractionStep } from '@/lib/extraction-queue'
+import { STEP_LABELS } from '@/lib/extraction-queue'
+
+type QueueJobInfo = {
+  documentId: string
+  currentStep: ExtractionStep
+  stepStartedAt?: number
+  steps: Array<{ step: ExtractionStep; startedAt: number; completedAt?: number }>
+  status: string
+}
 
 interface DocumentRegisterTabProps {
   companyId: string
@@ -81,6 +94,8 @@ const statusRingColors: Record<string, string> = {
 }
 
 export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
+  const { userId } = useAccountantUser()
+
   // Year/Month navigation
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
@@ -97,6 +112,10 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [bulkLoading, setBulkLoading] = useState(false)
+
+  // Extraction progress tracking
+  const [extractionJobs, setExtractionJobs] = useState<Map<string, QueueJobInfo>>(new Map())
+  const [now, setNow] = useState(Date.now())
 
   // Auto-select current month on first load
   useEffect(() => {
@@ -155,6 +174,44 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
 
   useEffect(() => { fetchDocuments() }, [fetchDocuments])
 
+  // Poll extraction queue when there are extracting documents
+  useEffect(() => {
+    const extractingDocs = documents.filter(d => d.status === 'extracting' || d.ocr_status === 'processing')
+    if (extractingDocs.length === 0) {
+      if (extractionJobs.size > 0) setExtractionJobs(new Map())
+      return
+    }
+
+    const poll = async () => {
+      if (!userId) return
+      try {
+        const res = await fetch('/api/extraction/queue', {
+          headers: { 'x-user-id': userId },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          const jobMap = new Map<string, QueueJobInfo>()
+          for (const job of data.jobs) {
+            jobMap.set(job.documentId, job)
+          }
+          setExtractionJobs(jobMap)
+          setNow(Date.now())
+
+          // If no more active jobs, refresh document list
+          const hasActive = data.jobs.some((j: { status: string }) => j.status === 'queued' || j.status === 'processing')
+          if (!hasActive && extractingDocs.length > 0) {
+            fetchDocuments()
+            fetchYearSummary()
+          }
+        }
+      } catch { /* ignore */ }
+    }
+
+    poll()
+    const interval = setInterval(poll, 2000)
+    return () => clearInterval(interval)
+  }, [documents, userId, fetchDocuments, fetchYearSummary])
+
   // Handlers
   const handleFilterChange = (newFilters: DocumentFilters) => {
     setFilters(newFilters)
@@ -208,6 +265,27 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
         fetchDocuments()
         fetchYearSummary()
       }
+    } catch { /* ignore */ } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  const handleBulkExtract = async () => {
+    if (selectedIds.size === 0 || !userId) return
+    setBulkLoading(true)
+    try {
+      const uploadedIds = documents
+        .filter(d => selectedIds.has(d.id) && d.status === 'uploaded')
+        .map(d => d.id)
+      if (uploadedIds.length > 0) {
+        await fetch('/api/extraction/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
+          body: JSON.stringify({ documentIds: uploadedIds }),
+        })
+      }
+      setSelectedIds(new Set())
+      fetchDocuments()
     } catch { /* ignore */ } finally {
       setBulkLoading(false)
     }
@@ -352,20 +430,35 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
       <DocumentRegisterFilters filters={filters} onChange={handleFilterChange} />
 
       {/* Bulk actions */}
-      {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 bg-purple-50 dark:bg-purple-900/20 px-4 py-2.5 rounded-xl border border-purple-200/50 dark:border-purple-800/50">
-          <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
-            Vybráno: {selectedIds.size}
-          </span>
-          <Button size="sm" variant="outline" className="text-green-600 border-green-300" onClick={() => handleBulkAction('approve')} disabled={bulkLoading}>
-            {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle className="h-4 w-4 mr-1" />}
-            Schválit
-          </Button>
-          <Button size="sm" variant="outline" className="text-red-600 border-red-300" onClick={() => handleBulkAction('reject')} disabled={bulkLoading}>
-            <XCircle className="h-4 w-4 mr-1" /> Zamítnout
-          </Button>
-        </div>
-      )}
+      {selectedIds.size > 0 && (() => {
+        const selectedDocs = documents.filter(d => selectedIds.has(d.id))
+        const hasUploaded = selectedDocs.some(d => d.status === 'uploaded')
+        const hasExtracted = selectedDocs.some(d => d.status === 'extracted')
+        return (
+          <div className="flex items-center gap-3 bg-purple-50 dark:bg-purple-900/20 px-4 py-2.5 rounded-xl border border-purple-200/50 dark:border-purple-800/50">
+            <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+              Vybráno: {selectedIds.size}
+            </span>
+            {hasUploaded && (
+              <Button size="sm" variant="outline" className="text-blue-600 border-blue-300" onClick={handleBulkExtract} disabled={bulkLoading}>
+                {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ScanLine className="h-4 w-4 mr-1" />}
+                Vytěžit
+              </Button>
+            )}
+            {hasExtracted && (
+              <>
+                <Button size="sm" variant="outline" className="text-green-600 border-green-300" onClick={() => handleBulkAction('approve')} disabled={bulkLoading}>
+                  {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle className="h-4 w-4 mr-1" />}
+                  Schválit
+                </Button>
+                <Button size="sm" variant="outline" className="text-red-600 border-red-300" onClick={() => handleBulkAction('reject')} disabled={bulkLoading}>
+                  <XCircle className="h-4 w-4 mr-1" /> Zamítnout
+                </Button>
+              </>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Document Table */}
       <div className="rounded-2xl border border-gray-200/80 dark:border-gray-700/60 bg-white dark:bg-gray-900/60 overflow-hidden">
@@ -442,9 +535,22 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
                             {doc.date_issued ? formatDate(doc.date_issued) : '—'}
                           </td>
                           <td className="py-2.5 px-3">
-                            <Badge className={`${statusColor.bg} ${statusColor.text} text-[11px] border-0`}>
-                              {DOCUMENT_STATUS_LABELS[doc.status]}
-                            </Badge>
+                            {(doc.status === 'extracting' || doc.ocr_status === 'processing') && extractionJobs.has(doc.id) ? (() => {
+                              const job = extractionJobs.get(doc.id)!
+                              const elapsed = job.stepStartedAt ? Math.floor((now - job.stepStartedAt) / 1000) : 0
+                              const elapsedColor = elapsed > 60 ? 'text-red-600' : elapsed > 30 ? 'text-amber-600' : 'text-blue-600'
+                              return (
+                                <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${elapsedColor}`}>
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  <span>{STEP_LABELS[job.currentStep] || job.currentStep}</span>
+                                  <span className="tabular-nums">{elapsed}s</span>
+                                </span>
+                              )
+                            })() : (
+                              <Badge className={`${statusColor.bg} ${statusColor.text} text-[11px] border-0`}>
+                                {DOCUMENT_STATUS_LABELS[doc.status]}
+                              </Badge>
+                            )}
                           </td>
                           <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                             {doc.storage_path && (
@@ -476,6 +582,7 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
                                 onApprove={handleApprove}
                                 onReject={handleReject}
                                 onExtract={handleExtract}
+                                extractionJob={extractionJobs.get(doc.id)}
                               />
                             </td>
                           </tr>

@@ -4,7 +4,7 @@
  * - Max N concurrent extractions (configurable, default 5)
  * - FIFO queue, documents wait for a free slot
  * - Priority: manual trigger > cron
- * - Progress tracking via polling
+ * - Step-level progress tracking via polling
  * - Timeout: 60s per document
  */
 
@@ -13,12 +13,39 @@ import type { OcrResult } from './ocr-client'
 
 export type ExtractionPriority = 'high' | 'normal' | 'low'
 
+export type ExtractionStep =
+  | 'queued'
+  | 'downloading'
+  | 'ocr'
+  | 'ai_extraction'
+  | 'ai_verification'
+  | 'saving'
+  | 'completed'
+  | 'error'
+
+export const STEP_LABELS: Record<ExtractionStep, string> = {
+  queued: 'Ve frontě',
+  downloading: 'Stahování souboru',
+  ocr: 'OCR zpracování',
+  ai_extraction: 'AI extrakce dat',
+  ai_verification: 'AI kontrolní ověření',
+  saving: 'Ukládání výsledků',
+  completed: 'Hotovo',
+  error: 'Chyba',
+}
+
 export type ExtractionJobStatus =
   | 'queued'
   | 'processing'
   | 'completed'
   | 'error'
   | 'timeout'
+
+export interface StepRecord {
+  step: ExtractionStep
+  startedAt: number
+  completedAt?: number
+}
 
 export interface ExtractionJob {
   id: string
@@ -29,6 +56,9 @@ export interface ExtractionJob {
   priority: ExtractionPriority
   status: ExtractionJobStatus
   progress: number // 0-100
+  currentStep: ExtractionStep
+  stepStartedAt?: number
+  steps: StepRecord[]
   result?: ExtractedInvoice
   ocrResult?: OcrResult
   error?: string
@@ -82,6 +112,8 @@ class ExtractionQueueManager {
       priority: params.priority || 'normal',
       status: 'queued',
       progress: 0,
+      currentStep: 'queued',
+      steps: [{ step: 'queued', startedAt: Date.now() }],
       createdAt: Date.now(),
       submittedBy: params.submittedBy,
       fastMode: params.fastMode,
@@ -150,10 +182,23 @@ class ExtractionQueueManager {
     const [job] = this.queue.splice(idx, 1)
     job.status = 'error'
     job.error = 'Cancelled'
+    this.updateStep(job, 'error')
     this.buffers.delete(job.id)
     this.resolvers.get(job.id)?.reject(new Error('Cancelled'))
     this.resolvers.delete(job.id)
     return true
+  }
+
+  private updateStep(job: ExtractionJob, step: ExtractionStep) {
+    // Complete previous step
+    const prev = job.steps[job.steps.length - 1]
+    if (prev && !prev.completedAt) {
+      prev.completedAt = Date.now()
+    }
+    // Start new step
+    job.currentStep = step
+    job.stepStartedAt = Date.now()
+    job.steps.push({ step, startedAt: Date.now() })
   }
 
   private async processNext() {
@@ -173,7 +218,8 @@ class ExtractionQueueManager {
 
     job.status = 'processing'
     job.startedAt = Date.now()
-    job.progress = 10
+    job.progress = 5
+    this.updateStep(job, 'downloading')
 
     // Set timeout
     const timeout = setTimeout(() => {
@@ -185,19 +231,33 @@ class ExtractionQueueManager {
     try {
       const extractor = await createExtractor()
 
-      job.progress = 30
+      job.progress = 10
+
+      const onProgress = (step: string) => {
+        this.updateStep(job, step as ExtractionStep)
+        // Update progress based on step
+        const progressMap: Record<string, number> = {
+          ocr: 20,
+          ai_extraction: 45,
+          ai_verification: 70,
+          saving: 90,
+        }
+        job.progress = progressMap[step] ?? job.progress
+      }
 
       if (job.fastMode) {
         const { invoice, ocrResult } = await extractor.extractFast(
-          buffer, job.fileName, job.mimeType
+          buffer, job.fileName, job.mimeType, onProgress
         )
+        this.updateStep(job, 'saving')
         job.progress = 90
         clearTimeout(timeout)
         this.finishJob(job, 'completed', invoice, ocrResult)
       } else {
         const { invoice, ocrResult } = await extractor.extractFromFile(
-          buffer, job.fileName, job.mimeType
+          buffer, job.fileName, job.mimeType, onProgress
         )
+        this.updateStep(job, 'saving')
         job.progress = 90
         clearTimeout(timeout)
         this.finishJob(job, 'completed', invoice, ocrResult)
@@ -223,6 +283,8 @@ class ExtractionQueueManager {
     job.result = result
     job.ocrResult = ocrResult
     job.error = error
+
+    this.updateStep(job, status === 'completed' ? 'completed' : 'error')
 
     this.active.delete(job.id)
     this.buffers.delete(job.id)
