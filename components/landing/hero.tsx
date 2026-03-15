@@ -19,7 +19,7 @@ export function Hero() {
         </div>
 
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display tracking-tight text-foreground max-w-4xl mx-auto leading-tight">
-          Účetnictvi pod kontrolou.{' '}
+          Účetnictví pod kontrolou.{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">
             Pro klienty i účetní.
           </span>
@@ -32,7 +32,7 @@ export function Hero() {
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button size="lg" className="h-12 px-8 text-base font-semibold" asChild>
-            <Link href="/auth/login">
+            <Link href="/auth/register">
               Začít zdarma
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>

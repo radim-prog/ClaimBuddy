@@ -68,6 +68,7 @@ export default function KnowledgeBasePage() {
   const [isAddingNew, setIsAddingNew] = useState<string | null>(null) // category id
   const [saving, setSaving] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   // Form state
   const [formTitle, setFormTitle] = useState('')
@@ -151,9 +152,9 @@ export default function KnowledgeBasePage() {
   }
 
   const deleteArticle = async (id: string) => {
-    if (!confirm('Opravdu smazat tento článek?')) return
     try {
       await fetch(`/api/accountant/admin/knowledge-base?id=${id}`, { method: 'DELETE' })
+      setDeleteConfirmId(null)
       refresh()
     } catch (e) {
       console.error('Delete error:', e)
@@ -246,7 +247,10 @@ export default function KnowledgeBasePage() {
                         formSourceUrl={formSourceUrl}
                         saving={saving}
                         onEdit={() => startEdit(article)}
-                        onDelete={() => deleteArticle(article.id)}
+                        onDelete={() => setDeleteConfirmId(article.id)}
+                        deleteConfirm={deleteConfirmId === article.id}
+                        onDeleteConfirm={() => deleteArticle(article.id)}
+                        onDeleteCancel={() => setDeleteConfirmId(null)}
                         onSave={saveArticle}
                         onCancel={cancelEdit}
                         onFormTitleChange={setFormTitle}
@@ -330,6 +334,9 @@ function ArticleCard({
   saving,
   onEdit,
   onDelete,
+  deleteConfirm,
+  onDeleteConfirm,
+  onDeleteCancel,
   onSave,
   onCancel,
   onFormTitleChange,
@@ -344,6 +351,9 @@ function ArticleCard({
   saving: boolean
   onEdit: () => void
   onDelete: () => void
+  deleteConfirm: boolean
+  onDeleteConfirm: () => void
+  onDeleteCancel: () => void
   onSave: () => void
   onCancel: () => void
   onFormTitleChange: (v: string) => void
@@ -427,13 +437,30 @@ function ArticleCard({
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
-            <button
-              onClick={onDelete}
-              className="p-1 text-muted-foreground hover:text-red-600 transition-colors"
-              title="Smazat"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            {deleteConfirm ? (
+              <span className="flex items-center gap-1 text-xs">
+                <button
+                  onClick={onDeleteConfirm}
+                  className="px-1.5 py-0.5 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                >
+                  Smazat
+                </button>
+                <button
+                  onClick={onDeleteCancel}
+                  className="px-1.5 py-0.5 text-muted-foreground hover:text-foreground text-xs"
+                >
+                  Ne
+                </button>
+              </span>
+            ) : (
+              <button
+                onClick={onDelete}
+                className="p-1 text-muted-foreground hover:text-red-600 transition-colors"
+                title="Smazat"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         </div>
         {showContent && article.content && (

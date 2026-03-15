@@ -215,7 +215,11 @@ export function PricingTable({
       </div>
 
       {/* Pricing cards */}
-      <div className={`grid grid-cols-1 md:grid-cols-${plans.length} gap-6`}>
+      <div className={`grid grid-cols-1 gap-6 ${
+        plans.length === 2 ? 'md:grid-cols-2' :
+        plans.length === 3 ? 'md:grid-cols-3' :
+        plans.length === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3'
+      }`}>
         {plans.map((plan) => {
           const Icon = plan.icon
           const isCurrent = plan.id === currentPlan

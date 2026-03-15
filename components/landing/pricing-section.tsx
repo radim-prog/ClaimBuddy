@@ -196,7 +196,7 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: BillingCycle }) {
         variant={plan.popular ? 'default' : 'outline'}
         asChild
       >
-        <Link href="/auth/login">{plan.cta}</Link>
+        <Link href="/auth/register">{plan.cta}</Link>
       </Button>
     </div>
   )
@@ -251,6 +251,9 @@ export function PricingSection() {
           </span>
           <button
             onClick={() => setBilling(billing === 'monthly' ? 'yearly' : 'monthly')}
+            role="switch"
+            aria-checked={billing === 'yearly'}
+            aria-label="Přepnout roční/měsíční fakturaci"
             className={`relative w-12 h-6 rounded-full transition-colors ${
               billing === 'yearly' ? 'bg-purple-600' : 'bg-muted-foreground/30'
             }`}

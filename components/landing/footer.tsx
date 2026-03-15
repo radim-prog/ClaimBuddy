@@ -37,9 +37,9 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-semibold text-foreground mb-3">Právní</h4>
             <ul className="space-y-2">
-              <li><span className="text-sm text-muted-foreground">Obchodní podmínky</span></li>
-              <li><span className="text-sm text-muted-foreground">Ochrana osobních údajů</span></li>
-              <li><span className="text-sm text-muted-foreground">GDPR</span></li>
+              <li><Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Obchodní podmínky</Link></li>
+              <li><Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Ochrana osobních údajů</Link></li>
+              <li><Link href="/gdpr" className="text-sm text-muted-foreground hover:text-foreground transition-colors">GDPR</Link></li>
             </ul>
           </div>
         </div>
