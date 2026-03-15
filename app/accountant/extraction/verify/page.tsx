@@ -125,6 +125,17 @@ function VerificationPageContent() {
   const [reextracting, setReextracting] = useState(false)
   const viewerRef = useRef<HTMLDivElement>(null)
 
+  // Auto-hide sidebar on enter, restore on leave
+  useEffect(() => {
+    const prev = localStorage.getItem('accountant-sidebar-collapsed')
+    localStorage.setItem('accountant-sidebar-collapsed', 'true')
+    window.dispatchEvent(new Event('sidebar-toggle'))
+    return () => {
+      localStorage.setItem('accountant-sidebar-collapsed', prev || 'false')
+      window.dispatchEvent(new Event('sidebar-toggle'))
+    }
+  }, [])
+
   const category = (searchParams.get('category') as Category) || 'all'
 
   const setCategory = (cat: Category) => {

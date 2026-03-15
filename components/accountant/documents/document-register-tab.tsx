@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, Fragment } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,8 +13,6 @@ import {
   Loader2,
   Inbox,
   ArrowUpDown,
-  CheckCircle,
-  XCircle,
   FileText,
   TrendingUp,
   Download,
@@ -257,25 +255,6 @@ export function DocumentRegisterTab({ companyId, extractableOnly }: DocumentRegi
     }
   }
 
-  const handleBulkAction = async (action: 'approve' | 'reject') => {
-    if (selectedIds.size === 0) return
-    setBulkLoading(true)
-    try {
-      const res = await fetch(`/api/accountant/companies/${companyId}/documents/bulk`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ document_ids: Array.from(selectedIds), action }),
-      })
-      if (res.ok) {
-        setSelectedIds(new Set())
-        fetchDocuments()
-        fetchYearSummary()
-      }
-    } catch { /* ignore */ } finally {
-      setBulkLoading(false)
-    }
-  }
-
   const handleBulkExtract = async () => {
     if (selectedIds.size === 0 || !userId) return
     setBulkLoading(true)
@@ -295,26 +274,6 @@ export function DocumentRegisterTab({ companyId, extractableOnly }: DocumentRegi
     } catch { /* ignore */ } finally {
       setBulkLoading(false)
     }
-  }
-
-  const handleApprove = async (id: string) => {
-    await fetch(`/api/accountant/companies/${companyId}/documents/bulk`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ document_ids: [id], action: 'approve' }),
-    })
-    fetchDocuments()
-    fetchYearSummary()
-  }
-
-  const handleReject = async (id: string, reason?: string) => {
-    await fetch(`/api/accountant/companies/${companyId}/documents/bulk`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ document_ids: [id], action: 'reject', rejection_reason: reason }),
-    })
-    fetchDocuments()
-    fetchYearSummary()
   }
 
   const handleExtract = async (id: string) => {
@@ -437,7 +396,7 @@ export function DocumentRegisterTab({ companyId, extractableOnly }: DocumentRegi
       <DocumentRegisterFilters
         filters={filters}
         onChange={handleFilterChange}
-        availableTypes={extractableOnly ? EXTRACTABLE_DOCUMENT_TYPES : undefined}
+        availableTypes={undefined}
       />
 
       {/* Bulk actions */}
@@ -455,17 +414,6 @@ export function DocumentRegisterTab({ companyId, extractableOnly }: DocumentRegi
                 {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ScanLine className="h-4 w-4 mr-1" />}
                 Vytěžit
               </Button>
-            )}
-            {hasExtracted && (
-              <>
-                <Button size="sm" variant="outline" className="text-green-600 border-green-300" onClick={() => handleBulkAction('approve')} disabled={bulkLoading}>
-                  {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle className="h-4 w-4 mr-1" />}
-                  Schválit
-                </Button>
-                <Button size="sm" variant="outline" className="text-red-600 border-red-300" onClick={() => handleBulkAction('reject')} disabled={bulkLoading}>
-                  <XCircle className="h-4 w-4 mr-1" /> Zamítnout
-                </Button>
-              </>
             )}
           </div>
         )
@@ -513,8 +461,8 @@ export function DocumentRegisterTab({ companyId, extractableOnly }: DocumentRegi
                     const statusColor = DOCUMENT_STATUS_COLORS[doc.status]
 
                     return (
-                      <><tr
-                          key={doc.id}
+                      <Fragment key={doc.id}>
+                        <tr
                           onClick={() => setExpandedId(isExpanded ? null : doc.id)}
                           className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors ${isSelected ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''}`}
                         >
@@ -590,8 +538,6 @@ export function DocumentRegisterTab({ companyId, extractableOnly }: DocumentRegi
                               <DocumentDetailPanel
                                 document={doc}
                                 companyId={companyId}
-                                onApprove={handleApprove}
-                                onReject={handleReject}
                                 onExtract={handleExtract}
                                 extractionJob={extractionJobs.get(doc.id)}
                                 onDocumentUpdated={fetchDocuments}
@@ -599,7 +545,7 @@ export function DocumentRegisterTab({ companyId, extractableOnly }: DocumentRegi
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     )
                   })}
                 </tbody>

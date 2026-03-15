@@ -111,6 +111,14 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
     if (saved === 'true') setCollapsed(true)
   }, [])
 
+  useEffect(() => {
+    const handler = () => {
+      setCollapsed(localStorage.getItem('accountant-sidebar-collapsed') === 'true')
+    }
+    window.addEventListener('sidebar-toggle', handler)
+    return () => window.removeEventListener('sidebar-toggle', handler)
+  }, [])
+
   const toggleSidebar = () => {
     setCollapsed(prev => {
       localStorage.setItem('accountant-sidebar-collapsed', String(!prev))

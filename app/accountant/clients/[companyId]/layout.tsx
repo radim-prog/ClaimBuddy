@@ -290,7 +290,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
           ).length
           const tasksBadge = attention.active_tasks || activeTaskCount || 0
           const messagesBadge = attention.unread_messages || 0
-          const documentsBadge = (attention.missing_documents || 0) + (attention.pending_uploads || 0)
+          const documentsBadge = attention.pending_uploads || 0
           const filesBadge = hubStats?.files?.recent || 0
           const notificationsBadge = attention.active_notifications || 0
 
@@ -305,16 +305,32 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
             { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile'), badge: notificationsBadge },
           ]
 
+          // Latest closure status
+          const latestClosure = closures.length > 0
+            ? [...closures].sort((a, b) => b.period.localeCompare(a.period))[0]
+            : null
+          const closureComplete = latestClosure
+            ? latestClosure.bank_statement_status !== 'missing' &&
+              latestClosure.expense_documents_status !== 'missing' &&
+              latestClosure.income_invoices_status !== 'missing'
+            : false
+
           // Attention items for banner
           const attentionItems: Array<{ message: string; severity: 'high' | 'medium' | 'low' }> = []
           if (hubStats?.attention?.items) {
             attentionItems.push(...hubStats.attention.items)
           }
-          if (attention.missing_documents > 0) {
-            attentionItems.push({
-              message: `${attention.missing_documents} chybějící${attention.missing_documents > 1 ? ' doklady' : ' doklad'}`,
-              severity: 'high',
-            })
+          if (latestClosure && !closureComplete) {
+            const missingCategories: string[] = []
+            if (latestClosure.bank_statement_status === 'missing') missingCategories.push('bankovní výpis')
+            if (latestClosure.expense_documents_status === 'missing') missingCategories.push('výdaje')
+            if (latestClosure.income_invoices_status === 'missing') missingCategories.push('příjmy')
+            if (missingCategories.length > 0) {
+              attentionItems.push({
+                message: `Uzávěrka: chybí ${missingCategories.join(', ')}`,
+                severity: 'high',
+              })
+            }
           }
           if (attention.pending_uploads > 0) {
             attentionItems.push({
@@ -328,16 +344,6 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
               severity: 'medium',
             })
           }
-
-          // Latest closure status
-          const latestClosure = closures.length > 0
-            ? [...closures].sort((a, b) => b.period.localeCompare(a.period))[0]
-            : null
-          const closureComplete = latestClosure
-            ? latestClosure.bank_statement_status !== 'missing' &&
-              latestClosure.expense_documents_status !== 'missing' &&
-              latestClosure.income_invoices_status !== 'missing'
-            : false
 
           const s = (val: number | undefined) => statsLoading ? '—' : (val ?? '—')
 
@@ -514,15 +520,30 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
 
         {/* Attention Banner — only if issues */}
         {(() => {
+          const latestClosure = closures.length > 0
+            ? [...closures].sort((a, b) => b.period.localeCompare(a.period))[0]
+            : null
+          const closureComplete = latestClosure
+            ? latestClosure.bank_statement_status !== 'missing' &&
+              latestClosure.expense_documents_status !== 'missing' &&
+              latestClosure.income_invoices_status !== 'missing'
+            : false
+
           const attentionItems: Array<{ message: string; severity: 'high' | 'medium' | 'low' }> = []
           if (hubStats?.attention?.items) {
             attentionItems.push(...hubStats.attention.items)
           }
-          if (attention.missing_documents > 0) {
-            attentionItems.push({
-              message: `${attention.missing_documents} chybějící${attention.missing_documents > 1 ? ' doklady' : ' doklad'}`,
-              severity: 'high',
-            })
+          if (latestClosure && !closureComplete) {
+            const missingCategories: string[] = []
+            if (latestClosure.bank_statement_status === 'missing') missingCategories.push('bankovní výpis')
+            if (latestClosure.expense_documents_status === 'missing') missingCategories.push('výdaje')
+            if (latestClosure.income_invoices_status === 'missing') missingCategories.push('příjmy')
+            if (missingCategories.length > 0) {
+              attentionItems.push({
+                message: `Uzávěrka: chybí ${missingCategories.join(', ')}`,
+                severity: 'high',
+              })
+            }
           }
           if (attention.pending_uploads > 0) {
             attentionItems.push({
@@ -536,15 +557,6 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
               severity: 'medium',
             })
           }
-
-          const latestClosure = closures.length > 0
-            ? [...closures].sort((a, b) => b.period.localeCompare(a.period))[0]
-            : null
-          const closureComplete = latestClosure
-            ? latestClosure.bank_statement_status !== 'missing' &&
-              latestClosure.expense_documents_status !== 'missing' &&
-              latestClosure.income_invoices_status !== 'missing'
-            : false
 
           const activeTaskCount = tasks.filter(t =>
             t.status === 'pending' || t.status === 'accepted' || t.status === 'in_progress'

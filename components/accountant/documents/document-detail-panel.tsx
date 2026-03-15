@@ -3,10 +3,8 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   CheckCircle,
-  XCircle,
   RotateCcw,
   Loader2,
   FileText,
@@ -24,7 +22,7 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 import type { ExtractionStep } from '@/lib/extraction-types'
-import { STEP_LABELS } from '@/lib/extraction-types'
+import { STEP_LABELS, STEP_ESTIMATES } from '@/lib/extraction-types'
 import { cn, formatCurrency, formatDate } from '@/lib/utils'
 import type { DocumentRegisterEntry, DocumentType } from '@/lib/types/document-register'
 import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS, DOCUMENT_STATUS_COLORS, isExtractableType } from '@/lib/types/document-register'
@@ -66,8 +64,6 @@ type QueueJobInfo = {
 interface DocumentDetailPanelProps {
   document: DocumentRegisterEntry
   companyId: string
-  onApprove: (id: string) => void
-  onReject: (id: string, reason?: string) => void
   onExtract: (id: string) => void
   extractionJob?: QueueJobInfo
   onDocumentUpdated?: () => void
@@ -87,14 +83,14 @@ function ConfidenceBadge({ score }: { score: number | null }) {
 
 const PIPELINE_STEPS: ExtractionStep[] = ['downloading', 'ocr', 'ai_extraction', 'ai_verification', 'saving']
 
-export function DocumentDetailPanel({ document: doc, companyId, onApprove, onReject, onExtract, extractionJob, onDocumentUpdated }: DocumentDetailPanelProps) {
+export function DocumentDetailPanel({ document: doc, companyId, onExtract, extractionJob, onDocumentUpdated }: DocumentDetailPanelProps) {
   const { userId } = useAccountantUser()
   const [extracting, setExtracting] = useState(false)
-  const [rejecting, setRejecting] = useState(false)
-  const [rejectionReason, setRejectionReason] = useState('')
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([])
   const [loadingPredkontace, setLoadingPredkontace] = useState(false)
   const [showPredkontace, setShowPredkontace] = useState(false)
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null)
+  const [editValues, setEditValues] = useState<{ debit_account: string; credit_account: string; amount: number; vat_amount: number }>({ debit_account: '', credit_account: '', amount: 0, vat_amount: 0 })
 
   const extractable = isExtractableType(doc.type as DocumentType)
   const numPages = (doc.ocr_data as Record<string, unknown> | null)?.num_pages as number | undefined
@@ -130,13 +126,30 @@ export function DocumentDetailPanel({ document: doc, companyId, onApprove, onRej
     }
   }
 
-  const handleReject = () => {
-    if (rejecting) {
-      onReject(doc.id, rejectionReason || undefined)
-      setRejecting(false)
-      setRejectionReason('')
-    } else {
-      setRejecting(true)
+  const handleSaveEntry = async (entryId: string) => {
+    try {
+      const res = await fetch('/api/documents/predkontace', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
+        body: JSON.stringify({
+          entry_id: entryId,
+          debit_account: editValues.debit_account,
+          credit_account: editValues.credit_account,
+          amount: editValues.amount,
+          vat_amount: editValues.vat_amount,
+        }),
+      })
+      if (res.ok) {
+        setJournalEntries(prev => prev.map(e =>
+          e.id === entryId ? { ...e, ...editValues, status: 'modified' } : e
+        ))
+        setEditingEntryId(null)
+        toast.success('Předkontace upravena')
+      } else {
+        toast.error('Chyba při ukládání')
+      }
+    } catch {
+      toast.error('Chyba při ukládání')
     }
   }
 
@@ -255,50 +268,34 @@ export function DocumentDetailPanel({ document: doc, companyId, onApprove, onRej
               {doc.ocr_processed ? 'Znovu vytěžit' : 'Vytěžit'}
             </Button>
           )}
-          {(doc.status === 'uploaded' || doc.status === 'extracted') && (
-            <>
-              <Button size="sm" variant="outline" className="text-green-600 border-green-300 hover:bg-green-50 dark:hover:bg-green-900/20" onClick={() => onApprove(doc.id)}>
-                <CheckCircle className="h-4 w-4 mr-1" /> Schválit
-              </Button>
-              <Button size="sm" variant="outline" className="text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={handleReject}>
-                <XCircle className="h-4 w-4 mr-1" /> Zamítnout
-              </Button>
-            </>
-          )}
         </div>
       </div>
 
-      {/* Rejection reason input */}
-      {rejecting && (
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            placeholder="Důvod zamítnutí..."
-            value={rejectionReason}
-            onChange={(e) => setRejectionReason(e.target.value)}
-            className="flex-1 px-3 py-1.5 text-sm border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            autoFocus
-          />
-          <Button size="sm" variant="destructive" onClick={handleReject}>Potvrdit</Button>
-          <Button size="sm" variant="ghost" onClick={() => { setRejecting(false); setRejectionReason('') }}>Zrušit</Button>
-        </div>
-      )}
-
-      {doc.rejection_reason && (
-        <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded">
-          Zamítnuto: {doc.rejection_reason}
-        </div>
-      )}
-
       {/* Extraction pipeline progress */}
-      {extractionJob && (doc.status === 'extracting' || doc.ocr_status === 'processing') && (
-        <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-2">
+      {extractionJob && (
+        <div className={cn(
+          'rounded-lg p-3 space-y-2 border',
+          extractionJob.status === 'completed'
+            ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
+            : 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800'
+        )}>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase">Pipeline vytěžování</span>
+            <span className={cn(
+              'text-xs font-semibold uppercase',
+              extractionJob.status === 'completed'
+                ? 'text-green-700 dark:text-green-300'
+                : 'text-blue-700 dark:text-blue-300'
+            )}>
+              {extractionJob.status === 'completed' ? 'Vytěžení dokončeno' : 'Pipeline vytěžování'}
+            </span>
             {extractionJob.steps.length > 0 && (() => {
               const first = extractionJob.steps[0]
-              const totalMs = Date.now() - first.startedAt
-              return <span className="text-xs text-blue-600 dark:text-blue-400">Celkem: {Math.floor(totalMs / 1000)}s</span>
+              const last = extractionJob.steps[extractionJob.steps.length - 1]
+              const totalMs = (last.completedAt || Date.now()) - first.startedAt
+              return <span className={cn(
+                'text-xs',
+                extractionJob.status === 'completed' ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'
+              )}>Celkem: {Math.floor(totalMs / 1000)}s</span>
             })()}
           </div>
           <div className="space-y-1">
@@ -329,6 +326,11 @@ export function DocumentDetailPanel({ document: doc, companyId, onApprove, onRej
                   )}>
                     {STEP_LABELS[step]}
                   </span>
+                  {isPending && STEP_ESTIMATES[step] && (
+                    <span className="text-gray-400 dark:text-gray-500 tabular-nums">
+                      {STEP_ESTIMATES[step]}
+                    </span>
+                  )}
                   {(isCompleted || isCurrent) && (
                     <span className={cn(
                       'tabular-nums',
@@ -343,6 +345,12 @@ export function DocumentDetailPanel({ document: doc, companyId, onApprove, onRej
               )
             })}
           </div>
+          {extractionJob.status === 'completed' && (
+            <div className="text-xs text-green-700 dark:text-green-400 font-medium pt-1 border-t border-green-200 dark:border-green-800">
+              <CheckCircle className="h-3.5 w-3.5 inline mr-1" />
+              Vytěžení úspěšně dokončeno
+            </div>
+          )}
         </div>
       )}
 
@@ -501,24 +509,57 @@ export function DocumentDetailPanel({ document: doc, companyId, onApprove, onRej
                       rejected: { label: 'Zamítnuto', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
                     }[entry.status] || { label: entry.status, color: 'bg-gray-100 text-gray-700' }
 
+                    const isEditing = editingEntryId === entry.id
+
                     return (
                       <tr key={entry.id || entry.line_number} className="border-b dark:border-gray-700">
                         <td className="py-1.5 px-2 text-gray-400">{entry.line_number}</td>
                         <td className="py-1.5 px-2 text-gray-900 dark:text-white max-w-[200px] truncate">{entry.description}</td>
                         <td className="py-1.5 px-2">
-                          <span className="font-mono text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded" title={entry.debit_name}>
-                            {entry.debit_account}
-                          </span>
-                          {entry.debit_name && <span className="text-xs text-gray-400 ml-1 hidden lg:inline">{entry.debit_name}</span>}
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editValues.debit_account}
+                              onChange={(e) => setEditValues(v => ({ ...v, debit_account: e.target.value }))}
+                              className="w-16 font-mono text-xs px-1.5 py-0.5 rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            />
+                          ) : (
+                            <>
+                              <span className="font-mono text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded" title={entry.debit_name}>
+                                {entry.debit_account}
+                              </span>
+                              {entry.debit_name && <span className="text-xs text-gray-400 ml-1 hidden lg:inline">{entry.debit_name}</span>}
+                            </>
+                          )}
                         </td>
                         <td className="py-1.5 px-2">
-                          <span className="font-mono text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded" title={entry.credit_name}>
-                            {entry.credit_account}
-                          </span>
-                          {entry.credit_name && <span className="text-xs text-gray-400 ml-1 hidden lg:inline">{entry.credit_name}</span>}
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editValues.credit_account}
+                              onChange={(e) => setEditValues(v => ({ ...v, credit_account: e.target.value }))}
+                              className="w-16 font-mono text-xs px-1.5 py-0.5 rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            />
+                          ) : (
+                            <>
+                              <span className="font-mono text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded" title={entry.credit_name}>
+                                {entry.credit_account}
+                              </span>
+                              {entry.credit_name && <span className="text-xs text-gray-400 ml-1 hidden lg:inline">{entry.credit_name}</span>}
+                            </>
+                          )}
                         </td>
                         <td className="py-1.5 px-2 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                          {entry.amount.toLocaleString('cs-CZ')} Kč
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              value={editValues.amount}
+                              onChange={(e) => setEditValues(v => ({ ...v, amount: Number(e.target.value) }))}
+                              className="w-24 text-xs text-right px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            />
+                          ) : (
+                            <>{entry.amount.toLocaleString('cs-CZ')} Kč</>
+                          )}
                         </td>
                         <td className="py-1.5 px-2 text-center">
                           {confidencePct !== null && (
@@ -531,22 +572,51 @@ export function DocumentDetailPanel({ document: doc, companyId, onApprove, onRej
                           </span>
                         </td>
                         <td className="py-1.5 px-2 text-center">
-                          {entry.status === 'suggested' && entry.id && (
+                          {isEditing ? (
                             <div className="flex items-center justify-center gap-1">
                               <button
-                                onClick={() => handleEntryAction(entry.id, 'approved')}
+                                onClick={() => handleSaveEntry(entry.id)}
                                 className="p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
-                                title="Schválit"
+                                title="Uložit"
                               >
                                 <Check className="h-3.5 w-3.5" />
                               </button>
                               <button
-                                onClick={() => handleEntryAction(entry.id, 'rejected')}
-                                className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                                title="Zamítnout"
+                                onClick={() => setEditingEntryId(null)}
+                                className="p-1 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
+                                title="Zrušit"
                               >
                                 <X className="h-3.5 w-3.5" />
                               </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center gap-1">
+                              {entry.id && (
+                                <button
+                                  onClick={() => {
+                                    setEditingEntryId(entry.id)
+                                    setEditValues({
+                                      debit_account: entry.debit_account,
+                                      credit_account: entry.credit_account,
+                                      amount: entry.amount,
+                                      vat_amount: entry.vat_amount,
+                                    })
+                                  }}
+                                  className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                                  title="Upravit"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                              {entry.status === 'suggested' && entry.id && (
+                                <button
+                                  onClick={() => handleEntryAction(entry.id, 'approved')}
+                                  className="p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
+                                  title="Schválit"
+                                >
+                                  <Check className="h-3.5 w-3.5" />
+                                </button>
+                              )}
                             </div>
                           )}
                         </td>

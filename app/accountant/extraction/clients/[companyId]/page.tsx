@@ -89,7 +89,7 @@ export default function ExtractionClientDetailPage() {
       </div>
 
       {/* Document Register — reuse existing component */}
-      <DocumentRegisterTab companyId={companyId} extractableOnly />
+      <DocumentRegisterTab companyId={companyId} />
     </div>
   )
 }

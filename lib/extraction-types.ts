@@ -23,6 +23,17 @@ export const STEP_LABELS: Record<ExtractionStep, string> = {
   error: 'Chyba',
 }
 
+export const STEP_ESTIMATES: Record<ExtractionStep, string> = {
+  queued: '',
+  downloading: '~2-5s',
+  ocr: '~10-15s',
+  ai_extraction: '~5-10s',
+  ai_verification: '~3-5s',
+  saving: '~1-2s',
+  completed: '',
+  error: '',
+}
+
 export type ExtractionPriority = 'high' | 'normal' | 'low'
 
 export type ExtractionJobStatus =
