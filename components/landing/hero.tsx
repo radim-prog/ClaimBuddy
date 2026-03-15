@@ -15,13 +15,13 @@ export function Hero() {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 rounded-full border border-purple-200 dark:border-purple-800/50 bg-purple-50 dark:bg-purple-950/30 px-4 py-1.5 text-sm text-purple-700 dark:text-purple-300 mb-8">
           <Sparkles className="h-3.5 w-3.5" />
-          30 dnu zdarma na vyzkoušeni
+          30 dní zdarma na vyzkoušení
         </div>
 
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display tracking-tight text-foreground max-w-4xl mx-auto leading-tight">
           Účetnictvi pod kontrolou.{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">
-            Pro klienty i účetni.
+            Pro klienty i účetní.
           </span>
         </h1>
 

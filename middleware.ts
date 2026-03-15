@@ -247,10 +247,8 @@ function handleUnauthenticated(request: NextRequest, pathname: string): NextResp
   if (pathname.startsWith('/api/')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  // Smart redirect: accountant paths → /ucetni, everything else → / (client landing)
-  const dest = pathname.startsWith('/accountant') || pathname.startsWith('/api/accountant')
-    ? '/ucetni'
-    : '/'
+  // All unauthenticated users → landing page (/ has login CTA)
+  const dest = '/'
   return NextResponse.redirect(new URL(dest, request.url))
 }
 

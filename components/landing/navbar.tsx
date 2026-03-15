@@ -49,6 +49,8 @@ export function Navbar() {
         <button
           className="md:hidden p-2 text-muted-foreground"
           onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label={mobileOpen ? 'Zavřít menu' : 'Otevřít menu'}
+          aria-expanded={mobileOpen}
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>

@@ -34,7 +34,7 @@ export function CTASection() {
             className="h-12 px-8 text-base border-white/30 text-white hover:bg-white/10"
             asChild
           >
-            <a href="#pricing">Zobrazit ceník</a>
+            <a href="/#pricing">Zobrazit ceník</a>
           </Button>
         </div>
       </div>
