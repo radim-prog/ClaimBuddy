@@ -7,8 +7,13 @@ export const dynamic = 'force-dynamic'
 // Monthly cron: reset extraction credits for all users based on their plan
 // Should run on the 1st of each month
 export async function GET(request: NextRequest) {
+  const expectedSecret = process.env.CRON_SECRET
+  if (!expectedSecret) {
+    console.error('CRON_SECRET not configured')
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
+  }
   const cronSecret = request.headers.get('authorization')?.replace('Bearer ', '')
-  if (cronSecret !== process.env.CRON_SECRET) {
+  if (cronSecret !== expectedSecret) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -24,14 +29,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, created: 0, period: currentPeriod })
   }
 
-  // Get plan limits for credit allocation
+  // Get plan limits for credit allocation (both accountant and client portals)
   const accountantLimits = await getAllPlanLimits('accountant')
-  const limitsByTier = new Map(accountantLimits.map(l => [l.plan_tier, l]))
+  const clientLimits = await getAllPlanLimits('client')
+  const limitsByPortalAndTier = new Map<string, typeof accountantLimits[number]>()
+  for (const l of accountantLimits) limitsByPortalAndTier.set(`accountant:${l.plan_tier}`, l)
+  for (const l of clientLimits) limitsByPortalAndTier.set(`client:${l.plan_tier}`, l)
 
   let created = 0
 
   for (const sub of subscriptions) {
-    const limits = limitsByTier.get(sub.plan_tier)
+    const limits = limitsByPortalAndTier.get(`${sub.portal_type}:${sub.plan_tier}`)
     const monthlyCredits = limits?.max_extractions_month
 
     if (!monthlyCredits || monthlyCredits <= 0) continue

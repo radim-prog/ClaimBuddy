@@ -42,8 +42,9 @@ export async function checkFeatureAccess(
 
   const limits = await getPlanLimits(portalType, tier)
   if (!limits) {
-    // No limits defined = allow (safe fallback)
-    return { allowed: true }
+    // No limits defined = deny (fail closed for safety)
+    console.warn(`No plan_limits found for ${portalType}/${tier}`)
+    return { allowed: false, reason: 'Konfigurace tarifu nenalezena.', currentTier: tier }
   }
 
   const featureEnabled = limits.features[feature]
@@ -79,7 +80,10 @@ export async function checkQuantityLimit(
   const tier = sub?.plan_tier ?? 'free'
   const limits = await getPlanLimits(portalType, tier)
 
-  if (!limits) return { allowed: true }
+  if (!limits) {
+    console.warn(`No plan_limits found for ${portalType}/${tier}`)
+    return { allowed: false, reason: 'Konfigurace tarifu nenalezena.', currentTier: tier }
+  }
 
   const maxField = resource === 'companies' ? limits.max_companies : limits.max_users
   if (maxField === null) return { allowed: true } // unlimited
@@ -126,7 +130,10 @@ export async function checkExtractionCredits(
   const tier = sub?.plan_tier ?? 'free'
   const limits = await getPlanLimits(portalType, tier)
 
-  if (!limits) return { allowed: true }
+  if (!limits) {
+    console.warn(`No plan_limits found for ${portalType}/${tier}`)
+    return { allowed: false, reason: 'Konfigurace tarifu nenalezena.', currentTier: tier }
+  }
 
   // Check feature access first
   if (limits.features.extraction !== true) {

@@ -48,6 +48,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No company found' }, { status: 400 })
   }
 
+  // IDOR check: verify user owns the company
+  if (requestedCompanyId) {
+    const { data: owned } = await supabase
+      .from('companies')
+      .select('id')
+      .eq('id', requestedCompanyId)
+      .eq('owner_id', userId)
+      .is('deleted_at', null)
+      .single()
+    if (!owned) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+  }
+
   if (!vehicleId || !year || !month) {
     return NextResponse.json({ error: 'Missing required fields (vehicleId, year, month)' }, { status: 400 })
   }

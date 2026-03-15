@@ -187,16 +187,35 @@ export async function getUsageCredits(userId: string, creditType: string, period
 }
 
 export async function consumeCredit(userId: string, creditType: string, period?: string): Promise<boolean> {
+  // Optimistic locking: read current state, then UPDATE only if used_credits
+  // hasn't changed (prevents race condition / double-consume)
   const credits = await getUsageCredits(userId, creditType, period)
   if (!credits) return false
   if (credits.used_credits >= credits.total_credits) return false
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('usage_credits')
     .update({ used_credits: credits.used_credits + 1 })
     .eq('id', credits.id)
+    .eq('used_credits', credits.used_credits) // optimistic lock
+    .select('id')
 
   if (error) throw new Error(`Failed to consume credit: ${error.message}`)
+
+  // No rows updated = concurrent request already consumed → retry once
+  if (!updated || updated.length === 0) {
+    const retry = await getUsageCredits(userId, creditType, period)
+    if (!retry || retry.used_credits >= retry.total_credits) return false
+    const { data: retried, error: retryErr } = await supabase
+      .from('usage_credits')
+      .update({ used_credits: retry.used_credits + 1 })
+      .eq('id', retry.id)
+      .eq('used_credits', retry.used_credits)
+      .select('id')
+    if (retryErr) throw new Error(`Failed to consume credit: ${retryErr.message}`)
+    return (retried?.length ?? 0) > 0
+  }
+
   return true
 }
 
@@ -246,7 +265,11 @@ export async function logUsage(userId: string, action: string, resourceId?: stri
 const TRIAL_DURATION_DAYS = 30
 const TRIAL_TIER = 'professional'
 
-export async function startReverseTrial(userId: string, portalType: 'accountant' | 'client' = 'accountant'): Promise<Subscription> {
+export async function startReverseTrial(userId: string, portalType: 'accountant' | 'client' = 'accountant'): Promise<Subscription | null> {
+  // Prevent trial restart: if user already has any subscription (active, trialing, cancelled, etc.), skip
+  const existing = await getSubscription(userId, portalType)
+  if (existing) return existing
+
   const trialEnd = new Date()
   trialEnd.setDate(trialEnd.getDate() + TRIAL_DURATION_DAYS)
 

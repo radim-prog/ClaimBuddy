@@ -96,8 +96,8 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error(`Error processing Stripe event ${event.type}:`, err)
-    // Return 200 to prevent Stripe from retrying on processing errors
-    // The error is logged for manual investigation
+    // Return 500 so Stripe retries the webhook (up to ~3 days with exponential backoff)
+    return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
   }
 
   return NextResponse.json({ received: true })
@@ -173,6 +173,6 @@ function mapStripeStatus(status: string): 'active' | 'trialing' | 'past_due' | '
     case 'canceled': return 'cancelled'
     case 'incomplete': return 'incomplete'
     case 'incomplete_expired': return 'cancelled'
-    default: return 'active'
+    default: return 'incomplete'
   }
 }
