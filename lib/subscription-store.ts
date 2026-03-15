@@ -200,6 +200,35 @@ export async function consumeCredit(userId: string, creditType: string, period?:
   return true
 }
 
+// Add extra purchased credits to current period
+export async function addExtraCredits(userId: string, creditType: string, amount: number): Promise<void> {
+  const currentPeriod = new Date().toISOString().slice(0, 7)
+
+  // Check if credits exist for current period
+  const existing = await getUsageCredits(userId, creditType, currentPeriod)
+
+  if (existing) {
+    // Add to existing credits
+    const { error } = await supabase
+      .from('usage_credits')
+      .update({ total_credits: existing.total_credits + amount })
+      .eq('id', existing.id)
+    if (error) throw new Error(`Failed to add credits: ${error.message}`)
+  } else {
+    // Create new credits entry
+    const { error } = await supabase
+      .from('usage_credits')
+      .insert({
+        user_id: userId,
+        credit_type: creditType,
+        total_credits: amount,
+        used_credits: 0,
+        period: currentPeriod,
+      })
+    if (error) throw new Error(`Failed to create credits: ${error.message}`)
+  }
+}
+
 // ============================================
 // USAGE LOG
 // ============================================
@@ -208,6 +237,87 @@ export async function logUsage(userId: string, action: string, resourceId?: stri
   await supabase
     .from('usage_log')
     .insert({ user_id: userId, action, resource_id: resourceId, metadata })
+}
+
+// ============================================
+// REVERSE TRIAL (30 days Professional)
+// ============================================
+
+const TRIAL_DURATION_DAYS = 30
+const TRIAL_TIER = 'professional'
+
+export async function startReverseTrial(userId: string, portalType: 'accountant' | 'client' = 'accountant'): Promise<Subscription> {
+  const trialEnd = new Date()
+  trialEnd.setDate(trialEnd.getDate() + TRIAL_DURATION_DAYS)
+
+  return upsertSubscription({
+    user_id: userId,
+    portal_type: portalType,
+    plan_tier: TRIAL_TIER,
+    status: 'trialing',
+    trial_end: trialEnd.toISOString().split('T')[0],
+  })
+}
+
+export async function getTrialStatus(userId: string, portalType: 'accountant' | 'client' = 'accountant'): Promise<{
+  isTrialing: boolean
+  daysRemaining: number
+  trialEnd: string | null
+  trialTier: string
+} | null> {
+  const sub = await getSubscription(userId, portalType)
+  if (!sub || sub.status !== 'trialing' || !sub.trial_end) {
+    return null
+  }
+
+  const now = new Date()
+  const end = new Date(sub.trial_end)
+  const diffMs = end.getTime() - now.getTime()
+  const daysRemaining = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+
+  return {
+    isTrialing: true,
+    daysRemaining,
+    trialEnd: sub.trial_end,
+    trialTier: sub.plan_tier,
+  }
+}
+
+export async function downgradeExpiredTrials(): Promise<number> {
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data: expired } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('status', 'trialing')
+    .lt('trial_end', today)
+
+  if (!expired || expired.length === 0) return 0
+
+  let count = 0
+  for (const sub of expired) {
+    // Only downgrade if no active Stripe subscription
+    if (!sub.stripe_subscription_id) {
+      await supabase
+        .from('subscriptions')
+        .update({
+          plan_tier: 'free',
+          status: 'active',
+          trial_end: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sub.id)
+
+      await supabase
+        .from('users')
+        .update({ plan_tier: 'free' })
+        .eq('id', sub.user_id)
+
+      count++
+    }
+  }
+
+  return count
 }
 
 // ============================================

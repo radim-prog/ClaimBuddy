@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { extractionQueue } from '@/lib/extraction-queue'
-import { checkFeatureAccess } from '@/lib/plan-gate'
+import { checkExtractionCredits, logGatedAction } from '@/lib/plan-gate'
+import { consumeCredit } from '@/lib/subscription-store'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,8 +16,8 @@ export async function POST(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Plan gate: extraction feature
-  const gate = await checkFeatureAccess(userId, 'extraction')
+  // Plan gate: check extraction feature + credit limits
+  const gate = await checkExtractionCredits(userId)
   if (!gate.allowed) {
     return NextResponse.json({ error: gate.reason }, { status: 403 })
   }
@@ -51,6 +52,11 @@ export async function POST(request: NextRequest) {
       submittedBy: userId,
       fastMode,
     })
+
+    // Consume extraction credit after successful extraction
+    const currentPeriod = new Date().toISOString().slice(0, 7)
+    await consumeCredit(userId, 'extraction', currentPeriod)
+    await logGatedAction(userId, 'extraction_used', documentId)
 
     return NextResponse.json({
       success: true,

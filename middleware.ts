@@ -9,7 +9,7 @@ if (!AUTH_SECRET) {
 }
 
 const PUBLIC_EXACT = ['/', '/ucetni']  // Exact match only (startsWith '/' would match everything)
-const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/cron/drive-sync']
+const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/pricing', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/cron/drive-sync', '/api/cron/trial-expiry', '/api/cron/credits-reset']
 const STATIC_PREFIXES = ['/_next', '/static', '/favicon.ico']
 
 // --- Rate Limiting (in-memory, sliding window) ---

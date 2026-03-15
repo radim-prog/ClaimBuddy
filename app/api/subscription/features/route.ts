@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSubscription, getPlanLimits } from '@/lib/subscription-store'
+import { getSubscription, getPlanLimits, getTrialStatus } from '@/lib/subscription-store'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,9 +37,10 @@ export async function GET(request: NextRequest) {
   const portalType = userRole === 'client' ? 'client' : 'accountant'
   const tier = userPlan || 'free'
 
-  const [subscription, limits] = await Promise.all([
+  const [subscription, limits, trial] = await Promise.all([
     getSubscription(userId, portalType as 'accountant' | 'client'),
     getPlanLimits(portalType, tier),
+    getTrialStatus(userId, portalType as 'accountant' | 'client'),
   ])
 
   return NextResponse.json({
@@ -56,6 +57,7 @@ export async function GET(request: NextRequest) {
       trial_end: subscription.trial_end,
       current_period_end: subscription.current_period_end,
     } : null,
+    trial: trial ?? null,
     monetization_enabled: true,
   })
 }

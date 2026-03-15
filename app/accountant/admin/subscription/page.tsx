@@ -20,6 +20,7 @@ import {
   CreditCard,
   Gift,
   ExternalLink,
+  Clock,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
@@ -52,45 +53,46 @@ const PLANS: {
       'Seznam klientů',
       'Časové výkazy',
       'Přehled plateb',
-      'Termíny',
+      'Termíny a deadlines',
       'Základní úkoly',
+      'Zprávy klientům (5/měs)',
     ],
     support: 'Komunita',
   },
   {
     id: 'starter',
     name: 'Starter',
-    price: 990,
-    yearlyPrice: 9900,
+    price: 490,
+    yearlyPrice: 4900,
     icon: Rocket,
     description: 'Pro začínající účetní a malé kanceláře',
-    maxCompanies: 15,
-    maxUsers: 2,
+    maxCompanies: 20,
+    maxUsers: 3,
     features: [
       'Vše z Free',
-      'Komunikace',
+      'Neomezená komunikace',
       'Matice měsíčních uzávěrek',
       'Přehled DPH',
-      'E-mail notifikace',
+      'AI vytěžování (10/měs)',
     ],
     support: 'E-mail (48h)',
   },
   {
     id: 'professional',
     name: 'Professional',
-    price: 2490,
-    yearlyPrice: 24900,
+    price: 1290,
+    yearlyPrice: 12900,
     icon: Crown,
     description: 'Pro profesionální účetní kanceláře',
     maxCompanies: 100,
-    maxUsers: 5,
+    maxUsers: 10,
     features: [
       'Vše ze Starter',
       'Daň z příjmu',
       'Skupiny klientů',
       'Projekty a fáze',
       'Klientská fakturace',
-      'Klávesové zkratky',
+      'AI vytěžování (50/měs)',
     ],
     support: 'E-mail (24h) + telefon',
     popular: true,
@@ -98,19 +100,19 @@ const PLANS: {
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: 4990,
-    yearlyPrice: 49900,
+    price: 2990,
+    yearlyPrice: 29900,
     icon: Building2,
     description: 'Pro velké kanceláře a daňové poradce',
     maxCompanies: null,
     maxUsers: null,
     features: [
       'Vše z Professional',
-      'Vytěžování dokumentů (100/měs)',
+      'AI vytěžování (200/měs)',
       'Případy a řízení',
       'Pokročilá analytika',
+      'Health Score klientů',
       'API přístup',
-      'SLA garance 99.9%',
       'Prioritní podpora',
     ],
     support: 'Prioritní (4h)',
@@ -118,15 +120,32 @@ const PLANS: {
 ]
 
 const ADDONS = [
+  { label: 'Extra vytěžování (50 kreditů)', price: 490, unit: 'jednorázově' },
+  { label: 'Extra vytěžování (200 kreditů)', price: 1490, unit: 'jednorázově' },
   { label: 'Firma nad limit', price: 49, unit: '/měsíc/firma' },
-  { label: 'Uživatel nad limit', price: 299, unit: '/měsíc/uživatel' },
   { label: 'Jednorázový onboarding', price: 2990, unit: 'jednorázově' },
 ]
 
+interface TrialStatus {
+  isTrialing: boolean
+  daysRemaining: number
+  trialEnd: string | null
+  trialTier: string
+}
+
 export default function SubscriptionPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
+  const [trial, setTrial] = useState<TrialStatus | null>(null)
   const { planTier, subscription, loading, refreshFeatures } = usePlanFeatures()
   const currentPlan = (planTier || 'free') as PlanTier
+
+  // Fetch trial status
+  useEffect(() => {
+    fetch('/api/subscription/trial')
+      .then(r => r.json())
+      .then(data => { if (data.trial) setTrial(data.trial) })
+      .catch(() => {})
+  }, [])
 
   // Handle success/cancel URL params
   useEffect(() => {
@@ -134,7 +153,6 @@ export default function SubscriptionPage() {
     if (params.get('success') === 'true') {
       toast.success('Předplatné úspěšně aktivováno!')
       refreshFeatures()
-      // Clean URL
       window.history.replaceState({}, '', window.location.pathname)
     }
     if (params.get('cancelled') === 'true') {
@@ -200,6 +218,35 @@ export default function SubscriptionPage() {
           Správa vašeho tarifu Účetní OS
         </p>
       </div>
+
+      {/* Trial countdown banner */}
+      {trial && trial.isTrialing && trial.daysRemaining > 0 && (
+        <Card className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <Clock className="h-6 w-6" />
+                <div>
+                  <p className="font-semibold">
+                    Zkušební verze Professional — zbývá {trial.daysRemaining} {trial.daysRemaining === 1 ? 'den' : trial.daysRemaining < 5 ? 'dny' : 'dní'}
+                  </p>
+                  <p className="text-sm text-white/80">
+                    Po skončení bude váš účet přepnut na Free. Vyberte si tarif a udržte si všechny funkce.
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                className="bg-white text-orange-600 hover:bg-white/90 font-semibold"
+                onClick={() => document.getElementById('pricing-cards')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                Vybrat tarif
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Current plan banner */}
       <Card className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-0">
@@ -283,7 +330,7 @@ export default function SubscriptionPage() {
       </div>
 
       {/* Pricing cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div id="pricing-cards" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {PLANS.map((plan) => {
           const Icon = plan.icon
           const isCurrent = plan.id === currentPlan

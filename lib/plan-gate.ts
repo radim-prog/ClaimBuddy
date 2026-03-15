@@ -155,6 +155,52 @@ export async function checkExtractionCredits(
 }
 
 // ============================================
+// MESSAGE LIMIT CHECK (Free tier: 5/month)
+// ============================================
+
+const FREE_MESSAGE_LIMIT = 5
+
+export async function checkMessageLimit(
+  userId: string,
+  portalType: PortalType = 'accountant'
+): Promise<GateResult & { used?: number; limit?: number }> {
+  if (!isMonetizationEnabled()) {
+    return { allowed: true }
+  }
+
+  const sub = await getSubscription(userId, portalType)
+  const tier = sub?.plan_tier ?? 'free'
+
+  // Only free tier has message limits
+  if (tier !== 'free') {
+    return { allowed: true }
+  }
+
+  const currentPeriod = new Date().toISOString().slice(0, 7)
+  const { count } = await supabase
+    .from('usage_log')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('action', 'message_sent')
+    .gte('created_at', `${currentPeriod}-01`)
+
+  const used = count ?? 0
+
+  if (used >= FREE_MESSAGE_LIMIT) {
+    return {
+      allowed: false,
+      reason: `Vyčerpali jste limit ${FREE_MESSAGE_LIMIT} zpráv/měsíc na tarifu Free.`,
+      requiredTier: 'starter',
+      currentTier: tier,
+      used,
+      limit: FREE_MESSAGE_LIMIT,
+    }
+  }
+
+  return { allowed: true, used, limit: FREE_MESSAGE_LIMIT }
+}
+
+// ============================================
 // LOG GATED ACTION
 // ============================================
 

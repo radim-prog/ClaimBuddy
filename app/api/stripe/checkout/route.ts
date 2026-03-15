@@ -71,10 +71,10 @@ export async function POST(request: NextRequest) {
     sessionParams.customer = customerId
   }
 
-  // Add trial for new subscriptions (14 days)
+  // Reverse trial: 30 days Professional for new users
   if (!existingCustomerId) {
     sessionParams.subscription_data = {
-      trial_period_days: 14,
+      trial_period_days: 30,
       metadata: { user_id: userId, plan_tier: tier },
     }
   }

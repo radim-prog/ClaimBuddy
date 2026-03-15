@@ -4,6 +4,7 @@ import {
   upsertSubscription,
   updateSubscriptionByStripeId,
   setStripeCustomerId,
+  addExtraCredits,
 } from '@/lib/subscription-store'
 import type Stripe from 'stripe'
 
@@ -36,10 +37,9 @@ export async function POST(request: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         const userId = session.metadata?.user_id
-        const planTier = session.metadata?.plan_tier
 
-        if (!userId || !planTier) {
-          console.error('Checkout session missing metadata:', session.id)
+        if (!userId) {
+          console.error('Checkout session missing user_id:', session.id)
           break
         }
 
@@ -49,7 +49,23 @@ export async function POST(request: NextRequest) {
           await setStripeCustomerId(userId, customerId)
         }
 
-        // Create/update subscription
+        // Handle credit pack purchase (one-time payment)
+        if (session.metadata?.type === 'credit_purchase') {
+          const credits = parseInt(session.metadata.credits || '0', 10)
+          if (credits > 0) {
+            await addExtraCredits(userId, 'extraction', credits)
+            console.log(`Credits purchased: user=${userId}, credits=${credits}`)
+          }
+          break
+        }
+
+        // Handle subscription checkout
+        const planTier = session.metadata?.plan_tier
+        if (!planTier) {
+          console.error('Checkout session missing plan_tier:', session.id)
+          break
+        }
+
         const subId = typeof session.subscription === 'string' ? session.subscription : (session.subscription as { id: string } | null)?.id
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const stripeSubscription: any = subId ? await stripe.subscriptions.retrieve(subId) : null
