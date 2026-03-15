@@ -36,11 +36,19 @@ type BankTransaction = {
   description?: string | null
 }
 
+type MatchableDohodaVykaz = {
+  id: string
+  cista_mzda: number
+  period: string
+  employee_name?: string // "Jan Novák"
+}
+
 export type MatchResult = {
   document_id?: string
   invoice_id?: string
+  dohoda_mesic_id?: string
   confidence: number
-  method: 'variable_symbol' | 'amount_date' | 'fuzzy' | 'manual'
+  method: 'variable_symbol' | 'amount_date' | 'fuzzy' | 'manual' | 'dohoda_amount_name' | 'dohoda_amount'
 }
 
 export function matchByVariableSymbol(
@@ -184,15 +192,55 @@ function fuzzyContains(haystack: string, needle: string): boolean {
   return matches >= Math.min(2, needleWords.length)
 }
 
+export function matchDohodaPayment(
+  tx: BankTransaction,
+  unmatchedVykazy: MatchableDohodaVykaz[]
+): MatchResult | null {
+  // Only match expense transactions (negative = outgoing payment to employee)
+  if (tx.amount >= 0) return null
+  const absAmount = Math.abs(tx.amount)
+  const txDate = new Date(tx.transaction_date)
+
+  for (const vykaz of unmatchedVykazy) {
+    // Amount must match within 1 CZK tolerance
+    if (Math.abs(vykaz.cista_mzda - absAmount) > 1) continue
+
+    // Check if tx date is in the month after the vykaz period (typical payroll timing)
+    const [year, month] = vykaz.period.split('-').map(Number)
+    const periodEnd = new Date(year, month, 0) // last day of period month
+    const paymentWindow = new Date(year, month + 1, 15) // up to 15th of month+2
+
+    if (txDate < periodEnd || txDate > paymentWindow) continue
+
+    // Strategy 1: amount + counterparty name match
+    if (vykaz.employee_name && tx.counterparty_name) {
+      const empWords = vykaz.employee_name.toLowerCase().split(/\s+/)
+      const txName = tx.counterparty_name.toLowerCase()
+      const nameMatch = empWords.filter(w => w.length > 2).some(w => txName.includes(w))
+
+      if (nameMatch) {
+        return { dohoda_mesic_id: vykaz.id, confidence: 0.85, method: 'dohoda_amount_name' }
+      }
+    }
+
+    // Strategy 2: amount only (lower confidence)
+    return { dohoda_mesic_id: vykaz.id, confidence: 0.60, method: 'dohoda_amount' }
+  }
+
+  return null
+}
+
 export function autoMatchTransaction(
   tx: BankTransaction,
   documents: MatchableDocument[],
-  invoices: MatchableInvoice[]
+  invoices: MatchableInvoice[],
+  dohodaVykazy?: MatchableDohodaVykaz[]
 ): MatchResult | null {
   // Try strategies in order of confidence
   return (
     matchByVariableSymbol(tx, documents, invoices) ||
     matchByAmountDate(tx, documents, invoices) ||
+    (dohodaVykazy ? matchDohodaPayment(tx, dohodaVykazy) : null) ||
     matchFuzzy(tx, documents, invoices)
   )
 }

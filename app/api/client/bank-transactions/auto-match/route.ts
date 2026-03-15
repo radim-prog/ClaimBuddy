@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ matched: 0, message: 'No unmatched transactions' })
     }
 
-    // Get documents and invoices for matching
+    // Get documents, invoices, and unmatched dohoda vykazy for matching
     const [{ data: documents }, { data: invoices }] = await Promise.all([
       supabaseAdmin
         .from('documents')
@@ -56,6 +56,15 @@ export async function POST(request: NextRequest) {
         .is('deleted_at', null)
         .limit(500),
     ])
+
+    // Separate query for dohoda_mesice (table may not exist yet)
+    const { data: dohodaVykazy } = await (supabaseAdmin as any)
+      .from('dohoda_mesice')
+      .select('id, cista_mzda, period, dohody(employees(first_name, last_name))')
+      .eq('company_id', company_id)
+      .eq('payment_status', 'unpaid')
+      .eq('vykaz_status', 'confirmed')
+      .limit(200)
 
     const matchableDocs = (documents || []).map(d => ({
       id: d.id,
@@ -74,6 +83,15 @@ export async function POST(request: NextRequest) {
       partner: i.partner,
     }))
 
+    const matchableDohodaVykazy = (dohodaVykazy || []).map((v: any) => ({
+      id: v.id,
+      cista_mzda: Number(v.cista_mzda) || 0,
+      period: v.period,
+      employee_name: v.dohody?.employees
+        ? `${v.dohody.employees.first_name} ${v.dohody.employees.last_name}`
+        : undefined,
+    }))
+
     let matched = 0
 
     for (const tx of transactions) {
@@ -88,7 +106,8 @@ export async function POST(request: NextRequest) {
           description: tx.description,
         },
         matchableDocs,
-        matchableInvs
+        matchableInvs,
+        matchableDohodaVykazy
       )
 
       if (match) {
@@ -97,6 +116,7 @@ export async function POST(request: NextRequest) {
           .update({
             matched_document_id: match.document_id || null,
             matched_invoice_id: match.invoice_id || null,
+            matched_dohoda_mesic_id: match.dohoda_mesic_id || null,
             match_confidence: match.confidence,
             match_method: match.method,
             tax_impact: 0,
@@ -104,6 +124,20 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString(),
           })
           .eq('id', tx.id)
+
+        // If matched to dohoda vykaz, also update payment status
+        if (match.dohoda_mesic_id) {
+          await supabaseAdmin
+            .from('dohoda_mesice')
+            .update({
+              payment_status: 'paid',
+              payment_date: tx.transaction_date,
+              payment_method: 'bank',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', match.dohoda_mesic_id)
+        }
+
         matched++
       } else if (tx.amount < 0) {
         // Recalculate tax impact for still-unmatched expenses
