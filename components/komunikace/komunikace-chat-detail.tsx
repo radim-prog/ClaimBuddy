@@ -56,12 +56,14 @@ interface Message {
 
 interface ChatDetailProps {
   conversation: ConversationWithContext
+  siblingConversations?: ConversationWithContext[]
   onBack?: () => void
   onConversationChange?: () => void
+  onSwitchConversation?: (chatId: string) => void
   breadcrumbLabel?: string
 }
 
-export function KomunikaceChatDetail({ conversation, onBack, onConversationChange, breadcrumbLabel }: ChatDetailProps) {
+export function KomunikaceChatDetail({ conversation, siblingConversations, onBack, onConversationChange, onSwitchConversation, breadcrumbLabel }: ChatDetailProps) {
   const { userId, userName } = useAccountantUser()
   const [messages, setMessages] = useState<Message[]>([])
   const [loadingMessages, setLoadingMessages] = useState(true)
@@ -181,8 +183,12 @@ export function KomunikaceChatDetail({ conversation, onBack, onConversationChang
     onConversationChange?.()
   }
 
+  const showSidebar = siblingConversations && siblingConversations.length > 1
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full">
+      {/* Main chat area */}
+      <div className="flex-1 flex flex-col min-w-0">
       {/* Chat header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
         <div className="flex items-center gap-3 min-w-0">
@@ -348,6 +354,56 @@ export function KomunikaceChatDetail({ conversation, onBack, onConversationChang
             Konverzace byla vyresena.{' '}
             <button onClick={handleReopen} className="text-purple-600 dark:text-purple-400 hover:underline font-medium">Znovu otevrit</button>
           </p>
+        </div>
+      )}
+      </div>{/* end main chat area */}
+
+      {/* Sidebar with sibling conversations */}
+      {showSidebar && (
+        <div className="w-64 border-l border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30 flex flex-col">
+          <div className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">
+                {conversation.company_name || conversation.task_title || 'Konverzace'}
+              </span>
+              <Badge variant="secondary" className="text-[10px] ml-auto">{siblingConversations!.length}</Badge>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {siblingConversations!.map(conv => {
+              const isActive = conv.id === conversation.id
+              const hasUnread = conv.unread_count > 0
+              return (
+                <button
+                  key={conv.id}
+                  onClick={() => onSwitchConversation?.(conv.id)}
+                  className={`w-full text-left px-3 py-2 border-b border-gray-100 dark:border-gray-800/50 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/30 ${
+                    isActive ? 'bg-purple-50 dark:bg-purple-900/20 border-l-2 border-l-purple-600 dark:border-l-purple-400' : 'border-l-2 border-l-transparent'
+                  } ${conv.status === 'completed' ? 'opacity-60' : ''}`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    {conv.status === 'completed' ? (
+                      <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
+                    ) : (
+                      <MessageSquare className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                    )}
+                    <span className={`text-xs truncate flex-1 ${hasUnread ? 'font-bold text-gray-900 dark:text-white' : 'font-medium text-gray-700 dark:text-gray-300'}`}>
+                      {conv.subject}
+                    </span>
+                    {hasUnread && (
+                      <Badge className="h-4 min-w-[14px] text-[9px] px-1 bg-red-500 hover:bg-red-500">{conv.unread_count}</Badge>
+                    )}
+                  </div>
+                  {conv.last_message_preview && (
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5 pl-4">
+                      {conv.last_message_preview}
+                    </p>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

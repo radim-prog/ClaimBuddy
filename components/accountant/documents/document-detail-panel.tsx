@@ -109,7 +109,7 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
     setNewFileName(doc.file_name)
   }, [doc.id, doc.file_name])
 
-  // Auto-load existing predkontace entries
+  // Auto-load existing predkontace entries, or auto-generate after extraction
   useEffect(() => {
     if (!doc.ocr_processed) return
     const load = async () => {
@@ -121,9 +121,28 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
           if (entries.length > 0) {
             setJournalEntries(entries)
             setShowPredkontace(true)
+          } else {
+            // No entries yet — auto-generate
+            autoGenerate()
           }
         }
       } catch { /* ignore */ }
+    }
+    const autoGenerate = async () => {
+      setLoadingPredkontace(true)
+      setShowPredkontace(true)
+      try {
+        const res = await fetch('/api/documents/predkontace', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ document_id: doc.id }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setJournalEntries(data.suggested_entries || [])
+        }
+      } catch { /* ignore */ }
+      setLoadingPredkontace(false)
     }
     load()
   }, [doc.id, doc.ocr_processed])
@@ -603,31 +622,36 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
 
       {/* Predkontace */}
       {doc.ocr_processed && (
-        <div className="border-t dark:border-gray-700 pt-3 space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase flex items-center gap-1">
-              <BookOpen className="h-3 w-3" /> Předkontace
-            </h4>
-            <div className="flex items-center gap-2">
-              {journalEntries.length > 0 && journalEntries.some(e => e.status === 'suggested') && (
-                <Button size="sm" variant="outline" className="text-green-600 border-green-300 h-7 text-xs" onClick={handleApproveAll}>
-                  <Check className="h-3 w-3 mr-1" /> Schválit vše
+        <div className="border-t dark:border-gray-700 pt-3">
+          <details open={showPredkontace || journalEntries.length > 0}>
+            <summary className="flex items-center justify-between cursor-pointer select-none group">
+              <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase flex items-center gap-1 group-hover:text-gray-700 dark:group-hover:text-gray-300">
+                <BookOpen className="h-3 w-3" /> Předkontace
+                {journalEntries.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] ml-1">{journalEntries.length}</Badge>
+                )}
+              </h4>
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                {journalEntries.length > 0 && journalEntries.some(e => e.status === 'suggested') && (
+                  <Button size="sm" variant="outline" className="text-green-600 border-green-300 h-7 text-xs" onClick={handleApproveAll}>
+                    <Check className="h-3 w-3 mr-1" /> Schválit vše
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={handleGeneratePredkontace}
+                  disabled={loadingPredkontace}
+                >
+                  {loadingPredkontace ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <BookOpen className="h-3 w-3 mr-1" />}
+                  {journalEntries.length > 0 ? 'Přegenerovat' : 'Navrhnout předkontaci'}
                 </Button>
-              )}
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs"
-                onClick={handleGeneratePredkontace}
-                disabled={loadingPredkontace}
-              >
-                {loadingPredkontace ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <BookOpen className="h-3 w-3 mr-1" />}
-                {journalEntries.length > 0 ? 'Přegenerovat' : 'Navrhnout předkontaci'}
-              </Button>
-            </div>
-          </div>
+              </div>
+            </summary>
 
-          {showPredkontace && journalEntries.length > 0 && (
+          <div className="mt-3 space-y-3">
+          {journalEntries.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -800,11 +824,13 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
             </div>
           )}
 
-          {showPredkontace && !loadingPredkontace && journalEntries.length === 0 && (
+          {!loadingPredkontace && journalEntries.length === 0 && (
             <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-2">
               Žádné záznamy předkontace
             </p>
           )}
+          </div>
+          </details>
         </div>
       )}
 
