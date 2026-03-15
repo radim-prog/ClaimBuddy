@@ -3,11 +3,11 @@ import { syncFromRaynet, createMonthlyBCs } from '@/lib/raynet-store'
 
 export const dynamic = 'force-dynamic'
 
-// GET - Cron endpoint for Raynet sync (called by systemd timer or node-cron)
-export async function GET(request: NextRequest) {
-  // Verify cron secret
-  const secret = request.nextUrl.searchParams.get('secret')
-  if (secret !== process.env.CRON_SECRET) {
+// POST - Cron endpoint for Raynet sync (called by systemd timer or node-cron)
+export async function POST(request: NextRequest) {
+  const authHeader = request.headers.get('authorization')
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

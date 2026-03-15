@@ -3,10 +3,11 @@ import { calculateAllHealthScores } from '@/lib/health-score-engine'
 
 export const dynamic = 'force-dynamic'
 
-// GET - Nightly batch recalculation of all health scores
-export async function GET(request: NextRequest) {
-  const secret = request.nextUrl.searchParams.get('secret')
-  if (secret !== process.env.CRON_SECRET) {
+// POST - Nightly batch recalculation of all health scores
+export async function POST(request: NextRequest) {
+  const authHeader = request.headers.get('authorization')
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
