@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCompany } from '../layout'
 import { OsvcTaxWorkspace } from '@/components/taxes/osvc-tax-workspace'
 import { SroTaxWorkspace } from '@/components/taxes/sro-tax-workspace'
+import { QuestionnaireViewer } from '@/components/taxes/questionnaire-viewer'
 import type { TaxRates } from '@/lib/tax-calculator'
 import type { TaxAnnualConfigRow } from '@/lib/types/tax'
 
@@ -56,6 +57,9 @@ export default function TaxesPage() {
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
+
+      {/* Tax questionnaire */}
+      <QuestionnaireViewer companyId={companyId} year={year} />
 
       {loading ? (
         <div className="space-y-3 animate-pulse">
