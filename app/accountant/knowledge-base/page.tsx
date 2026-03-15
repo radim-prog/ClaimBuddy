@@ -21,6 +21,8 @@ import {
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface Article {
   id: string
@@ -435,8 +437,8 @@ function ArticleCard({
           </div>
         </div>
         {showContent && article.content && (
-          <div className="mt-3 pl-5 text-sm text-muted-foreground whitespace-pre-wrap border-t pt-3">
-            {article.content}
+          <div className="mt-3 pl-5 text-sm text-muted-foreground border-t pt-3 prose prose-sm dark:prose-invert max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-h2:text-base prose-h3:text-sm prose-h3:mt-3 prose-p:my-1.5 prose-li:my-0.5 prose-table:text-xs prose-th:px-2 prose-th:py-1 prose-td:px-2 prose-td:py-1 prose-strong:text-foreground">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{article.content}</ReactMarkdown>
           </div>
         )}
         {showContent && article.source_url && (
