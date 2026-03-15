@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   Lock,
   Crown,
+  ClipboardList,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -49,6 +50,7 @@ const navigation: { name: string; href: string; icon: typeof LayoutDashboard; fe
   { name: 'Faktury', href: '/client/invoices', icon: Receipt },
   { name: 'Adresář', href: '/client/partners', icon: Users, feature: 'address_book' },
   { name: 'Cesťák', href: '/client/travel', icon: Car },
+  { name: 'Dotazník', href: '/client/tax-questionnaire', icon: ClipboardList },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
   { name: 'Účet', href: '/client/account', icon: UserCircle },
 ]
