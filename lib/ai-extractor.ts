@@ -613,7 +613,7 @@ function normalizeInvoiceData(data: any, filename: string, engine: string): Extr
     document_type: data.document_type || 'receivedInvoice',
     payment_type: data.payment_type || 'wire',
     supplier: {
-      name: data.supplier?.name || 'Neznámý dodavatel',
+      name: data.supplier?.name || null,
       ico: data.supplier?.ico || null,
       dic: data.supplier?.dic || null,
       address: data.supplier?.address || null,

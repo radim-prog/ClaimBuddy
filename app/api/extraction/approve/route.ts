@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
       const updateData: Record<string, unknown> = {
         status,
         updated_at: new Date().toISOString(),
-        approved_by: action === 'approve' ? userId : undefined,
-        approved_at: action === 'approve' ? new Date().toISOString() : undefined,
+        reviewed_by: action === 'approve' ? userId : undefined,
+        reviewed_at: action === 'approve' ? new Date().toISOString() : undefined,
       }
 
       if (editedData) {
