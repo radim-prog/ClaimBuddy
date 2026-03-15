@@ -290,7 +290,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
           ).length
           const tasksBadge = attention.active_tasks || activeTaskCount || 0
           const messagesBadge = attention.unread_messages || 0
-          const documentsBadge = attention.pending_uploads || 0
+          const documentsBadge = hubStats?.documents?.pending || 0
           const filesBadge = hubStats?.files?.recent || 0
           const notificationsBadge = attention.active_notifications || 0
 
@@ -332,11 +332,14 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
               })
             }
           }
-          if (attention.pending_uploads > 0) {
-            attentionItems.push({
-              message: `${attention.pending_uploads} nahrání ke zpracování`,
-              severity: 'medium',
-            })
+          {
+            const pendingDocs = hubStats?.documents?.pending || 0
+            if (pendingDocs > 0) {
+              attentionItems.push({
+                message: `${pendingDocs} ${pendingDocs === 1 ? 'doklad' : pendingDocs < 5 ? 'doklady' : 'dokladů'} ke zpracování`,
+                severity: 'medium',
+              })
+            }
           }
           if (attention.unread_messages > 0) {
             attentionItems.push({
@@ -545,11 +548,14 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
               })
             }
           }
-          if (attention.pending_uploads > 0) {
-            attentionItems.push({
-              message: `${attention.pending_uploads} nahrání ke zpracování`,
-              severity: 'medium',
-            })
+          {
+            const pendingDocs = hubStats?.documents?.pending || 0
+            if (pendingDocs > 0) {
+              attentionItems.push({
+                message: `${pendingDocs} ${pendingDocs === 1 ? 'doklad' : pendingDocs < 5 ? 'doklady' : 'dokladů'} ke zpracování`,
+                severity: 'medium',
+              })
+            }
           }
           if (attention.unread_messages > 0) {
             attentionItems.push({

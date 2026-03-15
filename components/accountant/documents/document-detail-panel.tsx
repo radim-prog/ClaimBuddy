@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -20,6 +20,8 @@ import {
   Eye,
   Clock,
   AlertTriangle,
+  Code,
+  Copy,
 } from 'lucide-react'
 import type { ExtractionStep } from '@/lib/extraction-types'
 import { STEP_LABELS, STEP_ESTIMATES } from '@/lib/extraction-types'
@@ -91,6 +93,36 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
   const [showPredkontace, setShowPredkontace] = useState(false)
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null)
   const [editValues, setEditValues] = useState<{ debit_account: string; credit_account: string; amount: number; vat_amount: number }>({ debit_account: '', credit_account: '', amount: 0, vat_amount: 0 })
+  const [editingName, setEditingName] = useState(false)
+  const [newFileName, setNewFileName] = useState(doc.file_name)
+
+  useEffect(() => {
+    setEditingName(false)
+    setNewFileName(doc.file_name)
+  }, [doc.id, doc.file_name])
+
+  const handleRename = async () => {
+    if (!newFileName.trim() || newFileName.trim() === doc.file_name) {
+      setEditingName(false)
+      return
+    }
+    try {
+      const res = await fetch(`/api/accountant/companies/${companyId}/documents`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
+        body: JSON.stringify({ document_id: doc.id, file_name: newFileName.trim() }),
+      })
+      if (res.ok) {
+        toast.success('Název dokladu upraven')
+        setEditingName(false)
+        onDocumentUpdated?.()
+      } else {
+        toast.error('Chyba při změně názvu')
+      }
+    } catch {
+      toast.error('Chyba při změně názvu')
+    }
+  }
 
   const extractable = isExtractableType(doc.type as DocumentType)
   const numPages = (doc.ocr_data as Record<string, unknown> | null)?.num_pages as number | undefined
@@ -219,7 +251,24 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
         <div>
           <div className="flex items-center gap-2 mb-1">
             <FileText className="h-4 w-4 text-gray-400" />
-            <span className="text-sm font-medium text-gray-900 dark:text-white">{doc.file_name}</span>
+            {editingName ? (
+              <div className="flex items-center gap-1">
+                <input type="text" value={newFileName}
+                  onChange={(e) => setNewFileName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') { setEditingName(false); setNewFileName(doc.file_name) } }}
+                  className="text-sm font-medium px-1.5 py-0.5 border rounded bg-white dark:bg-gray-800 dark:border-gray-600 text-gray-900 dark:text-white min-w-[200px]"
+                  autoFocus />
+                <button onClick={handleRename} className="p-0.5 text-green-600 hover:bg-green-50 rounded"><Check className="h-3.5 w-3.5" /></button>
+                <button onClick={() => { setEditingName(false); setNewFileName(doc.file_name) }} className="p-0.5 text-gray-500 hover:bg-gray-50 rounded"><X className="h-3.5 w-3.5" /></button>
+              </div>
+            ) : (
+              <span className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-purple-600 group"
+                onClick={() => { setNewFileName(doc.file_name); setEditingName(true) }}
+                title="Klikněte pro přejmenování">
+                {doc.file_name}
+                <Pencil className="h-3 w-3 ml-1 inline opacity-0 group-hover:opacity-50" />
+              </span>
+            )}
             {doc.storage_path && (
               <>
                 <Button variant="ghost" size="sm" className="h-6 px-1.5" onClick={() => window.open(`/api/documents/${doc.id}/download?inline=true`, '_blank')} title="Náhled">
@@ -446,6 +495,24 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
               </div>
             </div>
           )}
+
+          {/* Raw JSON viewer */}
+          <div className="md:col-span-2 border-t dark:border-gray-700 pt-3 mt-2">
+            <details>
+              <summary className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1 select-none">
+                <Code className="h-3 w-3" /> Vytěžená data (JSON)
+              </summary>
+              <div className="relative mt-2">
+                <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(ocrData, null, 2)); toast.success('Zkopírováno') }}
+                  className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 bg-white/80 dark:bg-gray-800/80 rounded" title="Kopírovat">
+                  <Copy className="h-3.5 w-3.5" />
+                </button>
+                <pre className="p-3 bg-gray-100 dark:bg-gray-900 rounded-lg text-xs text-gray-700 dark:text-gray-300 overflow-x-auto max-h-96 overflow-y-auto font-mono whitespace-pre-wrap break-words">
+                  {JSON.stringify(ocrData, null, 2)}
+                </pre>
+              </div>
+            </details>
+          </div>
         </div>
       )}
 

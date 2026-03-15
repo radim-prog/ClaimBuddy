@@ -378,6 +378,11 @@ export function DocumentRegisterTab({ companyId, extractableOnly }: DocumentRegi
               </span>
               <span className="text-gray-500 dark:text-gray-400">
                 {pagination.total} doklad{pagination.total === 1 ? '' : pagination.total < 5 ? 'y' : 'ů'}
+                {yearSummary && yearSummary.yearly_total.count > pagination.total && (
+                  <span className="text-gray-400 dark:text-gray-500 ml-1">
+                    (celkem {yearSummary.yearly_total.count})
+                  </span>
+                )}
               </span>
             </div>
             <div className="flex items-center gap-4 text-sm">

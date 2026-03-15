@@ -91,20 +91,27 @@ export async function PATCH(
 
   try {
     const body = await request.json()
-    const { document_id, action, rejection_reason, type } = body
+    const { document_id, action, rejection_reason, type, file_name } = body
 
     if (!document_id) {
       return NextResponse.json({ error: 'Missing document_id' }, { status: 400 })
     }
 
-    // Type update (Krok 4)
-    if (type && !action) {
+    // Type or file_name update
+    if ((type || file_name) && !action) {
+      const updateFields: Record<string, any> = { updated_at: new Date().toISOString() }
+      if (type) updateFields.type = type
+      if (file_name) {
+        const sanitized = file_name.trim().slice(0, 255)
+        if (!sanitized) return NextResponse.json({ error: 'Invalid file_name' }, { status: 400 })
+        updateFields.file_name = sanitized
+      }
       const { data: doc, error } = await supabaseAdmin
         .from('documents')
-        .update({ type, updated_at: new Date().toISOString() })
+        .update(updateFields)
         .eq('id', document_id)
         .eq('company_id', params.companyId)
-        .select('id, type')
+        .select('id, type, file_name')
         .single()
 
       if (error) {
