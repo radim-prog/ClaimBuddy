@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { ConfidenceBadge } from '@/components/extraction/ConfidenceBadge'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { toast } from 'sonner'
@@ -24,6 +23,9 @@ import {
   RotateCw,
   RefreshCw,
   Download,
+  ArrowLeft,
+  BookOpen,
+  ChevronDown,
 } from 'lucide-react'
 
 type VerifyDocument = {
@@ -48,6 +50,20 @@ type FieldDef = {
   required?: boolean
 }
 
+type JournalEntry = {
+  id: string
+  line_number: number
+  description: string
+  amount: number
+  vat_amount: number
+  debit_account: string
+  debit_name?: string
+  credit_account: string
+  credit_name?: string
+  confidence: number | null
+  status: string
+}
+
 const VERIFY_FIELDS: FieldDef[] = [
   { key: 'document_number', label: 'Číslo dokladu', path: ['document_number'], type: 'text', required: true },
   { key: 'variable_symbol', label: 'Variabilní symbol', path: ['variable_symbol'], type: 'text' },
@@ -57,7 +73,9 @@ const VERIFY_FIELDS: FieldDef[] = [
   { key: 'supplier_name', label: 'Dodavatel', path: ['supplier', 'name'], type: 'text', required: true },
   { key: 'supplier_ico', label: 'IČO', path: ['supplier', 'ico'], type: 'text' },
   { key: 'supplier_dic', label: 'DIČ', path: ['supplier', 'dic'], type: 'text' },
-  { key: 'supplier_address', label: 'Adresa', path: ['supplier', 'address'], type: 'text' },
+  { key: 'supplier_street', label: 'Ulice', path: ['supplier', 'street'], type: 'text' },
+  { key: 'supplier_city', label: 'Město', path: ['supplier', 'city'], type: 'text' },
+  { key: 'supplier_zip', label: 'PSČ', path: ['supplier', 'zip'], type: 'text' },
   { key: 'supplier_bank_account', label: 'Číslo účtu', path: ['supplier', 'bank_account'], type: 'text' },
   { key: 'total_without_vat', label: 'Základ DPH', path: ['total_without_vat'], type: 'number' },
   { key: 'total_vat', label: 'DPH', path: ['total_vat'], type: 'number' },
@@ -125,6 +143,9 @@ function VerificationPageContent() {
   const [approving, setApproving] = useState(false)
   const [reextracting, setReextracting] = useState(false)
   const viewerRef = useRef<HTMLDivElement>(null)
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([])
+  const [loadingPredkontace, setLoadingPredkontace] = useState(false)
+  const [showPredkontace, setShowPredkontace] = useState(false)
 
   // Auto-hide sidebar on enter, restore on leave
   useEffect(() => {
@@ -212,7 +233,28 @@ function VerificationPageContent() {
 
   useEffect(() => {
     if (!currentDoc) return
-    setEditedData(currentDoc.ocr_data)
+    // Auto-parse address into street/city/zip if needed
+    let data = currentDoc.ocr_data
+    if (data?.supplier?.address && !data?.supplier?.street) {
+      const addr = data.supplier.address
+      const parts = addr.split(',').map((s: string) => s.trim())
+      const supplier = { ...data.supplier }
+      if (parts.length >= 2) {
+        supplier.street = parts[0]
+        const cityPart = parts[parts.length - 1]
+        const zipMatch = cityPart.match(/^(\d{3}\s?\d{2})\s+(.+)$/)
+        if (zipMatch) {
+          supplier.zip = zipMatch[1].replace(/\s/g, '')
+          supplier.city = zipMatch[2]
+        } else {
+          supplier.city = cityPart
+        }
+      } else {
+        supplier.street = addr
+      }
+      data = { ...data, supplier }
+    }
+    setEditedData(data)
     setHighlightedField(null)
 
     // Get file URL for viewer
@@ -223,6 +265,76 @@ function VerificationPageContent() {
       .then(data => setFileUrl(data.url || null))
       .catch(() => setFileUrl(null))
   }, [currentDoc, userId])
+
+  // Auto-load predkontace entries
+  useEffect(() => {
+    if (!currentDoc) return
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/documents/predkontace?document_id=${currentDoc.id}`)
+        if (res.ok) {
+          const data = await res.json()
+          const entries = data.entries || []
+          if (entries.length > 0) {
+            setJournalEntries(entries)
+            setShowPredkontace(true)
+          } else {
+            setJournalEntries([])
+            setShowPredkontace(false)
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    load()
+  }, [currentDoc?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleGeneratePredkontace = async () => {
+    if (!currentDoc) return
+    setLoadingPredkontace(true)
+    setShowPredkontace(true)
+    try {
+      const res = await fetch('/api/documents/predkontace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ document_id: currentDoc.id }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setJournalEntries(data.suggested_entries || [])
+        toast.success('Předkontace vygenerována')
+      } else {
+        toast.error('Chyba při generování předkontace')
+      }
+    } catch {
+      toast.error('Chyba při generování předkontace')
+    }
+    setLoadingPredkontace(false)
+  }
+
+  const handleEntryAction = async (entryId: string, action: 'approved' | 'rejected') => {
+    try {
+      const res = await fetch('/api/documents/predkontace', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entry_id: entryId, status: action }),
+      })
+      if (res.ok) {
+        setJournalEntries(prev => prev.map(e =>
+          e.id === entryId ? { ...e, status: action } : e
+        ))
+        toast.success(action === 'approved' ? 'Schváleno' : 'Zamítnuto')
+      }
+    } catch {
+      toast.error('Chyba')
+    }
+  }
+
+  const handleApproveAllEntries = async () => {
+    const suggested = journalEntries.filter(e => e.status === 'suggested')
+    for (const entry of suggested) {
+      await handleEntryAction(entry.id, 'approved')
+    }
+  }
 
   const navigateDoc = (direction: 'prev' | 'next') => {
     const newIndex = direction === 'prev'
@@ -402,7 +514,17 @@ function VerificationPageContent() {
           {/* Combined single-line bar: nav + category pills + file info + actions */}
           <div className="flex items-center justify-between py-1.5 border-b mb-2 gap-2 min-h-[36px]">
             <div className="flex items-center gap-2 min-w-0">
-              {/* Navigation */}
+              {/* Back + Navigation */}
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 flex-shrink-0"
+                onClick={() => {
+                  if (window.history.length > 1) router.back()
+                  else router.push('/accountant/extraction/clients')
+                }}
+                title="Zpět"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </Button>
+              <div className="w-px h-5 bg-border flex-shrink-0" />
               <div className="flex items-center gap-1 flex-shrink-0">
                 <Button
                   variant="ghost"
@@ -498,35 +620,34 @@ function VerificationPageContent() {
                 </Button>
               )}
 
-              {currentCategory === 'errors' ? (
-                <Button
-                  onClick={handleReextract}
-                  disabled={reextracting}
-                  size="sm"
-                  className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
-                >
-                  {reextracting ? (
-                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                  )}
-                  Znovu
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleApprove}
-                  disabled={approving}
-                  size="sm"
-                  className="h-7 text-xs bg-green-600 hover:bg-green-700"
-                >
-                  {approving ? (
-                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                  ) : (
-                    <Check className="h-3.5 w-3.5 mr-1" />
-                  )}
-                  Schválit
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                onClick={handleReextract}
+                disabled={reextracting}
+                size="sm"
+                className="h-7 text-xs"
+              >
+                {reextracting ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                )}
+                Znovu
+              </Button>
+
+              <Button
+                onClick={handleApprove}
+                disabled={approving}
+                size="sm"
+                className="h-7 text-xs bg-green-600 hover:bg-green-700"
+              >
+                {approving ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Check className="h-3.5 w-3.5 mr-1" />
+                )}
+                Schválit
+              </Button>
 
               <Button
                 variant="destructive"
@@ -594,7 +715,7 @@ function VerificationPageContent() {
             </Card>
 
             {/* RIGHT: Form */}
-            <Card className="flex flex-col min-h-0 overflow-hidden">
+            <Card className="flex flex-col min-h-0 min-w-0 overflow-hidden" style={{ maxWidth: '100%' }}>
               <div className="px-2 py-1.5 border-b bg-muted/30 flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Vytěžená data</span>
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -602,7 +723,7 @@ function VerificationPageContent() {
                   <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> Nejisté
                 </div>
               </div>
-              <ScrollArea className="flex-1">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden">
                 <div className="p-2 space-y-1.5">
                   {VERIFY_FIELDS.map((field) => {
                     const value = getNestedValue(editedData, field.path)
@@ -635,24 +756,161 @@ function VerificationPageContent() {
                       <Label className="text-[11px] text-muted-foreground mb-1 block">
                         Položky ({editedData.items.length})
                       </Label>
-                      <div className="space-y-1">
-                        {editedData.items.map((item: any, i: number) => (
-                          <div key={i} className="flex items-center gap-1.5 text-xs bg-muted/30 rounded px-2 py-1">
-                            <span className="flex-1 truncate">{item.description || '-'}</span>
-                            <span className="text-muted-foreground">{item.quantity}x</span>
-                            <span className="font-medium whitespace-nowrap">
-                              {Number(item.total_price || 0).toLocaleString('cs-CZ')} Kč
-                            </span>
-                            <Badge variant="outline" className="text-[10px]">
-                              {item.vat_rate === 'none' ? '0%' : item.vat_rate === 'low' ? '12%' : '21%'}
-                            </Badge>
-                          </div>
-                        ))}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-[11px]">
+                          <thead>
+                            <tr className="border-b text-muted-foreground">
+                              <th className="text-left py-1 pr-1">Popis</th>
+                              <th className="text-right py-1 px-1">Mn.</th>
+                              <th className="text-right py-1 px-1">Cena/ks</th>
+                              <th className="text-right py-1 px-1">Základ</th>
+                              <th className="text-right py-1 px-1">DPH</th>
+                              <th className="text-right py-1 px-1">Celkem</th>
+                              <th className="text-right py-1 pl-1">Sazba</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {editedData.items.map((item: any, i: number) => {
+                              const totalWith = Number(item.total_price || 0)
+                              const totalWithout = Number(item.total_without_vat || item.base_price || 0)
+                              const vatAmount = totalWith - totalWithout
+                              const unitPrice = Number(item.unit_price || 0)
+                              const vatRate = typeof item.vat_rate === 'number'
+                                ? `${item.vat_rate}%`
+                                : item.vat_rate === 'none' ? '0%' : item.vat_rate === 'low' ? '12%' : '21%'
+                              return (
+                                <tr key={i} className="border-b border-muted/50">
+                                  <td className="py-1 pr-1 max-w-[120px] truncate">{item.description || '-'}</td>
+                                  <td className="py-1 px-1 text-right tabular-nums text-muted-foreground">{item.quantity || ''}</td>
+                                  <td className="py-1 px-1 text-right tabular-nums text-muted-foreground">{unitPrice ? unitPrice.toLocaleString('cs-CZ') : ''}</td>
+                                  <td className="py-1 px-1 text-right tabular-nums">{totalWithout ? totalWithout.toLocaleString('cs-CZ') : ''}</td>
+                                  <td className="py-1 px-1 text-right tabular-nums text-muted-foreground">{vatAmount > 0 ? vatAmount.toLocaleString('cs-CZ') : ''}</td>
+                                  <td className="py-1 px-1 text-right tabular-nums font-medium">{totalWith.toLocaleString('cs-CZ')}</td>
+                                  <td className="py-1 pl-1 text-right text-muted-foreground">{vatRate}</td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   )}
+
+                  {/* Predkontace section */}
+                  {currentDoc && (
+                    <div className="pt-1.5 border-t mt-2">
+                      <button
+                        onClick={() => setShowPredkontace(!showPredkontace)}
+                        className="flex items-center gap-1 w-full text-left mb-1"
+                      >
+                        <BookOpen className="h-3 w-3 text-muted-foreground" />
+                        <Label className="text-[11px] text-muted-foreground cursor-pointer">
+                          Předkontace
+                        </Label>
+                        <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${showPredkontace ? 'rotate-180' : ''}`} />
+                        {journalEntries.length > 0 && (
+                          <Badge variant="outline" className="text-[10px] ml-auto">{journalEntries.length}</Badge>
+                        )}
+                      </button>
+
+                      {showPredkontace && (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 text-[10px] px-2"
+                              onClick={handleGeneratePredkontace}
+                              disabled={loadingPredkontace}
+                            >
+                              {loadingPredkontace ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <BookOpen className="h-3 w-3 mr-1" />}
+                              {journalEntries.length > 0 ? 'Přegenerovat' : 'Navrhnout'}
+                            </Button>
+                            {journalEntries.length > 0 && journalEntries.some(e => e.status === 'suggested') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 text-[10px] px-2 text-green-600 border-green-300"
+                                onClick={handleApproveAllEntries}
+                              >
+                                <Check className="h-3 w-3 mr-1" /> Schválit vše
+                              </Button>
+                            )}
+                          </div>
+
+                          {journalEntries.length > 0 && (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-[10px]">
+                                <thead>
+                                  <tr className="border-b text-muted-foreground">
+                                    <th className="text-left py-0.5 pr-1">#</th>
+                                    <th className="text-left py-0.5 px-1">Popis</th>
+                                    <th className="text-left py-0.5 px-1">MD</th>
+                                    <th className="text-left py-0.5 px-1">D</th>
+                                    <th className="text-right py-0.5 px-1">Částka</th>
+                                    <th className="text-center py-0.5 px-1">Status</th>
+                                    <th className="text-center py-0.5 pl-1">Akce</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {journalEntries.map(entry => {
+                                    const statusDot = {
+                                      suggested: 'bg-blue-500',
+                                      approved: 'bg-green-500',
+                                      modified: 'bg-yellow-500',
+                                      rejected: 'bg-red-500',
+                                    }[entry.status] || 'bg-gray-400'
+
+                                    return (
+                                      <tr key={entry.id || entry.line_number} className="border-b border-muted/50">
+                                        <td className="py-0.5 pr-1 text-muted-foreground">{entry.line_number}</td>
+                                        <td className="py-0.5 px-1 max-w-[100px] truncate">{entry.description}</td>
+                                        <td className="py-0.5 px-1">
+                                          <span className="font-mono bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-1 py-0.5 rounded text-[9px]">
+                                            {entry.debit_account}
+                                          </span>
+                                        </td>
+                                        <td className="py-0.5 px-1">
+                                          <span className="font-mono bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded text-[9px]">
+                                            {entry.credit_account}
+                                          </span>
+                                        </td>
+                                        <td className="py-0.5 px-1 text-right tabular-nums font-medium whitespace-nowrap">
+                                          {entry.amount.toLocaleString('cs-CZ')} Kč
+                                        </td>
+                                        <td className="py-0.5 px-1 text-center">
+                                          <span className={`inline-block w-1.5 h-1.5 rounded-full ${statusDot}`} title={entry.status} />
+                                        </td>
+                                        <td className="py-0.5 pl-1 text-center">
+                                          {entry.status === 'suggested' && entry.id && (
+                                            <button
+                                              onClick={() => handleEntryAction(entry.id, 'approved')}
+                                              className="p-0.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
+                                              title="Schválit"
+                                            >
+                                              <Check className="h-3 w-3" />
+                                            </button>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    )
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+
+                          {!loadingPredkontace && journalEntries.length === 0 && (
+                            <p className="text-[10px] text-muted-foreground text-center py-1">
+                              Žádné záznamy předkontace
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </ScrollArea>
+              </div>
             </Card>
           </div>
         </>

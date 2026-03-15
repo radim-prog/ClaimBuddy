@@ -469,13 +469,7 @@ export function DocumentRegisterTab({ companyId, extractableOnly, onDocumentNavi
                     return (
                       <Fragment key={doc.id}>
                         <tr
-                          onClick={() => {
-                            if (onDocumentNavigate && doc.ocr_processed) {
-                              onDocumentNavigate(doc.id)
-                            } else {
-                              setExpandedId(isExpanded ? null : doc.id)
-                            }
-                          }}
+                          onClick={() => setExpandedId(isExpanded ? null : doc.id)}
                           className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors ${isSelected ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''}`}
                         >
                           <td className="py-2.5 px-3" onClick={(e) => e.stopPropagation()}>
@@ -524,24 +518,35 @@ export function DocumentRegisterTab({ companyId, extractableOnly, onDocumentNavi
                             )}
                           </td>
                           <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
-                            {doc.storage_path && (
-                              <button
-                                onClick={async () => {
-                                  const res = await fetch(`/api/documents/${doc.id}/download`)
-                                  if (res.ok) {
-                                    const data = await res.json()
-                                    const a = document.createElement('a')
-                                    a.href = data.url
-                                    a.download = data.file_name || doc.file_name
-                                    a.click()
-                                  }
-                                }}
-                                className="p-1.5 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
-                                title="Stáhnout"
-                              >
-                                <Download className="h-3.5 w-3.5" />
-                              </button>
-                            )}
+                            <div className="flex items-center gap-0.5 justify-center">
+                              {onDocumentNavigate && doc.ocr_processed && (
+                                <button
+                                  onClick={() => onDocumentNavigate(doc.id)}
+                                  className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                  title="Verifikovat"
+                                >
+                                  <ScanLine className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                              {doc.storage_path && (
+                                <button
+                                  onClick={async () => {
+                                    const res = await fetch(`/api/documents/${doc.id}/download`)
+                                    if (res.ok) {
+                                      const data = await res.json()
+                                      const a = document.createElement('a')
+                                      a.href = data.url
+                                      a.download = data.file_name || doc.file_name
+                                      a.click()
+                                    }
+                                  }}
+                                  className="p-1.5 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                                  title="Stáhnout"
+                                >
+                                  <Download className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                         {isExpanded && (
