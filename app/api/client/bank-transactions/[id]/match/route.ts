@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,6 +13,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const { id } = await params
 
   try {
+    // Verify transaction ownership
+    const { data: txn } = await supabaseAdmin
+      .from('bank_transactions')
+      .select('company_id')
+      .eq('id', id)
+      .single()
+
+    if (!txn) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    const userRole = request.headers.get('x-user-role')
+    const impersonate = request.headers.get('x-impersonate-company')
+    if (!(await canAccessCompany(userId, userRole, txn.company_id, impersonate))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await request.json()
     const { matched_document_id, matched_invoice_id, category } = body
 

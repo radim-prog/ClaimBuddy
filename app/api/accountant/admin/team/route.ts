@@ -6,7 +6,11 @@ export const dynamic = 'force-dynamic'
 // GET - list team members (from users table)
 export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
+  const userRole = request.headers.get('x-user-role')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (userRole !== 'admin' && userRole !== 'accountant') {
+    return NextResponse.json({ error: 'Forbidden — admin/accountant only' }, { status: 403 })
+  }
 
   try {
     const { data: users, error } = await supabaseAdmin
