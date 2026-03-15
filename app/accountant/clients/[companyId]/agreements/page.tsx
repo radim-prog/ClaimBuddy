@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Users, Calculator, Info, AlertTriangle, ChevronDown, ChevronRight,
-  TrendingDown, FileText, Clock, Banknote, Search,
+  TrendingDown, FileText, Clock, Banknote, Search, Download, Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCompany, type Company } from '../layout'
@@ -260,9 +260,29 @@ function SummaryCard({ icon: Icon, label, value, color, bgColor }: {
 }
 
 function WorkerRow({ worker }: { worker: Employee }) {
+  const [downloading, setDownloading] = useState(false)
   const isActive = worker.active && !worker.employment_end
   const isDPP = worker.contract_type === 'dpp'
   const impact = calculateAgreementTaxImpact(worker.base_salary, worker.tax_declaration)
+
+  const downloadPDF = async () => {
+    setDownloading(true)
+    try {
+      const res = await fetch(`/api/accountant/agreements/pdf?employee_id=${worker.id}`)
+      if (!res.ok) throw new Error('PDF generation failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${isDPP ? 'DPP' : 'DPC'}_${worker.last_name}_${worker.first_name}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      // silent
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   return (
     <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/30 transition-colors">
@@ -291,19 +311,22 @@ function WorkerRow({ worker }: { worker: Employee }) {
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-4 text-right shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         {impact.noInsurance && (
           <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0 text-[10px]">
             Bez odvodů
           </Badge>
         )}
-        <div>
+        <div className="text-right">
           <p className="text-xs text-muted-foreground">Úspora zaměstnavatele</p>
           <p className={cn('text-sm font-bold', impact.employerSaving > 0 ? 'text-green-600' : 'text-muted-foreground')}>
             {impact.employerSaving > 0 ? `${impact.employerSaving.toLocaleString('cs-CZ')} Kč` : '0 Kč'}
             {impact.savingPercent > 0 && <span className="text-xs font-normal ml-1">({impact.savingPercent}%)</span>}
           </p>
         </div>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={downloadPDF} disabled={downloading} title="Stáhnout dohodu (PDF)">
+          {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+        </Button>
       </div>
     </div>
   )
