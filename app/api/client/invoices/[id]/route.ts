@@ -45,6 +45,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
     }
 
+    if (!(await canAccessInvoice(request, row.company_id))) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+    }
+
     // Fetch supplier info from company
     let supplier = null
     if (row.company_id) {
@@ -83,6 +87,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (!existing) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
+
+    if (!(await canAccessInvoice(request, existing.company_id))) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
     if (existing.sent_at) {

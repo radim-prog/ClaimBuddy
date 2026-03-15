@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { generateInvoiceNumber, getDocumentTypePrefix } from '@/lib/invoice-utils'
+import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,6 +32,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (sourceError || !source) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
+
+    const userRole = request.headers.get('x-user-role')
+    const impersonateCompany = request.headers.get('x-impersonate-company')
+    if (!(await canAccessCompany(userId, userRole, source.company_id, impersonateCompany))) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
     const sourceDocType = source.document_type || 'invoice'

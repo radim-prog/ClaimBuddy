@@ -5,6 +5,7 @@ import { mapDbRowToInvoice } from '@/lib/invoice-utils'
 import { generatePaymentQR } from '@/lib/qr-payment'
 import { InvoicePDF } from '@/lib/pdf/invoice-template'
 import { getSupplierInfo } from '@/lib/supplier-loader'
+import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +27,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (error || !row) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
+
+    const userRole = request.headers.get('x-user-role')
+    const impersonateCompany = request.headers.get('x-impersonate-company')
+    if (!(await canAccessCompany(userId, userRole, row.company_id, impersonateCompany))) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
     const invoice = mapDbRowToInvoice(row)
