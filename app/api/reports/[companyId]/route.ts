@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,10 +46,16 @@ export async function GET(
   { params }: { params: { companyId: string } }
 ) {
   const userId = request.headers.get('x-user-id')
+  const userRole = request.headers.get('x-user-role')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
     const { companyId } = params
+
+    // Verify user can access this company
+    const impersonateCompany = request.headers.get('x-impersonate-company')
+    const hasAccess = await canAccessCompany(userId, userRole, companyId, impersonateCompany)
+    if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period') || new Date().toISOString().slice(0, 7)
 

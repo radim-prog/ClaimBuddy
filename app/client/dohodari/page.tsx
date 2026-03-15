@@ -16,6 +16,7 @@ import {
   Send,
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { toast } from 'sonner'
 import type { Dohoda, DohodaMesic } from '@/lib/types/dohodari'
 import { DOHODA_TYPE_LABELS, DOHODA_STATUS_LABELS, PAYMENT_STATUS_LABELS, VYKAZ_STATUS_LABELS } from '@/lib/types/dohodari'
 
@@ -44,7 +45,7 @@ export default function ClientDohodariPage() {
       if (dRes.ok) setDohody((await dRes.json()).dohody || [])
       if (iRes.ok) setInfo((await iRes.json()).info || null)
     } catch {
-      // silent
+      toast.error('Nepodařilo se načíst dohody')
     } finally {
       setLoading(false)
     }
@@ -63,7 +64,7 @@ export default function ClientDohodariPage() {
         setVykazy(prev => ({ ...prev, [dohodaId]: data.vykazy || [] }))
       }
     } catch {
-      // silent
+      toast.error('Nepodařilo se načíst výkazy')
     }
   }
 
@@ -94,7 +95,7 @@ export default function ClientDohodariPage() {
         setNewVykaz(null)
       }
     } catch {
-      // silent
+      toast.error('Nepodařilo se odeslat výkaz')
     } finally {
       setSubmitting(false)
     }

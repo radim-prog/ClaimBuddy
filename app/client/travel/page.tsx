@@ -92,8 +92,8 @@ function TravelPageInner() {
       setDrivers(driversData.drivers || [])
       setPlaces(placesData.places || [])
       setStats(statsData.stats || null)
-    } catch (err) {
-      console.error('Failed to load travel data:', err)
+    } catch {
+      toast.error('Nepodařilo se načíst data knihy jízd')
     } finally {
       setLoading(false)
     }
@@ -103,93 +103,121 @@ function TravelPageInner() {
 
   // Trip CRUD
   const handleCreateTrip = async (data: any) => {
-    const res = await fetch('/api/client/travel/trips', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error('Failed to create trip')
-    toast.success('Jízda zapsána')
-    setShowTripForm(false)
-    loadData()
+    try {
+      const res = await fetch('/api/client/travel/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) throw new Error('Failed to create trip')
+      toast.success('Jízda zapsána')
+      setShowTripForm(false)
+      loadData()
+    } catch {
+      toast.error('Nepodařilo se vytvořit jízdu')
+    }
   }
 
   const handleUpdateTrip = async (data: any) => {
     if (!editingTrip) return
-    const res = await fetch(`/api/client/travel/trips/${editingTrip.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error('Failed to update trip')
-    toast.success('Jízda aktualizována')
-    setEditingTrip(undefined)
-    loadData()
+    try {
+      const res = await fetch(`/api/client/travel/trips/${editingTrip.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) throw new Error('Failed to update trip')
+      toast.success('Jízda aktualizována')
+      setEditingTrip(undefined)
+      loadData()
+    } catch {
+      toast.error('Nepodařilo se aktualizovat jízdu')
+    }
   }
 
   const handleDeleteTrip = async (id: string) => {
     if (!confirm('Opravdu smazat tuto jízdu?')) return
-    await fetch(`/api/client/travel/trips/${id}`, { method: 'DELETE' })
-    toast.success('Jízda smazána')
-    loadData()
+    try {
+      await fetch(`/api/client/travel/trips/${id}`, { method: 'DELETE' })
+      toast.success('Jízda smazána')
+      loadData()
+    } catch {
+      toast.error('Nepodařilo se smazat jízdu')
+    }
   }
 
   // Vehicle CRUD
   const handleCreateVehicle = async (data: any) => {
-    const res = await fetch('/api/client/travel/vehicles', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error('Failed to create vehicle')
-    toast.success('Vozidlo přidáno')
-    setShowVehicleForm(false)
-    loadData()
+    try {
+      const res = await fetch('/api/client/travel/vehicles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) throw new Error('Failed to create vehicle')
+      toast.success('Vozidlo přidáno')
+      setShowVehicleForm(false)
+      loadData()
+    } catch {
+      toast.error('Nepodařilo se přidat vozidlo')
+    }
   }
 
   const handleUpdateVehicle = async (data: any) => {
     if (!editingVehicle) return
-    const res = await fetch(`/api/client/travel/vehicles/${editingVehicle.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) throw new Error('Failed to update vehicle')
-    toast.success('Vozidlo aktualizováno')
-    setEditingVehicle(undefined)
-    setShowVehicleForm(false)
-    loadData()
+    try {
+      const res = await fetch(`/api/client/travel/vehicles/${editingVehicle.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) throw new Error('Failed to update vehicle')
+      toast.success('Vozidlo aktualizováno')
+      setEditingVehicle(undefined)
+      setShowVehicleForm(false)
+      loadData()
+    } catch {
+      toast.error('Nepodařilo se aktualizovat vozidlo')
+    }
   }
 
   const handleDeleteVehicle = async (id: string) => {
     if (!confirm('Opravdu odebrat vozidlo?')) return
-    await fetch(`/api/client/travel/vehicles/${id}`, { method: 'DELETE' })
-    toast.success('Vozidlo odebráno')
-    loadData()
+    try {
+      await fetch(`/api/client/travel/vehicles/${id}`, { method: 'DELETE' })
+      toast.success('Vozidlo odebráno')
+      loadData()
+    } catch {
+      toast.error('Nepodařilo se odebrat vozidlo')
+    }
   }
 
   // Fuel log
   const handleCreateFuelLog = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const fd = new FormData(e.currentTarget)
-    const res = await fetch('/api/client/travel/fuel-logs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        vehicle_id: fd.get('vehicle_id'),
-        log_date: fd.get('log_date'),
-        liters: Number(fd.get('liters')),
-        price_per_liter: fd.get('price_per_liter') ? Number(fd.get('price_per_liter')) : null,
-        total_price: fd.get('total_price') ? Number(fd.get('total_price')) : null,
-        odometer: fd.get('odometer') ? Number(fd.get('odometer')) : null,
-        station_name: fd.get('station_name') || null,
-        is_full_tank: fd.get('is_full_tank') === 'on',
-      }),
-    })
-    if (!res.ok) throw new Error('Failed')
-    toast.success('Tankování zapsáno')
-    setShowFuelForm(false)
-    loadData()
+    try {
+      const fd = new FormData(e.currentTarget)
+      const res = await fetch('/api/client/travel/fuel-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vehicle_id: fd.get('vehicle_id'),
+          log_date: fd.get('log_date'),
+          liters: Number(fd.get('liters')),
+          price_per_liter: fd.get('price_per_liter') ? Number(fd.get('price_per_liter')) : null,
+          total_price: fd.get('total_price') ? Number(fd.get('total_price')) : null,
+          odometer: fd.get('odometer') ? Number(fd.get('odometer')) : null,
+          station_name: fd.get('station_name') || null,
+          is_full_tank: fd.get('is_full_tank') === 'on',
+        }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      toast.success('Tankování zapsáno')
+      setShowFuelForm(false)
+      loadData()
+    } catch {
+      toast.error('Nepodařilo se zapsat tankování')
+    }
   }
 
   return (

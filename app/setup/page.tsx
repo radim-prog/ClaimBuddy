@@ -9,32 +9,26 @@ export default function SetupPage() {
   const [created, setCreated] = useState(false)
 
   const createAdmin = async () => {
-    console.log('createAdmin called')
     setLoading(true)
 
     try {
-      console.log('Fetching /api/setup/first-admin...')
       const res = await fetch('/api/setup/first-admin', {
         method: 'POST'
       })
 
       const data = await res.json()
-      console.log('Response:', { status: res.status, data })
 
       if (!res.ok) {
-        console.error('Error response:', data.error)
         toast.error('Chyba', { description: data.error })
         setLoading(false)
         return
       }
 
-      console.log('Admin created successfully')
       toast.success('Admin vytvořen!', {
-        description: 'Můžeš se přihlásit: Radim / admin'
+        description: 'Přihlašovací údaje byly nastaveny.'
       })
       setCreated(true)
-    } catch (error) {
-      console.error('Exception:', error)
+    } catch {
       toast.error('Chyba', { description: 'Něco se pokazilo' })
     } finally {
       setLoading(false)
@@ -56,12 +50,9 @@ export default function SetupPage() {
               <div className="text-green-600 font-semibold font-display">
                 Admin vytvořen!
               </div>
-              <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-xl text-sm">
-                <div className="font-mono">
-                  <div><strong>Jméno:</strong> Radim</div>
-                  <div><strong>Heslo:</strong> admin</div>
-                </div>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Přihlašovací údaje byly nastaveny. Změňte heslo po prvním přihlášení.
+              </p>
               <button
                 onClick={() => window.location.href = '/auth/login'}
                 className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -72,17 +63,8 @@ export default function SetupPage() {
           ) : (
             <>
               <p className="text-sm text-muted-foreground">
-                Klikni pro vytvoření prvního admin účtu:
+                Klikni pro vytvoření prvního admin účtu. Přihlašovací údaje budou zobrazeny po vytvoření.
               </p>
-              <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-xl text-sm">
-                <div className="font-mono">
-                  <div><strong>Jméno:</strong> Radim</div>
-                  <div><strong>Heslo:</strong> admin</div>
-                  <div className="text-xs text-red-600 mt-2">
-                    Změň heslo po prvním přihlášení!
-                  </div>
-                </div>
-              </div>
               <button
                 onClick={createAdmin}
                 disabled={loading}
