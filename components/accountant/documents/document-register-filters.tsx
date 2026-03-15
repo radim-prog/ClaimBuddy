@@ -1,26 +1,26 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Search, X } from 'lucide-react'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Search, X, ChevronDown } from 'lucide-react'
 import type { DocumentFilters, DocumentType, DocumentStatus } from '@/lib/types/document-register'
 import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS, defaultDocumentFilters } from '@/lib/types/document-register'
 
 interface DocumentRegisterFiltersProps {
   filters: DocumentFilters
   onChange: (filters: DocumentFilters) => void
+  availableTypes?: DocumentType[]
 }
 
-export function DocumentRegisterFilters({ filters, onChange }: DocumentRegisterFiltersProps) {
+export function DocumentRegisterFilters({ filters, onChange, availableTypes }: DocumentRegisterFiltersProps) {
   const [searchInput, setSearchInput] = useState(filters.search)
 
   // Debounced search
@@ -47,21 +47,38 @@ export function DocumentRegisterFilters({ filters, onChange }: DocumentRegisterF
     onChange(defaultDocumentFilters)
   }
 
-  const setType = (value: string) => {
-    if (value === 'none') {
-      onChange({ ...filters, types: [] })
-    } else {
-      onChange({ ...filters, types: [value as DocumentType] })
-    }
+  const toggleType = (type: DocumentType) => {
+    const next = filters.types.includes(type)
+      ? filters.types.filter(t => t !== type)
+      : [...filters.types, type]
+    onChange({ ...filters, types: next })
   }
 
-  const setStatus = (value: string) => {
-    if (value === 'none') {
-      onChange({ ...filters, statuses: [] })
-    } else {
-      onChange({ ...filters, statuses: [value as DocumentStatus] })
-    }
+  const toggleStatus = (status: DocumentStatus) => {
+    const next = filters.statuses.includes(status)
+      ? filters.statuses.filter(s => s !== status)
+      : [...filters.statuses, status]
+    onChange({ ...filters, statuses: next })
   }
+
+  // Which types to show in the dropdown
+  const typeEntries = availableTypes
+    ? availableTypes.map(k => [k, DOCUMENT_TYPE_LABELS[k]] as [DocumentType, string])
+    : (Object.entries(DOCUMENT_TYPE_LABELS) as [DocumentType, string][])
+
+  const statusEntries = Object.entries(DOCUMENT_STATUS_LABELS) as [DocumentStatus, string][]
+
+  const typeButtonLabel = filters.types.length === 0
+    ? 'Všechny typy'
+    : filters.types.length === 1
+      ? DOCUMENT_TYPE_LABELS[filters.types[0]]
+      : `${filters.types.length} typy`
+
+  const statusButtonLabel = filters.statuses.length === 0
+    ? 'Všechny stavy'
+    : filters.statuses.length === 1
+      ? DOCUMENT_STATUS_LABELS[filters.statuses[0]]
+      : `${filters.statuses.length} stavy`
 
   return (
     <div className="space-y-3">
@@ -96,30 +113,83 @@ export function DocumentRegisterFilters({ filters, onChange }: DocumentRegisterF
       <div className="flex items-end gap-3 flex-wrap">
         {/* Dropdowns group */}
         <div className="flex items-center gap-2">
-          <Select value={filters.types[0] || 'none'} onValueChange={setType}>
-            <SelectTrigger className="w-[160px] h-9 rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm">
-              <SelectValue placeholder="Všechny typy" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Všechny typy</SelectItem>
-              {(Object.entries(DOCUMENT_TYPE_LABELS) as [DocumentType, string][]).map(([key, label]) => (
-                <SelectItem key={key} value={key}>{label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Multi-select Type filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-[180px] h-9 rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm justify-between font-normal"
+              >
+                <span className="truncate">{typeButtonLabel}</span>
+                <ChevronDown className="h-3.5 w-3.5 ml-1 opacity-50 flex-shrink-0" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[220px] p-2" align="start">
+              <div className="max-h-[280px] overflow-y-auto space-y-0.5">
+                {typeEntries.map(([key, label]) => (
+                  <label
+                    key={key}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer text-sm"
+                  >
+                    <Checkbox
+                      checked={filters.types.includes(key)}
+                      onCheckedChange={() => toggleType(key)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+              {filters.types.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full mt-1 text-xs text-gray-500"
+                  onClick={() => onChange({ ...filters, types: [] })}
+                >
+                  Zrušit výběr
+                </Button>
+              )}
+            </PopoverContent>
+          </Popover>
 
-          <Select value={filters.statuses[0] || 'none'} onValueChange={setStatus}>
-            <SelectTrigger className="w-[150px] h-9 rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm">
-              <SelectValue placeholder="Všechny stavy" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Všechny stavy</SelectItem>
-              {(Object.entries(DOCUMENT_STATUS_LABELS) as [DocumentStatus, string][]).map(([key, label]) => (
-                <SelectItem key={key} value={key}>{label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
+          {/* Multi-select Status filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-[170px] h-9 rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm justify-between font-normal"
+              >
+                <span className="truncate">{statusButtonLabel}</span>
+                <ChevronDown className="h-3.5 w-3.5 ml-1 opacity-50 flex-shrink-0" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-2" align="start">
+              <div className="max-h-[280px] overflow-y-auto space-y-0.5">
+                {statusEntries.map(([key, label]) => (
+                  <label
+                    key={key}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer text-sm"
+                  >
+                    <Checkbox
+                      checked={filters.statuses.includes(key)}
+                      onCheckedChange={() => toggleStatus(key)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+              {filters.statuses.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full mt-1 text-xs text-gray-500"
+                  onClick={() => onChange({ ...filters, statuses: [] })}
+                >
+                  Zrušit výběr
+                </Button>
+              )}
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Separator */}

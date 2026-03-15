@@ -278,6 +278,16 @@ export const TAX_FILING_STATUS_COLORS: Record<TaxFilingStatus, { bg: string; tex
   refund_received: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400' },
 }
 
+// Extractable document types — types that go through OCR/AI pipeline
+export const EXTRACTABLE_DOCUMENT_TYPES: DocumentType[] = [
+  'expense_invoice', 'income_invoice', 'receipt', 'advance_invoice',
+  'credit_note', 'proforma_invoice', 'cash_receipt', 'internal_document',
+]
+
+export function isExtractableType(type: DocumentType): boolean {
+  return EXTRACTABLE_DOCUMENT_TYPES.includes(type)
+}
+
 // Document type prefixes for accounting numbers (Czech standard)
 export const DOC_TYPE_PREFIXES: Record<string, string> = {
   expense_invoice: 'FP',   // Faktura přijatá

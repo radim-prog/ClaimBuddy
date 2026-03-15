@@ -35,6 +35,8 @@ import {
   DOCUMENT_STATUS_LABELS,
   DOCUMENT_STATUS_COLORS,
   defaultDocumentFilters,
+  EXTRACTABLE_DOCUMENT_TYPES,
+  isExtractableType,
 } from '@/lib/types/document-register'
 import { DocumentRegisterFilters } from './document-register-filters'
 import { DocumentDetailPanel } from './document-detail-panel'
@@ -52,6 +54,7 @@ type QueueJobInfo = {
 
 interface DocumentRegisterTabProps {
   companyId: string
+  extractableOnly?: boolean
 }
 
 const MONTH_NAMES_SHORT = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čvn', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro']
@@ -92,7 +95,7 @@ const statusRingColors: Record<string, string> = {
   future: '',
 }
 
-export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
+export function DocumentRegisterTab({ companyId, extractableOnly }: DocumentRegisterTabProps) {
   const { userId } = useAccountantUser()
 
   // Year/Month navigation
@@ -146,7 +149,11 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
     try {
       const params = new URLSearchParams()
       if (filters.search) params.set('q', filters.search)
-      filters.types.forEach(t => params.append('type', t))
+      // When extractableOnly and no explicit type filter, auto-filter to extractable types
+      const effectiveTypes = extractableOnly && filters.types.length === 0
+        ? EXTRACTABLE_DOCUMENT_TYPES
+        : filters.types
+      effectiveTypes.forEach(t => params.append('type', t))
       filters.statuses.forEach(s => params.append('status', s))
       if (filters.dateFrom) params.set('date_from', filters.dateFrom)
       if (filters.dateTo) params.set('date_to', filters.dateTo)
@@ -169,7 +176,7 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
     } catch { /* ignore */ } finally {
       setLoading(false)
     }
-  }, [companyId, selectedMonth, filters, pagination.page, pagination.perPage, sort])
+  }, [companyId, selectedMonth, filters, pagination.page, pagination.perPage, sort, extractableOnly])
 
   useEffect(() => { fetchDocuments() }, [fetchDocuments])
 
@@ -274,7 +281,7 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
     setBulkLoading(true)
     try {
       const uploadedIds = documents
-        .filter(d => selectedIds.has(d.id) && d.status === 'uploaded')
+        .filter(d => selectedIds.has(d.id) && d.status === 'uploaded' && isExtractableType(d.type))
         .map(d => d.id)
       if (uploadedIds.length > 0) {
         await fetch('/api/extraction/batch', {
@@ -426,7 +433,11 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
       </div>
 
       {/* Filters */}
-      <DocumentRegisterFilters filters={filters} onChange={handleFilterChange} />
+      <DocumentRegisterFilters
+        filters={filters}
+        onChange={handleFilterChange}
+        availableTypes={extractableOnly ? EXTRACTABLE_DOCUMENT_TYPES : undefined}
+      />
 
       {/* Bulk actions */}
       {selectedIds.size > 0 && (() => {
@@ -582,6 +593,7 @@ export function DocumentRegisterTab({ companyId }: DocumentRegisterTabProps) {
                                 onReject={handleReject}
                                 onExtract={handleExtract}
                                 extractionJob={extractionJobs.get(doc.id)}
+                                onDocumentUpdated={fetchDocuments}
                               />
                             </td>
                           </tr>

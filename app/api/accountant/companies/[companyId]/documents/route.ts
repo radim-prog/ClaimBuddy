@@ -91,9 +91,29 @@ export async function PATCH(
 
   try {
     const body = await request.json()
-    const { document_id, action, rejection_reason } = body
+    const { document_id, action, rejection_reason, type } = body
 
-    if (!document_id || !['approve', 'reject'].includes(action)) {
+    if (!document_id) {
+      return NextResponse.json({ error: 'Missing document_id' }, { status: 400 })
+    }
+
+    // Type update (Krok 4)
+    if (type && !action) {
+      const { data: doc, error } = await supabaseAdmin
+        .from('documents')
+        .update({ type, updated_at: new Date().toISOString() })
+        .eq('id', document_id)
+        .eq('company_id', params.companyId)
+        .select('id, type')
+        .single()
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+      return NextResponse.json({ success: true, document: doc })
+    }
+
+    if (!action || !['approve', 'reject'].includes(action)) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
 

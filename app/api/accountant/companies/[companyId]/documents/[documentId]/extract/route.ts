@@ -63,14 +63,26 @@ export async function POST(
       return NextResponse.json({ error: 'Could not access document file' }, { status: 500 })
     }
 
-    // Call Kimi AI for extraction
+    // AI extraction pipeline (model-agnostic)
     try {
-      const { KimiAIClient } = await import('@/lib/kimi-ai')
-      const kimi = new KimiAIClient()
-      const result = await kimi.extractInvoiceData(signedData.signedUrl, doc.file_name)
+      // Download the file into a buffer
+      const fileRes = await fetch(signedData.signedUrl)
+      if (!fileRes.ok) {
+        throw new Error(`Failed to download file: ${fileRes.status}`)
+      }
+      const buffer = Buffer.from(await fileRes.arrayBuffer())
+      const mimeType = doc.mime_type || 'application/pdf'
+
+      const { createExtractor } = await import('@/lib/ai-extractor')
+      const extractor = await createExtractor()
+      const { invoice, ocrResult } = await extractor.extractFromFile(buffer, doc.file_name, mimeType)
 
       // Store OCR result and populate denormalized fields
-      const ocrData = result as unknown as Record<string, unknown>
+      const ocrData = {
+        ...(invoice as unknown as Record<string, unknown>),
+        num_pages: ocrResult.num_pages,
+        ocr_text_length: ocrResult.text.length,
+      }
       await supabaseAdmin
         .from('documents')
         .update({
@@ -78,6 +90,7 @@ export async function POST(
           ocr_processed: true,
           ocr_status: 'completed',
           status: 'extracted',
+          confidence_score: invoice.confidence_score,
           updated_at: new Date().toISOString(),
         })
         .eq('id', documentId)
@@ -86,11 +99,11 @@ export async function POST(
 
       return NextResponse.json({
         success: true,
-        source: 'kimi_ocr',
-        confidence_score: result.confidence_score,
+        source: 'ai_extractor',
+        confidence_score: invoice.confidence_score,
       })
     } catch (ocrErr) {
-      console.error('OCR extraction failed:', ocrErr)
+      console.error('AI extraction failed:', ocrErr)
       await supabaseAdmin
         .from('documents')
         .update({
@@ -99,7 +112,7 @@ export async function POST(
           updated_at: new Date().toISOString(),
         })
         .eq('id', documentId)
-      return NextResponse.json({ error: 'OCR extraction failed' }, { status: 500 })
+      return NextResponse.json({ error: 'AI extraction failed' }, { status: 500 })
     }
   } catch (err) {
     console.error('Extract document error:', err)

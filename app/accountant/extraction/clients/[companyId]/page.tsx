@@ -73,7 +73,9 @@ export default function ExtractionClientDetailPage() {
               <Building2 className="h-4 w-4 text-blue-600" />
             </div>
             <div>
-              <h2 className="font-semibold text-lg">{company?.name || 'Neznámá firma'}</h2>
+              <Link href={`/accountant/clients/${companyId}`} className="hover:underline">
+                <h2 className="font-semibold text-lg">{company?.name || 'Neznámá firma'}</h2>
+              </Link>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {company?.ico && <span>IČ: {company.ico}</span>}
                 {company?.dic && <span>DIČ: {company.dic}</span>}
@@ -87,7 +89,7 @@ export default function ExtractionClientDetailPage() {
       </div>
 
       {/* Document Register — reuse existing component */}
-      <DocumentRegisterTab companyId={companyId} />
+      <DocumentRegisterTab companyId={companyId} extractableOnly />
     </div>
   )
 }

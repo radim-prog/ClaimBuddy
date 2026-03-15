@@ -21,12 +21,20 @@ import {
   Download,
   Eye,
   Clock,
+  AlertTriangle,
 } from 'lucide-react'
 import type { ExtractionStep } from '@/lib/extraction-types'
 import { STEP_LABELS } from '@/lib/extraction-types'
 import { cn, formatCurrency, formatDate } from '@/lib/utils'
-import type { DocumentRegisterEntry } from '@/lib/types/document-register'
-import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS, DOCUMENT_STATUS_COLORS } from '@/lib/types/document-register'
+import type { DocumentRegisterEntry, DocumentType } from '@/lib/types/document-register'
+import { DOCUMENT_TYPE_LABELS, DOCUMENT_STATUS_LABELS, DOCUMENT_STATUS_COLORS, isExtractableType } from '@/lib/types/document-register'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { DocumentComments } from '@/components/documents/document-comments'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { toast } from 'sonner'
@@ -62,6 +70,7 @@ interface DocumentDetailPanelProps {
   onReject: (id: string, reason?: string) => void
   onExtract: (id: string) => void
   extractionJob?: QueueJobInfo
+  onDocumentUpdated?: () => void
 }
 
 function ConfidenceBadge({ score }: { score: number | null }) {
@@ -78,7 +87,7 @@ function ConfidenceBadge({ score }: { score: number | null }) {
 
 const PIPELINE_STEPS: ExtractionStep[] = ['downloading', 'ocr', 'ai_extraction', 'ai_verification', 'saving']
 
-export function DocumentDetailPanel({ document: doc, companyId, onApprove, onReject, onExtract, extractionJob }: DocumentDetailPanelProps) {
+export function DocumentDetailPanel({ document: doc, companyId, onApprove, onReject, onExtract, extractionJob, onDocumentUpdated }: DocumentDetailPanelProps) {
   const { userId } = useAccountantUser()
   const [extracting, setExtracting] = useState(false)
   const [rejecting, setRejecting] = useState(false)
@@ -86,6 +95,27 @@ export function DocumentDetailPanel({ document: doc, companyId, onApprove, onRej
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([])
   const [loadingPredkontace, setLoadingPredkontace] = useState(false)
   const [showPredkontace, setShowPredkontace] = useState(false)
+
+  const extractable = isExtractableType(doc.type as DocumentType)
+  const numPages = (doc.ocr_data as Record<string, unknown> | null)?.num_pages as number | undefined
+
+  const handleTypeChange = async (newType: string) => {
+    try {
+      const res = await fetch(`/api/accountant/companies/${companyId}/documents`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
+        body: JSON.stringify({ document_id: doc.id, type: newType }),
+      })
+      if (res.ok) {
+        toast.success('Typ dokladu upraven')
+        onDocumentUpdated?.()
+      } else {
+        toast.error('Chyba při změně typu')
+      }
+    } catch {
+      toast.error('Chyba při změně typu')
+    }
+  }
 
   const ocrData = doc.ocr_data as Record<string, unknown> | null
   const supplier = ocrData?.supplier as Record<string, unknown> | undefined
@@ -201,21 +231,31 @@ export function DocumentDetailPanel({ document: doc, companyId, onApprove, onRej
             </Badge>
             <ConfidenceBadge score={doc.confidence_score} />
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            {DOCUMENT_TYPE_LABELS[doc.type]} | {doc.period} | Nahráno: {formatDate(doc.uploaded_at)}
+          <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <Select value={doc.type} onValueChange={handleTypeChange}>
+              <SelectTrigger className="h-6 w-auto min-w-[120px] text-xs border-dashed border-gray-300 dark:border-gray-600 bg-transparent px-2 py-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.entries(DOCUMENT_TYPE_LABELS) as [DocumentType, string][]).map(([key, label]) => (
+                  <SelectItem key={key} value={key} className="text-xs">{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span>| {doc.period} | Nahráno: {formatDate(doc.uploaded_at)}</span>
             {doc.accounting_number && <> | <Hash className="h-3 w-3 inline" /> {doc.accounting_number}</>}
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {!doc.ocr_processed && (
+          {extractable && !doc.ocr_processed && (
             <Button variant="outline" size="sm" onClick={handleExtract} disabled={extracting}>
               {extracting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCcw className="h-4 w-4 mr-1" />}
               Vytěžit
             </Button>
           )}
-          {doc.ocr_processed && doc.status !== 'extracted' && (
+          {extractable && doc.ocr_processed && doc.status !== 'extracted' && (
             <Button variant="outline" size="sm" onClick={handleExtract} disabled={extracting}>
               {extracting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCcw className="h-4 w-4 mr-1" />}
               Znovu
@@ -312,6 +352,16 @@ export function DocumentDetailPanel({ document: doc, companyId, onApprove, onRej
         </div>
       )}
 
+      {/* Multi-page PDF warning */}
+      {numPages && numPages > 2 && (
+        <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+          <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-700 dark:text-amber-400">
+            Tento PDF má <strong>{numPages} stránek</strong>. Pokud obsahuje více dokumentů, nahrajte je prosím zvlášť pro přesnější vytěžení.
+          </div>
+        </div>
+      )}
+
       {/* OCR data display */}
       {ocrData && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -399,11 +449,13 @@ export function DocumentDetailPanel({ document: doc, companyId, onApprove, onRej
 
       {!ocrData && !doc.ocr_processed && (
         <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-          <p className="text-sm">Dokument nebyl vytěžen</p>
-          <Button variant="outline" size="sm" className="mt-2" onClick={handleExtract} disabled={extracting}>
-            {extracting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCcw className="h-4 w-4 mr-1" />}
-            Spustit OCR vytěžení
-          </Button>
+          <p className="text-sm">{extractable ? 'Dokument nebyl vytěžen' : 'Tento typ dokladu nepodléhá vytěžování'}</p>
+          {extractable && (
+            <Button variant="outline" size="sm" className="mt-2" onClick={handleExtract} disabled={extracting}>
+              {extracting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCcw className="h-4 w-4 mr-1" />}
+              Spustit OCR vytěžení
+            </Button>
+          )}
         </div>
       )}
 
