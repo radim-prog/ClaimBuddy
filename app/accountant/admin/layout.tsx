@@ -7,7 +7,6 @@ import {
   Users,
   Settings2,
   Database,
-  BookOpen,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -16,7 +15,6 @@ const adminNavItems = [
   { href: '/accountant/admin/people', label: 'Lidé', icon: Users },
   { href: '/accountant/admin/operations', label: 'Provoz', icon: Settings2 },
   { href: '/accountant/admin/system', label: 'Systém', icon: Database },
-  { href: '/accountant/admin/knowledge-base', label: 'Znalostní báze', icon: BookOpen },
 ]
 
 export default function AdminLayout({

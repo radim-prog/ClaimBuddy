@@ -63,6 +63,7 @@ const navigation = [
   { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'] },
   { name: 'Vytěžování', href: '/accountant/extraction', icon: ScanLine, activeMatch: ['/accountant/extraction'], feature: 'extraction' },
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
+  { name: 'Znalostní báze', href: '/accountant/knowledge-base', icon: BookOpen, activeMatch: ['/accountant/knowledge-base'] },
 ]
 
 const adminNavigation = [
@@ -260,7 +261,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 <div className={`pt-3 mt-3 border-t border-white/[0.06] ${collapsed ? '' : ''}`}>
                   {!collapsed && (
                     <p className="px-3 text-[10px] font-semibold text-violet-300/60 uppercase tracking-widest mb-1.5">
-                      Administrace
+                      Správa
                     </p>
                   )}
                   {adminNavigation.map((item) => {
@@ -555,7 +556,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
               {showAdmin && (
                 <>
                 <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Administrace</p>
+                <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Správa</p>
                 <Link
                   href="/accountant/analytics"
                   onClick={() => setMobileMenuOpen(false)}
