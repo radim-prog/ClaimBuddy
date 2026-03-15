@@ -8,7 +8,9 @@ type RouteParams = { params: Promise<{ companyId: string }> }
 
 // GET — fetch onboarding questionnaire for a company
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const userId = request.headers.get('x-user-id')
   const userRole = request.headers.get('x-user-role')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { companyId } = await params
@@ -24,7 +26,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // POST — create/send onboarding questionnaire to client
 export async function POST(request: NextRequest, { params }: RouteParams) {
+  const userId = request.headers.get('x-user-id')
   const userRole = request.headers.get('x-user-role')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { companyId } = await params

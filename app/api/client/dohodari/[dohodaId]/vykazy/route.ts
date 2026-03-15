@@ -23,6 +23,20 @@ export async function GET(
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
+    const companyIds = await getCompanyIds(userId, request.headers.get('x-impersonate-company'))
+    if (companyIds.length === 0) return NextResponse.json({ error: 'No company' }, { status: 404 })
+
+    // Verify the dohoda belongs to one of the client's companies
+    const { data: dohoda } = await supabaseAdmin
+      .from('dohody')
+      .select('company_id')
+      .eq('id', params.dohodaId)
+      .single()
+
+    if (!dohoda || !companyIds.includes(dohoda.company_id)) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
+
     const vykazy = await getVykazy(params.dohodaId, {})
     return NextResponse.json({ vykazy })
   } catch (error) {

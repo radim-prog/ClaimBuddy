@@ -56,6 +56,9 @@ export async function POST(
       return NextResponse.json({ error: 'typ must be dpp or dpc' }, { status: 400 })
     }
 
+    const ALLOWED_STATUSES: DohodaStatus[] = ['draft', 'active']
+    const status: DohodaStatus = ALLOWED_STATUSES.includes(body.status) ? body.status : 'draft'
+
     const dohoda = await createDohoda({
       company_id: params.companyId,
       employee_id,
@@ -68,7 +71,7 @@ export async function POST(
       platnost_do: body.platnost_do || null,
       prohlaseni_podepsano: body.prohlaseni_podepsano,
       prohlaseni_datum: body.prohlaseni_datum,
-      status: body.status,
+      status,
       notes: body.notes,
     })
 

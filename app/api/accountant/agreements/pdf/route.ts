@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { isStaffRole } from '@/lib/access-check'
+import { isStaffRole, canAccessCompany } from '@/lib/access-check'
 import { AgreementPDF } from '@/lib/pdf/agreement-template'
 
 export const dynamic = 'force-dynamic'
@@ -25,6 +25,13 @@ export async function GET(request: NextRequest) {
 
     if (empErr || !employee) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 })
+    }
+
+    // Verify accountant can access this employee's company
+    const impersonateCompany = request.headers.get('x-impersonate-company')
+    const hasAccess = await canAccessCompany(userId!, userRole, employee.company_id, impersonateCompany)
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Verify employee is DPP/DPČ
