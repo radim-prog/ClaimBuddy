@@ -1,0 +1,223 @@
+{
+  "project": "UcetniWebApp",
+  "branchName": "ralph/cleanup-and-monetization",
+  "description": "Cleanup existujícího kódu, oprava identifikovaných bugů a příprava monetizačního modelu pro UcetniWebApp",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Fix assistant role DB constraint",
+      "description": "Opravit CHECK constraint v tabulce users, který nepovoluje roli 'assistant'. Vytvořit migraci a aktualizovat schema.sql.",
+      "acceptanceCriteria": [
+        "Migrace přidává 'assistant' do CHECK constraint: CHECK (role IN ('client', 'accountant', 'admin', 'assistant'))",
+        "supabase/schema.sql je aktualizován a synchronizován s migracemi",
+        "Existující kód používající 'assistant' roli funguje bez chyb",
+        "Typecheck passes (npx tsc --noEmit)"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "CRITICAL — bez tohoto constraintu nelze vytvořit uživatele s rolí assistant"
+    },
+    {
+      "id": "US-002",
+      "title": "Update .env.local.example with all required env vars",
+      "description": "Doplnit všech 17 nedokumentovaných environment variables do .env.local.example s popisem a příkladovými hodnotami.",
+      "acceptanceCriteria": [
+        ".env.local.example obsahuje AUTH_SECRET s komentářem jak generovat (openssl rand -hex 32)",
+        ".env.local.example obsahuje MONETIZATION_ENABLED=false s popisem",
+        ".env.local.example obsahuje CRON_SECRET s popisem",
+        ".env.local.example obsahuje všech 12 STRIPE_* proměnných",
+        ".env.local.example obsahuje STRIPE_PRICE_CREDITS_50 a STRIPE_PRICE_CREDITS_200",
+        "Každá proměnná má komentář vysvětlující účel",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "HIGH — nový vývojář bez těchto informací nemůže aplikaci spustit"
+    },
+    {
+      "id": "US-003",
+      "title": "Fix register flow — migrate from Supabase Auth to custom JWT",
+      "description": "Opravit registrační stránku /auth/register — přejít z Supabase Auth signUp() na custom JWT systém (stejný jako login). Registrace musí vytvořit záznam v tabulce users s password_hash.",
+      "acceptanceCriteria": [
+        "app/auth/register/actions.ts nepoužívá supabase.auth.signUp()",
+        "Registrace vytváří uživatele v tabulce users s PBKDF2 password_hash",
+        "Po registraci se uživatel může přihlásit přes /api/auth/login",
+        "Registrační formulář validuje vstup (email, heslo síla, povinná pole)",
+        "Pricing page (/pricing) správně linkuje na novou registraci",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "HIGH — stávající register flow pravděpodobně nefunguje (Supabase Auth vs custom JWT mismatch)"
+    },
+    {
+      "id": "US-004",
+      "title": "Extract shared types from kimi-ai.ts",
+      "description": "Přesunout sdílené typy (ExtractedInvoice, CorrectionRecord, RoundResult, validateInvoiceStructure) z lib/kimi-ai.ts do lib/types/extraction.ts. Aktualizovat všechny importy.",
+      "acceptanceCriteria": [
+        "Nový soubor lib/types/extraction.ts obsahuje sdílené typy",
+        "lib/kimi-ai.ts importuje typy z lib/types/extraction.ts místo vlastních definic",
+        "lib/ai-extractor.ts importuje typy z lib/types/extraction.ts",
+        "Všechny soubory importující z kimi-ai.ts aktualizovány",
+        "lib/kimi-ai.ts zmenšen o přesunuté typy",
+        "Typecheck passes",
+        "npm run build passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "MEDIUM — refaktoring pro lepší údržbu kódu"
+    },
+    {
+      "id": "US-005",
+      "title": "Consolidate duplicate formatCurrency/formatDate",
+      "description": "Nahradit všechny lokální kopie formatCurrency a formatDate importem z @/lib/utils. Smazat lokální definice na 8+ místech.",
+      "acceptanceCriteria": [
+        "lib/utils.ts exportuje formatCurrency a formatDate (ověřit že existují)",
+        "Smazány lokální definice v: accountant/invoices/page.tsx, accountant/invoices/[id]/page.tsx, accountant/analytics/clients/page.tsx, invoice/invoice-items-editor.tsx, lib/pdf/invoice-template.tsx, lib/travel-randomizer.ts, admin/people-substitutions.tsx, accountant/analytics/page.tsx, api/time-entries/route.ts",
+        "Všechna místa importují z @/lib/utils",
+        "Typecheck passes",
+        "npm run build passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "MEDIUM — 9 souborů s duplicitním kódem"
+    },
+    {
+      "id": "US-006",
+      "title": "Merge duplicate CollapsibleSection components",
+      "description": "Sloučit components/collapsible-section.tsx a components/ui/collapsible-section.tsx do jedné komponenty s podporou controlled i uncontrolled módu.",
+      "acceptanceCriteria": [
+        "Jedna CollapsibleSection komponenta (v components/ui/)",
+        "Podporuje obě API: title/defaultOpen (uncontrolled) i label/expanded/onToggle (controlled)",
+        "Všech 8 souborů importujících kteroukoli verzi aktualizováno",
+        "Stará components/collapsible-section.tsx smazána",
+        "Vizuální vzhled zachován (Card-based s purple accenty)",
+        "Typecheck passes",
+        "npm run build passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "MEDIUM — dva komponenty se stejným názvem, různým API"
+    },
+    {
+      "id": "US-007",
+      "title": "Remove unused components",
+      "description": "Smazat nepoužívané komponenty: annual-closing-section.tsx a section-nav.tsx.",
+      "acceptanceCriteria": [
+        "components/annual-closing-section.tsx smazán",
+        "components/section-nav.tsx smazán",
+        "Žádný import na tyto soubory v celém projektu",
+        "npm run build passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "LOW — dead code cleanup"
+    },
+    {
+      "id": "US-008",
+      "title": "Rename mock-data.ts and reorganize types",
+      "description": "Přejmenovat lib/mock-data.ts na výstižnější název a reorganizovat typy. Soubor neobsahuje mock data — obsahuje Invoice typy a urgency helpers.",
+      "acceptanceCriteria": [
+        "lib/mock-data.ts přejmenován na lib/types/invoice-domain.ts (nebo split na invoice.ts + urgency.ts)",
+        "Všech 12 souborů importujících z mock-data aktualizováno",
+        "Typecheck passes",
+        "npm run build passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "LOW — zavádějící název souboru"
+    },
+    {
+      "id": "US-009",
+      "title": "Consolidate duplicate extraction approve endpoints",
+      "description": "Prověřit a konsolidovat dva approve endpointy: /api/extraction/approve a /api/accountant/extraction/approve. Oba updatují dokument a volají populateDenormalizedFields.",
+      "acceptanceCriteria": [
+        "Identifikováno které UI volá který endpoint",
+        "Starší endpoint buď smazán nebo přesměrován na hlavní",
+        "Funkčnost schvalování zachována",
+        "Typecheck passes",
+        "npm run build passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "MEDIUM — duplicitní business logika"
+    },
+    {
+      "id": "US-010",
+      "title": "Remove console.log from production API routes",
+      "description": "Nahradit nebo odstranit console.log ve Stripe webhook route (nahradit structured error-logem) a smazat debug logy v /api/documents/extract.",
+      "acceptanceCriteria": [
+        "Stripe webhook route: console.log nahrazeny buď error-logger.ts voláním nebo podmíněným logem",
+        "/api/documents/extract: debug console.log smazány",
+        "Důležité audit trail záznamy zachovány (Stripe eventy)",
+        "Typecheck passes",
+        "npm run build passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "LOW — production code hygiene"
+    },
+    {
+      "id": "US-011",
+      "title": "New monetization tiers — DB schema",
+      "description": "Navrhnout a vytvořit DB migrace pro nový tarifní model: 3 účetnické tarify (Základní/Střední/Profi) + klientské pluginy. Rozšířit stávající plan_limits tabulku.",
+      "acceptanceCriteria": [
+        "Migrace definuje nové tarify v plan_limits tabulce",
+        "Účetnické: zakladni (free, 10 firem), stredni (100 firem), profi (unlimited)",
+        "Klientské: free + pluginy (vytezovani, adresar_pro, cestak_pro, randomizer)",
+        "Feature flags per tarif definovány (které moduly jsou v kterém tarifu)",
+        "Stávající data zachována (migrace neničí existující subscriptions)",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "Závisí na rozhodnutí o cenách a naming — Open Questions v PRD"
+    },
+    {
+      "id": "US-012",
+      "title": "Update plan-gate.ts for new tiers",
+      "description": "Rozšířit lib/plan-gate.ts a components/plan-gate.tsx pro nový tarifní model. Feature gating dle nových tarifů.",
+      "acceptanceCriteria": [
+        "plan-gate.ts rozumí novým tarifním názvům",
+        "Feature gates odpovídají novému modelu (uzávěrky = střední+, vytěžování = profi+, atd.)",
+        "Upgrade banner zobrazuje správný doporučený tarif",
+        "MONETIZATION_ENABLED=false stále odemyká vše",
+        "Typecheck passes",
+        "npm run build passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "Závisí na US-011 (DB schema)"
+    },
+    {
+      "id": "US-013",
+      "title": "Landing page with pricing",
+      "description": "Vytvořit/aktualizovat landing page (/pricing a hlavní /) s vysvětlením tarifů, funkcí a CTA pro registraci.",
+      "acceptanceCriteria": [
+        "Pricing page zobrazuje 3 účetnické tarify s porovnáním funkcí",
+        "Pricing page zobrazuje klientské rozšíření/pluginy",
+        "CTA tlačítka linkují na registraci s vybraným tarifem",
+        "Responsivní design (mobile + desktop)",
+        "Verify in browser using dev server"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "Závisí na rozhodnutí o cenách"
+    },
+    {
+      "id": "US-014",
+      "title": "Final build verification and E2E tests",
+      "description": "Ověřit že po všech změnách aplikace builduje, prochází lint a testy.",
+      "acceptanceCriteria": [
+        "npm run build passes bez errorů",
+        "npm run lint passes",
+        "npx tsc --noEmit passes",
+        "npx playwright test passes (všech 9 spec souborů)",
+        "Ruční smoke test: login accountant, login client, upload dokladu, vytvoření faktury, přidání jízdy"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "Finální verifikace celé pipeline"
+    }
+  ]
+}
