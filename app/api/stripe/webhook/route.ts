@@ -7,6 +7,7 @@ import {
   addExtraCredits,
 } from '@/lib/subscription-store'
 import type Stripe from 'stripe'
+import { logError } from '@/lib/error-logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
   } catch (err) {
-    console.error('Stripe webhook verification failed:', err)
+    logError({ level: 'error', message: 'Stripe webhook verification failed', source: 'stripe-webhook', metadata: { error: String(err) } })
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
           ...(periodEnd ? { current_period_end: periodEnd } : {}),
         })
 
-        console.log(`Subscription updated: ${subscription.id}, status=${subscription.status}`)
+        logError({ level: 'info', message: `Subscription updated: ${subscription.id}, status=${subscription.status}`, source: 'stripe-webhook' })
         break
       }
 
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
           cancelled_at: new Date().toISOString(),
         })
 
-        console.log(`Subscription cancelled: ${subscription.id}`)
+        logError({ level: 'info', message: `Subscription cancelled: ${subscription.id}`, source: 'stripe-webhook' })
         break
       }
 
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
         const subscriptionId = extractSubscriptionId(event.data.object)
         if (subscriptionId) {
           await updateSubscriptionByStripeId(subscriptionId, { status: 'past_due' })
-          console.log(`Payment failed for subscription: ${subscriptionId}`)
+          logError({ level: 'warn', message: `Payment failed for subscription: ${subscriptionId}`, source: 'stripe-webhook' })
         }
         break
       }
@@ -86,16 +87,16 @@ export async function POST(request: NextRequest) {
         const subscriptionId = extractSubscriptionId(event.data.object)
         if (subscriptionId) {
           await updateSubscriptionByStripeId(subscriptionId, { status: 'active' })
-          console.log(`Payment confirmed for subscription: ${subscriptionId}`)
+          logError({ level: 'info', message: `Payment confirmed for subscription: ${subscriptionId}`, source: 'stripe-webhook' })
         }
         break
       }
 
       default:
-        console.log('Unhandled Stripe event:', event.type)
+        logError({ level: 'info', message: `Unhandled Stripe event: ${event.type}`, source: 'stripe-webhook' })
     }
   } catch (err) {
-    console.error(`Error processing Stripe event ${event.type}:`, err)
+    logError({ level: 'error', message: `Error processing Stripe event ${event.type}`, source: 'stripe-webhook', stack: err instanceof Error ? err.stack : undefined, metadata: { error: String(err) } })
     // Return 500 so Stripe retries the webhook (up to ~3 days with exponential backoff)
     return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
   }
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
 async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.Session): Promise<void> {
   const userId = session.metadata?.user_id
   if (!userId) {
-    console.error('Checkout session missing user_id:', session.id)
+    logError({ level: 'error', message: `Checkout session missing user_id: ${session.id}`, source: 'stripe-webhook' })
     return
   }
 
@@ -123,7 +124,7 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
     const credits = parseInt(session.metadata.credits || '0', 10)
     if (credits > 0) {
       await addExtraCredits(userId, 'extraction', credits)
-      console.log(`Credits purchased: user=${userId}, credits=${credits}`)
+      logError({ level: 'info', message: `Credits purchased: user=${userId}, credits=${credits}`, source: 'stripe-webhook' })
     }
     return
   }
@@ -131,7 +132,7 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
   // Handle subscription checkout
   const planTier = session.metadata?.plan_tier
   if (!planTier) {
-    console.error('Checkout session missing plan_tier:', session.id)
+    logError({ level: 'error', message: `Checkout session missing plan_tier: ${session.id}`, source: 'stripe-webhook' })
     return
   }
 
@@ -157,7 +158,7 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
       : null,
   })
 
-  console.log(`Checkout completed: user=${userId}, plan=${planTier}`)
+  logError({ level: 'info', message: `Checkout completed: user=${userId}, plan=${planTier}`, source: 'stripe-webhook' })
 }
 
 function extractSubscriptionId(invoice: WebhookObject): string | null {

@@ -66,8 +66,6 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    console.log(`[Extract API] Processing file: ${file.name} (${file.type}, ${file.size} bytes)`)
-
     const invoice: ExtractedInvoice = await extractInvoice(
       buffer,
       file.name,
@@ -75,8 +73,6 @@ export async function POST(request: NextRequest) {
     )
 
     const processingTime = Date.now() - startTime
-
-    console.log(`[Extract API] Extraction complete: ${invoice.document_number} (${processingTime}ms)`)
 
     return NextResponse.json({
       success: true,
@@ -87,7 +83,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     const processingTime = Date.now() - startTime
-    console.error('[Extract API] Extraction failed:', error)
+    // Error is returned in the response body
 
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
