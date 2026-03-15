@@ -43,6 +43,7 @@ import { NotificationSettings } from '@/components/accountant/notification-setti
 import { ActivityFeed } from '@/components/accountant/activity-feed'
 import { TileContainer } from '@/components/tiles/tile-container'
 import type { TileDefinition } from '@/lib/types/layout'
+import { OnboardingQuestionnaireViewer } from '@/components/onboarding/onboarding-questionnaire-viewer'
 import { useCompany } from '../layout'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
@@ -59,6 +60,7 @@ const healthInsuranceLabels: Record<string, string> = {
 
 const BASE_TILES: TileDefinition[] = [
   { id: 'company-info', label: 'Údaje o firmě', defaultVisible: true },
+  { id: 'onboarding-questionnaire', label: 'Vstupní dotazník', defaultVisible: true },
   { id: 'health-score', label: 'Zdraví klienta', defaultVisible: true },
   { id: 'reports', label: 'Reporty', defaultVisible: true },
   { id: 'employees', label: 'Zaměstnanci', defaultVisible: true },
@@ -215,6 +217,8 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
             )
+          case 'onboarding-questionnaire':
+            return <OnboardingQuestionnaireViewer companyId={companyId} />
           case 'health-score':
             return (
               <CollapsibleSection id="health-score" title="Zdraví klienta" icon={BarChart3} defaultOpen={true}>
