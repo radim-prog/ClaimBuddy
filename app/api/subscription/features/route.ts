@@ -15,9 +15,9 @@ export async function GET(request: NextRequest) {
   const portalType: 'accountant' | 'client' = userRole === 'client' ? 'client' : 'accountant'
   const monetizationEnabled = process.env.MONETIZATION_ENABLED === 'true'
 
-  // If monetization disabled, return enterprise-level access
+  // If monetization disabled, return top-tier access
   if (!monetizationEnabled) {
-    const topTier = portalType === 'client' ? 'premium' : 'enterprise'
+    const topTier = portalType === 'client' ? 'premium' : 'business'
     const limits = await getPlanLimits(portalType, topTier)
 
     return NextResponse.json({

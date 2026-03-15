@@ -178,8 +178,8 @@ export async function checkMessageLimit(
   const sub = await getSubscription(userId, portalType)
   const tier = sub?.plan_tier ?? 'free'
 
-  // Only free tier has message limits
-  if (tier !== 'free') {
+  // Only free/zaklad tier has message limits
+  if (tier !== 'free' && tier !== 'zaklad') {
     return { allowed: true }
   }
 
@@ -197,7 +197,7 @@ export async function checkMessageLimit(
     return {
       allowed: false,
       reason: `Vyčerpali jste limit ${FREE_MESSAGE_LIMIT} zpráv/měsíc na tarifu Free.`,
-      requiredTier: 'starter',
+      requiredTier: 'profi',
       currentTier: tier,
       used,
       limit: FREE_MESSAGE_LIMIT,
@@ -222,8 +222,8 @@ export async function logGatedAction(userId: string, action: string, resourceId?
 
 async function findMinimumTier(portalType: string, feature: string): Promise<string> {
   const tierOrder = portalType === 'accountant'
-    ? ['free', 'starter', 'professional', 'enterprise']
-    : ['free', 'basic', 'premium']
+    ? ['zaklad', 'profi', 'business']
+    : ['free', 'plus', 'premium']
 
   for (const tier of tierOrder) {
     const limits = await getPlanLimits(portalType, tier)
@@ -234,11 +234,11 @@ async function findMinimumTier(portalType: string, feature: string): Promise<str
 
 function tierLabel(tier: string): string {
   const labels: Record<string, string> = {
+    zaklad: 'Základ',
+    profi: 'Profi',
+    business: 'Business',
     free: 'Free',
-    starter: 'Starter',
-    professional: 'Professional',
-    enterprise: 'Enterprise',
-    basic: 'Basic',
+    plus: 'Plus',
     premium: 'Premium',
   }
   return labels[tier] || tier

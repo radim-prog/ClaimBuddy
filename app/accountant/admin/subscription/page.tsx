@@ -8,7 +8,6 @@ import {
   Check,
   Crown,
   Building2,
-  Rocket,
   Users,
   FolderOpen,
   Zap,
@@ -25,14 +24,14 @@ import {
 import { toast } from 'sonner'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 
-type PlanTier = 'free' | 'starter' | 'professional' | 'enterprise'
+type PlanTier = 'zaklad' | 'profi' | 'business'
 
 const PLANS: {
   id: PlanTier
   name: string
   price: number
   yearlyPrice: number
-  icon: typeof Rocket
+  icon: typeof Crown
   description: string
   maxCompanies: number | null
   maxUsers: number | null
@@ -41,77 +40,63 @@ const PLANS: {
   popular?: boolean
 }[] = [
   {
-    id: 'free',
-    name: 'Free',
+    id: 'zaklad',
+    name: 'Základ',
     price: 0,
     yearlyPrice: 0,
     icon: Gift,
-    description: 'Pro vyzkoušení a jednoduché účetnictví',
-    maxCompanies: 5,
+    description: 'Pro začátek a vyzkoušení',
+    maxCompanies: 10,
     maxUsers: 1,
     features: [
-      'Seznam klientů',
-      'Časové výkazy',
-      'Přehled plateb',
+      'Seznam klientů + profily',
+      'Evidence času',
+      'Kontrola plateb',
       'Termíny a deadlines',
       'Základní úkoly',
-      'Zprávy klientům (5/měs)',
+      'Komunikace (omezená)',
     ],
     support: 'Komunita',
   },
   {
-    id: 'starter',
-    name: 'Starter',
-    price: 490,
-    yearlyPrice: 4900,
-    icon: Rocket,
-    description: 'Pro začínající účetní a malé kanceláře',
-    maxCompanies: 20,
-    maxUsers: 3,
-    features: [
-      'Vše z Free',
-      'Neomezená komunikace',
-      'Matice měsíčních uzávěrek',
-      'Přehled DPH',
-      'AI vytěžování (10/měs)',
-    ],
-    support: 'E-mail (48h)',
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    price: 1290,
-    yearlyPrice: 12900,
+    id: 'profi',
+    name: 'Profi',
+    price: 699,
+    yearlyPrice: 6990,
     icon: Crown,
     description: 'Pro profesionální účetní kanceláře',
     maxCompanies: 100,
-    maxUsers: 10,
+    maxUsers: 5,
     features: [
-      'Vše ze Starter',
-      'Daň z příjmu',
+      'Vše ze Základ',
       'Skupiny klientů',
-      'Projekty a fáze',
-      'Klientská fakturace',
-      'AI vytěžování (50/měs)',
+      'Projekty + spisy',
+      'Plná komunikace',
+      'Uzávěrky, DPH matice, daň z příjmů',
+      'B2B fakturace klientům',
+      'Analytika',
+      'Google Drive integrace',
     ],
-    support: 'E-mail (24h) + telefon',
+    support: 'E-mail (24h)',
     popular: true,
   },
   {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 2990,
-    yearlyPrice: 29900,
+    id: 'business',
+    name: 'Business',
+    price: 1499,
+    yearlyPrice: 14990,
     icon: Building2,
-    description: 'Pro velké kanceláře a daňové poradce',
+    description: 'Pro velké kanceláře — neomezeno',
     maxCompanies: null,
     maxUsers: null,
     features: [
-      'Vše z Professional',
-      'AI vytěžování (200/měs)',
-      'Případy a řízení',
-      'Pokročilá analytika',
-      'Health Score klientů',
+      'Vše z Profi',
+      'Vytěžování (100/měs v ceně)',
+      'Health score klientů',
+      'Znalostní báze',
+      'Onboarding editor',
+      'Admin panel',
+      'Raynet CRM sync',
       'API přístup',
       'Prioritní podpora',
     ],
@@ -137,7 +122,7 @@ export default function SubscriptionPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
   const [trial, setTrial] = useState<TrialStatus | null>(null)
   const { planTier, subscription, loading, refreshFeatures } = usePlanFeatures()
-  const currentPlan = (planTier || 'free') as PlanTier
+  const currentPlan = (planTier || 'zaklad') as PlanTier
 
   // Fetch trial status
   useEffect(() => {
@@ -167,8 +152,8 @@ export default function SubscriptionPage() {
       return
     }
 
-    if (planId === 'free') {
-      toast.info('Pro přechod na Free kontaktujte podporu.')
+    if (planId === 'zaklad') {
+      toast.info('Pro přechod na Základ kontaktujte podporu.')
       return
     }
 
@@ -211,7 +196,7 @@ export default function SubscriptionPage() {
   function getButtonLabel(planId: PlanTier, isCurrent: boolean, isDowngrade: boolean): React.ReactNode {
     if (isCurrent) return 'Aktuální tarif'
     if (isDowngrade) return 'Kontaktovat podporu'
-    if (planId === 'free') return 'Free'
+    if (planId === 'zaklad') return 'Základ (zdarma)'
     return (
       <>
         Vybrat tarif
@@ -254,7 +239,7 @@ export default function SubscriptionPage() {
                 <Clock className="h-6 w-6" />
                 <div>
                   <p className="font-semibold">
-                    Zkušební verze Professional — zbývá {trial.daysRemaining} {trial.daysRemaining === 1 ? 'den' : trial.daysRemaining < 5 ? 'dny' : 'dní'}
+                    Zkušební verze Profi — zbývá {trial.daysRemaining} {trial.daysRemaining === 1 ? 'den' : trial.daysRemaining < 5 ? 'dny' : 'dní'}
                   </p>
                   <p className="text-sm text-white/80">
                     Po skončení bude váš účet přepnut na Free. Vyberte si tarif a udržte si všechny funkce.
@@ -311,7 +296,7 @@ export default function SubscriptionPage() {
                   {currentPlanData.maxUsers ? `${currentPlanData.maxUsers} uživatelů` : 'Neomezeno uživatelů'}
                 </p>
               )}
-              {currentPlan !== 'free' && (
+              {currentPlan !== 'zaklad' && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -443,7 +428,7 @@ export default function SubscriptionPage() {
                       ? 'bg-purple-600 hover:bg-purple-700 text-white'
                       : ''
                   }`}
-                  disabled={isCurrent || plan.id === 'free'}
+                  disabled={isCurrent || plan.id === 'zaklad'}
                 >
                   {getButtonLabel(plan.id, isCurrent, isDowngrade)}
                 </Button>

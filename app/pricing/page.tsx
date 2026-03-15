@@ -70,7 +70,7 @@ const TESTIMONIALS = [
 const FAQ = [
   {
     q: 'Co je zahrnuto ve 30denním trialu?',
-    a: 'Plný přístup k tarifu Professional — uzávěrky, DPH, daňové přehledy, skupiny klientů, 50 AI vytěžování měsíčně a vše ostatní. Po 30 dnech přejdete na Free nebo si vyberete tarif.',
+    a: 'Plný přístup k tarifu Profi — uzávěrky, DPH, daňové přehledy, skupiny klientů, projekty, analytika a vše ostatní. Po 30 dnech přejdete na Základ nebo si vyberete tarif.',
   },
   {
     q: 'Mohu kdykoliv zrušit předplatné?',
@@ -86,7 +86,7 @@ const FAQ = [
   },
   {
     q: 'Kolik firem mohu spravovat na Free tarifu?',
-    a: 'Free tarif umožňuje až 5 firem s 1 uživatelem. Dostanete seznam klientů, time tracking, platby, termíny a 5 zpráv měsíčně.',
+    a: 'Tarif Základ umožňuje až 10 firem s 1 uživatelem. Dostanete seznam klientů, evidenci času, kontrolu plateb, termíny a základní komunikaci.',
   },
 ]
 
@@ -126,7 +126,7 @@ export default function PricingPage() {
       <section className="py-16 sm:py-24 text-center px-4">
         <div className="max-w-3xl mx-auto">
           <Badge className="mb-4 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200">
-            30 dní Professional zdarma
+            30 dní Profi zdarma
           </Badge>
           <h1 className="text-4xl sm:text-5xl font-bold font-display text-gray-900 dark:text-white mb-4 leading-tight">
             Účetní operační systém
@@ -283,7 +283,7 @@ export default function PricingPage() {
             Začněte spravovat klienty efektivněji
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-8">
-            30 dní Professional zdarma. Žádná kreditní karta. Zrušení kdykoliv.
+            30 dní Profi zdarma. Žádná kreditní karta. Zrušení kdykoliv.
           </p>
           <Link href="/auth/register">
             <Button size="lg" className="bg-purple-600 hover:bg-purple-700 text-white px-8">

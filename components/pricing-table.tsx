@@ -9,23 +9,24 @@ import {
   X,
   Crown,
   Building2,
-  Rocket,
   Users,
   FolderOpen,
   Star,
   Gift,
   ArrowRight,
   Sparkles,
+  Briefcase,
 } from 'lucide-react'
 
-type PlanTier = 'free' | 'starter' | 'professional' | 'enterprise'
+type AccountantTier = 'zaklad' | 'profi' | 'business'
+type ClientTier = 'free' | 'plus' | 'premium'
 
 interface PricingPlan {
-  id: PlanTier
+  id: string
   name: string
   price: number
   yearlyPrice: number
-  icon: typeof Rocket
+  icon: typeof Crown
   description: string
   maxCompanies: number | null
   maxUsers: number | null
@@ -34,87 +35,68 @@ interface PricingPlan {
   popular?: boolean
 }
 
-const PLANS: PricingPlan[] = [
+const ACCOUNTANT_PLANS: PricingPlan[] = [
   {
-    id: 'free',
-    name: 'Free',
+    id: 'zaklad',
+    name: 'Základ',
     price: 0,
     yearlyPrice: 0,
     icon: Gift,
-    description: 'Pro vyzkoušení a jednoduché účetnictví',
-    maxCompanies: 5,
+    description: 'Pro začátek a vyzkoušení',
+    maxCompanies: 10,
     maxUsers: 1,
     features: [
-      { name: 'Seznam klientů', included: true },
-      { name: 'Časové výkazy', included: true },
-      { name: 'Přehled plateb', included: true },
+      { name: 'Seznam klientů + profily', included: true },
+      { name: 'Evidence času', included: true },
+      { name: 'Kontrola plateb', included: true },
       { name: 'Termíny a deadlines', included: true },
       { name: 'Základní úkoly', included: true },
-      { name: 'Zprávy klientům', included: true, note: '5/měs' },
-      { name: 'Uzávěrky', included: false },
-      { name: 'DPH přehledy', included: false },
-      { name: 'AI vytěžování', included: false },
+      { name: 'Komunikace', included: true, note: 'omezená' },
+      { name: 'Vytěžování dokladů', included: false },
+      { name: 'Uzávěrky a DPH matice', included: false },
     ],
     support: 'Komunita',
   },
   {
-    id: 'starter',
-    name: 'Starter',
-    price: 490,
-    yearlyPrice: 4900,
-    icon: Rocket,
-    description: 'Pro začínající účetní a malé kanceláře',
-    maxCompanies: 20,
-    maxUsers: 3,
-    features: [
-      { name: 'Vše z Free', included: true },
-      { name: 'Neomezená komunikace', included: true },
-      { name: 'Matice měsíčních uzávěrek', included: true },
-      { name: 'Přehled DPH', included: true },
-      { name: 'AI vytěžování', included: true, note: '10/měs' },
-      { name: 'Daň z příjmu', included: false },
-      { name: 'Skupiny klientů', included: false },
-      { name: 'Klientská fakturace', included: false },
-    ],
-    support: 'E-mail (48h)',
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    price: 1290,
-    yearlyPrice: 12900,
+    id: 'profi',
+    name: 'Profi',
+    price: 699,
+    yearlyPrice: 6990,
     icon: Crown,
     description: 'Pro profesionální účetní kanceláře',
     maxCompanies: 100,
-    maxUsers: 10,
+    maxUsers: 5,
     features: [
-      { name: 'Vše ze Starter', included: true },
-      { name: 'Daň z příjmu', included: true },
+      { name: 'Vše ze Základ', included: true },
       { name: 'Skupiny klientů', included: true },
-      { name: 'Projekty a fáze', included: true },
-      { name: 'Klientská fakturace', included: true },
-      { name: 'AI vytěžování', included: true, note: '50/měs' },
-      { name: 'Případy', included: false },
-      { name: 'Health Score', included: false },
+      { name: 'Projekty + spisy', included: true },
+      { name: 'Plná komunikace', included: true },
+      { name: 'Uzávěrky, DPH matice, daň z příjmů', included: true },
+      { name: 'B2B fakturace klientům', included: true },
+      { name: 'Analytika', included: true },
+      { name: 'Google Drive integrace', included: true },
+      { name: 'Vytěžování', included: false, note: 'per-use addon' },
     ],
-    support: 'E-mail (24h) + telefon',
+    support: 'E-mail (24h)',
     popular: true,
   },
   {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 2990,
-    yearlyPrice: 29900,
+    id: 'business',
+    name: 'Business',
+    price: 1499,
+    yearlyPrice: 14990,
     icon: Building2,
-    description: 'Pro velké kanceláře a daňové poradce',
+    description: 'Pro velké kanceláře — neomezeno',
     maxCompanies: null,
     maxUsers: null,
     features: [
-      { name: 'Vše z Professional', included: true },
-      { name: 'AI vytěžování', included: true, note: '200/měs' },
-      { name: 'Případy a řízení', included: true },
-      { name: 'Pokročilá analytika', included: true },
-      { name: 'Health Score klientů', included: true },
+      { name: 'Vše z Profi', included: true },
+      { name: 'Vytěžování', included: true, note: '100/měs v ceně' },
+      { name: 'Health score klientů', included: true },
+      { name: 'Znalostní báze', included: true },
+      { name: 'Onboarding editor', included: true },
+      { name: 'Admin panel', included: true },
+      { name: 'Raynet CRM sync', included: true },
       { name: 'API přístup', included: true },
       { name: 'Prioritní podpora', included: true },
     ],
@@ -122,15 +104,86 @@ const PLANS: PricingPlan[] = [
   },
 ]
 
+const CLIENT_PLANS: PricingPlan[] = [
+  {
+    id: 'free',
+    name: 'Free',
+    price: 0,
+    yearlyPrice: 0,
+    icon: Gift,
+    description: 'Základní přístup zdarma',
+    maxCompanies: null,
+    maxUsers: null,
+    features: [
+      { name: 'Faktury — neomezeno', included: true },
+      { name: 'Adresář', included: true, note: 'max 5 partnerů' },
+      { name: 'Cestovní deník — základní', included: true },
+      { name: 'Zprávy s účetním', included: true },
+      { name: 'Nahrávání dokladů', included: true },
+      { name: 'Vytěžování dokladů', included: false },
+      { name: 'Spisy', included: false },
+    ],
+    support: 'Komunita',
+  },
+  {
+    id: 'plus',
+    name: 'Plus',
+    price: 199,
+    yearlyPrice: 1990,
+    icon: Briefcase,
+    description: 'Pro aktivní podnikatele',
+    maxCompanies: null,
+    maxUsers: null,
+    features: [
+      { name: 'Vše z Free', included: true },
+      { name: 'Adresář — neomezeno', included: true },
+      { name: 'Cestovní deník — plný', included: true },
+      { name: 'Vytěžování dokladů', included: true, note: '5/měs' },
+      { name: 'Spisy — plný přístup', included: true },
+      { name: 'Rozšířené statistiky', included: false },
+      { name: 'QR platební kódy', included: false },
+    ],
+    support: 'E-mail (48h)',
+    popular: true,
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    price: 399,
+    yearlyPrice: 3990,
+    icon: Crown,
+    description: 'Kompletní sada nástrojů',
+    maxCompanies: null,
+    maxUsers: null,
+    features: [
+      { name: 'Vše z Plus', included: true },
+      { name: 'Vytěžování dokladů', included: true, note: '20/měs' },
+      { name: 'Proforma → faktura → dobropis', included: true },
+      { name: 'QR platební kódy', included: true },
+      { name: 'Rozšířené statistiky', included: true },
+      { name: 'Prioritní podpora', included: true },
+    ],
+    support: 'Prioritní (24h)',
+  },
+]
+
 interface PricingTableProps {
-  onSelectPlan?: (planId: PlanTier, cycle: 'monthly' | 'yearly') => void
-  currentPlan?: PlanTier
+  portal?: 'accountant' | 'client'
+  onSelectPlan?: (planId: string, cycle: 'monthly' | 'yearly') => void
+  currentPlan?: string
   ctaLabel?: string
   showCta?: boolean
 }
 
-export function PricingTable({ onSelectPlan, currentPlan, ctaLabel, showCta = true }: PricingTableProps) {
+export function PricingTable({
+  portal = 'accountant',
+  onSelectPlan,
+  currentPlan,
+  ctaLabel,
+  showCta = true,
+}: PricingTableProps) {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
+  const plans = portal === 'accountant' ? ACCOUNTANT_PLANS : CLIENT_PLANS
 
   return (
     <div className="space-y-8">
@@ -162,8 +215,8 @@ export function PricingTable({ onSelectPlan, currentPlan, ctaLabel, showCta = tr
       </div>
 
       {/* Pricing cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {PLANS.map((plan) => {
+      <div className={`grid grid-cols-1 md:grid-cols-${plans.length} gap-6`}>
+        {plans.map((plan) => {
           const Icon = plan.icon
           const isCurrent = plan.id === currentPlan
           const price = billingCycle === 'monthly'
@@ -222,16 +275,22 @@ export function PricingTable({ onSelectPlan, currentPlan, ctaLabel, showCta = tr
                   )}
                 </div>
 
-                <div className="flex justify-center gap-4 mb-6 text-sm">
-                  <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                    <FolderOpen className="h-4 w-4" />
-                    {plan.maxCompanies ? `${plan.maxCompanies} firem` : 'Neomezeno'}
+                {plan.maxCompanies !== null || plan.maxUsers !== null ? (
+                  <div className="flex justify-center gap-4 mb-6 text-sm">
+                    {plan.maxCompanies !== undefined && (
+                      <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
+                        <FolderOpen className="h-4 w-4" />
+                        {plan.maxCompanies ? `${plan.maxCompanies} firem` : 'Neomezeno'}
+                      </div>
+                    )}
+                    {plan.maxUsers !== undefined && (
+                      <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
+                        <Users className="h-4 w-4" />
+                        {plan.maxUsers ? `${plan.maxUsers} uživat.` : 'Neomezeno'}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                    <Users className="h-4 w-4" />
-                    {plan.maxUsers ? `${plan.maxUsers} uživat.` : 'Neomezeno'}
-                  </div>
-                </div>
+                ) : null}
 
                 <ul className="space-y-2 mb-6 flex-1">
                   {plan.features.map((feature) => (
@@ -266,7 +325,7 @@ export function PricingTable({ onSelectPlan, currentPlan, ctaLabel, showCta = tr
                   >
                     {isCurrent ? (
                       'Aktuální tarif'
-                    ) : plan.id === 'free' ? (
+                    ) : plan.price === 0 ? (
                       'Začít zdarma'
                     ) : (
                       <>
@@ -286,7 +345,7 @@ export function PricingTable({ onSelectPlan, currentPlan, ctaLabel, showCta = tr
       <div className="text-center">
         <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 px-4 py-2 rounded-full">
           <Sparkles className="h-4 w-4 text-purple-500" />
-          Každý nový účet dostane 30 dní Professional zdarma
+          Každý nový účet dostane 30 dní Profi zdarma
         </div>
       </div>
     </div>

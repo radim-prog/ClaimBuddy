@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ trial, monetization_enabled: true })
 }
 
-// POST: Start reverse trial (30 days Professional)
+// POST: Start reverse trial (30 days Profi)
 export async function POST(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) {

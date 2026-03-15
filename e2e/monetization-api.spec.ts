@@ -25,7 +25,7 @@ test.describe('Monetization API — Stripe', () => {
   test('POST /api/stripe/checkout with auth returns URL or config error', async ({ request }) => {
     const response = await request.post('/api/stripe/checkout', {
       headers: { 'Content-Type': 'application/json' },
-      data: JSON.stringify({ tier: 'starter', cycle: 'monthly' }),
+      data: JSON.stringify({ tier: 'profi', cycle: 'monthly' }),
     })
     // 200 with URL (Stripe configured) or 503 (Stripe not configured)
     expect([200, 503]).toContain(response.status())

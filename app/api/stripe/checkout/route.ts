@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
   const origin = request.headers.get('origin') || 'https://app.zajcon.cz'
   const userRole = request.headers.get('x-user-role')
-  const isClient = userRole === 'client' || tier === 'basic' || tier === 'premium'
+  const isClient = userRole === 'client' || tier === 'free' || tier === 'plus' || tier === 'premium'
   const portalType = isClient ? 'client' : 'accountant'
   const basePath = isClient ? '/client/subscription' : '/accountant/admin/subscription'
 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     locale: 'cs',
     metadata: { user_id: userId, plan_tier: tier, portal_type: portalType },
     ...(customerId ? { customer: customerId } : {}),
-    // Reverse trial: 30 days Professional for new users
+    // Reverse trial: 30 days Profi for new users
     ...(!existingCustomerId ? {
       subscription_data: {
         trial_period_days: 30,

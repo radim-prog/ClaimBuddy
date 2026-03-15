@@ -24,7 +24,7 @@ import {
 import { toast } from 'sonner'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 
-type ClientTier = 'free' | 'basic' | 'premium'
+type ClientTier = 'free' | 'plus' | 'premium'
 
 const PLANS: {
   id: ClientTier
@@ -54,34 +54,35 @@ const PLANS: {
     highlight: 'Navždy zdarma',
   },
   {
-    id: 'basic',
-    name: 'Basic',
-    price: 299,
-    yearlyPrice: 2990,
+    id: 'plus',
+    name: 'Plus',
+    price: 199,
+    yearlyPrice: 1990,
     icon: Sparkles,
-    description: 'Pro aktivní podnikatele a firmy',
+    description: 'Pro aktivní podnikatele',
     features: [
       { name: 'Vše z Free', icon: Check },
-      { name: 'Adresář obchodních partnerů', icon: Users },
-      { name: 'Vytěžování dokladů (5/měsíc)', icon: ScanLine },
-      { name: 'Pokročilé faktury (dobropisy, proformy)', icon: Receipt },
-      { name: 'ARES napojení', icon: Sparkles },
+      { name: 'Adresář — neomezeno', icon: Users },
+      { name: 'Cestovní deník — plný', icon: Car },
+      { name: 'Vytěžování dokladů (5/měs)', icon: ScanLine },
+      { name: 'Spisy — plný přístup', icon: FileText },
     ],
     popular: true,
   },
   {
     id: 'premium',
     name: 'Premium',
-    price: 699,
-    yearlyPrice: 6990,
+    price: 399,
+    yearlyPrice: 3990,
     icon: Crown,
-    description: 'Maximální automatizace a AI funkce',
+    description: 'Kompletní sada nástrojů',
     features: [
-      { name: 'Vše z Basic', icon: Check },
-      { name: 'Vytěžování dokladů (20/měsíc)', icon: ScanLine },
-      { name: 'AI Cestovní deník (randomizer)', icon: Car },
-      { name: 'Prioritní podpora', icon: Star },
-      { name: 'Neomezený adresář', icon: Users },
+      { name: 'Vše z Plus', icon: Check },
+      { name: 'Vytěžování dokladů (20/měs)', icon: ScanLine },
+      { name: 'Proforma → faktura → dobropis', icon: Receipt },
+      { name: 'QR platební kódy', icon: Star },
+      { name: 'Rozšířené statistiky', icon: Sparkles },
+      { name: 'Prioritní podpora', icon: Crown },
     ],
   },
 ]

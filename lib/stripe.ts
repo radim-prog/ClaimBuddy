@@ -17,26 +17,41 @@ export function isStripeConfigured(): boolean {
 }
 
 // Price IDs - set in .env.local when Stripe account is ready
+// Accountant portal: zaklad (free), profi, business
+// Client portal: free, plus, premium
 export const STRIPE_PRICES = {
-  starter_monthly: process.env.STRIPE_PRICE_STARTER_MONTHLY || '',
-  starter_yearly: process.env.STRIPE_PRICE_STARTER_YEARLY || '',
-  professional_monthly: process.env.STRIPE_PRICE_PROFESSIONAL_MONTHLY || '',
-  professional_yearly: process.env.STRIPE_PRICE_PROFESSIONAL_YEARLY || '',
-  enterprise_monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY || '',
-  enterprise_yearly: process.env.STRIPE_PRICE_ENTERPRISE_YEARLY || '',
-  // Client portal prices
-  client_basic_monthly: process.env.STRIPE_PRICE_CLIENT_BASIC_MONTHLY || '',
-  client_basic_yearly: process.env.STRIPE_PRICE_CLIENT_BASIC_YEARLY || '',
+  // Accountant tiers
+  profi_monthly: process.env.STRIPE_PRICE_PROFI_MONTHLY || '',
+  profi_yearly: process.env.STRIPE_PRICE_PROFI_YEARLY || '',
+  business_monthly: process.env.STRIPE_PRICE_BUSINESS_MONTHLY || '',
+  business_yearly: process.env.STRIPE_PRICE_BUSINESS_YEARLY || '',
+  // Client tiers
+  client_plus_monthly: process.env.STRIPE_PRICE_CLIENT_PLUS_MONTHLY || '',
+  client_plus_yearly: process.env.STRIPE_PRICE_CLIENT_PLUS_YEARLY || '',
   client_premium_monthly: process.env.STRIPE_PRICE_CLIENT_PREMIUM_MONTHLY || '',
   client_premium_yearly: process.env.STRIPE_PRICE_CLIENT_PREMIUM_YEARLY || '',
+  // Per-use addon prices (one-time or metered)
+  extraction_single: process.env.STRIPE_PRICE_EXTRACTION_SINGLE || '',
+  extraction_bulk: process.env.STRIPE_PRICE_EXTRACTION_BULK || '',
+  extraction_opus: process.env.STRIPE_PRICE_EXTRACTION_OPUS || '',
+  extra_user: process.env.STRIPE_PRICE_EXTRA_USER || '',
+  extra_company: process.env.STRIPE_PRICE_EXTRA_COMPANY || '',
+  randomizer: process.env.STRIPE_PRICE_RANDOMIZER || '',
 } as const
 
-export type PlanTier = 'starter' | 'professional' | 'enterprise' | 'basic' | 'premium'
+// Accountant tiers: zaklad (free), profi, business
+// Client tiers: free, plus, premium
+export type AccountantTier = 'zaklad' | 'profi' | 'business'
+export type ClientTier = 'free' | 'plus' | 'premium'
+export type PlanTier = AccountantTier | ClientTier
 export type BillingCycle = 'monthly' | 'yearly'
 
 export function getStripePriceId(tier: PlanTier, cycle: BillingCycle): string {
+  // Free tiers have no Stripe price
+  if (tier === 'free' || tier === 'zaklad') return ''
+
   // Client tiers use client_ prefix
-  const isClientTier = tier === 'basic' || tier === 'premium'
+  const isClientTier = tier === 'plus' || tier === 'premium'
   const key = isClientTier
     ? `client_${tier}_${cycle}` as keyof typeof STRIPE_PRICES
     : `${tier}_${cycle}` as keyof typeof STRIPE_PRICES
