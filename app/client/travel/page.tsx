@@ -22,6 +22,7 @@ import { TripForm } from '@/components/client/travel/trip-form'
 import { VehicleCard } from '@/components/client/travel/vehicle-card'
 import { VehicleForm } from '@/components/client/travel/vehicle-form'
 import { TravelStatsCards } from '@/components/client/travel/travel-stats'
+import { TravelRandomizer } from '@/components/client/travel/travel-randomizer'
 import { toast } from 'sonner'
 import type { TravelTrip, TravelVehicle, TravelDriver, TravelPlace, TravelStats } from '@/lib/types/travel'
 
@@ -279,6 +280,17 @@ function TravelPageInner() {
                       </div>
                     )}
                   </div>
+
+                  {/* AI Trip Generator */}
+                  {vehicles.length > 0 && (
+                    <TravelRandomizer
+                      companyId={trips[0]?.company_id || ''}
+                      vehicles={vehicles}
+                      drivers={drivers}
+                      currentMonth={monthFilter}
+                      onTripsGenerated={loadData}
+                    />
+                  )}
 
                   <TripList
                     trips={trips}
