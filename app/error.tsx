@@ -13,6 +13,18 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error('Application error:', error)
+    // Report to server for debugging
+    fetch('/api/error-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+        digest: error.digest,
+        url: typeof window !== 'undefined' ? window.location.href : '',
+        source: 'error-boundary',
+      }),
+    }).catch(() => {})
   }, [error])
 
   return (
@@ -32,6 +44,14 @@ export default function Error({
             Kód chyby: {error.digest}
           </p>
         )}
+        <details className="text-left text-xs text-gray-500 mb-4 max-w-full overflow-auto">
+          <summary className="cursor-pointer">Detail chyby</summary>
+          <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-[10px] whitespace-pre-wrap break-all">
+            {error.message}
+            {'\n\n'}
+            {error.stack}
+          </pre>
+        </details>
         <Button
           onClick={() => reset()}
           className="gap-2"

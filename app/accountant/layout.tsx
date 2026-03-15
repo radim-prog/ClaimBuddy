@@ -85,7 +85,9 @@ export default function AccountantLayout({
       <SettingsProvider>
         <AttentionProvider>
           <TutorialProvider>
-            <AccountantLayoutInner>{children}</AccountantLayoutInner>
+            <TooltipProvider delayDuration={0}>
+              <AccountantLayoutInner>{children}</AccountantLayoutInner>
+            </TooltipProvider>
           </TutorialProvider>
         </AttentionProvider>
       </SettingsProvider>
