@@ -1,67 +1,71 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { hashPassword } from '@/lib/auth'
+import crypto from 'crypto'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+export const dynamic = 'force-dynamic'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  // Require SETUP_SECRET (prevents unauthenticated access)
+  const setupSecret = process.env.SETUP_SECRET
+  if (!setupSecret) {
+    return NextResponse.json({ error: 'Setup is disabled' }, { status: 403 })
+  }
+
+  const authHeader = request.headers.get('authorization')
+  if (authHeader !== `Bearer ${setupSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
+    // Check if any admin already exists
+    const { data: existingAdmins } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('role', 'admin')
+      .limit(1)
 
-    // Check if any admin exists in Auth (not just in users table)
-    const { data: authUsers } = await supabase.auth.admin.listUsers()
-    const adminInAuth = authUsers?.users?.some(u =>
-      u.email === 'radim@internal.local' || u.user_metadata?.name === 'Radim'
-    )
-
-    if (adminInAuth) {
+    if (existingAdmins && existingAdmins.length > 0) {
       return NextResponse.json(
-        { error: 'Admin už existuje v Auth' },
+        { error: 'Admin already exists' },
         { status: 400 }
       )
     }
 
-    // Clean up orphaned user record if exists
-    await supabase
-      .from('users')
-      .delete()
-      .eq('email', 'radim@internal.local')
+    // Require password and credentials in body
+    const body = await request.json()
+    const { name, email, login_name, password } = body
 
-    // Create auth user
-    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-      email: 'radim@internal.local',
-      password: 'admin',
-      email_confirm: true,
-      user_metadata: {
-        name: 'Radim'
-      }
-    })
-
-    if (authError || !authUser.user) {
-      console.error('Auth error:', authError)
+    if (!name || !email || !login_name || !password) {
       return NextResponse.json(
-        { error: authError?.message || 'Chyba při vytváření auth uživatele' },
-        { status: 500 }
+        { error: 'name, email, login_name, and password are required' },
+        { status: 400 }
       )
     }
 
-    // Create user record
-    const { error: userError } = await supabase
+    if (password.length < 8) {
+      return NextResponse.json(
+        { error: 'Password must be at least 8 characters' },
+        { status: 400 }
+      )
+    }
+
+    const passwordHash = await hashPassword(password)
+    const userId = crypto.randomUUID()
+
+    const { error: userError } = await supabaseAdmin
       .from('users')
       .insert({
-        id: authUser.user.id,
-        email: 'radim@internal.local',
-        name: 'Radim',
-        role: 'admin'
+        id: userId,
+        email,
+        name,
+        login_name,
+        password_hash: passwordHash,
+        role: 'admin',
       })
 
     if (userError) {
-      console.error('User error:', userError)
+      console.error('User creation error:', userError)
       return NextResponse.json(
         { error: userError.message },
         { status: 500 }
@@ -70,17 +74,11 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      user: {
-        id: authUser.user.id,
-        name: 'Radim',
-        email: 'radim@internal.local'
-      }
+      user: { id: userId, name, email },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Setup error:', error)
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : 'Internal server error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
