@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { isStaffRole } from '@/lib/access-check'
+import { isStaffRole, canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +14,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { companyId } = await params
+  const impersonate = request.headers.get('x-impersonate-company')
+  if (!(await canAccessCompany(userId!, userRole, companyId, impersonate))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const { data } = await supabaseAdmin
     .from('onboarding_questionnaires')
@@ -32,6 +36,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { companyId } = await params
+  const impersonate = request.headers.get('x-impersonate-company')
+  if (!(await canAccessCompany(userId!, userRole, companyId, impersonate))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   // Check if one already exists
   const { data: existing } = await supabaseAdmin
@@ -65,6 +73,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { companyId } = await params
+  const impersonate = request.headers.get('x-impersonate-company')
+  if (!(await canAccessCompany(userId!, userRole, companyId, impersonate))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const { data, error } = await supabaseAdmin
     .from('onboarding_questionnaires')

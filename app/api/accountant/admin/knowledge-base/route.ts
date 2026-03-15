@@ -81,10 +81,16 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { id, ...updates } = body
+    const { id } = body
 
     if (!id) {
       return NextResponse.json({ error: 'Article ID required' }, { status: 400 })
+    }
+
+    const ALLOWED_FIELDS = ['category', 'title', 'content', 'source_url', 'sort_order'] as const
+    const updates: Record<string, unknown> = {}
+    for (const field of ALLOWED_FIELDS) {
+      if (field in body) updates[field] = body[field]
     }
 
     const { data, error } = await supabaseAdmin

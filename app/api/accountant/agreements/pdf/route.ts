@@ -39,11 +39,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Employee is not on DPP/DPČ contract' }, { status: 400 })
     }
 
-    // Fetch company
+    // Fetch company (must not be deleted)
     const { data: company, error: compErr } = await supabaseAdmin
       .from('companies')
       .select('*')
       .eq('id', employee.company_id)
+      .is('deleted_at', null)
       .single()
 
     if (compErr || !company) {

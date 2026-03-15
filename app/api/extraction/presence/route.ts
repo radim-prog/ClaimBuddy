@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { isStaffRole } from '@/lib/access-check'
+import { isStaffRole, canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,9 +30,17 @@ export async function POST(request: Request) {
   if (documentId) {
     const { data: doc } = await supabaseAdmin
       .from('documents')
-      .select('locked_by, locked_at')
+      .select('locked_by, locked_at, company_id')
       .eq('id', documentId)
       .single()
+
+    // Verify document exists and staff can access its company
+    if (!doc) return NextResponse.json({ error: 'Document not found' }, { status: 404 })
+    if (doc.company_id) {
+      const impersonate = request.headers.get('x-impersonate-company')
+      const hasAccess = await canAccessCompany(userId!, userRole, doc.company_id, impersonate)
+      if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     const isStale = doc?.locked_at &&
       (Date.now() - new Date(doc.locked_at).getTime()) > LOCK_THRESHOLD_MS
