@@ -46,3 +46,6 @@ CREDENTIALS.md
 # Claude Code
 .claude-context/
 .claude-backup/
+
+# Playwright auth state
+e2e/.auth/

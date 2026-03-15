@@ -9,9 +9,13 @@ test.describe('API Health Checks', () => {
     expect(data.checks.supabase.status).toBe('ok')
   })
 
-  test('auth/me returns 401 without cookie', async ({ request }) => {
+  test('auth/me returns valid response with cookie', async ({ request }) => {
+    // With storageState (authenticated), should return 200
     const response = await request.get('/api/auth/me')
-    expect(response.status()).toBe(401)
+    expect(response.status()).toBe(200)
+    const body = await response.json()
+    expect(body.name).toBe('Radim')
+    expect(body.role).toBe('admin')
   })
 
   test('matrix API responds', async ({ request }) => {

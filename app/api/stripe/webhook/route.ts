@@ -10,6 +10,11 @@ import type Stripe from 'stripe'
 
 export const dynamic = 'force-dynamic'
 
+// Stripe webhook payloads use raw JSON shapes that differ from SDK types,
+// so we use a minimal interface for the fields we actually access.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type WebhookObject = any
+
 export async function POST(request: NextRequest) {
   const stripe = getStripe()
   if (!stripe) {
@@ -35,65 +40,12 @@ export async function POST(request: NextRequest) {
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session
-        const userId = session.metadata?.user_id
-
-        if (!userId) {
-          console.error('Checkout session missing user_id:', session.id)
-          break
-        }
-
-        // Save Stripe customer ID
-        const customerId = typeof session.customer === 'string' ? session.customer : (session.customer as { id: string } | null)?.id
-        if (customerId) {
-          await setStripeCustomerId(userId, customerId)
-        }
-
-        // Handle credit pack purchase (one-time payment)
-        if (session.metadata?.type === 'credit_purchase') {
-          const credits = parseInt(session.metadata.credits || '0', 10)
-          if (credits > 0) {
-            await addExtraCredits(userId, 'extraction', credits)
-            console.log(`Credits purchased: user=${userId}, credits=${credits}`)
-          }
-          break
-        }
-
-        // Handle subscription checkout
-        const planTier = session.metadata?.plan_tier
-        if (!planTier) {
-          console.error('Checkout session missing plan_tier:', session.id)
-          break
-        }
-
-        const subId = typeof session.subscription === 'string' ? session.subscription : (session.subscription as { id: string } | null)?.id
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const stripeSubscription: any = subId ? await stripe.subscriptions.retrieve(subId) : null
-        const portalType = (session.metadata?.portal_type === 'client' ? 'client' : 'accountant') as 'accountant' | 'client'
-
-        await upsertSubscription({
-          user_id: userId,
-          portal_type: portalType,
-          plan_tier: planTier,
-          status: stripeSubscription?.status === 'trialing' ? 'trialing' : 'active',
-          stripe_customer_id: customerId || undefined,
-          stripe_subscription_id: subId || undefined,
-          billing_cycle: stripeSubscription?.items?.data?.[0]?.price?.recurring?.interval === 'year' ? 'yearly' : 'monthly',
-          trial_end: stripeSubscription?.trial_end
-            ? new Date(stripeSubscription.trial_end * 1000).toISOString().split('T')[0]
-            : null,
-          current_period_end: stripeSubscription?.current_period_end
-            ? new Date(stripeSubscription.current_period_end * 1000).toISOString()
-            : null,
-        })
-
-        console.log(`Checkout completed: user=${userId}, plan=${planTier}`)
+        await handleCheckoutCompleted(stripe, event.data.object as Stripe.Checkout.Session)
         break
       }
 
       case 'customer.subscription.updated': {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const subscription = event.data.object as any
+        const subscription: WebhookObject = event.data.object
         const planTier = subscription.metadata?.plan_tier
         const periodEnd = subscription.current_period_end
           ? new Date(subscription.current_period_end * 1000).toISOString()
@@ -110,8 +62,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'customer.subscription.deleted': {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const subscription = event.data.object as any
+        const subscription: WebhookObject = event.data.object
 
         await updateSubscriptionByStripeId(subscription.id, {
           status: 'cancelled',
@@ -123,28 +74,18 @@ export async function POST(request: NextRequest) {
       }
 
       case 'invoice.payment_failed': {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const invoice = event.data.object as any
-        const subscriptionId = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id
-
+        const subscriptionId = extractSubscriptionId(event.data.object)
         if (subscriptionId) {
-          await updateSubscriptionByStripeId(subscriptionId, {
-            status: 'past_due',
-          })
+          await updateSubscriptionByStripeId(subscriptionId, { status: 'past_due' })
           console.log(`Payment failed for subscription: ${subscriptionId}`)
         }
         break
       }
 
       case 'invoice.paid': {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const invoice = event.data.object as any
-        const subscriptionId = typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id
-
+        const subscriptionId = extractSubscriptionId(event.data.object)
         if (subscriptionId) {
-          await updateSubscriptionByStripeId(subscriptionId, {
-            status: 'active',
-          })
+          await updateSubscriptionByStripeId(subscriptionId, { status: 'active' })
           console.log(`Payment confirmed for subscription: ${subscriptionId}`)
         }
         break
@@ -160,6 +101,68 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ received: true })
+}
+
+async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.Session): Promise<void> {
+  const userId = session.metadata?.user_id
+  if (!userId) {
+    console.error('Checkout session missing user_id:', session.id)
+    return
+  }
+
+  // Save Stripe customer ID
+  const customerId = typeof session.customer === 'string'
+    ? session.customer
+    : (session.customer as { id: string } | null)?.id ?? null
+  if (customerId) {
+    await setStripeCustomerId(userId, customerId)
+  }
+
+  // Handle credit pack purchase (one-time payment)
+  if (session.metadata?.type === 'credit_purchase') {
+    const credits = parseInt(session.metadata.credits || '0', 10)
+    if (credits > 0) {
+      await addExtraCredits(userId, 'extraction', credits)
+      console.log(`Credits purchased: user=${userId}, credits=${credits}`)
+    }
+    return
+  }
+
+  // Handle subscription checkout
+  const planTier = session.metadata?.plan_tier
+  if (!planTier) {
+    console.error('Checkout session missing plan_tier:', session.id)
+    return
+  }
+
+  const subId = typeof session.subscription === 'string'
+    ? session.subscription
+    : (session.subscription as { id: string } | null)?.id ?? null
+  const stripeSubscription: WebhookObject = subId ? await stripe.subscriptions.retrieve(subId) : null
+  const portalType = session.metadata?.portal_type === 'client' ? 'client' : 'accountant'
+
+  await upsertSubscription({
+    user_id: userId,
+    portal_type: portalType,
+    plan_tier: planTier,
+    status: stripeSubscription?.status === 'trialing' ? 'trialing' : 'active',
+    stripe_customer_id: customerId || undefined,
+    stripe_subscription_id: subId || undefined,
+    billing_cycle: stripeSubscription?.items?.data?.[0]?.price?.recurring?.interval === 'year' ? 'yearly' : 'monthly',
+    trial_end: stripeSubscription?.trial_end
+      ? new Date(stripeSubscription.trial_end * 1000).toISOString().split('T')[0]
+      : null,
+    current_period_end: stripeSubscription?.current_period_end
+      ? new Date(stripeSubscription.current_period_end * 1000).toISOString()
+      : null,
+  })
+
+  console.log(`Checkout completed: user=${userId}, plan=${planTier}`)
+}
+
+function extractSubscriptionId(invoice: WebhookObject): string | null {
+  if (typeof invoice.subscription === 'string') return invoice.subscription
+  return invoice.subscription?.id ?? null
 }
 
 function mapStripeStatus(status: string): 'active' | 'trialing' | 'past_due' | 'cancelled' | 'incomplete' {

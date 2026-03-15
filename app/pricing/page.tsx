@@ -6,10 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PricingTable } from '@/components/pricing-table'
 import {
-  ArrowLeft,
   ArrowRight,
-  Shield,
-  Zap,
   BarChart3,
   Clock,
   FileText,
@@ -94,12 +91,9 @@ const FAQ = [
 ]
 
 export default function PricingPage() {
-  const handleSelectPlan = (planId: string) => {
-    if (planId === 'free') {
-      window.location.href = '/auth/register'
-    } else {
-      window.location.href = `/auth/register?plan=${planId}`
-    }
+  function handleSelectPlan(planId: string): void {
+    const params = planId === 'free' ? '' : `?plan=${planId}`
+    window.location.href = `/auth/register${params}`
   }
 
   return (
@@ -196,7 +190,7 @@ export default function PricingPage() {
             Začněte zdarma, upgradujte až budete potřebovat. Žádné skryté poplatky.
           </p>
           <PricingTable
-            onSelectPlan={(planId) => handleSelectPlan(planId)}
+            onSelectPlan={handleSelectPlan}
             ctaLabel="Začít zdarma"
           />
         </div>

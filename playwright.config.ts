@@ -13,8 +13,18 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: 'setup',
+      testMatch: /auth\.setup\.ts/,
       use: { browserName: 'chromium' },
+    },
+    {
+      name: 'chromium',
+      use: {
+        browserName: 'chromium',
+        storageState: 'e2e/.auth/user.json',
+      },
+      dependencies: ['setup'],
+      testIgnore: /auth\.setup\.ts/,
     },
   ],
 })

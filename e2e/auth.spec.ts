@@ -7,23 +7,14 @@ test.describe('Authentication', () => {
     await expect(page.locator('input[name="password"]')).toBeVisible()
   })
 
-  test('login with valid credentials', async ({ page }) => {
-    await page.goto('/auth/login')
-    await page.fill('input[name="username"]', 'radim')
-    await page.fill('input[name="password"]', 'admin123')
-    await page.click('button[type="submit"]')
-
-    // Should redirect to dashboard
-    await page.waitForURL('**/accountant/dashboard', { timeout: 10000 })
-    await expect(page).toHaveURL(/accountant\/dashboard/)
-  })
+  // Login with valid credentials is tested by auth.setup.ts (shared auth state)
+  // Testing it again here would waste a rate-limited login attempt
 
   test('login with invalid credentials shows error', async ({ page }) => {
     await page.goto('/auth/login')
     await page.fill('input[name="username"]', 'invalid')
     await page.fill('input[name="password"]', 'wrongpassword')
     await page.click('button[type="submit"]')
-
     // Should show error, stay on login page
     await expect(page).toHaveURL(/auth\/login/)
   })

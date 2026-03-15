@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getStripe } from '@/lib/stripe'
+import { getStripe, findOrCreateStripeCustomer } from '@/lib/stripe'
 import { getStripeCustomerId, setStripeCustomerId, getUsageCredits } from '@/lib/subscription-store'
-import { findOrCreateStripeCustomer } from '@/lib/stripe'
 import { getUserById } from '@/lib/user-store'
 
 export const dynamic = 'force-dynamic'

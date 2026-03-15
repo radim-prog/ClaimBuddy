@@ -51,35 +51,24 @@ export async function POST(request: NextRequest) {
   const userRole = request.headers.get('x-user-role')
   const isClient = userRole === 'client' || tier === 'basic' || tier === 'premium'
   const portalType = isClient ? 'client' : 'accountant'
-  const successUrl = isClient
-    ? `${origin}/client/subscription?success=true`
-    : `${origin}/accountant/admin/subscription?success=true`
-  const cancelUrl = isClient
-    ? `${origin}/client/subscription?cancelled=true`
-    : `${origin}/accountant/admin/subscription?cancelled=true`
+  const basePath = isClient ? '/client/subscription' : '/accountant/admin/subscription'
 
-  const sessionParams: Record<string, unknown> = {
+  const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: successUrl,
-    cancel_url: cancelUrl,
+    success_url: `${origin}${basePath}?success=true`,
+    cancel_url: `${origin}${basePath}?cancelled=true`,
     locale: 'cs',
     metadata: { user_id: userId, plan_tier: tier, portal_type: portalType },
-  }
-
-  if (customerId) {
-    sessionParams.customer = customerId
-  }
-
-  // Reverse trial: 30 days Professional for new users
-  if (!existingCustomerId) {
-    sessionParams.subscription_data = {
-      trial_period_days: 30,
-      metadata: { user_id: userId, plan_tier: tier },
-    }
-  }
-
-  const session = await stripe.checkout.sessions.create(sessionParams as Parameters<typeof stripe.checkout.sessions.create>[0])
+    ...(customerId ? { customer: customerId } : {}),
+    // Reverse trial: 30 days Professional for new users
+    ...(!existingCustomerId ? {
+      subscription_data: {
+        trial_period_days: 30,
+        metadata: { user_id: userId, plan_tier: tier },
+      },
+    } : {}),
+  })
 
   return NextResponse.json({ url: session.url })
 }

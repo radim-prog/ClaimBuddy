@@ -207,8 +207,34 @@ export default function SubscriptionPage() {
   }
 
   const currentPlanData = PLANS.find(p => p.id === currentPlan)
-  const statusLabel = subscription?.status === 'trialing' ? 'Zkušební verze' : subscription?.status === 'past_due' ? 'Po splatnosti' : 'Aktivní'
-  const statusColor = subscription?.status === 'past_due' ? 'bg-red-500/20 text-red-100 border-red-400/50' : 'bg-green-500/20 text-green-100 border-green-400/50'
+
+  function getButtonLabel(planId: PlanTier, isCurrent: boolean, isDowngrade: boolean): React.ReactNode {
+    if (isCurrent) return 'Aktuální tarif'
+    if (isDowngrade) return 'Kontaktovat podporu'
+    if (planId === 'free') return 'Free'
+    return (
+      <>
+        Vybrat tarif
+        <ArrowRight className="h-4 w-4 ml-2" />
+      </>
+    )
+  }
+
+  let statusLabel: string
+  switch (subscription?.status) {
+    case 'trialing':
+      statusLabel = 'Zkušební verze'
+      break
+    case 'past_due':
+      statusLabel = 'Po splatnosti'
+      break
+    default:
+      statusLabel = 'Aktivní'
+  }
+
+  const statusColor = subscription?.status === 'past_due'
+    ? 'bg-red-500/20 text-red-100 border-red-400/50'
+    : 'bg-green-500/20 text-green-100 border-green-400/50'
 
   return (
     <div className="space-y-8">
@@ -419,16 +445,7 @@ export default function SubscriptionPage() {
                   }`}
                   disabled={isCurrent || plan.id === 'free'}
                 >
-                  {isCurrent ? (
-                    'Aktuální tarif'
-                  ) : isDowngrade ? (
-                    'Kontaktovat podporu'
-                  ) : (
-                    <>
-                      {plan.id === 'free' ? 'Free' : 'Vybrat tarif'}
-                      {plan.id !== 'free' && <ArrowRight className="h-4 w-4 ml-2" />}
-                    </>
-                  )}
+                  {getButtonLabel(plan.id, isCurrent, isDowngrade)}
                 </Button>
               </CardContent>
             </Card>

@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       vehicle,
       fuelLogs: periodFuelLogs,
       existingPlaces: places,
-      existingTrips: existingTrips,
+      existingTrips,
       companyName: company?.name || 'Firma',
       companyAddress: company?.address || null,
       period: { year, month },

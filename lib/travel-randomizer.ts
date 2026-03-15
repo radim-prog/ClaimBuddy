@@ -13,7 +13,6 @@ import {
   TravelFuelLog,
   TravelTrip,
   TravelPlace,
-  PURPOSE_SUGGESTIONS,
   calculateReimbursement,
 } from '@/lib/types/travel'
 
@@ -94,22 +93,19 @@ function getCzechHolidays(year: number): string[] {
     `${year}-12-26`, // 2. svátek vánoční
   ]
 
-  // Easter (approximate — for simplicity use a basic calculation)
-  // Easter Monday is the variable one
+  // Easter Monday and Good Friday are the variable holidays
   const easter = calculateEaster(year)
-  if (easter) {
-    const easterMonday = new Date(easter)
-    easterMonday.setDate(easterMonday.getDate() + 1)
-    const goodFriday = new Date(easter)
-    goodFriday.setDate(goodFriday.getDate() - 2)
-    fixed.push(formatDate(goodFriday))
-    fixed.push(formatDate(easterMonday))
-  }
+  const easterMonday = new Date(easter)
+  easterMonday.setDate(easterMonday.getDate() + 1)
+  const goodFriday = new Date(easter)
+  goodFriday.setDate(goodFriday.getDate() - 2)
+  fixed.push(formatDate(goodFriday))
+  fixed.push(formatDate(easterMonday))
 
   return fixed
 }
 
-function calculateEaster(year: number): Date | null {
+function calculateEaster(year: number): Date {
   // Anonymous Gregorian algorithm
   const a = year % 19
   const b = Math.floor(year / 100)

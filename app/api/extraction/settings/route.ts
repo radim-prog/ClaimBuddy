@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { encrypt } from '@/lib/crypto'
 
 export const dynamic = 'force-dynamic'
+
+const ALLOWED_ROLES = ['admin', 'accountant']
 
 /**
  * GET /api/extraction/settings — Get current extraction settings
@@ -10,6 +13,11 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const userRole = request.headers.get('x-user-role')
+  if (!userRole || !ALLOWED_ROLES.includes(userRole)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   try {
     const { data, error } = await supabaseAdmin
@@ -33,7 +41,8 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    const active = (data || [])[0]
+    const rows = data ?? []
+    const active = rows[0]
 
     return NextResponse.json({
       settings: active ? {
@@ -47,7 +56,7 @@ export async function GET(request: NextRequest) {
         cron_time: active.cron_time || '02:00',
         max_concurrent: active.max_concurrent || 5,
       } : null,
-      all: (data || []).map(s => ({
+      all: rows.map(s => ({
         id: s.id,
         provider: s.provider,
         model: s.model,
@@ -64,6 +73,11 @@ export async function POST(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const userRole = request.headers.get('x-user-role')
+  if (!userRole || !ALLOWED_ROLES.includes(userRole)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   try {
     const body = await request.json()
     const { provider, model, api_key, ocr_api_key, cron_enabled, cron_time, max_concurrent } = body
@@ -72,6 +86,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'provider and model are required' }, { status: 400 })
     }
 
+    // Encrypt API keys before storing
+    const encryptedApiKey = api_key ? encrypt(api_key) : undefined
+    const encryptedOcrKey = ocr_api_key ? encrypt(ocr_api_key) : undefined
+
     // Deactivate all existing
     await supabaseAdmin
       .from('extraction_settings')
@@ -79,13 +97,13 @@ export async function POST(request: NextRequest) {
       .neq('id', '00000000-0000-0000-0000-000000000000') // match all
 
     // Upsert new active config
-    const { data, error } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('extraction_settings')
       .upsert({
         provider,
         model,
-        ...(api_key ? { api_key } : {}),
-        ...(ocr_api_key ? { ocr_api_key } : {}),
+        ...(encryptedApiKey ? { api_key: encryptedApiKey } : {}),
+        ...(encryptedOcrKey ? { ocr_api_key: encryptedOcrKey } : {}),
         is_active: true,
         cron_enabled: cron_enabled ?? false,
         cron_time: cron_time || '02:00',
@@ -94,15 +112,13 @@ export async function POST(request: NextRequest) {
       }, {
         onConflict: 'provider,model',
       })
-      .select()
-      .single()
 
     if (error) {
       console.error('[Extraction Settings] Upsert error:', error)
       return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, settings: data })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('[Extraction Settings] POST Error:', error)
     return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 })

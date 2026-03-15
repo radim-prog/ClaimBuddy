@@ -12,11 +12,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const portalType: 'accountant' | 'client' = userRole === 'client' ? 'client' : 'accountant'
   const monetizationEnabled = process.env.MONETIZATION_ENABLED === 'true'
 
   // If monetization disabled, return enterprise-level access
   if (!monetizationEnabled) {
-    const portalType = userRole === 'client' ? 'client' : 'accountant'
     const topTier = portalType === 'client' ? 'premium' : 'enterprise'
     const limits = await getPlanLimits(portalType, topTier)
 
@@ -34,13 +34,12 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  const portalType = userRole === 'client' ? 'client' : 'accountant'
   const tier = userPlan || 'free'
 
   const [subscription, limits, trial] = await Promise.all([
-    getSubscription(userId, portalType as 'accountant' | 'client'),
+    getSubscription(userId, portalType),
     getPlanLimits(portalType, tier),
-    getTrialStatus(userId, portalType as 'accountant' | 'client'),
+    getTrialStatus(userId, portalType),
   ])
 
   return NextResponse.json({

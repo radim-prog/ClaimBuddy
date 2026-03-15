@@ -89,9 +89,8 @@ async function verifyToken(token: string): Promise<TokenPayload | null> {
 
     // Constant-time comparison (Edge Runtime - no crypto.timingSafeEqual)
     if (signature.length !== expectedSig.length) return null
-    const encoder2 = new TextEncoder()
-    const a = encoder2.encode(signature)
-    const b = encoder2.encode(expectedSig)
+    const a = encoder.encode(signature)
+    const b = encoder.encode(expectedSig)
     let diff = 0
     for (let i = 0; i < a.length; i++) {
       diff |= a[i] ^ b[i]
@@ -185,17 +184,17 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (pathname.startsWith('/client') || pathname.startsWith('/api/client')) {
-    const impersonateCompany = request.cookies.get('impersonate_company')?.value
-    const isImpersonating = impersonateCompany && ['accountant', 'admin', 'assistant'].includes(user.role)
+  const impersonateCompany = request.cookies.get('impersonate_company')?.value
+  const isStaffRole = ['accountant', 'admin', 'assistant'].includes(user.role)
+  const isImpersonating = impersonateCompany && isStaffRole
 
+  if (pathname.startsWith('/client') || pathname.startsWith('/api/client')) {
     if (!isImpersonating && user.role !== 'client' && user.role !== 'admin') {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
       return NextResponse.redirect(new URL('/accountant/dashboard', request.url))
     }
-
   }
 
   // Add user info to headers
@@ -206,9 +205,8 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-user-plan', user.plan || 'free')
 
   // Forward impersonation context if active
-  const impersonateCookie = request.cookies.get('impersonate_company')?.value
-  if (impersonateCookie && ['accountant', 'admin', 'assistant'].includes(user.role)) {
-    requestHeaders.set('x-impersonate-company', impersonateCookie)
+  if (isImpersonating) {
+    requestHeaders.set('x-impersonate-company', impersonateCompany)
   }
 
   return NextResponse.next({
