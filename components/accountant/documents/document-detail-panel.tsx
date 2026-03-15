@@ -249,16 +249,10 @@ export function DocumentDetailPanel({ document: doc, companyId, onApprove, onRej
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {extractable && !doc.ocr_processed && (
+          {extractable && doc.status !== 'approved' && doc.status !== 'booked' && (
             <Button variant="outline" size="sm" onClick={handleExtract} disabled={extracting}>
               {extracting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCcw className="h-4 w-4 mr-1" />}
-              Vytěžit
-            </Button>
-          )}
-          {extractable && doc.ocr_processed && doc.status !== 'extracted' && (
-            <Button variant="outline" size="sm" onClick={handleExtract} disabled={extracting}>
-              {extracting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCcw className="h-4 w-4 mr-1" />}
-              Znovu
+              {doc.ocr_processed ? 'Znovu vytěžit' : 'Vytěžit'}
             </Button>
           )}
           {(doc.status === 'uploaded' || doc.status === 'extracted') && (
@@ -447,15 +441,9 @@ export function DocumentDetailPanel({ document: doc, companyId, onApprove, onRej
         </div>
       )}
 
-      {!ocrData && !doc.ocr_processed && (
-        <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-          <p className="text-sm">{extractable ? 'Dokument nebyl vytěžen' : 'Tento typ dokladu nepodléhá vytěžování'}</p>
-          {extractable && (
-            <Button variant="outline" size="sm" className="mt-2" onClick={handleExtract} disabled={extracting}>
-              {extracting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RotateCcw className="h-4 w-4 mr-1" />}
-              Spustit OCR vytěžení
-            </Button>
-          )}
+      {!ocrData && !doc.ocr_processed && !extractable && (
+        <div className="text-center py-3 text-sm text-gray-400 dark:text-gray-500">
+          Tento typ dokladu nepodléhá vytěžování
         </div>
       )}
 

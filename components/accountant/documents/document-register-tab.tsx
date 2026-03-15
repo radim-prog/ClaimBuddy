@@ -318,8 +318,9 @@ export function DocumentRegisterTab({ companyId, extractableOnly }: DocumentRegi
   }
 
   const handleExtract = async (id: string) => {
-    await fetch(`/api/accountant/companies/${companyId}/documents/${id}/extract`, {
+    await fetch(`/api/accountant/companies/${companyId}/documents/${id}/extract?force=1`, {
       method: 'POST',
+      headers: { 'x-user-id': userId || '' },
     })
     fetchDocuments()
   }

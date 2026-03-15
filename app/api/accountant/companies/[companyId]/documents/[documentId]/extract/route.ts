@@ -29,8 +29,10 @@ export async function POST(
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // If already has OCR data, use it to populate denormalized fields
-    if (doc.ocr_data) {
+    const forceReextract = request.nextUrl.searchParams.get('force') === '1'
+
+    // If already has OCR data and not forcing re-extraction, just populate
+    if (doc.ocr_data && !forceReextract) {
       await populateDenormalizedFields(documentId, doc.ocr_data)
       return NextResponse.json({
         success: true,
@@ -39,7 +41,7 @@ export async function POST(
       })
     }
 
-    // No OCR data - mark as extracting and trigger OCR
+    // Reset stuck documents + mark as extracting
     await supabaseAdmin
       .from('documents')
       .update({
