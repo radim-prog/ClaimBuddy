@@ -75,7 +75,6 @@ export default function ExtractionClientsPage() {
   }, [userId, filter])
 
   useEffect(() => {
-    setLoading(true)
     fetchClients()
   }, [fetchClients])
 

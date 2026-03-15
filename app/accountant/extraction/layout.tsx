@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Users, CheckSquare, ScanLine, FileText, CheckCircle2, Clock, AlertCircle, ShieldCheck, AlertTriangle, XCircle } from 'lucide-react'
@@ -33,6 +33,8 @@ export default function ExtractionLayout({ children }: { children: React.ReactNo
   const [stats, setStats] = useState<Stats | null>(null)
   const [byConfidence, setByConfidence] = useState<ByConfidence | null>(null)
 
+  const statsJsonRef = useRef<string>('')
+
   const fetchStats = useCallback(async () => {
     if (!userId) return
     try {
@@ -41,8 +43,12 @@ export default function ExtractionLayout({ children }: { children: React.ReactNo
       })
       if (res.ok) {
         const data = await res.json()
-        setStats(data.stats)
-        setByConfidence(data.by_confidence || null)
+        const json = JSON.stringify(data)
+        if (json !== statsJsonRef.current) {
+          statsJsonRef.current = json
+          setStats(data.stats)
+          setByConfidence(data.by_confidence || null)
+        }
       }
     } catch {
       // silent

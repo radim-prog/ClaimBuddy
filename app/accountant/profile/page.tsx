@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 export default function AccountantProfilePage() {
-  const { userName, userInitials } = useAccountantUser()
+  const { userName, userEmail, userInitials } = useAccountantUser()
 
   return (
     <div className="space-y-6">
@@ -50,22 +50,22 @@ export default function AccountantProfilePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue="jana@ucetni.cz" className="h-11" />
+                <Input id="email" type="email" defaultValue={userEmail} className="h-11" />
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="phone">Telefon</Label>
-                <Input id="phone" type="tel" defaultValue="+420 777 654 321" className="h-11" />
+                <Input id="phone" type="tel" defaultValue="" placeholder="+420 ..." className="h-11" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ic">IČ (jako OSVČ)</Label>
-                <Input id="ic" defaultValue="12345678" className="h-11" />
+                <Input id="ic" defaultValue="" placeholder="12345678" className="h-11" />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="address">Adresa</Label>
-              <Input id="address" defaultValue="Hlavní 123, Praha 1, 110 00" className="h-11" />
+              <Input id="address" defaultValue="" placeholder="Ulice, Město, PSČ" className="h-11" />
             </div>
           </CardContent>
         </Card>
