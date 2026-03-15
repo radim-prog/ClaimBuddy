@@ -6,13 +6,9 @@ export const dynamic = 'force-dynamic'
 
 // POST: Cron job to fetch new emails from configured inboxes
 export async function POST(request: Request) {
-  // Verify cron secret or auth
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
-  const userId = request.headers.get('x-user-id')
-
-  // Allow either cron secret or authenticated admin
-  if (!userId && (!cronSecret || authHeader !== `Bearer ${cronSecret}`)) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
