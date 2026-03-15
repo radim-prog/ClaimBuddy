@@ -24,7 +24,7 @@ import { TransactionList, type BankTransaction } from '@/components/client/trans
 import { TransactionMatchDialog } from '@/components/client/transaction-match-dialog'
 import { TaxImpactSummary } from '@/components/client/tax-impact-summary'
 import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
-import { CollapsibleSection } from '@/components/ui/collapsible-section'
+import { CollapsibleSection } from '@/components/collapsible-section'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { Suspense } from 'react'
@@ -93,6 +93,7 @@ function DocumentsPageInner() {
         icon={Landmark}
         expanded={bankExpanded}
         onToggle={toggleBank}
+        variant="bordered"
       >
         <BankTab />
       </CollapsibleSection>

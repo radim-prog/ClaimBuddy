@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { FileText, Download, Brain } from 'lucide-react'
-import { CollapsibleSection } from '@/components/ui/collapsible-section'
+import { CollapsibleSection } from '@/components/collapsible-section'
 import { SystemAudit } from '@/components/admin/system-audit'
 import { SystemExport } from '@/components/admin/system-export'
 import { SystemExtraction } from '@/components/admin/system-extraction'
@@ -38,6 +38,7 @@ export default function SystemPage() {
           icon={icon}
           expanded={openSections.has(id)}
           onToggle={() => toggle(id)}
+          variant="bordered"
         >
           <Component />
         </CollapsibleSection>

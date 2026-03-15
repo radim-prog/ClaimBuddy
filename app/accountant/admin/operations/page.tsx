@@ -11,7 +11,7 @@ import {
   Link2,
   Calculator,
 } from 'lucide-react'
-import { CollapsibleSection } from '@/components/ui/collapsible-section'
+import { CollapsibleSection } from '@/components/collapsible-section'
 import { TaskTemplates } from '@/components/admin/task-templates'
 import { OperationsWorkflow } from '@/components/admin/operations-workflow'
 import { OperationsNotifications } from '@/components/admin/operations-notifications'
@@ -57,6 +57,7 @@ export default function OperationsPage() {
           icon={icon}
           expanded={openSections.has(id)}
           onToggle={() => toggle(id)}
+          variant="bordered"
         >
           <Component />
         </CollapsibleSection>

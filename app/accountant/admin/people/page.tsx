@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Users, Network, Calendar } from 'lucide-react'
-import { CollapsibleSection } from '@/components/ui/collapsible-section'
+import { CollapsibleSection } from '@/components/collapsible-section'
 import { PeopleUsers } from '@/components/admin/people-users'
 import { PeopleHierarchy } from '@/components/admin/people-hierarchy'
 import { PeopleSubstitutions } from '@/components/admin/people-substitutions'
@@ -69,6 +69,7 @@ export default function PeoplePage() {
             icon={icon}
             expanded={expanded === id}
             onToggle={() => setExpanded(expanded === id ? '' : id)}
+            variant="bordered"
           >
             <Component />
           </CollapsibleSection>
