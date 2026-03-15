@@ -5,11 +5,6 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Eye, ShieldCheck } from 'lucide-react'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 
-function getCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
-  return match ? decodeURIComponent(match[2]) : null
-}
-
 export function ImpersonationBanner() {
   const router = useRouter()
   const [companyId, setCompanyId] = useState<string | null>(null)
@@ -17,15 +12,14 @@ export function ImpersonationBanner() {
   const { companies } = useClientUser()
 
   useEffect(() => {
-    const id = getCookie('impersonate_company')
-    if (id) setCompanyId(id)
-
-    // Check if current user is admin/accountant browsing client portal
     fetch('/api/auth/me')
       .then(r => r.json())
       .then(data => {
         if (data.role === 'admin' || data.role === 'accountant') {
           setIsAdmin(true)
+        }
+        if (data.impersonate_company) {
+          setCompanyId(data.impersonate_company)
         }
       })
       .catch(() => {})

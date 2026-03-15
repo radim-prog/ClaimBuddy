@@ -110,6 +110,31 @@ async function verifyToken(token: string): Promise<TokenPayload | null> {
   }
 }
 
+async function verifySignedCookie(signedValue: string): Promise<string | null> {
+  const dotIndex = signedValue.lastIndexOf('.')
+  if (dotIndex === -1) return null
+  const value = signedValue.substring(0, dotIndex)
+  const signature = signedValue.substring(dotIndex + 1)
+  try {
+    const encoder = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+      'raw', encoder.encode(AUTH_SECRET),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    )
+    const sigBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(value))
+    const expectedHex = Array.from(new Uint8Array(sigBuffer))
+      .map(b => b.toString(16).padStart(2, '0')).join('')
+    if (signature.length !== expectedHex.length) return null
+    const a = encoder.encode(signature)
+    const b = encoder.encode(expectedHex)
+    let diff = 0
+    for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
+    return diff === 0 ? value : null
+  } catch {
+    return null
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -184,9 +209,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  const impersonateCompany = request.cookies.get('impersonate_company')?.value
+  const rawImpersonate = request.cookies.get('impersonate_company')?.value
   const isStaffRole = ['accountant', 'admin', 'assistant'].includes(user.role)
-  const isImpersonating = impersonateCompany && isStaffRole
+  let impersonateCompany: string | undefined
+  if (rawImpersonate && isStaffRole) {
+    impersonateCompany = await verifySignedCookie(rawImpersonate) || undefined
+  }
+  const isImpersonating = !!impersonateCompany
 
   if (pathname.startsWith('/client') || pathname.startsWith('/api/client')) {
     if (!isImpersonating && user.role !== 'client' && user.role !== 'admin') {
@@ -206,7 +235,7 @@ export async function middleware(request: NextRequest) {
 
   // Forward impersonation context if active
   if (isImpersonating) {
-    requestHeaders.set('x-impersonate-company', impersonateCompany)
+    requestHeaders.set('x-impersonate-company', impersonateCompany as string)
   }
 
   return NextResponse.next({

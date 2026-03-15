@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    const impersonateCompany = request.headers.get('x-impersonate-company') || null
+
     return NextResponse.json({
       id: user.id,
       name: user.name,
@@ -22,6 +24,7 @@ export async function GET(request: NextRequest) {
       role: user.role,
       login_name: user.login_name,
       permissions: user.permissions,
+      impersonate_company: impersonateCompany,
     })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
