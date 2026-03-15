@@ -33,10 +33,7 @@ import {
   SubstitutionRule,
   UserRole,
 } from '@/lib/types/admin'
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('cs-CZ')
-}
+import { formatDate } from '@/lib/utils'
 
 function getSubstitutionTypeLabel(type: SubstitutionRule['type']) {
   switch (type) {

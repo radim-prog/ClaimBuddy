@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus, Trash2, ListPlus } from 'lucide-react'
+import { formatCurrencyDetailed as formatCurrency } from '@/lib/utils'
 
 export interface InvoiceItemRow {
   id: string
@@ -27,9 +28,6 @@ function calcRow(item: InvoiceItemRow) {
   return { base: Math.round(base * 100) / 100, vat: Math.round(vat * 100) / 100, total: Math.round((base + vat) * 100) / 100 }
 }
 
-function formatCurrency(n: number) {
-  return new Intl.NumberFormat('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
-}
 
 export function InvoiceItemsEditor({ items, onChange, defaultVatRate = 21, onOpenTemplates }: InvoiceItemsEditorProps) {
   const addRow = () => {

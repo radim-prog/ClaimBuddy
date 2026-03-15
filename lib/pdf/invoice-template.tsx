@@ -14,6 +14,7 @@ import {
 } from '@react-pdf/renderer'
 import type { Invoice } from '@/lib/mock-data'
 import type { SupplierInfo } from '@/lib/invoice-config'
+import { formatDate } from '@/lib/utils'
 
 // Register Czech-supporting font
 const fontDir = path.join(process.cwd(), 'public', 'fonts')
@@ -36,13 +37,6 @@ function formatAmount(amount: number): string {
   })
 }
 
-// Format date Czech style: 23.02.2026
-function formatDate(dateStr: string): string {
-  if (!dateStr) return '—'
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  return d.toLocaleDateString('cs-CZ')
-}
 
 // Format IBAN with spaces: CZ65 0800 0000 0020 0001 4539
 function formatIBAN(iban: string): string {

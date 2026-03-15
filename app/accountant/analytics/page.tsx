@@ -17,6 +17,7 @@ import {
   Wallet,
   CircleDollarSign,
 } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
 
 interface RevenueData {
   year: number
@@ -76,9 +77,7 @@ const EVENT_COLORS: Record<string, string> = {
   fee_changed: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400',
 }
 
-function formatKc(n: number) {
-  return n.toLocaleString('cs', { maximumFractionDigits: 0 }) + ' Kc'
-}
+const formatKc = formatCurrency
 
 export default function AnalyticsDashboard() {
   const [data, setData] = useState<RevenueData | null>(null)

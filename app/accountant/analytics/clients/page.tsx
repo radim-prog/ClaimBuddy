@@ -14,6 +14,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { formatCurrency } from '@/lib/utils'
 
 interface ClientRow {
   id: string
@@ -42,9 +43,6 @@ const STATUS_COLORS: Record<string, string> = {
   onboarding: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
 }
 
-function formatCurrency(n: number) {
-  return n.toLocaleString('cs', { maximumFractionDigits: 0 }) + ' Kč'
-}
 
 export default function ClientsRevenuePage() {
   const [companies, setCompanies] = useState<ClientRow[]>([])

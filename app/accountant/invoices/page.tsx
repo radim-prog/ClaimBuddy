@@ -30,6 +30,7 @@ import {
   Plus,
 } from 'lucide-react'
 import type { Invoice, InvoiceStatus } from '@/lib/mock-data'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
 
 type FilterStatus = 'all' | InvoiceStatus
@@ -57,21 +58,6 @@ const statusConfig: Record<InvoiceStatus, { label: string; color: string; icon: 
   },
 }
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('cs-CZ', {
-    style: 'currency',
-    currency: 'CZK',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
-
-function formatDate(dateStr: string) {
-  if (!dateStr) return '—'
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  return d.toLocaleDateString('cs-CZ')
-}
 
 export default function InvoicesListPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])

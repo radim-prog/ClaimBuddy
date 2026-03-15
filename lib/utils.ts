@@ -5,13 +5,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Format currency (CZK)
+// Format currency (CZK, no decimals)
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('cs-CZ', {
     style: 'currency',
     currency: 'CZK',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+// Format currency with 2 decimal places (for invoices/items)
+export function formatCurrencyDetailed(amount: number): string {
+  return new Intl.NumberFormat('cs-CZ', {
+    style: 'currency',
+    currency: 'CZK',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount)
 }
 

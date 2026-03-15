@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import type { Invoice, InvoiceStatus } from '@/lib/mock-data'
 import type { SupplierInfo } from '@/lib/invoice-config'
+import { formatCurrencyDetailed as formatCurrency, formatDate } from '@/lib/utils'
 import { PaymentQR } from '@/components/invoice/payment-qr'
 import { SendInvoiceDialog } from '@/components/invoice/send-invoice-dialog'
 import { toast } from 'sonner'
@@ -34,21 +35,6 @@ const statusConfig: Record<InvoiceStatus, { label: string; color: string; icon: 
   cancelled: { label: 'Storno', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300', icon: AlertTriangle },
 }
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat('cs-CZ', {
-    style: 'currency',
-    currency: 'CZK',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)
-}
-
-function formatDate(dateStr: string) {
-  if (!dateStr) return '—'
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  return d.toLocaleDateString('cs-CZ')
-}
 
 export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
