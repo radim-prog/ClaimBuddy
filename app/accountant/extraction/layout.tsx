@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { Users, CheckSquare, ScanLine, FileText, CheckCircle2, Clock, AlertCircle, ShieldCheck, AlertTriangle, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { useExtractionPresence } from '@/lib/hooks/use-extraction-presence'
+import { PresenceBar } from '@/components/extraction/presence-bar'
 
 const tabs = [
   { name: 'Klienti', href: '/accountant/extraction/clients', icon: Users },
@@ -32,6 +34,16 @@ export default function ExtractionLayout({ children }: { children: React.ReactNo
   const { userId } = useAccountantUser()
   const [stats, setStats] = useState<Stats | null>(null)
   const [byConfidence, setByConfidence] = useState<ByConfidence | null>(null)
+
+  // Derive page from pathname for presence tracking
+  const presencePage = pathname.includes('/verify') ? 'verify'
+    : pathname.includes('/clients') ? 'clients'
+    : pathname.includes('/settings') ? 'settings' : 'verify'
+
+  const { otherUsers } = useExtractionPresence({
+    userId,
+    page: presencePage,
+  })
 
   const statsJsonRef = useRef<string>('')
 
@@ -137,7 +149,11 @@ export default function ExtractionLayout({ children }: { children: React.ReactNo
           )}
         </div>
 
-        {/* Right: KPI strip */}
+        {/* Right: presence + KPI strip */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <PresenceBar users={otherUsers} />
+          {otherUsers.length > 0 && stats && <div className="w-px h-4 bg-border" />}
+        </div>
         {stats && (
           <div className="hidden md:flex items-center gap-1 flex-shrink-0">
             {kpiItems.map((kpi, i) => {

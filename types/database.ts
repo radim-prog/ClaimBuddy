@@ -151,6 +151,10 @@ export interface Document {
   reviewed_at?: string;
   rejection_reason?: string;
 
+  // Soft locking
+  locked_by?: string; // FK → users/{id}
+  locked_at?: string;
+
   uploaded_by: string; // FK → users/{id}
   uploaded_at: string;
   upload_source: 'web' | 'mobile' | 'whatsapp' | 'api';

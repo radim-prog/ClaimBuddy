@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Check,
   CheckCheck,
+  CheckCircle,
   AlertTriangle,
   FileText,
   Loader2,
@@ -26,7 +27,12 @@ import {
   ArrowLeft,
   BookOpen,
   ChevronDown,
+  Clock,
 } from 'lucide-react'
+import { ExtractionStep, STEP_LABELS } from '@/lib/extraction-types'
+import { cn } from '@/lib/utils'
+import { useExtractionPresence } from '@/lib/hooks/use-extraction-presence'
+import { LockIndicator } from '@/components/extraction/presence-bar'
 
 type VerifyDocument = {
   id: string
@@ -103,6 +109,7 @@ function setNestedValue(obj: any, path: string[], value: any): any {
 }
 
 function getDocCategory(doc: VerifyDocument): 'ok' | 'warnings' | 'errors' {
+  if (doc.status === 'extracting' || doc.ocr_status === 'processing') return 'errors'
   if (doc.ocr_status === 'error') return 'errors'
   const score = doc.ocr_data?.confidence_score
   if (score === undefined || score === null || score < 50) return 'errors'
@@ -146,6 +153,12 @@ function VerificationPageContent() {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([])
   const [loadingPredkontace, setLoadingPredkontace] = useState(false)
   const [showPredkontace, setShowPredkontace] = useState(false)
+  const [extractionJob, setExtractionJob] = useState<{
+    documentId: string
+    currentStep: ExtractionStep
+    steps: Array<{ step: ExtractionStep; startedAt: number; completedAt?: number }>
+    status: string
+  } | null>(null)
 
   // Auto-hide sidebar on enter, restore on leave
   useEffect(() => {
@@ -186,6 +199,13 @@ function VerificationPageContent() {
   }), [allDocuments])
 
   const currentDoc = documents[currentIndex]
+
+  // Presence tracking with document-level locking
+  const { documentViewers, lockConflict } = useExtractionPresence({
+    userId,
+    documentId: currentDoc?.id,
+    page: 'verify',
+  })
 
   const fetchDocuments = useCallback(async () => {
     if (!userId) return
@@ -286,6 +306,106 @@ function VerificationPageContent() {
       } catch { /* ignore */ }
     }
     load()
+  }, [currentDoc?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-generate predkontace after extraction completes
+  const autoGeneratePredkontace = useCallback(async (documentId: string) => {
+    try {
+      const res = await fetch('/api/documents/predkontace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ document_id: documentId }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const entries = data.suggested_entries || []
+        if (entries.length > 0) {
+          setJournalEntries(entries)
+          setShowPredkontace(true)
+        }
+      }
+    } catch { /* silent */ }
+  }, [])
+
+  const cancelExtraction = useCallback(() => {
+    setExtractionJob(null)
+    setReextracting(false)
+    toast.info('Vytěžování přerušeno')
+  }, [])
+
+  // Polling for extraction job progress
+  useEffect(() => {
+    if (!extractionJob || extractionJob.status === 'completed' || !userId) return
+    let missedPolls = 0
+    const startedAt = Date.now()
+    const interval = setInterval(async () => {
+      // Timeout after 3 minutes — extraction is stuck
+      if (Date.now() - startedAt > 180_000) {
+        clearInterval(interval)
+        setExtractionJob(null)
+        toast.error('Vytěžování vypršelo (timeout)')
+        return
+      }
+      try {
+        const res = await fetch('/api/extraction/queue', {
+          headers: { 'x-user-id': userId },
+        })
+        if (!res.ok) {
+          missedPolls++
+          // After 5 failed polls (10s), give up — server likely restarted
+          if (missedPolls >= 5) {
+            clearInterval(interval)
+            setExtractionJob(null)
+            toast.error('Nelze zjistit stav vytěžování')
+          }
+          return
+        }
+        missedPolls = 0
+        const data = await res.json()
+        const job = data.jobs?.find((j: any) => j.documentId === extractionJob.documentId)
+
+        const handleCompletion = (docId: string) => {
+          setTimeout(() => {
+            fetchDocuments()
+            autoGeneratePredkontace(docId)
+            setTimeout(() => setExtractionJob(null), 1000)
+          }, 2000)
+        }
+
+        if (job) {
+          setExtractionJob(prev => prev ? {
+            ...prev,
+            currentStep: job.currentStep || prev.currentStep,
+            steps: job.steps || prev.steps,
+            status: job.status,
+          } : null)
+          if (job.status === 'completed' || job.status === 'error') {
+            clearInterval(interval)
+            if (job.status === 'completed') {
+              handleCompletion(job.documentId)
+            } else {
+              toast.error('Vytěžování selhalo')
+              setTimeout(() => setExtractionJob(null), 3000)
+            }
+          }
+        } else {
+          // Job not found in queue — server restarted or job already done
+          clearInterval(interval)
+          // Refresh documents to see if data changed
+          fetchDocuments()
+          setExtractionJob(null)
+          toast.info('Vytěžování dokončeno nebo bylo přerušeno')
+        }
+      } catch { /* ignore */ }
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [extractionJob?.documentId, extractionJob?.status, userId, fetchDocuments, autoGeneratePredkontace])
+
+  // Reset extraction job when navigating to a different document
+  useEffect(() => {
+    if (extractionJob && currentDoc && extractionJob.documentId !== currentDoc.id) {
+      setExtractionJob(null)
+    }
   }, [currentDoc?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleGeneratePredkontace = async () => {
@@ -432,10 +552,13 @@ function VerificationPageContent() {
         }),
       })
       if (res.ok) {
-        toast.success('Doklad odeslán k opětovnému vytěžení')
-        const newDocs = allDocuments.filter(d => d.id !== currentDoc.id)
-        setAllDocuments(newDocs)
-        if (currentIndex >= documents.length - 1) setCurrentIndex(Math.max(0, currentIndex - 1))
+        toast.success('Vytěžování zahájeno...')
+        setExtractionJob({
+          documentId: currentDoc.id,
+          currentStep: 'queued',
+          steps: [],
+          status: 'processing',
+        })
       } else {
         toast.error('Chyba při odesílání')
       }
@@ -666,6 +789,20 @@ function VerificationPageContent() {
             </div>
           </div>
 
+          {/* Lock conflict / viewers indicator */}
+          <LockIndicator
+            conflict={lockConflict}
+            viewers={documentViewers}
+            onForceUnlock={() => {
+              // Force unlock by sending a heartbeat (server will override stale lock)
+              fetch('/api/extraction/presence', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ documentId: currentDoc?.id, page: 'verify', force: true }),
+              }).catch(() => {})
+            }}
+          />
+
           {/* Split screen — 2:1 ratio */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-3 min-h-0">
             {/* LEFT: Document viewer */}
@@ -724,6 +861,119 @@ function VerificationPageContent() {
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                {/* Stuck extraction banner — document has extracting status in DB but no active job */}
+                {currentDoc?.status === 'extracting' && !(extractionJob && extractionJob.documentId === currentDoc?.id) && (
+                  <div className="mx-2 mt-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 p-3">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                      <span className="text-xs font-medium text-amber-800 dark:text-amber-300 flex-1">
+                        Vytěžování se zaseklo
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 mb-2">
+                      Dokument zůstal ve stavu &quot;vytěžuje se&quot;. Můžete ho resetovat a spustit znovu.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs border-amber-400 text-amber-700 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-300"
+                        onClick={async () => {
+                          try {
+                            const res = await fetch('/api/extraction/reset', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
+                              body: JSON.stringify({ documentId: currentDoc.id }),
+                            })
+                            if (res.ok) {
+                              toast.success('Dokument resetován')
+                              fetchDocuments()
+                            } else {
+                              toast.error('Chyba při resetování')
+                            }
+                          } catch {
+                            toast.error('Chyba připojení')
+                          }
+                        }}
+                      >
+                        <RotateCw className="h-3 w-3 mr-1" />
+                        Resetovat
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white"
+                        onClick={handleReextract}
+                        disabled={reextracting}
+                      >
+                        {reextracting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                        Znovu vytěžit
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Extraction progress overlay */}
+                {extractionJob && extractionJob.documentId === currentDoc?.id && (
+                  <div className={cn(
+                    'mx-2 mt-2 rounded-lg border p-3',
+                    extractionJob.status === 'completed'
+                      ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800'
+                      : 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800'
+                  )}>
+                    <div className="flex items-center gap-2 mb-2">
+                      {extractionJob.status === 'completed' ? (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                      )}
+                      <span className="text-xs font-medium flex-1">
+                        {extractionJob.status === 'completed' ? 'Vytěžení dokončeno' : 'Probíhá vytěžování...'}
+                      </span>
+                      {extractionJob.status !== 'completed' && (
+                        <button
+                          onClick={cancelExtraction}
+                          className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors"
+                          title="Zrušit vytěžování"
+                        >
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      {(['downloading', 'ocr', 'ai_extraction', 'ai_verification', 'saving'] as ExtractionStep[]).map((step) => {
+                        const stepRecord = extractionJob.steps.find(s => s.step === step)
+                        const isCurrent = extractionJob.currentStep === step
+                        const isCompleted = stepRecord?.completedAt != null
+                        const isWaiting = !stepRecord && !isCurrent
+
+                        return (
+                          <div key={step} className="flex items-center gap-2 text-[11px]">
+                            {isCompleted ? (
+                              <CheckCircle className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                            ) : isCurrent ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600 flex-shrink-0" />
+                            ) : (
+                              <Clock className="h-3.5 w-3.5 text-muted-foreground/40 flex-shrink-0" />
+                            )}
+                            <span className={cn(
+                              isCompleted ? 'text-green-700 dark:text-green-400' :
+                              isCurrent ? 'text-blue-700 dark:text-blue-400 font-medium' :
+                              'text-muted-foreground/50'
+                            )}>
+                              {STEP_LABELS[step]}
+                            </span>
+                            {stepRecord?.completedAt && stepRecord?.startedAt && (
+                              <span className="text-muted-foreground/60 ml-auto tabular-nums">
+                                {Math.round((stepRecord.completedAt - stepRecord.startedAt) / 1000)}s
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="p-2 space-y-1.5">
                   {VERIFY_FIELDS.map((field) => {
                     const value = getNestedValue(editedData, field.path)
