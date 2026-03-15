@@ -7,6 +7,11 @@ export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const userRole = request.headers.get('x-user-role')
+  if (userRole !== 'accountant' && userRole !== 'admin' && userRole !== 'assistant') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const companyId = searchParams.get('companyId')

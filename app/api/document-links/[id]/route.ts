@@ -10,6 +10,11 @@ export async function DELETE(
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const userRole = request.headers.get('x-user-role')
+  if (userRole !== 'accountant' && userRole !== 'admin' && userRole !== 'assistant') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   try {
     await deleteDocumentLink(params.id)
     return NextResponse.json({ success: true })

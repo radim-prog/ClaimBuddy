@@ -8,6 +8,11 @@ export async function POST(request: NextRequest) {
   const userName = request.headers.get('x-user-name') || 'Účetní'
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const userRole = request.headers.get('x-user-role')
+  if (userRole !== 'accountant' && userRole !== 'admin' && userRole !== 'assistant') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   try {
     const body = await request.json()
     const { entity_type, entity_id, document_id, link_type } = body

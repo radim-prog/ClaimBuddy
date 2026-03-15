@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { isStaffRole, canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +23,16 @@ export async function GET(
 
   if (error || !doc) {
     return NextResponse.json({ error: 'Document not found' }, { status: 404 })
+  }
+
+  // Verify user has access to this document's company
+  const userRole = request.headers.get('x-user-role')
+  if (!isStaffRole(userRole)) {
+    const impersonateCompany = request.headers.get('x-impersonate-company')
+    const hasAccess = await canAccessCompany(userId, userRole, doc.company_id, impersonateCompany)
+    if (!hasAccess) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
   }
 
   if (!doc.storage_path) {

@@ -9,8 +9,16 @@ import {
   markAllAsReadInChat,
   getUnreadCountByCompany,
 } from '@/lib/message-store-db'
+import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
+
+async function verifyCompanyAccess(request: NextRequest, companyId: string): Promise<boolean> {
+  const userId = request.headers.get('x-user-id')!
+  const userRole = request.headers.get('x-user-role')
+  const impersonateCompany = request.headers.get('x-impersonate-company')
+  return canAccessCompany(userId, userRole, companyId, impersonateCompany)
+}
 
 export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
@@ -23,6 +31,10 @@ export async function GET(request: NextRequest) {
 
     if (!companyId) {
       return NextResponse.json({ error: 'company_id is required' }, { status: 400 })
+    }
+
+    if (!await verifyCompanyAccess(request, companyId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     if (chatId) {
@@ -56,6 +68,9 @@ export async function POST(request: NextRequest) {
       if (!company_id || !subject?.trim()) {
         return NextResponse.json({ error: 'company_id and subject are required' }, { status: 400 })
       }
+      if (!await verifyCompanyAccess(request, company_id)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
       const conversation = await createConversation({
         company_id,
         subject: subject.trim(),
@@ -71,6 +86,9 @@ export async function POST(request: NextRequest) {
     }
     if (!content?.trim() && (!attachments || attachments.length === 0)) {
       return NextResponse.json({ error: 'Content is required' }, { status: 400 })
+    }
+    if (!await verifyCompanyAccess(request, company_id)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const message = await addMessage({
@@ -96,7 +114,12 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { action, chat_id } = body
+    const { action, chat_id, company_id } = body
+
+    // Verify company access if company_id is provided
+    if (company_id && !await verifyCompanyAccess(request, company_id)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     switch (action) {
       case 'complete_conversation':

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +23,16 @@ export async function POST(request: NextRequest) {
     }
     if (!companyId && !taskId) {
       return NextResponse.json({ error: 'Either companyId or taskId is required' }, { status: 400 })
+    }
+
+    // Verify user has access to the target company
+    if (companyId) {
+      const userRole = request.headers.get('x-user-role')
+      const impersonateCompany = request.headers.get('x-impersonate-company')
+      const hasAccess = await canAccessCompany(userId, userRole, companyId, impersonateCompany)
+      if (!hasAccess) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
     }
 
     if (file.size > 20 * 1024 * 1024) {
