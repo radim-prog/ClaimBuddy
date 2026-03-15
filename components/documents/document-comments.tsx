@@ -28,8 +28,9 @@ export function DocumentComments({ documentId, userRole, companyId, userId }: Do
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [newComment, setNewComment] = useState('')
-  const [isInternal, setIsInternal] = useState(false)
+  const [internalComment, setInternalComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [submittingInternal, setSubmittingInternal] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
 
@@ -53,22 +54,23 @@ export function DocumentComments({ documentId, userRole, companyId, userId }: Do
 
   useEffect(() => { fetchComments() }, [fetchComments])
 
-  const handleSubmit = async () => {
-    if (!newComment.trim() || submitting) return
-    setSubmitting(true)
+  const submitComment = async (content: string, isInternal: boolean) => {
+    if (!content.trim()) return
+    const setLoading = isInternal ? setSubmittingInternal : setSubmitting
+    setLoading(true)
     try {
       const res = await fetch(apiBase, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newComment.trim(), is_internal: userRole === 'accountant' ? isInternal : false }),
+        body: JSON.stringify({ content: content.trim(), is_internal: userRole === 'accountant' ? isInternal : false }),
       })
       if (res.ok) {
-        setNewComment('')
-        setIsInternal(false)
+        if (isInternal) setInternalComment('')
+        else setNewComment('')
         await fetchComments()
       }
     } finally {
-      setSubmitting(false)
+      setLoading(false)
     }
   }
 
@@ -121,7 +123,7 @@ export function DocumentComments({ documentId, userRole, companyId, userId }: Do
       {comments.map(comment => (
         <div
           key={comment.id}
-          className={`rounded-md px-3 py-2 text-sm ${
+          className={`group rounded-md px-3 py-2 text-sm ${
             comment.is_internal
               ? 'bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30'
               : 'bg-white dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600'
@@ -182,39 +184,79 @@ export function DocumentComments({ documentId, userRole, companyId, userId }: Do
         </div>
       ))}
 
-      {/* New comment input */}
-      <div className="flex items-start gap-2">
-        <div className="flex-1">
-          <textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder={userRole === 'accountant' ? 'Poznámka k dokladu...' : 'Napište komentář...'}
-            className="w-full px-3 py-2 text-sm border rounded-md resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-            rows={2}
-            onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit() }}
-          />
-          {userRole === 'accountant' && (
-            <label className="flex items-center gap-1.5 mt-1 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isInternal}
-                onChange={(e) => setIsInternal(e.target.checked)}
-                className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-              />
-              <Lock className="h-3 w-3 text-amber-500" />
-              <span className="text-xs text-gray-500 dark:text-gray-400">Interní poznámka (neviditelná pro klienta)</span>
+      {/* New comment input — side by side for accountant */}
+      {userRole === 'accountant' ? (
+        <div className="grid grid-cols-2 gap-2">
+          {/* Left: client-visible comment */}
+          <div>
+            <label className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 block">Pro klienta</label>
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Poznámka pro klienta..."
+              className="w-full px-3 py-2 text-sm border rounded-md resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+              rows={2}
+              onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submitComment(newComment, false) }}
+            />
+            <Button
+              size="sm"
+              onClick={() => submitComment(newComment, false)}
+              disabled={!newComment.trim() || submitting}
+              className="mt-1 w-full"
+            >
+              {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Send className="h-3.5 w-3.5 mr-1" />}
+              Odeslat
+            </Button>
+          </div>
+
+          {/* Right: internal comment */}
+          <div>
+            <label className="text-[11px] font-medium text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1">
+              <Lock className="h-3 w-3" /> Interní
             </label>
-          )}
+            <textarea
+              value={internalComment}
+              onChange={(e) => setInternalComment(e.target.value)}
+              placeholder="Interní poznámka..."
+              className="w-full px-3 py-2 text-sm border border-amber-200 dark:border-amber-800/50 rounded-md resize-none bg-amber-50/50 dark:bg-amber-900/10 dark:text-white dark:placeholder-gray-400"
+              rows={2}
+              onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submitComment(internalComment, true) }}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => submitComment(internalComment, true)}
+              disabled={!internalComment.trim() || submittingInternal}
+              className="mt-1 w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+            >
+              {submittingInternal ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Lock className="h-3.5 w-3.5 mr-1" />}
+              Interní
+            </Button>
+          </div>
         </div>
-        <Button
-          size="sm"
-          onClick={handleSubmit}
-          disabled={!newComment.trim() || submitting}
-          className="mt-0.5"
-        >
-          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        </Button>
-      </div>
+      ) : (
+        /* Client role: single textarea */
+        <div className="flex items-start gap-2">
+          <div className="flex-1">
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Napište komentář..."
+              className="w-full px-3 py-2 text-sm border rounded-md resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+              rows={2}
+              onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submitComment(newComment, false) }}
+            />
+          </div>
+          <Button
+            size="sm"
+            onClick={() => submitComment(newComment, false)}
+            disabled={!newComment.trim() || submitting}
+            className="mt-0.5"
+          >
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

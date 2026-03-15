@@ -197,3 +197,202 @@ export function generatePohodaXml(invoices: Invoice[], supplierCompany?: Company
 ${dataPackItems}
 </dat:dataPack>`
 }
+
+// --- Received invoices (extracted documents) ---
+
+export type ExtractedDocumentForExport = {
+  id: string
+  document_number: string | null
+  variable_symbol: string | null
+  constant_symbol: string | null
+  date_issued: string | null
+  date_due: string | null
+  date_tax: string | null
+  supplier_name: string | null
+  supplier_ico: string | null
+  supplier_dic: string | null
+  supplier_address: string | null
+  supplier_bank_account: string | null
+  total_without_vat: number | null
+  total_vat: number | null
+  total_with_vat: number | null
+  currency: string
+  payment_type: string | null
+  items: Array<{
+    description: string; quantity: number; unit: string
+    unit_price: number; vat_rate: number | string
+    total_without_vat: number; total_with_vat: number
+  }>
+}
+
+function normalizeVatRate(rate: number | string): number {
+  if (typeof rate === 'string') {
+    if (rate === 'high') return 21
+    if (rate === 'low') return 12
+    if (rate === 'none') return 0
+    return parseFloat(rate) || 0
+  }
+  return rate
+}
+
+function mapPaymentType(type: string | null): string {
+  if (!type) return 'Příkazem'
+  const lower = type.toLowerCase()
+  if (lower.includes('cash') || lower.includes('hotov')) return 'Hotově'
+  if (lower.includes('card') || lower.includes('kart')) return 'Kartou'
+  return 'Příkazem'
+}
+
+function generateReceivedItem(item: ExtractedDocumentForExport['items'][0]): string {
+  const vatRate = normalizeVatRate(item.vat_rate)
+  const vatTag = vatRateTag(vatRate)
+  const priceEl = vatPriceElement(vatRate)
+  const vatAmount = item.total_with_vat - item.total_without_vat
+
+  return `      <inv:invoiceItem>
+        <inv:text>${escapeXml(item.description)}</inv:text>
+        <inv:quantity>${item.quantity}</inv:quantity>
+        <inv:unit>${escapeXml(item.unit || 'ks')}</inv:unit>
+        <inv:coefficient>1</inv:coefficient>
+        <inv:${priceEl}>
+          <typ:unitPrice>${item.unit_price.toFixed(2)}</typ:unitPrice>
+          <typ:price>${item.total_without_vat.toFixed(2)}</typ:price>
+          <typ:priceSum>${item.total_with_vat.toFixed(2)}</typ:priceSum>
+          <typ:priceVAT>${vatAmount.toFixed(2)}</typ:priceVAT>
+        </inv:${priceEl}>
+        <inv:vatRate>${vatTag}</inv:vatRate>
+      </inv:invoiceItem>`
+}
+
+function generateReceivedSummary(doc: ExtractedDocumentForExport): string {
+  const groups: Record<string, { price: number; priceSum: number; priceVAT: number }> = {}
+
+  if (doc.items.length > 0) {
+    for (const item of doc.items) {
+      const key = vatPriceElement(normalizeVatRate(item.vat_rate))
+      if (!groups[key]) groups[key] = { price: 0, priceSum: 0, priceVAT: 0 }
+      groups[key].price += item.total_without_vat
+      groups[key].priceSum += item.total_with_vat
+      groups[key].priceVAT += (item.total_with_vat - item.total_without_vat)
+    }
+  }
+
+  let summaryParts = ''
+  for (const [key, vals] of Object.entries(groups)) {
+    summaryParts += `
+          <inv:${key}>
+            <typ:price>${vals.price.toFixed(2)}</typ:price>
+            <typ:priceSum>${vals.priceSum.toFixed(2)}</typ:priceSum>
+            <typ:priceVAT>${vals.priceVAT.toFixed(2)}</typ:priceVAT>
+          </inv:${key}>`
+  }
+
+  const totalBase = doc.total_without_vat ?? 0
+  const totalWithVat = doc.total_with_vat ?? 0
+  const totalVat = doc.total_vat ?? 0
+
+  return `    <inv:invoiceSummary>
+      <inv:roundingDocument>
+        <typ:priceRound>0.00</typ:priceRound>
+      </inv:roundingDocument>
+      <inv:homeCurrency>${summaryParts}
+          <inv:roundingVAT>
+            <typ:priceRound>0.00</typ:priceRound>
+          </inv:roundingVAT>
+          <inv:priceTotal>
+            <typ:price>${totalBase.toFixed(2)}</typ:price>
+            <typ:priceSum>${totalWithVat.toFixed(2)}</typ:priceSum>
+            <typ:priceVAT>${totalVat.toFixed(2)}</typ:priceVAT>
+          </inv:priceTotal>
+      </inv:homeCurrency>
+    </inv:invoiceSummary>`
+}
+
+function generateReceivedInvoiceXml(
+  doc: ExtractedDocumentForExport,
+  clientCompany?: { name: string; ico: string; dic?: string; address?: string }
+): string {
+  const docNum = doc.document_number || doc.id.slice(0, 8)
+  const itemId = `PF_${docNum.replace(/[^a-zA-Z0-9]/g, '_')}`
+
+  // myIdentity = client (who receives the invoice)
+  const myIdentityBlock = clientCompany
+    ? generateAddress('inv:myIdentity', {
+        company: clientCompany.name,
+        ico: clientCompany.ico,
+        dic: clientCompany.dic,
+        address: clientCompany.address,
+      })
+    : ''
+
+  // partnerIdentity = supplier (who issued the invoice)
+  const partnerBlock = doc.supplier_name
+    ? generateAddress('inv:partnerIdentity', {
+        name: doc.supplier_name,
+        ico: doc.supplier_ico || undefined,
+        dic: doc.supplier_dic || undefined,
+        address: doc.supplier_address || undefined,
+      })
+    : ''
+
+  const items = doc.items.length > 0
+    ? doc.items.map(generateReceivedItem).join('\n')
+    : ''
+  const summary = generateReceivedSummary(doc)
+  const paymentType = mapPaymentType(doc.payment_type)
+
+  const accountElement = doc.supplier_bank_account
+    ? `\n      <inv:account>\n        <typ:accountNo>${escapeXml(doc.supplier_bank_account)}</typ:accountNo>\n      </inv:account>`
+    : ''
+
+  return `  <dat:dataPackItem id="${escapeXml(itemId)}" version="2.0">
+    <inv:invoice version="2.0">
+    <inv:invoiceHeader>
+      <inv:invoiceType>receivedInvoice</inv:invoiceType>
+      <inv:number>
+        <typ:numberRequested>${escapeXml(docNum)}</typ:numberRequested>
+      </inv:number>
+      <inv:symVar>${escapeXml(doc.variable_symbol || docNum)}</inv:symVar>${doc.constant_symbol ? `
+      <inv:symConst>${escapeXml(doc.constant_symbol)}</inv:symConst>` : ''}
+      <inv:date>${doc.date_issued || new Date().toISOString().slice(0, 10)}</inv:date>
+      <inv:dateTax>${doc.date_tax || doc.date_issued || new Date().toISOString().slice(0, 10)}</inv:dateTax>
+      <inv:dueDate>${doc.date_due || doc.date_issued || new Date().toISOString().slice(0, 10)}</inv:dueDate>
+      <inv:paymentType>
+        <typ:paymentType>${escapeXml(paymentType)}</typ:paymentType>
+      </inv:paymentType>${accountElement}
+      <inv:currency>
+        <typ:currencyId>${escapeXml(doc.currency || 'CZK')}</typ:currencyId>
+      </inv:currency>
+      <inv:classificationVAT>inland</inv:classificationVAT>
+      <inv:text>Přijatá faktura ${escapeXml(docNum)}</inv:text>
+${myIdentityBlock}
+${partnerBlock}
+    </inv:invoiceHeader>${items ? `
+    <inv:invoiceDetail>
+${items}
+    </inv:invoiceDetail>` : ''}
+${summary}
+    </inv:invoice>
+  </dat:dataPackItem>`
+}
+
+export function generatePohodaXmlFromDocuments(
+  documents: ExtractedDocumentForExport[],
+  clientCompany?: { name: string; ico: string; dic?: string; address?: string }
+): string {
+  const ico = clientCompany?.ico || '00000000'
+  const dataPackItems = documents.map(doc => generateReceivedInvoiceXml(doc, clientCompany)).join('\n')
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<dat:dataPack
+  xmlns:dat="${NS_DAT}"
+  xmlns:inv="${NS_INV}"
+  xmlns:typ="${NS_TYP}"
+  id="EXPORT_${new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)}"
+  ico="${escapeXml(ico)}"
+  application="UcetniOS"
+  version="2.0"
+  note="Export přijatých faktur z Účetní OS">
+${dataPackItems}
+</dat:dataPack>`
+}

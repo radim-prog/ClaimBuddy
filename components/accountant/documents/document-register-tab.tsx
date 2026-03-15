@@ -53,6 +53,7 @@ type QueueJobInfo = {
 interface DocumentRegisterTabProps {
   companyId: string
   extractableOnly?: boolean
+  onDocumentNavigate?: (docId: string) => void
 }
 
 const MONTH_NAMES_SHORT = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čvn', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro']
@@ -93,7 +94,7 @@ const statusRingColors: Record<string, string> = {
   future: '',
 }
 
-export function DocumentRegisterTab({ companyId, extractableOnly }: DocumentRegisterTabProps) {
+export function DocumentRegisterTab({ companyId, extractableOnly, onDocumentNavigate }: DocumentRegisterTabProps) {
   const { userId } = useAccountantUser()
 
   // Year/Month navigation
@@ -468,7 +469,13 @@ export function DocumentRegisterTab({ companyId, extractableOnly }: DocumentRegi
                     return (
                       <Fragment key={doc.id}>
                         <tr
-                          onClick={() => setExpandedId(isExpanded ? null : doc.id)}
+                          onClick={() => {
+                            if (onDocumentNavigate && doc.ocr_processed) {
+                              onDocumentNavigate(doc.id)
+                            } else {
+                              setExpandedId(isExpanded ? null : doc.id)
+                            }
+                          }}
                           className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors ${isSelected ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''}`}
                         >
                           <td className="py-2.5 px-3" onClick={(e) => e.stopPropagation()}>

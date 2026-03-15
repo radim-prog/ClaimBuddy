@@ -63,6 +63,11 @@ type QueueJobInfo = {
   status: string
 }
 
+type AccountEntry = {
+  account_number: string
+  account_name: string
+}
+
 interface DocumentDetailPanelProps {
   document: DocumentRegisterEntry
   companyId: string
@@ -95,11 +100,52 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
   const [editValues, setEditValues] = useState<{ debit_account: string; credit_account: string; amount: number; vat_amount: number }>({ debit_account: '', credit_account: '', amount: 0, vat_amount: 0 })
   const [editingName, setEditingName] = useState(false)
   const [newFileName, setNewFileName] = useState(doc.file_name)
+  const [accountsMap, setAccountsMap] = useState<Map<string, string>>(new Map())
+  const [inlineEditAccount, setInlineEditAccount] = useState<{ entryId: string; field: 'debit' | 'credit' } | null>(null)
+  const [inlineEditValue, setInlineEditValue] = useState('')
 
   useEffect(() => {
     setEditingName(false)
     setNewFileName(doc.file_name)
   }, [doc.id, doc.file_name])
+
+  // Auto-load existing predkontace entries
+  useEffect(() => {
+    if (!doc.ocr_processed) return
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/documents/predkontace?document_id=${doc.id}`)
+        if (res.ok) {
+          const data = await res.json()
+          const entries = data.entries || []
+          if (entries.length > 0) {
+            setJournalEntries(entries)
+            setShowPredkontace(true)
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    load()
+  }, [doc.id, doc.ocr_processed])
+
+  // Load chart of accounts map once
+  useEffect(() => {
+    if (accountsMap.size > 0) return
+    const load = async () => {
+      try {
+        const res = await fetch('/api/documents/predkontace/accounts')
+        if (res.ok) {
+          const data = await res.json()
+          const map = new Map<string, string>()
+          for (const acc of (data.accounts || [])) {
+            map.set(acc.account_number, acc.account_name)
+          }
+          setAccountsMap(map)
+        }
+      } catch { /* ignore */ }
+    }
+    load()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRename = async () => {
     if (!newFileName.trim() || newFileName.trim() === doc.file_name) {
@@ -149,6 +195,11 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
   const supplier = ocrData?.supplier as Record<string, unknown> | undefined
   const items = ocrData?.items as Array<Record<string, unknown>> | undefined
 
+  // Check if supplier has any non-empty values
+  const hasSupplierData = supplier && Object.values(supplier).some(v => v != null && v !== '')
+  // Check if amounts have any values
+  const hasAmounts = doc.total_without_vat !== null || doc.total_vat !== null || doc.total_with_vat !== null
+
   const handleExtract = async () => {
     setExtracting(true)
     try {
@@ -185,6 +236,43 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
     }
   }
 
+  const handleInlineAccountSave = async (entryId: string, field: 'debit' | 'credit') => {
+    const accountField = field === 'debit' ? 'debit_account' : 'credit_account'
+    const entry = journalEntries.find(e => e.id === entryId)
+    if (!entry) return
+
+    try {
+      const res = await fetch('/api/documents/predkontace', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId || '' },
+        body: JSON.stringify({
+          entry_id: entryId,
+          [accountField]: inlineEditValue,
+          ...(field === 'debit' ? { credit_account: entry.credit_account } : { debit_account: entry.debit_account }),
+          amount: entry.amount,
+          vat_amount: entry.vat_amount,
+        }),
+      })
+      if (res.ok) {
+        const accountName = accountsMap.get(inlineEditValue) || ''
+        setJournalEntries(prev => prev.map(e =>
+          e.id === entryId ? {
+            ...e,
+            [accountField]: inlineEditValue,
+            [`${field}_name`]: accountName,
+            status: 'modified',
+          } : e
+        ))
+        setInlineEditAccount(null)
+        toast.success('Účet upraven')
+      } else {
+        toast.error('Chyba při ukládání')
+      }
+    } catch {
+      toast.error('Chyba při ukládání')
+    }
+  }
+
   const handleGeneratePredkontace = async () => {
     setLoadingPredkontace(true)
     setShowPredkontace(true)
@@ -205,17 +293,6 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
       toast.error('Chyba při generování předkontace')
     }
     setLoadingPredkontace(false)
-  }
-
-  const handleLoadExistingEntries = async () => {
-    setShowPredkontace(true)
-    try {
-      const res = await fetch(`/api/documents/predkontace?document_id=${doc.id}`)
-      if (res.ok) {
-        const data = await res.json()
-        setJournalEntries(data.entries || [])
-      }
-    } catch { /* ignore */ }
   }
 
   const handleEntryAction = async (entryId: string, action: 'approved' | 'rejected') => {
@@ -246,7 +323,7 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
   const statusColor = DOCUMENT_STATUS_COLORS[doc.status]
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border dark:border-gray-700 space-y-4">
+    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border dark:border-gray-700 space-y-3">
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -415,21 +492,21 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
 
       {/* OCR data display */}
       {ocrData && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Supplier info */}
-          {supplier && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Supplier info — only if has data */}
+          {hasSupplierData && (
             <div>
               <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 flex items-center gap-1">
                 <Building2 className="h-3 w-3" /> Dodavatel
               </h4>
               <div className="space-y-1 text-sm">
-                {!!supplier.name && <div className="font-medium text-gray-900 dark:text-white">{String(supplier.name)}</div>}
-                {!!supplier.ico && <div className="text-gray-600 dark:text-gray-400">IČO: {String(supplier.ico)}</div>}
-                {!!supplier.dic && <div className="text-gray-600 dark:text-gray-400">DIČ: {String(supplier.dic)}</div>}
-                {!!supplier.address && <div className="text-gray-600 dark:text-gray-400">{String(supplier.address)}</div>}
-                {!!supplier.bank_account && (
+                {!!supplier!.name && <div className="font-medium text-gray-900 dark:text-white">{String(supplier!.name)}</div>}
+                {!!supplier!.ico && <div className="text-gray-600 dark:text-gray-400">IČO: {String(supplier!.ico)}</div>}
+                {!!supplier!.dic && <div className="text-gray-600 dark:text-gray-400">DIČ: {String(supplier!.dic)}</div>}
+                {!!supplier!.address && <div className="text-gray-600 dark:text-gray-400">{String(supplier!.address)}</div>}
+                {!!supplier!.bank_account && (
                   <div className="text-gray-600 dark:text-gray-400">
-                    Účet: {String(supplier.bank_account)}{supplier.bank_code ? `/${String(supplier.bank_code)}` : ''}
+                    Účet: {String(supplier!.bank_account)}{supplier!.bank_code ? `/${String(supplier!.bank_code)}` : ''}
                   </div>
                 )}
               </div>
@@ -452,18 +529,20 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
             </div>
           </div>
 
-          {/* Amounts */}
-          <div>
-            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 flex items-center gap-1">
-              <CreditCard className="h-3 w-3" /> Částky
-            </h4>
-            <div className="space-y-1 text-sm">
-              {doc.total_without_vat !== null && <div className="text-gray-600 dark:text-gray-400">Základ: {formatCurrency(doc.total_without_vat)}</div>}
-              {doc.total_vat !== null && <div className="text-gray-600 dark:text-gray-400">DPH: {formatCurrency(doc.total_vat)}</div>}
-              {doc.total_with_vat !== null && <div className="font-semibold text-gray-900 dark:text-white">Celkem: {formatCurrency(doc.total_with_vat)}</div>}
-              {doc.currency && doc.currency !== 'CZK' && <div className="text-gray-600 dark:text-gray-400">Měna: {doc.currency}</div>}
+          {/* Amounts — only if has values */}
+          {hasAmounts && (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 flex items-center gap-1">
+                <CreditCard className="h-3 w-3" /> Částky
+              </h4>
+              <div className="space-y-1 text-sm">
+                {doc.total_without_vat !== null && <div className="text-gray-600 dark:text-gray-400">Základ: {formatCurrency(doc.total_without_vat)}</div>}
+                {doc.total_vat !== null && <div className="text-gray-600 dark:text-gray-400">DPH: {formatCurrency(doc.total_vat)}</div>}
+                {doc.total_with_vat !== null && <div className="font-semibold text-gray-900 dark:text-white">Celkem: {formatCurrency(doc.total_with_vat)}</div>}
+                {doc.currency && doc.currency !== 'CZK' && <div className="text-gray-600 dark:text-gray-400">Měna: {doc.currency}</div>}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Items */}
           {items && items.length > 0 && (
@@ -539,7 +618,7 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
                 size="sm"
                 variant="outline"
                 className="h-7 text-xs"
-                onClick={showPredkontace && journalEntries.length > 0 ? handleGeneratePredkontace : (showPredkontace ? handleGeneratePredkontace : () => { handleLoadExistingEntries(); handleGeneratePredkontace() })}
+                onClick={handleGeneratePredkontace}
                 disabled={loadingPredkontace}
               >
                 {loadingPredkontace ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <BookOpen className="h-3 w-3 mr-1" />}
@@ -577,6 +656,8 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
                     }[entry.status] || { label: entry.status, color: 'bg-gray-100 text-gray-700' }
 
                     const isEditing = editingEntryId === entry.id
+                    const isInlineDebit = inlineEditAccount?.entryId === entry.id && inlineEditAccount.field === 'debit'
+                    const isInlineCredit = inlineEditAccount?.entryId === entry.id && inlineEditAccount.field === 'credit'
 
                     return (
                       <tr key={entry.id || entry.line_number} className="border-b dark:border-gray-700">
@@ -590,14 +671,26 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
                               onChange={(e) => setEditValues(v => ({ ...v, debit_account: e.target.value }))}
                               className="w-16 font-mono text-xs px-1.5 py-0.5 rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                             />
+                          ) : isInlineDebit ? (
+                            <input
+                              type="text"
+                              value={inlineEditValue}
+                              onChange={(e) => setInlineEditValue(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleInlineAccountSave(entry.id, 'debit'); if (e.key === 'Escape') setInlineEditAccount(null) }}
+                              onBlur={() => handleInlineAccountSave(entry.id, 'debit')}
+                              className="w-16 font-mono text-xs px-1.5 py-0.5 rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                              autoFocus
+                            />
                           ) : (
-                            <>
-                              <span className="font-mono text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded" title={entry.debit_name}>
-                                {entry.debit_account}
-                              </span>
-                              {entry.debit_name && <span className="text-xs text-gray-400 ml-1 hidden lg:inline">{entry.debit_name}</span>}
-                            </>
+                            <span
+                              className="font-mono text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded cursor-pointer hover:ring-2 hover:ring-purple-300"
+                              title={entry.debit_name || 'Klikněte pro editaci'}
+                              onClick={() => { setInlineEditAccount({ entryId: entry.id, field: 'debit' }); setInlineEditValue(entry.debit_account) }}
+                            >
+                              {entry.debit_account}
+                            </span>
                           )}
+                          {!isEditing && !isInlineDebit && entry.debit_name && <span className="text-xs text-gray-400 ml-1 hidden lg:inline">{entry.debit_name}</span>}
                         </td>
                         <td className="py-1.5 px-2">
                           {isEditing ? (
@@ -607,14 +700,26 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
                               onChange={(e) => setEditValues(v => ({ ...v, credit_account: e.target.value }))}
                               className="w-16 font-mono text-xs px-1.5 py-0.5 rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                             />
+                          ) : isInlineCredit ? (
+                            <input
+                              type="text"
+                              value={inlineEditValue}
+                              onChange={(e) => setInlineEditValue(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleInlineAccountSave(entry.id, 'credit'); if (e.key === 'Escape') setInlineEditAccount(null) }}
+                              onBlur={() => handleInlineAccountSave(entry.id, 'credit')}
+                              className="w-16 font-mono text-xs px-1.5 py-0.5 rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                              autoFocus
+                            />
                           ) : (
-                            <>
-                              <span className="font-mono text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded" title={entry.credit_name}>
-                                {entry.credit_account}
-                              </span>
-                              {entry.credit_name && <span className="text-xs text-gray-400 ml-1 hidden lg:inline">{entry.credit_name}</span>}
-                            </>
+                            <span
+                              className="font-mono text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded cursor-pointer hover:ring-2 hover:ring-blue-300"
+                              title={entry.credit_name || 'Klikněte pro editaci'}
+                              onClick={() => { setInlineEditAccount({ entryId: entry.id, field: 'credit' }); setInlineEditValue(entry.credit_account) }}
+                            >
+                              {entry.credit_account}
+                            </span>
                           )}
+                          {!isEditing && !isInlineCredit && entry.credit_name && <span className="text-xs text-gray-400 ml-1 hidden lg:inline">{entry.credit_name}</span>}
                         </td>
                         <td className="py-1.5 px-2 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">
                           {isEditing ? (

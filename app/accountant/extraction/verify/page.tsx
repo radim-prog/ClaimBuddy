@@ -23,6 +23,7 @@ import {
   ZoomOut,
   RotateCw,
   RefreshCw,
+  Download,
 } from 'lucide-react'
 
 type VerifyDocument = {
@@ -145,6 +146,7 @@ function VerificationPageContent() {
     } else {
       params.set('category', cat)
     }
+    params.delete('doc')
     router.replace(`/accountant/extraction/verify?${params.toString()}`)
   }
 
@@ -172,9 +174,21 @@ function VerificationPageContent() {
       })
       if (res.ok) {
         const data = await res.json()
-        setAllDocuments(data.documents || [])
-        if (data.documents?.length > 0) {
-          setEditedData(data.documents[0].ocr_data)
+        const docs = data.documents || []
+        setAllDocuments(docs)
+
+        // Handle ?doc= param for direct navigation
+        const docId = searchParams.get('doc')
+        if (docId && docs.length > 0) {
+          const idx = docs.findIndex((d: VerifyDocument) => d.id === docId)
+          if (idx >= 0) {
+            setCurrentIndex(idx)
+            setEditedData(docs[idx].ocr_data)
+          } else if (docs.length > 0) {
+            setEditedData(docs[0].ocr_data)
+          }
+        } else if (docs.length > 0) {
+          setEditedData(docs[0].ocr_data)
         }
       }
     } catch {
@@ -182,7 +196,7 @@ function VerificationPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [userId])
+  }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetchDocuments()
@@ -320,6 +334,27 @@ function VerificationPageContent() {
     }
   }
 
+  const handleExportPohoda = async () => {
+    if (!currentDoc || !userId) return
+    try {
+      const url = `/api/accountant/companies/${currentDoc.company_id}/documents/export-pohoda?ids=${currentDoc.id}`
+      const res = await fetch(url, { headers: { 'x-user-id': userId } })
+      if (res.ok) {
+        const blob = await res.blob()
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = `pohoda-${currentDoc.file_name.replace(/\.[^.]+$/, '')}.xml`
+        a.click()
+        URL.revokeObjectURL(a.href)
+        toast.success('Pohoda XML exportováno')
+      } else {
+        toast.error('Chyba při exportu')
+      }
+    } catch {
+      toast.error('Chyba připojení')
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -347,29 +382,7 @@ function VerificationPageContent() {
   const currentCategory = currentDoc ? getDocCategory(currentDoc) : 'ok'
 
   return (
-    <div className="flex flex-col h-[calc(100vh-220px)]">
-      {/* Category filter pills */}
-      <div className="flex items-center gap-2 mb-3">
-        {([
-          { value: 'all' as Category, label: 'Vše', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200' },
-          { value: 'ok' as Category, label: 'OK', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
-          { value: 'warnings' as Category, label: 'Varování', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' },
-          { value: 'errors' as Category, label: 'Chyby', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
-        ]).map((pill) => (
-          <button
-            key={pill.value}
-            onClick={() => setCategory(pill.value)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-              category === pill.value
-                ? `${pill.color} ring-2 ring-offset-1 ring-blue-500`
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            {pill.label} ({counts[pill.value]})
-          </button>
-        ))}
-      </div>
-
+    <div className="flex flex-col h-[calc(100vh-120px)]">
       {/* Empty state for filtered view */}
       {documents.length === 0 && (
         <div className="text-center py-20 text-muted-foreground">
@@ -386,58 +399,102 @@ function VerificationPageContent() {
 
       {documents.length > 0 && (
         <>
-          {/* Top bar */}
-          <div className="flex items-center justify-between py-2 border-b mb-3">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigateDoc('prev')}
-                disabled={currentIndex === 0}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm font-medium">
-                {currentIndex + 1} / {documents.length}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigateDoc('next')}
-                disabled={currentIndex === documents.length - 1}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <span className="text-sm text-muted-foreground">
+          {/* Combined single-line bar: nav + category pills + file info + actions */}
+          <div className="flex items-center justify-between py-1.5 border-b mb-2 gap-2 min-h-[36px]">
+            <div className="flex items-center gap-2 min-w-0">
+              {/* Navigation */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={() => navigateDoc('prev')}
+                  disabled={currentIndex === 0}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </Button>
+                <span className="text-xs font-medium tabular-nums min-w-[32px] text-center">
+                  {currentIndex + 1}/{documents.length}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={() => navigateDoc('next')}
+                  disabled={currentIndex === documents.length - 1}
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
+              <div className="w-px h-5 bg-border flex-shrink-0" />
+
+              {/* Category pills */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {([
+                  { value: 'all' as Category, label: 'Vše', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200' },
+                  { value: 'ok' as Category, label: 'OK', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
+                  { value: 'warnings' as Category, label: 'Var.', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' },
+                  { value: 'errors' as Category, label: 'Err', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
+                ]).map((pill) => (
+                  <button
+                    key={pill.value}
+                    onClick={() => setCategory(pill.value)}
+                    className={`px-2 py-1 rounded-full text-xs font-medium transition-all ${
+                      category === pill.value
+                        ? `${pill.color} ring-2 ring-offset-1 ring-blue-500`
+                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {pill.label}({counts[pill.value]})
+                  </button>
+                ))}
+              </div>
+
+              <div className="w-px h-5 bg-border flex-shrink-0" />
+
+              {/* File info */}
+              <span className="text-xs text-muted-foreground truncate max-w-[250px]">
                 {currentDoc?.company_name} — {currentDoc?.file_name}
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Right: actions */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               {editedData?.confidence_score && (
                 <ConfidenceBadge score={Math.round(editedData.confidence_score)} />
               )}
 
-              {/* Category-specific actions */}
-              {category === 'ok' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={handleExportPohoda}
+                title="Export Pohoda XML"
+              >
+                <Download className="h-3.5 w-3.5 mr-1" />
+                Pohoda
+              </Button>
+
+              {category === 'ok' ? (
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-7 text-xs text-green-700 border-green-300 hover:bg-green-50"
                   onClick={handleApproveAllFiltered}
-                  className="text-green-700 border-green-300 hover:bg-green-50"
                 >
-                  <CheckCheck className="h-4 w-4 mr-1" />
-                  Schválit vše OK ({counts.ok})
+                  <CheckCheck className="h-3.5 w-3.5 mr-1" />
+                  Vše OK({counts.ok})
                 </Button>
-              )}
-              {category !== 'ok' && (
+              ) : (
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-7 text-xs"
                   onClick={handleApproveAllFiltered}
                 >
-                  <CheckCheck className="h-4 w-4 mr-1" />
-                  Schválit vše ({documents.length})
+                  <CheckCheck className="h-3.5 w-3.5 mr-1" />
+                  Vše({documents.length})
                 </Button>
               )}
 
@@ -446,26 +503,26 @@ function VerificationPageContent() {
                   onClick={handleReextract}
                   disabled={reextracting}
                   size="sm"
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
                 >
                   {reextracting ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
                   ) : (
-                    <RefreshCw className="h-4 w-4 mr-1" />
+                    <RefreshCw className="h-3.5 w-3.5 mr-1" />
                   )}
-                  Znovu vytěžit
+                  Znovu
                 </Button>
               ) : (
                 <Button
                   onClick={handleApprove}
                   disabled={approving}
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700"
+                  className="h-7 text-xs bg-green-600 hover:bg-green-700"
                 >
                   {approving ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
                   ) : (
-                    <Check className="h-4 w-4 mr-1" />
+                    <Check className="h-3.5 w-3.5 mr-1" />
                   )}
                   Schválit
                 </Button>
@@ -474,6 +531,7 @@ function VerificationPageContent() {
               <Button
                 variant="destructive"
                 size="sm"
+                className="h-7 text-xs"
                 onClick={() => {
                   toast.info('Doklad označen jako problém')
                   const newDocs = allDocuments.filter(d => d.id !== currentDoc.id)
@@ -481,28 +539,28 @@ function VerificationPageContent() {
                   if (currentIndex >= documents.length - 1) setCurrentIndex(Math.max(0, currentIndex - 1))
                 }}
               >
-                <AlertTriangle className="h-4 w-4 mr-1" />
+                <AlertTriangle className="h-3.5 w-3.5 mr-1" />
                 Problém
               </Button>
             </div>
           </div>
 
-          {/* Split screen */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
+          {/* Split screen — 2:1 ratio */}
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-3 min-h-0">
             {/* LEFT: Document viewer */}
             <Card className={`flex flex-col min-h-0 overflow-hidden border-l-4 ${CATEGORY_COLORS[currentCategory] || ''}`}>
-              <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+              <div className="flex items-center justify-between px-3 py-1.5 border-b bg-muted/30">
                 <span className="text-xs font-medium text-muted-foreground">Dokument</span>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.max(50, z - 25))}>
-                    <ZoomOut className="h-3.5 w-3.5" />
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setZoom(z => Math.max(50, z - 25))}>
+                    <ZoomOut className="h-3 w-3" />
                   </Button>
-                  <span className="text-xs w-10 text-center">{zoom}%</span>
-                  <Button variant="ghost" size="sm" onClick={() => setZoom(z => Math.min(200, z + 25))}>
-                    <ZoomIn className="h-3.5 w-3.5" />
+                  <span className="text-[11px] w-8 text-center tabular-nums">{zoom}%</span>
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setZoom(z => Math.min(200, z + 25))}>
+                    <ZoomIn className="h-3 w-3" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setZoom(100)}>
-                    <RotateCw className="h-3.5 w-3.5" />
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setZoom(100)}>
+                    <RotateCw className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
@@ -537,16 +595,15 @@ function VerificationPageContent() {
 
             {/* RIGHT: Form */}
             <Card className="flex flex-col min-h-0 overflow-hidden">
-              <div className="px-3 py-2 border-b bg-muted/30 flex items-center justify-between">
+              <div className="px-2 py-1.5 border-b bg-muted/30 flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Vytěžená data</span>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Jisté
                   <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> Nejisté
-                  <span className="w-2 h-2 rounded-full bg-gray-300 inline-block" /> Manuální
                 </div>
               </div>
               <ScrollArea className="flex-1">
-                <div className="p-3 space-y-2">
+                <div className="p-2 space-y-1.5">
                   {VERIFY_FIELDS.map((field) => {
                     const value = getNestedValue(editedData, field.path)
                     const conf = getFieldConfidence(field.key)
@@ -558,7 +615,7 @@ function VerificationPageContent() {
                         className={`group ${isHighlighted ? 'ring-2 ring-blue-500 rounded-lg' : ''}`}
                         onFocus={() => setHighlightedField(field.key)}
                       >
-                        <Label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-0.5">
+                        <Label className="text-[11px] text-muted-foreground flex items-center gap-1 mb-0.5">
                           {field.label}
                           {field.required && <span className="text-red-500">*</span>}
                         </Label>
@@ -566,7 +623,7 @@ function VerificationPageContent() {
                           type={field.type === 'date' ? 'date' : 'text'}
                           value={value ?? ''}
                           onChange={(e) => handleFieldChange(field, e.target.value)}
-                          className={`h-8 text-sm ${confidenceFieldClasses[conf]}`}
+                          className={`h-7 text-sm max-w-full ${confidenceFieldClasses[conf]}`}
                         />
                       </div>
                     )
@@ -574,13 +631,13 @@ function VerificationPageContent() {
 
                   {/* Items section */}
                   {editedData?.items?.length > 0 && (
-                    <div className="pt-2 border-t mt-3">
-                      <Label className="text-xs text-muted-foreground mb-1 block">
+                    <div className="pt-1.5 border-t mt-2">
+                      <Label className="text-[11px] text-muted-foreground mb-1 block">
                         Položky ({editedData.items.length})
                       </Label>
-                      <div className="space-y-1.5">
+                      <div className="space-y-1">
                         {editedData.items.map((item: any, i: number) => (
-                          <div key={i} className="flex items-center gap-2 text-xs bg-muted/30 rounded px-2 py-1.5">
+                          <div key={i} className="flex items-center gap-1.5 text-xs bg-muted/30 rounded px-2 py-1">
                             <span className="flex-1 truncate">{item.description || '-'}</span>
                             <span className="text-muted-foreground">{item.quantity}x</span>
                             <span className="font-medium whitespace-nowrap">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,6 +23,7 @@ type CompanyInfo = {
 
 export default function ExtractionClientDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const companyId = params.companyId as string
   const { userId } = useAccountantUser()
   const [company, setCompany] = useState<CompanyInfo | null>(null)
@@ -88,8 +89,11 @@ export default function ExtractionClientDetailPage() {
         </div>
       </div>
 
-      {/* Document Register — reuse existing component */}
-      <DocumentRegisterTab companyId={companyId} />
+      {/* Document Register — with navigation to verify */}
+      <DocumentRegisterTab
+        companyId={companyId}
+        onDocumentNavigate={(id) => router.push(`/accountant/extraction/verify?doc=${id}`)}
+      />
     </div>
   )
 }
