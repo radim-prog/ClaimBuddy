@@ -13,6 +13,7 @@ import {
   Briefcase,
   Car,
   Receipt,
+  FileSignature,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -288,6 +289,9 @@ export default function ClientDashboard() {
           </Card>
         )}
 
+        {/* Dohodari Widget */}
+        <DohodariWidget />
+
         {/* Tax Impact Card */}
         {selectedCompany && <TaxImpactSummary companyId={selectedCompany.id} />}
 
@@ -443,5 +447,38 @@ export default function ClientDashboard() {
         </>
       )}
     </>
+  )
+}
+
+function DohodariWidget() {
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    fetch('/api/client/dohodari?status=active')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.dohody) setCount(d.dohody.length) })
+      .catch(() => {})
+  }, [])
+
+  if (count === 0) return null
+
+  return (
+    <Card className="rounded-2xl border-indigo-200 dark:border-indigo-800 card-hover">
+      <CardContent className="py-4 px-5">
+        <Link href="/client/dohodari" className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-full">
+              <FileSignature className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm text-gray-900 dark:text-white">Vaše dohody</p>
+              <p className="text-xs text-muted-foreground">
+                {count} {count === 1 ? 'aktivní dohoda' : count < 5 ? 'aktivní dohody' : 'aktivních dohod'} (DPP/DPČ)
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+        </Link>
+      </CardContent>
+    </Card>
   )
 }

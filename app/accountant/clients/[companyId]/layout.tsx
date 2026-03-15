@@ -303,7 +303,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
             { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files'), badge: filesBadge },
             { href: `${basePath}/travel`, label: 'Jízdy', icon: Car, match: (p: string) => p.includes('/travel') },
             { href: `${basePath}/taxes`, label: 'Daně', icon: Calculator, match: (p: string) => p.includes('/taxes') },
-            { href: `${basePath}/agreements`, label: 'Dohodáři', icon: FileSignature, match: (p: string) => p.includes('/agreements') },
+            { href: `${basePath}/dohodari`, label: 'Dohodáři', icon: FileSignature, match: (p: string) => p.includes('/dohodari') || p.includes('/agreements') },
             { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile'), badge: notificationsBadge },
           ]
 

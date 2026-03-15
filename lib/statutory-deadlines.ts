@@ -105,6 +105,17 @@ export const STATUTORY_TEMPLATES: StatutoryDeadlineTemplate[] = [
     applies_to: { is_osvc: true },
   },
 
+  // === DOHODÁŘI (DPP/DPČ) ===
+  {
+    id: 'dohody-vyplata',
+    type: 'payroll',
+    title: 'Výplata DPP/DPČ',
+    description: 'Výplata odměn za DPP/DPČ za předchozí měsíc, odvody srážkové daně do 20. dne',
+    frequency: 'monthly',
+    day_of_month: 20,
+    applies_to: { has_employees: true },
+  },
+
   // === UZÁVĚRKA ===
   {
     id: 'ucetni-zaverka',
