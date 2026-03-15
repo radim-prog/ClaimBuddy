@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Users, Calculator, Info, AlertTriangle, ChevronDown, ChevronRight,
-  TrendingDown, FileText, Clock, Banknote, Search, Download, Loader2,
+  TrendingDown, FileText, Clock, Banknote, Search, Download, Loader2, Lock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCompany, type Company } from '../layout'
+import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { CONTRACT_TYPE_LABELS, WAGE_TYPE_LABELS, type Employee } from '@/lib/types/employee'
 import {
   calculateAgreementTaxImpact,
@@ -24,10 +25,28 @@ import {
 
 export default function AgreementsPage() {
   const { employees, company } = useCompany()
+  const { isLocked } = usePlanFeatures()
   const [calcGross, setCalcGross] = useState('8000')
   const [calcTaxDecl, setCalcTaxDecl] = useState(true)
   const [expandedInfo, setExpandedInfo] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+
+  if (isLocked('agreements')) {
+    return (
+      <Card className="max-w-lg mx-auto mt-12">
+        <CardContent className="py-12 text-center">
+          <Lock className="h-10 w-10 mx-auto mb-4 text-muted-foreground/40" />
+          <h3 className="text-lg font-bold mb-2">Modul Dohodáři</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Evidence DPP/DPČ, daňová kalkulačka a generování smluv jsou dostupné od tarifu Profi.
+          </p>
+          <Button onClick={() => window.location.href = '/accountant/admin/subscription'}>
+            Zobrazit tarify
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
 
   // Filter only DPP/DPČ workers
   const agreementWorkers = useMemo(() => {

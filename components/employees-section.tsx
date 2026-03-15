@@ -64,9 +64,16 @@ export function EmployeesSection({ companyId, employees, onEmployeesChange, defa
     setIsAddingNew(false)
   }
 
-  const handleDeleteEmployee = (employeeId: string) => {
-    if (onEmployeesChange && confirm('Opravdu chcete smazat tohoto zaměstnance?')) {
-      onEmployeesChange(employees.filter(e => e.id !== employeeId))
+  const handleDeleteEmployee = async (employeeId: string) => {
+    if (!confirm('Opravdu chcete smazat tohoto zaměstnance?')) return
+    try {
+      const res = await fetch(`/api/accountant/employees?id=${employeeId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Delete failed')
+      if (onEmployeesChange) {
+        onEmployeesChange(employees.filter(e => e.id !== employeeId))
+      }
+    } catch {
+      // silent — toast handled elsewhere
     }
   }
 

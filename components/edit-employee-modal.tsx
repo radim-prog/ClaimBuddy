@@ -117,23 +117,29 @@ export function EditEmployeeModal({
 
     setSaving(true)
     try {
-      const now = new Date().toISOString()
-      const savedEmployee: Employee = {
+      const payload = {
         ...formData,
-        id: employee?.id || `emp-${Date.now()}`,
         company_id: companyId,
-        created_at: employee?.created_at || now,
-        updated_at: now,
+        ...(employee ? { id: employee.id } : {}),
       }
 
-      // V produkci: await fetch API
-      await new Promise(resolve => setTimeout(resolve, 300))
+      const res = await fetch('/api/accountant/employees', {
+        method: isNew ? 'POST' : 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
 
-      onSave(savedEmployee)
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Save failed')
+      }
+
+      const data = await res.json()
+      onSave(data.employee)
       toast.success(isNew ? 'Zaměstnanec přidán' : 'Zaměstnanec upraven')
       onOpenChange(false)
     } catch (error) {
-      toast.error('Chyba při ukládání')
+      toast.error(error instanceof Error ? error.message : 'Chyba při ukládání')
     } finally {
       setSaving(false)
     }
