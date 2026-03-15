@@ -9,117 +9,32 @@
  */
 
 import OpenAI from 'openai'
+import {
+  type DocumentType,
+  type PaymentType,
+  type SupplierInfo,
+  type InvoiceItem,
+  type ExtractedInvoice,
+  type CorrectionRecord,
+  type ExtractionOptions,
+  type RoundResult,
+  type BankStatementResult,
+  validateInvoiceStructure,
+} from './types/extraction'
 
-
-// ============================================================================
-// TYPES - Datové struktury pro extrahované doklady (z document-extractor.ts)
-// ============================================================================
-
-export type DocumentType = 'receivedInvoice' | 'receipt' | 'advanceInvoice' | 'creditNote'
-export type PaymentType = 'cash' | 'creditcard' | 'draft' | 'wire'
-
-export type SupplierInfo = {
-  name: string
-  ico: string | null
-  dic: string | null
-  address: string | null
-  bank_account: string | null
-  bank_code: string | null
+// Re-export all types for backward compatibility
+export type {
+  DocumentType,
+  PaymentType,
+  SupplierInfo,
+  InvoiceItem,
+  ExtractedInvoice,
+  CorrectionRecord,
+  ExtractionOptions,
+  RoundResult,
+  BankStatementResult,
 }
-
-export type InvoiceItem = {
-  description: string
-  quantity: number
-  unit: string
-  unit_price: number
-  total_price: number
-  vat_rate: 'none' | 'low' | 'high'  // 0%, 12%, 21%
-  vat_amount: number
-}
-
-/**
- * Hlavní struktura extrahované faktury
- */
-export type ExtractedInvoice = {
-  // Dokument
-  document_number: string
-  variable_symbol: string | null
-  constant_symbol: string | null
-  specific_symbol: string | null
-
-  // Data
-  date_issued: string        // YYYY-MM-DD
-  date_tax: string          // YYYY-MM-DD
-  date_due: string          // YYYY-MM-DD
-  date_payment: string | null  // datum úhrady pokud je vidět
-
-  // Typy
-  document_type: DocumentType
-  payment_type: PaymentType
-
-  // Dodavatel
-  supplier: SupplierInfo
-
-  // Položky
-  items: InvoiceItem[]
-
-  // Součty
-  total_without_vat: number
-  total_vat: number
-  total_with_vat: number
-
-  // Rozpad DPH
-  price_none: number        // 0% základ
-  price_low: number         // 12% základ
-  price_low_vat: number     // 12% DPH
-  price_low_sum: number     // 12% celkem
-  price_high: number        // 21% základ
-  price_high_vat: number    // 21% DPH
-  price_high_sum: number    // 21% celkem
-
-  // Metadata
-  description: string       // Záhlaví/popis faktury
-  currency: string         // CZK, EUR, ...
-
-  // Confidence
-  confidence_score: number  // 0-100 celkové skóre
-  field_confidence: {      // Skóre jednotlivých polí
-    document_number: number
-    date_issued: number
-    date_tax: number
-    date_due: number
-    supplier_name: number
-    ico: number
-    total_with_vat: number
-    vat_breakdown: number
-  }
-
-  // Provenance
-  source_filename: string
-  ocr_engine: string
-  ocr_timestamp: string
-
-  // Processing
-  status: 'extracted' | 'validated' | 'corrected' | 'approved' | 'rejected'
-  corrections?: CorrectionRecord[]
-  knownIssuesApplied?: string[]
-}
-
-export type CorrectionRecord = {
-  field: string
-  originalValue: unknown
-  correctedValue: unknown
-  reason: string
-  round: 1 | 2 | 3
-  timestamp: string
-}
-
-export type ExtractionOptions = {
-  model?: string              // Výchozí: kimi-k2.5
-  temperature?: number        // Výchozí: 0.1
-  maxTokens?: number          // Výchozí: 4096
-  confidenceThreshold?: number // Výchozí: 0.8
-}
+export { validateInvoiceStructure }
 
 // ============================================================================
 // KNOWN ISSUES DATABASE - Specifické problémy známých dodavatelů
@@ -193,14 +108,7 @@ const KNOWN_ISSUES: KnownIssue[] = [
 // SYSTEM PROMPTY PRO KIMI AI
 // ============================================================================
 
-// Round results for tracking multi-round extraction
-export type RoundResult = {
-  round: 1 | 2 | 3
-  confidence: number
-  changedFields: string[]
-  corrections: CorrectionRecord[]
-  duration_ms: number
-}
+// RoundResult type is now in lib/types/extraction.ts
 
 const OCR_SYSTEM_PROMPT = `Jsi OCR expert pro účetní software. Extrahuj data z přiložené faktury/dokladu.
 
@@ -888,25 +796,7 @@ Pravidla:
 5. Counterparty_name = jméno protistrany transakce
 6. Zachovej všechny transakce, nic nevynechávej`
 
-export type BankStatementResult = {
-  account_number: string
-  bank_code: string
-  statement_number: string | null
-  period_from: string
-  period_to: string
-  opening_balance: number
-  closing_balance: number
-  transactions: Array<{
-    date: string
-    amount: number
-    currency: string
-    variable_symbol: string | null
-    constant_symbol: string | null
-    counterparty_account: string | null
-    counterparty_name: string | null
-    description: string
-  }>
-}
+// BankStatementResult type is now in lib/types/extraction.ts
 
 /**
  * Extract bank statement data from a file using Kimi AI OCR
@@ -994,37 +884,7 @@ export async function extractInvoiceFromText(
   return client.extractInvoiceData(text, filename)
 }
 
-export function validateInvoiceStructure(
-  invoice: Partial<ExtractedInvoice>
-): { valid: boolean; errors: string[] } {
-  const errors: string[] = []
-
-  if (!invoice.document_number) errors.push('Missing document_number')
-  if (!invoice.date_issued) errors.push('Missing date_issued')
-  if (!invoice.total_with_vat && invoice.total_with_vat !== 0) {
-    errors.push('Missing total_with_vat')
-  }
-  if (!invoice.supplier?.name) errors.push('Missing supplier.name')
-
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-  if (invoice.date_issued && !dateRegex.test(invoice.date_issued)) {
-    errors.push('Invalid date_issued format (expected YYYY-MM-DD)')
-  }
-
-  if (invoice.total_with_vat !== undefined && invoice.total_with_vat < 0) {
-    errors.push('total_with_vat cannot be negative')
-  }
-
-  if (invoice.total_without_vat && invoice.total_vat && invoice.total_with_vat) {
-    const calculated = invoice.total_without_vat + invoice.total_vat
-    const tolerance = 0.01
-    if (Math.abs(calculated - invoice.total_with_vat) > tolerance) {
-      errors.push(`VAT math error: ${invoice.total_without_vat} + ${invoice.total_vat} ≠ ${invoice.total_with_vat}`)
-    }
-  }
-
-  return { valid: errors.length === 0, errors }
-}
+// validateInvoiceStructure is now in lib/types/extraction.ts
 
 export function isKimiAIAvailable(): boolean {
   return !!process.env.MOONSHOT_API_KEY
