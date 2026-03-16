@@ -22,6 +22,7 @@ import {
   BarChart3,
   MessageCircle,
   ScanLine,
+  Send,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -63,6 +64,7 @@ const navigation = [
   { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'] },
   { name: 'Vytěžování', href: '/accountant/extraction', icon: ScanLine, activeMatch: ['/accountant/extraction'], feature: 'extraction' },
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
+  { name: 'Připomínky', href: '/accountant/reminders', icon: Send, activeMatch: ['/accountant/reminders'] },
   { name: 'Znalostní báze', href: '/accountant/knowledge-base', icon: BookOpen, activeMatch: ['/accountant/knowledge-base'] },
 ]
 

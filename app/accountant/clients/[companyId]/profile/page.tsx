@@ -21,6 +21,7 @@ import {
   Save,
   UserMinus,
   Monitor,
+  Send,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -41,6 +42,7 @@ import { CompanyReports } from '@/components/company/company-reports'
 import { AccountantDeadlineCalendar } from '@/components/accountant/deadline-calendar'
 import { NotificationPanel } from '@/components/accountant/notification-panel'
 import { NotificationSettings } from '@/components/accountant/notification-settings'
+import { ReminderList } from '@/components/accountant/reminder-list'
 import { ActivityFeed } from '@/components/accountant/activity-feed'
 import { TileContainer } from '@/components/tiles/tile-container'
 import type { TileDefinition } from '@/lib/types/layout'
@@ -71,6 +73,7 @@ const BASE_TILES: TileDefinition[] = [
   { id: 'travel-diary', label: 'Kniha jízd', defaultVisible: true },
   { id: 'deadlines', label: 'Termíny a výročí', defaultVisible: true },
   { id: 'notifications', label: 'Notifikace klienta', defaultVisible: true },
+  { id: 'reminders', label: 'Připomínky', defaultVisible: true },
   { id: 'activity', label: 'Historie aktivit', defaultVisible: true },
 ]
 
@@ -272,6 +275,12 @@ export default function ProfilePage() {
                   <NotificationPanel companyId={companyId} />
                   <NotificationSettings companyId={companyId} notificationPreferences={null} />
                 </div>
+              </CollapsibleSection>
+            )
+          case 'reminders':
+            return (
+              <CollapsibleSection id="reminders" title="Připomínky" icon={Send} defaultOpen={false}>
+                <ReminderList companyId={companyId} companyName={company.name} />
               </CollapsibleSection>
             )
           case 'travel-diary':
