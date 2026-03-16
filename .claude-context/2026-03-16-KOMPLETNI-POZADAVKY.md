@@ -28,9 +28,9 @@
 - ✅ BOD-013: Inbox dokladů — seskupení podle klientů (clientGroups v inbox/page.tsx:400)
 - ❌ BOD-014: Inbox dokladů — zpracované doklady přesunout do profilu klienta — logika nenalezena
 - ✅ BOD-015: GTD/Práce — 3 taby Inbox|Úkoly|Projekty + InboxList component (work/page.tsx)
-- ❌ BOD-016: Navigace — rozdělení sidebaru "denní práce" vs "extras" — neimplementováno
-- ❌ BOD-017: Marketplace — admin se stále musí "registrovat" (marketplace/register/ stránka stále existuje)
-- ❌ BOD-018: Revenue analytika — stále na /accountant/revenue/, nepřesunuto do Admin/Analytika
+- ✅ BOD-016: Navigace — sidebar má 3 skupiny: dailyWorkNav (6 items) + managementNav/Správa (7 items) + toolsNav (2) ✅ (bylo hotové)
+- ✅ BOD-017: Marketplace — admin bypass: useAccountantUser + useRouter, admin se přesměruje na /marketplace-requests, nevidí reg. formulář
+- ✅ BOD-018: Revenue analytika — je v managementNav (Správa collapsible), admin-only filtr na řádcích 416+607 layoutu ✅
 - ⚠️ BOD-019: Krizový plán — client/crisis/page.tsx existuje, ale umístění pod "Firma" neověřeno
 - ❌ BOD-020: Role — junior vs senior účetní rozlišení — nenalezeno v kódu
 - ✅ BOD-021: Landing page pro klienty — /pro-podnikatele/ existuje
@@ -199,9 +199,9 @@
 
 | Status | Počet | Body |
 |--------|-------|------|
-| ✅ HOTOVO | 49 | BOD-001-002,005,009-010,012-013,015,021,023-027,029-030,033,036-037,041-042,044,049-051,053,057,065,079,085-086,088,092-094,096,098,103-105,113-114,116,121,137-138,140,142,144 |
+| ✅ HOTOVO | 52 | BOD-001-002,005,009-010,012-013,015-018,021,023-027,029-030,033,036-037,041-042,044,049-051,053,057,065,079,085-086,088,092-094,096,098,103-105,113-114,116,121,137-138,140,142,144 |
 | ⚠️ ČÁSTEČNĚ | 49 | Viz výše (potřebuje doladění nebo runtime ověření; 6 triviálních se právě opravuje) |
-| ❌ CHYBÍ | 25 | BOD-006,007,011,014,016-018,020,022,039-040,043,046-048,054-056,059,072,078,087,091,100-101,122 |
+| ❌ CHYBÍ | 22 | BOD-006,007,011,014,020,022,039-040,043,046-048,054-056,059,072,078,087,091,100-101,122 |
 | 🔧 RADIM | 22 | BOD-066-067,069-071,073-075,077,080-082,089-090 + BOD-131-136 |
 
 ### Kritické skupiny

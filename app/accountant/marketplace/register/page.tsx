@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +12,7 @@ import {
   Store, Search, CheckCircle2, Clock, XCircle, Building2,
   MapPin, Mail, Phone, Globe, Tag, Users, Banknote, Loader2,
 } from 'lucide-react'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 const SPECIALIZATIONS = [
   'Účetnictví', 'Daňové evidence', 'Mzdy a personalistika',
@@ -65,12 +67,21 @@ const initialForm: FormData = {
 type RegistrationStatus = 'none' | 'pending' | 'verified' | 'rejected'
 
 export default function MarketplaceRegisterPage() {
+  const router = useRouter()
+  const { userRole, loading: userLoading } = useAccountantUser()
   const [form, setForm] = useState<FormData>(initialForm)
   const [aresLoading, setAresLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState<RegistrationStatus>('none')
   const [rejectionReason, setRejectionReason] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Admin bypass: redirect to marketplace management instead of showing registration form
+  useEffect(() => {
+    if (!userLoading && userRole === 'admin') {
+      router.replace('/accountant/marketplace-requests')
+    }
+  }, [userLoading, userRole, router])
 
   // Check existing registration
   useEffect(() => {
@@ -182,7 +193,7 @@ export default function MarketplaceRegisterPage() {
     }
   }
 
-  if (loading) {
+  if (loading || userLoading || userRole === 'admin') {
     return (
       <div className="p-6 text-center text-muted-foreground">
         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
