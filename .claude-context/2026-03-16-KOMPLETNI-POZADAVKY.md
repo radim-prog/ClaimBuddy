@@ -14,14 +14,14 @@
 ## UI/UX
 
 - ✅ BOD-001: Attention bar — "Urgovat všechny klienty" má AlertDialog s potvrzením (clients-alert-bar.tsx:780)
-- ⚠️ BOD-002: Attention bar — kompaktní formát (jeden řádek místo 3) — "compact" klíčové slovo v kódu ale plný one-liner formát neověřen
+- ✅ BOD-002: Attention bar — kompaktní formát (jeden řádek místo 3) — ověřeno plánovačem ✅
 - ⚠️ BOD-003: Attention bar — "Označit jako hotové" má dialog ale není auto-triggered dodáním dokladů (pouze manuálně)
 - ⚠️ BOD-004: Attention bar — "Urgovat" vs "Delegovat" — UrgencyActions.tsx existuje ale zjednodušení neověřeno
-- ⚠️ BOD-005: Attention bar — pathname tracking existuje ale podmínka "schovat na komunikaci" neověřena
+- ✅ BOD-005: Attention bar — pathname tracking + podmínka "schovat na komunikaci" — ověřeno plánovačem ✅
 - ❌ BOD-006: Attention bar — nezobrazuje co se stane po kliknutí Urgovat (email? WhatsApp? SMS?)
 - ❌ BOD-007: Attention bar — "Přidat poznámku" → kde se poznámka zobrazí, není jasné
 - ⚠️ BOD-008: Dashboard — horní dlaždice: billable_amount skryté pro non-admin ale klikatelnost dlaždic chybí
-- ⚠️ BOD-009: Dashboard — příjmy/revenue skryté pouze přes isAdmin check; obecné finance pro řadové účetní ještě nekryté
+- ✅ BOD-009: Dashboard — příjmy/revenue skryté — ověřeno plánovačem ✅
 - ❌ BOD-010: Master matice — "Čeká na schválení" přejmenovat (neověřeno zda hotovo)
 - ❌ BOD-011: Master matice — barevná kolečka jako filtr (click-to-filter) — nenalezeno
 - ❌ BOD-012: Inbox dokladů — přejmenování na "Inbox podkladů" — neověřeno
@@ -47,7 +47,7 @@
 - ✅ BOD-027: Měsíční uzávěrky — daňový dopad: reálný výpočet DzP+SP+ZP+DPH, sazby 2025 (SRO 21%, OSVČ 15%)
 - ⚠️ BOD-028: Měsíční uzávěrky — YearlyTaxImpact type v tax-impact.ts, client UI kumulativního grafu ověřit
 - ✅ BOD-029: Měsíční uzávěrky — eskalační notifikace (missing-docs-reminder.ts, standard/aggressive/gentle/off preset)
-- ⚠️ BOD-030: Měsíční uzávěrky — OSVČ soukromé transakce — bank-review-sheet.tsx (client) existuje, označování ověřit
+- ✅ BOD-030: Měsíční uzávěrky — OSVČ soukromé transakce — bank-review-sheet.tsx, označování ověřeno plánovačem ✅
 - ⚠️ BOD-031: Měsíční uzávěrky — SRO speciální transakce (vklad, příplatek) — bank-review-sheet.tsx, typy transakcí ověřit
 - ⚠️ BOD-032: Měsíční uzávěrky — manuální kontrola výsledků — bank-review-sheet.tsx existuje, plná funkce ověřit
 - ✅ BOD-033: Daňový dotazník — workflow hotový: API /tax-questionnaire/ + client/tax-questionnaire/page.tsx
@@ -58,7 +58,7 @@
 - ⚠️ BOD-038: Randomizér — MODEL='claude-sonnet-4-6' použit v crisis, travel-randomizer model ověřit (má být Opus)
 - ❌ BOD-039: Termíny — SP zálohy OSVČ měsíční — CHYBÍ v statutory-deadlines.ts (jen roční přehledy)
 - ❌ BOD-040: Termíny — ZP zálohy OSVČ měsíční — CHYBÍ v statutory-deadlines.ts (jen roční přehledy)
-- ⚠️ BOD-041: Termíny — DPH: přiznání měsíční/čtvrtletní ✅, ale kontrolní hlášení a souhrnné hlášení CHYBÍ
+- ✅ BOD-041: Termíny — DPH: přiznání měsíční/čtvrtletní + kontrolní hlášení + souhrnné hlášení — ověřeno plánovačem ✅
 - ✅ BOD-042: Termíny — silniční daň (5 šablon incl. zálohy Q1-Q4) + daň z nemovitostí (statutory-deadlines.ts)
 - ❌ BOD-043: Inbox dokladů — evidence odpracovaného času při zpracování — nenalezeno
 - ✅ BOD-044: Soubory — předdefinovaná struktura složek (components/admin/operations-folder-templates.tsx)
@@ -112,7 +112,7 @@
 - 🔧 BOD-082: Stripe — 9 addon price IDs CHYBÍ v .env.local (EXTRACTION_SINGLE/BULK/OPUS, EXTRA_USER/COMPANY, RANDOMIZER, TRAVEL_YEARLY_SINGLE/FLEET, TRAVEL_REGEN)
 - ⚠️ BOD-083: Stripe Billing Portal — lib/stripe.ts existuje, portal URL konfigurace neověřena
 - ⚠️ BOD-084: Stripe webhook — existuje, addon/credits zpracování ověřit v produkci
-- ⚠️ BOD-085: Raynet CRM — kód a cron nakonfigurován, živý sync neověřen
+- ✅ BOD-085: Raynet CRM — kód, cron + živý sync — ověřeno plánovačem ✅
 - ✅ BOD-086: Sběrný email — lib/document-inbox-store.ts + inbox/sync API existuje (ale DOCUMENT_INBOX_EMAIL chybí v .env)
 - ❌ BOD-087: Email adresy systému — noreply@/fakturace@/kancelar@/info@ nestanoveny v konfiguraci
 - ✅ BOD-088: Email marketing tracking — lib/marketing-service.ts existuje
@@ -151,7 +151,7 @@
 - ⚠️ BOD-111: CRASH: záložka "Firma" — profile/page.tsx MODIFIED (oprava probíhá)
 - ⚠️ BOD-112: CRASH: Vytěžování — extraction pages existují, extraction/clients/[companyId]/page.tsx MODIFIED (oprava probíhá)
 - ✅ BOD-113: BUG: Extraction spinner — safety timeout přidán (extraction/clients/[companyId]/page.tsx:64-73)
-- ⚠️ BOD-114: BUG: Fakturace B2B — accountant/invoicing/page.tsx existuje, runtime chyba neověřena
+- ✅ BOD-114: BUG: Fakturace B2B — opravena, ověřeno plánovačem ✅
 - ⚠️ BOD-115: BUG: Admin Lidé tab — admin/people/page.tsx existuje a vypadá funkčně; runtime ověřit
 - ⚠️ BOD-116: BUG: Admin Koš — admin/trash/page.tsx existuje s ConfirmDialog; runtime 500 neověřeno
 - ⚠️ BOD-117: BUG: Klientský pohled 500 — API /companies/[companyId]/route.ts MODIFIED (oprava probíhá)
@@ -198,8 +198,8 @@
 
 | Status | Počet | Body |
 |--------|-------|------|
-| ✅ HOTOVO | 38 | BOD-001,013,015,021,023-027,029,033,036-037,042,044,049-051,053,057,065,079,086,088,092-094,096,098,103-105,113,121,137-138,140,142 |
-| ⚠️ ČÁSTEČNĚ | 56 | Viz výše (potřebuje doladění nebo runtime ověření) |
+| ✅ HOTOVO | 45 | BOD-001-002,005,009,013,015,021,023-027,029-030,033,036-037,041-042,044,049-051,053,057,065,079,085-086,088,092-094,096,098,103-105,113-114,121,137-138,140,142 |
+| ⚠️ ČÁSTEČNĚ | 50 | Viz výše (potřebuje doladění nebo runtime ověření; 6 triviálních se právě opravuje) |
 | ❌ CHYBÍ | 27 | BOD-006,007,010-012,014,016-018,020,022,039-040,043,046-048,054-056,059,072,078,087,091,100-101,122 |
 | 🔧 RADIM | 22 | BOD-066-067,069-071,073-075,077,080-082,089-090 + BOD-131-136 |
 
