@@ -191,7 +191,7 @@
 - ⚠️ BOD-141: Sdílený klientský profil — app-switcher existuje, ale plné sdílení DB dat claims/účetnictví neověřeno
 - ✅ BOD-142: Multi-tenant admin — admin/tenants/ stránka + API tenants/[firmId]/ existuje
 - ⚠️ BOD-143: Sdílená infrastruktura — lib kód pro Stripe/Ecomail/Telegram/WhatsApp/Notion existuje; konfigurace závisí na chybějících API klíčích
-- ❌ BOD-144: 🔴 TIER ALIAS BUG — plan-gate.ts řádek 296: `business → enterprise` ale DB plan_limits má `plan_tier='business'`. Pokud MONETIZATION_ENABLED=true → getPlanLimits('accountant','enterprise') nenajde row → všechny features zamknuty pro Radima. **FIXNOUT PŘED zapnutím monetizace!**
+- ✅ BOD-144: 🔴 TIER ALIAS BUG — FIXNUTO plánovačem: business→business v plan-gate.ts (plan_limits row bude nalezen správně)
 
 ---
 
@@ -199,20 +199,12 @@
 
 | Status | Počet | Body |
 |--------|-------|------|
-| ✅ HOTOVO | 46 | BOD-001-002,005,009,013,015,021,023-027,029-030,033,036-037,041-042,044,049-051,053,057,065,079,085-086,088,092-094,096,098,103-105,113-114,116,121,137-138,140,142 |
+| ✅ HOTOVO | 47 | BOD-001-002,005,009,013,015,021,023-027,029-030,033,036-037,041-042,044,049-051,053,057,065,079,085-086,088,092-094,096,098,103-105,113-114,116,121,137-138,140,142,144 |
 | ⚠️ ČÁSTEČNĚ | 49 | Viz výše (potřebuje doladění nebo runtime ověření; 6 triviálních se právě opravuje) |
-| ❌ CHYBÍ | 28 | BOD-006,007,010-012,014,016-018,020,022,039-040,043,046-048,054-056,059,072,078,087,091,100-101,122,144 |
+| ❌ CHYBÍ | 27 | BOD-006,007,010-012,014,016-018,020,022,039-040,043,046-048,054-056,059,072,078,087,091,100-101,122 |
 | 🔧 RADIM | 22 | BOD-066-067,069-071,073-075,077,080-082,089-090 + BOD-131-136 |
 
 ### Kritické skupiny
-
-**🔴 Nejdůležitější ❌ CHYBÍ:**
-- BOD-039/040: SP a ZP zálohy OSVČ v termínech
-- BOD-041: Kontrolní hlášení + souhrnné hlášení v termínech
-- BOD-047/048: Snapshots — celá funkce chybí
-- BOD-054: Krizový chatbot
-- BOD-078: TELFA API integrace
-- BOD-122: Folder creation nefunkční
 
 **🔴 Nejdůležitější 🔧 RADIM:**
 - BOD-066: ECOMAIL_API_KEY (P0)
@@ -222,5 +214,70 @@
 
 **⚠️ Důležité ČÁSTEČNĚ (ověřit v runtime):**
 - BOD-108-117: Crash bugy — opravy probíhají (MODIFIED soubory)
-- BOD-118-120: Master matice záložky — kód existuje, runtime neověřen
+- BOD-118-120: Master matice záložky — fungují, tax_period_data prázdná (normální stav)
 - BOD-028: Kumulativní daňový graf v klientském portálu
+
+---
+
+## PRIORITIZACE ❌ CHYBÍ (27 bodů)
+
+### 🔴 P0 — Triviální opravy, vysoký dopad (1–30 min kódu)
+
+| BOD | Co chybí | Proč prioritní |
+|-----|----------|---------------|
+| BOD-122 | Vytvořit složku — createFolder logika | Uživatelé nemohou vytvořit složky = blocker |
+| BOD-039 | SP zálohy OSVČ měsíční v termínech | Zákonný termín = právní riziko pro klienty |
+| BOD-040 | ZP zálohy OSVČ měsíční v termínech | Zákonný termín = právní riziko pro klienty |
+| BOD-010 | Master matice — "Čeká na schválení" přejmenovat | 1 řádek, zbytečně matoucí label |
+| BOD-012 | Inbox dokladů → "Inbox podkladů" | 1 řádek, správná terminologie |
+| BOD-091 | .env.local.example zastaralý | Matoucí pro budoucí setup; ~5 řádků |
+
+### 🟠 P1 — Důležité pro UX a provoz
+
+| BOD | Co chybí | Proč prioritní |
+|-----|----------|---------------|
+| BOD-006 | Attention bar — co se stane po Urgovat | Uživatel neví co akce dělá → mistrust |
+| BOD-007 | Attention bar — kam jde "Přidat poznámku" | UX confusion, denní workflow |
+| BOD-055 | Krizový plán — checklist pro PU "co dělat hned" | Rychlý content; přidaná hodnota claims modulu |
+| BOD-087 | Email adresy systému (noreply@, kancelar@) | Potřeba pro launch — emaily musí mít správný from |
+| BOD-022 | Freemium UX — indikátor zdarma vs placené | Důležité pro konverzi při launchi |
+| BOD-014 | Zpracované doklady → profil klienta | Workflow uzávěrky je neúplný bez tohoto |
+
+### 🟡 P2 — Střední priorita
+
+| BOD | Co chybí | Proč prioritní |
+|-----|----------|---------------|
+| BOD-011 | Master matice — barevná kolečka jako filtr | UX vylepšení dashboardu |
+| BOD-016 | Sidebar — denní práce vs extras | Navigace se zlepší pro nové uživatele |
+| BOD-017 | Marketplace — admin bez registrace | Radim se musí registrovat = zbytečné tření |
+| BOD-018 | Revenue → Admin/Analytika přesun | Čistší architektura navigace |
+| BOD-043 | Time tracking při zpracování dokladů | Pro billing hodinové sazby |
+| BOD-054 | Krizový chatbot (max 10 otázek) | AI feature pro vyšší tarify |
+| BOD-100 | Cross-selling emaily (účetnictví ↔ PU) | Revenue po launchi |
+| BOD-101 | Cross-selling — 3 měsíce zdarma na druhou službu | Launch promotion |
+
+### 🟢 P3 — Nízká priorita / Externě závislé
+
+| BOD | Co chybí | Proč nízká priorita |
+|-----|----------|---------------------|
+| BOD-020 | Junior/senior role rozlišení | Nice-to-have, binární role zatím stačí |
+| BOD-046 | Automatické třídění dokumentů do složek | Složitá AI feature, not critical |
+| BOD-047 | Snapshots per firma | Potřeba Hetzner disk (BOD-081 = 🔧 Radim) |
+| BOD-048 | Obnovení snapshots z admin | Závisí na BOD-047 |
+| BOD-056 | TELFA.cz API | Fyzicky SIM karta (BOD-077 = 🔧 Radim) |
+| BOD-062 | Role-based access junior/senior | Závisí na BOD-020 |
+| BOD-063 | Snapshots izolace | Závisí na BOD-047 |
+| BOD-072 | Signi.com DOCX šablony | Radim musí připravit šablony ručně |
+| BOD-078 | TELFA.cz API integrace | Závisí na fyzické SIM (BOD-077) |
+| BOD-106 | Reklama (Google Ads, Meta) | Není code — business/marketing akce |
+
+### Doporučené pořadí pro příští sprint
+
+1. **BOD-122** — Vytvořit složku (blocker)
+2. **BOD-039 + BOD-040** — SP/ZP zálohy OSVČ do termínů (zákon)
+3. **BOD-010 + BOD-012** — textové přejmenování (trivia, < 5 min)
+4. **BOD-091** — .env.local.example update
+5. **BOD-006 + BOD-007** — Attention bar UX feedback
+6. **BOD-087** — Email adresy systému
+7. **BOD-055** — PU checklist "co dělat hned"
+8. **BOD-022** — Freemium UX indikátor (před launche)
