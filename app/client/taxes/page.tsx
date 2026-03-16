@@ -158,7 +158,7 @@ export default function ClientTaxesPage() {
         <OverviewTab summary={summary} periods={periods} vatPayer={vatPayer} />
       ) : (
         <MissingDocsTab
-          companyId={selectedCompanyId!}
+          companyId={selectedCompanyId || ''}
           impact={missingImpact}
           vatPayer={vatPayer}
           year={year}
