@@ -25,6 +25,7 @@ import {
   TrendingUp,
   CreditCard,
   FileSignature,
+  ChevronDown,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -61,30 +62,39 @@ import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 
-const navigation = [
+// === NAVIGATION GROUPS ===
+
+// Group 1: Daily work — always visible (6 items)
+const dailyWorkNav = [
   { name: 'Přehled', href: '/accountant/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
   { name: 'Klienti', href: '/accountant/clients', icon: Users, badge: 'attention' as const, tourId: 'nav-clients' },
   { name: 'Komunikace', href: '/accountant/komunikace', icon: MessageCircle, badge: 'messages' as const, feature: 'messages', tourId: 'nav-komunikace' },
   { name: 'Inbox', href: '/accountant/inbox', icon: Inbox, badge: 'inbox' as const, activeMatch: ['/accountant/inbox'], tourId: 'nav-inbox' },
   { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'], tourId: 'nav-work' },
   { name: 'Vytěžování', href: '/accountant/extraction', icon: ScanLine, activeMatch: ['/accountant/extraction'], feature: 'extraction', tourId: 'nav-extraction' },
-  { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck, tourId: 'nav-deadlines' },
-  { name: 'Připomínky', href: '/accountant/reminders', icon: Send, activeMatch: ['/accountant/reminders'], tourId: 'nav-reminders' },
-  { name: 'Znalostní báze', href: '/accountant/knowledge-base', icon: BookOpen, activeMatch: ['/accountant/knowledge-base'], tourId: 'nav-knowledge-base' },
-  { name: 'Marketplace', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'] },
-  { name: 'Revenue', href: '/accountant/revenue', icon: TrendingUp, activeMatch: ['/accountant/revenue'] },
 ]
 
-const adminNavigation = [
+// Group 2: Management — collapsible (7 items)
+const managementNav = [
+  { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck, tourId: 'nav-deadlines' },
+  { name: 'Připomínky', href: '/accountant/reminders', icon: Send, activeMatch: ['/accountant/reminders'], tourId: 'nav-reminders' },
+  { name: 'Marketplace', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'] },
+  { name: 'Revenue', href: '/accountant/revenue', icon: TrendingUp, activeMatch: ['/accountant/revenue'] },
   { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics'], feature: 'analytics' },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices'], tourId: 'nav-invoicing', feature: 'client_invoicing' },
   { name: 'Billing', href: '/accountant/billing', icon: CreditCard, activeMatch: ['/accountant/billing'] },
-  { name: 'Nastavení', href: '/accountant/settings', icon: Settings, tourId: 'nav-settings' },
-  { name: 'Administrace', href: '/accountant/admin', icon: Shield },
 ]
 
-const demoFeatures: { name: string; href: string; icon: React.ComponentType<{ className?: string }>; badge: string }[] = [
-  { name: 'Podepisování', href: '/accountant/signing', icon: FileSignature, badge: 'DEMO' },
+// Group 3: Tools — collapsible (2 items)
+const toolsNav = [
+  { name: 'Znalostní báze', href: '/accountant/knowledge-base', icon: BookOpen, activeMatch: ['/accountant/knowledge-base'], tourId: 'nav-knowledge-base' },
+  { name: 'Podepisování', href: '/accountant/signing', icon: FileSignature, activeMatch: ['/accountant/signing'] },
+]
+
+// Group 4: Admin — bottom section, admin-only (2 items)
+const adminNav = [
+  { name: 'Nastavení', href: '/accountant/settings', icon: Settings, tourId: 'nav-settings' },
+  { name: 'Administrace', href: '/accountant/admin', icon: Shield },
 ]
 
 export default function AccountantLayout({
@@ -120,6 +130,18 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   // Attention for Klienti badge: exclude unread_messages (shown on Komunikace instead)
   const clientsAttentionCount = attentionTotals.total - attentionTotals.unread_messages
   const [collapsed, setCollapsed] = useState(false)
+  const [managementOpen, setManagementOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebar-management-open') !== 'false'
+    }
+    return true
+  })
+  const [toolsOpen, setToolsOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebar-tools-open') !== 'false'
+    }
+    return false
+  })
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   useEffect(() => {
@@ -138,6 +160,19 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const toggleSidebar = () => {
     setCollapsed(prev => {
       localStorage.setItem('accountant-sidebar-collapsed', String(!prev))
+      return !prev
+    })
+  }
+
+  const toggleManagement = () => {
+    setManagementOpen(prev => {
+      localStorage.setItem('sidebar-management-open', String(!prev))
+      return !prev
+    })
+  }
+  const toggleTools = () => {
+    setToolsOpen(prev => {
+      localStorage.setItem('sidebar-tools-open', String(!prev))
       return !prev
     })
   }

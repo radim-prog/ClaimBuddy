@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { mapDbRowToInvoice, getInvoiceStatus, generateInvoiceNumber } from '@/lib/invoice-utils'
+import { mapDbRowToInvoice, generateInvoiceNumber } from '@/lib/invoice-utils'
 
 export const dynamic = 'force-dynamic'
 

@@ -39,8 +39,6 @@ export async function POST(request: NextRequest) {
       results.payouts = await generatePayouts(prevPeriod)
     }
 
-    console.log(`[Billing cron] action=${action}, period=${currentPeriod}, results=`, JSON.stringify(results))
-
     return NextResponse.json({ success: true, period: currentPeriod, ...results })
   } catch (error) {
     console.error('[Billing cron] Error:', error)

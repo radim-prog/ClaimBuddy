@@ -90,8 +90,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`[Billing cron] Generated: ${generated}, New overdue: ${newOverdue?.length || 0}, Escalated: ${escalated}`)
-
     return NextResponse.json({
       success: true,
       generated,

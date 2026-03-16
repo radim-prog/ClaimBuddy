@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { isStaffRole } from '@/lib/access-check'
-import { getDohodaById, getVykazy, getVykazyByCompany } from '@/lib/dohodari-store-db'
+import { getDohodaById, getVykazy } from '@/lib/dohodari-store-db'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import {
   DohodaPDF,

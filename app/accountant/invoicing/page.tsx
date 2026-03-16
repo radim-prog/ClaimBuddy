@@ -155,10 +155,6 @@ export default function InvoicingPage() {
   // Expandable card state
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
 
-  // Invoice state
-  const [invoices, setInvoices] = useState<Invoice[]>([])
-  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set())
-
   // Invoice preview modal state
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [previewInvoice, setPreviewInvoice] = useState<InvoicePreview | null>(null)
@@ -198,14 +194,6 @@ export default function InvoicingPage() {
       .then(json => { if (json) setTimeSummary(json) })
       .catch(() => {})
       .finally(() => setTimeLoading(false))
-  }, [currentPeriod])
-
-  // Fetch invoices when period changes
-  useEffect(() => {
-    fetch(`/api/accountant/invoices?period=${currentPeriod}`)
-      .then(r => r.ok ? r.json() : { invoices: [] })
-      .then(json => setInvoices(json.invoices || []))
-      .catch(() => setInvoices([]))
   }, [currentPeriod])
 
   // Billable extra tasks (secondary concern, not yet connected)
@@ -296,13 +284,6 @@ export default function InvoicingPage() {
     } finally {
       handleClosePreview()
     }
-  }
-
-  // Handler: Navigate to time entry task detail
-  const handleTimeEntryClick = (entry: { description: string; userName: string }) => {
-    toast.info('Navigace k úkolu', {
-      description: `Úkol: ${entry.description.substring(0, 50)}...`,
-    })
   }
 
   // Handler: Create invoice from selected tasks (billable extra tasks section)

@@ -45,8 +45,6 @@ export async function POST(request: NextRequest) {
 
     const totalPurged = Object.values(results).reduce((a, b) => a + b, 0)
 
-    console.log(`[PurgeTrash] Purged ${totalPurged} items (retention: ${retentionDays}d, cutoff: ${cutoff})`, results)
-
     return NextResponse.json({
       ok: true,
       timestamp: new Date().toISOString(),

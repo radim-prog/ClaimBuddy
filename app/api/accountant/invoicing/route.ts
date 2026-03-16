@@ -4,19 +4,6 @@ import { getInvoiceStatus } from '@/lib/invoice-utils'
 
 export const dynamic = 'force-dynamic'
 
-// Transform time_logs to time entries format
-function transformTimeEntries(timeLogs: any[]): any[] {
-  return timeLogs.map(log => ({
-    date: log.date || log.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
-    userId: log.user_id || 'unknown',
-    userName: log.user_name || log.user?.name || 'Unknown User',
-    description: log.description || log.task_title || 'Work entry',
-    hours: log.hours || (log.minutes ? log.minutes / 60 : 0),
-    note: log.note || '',
-    billable: log.billable !== false,
-  }))
-}
-
 // Build invoicing periods from time_logs and invoices data
 function buildInvoicingPeriods(timeLogs: any[], invoices: any[]): { period: string; projects: any[] }[] {
   const periodMap = new Map<string, Map<string, any>>()

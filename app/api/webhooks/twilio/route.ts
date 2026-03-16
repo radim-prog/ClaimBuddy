@@ -50,8 +50,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!config) {
-      // Unknown sender - log and ignore
-      console.log(`[Twilio] Unknown WhatsApp sender: ${phoneNumber}`)
+      console.warn(`[Twilio] Unknown WhatsApp sender: ${phoneNumber}`)
       return new NextResponse('<Response/>', {
         status: 200,
         headers: { 'Content-Type': 'text/xml' },
