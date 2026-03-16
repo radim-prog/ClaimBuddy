@@ -1,55 +1,121 @@
 import Link from 'next/link'
 import { Logo } from '@/components/ui/logo'
 
+const FOOTER_COLS = [
+  {
+    heading: 'Produkt',
+    links: [
+      { href: '#features', label: 'Funkce' },
+      { href: '/pricing', label: 'Ceník' },
+      { href: '/accountant/marketplace', label: 'Marketplace' },
+      { href: '#faq', label: 'FAQ' },
+      { href: '/auth/register', label: 'Začít zdarma' },
+    ],
+  },
+  {
+    heading: 'Řešení',
+    links: [
+      { href: '/pro-ucetni', label: 'Pro účetní firmy' },
+      { href: '/pro-podnikatele', label: 'Pro podnikatele' },
+      { href: '/claims', label: 'Pojistné události' },
+      { href: '/pricing', label: 'Tarify a limity' },
+    ],
+  },
+  {
+    heading: 'Podpora',
+    links: [
+      { href: '/auth/login', label: 'Přihlásit se' },
+      { href: '/auth/register', label: 'Registrace' },
+      { href: 'mailto:podpora@zajcon.cz', label: 'Kontakt' },
+      { href: 'mailto:fakturace@zajcon.cz', label: 'Fakturace' },
+    ],
+  },
+  {
+    heading: 'Společnost',
+    links: [
+      { href: 'https://app.zajcon.cz', label: 'Aplikace' },
+      { href: '/legal/terms', label: 'Obchodní podmínky' },
+      { href: '/legal/privacy', label: 'Ochrana osobních údajů' },
+      { href: '/legal/cookies', label: 'Cookies' },
+    ],
+  },
+]
+
 export function Footer() {
   return (
-    <footer className="border-t border-border/40 bg-background">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Brand */}
-          <div className="sm:col-span-2 lg:col-span-1">
-            <Logo size="sm" variant="purple" />
-            <p className="mt-3 text-sm text-muted-foreground max-w-xs">
-              Moderní platforma pro spolupráci účetních a jejich klientů.
+    <footer className="bg-gray-950 text-gray-300">
+      <div className="container mx-auto px-6 pt-16 pb-8">
+        {/* Top grid */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+          {/* Brand — wider col */}
+          <div className="col-span-2 md:col-span-1">
+            <Logo size="sm" variant="white" />
+            <p className="mt-4 text-sm text-gray-400 leading-relaxed max-w-xs">
+              Moderní platforma pro spolupráci účetních a jejich klientů. Bezpečně, přehledně, bez papírování.
             </p>
+            <div className="mt-5 flex items-center gap-3">
+              <a
+                href="mailto:info@zajcon.cz"
+                className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                info@zajcon.cz
+              </a>
+            </div>
           </div>
 
-          {/* Product */}
-          <div>
-            <h4 className="text-sm font-semibold text-foreground mb-3">Produkt</h4>
-            <ul className="space-y-2">
-              <li><a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Funkce</a></li>
-              <li><Link href="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Ceník</Link></li>
-              <li><Link href="/marketplace" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Marketplace</Link></li>
-              <li><a href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</a></li>
-            </ul>
-          </div>
-
-          {/* Portals */}
-          <div>
-            <h4 className="text-sm font-semibold text-foreground mb-3">Řešení</h4>
-            <ul className="space-y-2">
-              <li><Link href="/pro-ucetni" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pro účetní</Link></li>
-              <li><Link href="/pro-podnikatele" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pro podnikatele</Link></li>
-              <li><Link href="/auth/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Přihlášení</Link></li>
-            </ul>
-          </div>
-
-          {/* Legal */}
-          <div>
-            <h4 className="text-sm font-semibold text-foreground mb-3">Právní</h4>
-            <ul className="space-y-2">
-              <li><Link href="/legal/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Obchodní podmínky</Link></li>
-              <li><Link href="/legal/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Ochrana osobních údajů</Link></li>
-              <li><Link href="/legal/cookies" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Cookies</Link></li>
-            </ul>
-          </div>
+          {/* 4 link columns */}
+          {FOOTER_COLS.map((col) => (
+            <div key={col.heading}>
+              <h4 className="text-sm font-semibold text-white mb-4">{col.heading}</h4>
+              <ul className="space-y-2.5">
+                {col.links.map((link) => (
+                  <li key={link.href}>
+                    {link.href.startsWith('http') || link.href.startsWith('mailto') ? (
+                      <a
+                        href={link.href}
+                        className="text-sm text-gray-400 hover:text-white transition-colors"
+                        {...(link.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                      >
+                        {link.label}
+                      </a>
+                    ) : link.href.startsWith('#') ? (
+                      <a
+                        href={link.href}
+                        className="text-sm text-gray-400 hover:text-white transition-colors"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        className="text-sm text-gray-400 hover:text-white transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        <div className="mt-12 pt-6 border-t border-border/40 text-center">
-          <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} Účetní OS. Všechna práva vyhrazena.
+        {/* Divider */}
+        <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-gray-500 order-2 sm:order-1">
+            &copy; {new Date().getFullYear()} Účetní OS s.r.o. Všechna práva vyhrazena.
           </p>
+          <div className="flex items-center gap-4 order-1 sm:order-2">
+            <Link href="/legal/terms" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+              Podmínky
+            </Link>
+            <Link href="/legal/privacy" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+              Soukromí
+            </Link>
+            <Link href="/legal/cookies" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+              Cookies
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
