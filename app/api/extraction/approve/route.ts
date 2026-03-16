@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { populateDenormalizedFields } from '@/lib/document-store'
-import { isStaffRole } from '@/lib/access-check'
+import { isStaffRole, canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,7 +22,22 @@ export async function POST(request: NextRequest) {
 
     // Support both new (documentId) and legacy (company_id + extracted_data) formats
     if (documentId) {
-      // New format: update existing document
+      // New format: update existing document — verify ownership first
+      const { data: doc } = await supabaseAdmin
+        .from('documents')
+        .select('company_id')
+        .eq('id', documentId)
+        .single()
+
+      if (!doc) {
+        return NextResponse.json({ error: 'Document not found' }, { status: 404 })
+      }
+
+      const impersonate = request.headers.get('x-impersonate-company')
+      if (!(await canAccessCompany(userId, userRole, doc.company_id, impersonate))) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
       const status = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'extracted'
 
       const updateData: Record<string, unknown> = {
@@ -57,7 +72,12 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ success: true, status })
     } else if (company_id && extracted_data) {
-      // Legacy format: create new document record
+      // Legacy format: verify company ownership before creating
+      const impersonate = request.headers.get('x-impersonate-company')
+      if (!(await canAccessCompany(userId, userRole, company_id, impersonate))) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
       const { data: doc, error } = await supabaseAdmin
         .from('documents')
         .insert({

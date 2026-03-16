@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { extractBankStatement } from '@/lib/kimi-ai'
 import { autoMatchTransaction, calculateTaxImpact } from '@/lib/bank-matching'
+import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,12 @@ export async function POST(request: NextRequest) {
 
     if (!file || !companyId) {
       return NextResponse.json({ error: 'Missing file or companyId' }, { status: 400 })
+    }
+
+    const userRole = request.headers.get('x-user-role')
+    const impersonate = request.headers.get('x-impersonate-company')
+    if (!(await canAccessCompany(userId, userRole, companyId, impersonate))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Get company info for tax calculations

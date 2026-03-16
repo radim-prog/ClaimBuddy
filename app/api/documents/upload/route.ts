@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { addUpload } from '@/lib/upload-store-db'
 import type { DocumentType } from '@/lib/upload-store-db'
+import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,12 @@ export async function POST(request: NextRequest) {
 
     if (!file || !companyId || !period || !type) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    const userRole = request.headers.get('x-user-role')
+    const impersonate = request.headers.get('x-impersonate-company')
+    if (!(await canAccessCompany(userId, userRole, companyId, impersonate))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Validate file size (20MB max - matches bucket limit)
