@@ -1,47 +1,93 @@
--- TASK-012: Billing-as-a-service — accounts receivable for marketplace providers
+-- Billing-as-a-service: accountant sets prices, platform collects, pays out accountant
+-- No Stripe Connect — platform collects all payments, tracks payouts internally
 
--- Per-client billing configuration (accountant sets monthly fee per client)
-CREATE TABLE IF NOT EXISTS client_billing_config (
+-- Billing configs: per-company monthly fee set by accountant
+CREATE TABLE IF NOT EXISTS billing_configs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  provider_id UUID NOT NULL REFERENCES marketplace_providers(id) ON DELETE CASCADE,
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  monthly_fee_czk INT NOT NULL,          -- in haléře (e.g. 500000 = 5000 Kč)
-  platform_fee_pct NUMERIC(5,2) DEFAULT 5.00, -- platform cut percentage
-  billing_day INT DEFAULT 1 CHECK (billing_day BETWEEN 1 AND 28),
-  status TEXT NOT NULL DEFAULT 'active'
-    CHECK (status IN ('active', 'paused', 'cancelled')),
+  accountant_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+  -- Pricing
+  monthly_fee INT NOT NULL, -- Kc per month
+  currency TEXT NOT NULL DEFAULT 'CZK',
+
+  -- Stripe
+  stripe_subscription_id TEXT,
+  stripe_price_id TEXT,
+  stripe_customer_id TEXT, -- client's Stripe customer ID
+
+  -- Status
+  status TEXT NOT NULL DEFAULT 'draft'
+    CHECK (status IN ('draft', 'active', 'paused', 'cancelled', 'suspended')),
+  activated_at TIMESTAMPTZ,
+  cancelled_at TIMESTAMPTZ,
+  suspended_at TIMESTAMPTZ,
+  suspension_reason TEXT,
+
+  -- Fee
+  platform_fee_pct NUMERIC(5,2) NOT NULL DEFAULT 10.00, -- platform takes 10% by default
+
+  -- Metadata
   notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(provider_id, company_id)
+
+  UNIQUE(company_id) -- one billing config per company
 );
 
--- Monthly billing cycles — one row per client per month
-CREATE TABLE IF NOT EXISTS billing_cycles (
+-- Billing invoices: monthly records of what was charged
+CREATE TABLE IF NOT EXISTS billing_invoices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  config_id UUID NOT NULL REFERENCES client_billing_config(id) ON DELETE CASCADE,
-  provider_id UUID NOT NULL REFERENCES marketplace_providers(id) ON DELETE CASCADE,
+  billing_config_id UUID NOT NULL REFERENCES billing_configs(id) ON DELETE CASCADE,
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  period TEXT NOT NULL,                   -- YYYY-MM
-  amount_due INT NOT NULL,               -- haléře
-  platform_fee INT NOT NULL,             -- haléře (our cut)
-  provider_payout INT NOT NULL,          -- haléře = amount_due - platform_fee
+
+  period TEXT NOT NULL, -- 'YYYY-MM'
+  amount INT NOT NULL, -- gross amount in Kc
+  platform_fee INT NOT NULL, -- platform fee in Kc
+  accountant_payout INT NOT NULL, -- amount - fee
+
+  -- Payment status
   status TEXT NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending', 'paid', 'overdue', 'cancelled', 'written_off')),
-  due_date DATE NOT NULL,
+    CHECK (status IN ('pending', 'paid', 'failed', 'overdue', 'refunded', 'waived')),
+  stripe_invoice_id TEXT,
   paid_at TIMESTAMPTZ,
-  payment_method TEXT,
+  due_date DATE NOT NULL,
+
+  -- Dunning
   reminder_count INT NOT NULL DEFAULT 0,
   last_reminder_at TIMESTAMPTZ,
-  escalation_level INT NOT NULL DEFAULT 0 CHECK (escalation_level BETWEEN 0 AND 3),
-  notes TEXT,
+  escalated BOOLEAN NOT NULL DEFAULT false,
+
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(config_id, period)
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  UNIQUE(billing_config_id, period)
 );
 
-CREATE INDEX IF NOT EXISTS idx_billing_config_provider ON client_billing_config(provider_id);
-CREATE INDEX IF NOT EXISTS idx_billing_config_company ON client_billing_config(company_id);
-CREATE INDEX IF NOT EXISTS idx_billing_cycles_status ON billing_cycles(status);
-CREATE INDEX IF NOT EXISTS idx_billing_cycles_period ON billing_cycles(period);
-CREATE INDEX IF NOT EXISTS idx_billing_cycles_provider ON billing_cycles(provider_id);
-CREATE INDEX IF NOT EXISTS idx_billing_cycles_overdue ON billing_cycles(due_date) WHERE status IN ('pending', 'overdue');
+-- Payout records: tracking what platform owes to accountants
+CREATE TABLE IF NOT EXISTS billing_payouts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  accountant_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+  period TEXT NOT NULL, -- 'YYYY-MM'
+  total_collected INT NOT NULL DEFAULT 0, -- total gross from all clients
+  total_fee INT NOT NULL DEFAULT 0, -- total platform fee
+  total_payout INT NOT NULL DEFAULT 0, -- net payout to accountant
+
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'processing', 'paid', 'failed')),
+  paid_at TIMESTAMPTZ,
+  payment_reference TEXT, -- bank transfer reference
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  UNIQUE(accountant_user_id, period)
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_billing_configs_accountant ON billing_configs(accountant_user_id);
+CREATE INDEX IF NOT EXISTS idx_billing_configs_status ON billing_configs(status) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_billing_invoices_period ON billing_invoices(period);
+CREATE INDEX IF NOT EXISTS idx_billing_invoices_status ON billing_invoices(status) WHERE status IN ('pending', 'overdue', 'failed');
+CREATE INDEX IF NOT EXISTS idx_billing_payouts_accountant ON billing_payouts(accountant_user_id);
