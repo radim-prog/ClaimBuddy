@@ -204,6 +204,13 @@
 | ❌ CHYBÍ | 8 | BOD-011,014,043,046,056,072,078,106 |
 | 🔧 RADIM | 22 | BOD-066-067,069-071,073-075,077,080-082,089-090 + BOD-131-136 |
 
+### Nové (mimo původní seznam)
+- ✅ SCRAPER: lib/scraper/ (types, rate-limiter, ares-scraper, firmy-scraper, leads-store, index) + /api/cron/scrape-accountants
+  - ARES NACE 6920 paginated fetch + Firmy.cz category scraper
+  - scraped_leads DB tabulka (viz SQL migrace v cron route)
+  - Rate limiter 1 req/s, exponential backoff retry, streaming generator pattern
+  - 🔧 RADIM: spustit CREATE TABLE scraped_leads SQL v Supabase
+
 ### Kritické skupiny
 
 **🔴 Nejdůležitější 🔧 RADIM:**
