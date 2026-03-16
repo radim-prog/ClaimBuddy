@@ -73,20 +73,21 @@ export default function ClaimsClientLayout({ children }: { children: ReactNode }
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
 
-      const c = data.company
-      const cases = data.cases || []
-      const open = cases.filter((x: { status: string }) =>
-        !['closed', 'rejected', 'withdrawn'].includes(x.status)
-      ).length
+      // API returns { profile: { company, claims_summary, accounting_summary } }
+      const c = data.profile?.company ?? data.company
+      const summary = data.profile?.claims_summary
+      const openCount = summary
+        ? (summary.total_cases - (summary.by_status?.closed ?? 0) - (summary.by_status?.rejected ?? 0) - (summary.by_status?.withdrawn ?? 0))
+        : 0
 
       setCompany({
         ...c,
-        cases_total: cases.length,
-        cases_open: open,
-        cases_closed: cases.length - open,
-        claimed_amount: cases.reduce((s: number, x: { claimed_amount?: number }) => s + (x.claimed_amount ?? 0), 0),
-        approved_amount: cases.reduce((s: number, x: { approved_amount?: number }) => s + (x.approved_amount ?? 0), 0),
-        paid_amount: cases.reduce((s: number, x: { paid_amount?: number }) => s + (x.paid_amount ?? 0), 0),
+        cases_total: summary?.total_cases ?? 0,
+        cases_open: openCount,
+        cases_closed: (summary?.total_cases ?? 0) - openCount,
+        claimed_amount: summary?.total_claimed ?? 0,
+        approved_amount: summary?.total_approved ?? 0,
+        paid_amount: summary?.total_paid ?? 0,
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Chyba načítání')
