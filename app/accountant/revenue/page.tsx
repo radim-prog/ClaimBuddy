@@ -9,6 +9,7 @@ import {
   TrendingUp, DollarSign, CreditCard, FileText, ChevronDown, ChevronUp,
   Banknote, Store,
 } from 'lucide-react'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 interface Summary {
   period: string
@@ -49,6 +50,8 @@ const pluginLabels: Record<string, string> = {
 const czk = (halere: number) => `${(halere / 100).toLocaleString('cs-CZ')} Kč`
 
 export default function RevenuePage() {
+  const { userRole } = useAccountantUser()
+  const isAdmin = userRole === 'admin'
   const [period, setPeriod] = useState(() => new Date().toISOString().slice(0, 7))
   const [provider, setProvider] = useState<any>(null)
   const [summary, setSummary] = useState<Summary[]>([])
@@ -78,7 +81,7 @@ export default function RevenuePage() {
     return <p className="text-center text-muted-foreground py-12">Načítání...</p>
   }
 
-  if (!provider) {
+  if (!provider && !isAdmin) {
     return (
       <div className="text-center py-12 space-y-3">
         <Store className="h-10 w-10 mx-auto text-muted-foreground/30" />
@@ -104,8 +107,11 @@ export default function RevenuePage() {
             Revenue sharing
           </h2>
           <p className="text-sm text-muted-foreground">
-            Podíl: {provider.revenue_share_pct}%
-            {provider.markup_pct > 0 && ` · Markup: +${provider.markup_pct}%`}
+            {provider ? (
+              <>Podíl: {provider.revenue_share_pct}%{provider.markup_pct > 0 && ` · Markup: +${provider.markup_pct}%`}</>
+            ) : (
+              <>Admin přehled — všichni poskytovatelé</>
+            )}
           </p>
         </div>
         <Input

@@ -13,11 +13,13 @@ import {
   Loader2,
   FolderKanban,
   CheckSquare,
+  Trash2,
+  ArrowRight,
 } from 'lucide-react'
 import { PrioritySwimlanes, WorkItem } from '@/components/gtd/priority-swimlanes'
 import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
 
-type TypeFilter = 'all' | 'tasks' | 'projects'
+type TypeFilter = 'all' | 'inbox' | 'tasks' | 'projects'
 
 type TaskFromAPI = {
   id: string
@@ -86,6 +88,109 @@ function calculateStreak(tasks: TaskFromAPI[]): number {
   return streak
 }
 
+function InboxList({ items, searchQuery, onAction }: {
+  items: TaskFromAPI[]
+  searchQuery: string
+  onAction: (id: string, action: 'task' | 'project' | 'delete') => Promise<void>
+}) {
+  const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+
+  const filtered = useMemo(() => {
+    if (!searchQuery) return items
+    const q = searchQuery.toLowerCase()
+    return items.filter(t => t.title.toLowerCase().includes(q) || t.company_name?.toLowerCase().includes(q))
+  }, [items, searchQuery])
+
+  const handleAction = async (id: string, action: 'task' | 'project' | 'delete') => {
+    if (action === 'delete' && confirmDelete !== id) {
+      setConfirmDelete(id)
+      return
+    }
+    setLoadingId(id)
+    setConfirmDelete(null)
+    await onAction(id, action)
+    setLoadingId(null)
+  }
+
+  if (filtered.length === 0) {
+    return (
+      <div className="py-16 text-center">
+        <Inbox className="h-12 w-12 text-green-400 mx-auto mb-3" />
+        <h3 className="text-lg font-semibold font-display mb-1 text-gray-900 dark:text-white">
+          {searchQuery ? 'Nic nenalezeno' : 'Inbox je prázdný'}
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {searchQuery ? 'Zkuste jiný dotaz' : 'Žádné nezpracované položky.'}
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm text-muted-foreground">{filtered.length} položek ke zpracování</p>
+        <Link href="/accountant/tasks/clarify" className="text-xs text-purple-600 hover:underline flex items-center gap-1">
+          Průvodce zpracováním <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+      {filtered.map(item => (
+        <div key={item.id} className="bg-white dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-700/60 shadow-soft-sm p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <Link href={`/accountant/work/${item.id}`} className="font-medium hover:underline text-sm">
+                {item.title}
+              </Link>
+              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                {item.company_name && <span>{item.company_name}</span>}
+                {item.due_date && (
+                  <>
+                    <span className="text-gray-300">·</span>
+                    <span>Termín: {new Date(item.due_date).toLocaleDateString('cs-CZ')}</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-1.5 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/30"
+                disabled={loadingId === item.id}
+                onClick={() => handleAction(item.id, 'task')}
+              >
+                {loadingId === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckSquare className="h-3 w-3 mr-1" />}
+                Úkol
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs border-violet-200 text-violet-700 hover:bg-violet-50 dark:border-violet-800 dark:text-violet-400 dark:hover:bg-violet-950/30"
+                disabled={loadingId === item.id}
+                onClick={() => handleAction(item.id, 'project')}
+              >
+                {loadingId === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <FolderKanban className="h-3 w-3 mr-1" />}
+                Projekt
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className={`h-8 text-xs ${confirmDelete === item.id ? 'border-red-400 bg-red-50 text-red-700 dark:bg-red-950/30' : 'border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30'}`}
+                disabled={loadingId === item.id}
+                onClick={() => handleAction(item.id, 'delete')}
+              >
+                {loadingId === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3 mr-1" />}
+                {confirmDelete === item.id ? 'Potvrdit' : 'Smazat'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function WorkPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<TypeFilter>(() => {
@@ -133,9 +238,8 @@ export default function WorkPage() {
   }, [tasks, projects])
 
   const inboxCount = useMemo(() => {
-    if (typeFilter === 'projects') return 0
     return tasks.filter(t => t.status === 'pending' && !t.is_project).length
-  }, [tasks, typeFilter])
+  }, [tasks])
 
   const todayCompleted = useMemo(() => {
     if (typeFilter === 'projects') return 0
@@ -148,6 +252,32 @@ export default function WorkPage() {
     if (typeFilter === 'projects') return 0
     return calculateStreak(tasks.filter(t => !t.is_project))
   }, [tasks, typeFilter])
+
+  const inboxItems = useMemo(() => {
+    return tasks.filter(t => t.status === 'pending' && !t.is_project)
+  }, [tasks])
+
+  const handleInboxAction = useCallback(async (id: string, action: 'task' | 'project' | 'delete') => {
+    const updates: Record<string, unknown> = {}
+    if (action === 'task') {
+      updates.status = 'accepted'
+    } else if (action === 'project') {
+      updates.status = 'in_progress'
+      updates.is_project = true
+    } else {
+      updates.status = 'cancelled'
+    }
+    try {
+      await fetch(`/api/tasks/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      })
+      // Trigger cache refresh
+      window.dispatchEvent(new CustomEvent('cache-invalidate', { detail: 'work-page' }))
+      window.location.reload()
+    } catch { /* silent */ }
+  }, [])
 
   const workItems: WorkItem[] = useMemo(() => {
     const taskItems: WorkItem[] = tasks
@@ -233,16 +363,16 @@ export default function WorkPage() {
                 </span>
               </>
             )}
-            {inboxCount > 0 && typeFilter !== 'projects' && (
+            {inboxCount > 0 && typeFilter !== 'projects' && typeFilter !== 'inbox' && (
               <>
                 <span className="text-gray-300 dark:text-gray-600">·</span>
-                <Link
-                  href="/accountant/tasks/clarify"
+                <button
+                  onClick={() => setTypeFilter('inbox')}
                   className="flex items-center gap-1 text-amber-600 dark:text-amber-400 hover:underline underline-offset-2"
                 >
                   <Inbox className="h-3.5 w-3.5" />
                   {inboxCount} v inboxu
-                </Link>
+                </button>
               </>
             )}
           </div>
@@ -251,6 +381,7 @@ export default function WorkPage() {
         {/* Type switcher — same row, TabsList style */}
         <div className="inline-flex items-center rounded-lg bg-muted p-1">
           {[
+            { mode: 'inbox' as TypeFilter, icon: Inbox, label: 'Inbox', count: inboxCount },
             { mode: 'tasks' as TypeFilter, icon: CheckSquare, label: 'Úkoly', count: taskCount },
             { mode: 'projects' as TypeFilter, icon: FolderKanban, label: 'Projekty', count: projectCount },
           ].map(v => (
@@ -268,7 +399,9 @@ export default function WorkPage() {
               <span className={`text-xs tabular-nums ${
                 typeFilter === v.mode
                   ? 'text-purple-600 dark:text-purple-400 font-bold'
-                  : 'text-muted-foreground'
+                  : v.mode === 'inbox' && v.count > 0
+                    ? 'text-amber-600 dark:text-amber-400 font-bold'
+                    : 'text-muted-foreground'
               }`}>
                 {v.count}
               </span>
@@ -298,7 +431,9 @@ export default function WorkPage() {
       </div>
 
       {/* Content */}
-      {workItems.length === 0 ? (
+      {typeFilter === 'inbox' ? (
+        <InboxList items={inboxItems} searchQuery={searchQuery} onAction={handleInboxAction} />
+      ) : workItems.length === 0 ? (
         <div className="py-16 text-center">
           <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-3" />
           <h3 className="text-lg font-semibold font-display mb-1 text-gray-900 dark:text-white">

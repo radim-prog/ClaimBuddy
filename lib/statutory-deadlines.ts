@@ -1,7 +1,7 @@
 // Zákonné termíny pro českou účetní kancelář
 // Generuje termíny na základě vlastností klienta (DPH, zaměstnanci, právní forma)
 
-export type DeadlineFrequency = 'monthly' | 'quarterly' | 'annual'
+export type DeadlineFrequency = 'monthly' | 'quarterly' | 'semi-annual' | 'annual'
 
 export type StatutoryDeadlineTemplate = {
   id: string
@@ -20,6 +20,11 @@ export type StatutoryDeadlineTemplate = {
     has_employees?: boolean
     legal_form?: string[] // e.g. ['s.r.o.', 'a.s.'] for legal entities
     is_osvc?: boolean
+    has_vehicles?: boolean
+    has_property?: boolean
+    has_intrastat?: boolean
+    has_tax_advisor?: boolean
+    tax_advance_period?: 'quarterly' | 'semi-annual'
   }
 }
 
@@ -37,14 +42,14 @@ export type GeneratedDeadline = {
   completed_by?: string
 }
 
-// Czech statutory deadline templates
+// Czech statutory deadline templates — complete list for accounting firms
 export const STATUTORY_TEMPLATES: StatutoryDeadlineTemplate[] = [
-  // === DPH (přiznání + kontrolní hlášení se podávají společně) ===
+  // === DPH (VAT) ===
   {
     id: 'dph-monthly',
     type: 'vat',
-    title: 'DPH přiznání + kontrolní hlášení',
-    description: 'Podání přiznání k DPH a kontrolního hlášení za předchozí měsíc',
+    title: 'DPH přiznání (měsíční)',
+    description: 'Podání přiznání k DPH za předchozí měsíc',
     frequency: 'monthly',
     day_of_month: 25,
     applies_to: { vat_payer: true, vat_period: 'monthly' },
@@ -52,15 +57,57 @@ export const STATUTORY_TEMPLATES: StatutoryDeadlineTemplate[] = [
   {
     id: 'dph-quarterly',
     type: 'vat',
-    title: 'DPH přiznání + kontrolní hlášení (kvartální)',
-    description: 'Podání přiznání k DPH a kontrolního hlášení za předchozí kvartál',
+    title: 'DPH přiznání (čtvrtletní)',
+    description: 'Podání přiznání k DPH za předchozí čtvrtletí',
     frequency: 'quarterly',
     day_of_month: 25,
     months: [1, 4, 7, 10],
     applies_to: { vat_payer: true, vat_period: 'quarterly' },
   },
 
-  // === MZDY / ZAMĚSTNANCI (mzdy + odvody = jeden proces) ===
+  // === KONTROLNÍ HLÁŠENÍ ===
+  {
+    id: 'kh-monthly',
+    type: 'vat',
+    title: 'Kontrolní hlášení (měsíční)',
+    description: 'Kontrolní hlášení k DPH — právnické osoby podávají měsíčně',
+    frequency: 'monthly',
+    day_of_month: 25,
+    applies_to: { vat_payer: true, vat_period: 'monthly', legal_form: ['s.r.o.', 'a.s.', 'v.o.s.', 'k.s.', 'z.s.', 'družstvo'] },
+  },
+  {
+    id: 'kh-quarterly',
+    type: 'vat',
+    title: 'Kontrolní hlášení (čtvrtletní)',
+    description: 'Kontrolní hlášení k DPH — FO plátci podávají čtvrtletně',
+    frequency: 'quarterly',
+    day_of_month: 25,
+    months: [1, 4, 7, 10],
+    applies_to: { vat_payer: true, vat_period: 'quarterly', is_osvc: true },
+  },
+
+  // === SOUHRNNÉ HLÁŠENÍ ===
+  {
+    id: 'sh-monthly',
+    type: 'vat',
+    title: 'Souhrnné hlášení (měsíční)',
+    description: 'Souhrnné hlášení k DPH za dodání zboží/služeb do EU',
+    frequency: 'monthly',
+    day_of_month: 25,
+    applies_to: { vat_payer: true, vat_period: 'monthly' },
+  },
+  {
+    id: 'sh-quarterly',
+    type: 'vat',
+    title: 'Souhrnné hlášení (čtvrtletní)',
+    description: 'Souhrnné hlášení k DPH za dodání zboží/služeb do EU',
+    frequency: 'quarterly',
+    day_of_month: 25,
+    months: [1, 4, 7, 10],
+    applies_to: { vat_payer: true, vat_period: 'quarterly' },
+  },
+
+  // === MZDY / ZAMĚSTNANCI ===
   {
     id: 'mzdy-zpracovani',
     type: 'payroll',
@@ -70,42 +117,6 @@ export const STATUTORY_TEMPLATES: StatutoryDeadlineTemplate[] = [
     day_of_month: 20,
     applies_to: { has_employees: true },
   },
-
-  // === DANĚ - ROČNÍ ===
-  {
-    id: 'dppo',
-    type: 'tax',
-    title: 'Přiznání k dani z příjmu PO',
-    description: 'Podání přiznání k DPPO (s daňovým poradcem do 1.7.)',
-    frequency: 'annual',
-    day_of_month: 1,
-    months: [7],
-    applies_to: { legal_form: ['s.r.o.', 'a.s.', 'v.o.s.', 'k.s.', 'z.s.', 'družstvo'] },
-  },
-  {
-    id: 'dpfo',
-    type: 'tax',
-    title: 'Přiznání k dani z příjmu FO',
-    description: 'Podání přiznání k DPFO (s daňovým poradcem do 1.7.)',
-    frequency: 'annual',
-    day_of_month: 1,
-    months: [7],
-    applies_to: { is_osvc: true },
-  },
-
-  // === PŘEHLEDY OSVČ (OSSZ + ZP se podávají společně) ===
-  {
-    id: 'prehledy-osvc',
-    type: 'insurance',
-    title: 'Přehledy OSSZ + ZP pro OSVČ',
-    description: 'Podání přehledů o příjmech a výdajích na OSSZ a ZP',
-    frequency: 'annual',
-    day_of_month: 2,
-    months: [5],
-    applies_to: { is_osvc: true },
-  },
-
-  // === DOHODÁŘI (DPP/DPČ) ===
   {
     id: 'dohody-vyplata',
     type: 'payroll',
@@ -116,16 +127,283 @@ export const STATUTORY_TEMPLATES: StatutoryDeadlineTemplate[] = [
     applies_to: { has_employees: true },
   },
 
-  // === UZÁVĚRKA ===
+  // === DAŇ Z PŘÍJMU PO ===
   {
-    id: 'ucetni-zaverka',
+    id: 'dppo-bez-poradce',
+    type: 'tax',
+    title: 'Přiznání k DPPO (bez poradce)',
+    description: 'Podání přiznání k dani z příjmu právnických osob — bez daňového poradce',
+    frequency: 'annual',
+    day_of_month: 1,
+    months: [4],
+    applies_to: { legal_form: ['s.r.o.', 'a.s.', 'v.o.s.', 'k.s.', 'z.s.', 'družstvo'], has_tax_advisor: false },
+  },
+  {
+    id: 'dppo-s-poradcem',
+    type: 'tax',
+    title: 'Přiznání k DPPO (s poradcem)',
+    description: 'Podání přiznání k dani z příjmu právnických osob — s daňovým poradcem',
+    frequency: 'annual',
+    day_of_month: 1,
+    months: [7],
+    applies_to: { legal_form: ['s.r.o.', 'a.s.', 'v.o.s.', 'k.s.', 'z.s.', 'družstvo'], has_tax_advisor: true },
+  },
+
+  // === DAŇ Z PŘÍJMU FO ===
+  {
+    id: 'dpfo-bez-poradce',
+    type: 'tax',
+    title: 'Přiznání k DPFO (bez poradce)',
+    description: 'Podání přiznání k dani z příjmu fyzických osob — bez daňového poradce',
+    frequency: 'annual',
+    day_of_month: 1,
+    months: [4],
+    applies_to: { is_osvc: true, has_tax_advisor: false },
+  },
+  {
+    id: 'dpfo-s-poradcem',
+    type: 'tax',
+    title: 'Přiznání k DPFO (s poradcem)',
+    description: 'Podání přiznání k dani z příjmu fyzických osob — s daňovým poradcem',
+    frequency: 'annual',
+    day_of_month: 1,
+    months: [7],
+    applies_to: { is_osvc: true, has_tax_advisor: true },
+  },
+
+  // === PŘEHLEDY OSSZ ===
+  {
+    id: 'prehled-ossz-bez-poradce',
+    type: 'insurance',
+    title: 'Přehled OSSZ (bez poradce)',
+    description: 'Přehled o příjmech a výdajích OSVČ pro OSSZ',
+    frequency: 'annual',
+    day_of_month: 2,
+    months: [5],
+    applies_to: { is_osvc: true, has_tax_advisor: false },
+  },
+  {
+    id: 'prehled-ossz-s-poradcem',
+    type: 'insurance',
+    title: 'Přehled OSSZ (s poradcem)',
+    description: 'Přehled o příjmech a výdajích OSVČ pro OSSZ — prodloužený termín',
+    frequency: 'annual',
+    day_of_month: 1,
+    months: [8],
+    applies_to: { is_osvc: true, has_tax_advisor: true },
+  },
+
+  // === PŘEHLEDY ZP ===
+  {
+    id: 'prehled-zp-bez-poradce',
+    type: 'insurance',
+    title: 'Přehled ZP (bez poradce)',
+    description: 'Přehled o příjmech a výdajích OSVČ pro zdravotní pojišťovnu',
+    frequency: 'annual',
+    day_of_month: 2,
+    months: [5],
+    applies_to: { is_osvc: true, has_tax_advisor: false },
+  },
+  {
+    id: 'prehled-zp-s-poradcem',
+    type: 'insurance',
+    title: 'Přehled ZP (s poradcem)',
+    description: 'Přehled o příjmech a výdajích OSVČ pro ZP — prodloužený termín',
+    frequency: 'annual',
+    day_of_month: 1,
+    months: [8],
+    applies_to: { is_osvc: true, has_tax_advisor: true },
+  },
+
+  // === SILNIČNÍ DAŇ ===
+  {
+    id: 'silnicni-dan-priznani',
+    type: 'tax',
+    title: 'Přiznání k silniční dani',
+    description: 'Podání přiznání k dani silniční za předchozí rok',
+    frequency: 'annual',
+    day_of_month: 31,
+    months: [1],
+    applies_to: { has_vehicles: true },
+  },
+  {
+    id: 'silnicni-dan-z1',
+    type: 'tax',
+    title: 'Záloha silniční daň (Q1)',
+    description: 'Záloha na silniční daň za leden–březen',
+    frequency: 'quarterly',
+    day_of_month: 15,
+    months: [4],
+    applies_to: { has_vehicles: true },
+  },
+  {
+    id: 'silnicni-dan-z2',
+    type: 'tax',
+    title: 'Záloha silniční daň (Q2)',
+    description: 'Záloha na silniční daň za duben–červen',
+    frequency: 'quarterly',
+    day_of_month: 15,
+    months: [7],
+    applies_to: { has_vehicles: true },
+  },
+  {
+    id: 'silnicni-dan-z3',
+    type: 'tax',
+    title: 'Záloha silniční daň (Q3)',
+    description: 'Záloha na silniční daň za červenec–září',
+    frequency: 'quarterly',
+    day_of_month: 15,
+    months: [10],
+    applies_to: { has_vehicles: true },
+  },
+  {
+    id: 'silnicni-dan-z4',
+    type: 'tax',
+    title: 'Záloha silniční daň (Q4)',
+    description: 'Záloha na silniční daň za říjen–listopad',
+    frequency: 'quarterly',
+    day_of_month: 15,
+    months: [12],
+    applies_to: { has_vehicles: true },
+  },
+
+  // === DAŇ Z NEMOVITOSTI ===
+  {
+    id: 'dan-nemovitosti',
+    type: 'tax',
+    title: 'Přiznání k dani z nemovitosti',
+    description: 'Podání přiznání k dani z nemovitých věcí (při změně oproti minulému roku)',
+    frequency: 'annual',
+    day_of_month: 31,
+    months: [1],
+    applies_to: { has_property: true },
+  },
+
+  // === ZÁLOHY NA DAŇ Z PŘÍJMU ===
+  {
+    id: 'zaloha-dan-q1',
+    type: 'tax',
+    title: 'Záloha daň z příjmu (Q1)',
+    description: 'Čtvrtletní záloha na daň z příjmu',
+    frequency: 'quarterly',
+    day_of_month: 15,
+    months: [3],
+    applies_to: { tax_advance_period: 'quarterly' },
+  },
+  {
+    id: 'zaloha-dan-q2',
+    type: 'tax',
+    title: 'Záloha daň z příjmu (Q2)',
+    description: 'Čtvrtletní záloha na daň z příjmu',
+    frequency: 'quarterly',
+    day_of_month: 15,
+    months: [6],
+    applies_to: { tax_advance_period: 'quarterly' },
+  },
+  {
+    id: 'zaloha-dan-q3',
+    type: 'tax',
+    title: 'Záloha daň z příjmu (Q3)',
+    description: 'Čtvrtletní záloha na daň z příjmu',
+    frequency: 'quarterly',
+    day_of_month: 15,
+    months: [9],
+    applies_to: { tax_advance_period: 'quarterly' },
+  },
+  {
+    id: 'zaloha-dan-q4',
+    type: 'tax',
+    title: 'Záloha daň z příjmu (Q4)',
+    description: 'Čtvrtletní záloha na daň z příjmu',
+    frequency: 'quarterly',
+    day_of_month: 15,
+    months: [12],
+    applies_to: { tax_advance_period: 'quarterly' },
+  },
+  {
+    id: 'zaloha-dan-h1',
+    type: 'tax',
+    title: 'Záloha daň z příjmu (1. pololetí)',
+    description: 'Pololetní záloha na daň z příjmu',
+    frequency: 'semi-annual',
+    day_of_month: 15,
+    months: [6],
+    applies_to: { tax_advance_period: 'semi-annual' },
+  },
+  {
+    id: 'zaloha-dan-h2',
+    type: 'tax',
+    title: 'Záloha daň z příjmu (2. pololetí)',
+    description: 'Pololetní záloha na daň z příjmu',
+    frequency: 'semi-annual',
+    day_of_month: 15,
+    months: [12],
+    applies_to: { tax_advance_period: 'semi-annual' },
+  },
+
+  // === INTRASTAT ===
+  {
+    id: 'intrastat',
+    type: 'reporting',
+    title: 'Intrastat hlášení',
+    description: 'Měsíční hlášení Intrastat (do 12. pracovního dne následujícího měsíce)',
+    frequency: 'monthly',
+    day_of_month: 18, // ~12th business day
+    applies_to: { has_intrastat: true },
+  },
+
+  // === VYÚČTOVÁNÍ DANĚ ===
+  {
+    id: 'vyuctovani-zavislacin',
+    type: 'tax',
+    title: 'Vyúčtování daně ze závislé činnosti',
+    description: 'Roční vyúčtování daně ze závislé činnosti zaměstnanců',
+    frequency: 'annual',
+    day_of_month: 1,
+    months: [3],
+    applies_to: { has_employees: true },
+  },
+  {
+    id: 'vyuctovani-srazkova',
+    type: 'tax',
+    title: 'Vyúčtování srážkové daně',
+    description: 'Roční vyúčtování srážkové daně',
+    frequency: 'annual',
+    day_of_month: 1,
+    months: [4],
+    applies_to: { has_employees: true },
+  },
+
+  // === ÚČETNÍ ZÁVĚRKA ===
+  {
+    id: 'ucetni-zaverka-po',
     type: 'closing',
-    title: 'Účetní závěrka',
+    title: 'Účetní závěrka (PO)',
     description: 'Sestavení účetní závěrky a uložení do sbírky listin',
     frequency: 'annual',
     day_of_month: 30,
     months: [6],
     applies_to: { legal_form: ['s.r.o.', 'a.s.', 'v.o.s.', 'k.s.', 'z.s.', 'družstvo'] },
+  },
+  {
+    id: 'ucetni-zaverka-fo-bez-poradce',
+    type: 'closing',
+    title: 'Uzávěrka FO (bez poradce)',
+    description: 'Uzavření účetních knih a přiznání OSVČ',
+    frequency: 'annual',
+    day_of_month: 1,
+    months: [4],
+    applies_to: { is_osvc: true, has_tax_advisor: false },
+  },
+  {
+    id: 'ucetni-zaverka-fo-s-poradcem',
+    type: 'closing',
+    title: 'Uzávěrka FO (s poradcem)',
+    description: 'Uzavření účetních knih a přiznání OSVČ — prodloužený termín',
+    frequency: 'annual',
+    day_of_month: 1,
+    months: [7],
+    applies_to: { is_osvc: true, has_tax_advisor: true },
   },
 ]
 
@@ -136,6 +414,11 @@ type CompanyForDeadlines = {
   vat_period?: 'monthly' | 'quarterly' | null
   has_employees?: boolean
   legal_form: string
+  has_vehicles?: boolean
+  has_property?: boolean
+  has_intrastat?: boolean
+  has_tax_advisor?: boolean
+  tax_advance_period?: 'quarterly' | 'semi-annual' | null
 }
 
 function matchesTemplate(company: CompanyForDeadlines, template: StatutoryDeadlineTemplate): boolean {
@@ -160,6 +443,26 @@ function matchesTemplate(company: CompanyForDeadlines, template: StatutoryDeadli
   if (applies_to.is_osvc !== undefined) {
     const isOsvc = company.legal_form === 'OSVČ'
     if (applies_to.is_osvc !== isOsvc) return false
+  }
+
+  if (applies_to.has_vehicles !== undefined && (company.has_vehicles || false) !== applies_to.has_vehicles) {
+    return false
+  }
+
+  if (applies_to.has_property !== undefined && (company.has_property || false) !== applies_to.has_property) {
+    return false
+  }
+
+  if (applies_to.has_intrastat !== undefined && (company.has_intrastat || false) !== applies_to.has_intrastat) {
+    return false
+  }
+
+  if (applies_to.has_tax_advisor !== undefined && (company.has_tax_advisor || false) !== applies_to.has_tax_advisor) {
+    return false
+  }
+
+  if (applies_to.tax_advance_period && company.tax_advance_period !== applies_to.tax_advance_period) {
+    return false
   }
 
   return true
@@ -204,6 +507,25 @@ export function generateDeadlinesForCompany(
 
         deadlines.push({
           id: `${template.id}-${company.id}-${year}-Q${Math.ceil(month / 3)}`,
+          template_id: template.id,
+          company_id: company.id,
+          company_name: company.name,
+          type: template.type,
+          title: template.title,
+          description: template.description,
+          due_date: dueDate.toISOString().split('T')[0],
+          completed: false,
+        })
+      }
+    } else if (template.frequency === 'semi-annual') {
+      if (template.months?.includes(month)) {
+        const dueDate = new Date(year, month - 1, template.day_of_month)
+        if (dueDate.getMonth() !== month - 1) {
+          dueDate.setDate(0)
+        }
+        const half = month <= 6 ? 'H1' : 'H2'
+        deadlines.push({
+          id: `${template.id}-${company.id}-${year}-${half}`,
           template_id: template.id,
           company_id: company.id,
           company_name: company.name,

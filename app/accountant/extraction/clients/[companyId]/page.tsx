@@ -25,12 +25,18 @@ export default function ExtractionClientDetailPage() {
   const params = useParams()
   const router = useRouter()
   const companyId = params.companyId as string
-  const { userId } = useAccountantUser()
+  const { userId, loading: userLoading } = useAccountantUser()
   const [company, setCompany] = useState<CompanyInfo | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchCompany = useCallback(async () => {
-    if (!userId || !companyId) return
+    if (userLoading) return
+    if (!userId || !companyId) {
+      setLoading(false)
+      setError(!userId ? 'Nepodařilo se ověřit uživatele' : 'Chybí ID firmy')
+      return
+    }
     try {
       const res = await fetch(`/api/accountant/companies/${companyId}`, {
         headers: { 'x-user-id': userId },
@@ -38,22 +44,55 @@ export default function ExtractionClientDetailPage() {
       if (res.ok) {
         const data = await res.json()
         setCompany(data.company)
+        setError(null)
+      } else if (res.status === 404) {
+        setError('Firma nenalezena')
+      } else {
+        setError('Chyba při načítání dat firmy')
       }
     } catch {
-      // silent
+      setError('Chyba připojení k serveru')
     } finally {
       setLoading(false)
     }
-  }, [userId, companyId])
+  }, [userId, userLoading, companyId])
 
   useEffect(() => {
     fetchCompany()
   }, [fetchCompany])
 
+  // Safety timeout — prevent infinite spinner
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading) {
+        setLoading(false)
+        setError('Načítání trvá příliš dlouho — zkuste to znovu')
+      }
+    }, 15000)
+    return () => clearTimeout(timer)
+  }, [loading])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => router.push('/accountant/extraction/clients')}>
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Zpět
+          </Button>
+          <Button size="sm" onClick={() => { setLoading(true); setError(null); fetchCompany() }}>
+            Zkusit znovu
+          </Button>
+        </div>
       </div>
     )
   }

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Users, CheckCircle2, XCircle, Clock, Building2, Mail, MessageSquare, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 interface MarketplaceRequest {
   id: string
@@ -30,6 +31,8 @@ const BUDGET_LABELS: Record<string, string> = {
 }
 
 export default function MarketplaceRequestsPage() {
+  const { userRole } = useAccountantUser()
+  const isAdmin = userRole === 'admin'
   const [requests, setRequests] = useState<MarketplaceRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [providerRegistered, setProviderRegistered] = useState(true)
@@ -90,7 +93,7 @@ export default function MarketplaceRequestsPage() {
     )
   }
 
-  if (!providerRegistered) {
+  if (!providerRegistered && !isAdmin) {
     return (
       <div className="max-w-lg mx-auto py-16 text-center">
         <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40" />
