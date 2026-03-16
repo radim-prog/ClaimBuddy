@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Lock, Save, Building2, Bell, MessageCircle, Mail, Loader2, Clock, Inbox, FileText, FileSpreadsheet, Receipt, File, Copy, CheckCircle2, AlertCircle } from 'lucide-react'
+import { User, Lock, Save, Building2, Bell, MessageCircle, Mail, Loader2, Clock, Inbox, FileText, FileSpreadsheet, Receipt, File, Copy, CheckCircle2, AlertCircle, Smartphone } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { useClientUser } from '@/lib/contexts/client-user-context'
@@ -478,6 +478,7 @@ function DocumentInboxTab() {
 interface NotificationPrefs {
   email: boolean
   telegram: boolean
+  whatsapp: boolean
   marketing_emails?: boolean
   types: {
     missing_document_tax_impact: boolean
@@ -490,6 +491,7 @@ function NotificationsTab() {
   const [prefs, setPrefs] = useState<NotificationPrefs>({
     email: true,
     telegram: false,
+    whatsapp: false,
     types: {
       missing_document_tax_impact: true,
       invoice_due_reminder: true,
@@ -497,6 +499,7 @@ function NotificationsTab() {
     },
   })
   const [telegramChatId, setTelegramChatId] = useState('')
+  const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -516,6 +519,7 @@ function NotificationsTab() {
           }))
         }
         if (data?.telegram_chat_id) setTelegramChatId(data.telegram_chat_id)
+        if (data?.phone) setPhone(data.phone)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -530,6 +534,7 @@ function NotificationsTab() {
         body: JSON.stringify({
           preferences: prefs,
           telegram_chat_id: telegramChatId || null,
+          phone: phone || null,
         }),
       })
       if (res.ok) {
@@ -607,6 +612,35 @@ function NotificationsTab() {
               />
               <p className="text-xs text-muted-foreground">
                 Napište /start botovi @UcetniWebAppBot a pošlete příkaz /id pro zjištění vašeho Chat ID
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Smartphone className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="font-medium text-sm">WhatsApp</p>
+                <p className="text-xs text-muted-foreground">Upozornění přes WhatsApp (v pracovní době)</p>
+              </div>
+            </div>
+            <Switch
+              checked={prefs.whatsapp}
+              onCheckedChange={(checked) => setPrefs(p => ({ ...p, whatsapp: checked }))}
+            />
+          </div>
+
+          {prefs.whatsapp && (
+            <div className="ml-8 space-y-2">
+              <Label className="text-xs">Telefonní číslo</Label>
+              <Input
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="+420 123 456 789"
+                className="h-11"
+              />
+              <p className="text-xs text-muted-foreground">
+                Číslo registrované ve WhatsApp. Zprávy chodí pouze v pracovní době (Po-Pá 8-18h).
               </p>
             </div>
           )}

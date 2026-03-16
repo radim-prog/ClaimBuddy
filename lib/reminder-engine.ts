@@ -1,6 +1,8 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { sendNotificationEmail } from '@/lib/email-service'
+import { sendWhatsAppMessage, isWhatsAppConfigured } from '@/lib/whatsapp'
+import { isBusinessHours } from '@/lib/business-hours'
 
 // ============================================
 // TYPES
@@ -9,7 +11,7 @@ import { sendNotificationEmail } from '@/lib/email-service'
 export type ReminderType = 'deadline' | 'missing_docs' | 'unpaid_invoice' | 'custom'
 export type ReminderFrequency = 'daily' | 'every_3_days' | 'weekly' | 'biweekly' | 'adaptive'
 export type ReminderStatus = 'active' | 'paused' | 'resolved' | 'expired'
-export type DeliveryChannel = 'in_app' | 'email' | 'sms' | 'telegram'
+export type DeliveryChannel = 'in_app' | 'email' | 'sms' | 'telegram' | 'whatsapp'
 export type DeliveryStatus = 'pending' | 'delivered' | 'failed' | 'skipped'
 
 export type Reminder = {
@@ -465,6 +467,40 @@ async function deliverViaChannel(
 
         const result = await sendNotificationEmail(userEmail, reminder.type, emailData)
         return result.success ? { ok: true } : { ok: false, error: result.error ?? 'Email send failed' }
+      }
+
+      case 'whatsapp': {
+        if (!isWhatsAppConfigured()) return { ok: false, error: 'WhatsApp not configured' }
+
+        // Only send WhatsApp during business hours
+        if (!isBusinessHours()) {
+          return { ok: false, error: 'Outside business hours — delivery deferred' }
+        }
+
+        // Look up company owner's phone number
+        const { data: waCompany } = await supabaseAdmin
+          .from('companies')
+          .select('owner_id')
+          .eq('id', reminder.company_id)
+          .single()
+
+        if (!waCompany?.owner_id) return { ok: false, error: 'No company owner' }
+
+        const { data: waUser } = await supabaseAdmin
+          .from('users')
+          .select('phone, notification_preferences')
+          .eq('id', waCompany.owner_id)
+          .single()
+
+        if (!waUser?.phone) return { ok: false, error: 'No phone number for user' }
+
+        // Check if user has WhatsApp enabled in preferences
+        const waPrefs = waUser.notification_preferences as Record<string, unknown> | null
+        if (waPrefs?.whatsapp === false) return { ok: false, error: 'WhatsApp disabled by user' }
+
+        const waText = `*${title}*\n\n${messageText}`
+        const waResult = await sendWhatsAppMessage(waUser.phone, waText)
+        return waResult.ok ? { ok: true } : { ok: false, error: waResult.error }
       }
 
       case 'sms': {

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Bell, Mail, Clock, Banknote, FileText, AlertTriangle } from 'lucide-react'
+import { Bell, Mail, Clock, Banknote, FileText, AlertTriangle, Smartphone, MessageCircle } from 'lucide-react'
 
 interface NotificationPreferences {
   channels: { in_app: boolean; email: boolean; sms: boolean; whatsapp: boolean }
@@ -29,6 +29,7 @@ const typeConfig: { key: keyof NotificationPreferences['types']; label: string; 
 const channelConfig: { key: keyof NotificationPreferences['channels']; label: string; icon: typeof Bell; note?: string }[] = [
   { key: 'in_app', label: 'V aplikaci', icon: Bell },
   { key: 'email', label: 'E-mail', icon: Mail, note: '(Připraveno)' },
+  { key: 'whatsapp', label: 'WhatsApp', icon: Smartphone, note: '(Po-Pá 8-18h)' },
 ]
 
 const frequencyOptions: { value: NonNullable<NotificationPreferences['missing_docs_reminder']>['frequency']; label: string; description: string }[] = [

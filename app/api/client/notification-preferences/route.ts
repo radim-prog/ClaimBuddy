@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 const DEFAULT_PREFERENCES = {
   email: true,
   telegram: false,
+  whatsapp: false,
   marketing_emails: true,
   types: {
     missing_document_tax_impact: true,
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
   try {
     const { data, error } = await supabaseAdmin
       .from('users')
-      .select('notification_preferences, telegram_chat_id, email, company_id')
+      .select('notification_preferences, telegram_chat_id, phone, email, company_id')
       .eq('id', userId)
       .single()
 
@@ -56,6 +57,7 @@ export async function GET(request: NextRequest) {
       preferences: mergedPrefs,
       company_overrides: companyOverrides,
       telegram_chat_id: data.telegram_chat_id || null,
+      phone: data.phone || null,
       email: data.email || null,
     })
   } catch (error) {
@@ -75,7 +77,7 @@ export async function PATCH(request: NextRequest) {
     if (body.preferences !== undefined) {
       // Client can only toggle channels (email/telegram) and non-forced types
       // Accountant-forced settings are read-only for client
-      const clientAllowed = ['email', 'telegram', 'types', 'marketing_emails']
+      const clientAllowed = ['email', 'telegram', 'whatsapp', 'types', 'marketing_emails']
       const filtered: Record<string, unknown> = {}
       for (const key of clientAllowed) {
         if (body.preferences[key] !== undefined) {
@@ -93,6 +95,10 @@ export async function PATCH(request: NextRequest) {
 
     if (body.telegram_chat_id !== undefined) {
       updates.telegram_chat_id = body.telegram_chat_id || null
+    }
+
+    if (body.phone !== undefined) {
+      updates.phone = body.phone || null
     }
 
     if (Object.keys(updates).length === 0) {
