@@ -24,6 +24,7 @@ import {
   Inbox,
   TrendingUp,
   CreditCard,
+  FileSignature,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -82,6 +83,7 @@ const adminNavigation = [
 ]
 
 const demoFeatures: { name: string; href: string; icon: React.ComponentType<{ className?: string }>; badge: string }[] = [
+  { name: 'Podepisování', href: '/accountant/signing', icon: FileSignature, badge: 'DEMO' },
 ]
 
 export default function AccountantLayout({

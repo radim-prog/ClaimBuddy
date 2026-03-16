@@ -15,6 +15,7 @@ import {
   Store,
   TrendingUp,
   CreditCard,
+  PenLine,
 } from 'lucide-react'
 import { CollapsibleSection } from '@/components/collapsible-section'
 import { TaskTemplates } from '@/components/admin/task-templates'
@@ -26,6 +27,7 @@ import { CompanyDriveMapper } from '@/components/drive/company-drive-mapper'
 import { CompanyRaynetMapper } from '@/components/raynet/company-raynet-mapper'
 import { OperationsTaxRates } from '@/components/admin/operations-tax-rates'
 import { OperationsMarketing } from '@/components/admin/operations-marketing'
+import { SigniSettings } from '@/components/admin/signi-settings'
 import { LeadsList } from '@/components/admin/leads-list'
 import { MarketplaceProviders } from '@/components/admin/marketplace-providers'
 import { OperationsRevenue } from '@/components/admin/operations-revenue'
@@ -45,6 +47,7 @@ const sections = [
   { id: 'raynet', label: 'Raynet CRM', icon: Link2, Component: CompanyRaynetMapper },
   { id: 'tax-rates', label: 'Daňové sazby', icon: Calculator, Component: OperationsTaxRates },
   { id: 'marketing', label: 'Email Marketing (Ecomail)', icon: Mail, Component: OperationsMarketing },
+  { id: 'signi', label: 'Signi.com — Elektronický podpis', icon: PenLine, Component: SigniSettings },
 ] as const
 
 export default function OperationsPage() {
