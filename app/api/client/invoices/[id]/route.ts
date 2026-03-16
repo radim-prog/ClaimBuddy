@@ -162,7 +162,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Soft delete
     const { error } = await supabaseAdmin
       .from('invoices')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
       .eq('id', id)
 
     if (error) {

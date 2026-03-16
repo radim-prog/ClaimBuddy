@@ -98,6 +98,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .from('invoices')
       .update({
         deleted_at: new Date().toISOString(),
+        deleted_by: userId,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)

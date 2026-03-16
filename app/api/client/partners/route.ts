@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     .from('invoice_partners')
     .select('*')
     .eq('company_id', companyId)
+    .is('deleted_at', null)
     .order('usage_count', { ascending: false })
     .order('name', { ascending: true })
 
@@ -186,7 +187,7 @@ export async function DELETE(request: NextRequest) {
 
   const { error } = await supabaseAdmin
     .from('invoice_partners')
-    .delete()
+    .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
     .eq('id', partnerId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

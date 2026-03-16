@@ -211,11 +211,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Úkol nenalezen' }, { status: 404 })
     }
 
-    // Soft delete - mark as cancelled
+    // Soft delete - mark as cancelled + set deleted_at for trash
     const { data: task, error: deleteError } = await supabaseAdmin
       .from('tasks')
       .update({
         status: 'cancelled',
+        deleted_at: new Date().toISOString(),
+        deleted_by: userId,
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })

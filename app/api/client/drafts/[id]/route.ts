@@ -81,7 +81,7 @@ export async function DELETE(
     // Soft delete — only if still draft
     const { error } = await supabaseAdmin
       .from('documents')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
       .eq('id', id)
       .eq('ocr_status', 'draft')
 

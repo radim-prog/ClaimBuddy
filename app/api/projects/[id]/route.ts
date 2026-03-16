@@ -61,7 +61,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const { id } = params
   const { error } = await supabaseAdmin
     .from('projects')
-    .update({ status: 'deleted', updated_at: new Date().toISOString() })
+    .update({
+      status: 'deleted',
+      deleted_at: new Date().toISOString(),
+      deleted_by: userId,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', id)
   if (error) return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   return NextResponse.json({ ok: true })
