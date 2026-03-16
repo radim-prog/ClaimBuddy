@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { DM_Sans, Plus_Jakarta_Sans } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/theme-provider'
+import { CookieConsentBanner } from '@/components/cookie-consent-banner'
 import './globals.css'
 
 const dmSans = DM_Sans({
@@ -41,6 +42,7 @@ export default function RootLayout({
         <ThemeProvider>
           {children}
           <Toaster position="top-center" richColors />
+          <CookieConsentBanner />
         </ThemeProvider>
       </body>
     </html>
