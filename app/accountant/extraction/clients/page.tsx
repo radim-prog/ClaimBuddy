@@ -48,6 +48,7 @@ export default function ExtractionClientsPage() {
   const { userId } = useAccountantUser()
   const [clients, setClients] = useState<ClientInfo[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<FilterType>('has_docs')
   const [search, setSearch] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -58,7 +59,7 @@ export default function ExtractionClientsPage() {
   const [uploadingCompanyId, setUploadingCompanyId] = useState<string | null>(null)
 
   const fetchClients = useCallback(async () => {
-    if (!userId) return
+    if (!userId) { setLoading(false); return }
     try {
       const res = await fetch(`/api/extraction/clients?filter=${filter}`, {
         headers: { 'x-user-id': userId },
@@ -66,9 +67,11 @@ export default function ExtractionClientsPage() {
       if (res.ok) {
         const data = await res.json()
         setClients(data.clients || [])
+      } else {
+        setError('Chyba při načítání klientů')
       }
     } catch {
-      // silent
+      setError('Nepodařilo se načíst klienty')
     } finally {
       setLoading(false)
     }

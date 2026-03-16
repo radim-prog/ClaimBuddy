@@ -152,7 +152,7 @@ function generateDeadlines(
       })
     }
 
-    // Nahráno, čeká na schválení - zobrazit VŽDY (bez časového limitu)
+    // Nahráno, ke kontrole - zobrazit VŽDY (bez časového limitu)
     if (hasUploaded && !hasMissing) {
       // Checklist pouze zobrazuje skutečný stav dokumentů (read-only)
       const checklist: Array<{ id: string; label: string; completed: boolean }> = []
@@ -191,7 +191,7 @@ function generateDeadlines(
 
       deadlines.push({
         id: `${closure.id}-approval`,
-        title: `Uzávěrka ${months[month - 1]} - čeká na schválení`,
+        title: `Uzávěrka ${months[month - 1]} - ke kontrole`,
         dueDate: deadline.toISOString(),
         type: approvalType,
         caseId: closure.id,
