@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Lock, Save, Building2, Bell, MessageCircle, Mail, Loader2, Plus, Clock } from 'lucide-react'
+import { User, Lock, Save, Building2, Bell, MessageCircle, Mail, Loader2, Plus, Clock, Inbox, FileText, FileSpreadsheet, Receipt, File, Copy, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { AddCompanyDialog } from '@/components/client/add-company-dialog'
+import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 
 export default function AccountPage() {
   return (
@@ -20,6 +21,7 @@ export default function AccountPage() {
       </div>
       <ProfileTab />
       <CompanyTab />
+      <DocumentInboxTab />
       <NotificationsTab />
     </div>
   )
@@ -260,6 +262,214 @@ function CompanyTab() {
             </Card>
           )
         })
+      )}
+    </div>
+  )
+}
+
+interface InboxItem {
+  id: string
+  filename: string
+  mime_type: string
+  from_name: string | null
+  subject: string | null
+  received_at: string | null
+  status: string
+  created_at: string
+  category: string
+  category_label: string
+  category_confidence: string
+}
+
+const CATEGORY_ICON: Record<string, typeof FileText> = {
+  expense_invoice: FileText,
+  bank_statement: FileSpreadsheet,
+  receipt: Receipt,
+  other: File,
+}
+
+const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
+  pending: { label: 'Čeká', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' },
+  processing: { label: 'Zpracovává se', cls: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' },
+  imported: { label: 'Importováno', cls: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
+  failed: { label: 'Chyba', cls: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
+  ignored: { label: 'Ignorováno', cls: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400' },
+}
+
+function DocumentInboxTab() {
+  const { selectedCompany } = useClientUser()
+  const { isLocked, loading: planLoading } = usePlanFeatures()
+  const [inboxEmail, setInboxEmail] = useState<string | null>(null)
+  const [isActive, setIsActive] = useState(false)
+  const [items, setItems] = useState<InboxItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
+
+  const locked = isLocked('document_inbox')
+
+  useEffect(() => {
+    if (!selectedCompany?.id || locked) {
+      setLoading(false)
+      return
+    }
+
+    fetch(`/api/client/document-inbox?company_id=${selectedCompany.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.inbox) {
+          setInboxEmail(data.inbox.email_address)
+          setIsActive(data.inbox.is_active)
+        }
+        if (data?.items) setItems(data.items)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [selectedCompany?.id, locked])
+
+  const handleCopy = async () => {
+    if (!inboxEmail) return
+    try {
+      await navigator.clipboard.writeText(inboxEmail)
+      setCopied(true)
+      toast.success('Email zkopírován')
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error('Nepodařilo se zkopírovat')
+    }
+  }
+
+  if (planLoading || loading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
+
+  if (locked) {
+    return (
+      <Card className="rounded-2xl border-dashed">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg font-display">
+            <Inbox className="h-5 w-5" />
+            Sběrný email pro doklady
+          </CardTitle>
+          <CardDescription>Posílejte doklady emailem — automaticky se zařadí ke správné firmě</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-6">
+            <Lock className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">
+              Tato funkce je dostupná v tarifu <span className="font-medium text-blue-600">Plus+</span> a vyšším.
+            </p>
+            <Button variant="outline" size="sm" className="mt-3" asChild>
+              <a href="/client/subscription">Zobrazit tarify</a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (!selectedCompany) {
+    return (
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg font-display">
+            <Inbox className="h-5 w-5" />
+            Sběrný email pro doklady
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Nejprve vyberte firmu.</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg font-display">
+            <Inbox className="h-5 w-5" />
+            Sběrný email pro doklady
+          </CardTitle>
+          <CardDescription>
+            Posílejte faktury, výpisy a účtenky na tento email — automaticky se přiřadí k vaší firmě
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {inboxEmail ? (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-muted rounded-lg px-4 py-3 font-mono text-sm select-all">
+                  {inboxEmail}
+                </div>
+                <Button variant="outline" size="icon" onClick={handleCopy} className="shrink-0">
+                  {copied ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              {!isActive && (
+                <div className="flex items-center gap-2 text-amber-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>Inbox je momentálně neaktivní. Kontaktujte svého účetního.</span>
+                </div>
+              )}
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>Podporované formáty: PDF, JPG, PNG, WEBP, HEIC, Excel</p>
+                <p>Přílohy se automaticky kategorizují podle názvu souboru.</p>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-4">
+              <Mail className="h-10 w-10 mx-auto mb-2 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">
+                Sběrný email zatím nebyl vytvořen. Kontaktujte svého účetního pro aktivaci.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {items.length > 0 && (
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="text-lg font-display">Odeslané doklady</CardTitle>
+            <CardDescription>Posledních {items.length} přijatých příloh</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y">
+              {items.map(item => {
+                const CatIcon = CATEGORY_ICON[item.category] || File
+                const statusCfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.pending
+                return (
+                  <div key={item.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                    <CatIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.filename}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{item.category_label}</span>
+                        {item.category_confidence !== 'high' && (
+                          <span className="text-muted-foreground/60">({item.category_confidence === 'medium' ? 'odhad' : 'nejisté'})</span>
+                        )}
+                        {item.received_at && (
+                          <>
+                            <span>·</span>
+                            <span>{new Date(item.received_at).toLocaleDateString('cs-CZ')}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium shrink-0 ${statusCfg.cls}`}>
+                      {statusCfg.label}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

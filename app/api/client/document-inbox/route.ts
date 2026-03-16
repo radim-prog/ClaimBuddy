@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { canAccessCompany } from '@/lib/access-check'
 import { getDocumentInbox, getDocumentInboxItems } from '@/lib/document-inbox-store'
+import { autoCategorize } from '@/lib/auto-categorize'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,15 +36,22 @@ export async function GET(request: NextRequest) {
         email_address: inbox.email_address,
         is_active: inbox.is_active,
       },
-      items: items.map(i => ({
-        id: i.id,
-        filename: i.filename,
-        from_name: i.from_name,
-        subject: i.subject,
-        received_at: i.received_at,
-        status: i.status,
-        created_at: i.created_at,
-      })),
+      items: items.map(i => {
+        const cat = autoCategorize(i.filename, i.mime_type)
+        return {
+          id: i.id,
+          filename: i.filename,
+          mime_type: i.mime_type,
+          from_name: i.from_name,
+          subject: i.subject,
+          received_at: i.received_at,
+          status: i.status,
+          created_at: i.created_at,
+          category: cat.category,
+          category_label: cat.label_cs,
+          category_confidence: cat.confidence,
+        }
+      }),
     })
   } catch (error) {
     console.error('[ClientDocInbox] GET error:', error)
