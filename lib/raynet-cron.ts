@@ -29,7 +29,6 @@ export function initRaynetCron() {
       const res = await fetch(`${baseUrl}/api/cron/raynet-sync?secret=${cronSecret}`)
       const data = await res.json()
       if (data.synced > 0 || data.updated > 0) {
-        console.log(`[Raynet Cron] Sync: ${data.synced} processed, ${data.updated} updated`)
       }
     } catch (err) {
       console.error('[Raynet Cron] Sync failed:', err)
@@ -39,5 +38,4 @@ export function initRaynetCron() {
   // 1st day of month at 8:00 — auto-create handled inside cron endpoint
   // (the */5 cron already runs at 8:00 on day 1, which triggers createMonthlyBCs)
 
-  console.log('[Raynet Cron] Initialized: sync every 5 min (8-20h)')
 }

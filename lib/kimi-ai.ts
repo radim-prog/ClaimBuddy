@@ -268,14 +268,12 @@ export class KimiAIClient {
     }
 
     try {
-      console.log(`[KimiAI] Uploading file: ${filename} (${mimeType})`)
 
       const fileObject = await this.client.files.create({
         file: new File([new Uint8Array(buffer)], filename, { type: mimeType }),
         purpose: 'user_data' as any
       })
 
-      console.log(`[KimiAI] File uploaded: ${fileObject.id}`)
 
       const response = await this.client.chat.completions.create({
         model: this.options.model,
@@ -308,7 +306,6 @@ export class KimiAIClient {
 
       try {
         await (this.client.files as any).del(fileObject.id)
-        console.log(`[KimiAI] File deleted: ${fileObject.id}`)
       } catch (cleanupError) {
         console.warn(`[KimiAI] Failed to delete file ${fileObject.id}:`, cleanupError)
       }
@@ -333,7 +330,6 @@ export class KimiAIClient {
     }
 
     try {
-      console.log(`[KimiAI] Extracting invoice data from text (${text.length} chars)`)
 
       const response = await this.client.chat.completions.create({
         model: this.options.model,
@@ -362,7 +358,6 @@ Vrať pouze JSON objekt podle specifikace.`
       const invoice = this.normalizeInvoiceData(extracted, filename)
       const fixedInvoice = this.applyKnownIssues(invoice)
 
-      console.log(`[KimiAI] Extraction complete: ${fixedInvoice.document_number} (${fixedInvoice.supplier?.name})`)
 
       return fixedInvoice
 
@@ -396,7 +391,6 @@ Vrať pouze JSON objekt podle specifikace.`
 
     // ── Round 1: Full extraction ──
     const r1Start = Date.now()
-    console.log(`[KimiAI] Round 1: Full extraction of ${filename}`)
     const text = await this.extractTextFromFile(buffer, filename, mimeType)
     const round1Invoice = await this.extractInvoiceData(text, filename)
 
@@ -407,11 +401,9 @@ Vrať pouze JSON objekt podle specifikace.`
       corrections: [],
       duration_ms: Date.now() - r1Start,
     })
-    console.log(`[KimiAI] Round 1 complete: confidence=${round1Invoice.confidence_score}, ${Date.now() - r1Start}ms`)
 
     // ── Round 2: Field-by-field reverse verification ──
     const r2Start = Date.now()
-    console.log(`[KimiAI] Round 2: Reverse verification of ${filename}`)
     const { invoice: round2Invoice, corrections: r2Corrections } =
       await this.verifyFieldByField(text, round1Invoice)
 
@@ -423,12 +415,10 @@ Vrať pouze JSON objekt podle specifikace.`
       corrections: r2Corrections,
       duration_ms: Date.now() - r2Start,
     })
-    console.log(`[KimiAI] Round 2 complete: ${r2Corrections.length} corrections, ${Date.now() - r2Start}ms`)
 
     // ── Round 3: Holistic revision ──
     const r3Start = Date.now()
     const changedInR2 = r2Corrections.map(c => c.field)
-    console.log(`[KimiAI] Round 3: Holistic revision of ${filename} (${changedInR2.length} fields changed in R2)`)
     const { invoice: round3Invoice, corrections: r3Corrections } =
       await this.reviseAsWhole(text, round2Invoice, changedInR2)
 
@@ -440,7 +430,6 @@ Vrať pouze JSON objekt podle specifikace.`
       corrections: r3Corrections,
       duration_ms: Date.now() - r3Start,
     })
-    console.log(`[KimiAI] Round 3 complete: ${r3Corrections.length} corrections, ${Date.now() - r3Start}ms`)
 
     // Final structural validation
     const validation = validateInvoiceStructure(round3Invoice)
@@ -460,7 +449,6 @@ Vrať pouze JSON objekt podle specifikace.`
     ;(finalInvoice as any).roundResults = roundResults
 
     const totalTime = roundResults.reduce((s, r) => s + r.duration_ms, 0)
-    console.log(`[KimiAI] 3-round extraction complete: ${allCorrections.length} total corrections, confidence=${finalInvoice.confidence_score}, ${totalTime}ms total`)
 
     return finalInvoice
   }
@@ -742,7 +730,6 @@ Vrať pouze JSON objekt podle specifikace.`
 
     for (const issue of KNOWN_ISSUES) {
       if (issue.supplierPattern.test(supplierName)) {
-        console.log(`[KimiAI] Applying known issue: ${issue.description}`)
         fixed = { ...fixed, ...issue.fix(fixed) }
         issuesApplied.push(issue.description)
       }
@@ -812,7 +799,6 @@ export async function extractBankStatement(
     throw new Error('MOONSHOT_API_KEY not configured')
   }
 
-  console.log(`[KimiAI] Extracting bank statement: ${fileName}`)
 
   // Step 1: Extract text from file
   const text = await client.extractTextFromFile(buffer, fileName, mimeType)
@@ -857,7 +843,6 @@ export async function extractBankStatement(
     description: tx.description || '',
   }))
 
-  console.log(`[KimiAI] Bank statement extracted: ${parsed.transactions.length} transactions`)
   return parsed
 }
 

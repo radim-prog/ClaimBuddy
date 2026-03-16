@@ -76,7 +76,7 @@ class ExtractionQueueManager {
           .from('documents')
           .update({ status: 'uploaded', ocr_status: 'pending', updated_at: new Date().toISOString() })
           .in('id', ids)
-        console.log(`[ExtractionQueue] Reset ${ids.length} stuck document(s) on startup`)
+        console.warn(`[ExtractionQueue] Reset ${ids.length} stuck document(s) on startup`)
       }
     } catch { /* ignore — DB might not be ready yet */ }
   }

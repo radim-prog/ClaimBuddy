@@ -15,8 +15,6 @@ export function useTileLayout(pageKey: string, defaultTiles: TileDefinition[]) {
   const [tiles, setTiles] = useState<TileConfig[]>(() => defaultsToTiles(defaultTiles))
   const [loading, setLoading] = useState(true)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const tilesRef = useRef(tiles)
-  tilesRef.current = tiles
 
   // Fetch saved layout on mount
   useEffect(() => {

@@ -23,7 +23,6 @@ export async function canAccessCompany(
   impersonateCompany: string | null
 ): Promise<boolean> {
   if (isStaffRole(userRole)) return true
-  if (impersonateCompany === companyId && isStaffRole(userRole)) return true
   const ids = await getUserCompanyIds(userId)
   return ids.includes(companyId)
 }

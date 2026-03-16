@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
+import { classifyTemplateFields } from '@/lib/template-autofill'
 
 /**
  * GET /api/accountant/signing/templates
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(arrayBuffer)
 
     // Parse placeholders from DOCX
-    let fields: { name: string; type: string; source: string; required: boolean }[] = []
+    let fields: { name: string; type: string; source: string; crm_field?: string; required: boolean }[] = []
     try {
       const PizZip = (await import('pizzip')).default
       const Docxtemplater = (await import('docxtemplater')).default
@@ -80,12 +81,7 @@ export async function POST(request: NextRequest) {
       const text = doc.getFullText()
       const tags = text.match(/\{([^}]+)\}/g) || []
       const uniqueTags = Array.from(new Set(tags.map((t: string) => t.replace(/[{}]/g, ''))))
-      fields = uniqueTags.map((tag: string) => ({
-        name: tag,
-        type: 'text',
-        source: 'manual',
-        required: true,
-      }))
+      fields = classifyTemplateFields(uniqueTags as string[])
     } catch (parseError) {
       console.error('[Signing Templates POST] DOCX parse error:', parseError)
       // Continue without fields — template is still valid

@@ -6,6 +6,7 @@ import { isStaffRole } from '@/lib/access-check'
 import { createContract, cancelContract } from '@/lib/signi-client'
 import { decrypt, isEncrypted } from '@/lib/crypto'
 import type { SigniSignerInput } from '@/lib/types/signing'
+import { resolveAutoFillData } from '@/lib/template-autofill'
 
 function decryptApiKey(raw: string | null | undefined): string | undefined {
   if (!raw) return undefined

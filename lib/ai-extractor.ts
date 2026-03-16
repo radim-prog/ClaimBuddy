@@ -241,7 +241,6 @@ export class AIExtractor {
 
     // ── Round 1: OCR ──
     const r1Start = Date.now()
-    console.log(`[AIExtractor] Round 1: OCR reading ${filename}`)
     onProgress?.('ocr')
 
     let ocrResult: OcrResult
@@ -253,11 +252,9 @@ export class AIExtractor {
       ocrResult = await this.visionFallback(buffer, mimeType)
     }
 
-    console.log(`[AIExtractor] OCR complete: ${ocrResult.text.length} chars, ${ocrResult.num_pages} pages, ${Date.now() - r1Start}ms`)
 
     // ── Round 2: AI Structured Extraction ──
     const r2Start = Date.now()
-    console.log(`[AIExtractor] Round 2: AI extraction from OCR text`)
     onProgress?.('ai_extraction')
 
     const round2Invoice = await this.aiExtract(ocrResult.text, filename)
@@ -276,11 +273,9 @@ export class AIExtractor {
       corrections: [],
       duration_ms: Date.now() - r2Start,
     })
-    console.log(`[AIExtractor] Round 2 complete: confidence=${round2Invoice.confidence_score}, ${Date.now() - r2Start}ms`)
 
     // ── Round 3: Reverse Verification ──
     const r3Start = Date.now()
-    console.log(`[AIExtractor] Round 3: Reverse verification`)
     onProgress?.('ai_verification')
 
     const { invoice: verifiedInvoice, corrections } = await this.aiVerify(ocrResult.text, round2Invoice, buffer, mimeType)
@@ -293,7 +288,6 @@ export class AIExtractor {
       corrections,
       duration_ms: Date.now() - r3Start,
     })
-    console.log(`[AIExtractor] Round 3 complete: ${corrections.length} corrections, ${Date.now() - r3Start}ms`)
 
     // Final validation
     const validation = validateInvoiceStructure(verifiedInvoice)
@@ -310,7 +304,6 @@ export class AIExtractor {
     }
 
     const totalTime = roundResults.reduce((s, r) => s + r.duration_ms, 0)
-    console.log(`[AIExtractor] Pipeline complete: ${allCorrections.length} corrections, confidence=${finalInvoice.confidence_score}, ${totalTime}ms`)
 
     return { invoice: finalInvoice, ocrResult, roundResults }
   }
@@ -379,7 +372,6 @@ export class AIExtractor {
     // Use vision only for image types when critical fields are missing (PDF stays text-only)
     const canUseVision = hasMissingCritical && buffer && mimeType && mimeType.startsWith('image/')
 
-    console.log(`[AIExtractor] Round 3: ${canUseVision ? 'VISION-ENHANCED' : 'text-only'} verification${hasMissingCritical ? ' (missing critical fields)' : ''}`)
 
     let userContent: string | Array<{ type: string; image_url?: { url: string }; text?: string }>
     if (canUseVision) {
