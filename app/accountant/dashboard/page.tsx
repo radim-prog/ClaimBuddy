@@ -11,6 +11,7 @@ import { PaymentMatrix } from '@/components/payment-tracking/payment-matrix'
 import { VatMatrix } from '@/components/tax-tracking/vat-matrix'
 import { IncomeTaxMatrix } from '@/components/tax-tracking/income-tax-matrix'
 import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
 
@@ -326,7 +327,9 @@ type DashboardData = {
 
 export default function AccountantDashboard() {
   const [selectedYear, setSelectedYear] = useState(currentYear)
-  const [filter, setFilter] = useState<'all' | 'missing' | 'uploaded'>('all')
+  const { userRole } = useAccountantUser()
+  const isAdmin = userRole === 'admin'
+  const [filter, setFilter] = useState<'all' | 'missing' | 'uploaded' | 'approved'>('all')
   const [closureModalOpen, setClosureModalOpen] = useState(false)
   const [selectedClosure, setSelectedClosure] = useState<MonthlyClosure | null>(null)
   const [selectedCompanyName, setSelectedCompanyName] = useState('')
@@ -430,8 +433,7 @@ export default function AccountantDashboard() {
     const passesFilter = (companyId: string) => {
       for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
         const status = getMonthStatus(closureMap, companyId, monthIndex, selectedYear)
-        if (filter === 'missing' && status === 'missing') return true
-        if (filter === 'uploaded' && status === 'uploaded') return true
+        if (filter === status) return true
       }
       return false
     }
@@ -500,19 +502,23 @@ export default function AccountantDashboard() {
                       <span className="text-sm text-yellow-900 font-bold">{stats.uploaded}</span>
                     </div>
                     <div className="text-left hidden sm:block">
-                      <div className="text-xs text-gray-500 dark:text-gray-400">Čeká na schválení</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">K dokončení</div>
                       <div className="text-lg font-bold text-yellow-700 dark:text-yellow-400">{stats.uploaded}</div>
                     </div>
                   </button>
 
-                  <div className="border-l pl-3 ml-1 hidden sm:flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded bg-green-500"></span> OK
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded bg-gray-200"></span> Budoucí
-                    </span>
-                  </div>
+                  <button
+                    onClick={() => setFilter(filter === 'approved' ? 'all' : 'approved')}
+                    className={`border-l pl-3 ml-1 hidden sm:flex items-center gap-2 px-2 py-2 rounded-lg transition-colors cursor-pointer ${filter === 'approved' ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-400' : 'hover:bg-green-50 dark:hover:bg-green-900/20'}`}
+                  >
+                    <div className="w-8 h-8 rounded bg-green-500 border-2 border-green-600 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm text-white font-bold">{stats.approved}</span>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Hotovo</div>
+                      <div className="text-lg font-bold text-green-700 dark:text-green-400">{stats.approved}</div>
+                    </div>
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -766,7 +772,7 @@ export default function AccountantDashboard() {
               ) : (
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatMinutes(timeSummary.total_minutes)}</span>
-                  {timeSummary.billable_amount > 0 && (
+                  {isAdmin && timeSummary.billable_amount > 0 && (
                     <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">{Math.round(timeSummary.billable_amount).toLocaleString('cs-CZ')} Kč</span>
                   )}
                   <span className="text-xs text-gray-400">{monthName}</span>
