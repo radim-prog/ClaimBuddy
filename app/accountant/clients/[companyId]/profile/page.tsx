@@ -20,6 +20,7 @@ import {
   DollarSign,
   Save,
   UserMinus,
+  Monitor,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -60,6 +61,7 @@ const healthInsuranceLabels: Record<string, string> = {
 
 const BASE_TILES: TileDefinition[] = [
   { id: 'company-info', label: 'Údaje o firmě', defaultVisible: true },
+  { id: 'portal-sections', label: 'Klientský portál', defaultVisible: true },
   { id: 'onboarding-questionnaire', label: 'Vstupní dotazník', defaultVisible: true },
   { id: 'health-score', label: 'Zdraví klienta', defaultVisible: true },
   { id: 'reports', label: 'Reporty', defaultVisible: true },
@@ -216,6 +218,12 @@ export default function ProfilePage() {
                   </div>
                 </CardContent>
               </Card>
+            )
+          case 'portal-sections':
+            return (
+              <CollapsibleSection id="portal-sections" title="Klientský portál" icon={Monitor} defaultOpen={false}>
+                <PortalSectionsToggle companyId={companyId} company={company} />
+              </CollapsibleSection>
             )
           case 'onboarding-questionnaire':
             return <OnboardingQuestionnaireViewer companyId={companyId} />
@@ -462,6 +470,74 @@ function RevenueTile({ companyId, company }: { companyId: string; company: any }
             Klient odesel
           </button>
         )}
+      </div>
+    </div>
+  )
+}
+
+const PORTAL_SECTION_LABELS: Record<string, string> = {
+  tax_overview: 'Daňový přehled',
+  assets: 'Majetek',
+  employees: 'Zaměstnanci',
+  tasks: 'Úkoly',
+  files: 'Soubory',
+  insurances: 'Pojištění',
+}
+
+function PortalSectionsToggle({ companyId, company }: { companyId: string; company: any }) {
+  const [sections, setSections] = useState<Record<string, boolean>>(() =>
+    company.portal_sections || {
+      tax_overview: false, assets: false, employees: false,
+      tasks: false, files: false, insurances: false,
+    }
+  )
+  const [saving, setSaving] = useState(false)
+
+  const handleToggle = async (key: string) => {
+    const updated = { ...sections, [key]: !sections[key] }
+    setSections(updated)
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/accountant/companies/${companyId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ portal_sections: updated }),
+      })
+      if (!res.ok) throw new Error()
+      toast.success(`${PORTAL_SECTION_LABELS[key]} ${updated[key] ? 'zapnuto' : 'vypnuto'}`)
+    } catch {
+      setSections(sections)
+      toast.error('Nepodařilo se uložit')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Vyberte sekce, které budou klientovi viditelné v jeho portálu.
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {Object.entries(PORTAL_SECTION_LABELS).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => handleToggle(key)}
+            disabled={saving}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              sections[key]
+                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 ring-1 ring-purple-200 dark:ring-purple-800'
+                : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+          >
+            <div className={`w-3 h-3 rounded-sm border transition-colors ${
+              sections[key]
+                ? 'bg-purple-600 border-purple-600'
+                : 'border-gray-300 dark:border-gray-600'
+            }`} />
+            {label}
+          </button>
+        ))}
       </div>
     </div>
   )
