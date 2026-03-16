@@ -3,6 +3,7 @@ import { extractionQueue } from '@/lib/extraction-queue'
 import { checkExtractionCredits, logGatedAction } from '@/lib/plan-gate'
 import { consumeCredit } from '@/lib/subscription-store'
 import { recordRevenueTransaction } from '@/lib/revenue-sharing'
+import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +31,16 @@ export async function POST(request: NextRequest) {
     const documentId = formData.get('documentId') as string || `doc_${Date.now()}`
     const fastMode = formData.get('fastMode') === 'true'
     const priority = (formData.get('priority') as string) || 'normal'
+
+    // IDOR: verify user has access to the company
+    if (companyId) {
+      const userRole = request.headers.get('x-user-role')
+      const impersonate = request.headers.get('x-impersonate-company')
+      const hasAccess = await canAccessCompany(userId, userRole, companyId, impersonate)
+      if (!hasAccess) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    }
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
