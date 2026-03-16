@@ -42,7 +42,7 @@ export async function getInsuranceCases(options: {
     .select(
       `*,
        insurance_company:insurance_companies(*),
-       company:companies(id, name, ico),
+       company:companies!company_id(id, name, ico),
        assigned_user:users!assigned_to(id, name)`,
       { count: 'exact' }
     )
@@ -78,7 +78,7 @@ export async function getInsuranceCase(caseId: string): Promise<InsuranceCase | 
     .select(
       `*,
        insurance_company:insurance_companies(*),
-       company:companies(id, name, ico),
+       company:companies!company_id(id, name, ico),
        assigned_user:users!assigned_to(id, name)`
     )
     .eq('id', caseId)
@@ -137,7 +137,7 @@ export async function createInsuranceCase(
     .select(
       `*,
        insurance_company:insurance_companies(*),
-       company:companies(id, name, ico),
+       company:companies!company_id(id, name, ico),
        assigned_user:users!assigned_to(id, name)`
     )
     .single()
@@ -179,7 +179,7 @@ export async function updateInsuranceCase(
     .select(
       `*,
        insurance_company:insurance_companies(*),
-       company:companies(id, name, ico),
+       company:companies!company_id(id, name, ico),
        assigned_user:users!assigned_to(id, name)`
     )
     .single()
