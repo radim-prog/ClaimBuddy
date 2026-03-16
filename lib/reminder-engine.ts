@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendTelegramMessage } from '@/lib/telegram'
+import { sendNotificationEmail } from '@/lib/email-service'
 
 // ============================================
 // TYPES
@@ -360,6 +361,28 @@ const REMINDER_TITLE_MAP: Record<ReminderType, string> = {
   custom: 'Upozornění',
 }
 
+/**
+ * Look up the email of a company's owner.
+ * Returns null when the company has no owner or the owner has no email stored.
+ */
+async function getUserEmail(companyId: string): Promise<string | null> {
+  const { data: company } = await supabaseAdmin
+    .from('companies')
+    .select('owner_id')
+    .eq('id', companyId)
+    .single()
+
+  if (!company?.owner_id) return null
+
+  const { data: user } = await supabaseAdmin
+    .from('users')
+    .select('email')
+    .eq('id', company.owner_id)
+    .single()
+
+  return user?.email ?? null
+}
+
 async function deliverViaChannel(
   channel: DeliveryChannel,
   reminder: Reminder,
@@ -429,9 +452,19 @@ async function deliverViaChannel(
       }
 
       case 'email': {
-        // Email channel depends on TASK-014 (Ecomail integration)
-        // For now, skip and mark as delivered with note
-        return { ok: true } // silently pass — email will be wired later
+        const userEmail = await getUserEmail(reminder.company_id)
+        if (!userEmail) return { ok: false, error: 'No email address found for company owner' }
+
+        const emailData: Record<string, string> = {
+          subject: title,
+          message: messageText,
+          ...Object.fromEntries(
+            Object.entries(reminder.metadata || {}).map(([k, v]) => [k, String(v)])
+          ),
+        }
+
+        const result = await sendNotificationEmail(userEmail, reminder.type, emailData)
+        return result.success ? { ok: true } : { ok: false, error: result.error ?? 'Email send failed' }
       }
 
       case 'sms': {
