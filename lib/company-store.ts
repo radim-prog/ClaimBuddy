@@ -136,6 +136,7 @@ export interface CreateCompanyInput {
   assigned_accountant_id?: string | null
   has_employees?: boolean
   managing_director?: string | null
+  owner_id?: string | null
 }
 
 export async function createCompany(input: CreateCompanyInput): Promise<Company> {
@@ -156,6 +157,7 @@ export async function createCompany(input: CreateCompanyInput): Promise<Company>
       assigned_accountant_id: input.assigned_accountant_id || null,
       has_employees: input.has_employees || false,
       managing_director: input.managing_director || null,
+      owner_id: input.owner_id || null,
       pohoda_years: [],
       invoice_stats: {},
       total_revenue: 0,

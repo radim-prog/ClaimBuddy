@@ -16,11 +16,13 @@ export async function GET(request: NextRequest) {
   try {
     let companies: any[] = []
 
+    const companySelect = 'id, name, ico, dic, legal_form, vat_payer, has_employees, status, address, managing_director, portal_sections'
+
     if (impersonateCompany) {
       // Impersonation mode - load specific company
       const { data, error } = await supabaseAdmin
         .from('companies')
-        .select('id, name, ico, dic, legal_form, vat_payer, has_employees, status, address, managing_director')
+        .select(companySelect)
         .eq('id', impersonateCompany)
         .is('deleted_at', null)
         .single()
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
       // Admin/accountant browsing client portal without impersonation — show all active companies
       const { data, error } = await supabaseAdmin
         .from('companies')
-        .select('id, name, ico, dic, legal_form, vat_payer, has_employees, status, address, managing_director')
+        .select(companySelect)
         .is('deleted_at', null)
         .eq('status', 'active')
         .order('name')
@@ -43,13 +45,13 @@ export async function GET(request: NextRequest) {
       }
       companies = data ?? []
     } else {
-      // Real client - load by owner_id
+      // Real client - load by owner_id (include pending_review so client sees their submitted companies)
       const { data, error } = await supabaseAdmin
         .from('companies')
-        .select('id, name, ico, dic, legal_form, vat_payer, has_employees, status, address, managing_director')
+        .select(companySelect)
         .eq('owner_id', userId)
         .is('deleted_at', null)
-        .eq('status', 'active')
+        .in('status', ['active', 'pending_review', 'onboarding'])
         .order('name')
 
       if (error) {
@@ -94,6 +96,7 @@ export async function GET(request: NextRequest) {
         status: company.status,
         address: company.address,
         managing_director: company.managing_director || null,
+        portal_sections: company.portal_sections || {},
         currentMonthStatus: {
           period: currentPeriod,
           missing_count: missingDocs.length,

@@ -13,6 +13,7 @@ type Company = {
   status: string
   address?: string
   managing_director?: string | null
+  portal_sections?: Record<string, boolean>
 }
 
 type ClosureStatus = 'missing' | 'uploaded' | 'approved'

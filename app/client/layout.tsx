@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
@@ -19,6 +19,9 @@ import {
   Crown,
   ClipboardList,
   FileInput,
+  Landmark,
+  Package,
+  UserCheck,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -45,7 +48,8 @@ import { MissingDocsBar } from '@/components/client/missing-docs-bar'
 import { CompanySwitcher } from '@/components/client/company-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 
-const navigation: { name: string; href: string; icon: typeof LayoutDashboard; feature?: string }[] = [
+// Static navigation — always visible
+const baseNavigation: { name: string; href: string; icon: typeof LayoutDashboard; feature?: string }[] = [
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard },
   { name: 'Doklady', href: '/client/documents', icon: FileText },
   { name: 'Faktury', href: '/client/invoices', icon: Receipt },
@@ -57,12 +61,31 @@ const navigation: { name: string; href: string; icon: typeof LayoutDashboard; fe
   { name: 'Účet', href: '/client/account', icon: UserCircle },
 ]
 
+// Dynamic navigation — visible only when portal_sections[key] is true
+const dynamicNavigation: { name: string; href: string; icon: typeof LayoutDashboard; portalKey: string }[] = [
+  { name: 'Daně', href: '/client/taxes', icon: Landmark, portalKey: 'tax_overview' },
+  { name: 'Majetek', href: '/client/assets', icon: Package, portalKey: 'assets' },
+  { name: 'Zaměstnanci', href: '/client/employees', icon: UserCheck, portalKey: 'employees' },
+]
+
 function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { userName, userInitials } = useClientUser()
+  const { userName, userInitials, selectedCompany } = useClientUser()
   const { isLocked, planTier } = usePlanFeatures()
   const [notificationsDismissed, setNotificationsDismissed] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+
+  // Build navigation: base + dynamic sections enabled for this company
+  const portalSections = selectedCompany?.portal_sections || {}
+  const enabledDynamic = dynamicNavigation.filter(item => portalSections[item.portalKey])
+  const navigation = useMemo(() => {
+    // Insert dynamic items before "Zprávy" (second to last group)
+    const messagesIdx = baseNavigation.findIndex(n => n.name === 'Zprávy')
+    const result = [...baseNavigation]
+    const insertAt = messagesIdx >= 0 ? messagesIdx : result.length
+    result.splice(insertAt, 0, ...enabledDynamic)
+    return result
+  }, [enabledDynamic.length, selectedCompany?.id])
 
   useEffect(() => {
     const saved = localStorage.getItem('client-sidebar-collapsed')
