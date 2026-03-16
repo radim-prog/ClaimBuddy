@@ -117,6 +117,20 @@
 .dark .client-theme {
   --primary: 220 80% 60%;
   --ring: 220 80% 60%;
+  --background: 224 40% 6%;
+  --foreground: 220 20% 88%;
+  --card: 224 35% 10%;
+  --card-foreground: 220 20% 88%;
+  --popover: 224 35% 10%;
+  --popover-foreground: 220 20% 88%;
+  --secondary: 224 25% 16%;
+  --secondary-foreground: 220 20% 88%;
+  --muted: 224 25% 16%;
+  --muted-foreground: 220 10% 56%;
+  --border: 224 25% 16%;
+  --input: 224 25% 16%;
+  --accent: 220 70% 50%;
+  --accent-foreground: 0 0% 100%;
 }
 
 .text-display {

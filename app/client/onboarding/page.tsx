@@ -27,11 +27,11 @@ const ICON_MAP: Record<string, React.ElementType> = {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  draft: { label: 'Koncept', color: 'bg-gray-100 text-gray-700' },
-  sent: { label: 'Čeká na vyplnění', color: 'bg-blue-100 text-blue-700' },
-  in_progress: { label: 'Rozpracováno', color: 'bg-amber-100 text-amber-700' },
-  completed: { label: 'Odesláno', color: 'bg-green-100 text-green-700' },
-  reviewed: { label: 'Zkontrolováno', color: 'bg-violet-100 text-violet-700' },
+  draft: { label: 'Koncept', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+  sent: { label: 'Čeká na vyplnění', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  in_progress: { label: 'Rozpracováno', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+  completed: { label: 'Odesláno', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+  reviewed: { label: 'Zkontrolováno', color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' },
 }
 
 export default function OnboardingQuestionnairePage() {

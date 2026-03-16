@@ -124,7 +124,7 @@ export default function ClientAssetsPage() {
                   <div className="text-right shrink-0">
                     <div className="font-semibold">{(asset.current_value ?? asset.acquisition_price).toLocaleString('cs')} Kč</div>
                     <Badge variant="outline" className={`text-xs ${
-                      asset.status === 'active' ? 'text-green-600 border-green-200' : 'text-gray-500'
+                      asset.status === 'active' ? 'text-green-600 border-green-200 dark:text-green-400 dark:border-green-800' : 'text-gray-500 dark:text-gray-400'
                     }`}>
                       {STATUS_LABELS[asset.status] || asset.status}
                     </Badge>

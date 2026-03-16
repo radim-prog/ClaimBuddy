@@ -132,7 +132,7 @@ export default function ClientDohodariPage() {
       {dohody.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            <FileSignature className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+            <FileSignature className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
             <p>Nemáte žádné aktivní dohody</p>
             <p className="text-sm mt-1">Dohody vám vytvoří váš účetní</p>
           </CardContent>
@@ -149,7 +149,7 @@ export default function ClientDohodariPage() {
                   <div className="font-medium flex items-center gap-2">
                     {DOHODA_TYPE_LABELS[d.typ]}
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      d.typ === 'dpp' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                      d.typ === 'dpp' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
                     }`}>{d.typ.toUpperCase()}</span>
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">

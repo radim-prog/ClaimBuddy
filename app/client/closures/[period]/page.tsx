@@ -26,7 +26,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
   reviewed: { label: 'Zkontrolováno', color: 'text-green-600', icon: CheckCircle2 },
   uploaded: { label: 'Nahráno', color: 'text-yellow-600', icon: AlertCircle },
   missing: { label: 'Chybí', color: 'text-red-600', icon: XCircle },
-  skipped: { label: 'Přeskočeno', color: 'text-gray-500', icon: CheckCircle2 },
+  skipped: { label: 'Přeskočeno', color: 'text-gray-500 dark:text-gray-400', icon: CheckCircle2 },
 }
 
 interface ClosureDetail {

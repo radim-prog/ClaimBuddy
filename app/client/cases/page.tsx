@@ -19,11 +19,11 @@ type ClientCase = {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  planning: { label: 'Plánování', color: 'bg-blue-100 text-blue-700' },
-  active: { label: 'Aktivní', color: 'bg-green-100 text-green-700' },
-  on_hold: { label: 'Pozastaveno', color: 'bg-yellow-100 text-yellow-700' },
-  review: { label: 'K přezkoumání', color: 'bg-purple-100 text-purple-700' },
-  completed: { label: 'Dokončeno', color: 'bg-gray-100 text-gray-600' },
+  planning: { label: 'Plánování', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  active: { label: 'Aktivní', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+  on_hold: { label: 'Pozastaveno', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' },
+  review: { label: 'K přezkoumání', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+  completed: { label: 'Dokončeno', color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
 }
 
 export default function ClientCasesPage() {

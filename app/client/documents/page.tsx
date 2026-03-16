@@ -286,7 +286,7 @@ function DocumentListTab() {
                           </button>
                         </div>
                       )}
-                      <Badge className={cn('rounded-md', statusColors[docStatus] || 'bg-gray-100 text-gray-800')}>
+                      <Badge className={cn('rounded-md', statusColors[docStatus] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300')}>
                         {statusLabels[docStatus] || docStatus}
                       </Badge>
                       <span className="text-xs text-muted-foreground hidden sm:inline">

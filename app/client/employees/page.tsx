@@ -108,9 +108,9 @@ export default function ClientEmployeesPage() {
                       </td>
                       <td className="py-2.5">
                         {emp.active ? (
-                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100 text-xs">Aktivní</Badge>
+                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30 text-xs">Aktivní</Badge>
                         ) : (
-                          <Badge variant="outline" className="text-xs text-gray-500">
+                          <Badge variant="outline" className="text-xs text-gray-500 dark:text-gray-400">
                             Ukončen {emp.employment_end ? new Date(emp.employment_end).toLocaleDateString('cs') : ''}
                           </Badge>
                         )}
