@@ -478,6 +478,7 @@ function DocumentInboxTab() {
 interface NotificationPrefs {
   email: boolean
   telegram: boolean
+  marketing_emails?: boolean
   types: {
     missing_document_tax_impact: boolean
     invoice_due_reminder: boolean
@@ -655,6 +656,28 @@ function NotificationsTab() {
             <Switch
               checked={prefs.types.monthly_summary}
               onCheckedChange={(v) => updateType('monthly_summary', v)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Marketing emails opt-out (GDPR) */}
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <CardTitle className="text-lg font-display">Marketingové emaily</CardTitle>
+          <CardDescription>GDPR: můžete se kdykoli odhlásit z marketingových emailů</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-sm">Tipy, novinky a nabídky</p>
+              <p className="text-xs text-muted-foreground">
+                Občasné emaily s tipy pro vaše podnikání a účetnictví
+              </p>
+            </div>
+            <Switch
+              checked={prefs.marketing_emails ?? true}
+              onCheckedChange={(checked) => setPrefs(p => ({ ...p, marketing_emails: checked }))}
             />
           </div>
         </CardContent>

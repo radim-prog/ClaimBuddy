@@ -712,6 +712,205 @@ Dotazník vyplníte zde: https://app.zajcon.cz/dotazniky
 }
 
 // ---------------------------------------------------------------------------
+// Lead nurturing (clients without accountant)
+// ---------------------------------------------------------------------------
+
+const UNSUBSCRIBE_BLOCK = `
+  <p style="margin: 24px 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
+    Nechcete tyto emaily? <a href="https://app.zajcon.cz/client/account" style="color: #9ca3af; text-decoration: underline;">Odhlásit se</a>
+  </p>`
+
+export function leadDeadlineReminder(name: string): EmailTemplate {
+  const subject = 'Blíží se daňové termíny — víte o nich?'
+
+  const content = `
+    <p style="margin: 0 0 16px; font-size: 16px; color: #111827;">Dobrý den, <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 16px; font-size: 15px; color: #374151; line-height: 1.6;">
+      jako podnikatel máte řadu daňových povinností s pevnými termíny. Přehlédnutí termínu může znamenat penále.
+    </p>
+    <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 16px; margin-bottom: 20px;">
+      <p style="margin: 0 0 8px; font-size: 14px; color: #92400e; font-weight: 700;">Nejčastější termíny:</p>
+      <ul style="margin: 0; padding-left: 18px; color: #92400e; font-size: 14px; line-height: 1.8;">
+        <li>DPH — 25. den následujícího měsíce</li>
+        <li>Zálohy na daň z příjmu — 15.6. a 15.12.</li>
+        <li>Přiznání k dani z příjmu — 1.4. (nebo 1.7. s daňovým poradcem)</li>
+      </ul>
+    </div>
+    <p style="margin: 0 0 20px; font-size: 15px; color: #374151; line-height: 1.6;">
+      S účetním v ÚčetníOS vám žádný termín neuteče — systém hlídá vše automaticky.
+    </p>
+    ${emailButton('Najít účetního', 'https://app.zajcon.cz/client/find-accountant')}
+    ${UNSUBSCRIBE_BLOCK}`
+
+  const text = `Dobrý den, ${name},
+
+jako podnikatel máte řadu daňových povinností s pevnými termíny.
+
+DPH — 25. den následujícího měsíce
+Zálohy na daň z příjmu — 15.6. a 15.12.
+Přiznání k dani — 1.4. (nebo 1.7. s daňovým poradcem)
+
+S účetním v ÚčetníOS vám žádný termín neuteče.
+
+Najít účetního: https://app.zajcon.cz/client/find-accountant
+
+Odhlásit se z emailů: https://app.zajcon.cz/client/account
+
+ÚčetníOS • ucetnios.cz`
+
+  return { subject, html: wrapInLayout(subject, content, { showUnsubscribe: true }), text }
+}
+
+export function leadTipDocuments(name: string): EmailTemplate {
+  const subject = '3 tipy jak si zjednodušit účetní doklady'
+
+  const content = `
+    <p style="margin: 0 0 16px; font-size: 16px; color: #111827;">Dobrý den, <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 16px; font-size: 15px; color: #374151; line-height: 1.6;">
+      Správa dokladů nemusí být noční můra. Tady jsou 3 tipy od zkušených účetních:
+    </p>
+    <div style="margin-bottom: 20px;">
+      <div style="border-left: 3px solid #2563eb; padding: 12px 16px; margin-bottom: 12px; background: #f9fafb; border-radius: 0 6px 6px 0;">
+        <p style="margin: 0 0 4px; font-size: 14px; font-weight: 700; color: #111827;">1. Foťte doklady hned</p>
+        <p style="margin: 0; font-size: 14px; color: #374151;">Účtenku z oběda vyfoťte rovnou — za týden ji nenajdete.</p>
+      </div>
+      <div style="border-left: 3px solid #2563eb; padding: 12px 16px; margin-bottom: 12px; background: #f9fafb; border-radius: 0 6px 6px 0;">
+        <p style="margin: 0 0 4px; font-size: 14px; font-weight: 700; color: #111827;">2. Posílejte doklady emailem</p>
+        <p style="margin: 0; font-size: 14px; color: #374151;">V ÚčetníOS máte sběrný email — přepošlete fakturu a je zařazena.</p>
+      </div>
+      <div style="border-left: 3px solid #2563eb; padding: 12px 16px; background: #f9fafb; border-radius: 0 6px 6px 0;">
+        <p style="margin: 0 0 4px; font-size: 14px; font-weight: 700; color: #111827;">3. Nechte AI vytěžit data</p>
+        <p style="margin: 0; font-size: 14px; color: #374151;">Naše AI přečte fakturu za vás — dodavatel, částka, DPH automaticky.</p>
+      </div>
+    </div>
+    <p style="margin: 0 0 20px; font-size: 15px; color: #374151; line-height: 1.6;">
+      Chcete mít doklady v pořádku bez stresu? Propojte se s účetním.
+    </p>
+    ${emailButton('Najít účetního', 'https://app.zajcon.cz/client/find-accountant')}
+    ${UNSUBSCRIBE_BLOCK}`
+
+  const text = `Dobrý den, ${name},
+
+3 tipy pro správu dokladů:
+1. Foťte doklady hned — za týden je nenajdete
+2. Posílejte doklady emailem — v ÚčetníOS máte sběrný email
+3. Nechte AI vytěžit data — dodavatel, částka, DPH automaticky
+
+Najít účetního: https://app.zajcon.cz/client/find-accountant
+
+Odhlásit se: https://app.zajcon.cz/client/account
+
+ÚčetníOS • ucetnios.cz`
+
+  return { subject, html: wrapInLayout(subject, content, { showUnsubscribe: true }), text }
+}
+
+export function leadTaxSaving(name: string): EmailTemplate {
+  const subject = 'Šetříte na daních? Účetní vám ušetří víc'
+
+  const content = `
+    <p style="margin: 0 0 16px; font-size: 16px; color: #111827;">Dobrý den, <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 16px; font-size: 15px; color: #374151; line-height: 1.6;">
+      Věděli jste, že průměrný podnikatel přeplatí na daních <strong>15–25 %</strong> jen proto, že nemá
+      správně nastavené odpočty a slevy?
+    </p>
+    <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 16px; margin-bottom: 20px;">
+      <p style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #166534;">Co účetní optimalizuje:</p>
+      <ul style="margin: 0; padding-left: 18px; color: #166534; font-size: 14px; line-height: 1.8;">
+        <li>Správné uplatnění odpočtů (dary, penzijko, hypotéka)</li>
+        <li>Optimální volba výdajového paušálu vs. skutečné výdaje</li>
+        <li>Plánování záloh na daň z příjmu</li>
+        <li>DPH optimalizace u plátců</li>
+      </ul>
+    </div>
+    <p style="margin: 0 0 20px; font-size: 15px; color: #374151; line-height: 1.6;">
+      V ÚčetníOS vidíte svůj <strong>daňový dopad v reálném čase</strong>. S účetním ušetříte ještě víc.
+    </p>
+    ${emailButton('Najít účetního', 'https://app.zajcon.cz/client/find-accountant')}
+    ${UNSUBSCRIBE_BLOCK}`
+
+  const text = `Dobrý den, ${name},
+
+Průměrný podnikatel přeplatí na daních 15–25 % kvůli chybějícím odpočtům.
+
+Účetní optimalizuje:
+- Odpočty (dary, penzijko, hypotéka)
+- Volbu paušálu vs. skutečné výdaje
+- Plánování záloh
+- DPH optimalizaci
+
+Najít účetního: https://app.zajcon.cz/client/find-accountant
+
+Odhlásit se: https://app.zajcon.cz/client/account
+
+ÚčetníOS • ucetnios.cz`
+
+  return { subject, html: wrapInLayout(subject, content, { showUnsubscribe: true }), text }
+}
+
+export function leadAccountantOffer(name: string): EmailTemplate {
+  const subject = 'Nechte účetnictví na profíkovi — my najdeme toho správného'
+
+  const content = `
+    <p style="margin: 0 0 16px; font-size: 16px; color: #111827;">Dobrý den, <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 16px; font-size: 15px; color: #374151; line-height: 1.6;">
+      Podnikáte, ale účetnictví řešíte sami? Nemusíte. V ÚčetníOS najdete ověřené
+      účetní, kteří se postarají o vše — od dokladů po daňové přiznání.
+    </p>
+    <div style="margin-bottom: 20px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+          <td style="padding: 12px; background: #eff6ff; border-radius: 6px; text-align: center; width: 33%;">
+            <p style="margin: 0 0 4px; font-size: 24px; font-weight: 700; color: #1d4ed8;">✓</p>
+            <p style="margin: 0; font-size: 13px; color: #1d4ed8; font-weight: 600;">Ověření účetní</p>
+          </td>
+          <td style="width: 8px;"></td>
+          <td style="padding: 12px; background: #eff6ff; border-radius: 6px; text-align: center; width: 33%;">
+            <p style="margin: 0 0 4px; font-size: 24px; font-weight: 700; color: #1d4ed8;">💬</p>
+            <p style="margin: 0; font-size: 13px; color: #1d4ed8; font-weight: 600;">Přímá komunikace</p>
+          </td>
+          <td style="width: 8px;"></td>
+          <td style="padding: 12px; background: #eff6ff; border-radius: 6px; text-align: center; width: 33%;">
+            <p style="margin: 0 0 4px; font-size: 24px; font-weight: 700; color: #1d4ed8;">📊</p>
+            <p style="margin: 0; font-size: 13px; color: #1d4ed8; font-weight: 600;">Online přehled</p>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <p style="margin: 0 0 20px; font-size: 15px; color: #374151; line-height: 1.6;">
+      Propojení je zdarma. Účetní vám připraví nabídku na míru.
+    </p>
+    ${emailButton('Najít účetního zdarma', 'https://app.zajcon.cz/client/find-accountant', '#16a34a')}
+    ${UNSUBSCRIBE_BLOCK}`
+
+  const text = `Dobrý den, ${name},
+
+Podnikáte, ale účetnictví řešíte sami? V ÚčetníOS najdete ověřené účetní.
+
+✓ Ověření účetní
+💬 Přímá komunikace
+📊 Online přehled
+
+Propojení je zdarma.
+
+Najít účetního: https://app.zajcon.cz/client/find-accountant
+
+Odhlásit se: https://app.zajcon.cz/client/account
+
+ÚčetníOS • ucetnios.cz`
+
+  return { subject, html: wrapInLayout(subject, content, { showUnsubscribe: true }), text }
+}
+
+/** All lead email generators indexed for rotation */
+export const LEAD_EMAIL_VARIANTS = [
+  leadDeadlineReminder,
+  leadTipDocuments,
+  leadTaxSaving,
+  leadAccountantOffer,
+] as const
+
+// ---------------------------------------------------------------------------
 // Účetní notifikace
 // ---------------------------------------------------------------------------
 
