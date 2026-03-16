@@ -23,6 +23,7 @@ import {
   type Section,
   type Question,
 } from '@/lib/tax-questionnaire-def'
+import { QuestionnaireUpload } from '@/components/client/questionnaire-upload'
 
 const ICON_MAP: Record<string, React.ElementType> = {
   banknote: Banknote, percent: Percent, receipt: Receipt, clock: Clock,
@@ -186,6 +187,8 @@ export default function TaxQuestionnairePage() {
             onToggle={() => toggleSection(section.id)}
             onResponse={setResponse}
             readOnly={isReadOnly}
+            questionnaireId={questionnaire.id}
+            companyId={selectedCompanyId ?? ''}
           />
         ))}
       </div>
@@ -226,7 +229,7 @@ export default function TaxQuestionnairePage() {
 // --- Section Card ---
 
 function SectionCard({
-  section, responses, expanded, onToggle, onResponse, readOnly,
+  section, responses, expanded, onToggle, onResponse, readOnly, questionnaireId, companyId,
 }: {
   section: Section
   responses: QuestionnaireResponses
@@ -234,6 +237,8 @@ function SectionCard({
   onToggle: () => void
   onResponse: (key: string, value: string | boolean | ChildEntry[] | null) => void
   readOnly: boolean
+  questionnaireId: string
+  companyId: string
 }) {
   const Icon = ICON_MAP[section.icon] || Info
   const sectionAnswered = section.questions.filter(q => {
@@ -285,12 +290,13 @@ function SectionCard({
               readOnly={readOnly}
             />
           ))}
-          {section.allowDocUpload && (
-            <div className="mt-3 p-3 bg-muted/30 rounded-lg border border-dashed">
-              <p className="text-xs text-muted-foreground">
-                {section.uploadHint || 'Přiložte relevantní dokumenty v sekci Dokumenty.'}
-              </p>
-            </div>
+          {section.allowDocUpload && questionnaireId && companyId && (
+            <QuestionnaireUpload
+              questionnaireId={questionnaireId}
+              sectionId={section.id}
+              companyId={companyId}
+              readOnly={readOnly}
+            />
           )}
         </CardContent>
       )}
