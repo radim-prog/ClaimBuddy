@@ -58,8 +58,8 @@ export function HowItWorks() {
 
         <div className="max-w-5xl mx-auto relative">
           {/* Vertical timeline line */}
-          <div className="hidden sm:block absolute left-[2.75rem] sm:left-1/2 top-0 bottom-0 w-px sm:-translate-x-px">
-            <div className="w-full h-full bg-gradient-to-b from-purple-500/30 via-blue-500/20 to-emerald-500/30" />
+          <div className="hidden sm:block absolute left-[2.75rem] sm:left-1/2 top-0 bottom-0 w-0.5 sm:-translate-x-px">
+            <div className="w-full h-full bg-gradient-to-b from-purple-500/50 via-blue-500/40 to-emerald-500/50" />
           </div>
 
           {STEPS.map((s, i) => (

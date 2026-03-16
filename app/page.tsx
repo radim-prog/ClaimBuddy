@@ -40,7 +40,7 @@ export default function LandingPage() {
       <div className="h-12 sm:h-20 bg-gradient-to-b from-background to-muted/30" />
       <PricingSection />
       {/* Pricing → FAQ: muted to dark */}
-      <div className="h-16 sm:h-24 bg-gradient-to-b from-muted/30 via-gray-900/50 to-gray-900" />
+      <div className="h-16 sm:h-24 bg-gradient-to-b from-muted/30 via-gray-800/50 to-gray-800" />
       <FAQ />
       {/* FAQ → CTA: dark to light */}
       <div className="h-16 sm:h-24 bg-gradient-to-b from-gray-900 to-background" />

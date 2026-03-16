@@ -69,7 +69,7 @@ export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   return (
-    <section id="faq" className="relative py-20 sm:py-28 bg-gray-100 dark:bg-gray-800 overflow-hidden">
+    <section id="faq" className="relative py-20 sm:py-28 bg-gray-800 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-blue-900/10 via-transparent to-transparent" />
 
