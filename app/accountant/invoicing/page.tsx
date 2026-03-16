@@ -171,15 +171,16 @@ export default function InvoicingPage() {
       setError(null)
       try {
         const response = await fetch('/api/accountant/invoicing')
-        if (!response.ok) {
-          throw new Error('Failed to fetch invoicing data')
-        }
         const data = await response.json()
-        setInvoicingData(data)
+        if (data.periods) {
+          setInvoicingData(data)
+        } else {
+          // API returned error but with periods array
+          setInvoicingData({ periods: data.periods || [] })
+        }
       } catch (err) {
         console.error('Error fetching invoicing data:', err)
-        setError(err instanceof Error ? err.message : 'Unknown error')
-        // Set empty data on error
+        // Show empty state instead of error — page is still usable
         setInvoicingData({ periods: [] })
       } finally {
         setLoading(false)

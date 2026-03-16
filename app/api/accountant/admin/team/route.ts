@@ -15,11 +15,28 @@ export async function GET(request: NextRequest) {
   try {
     const { data: users, error } = await supabaseAdmin
       .from('users')
-      .select('id, name, email, role, created_at')
+      .select('id, name, email, role, created_at, supervisor_id')
       .order('name')
 
     if (error) {
       console.error('Error fetching team members:', error)
+      // If supervisor_id column doesn't exist, retry without it
+      if (error.message?.includes('supervisor_id')) {
+        const { data: fallbackUsers } = await supabaseAdmin
+          .from('users')
+          .select('id, name, email, role, created_at')
+          .order('name')
+        const members = (fallbackUsers || []).map(u => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          is_active: true,
+          created_at: u.created_at,
+          supervisor_id: null,
+        }))
+        return NextResponse.json({ members })
+      }
       return NextResponse.json({ error: 'Failed to fetch team members' }, { status: 500 })
     }
 
@@ -31,6 +48,7 @@ export async function GET(request: NextRequest) {
       role: u.role,
       is_active: true,
       created_at: u.created_at,
+      supervisor_id: (u as any).supervisor_id || null,
     }))
 
     return NextResponse.json({ members })
