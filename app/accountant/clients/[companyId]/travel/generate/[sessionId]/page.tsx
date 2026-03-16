@@ -339,14 +339,14 @@ export default function TravelGenerateWizardPage() {
   const handleGenerate = async () => {
     setSaving(true)
     try {
-      await apiFetch(`${apiBase}/${sessionId}`, {
-        method: 'PATCH',
+      await apiFetch(`${apiBase}/${sessionId}/run`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'generating' }),
+        body: JSON.stringify({}),
       })
       toast.success('Generovani zahajeno! AI zpracovava data...')
-      // Navigate back to travel page — generation happens async
-      router.push(`/accountant/clients/${companyId}/travel`)
+      // Navigate to review page — will poll status there
+      router.push(`/accountant/clients/${companyId}/travel/generate/${sessionId}/review`)
     } catch (err: unknown) {
       toast.error('Chyba pri spusteni generovani')
     } finally {
