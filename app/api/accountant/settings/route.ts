@@ -73,6 +73,7 @@ export async function PATCH(request: NextRequest) {
       'invoice_number_series',
       'default_constant_symbol',
       'invoice_footer_text',
+      'default_document_type',
     ]
 
     for (const key of jsonKeys) {

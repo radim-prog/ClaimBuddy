@@ -142,6 +142,7 @@ export async function scheduleReminder(params: {
   metadata?: Record<string, unknown>
   maxDeliveries?: number
   createdBy?: string
+  escalationLevel?: number
 }): Promise<Reminder | null> {
   const {
     companyId,
@@ -152,6 +153,7 @@ export async function scheduleReminder(params: {
     metadata = {},
     maxDeliveries = 20,
     createdBy,
+    escalationLevel = 0,
   } = params
 
   // Insert reminder
@@ -166,6 +168,7 @@ export async function scheduleReminder(params: {
       metadata,
       max_deliveries: maxDeliveries,
       created_by: createdBy || null,
+      escalation_level: escalationLevel,
     })
     .select()
     .single()
@@ -186,7 +189,7 @@ export async function scheduleReminder(params: {
         channel,
         scheduled_at: slot.toISOString(),
         status: 'pending' as const,
-        escalation_level: 0,
+        escalation_level: escalationLevel,
         message_text: null,
       })
     }

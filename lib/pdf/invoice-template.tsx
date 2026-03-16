@@ -291,9 +291,19 @@ interface InvoicePDFProps {
   supplier: SupplierInfo
   qrDataUrl?: string
   notices?: string[]
+  documentType?: string
 }
 
-export function InvoicePDF({ invoice, supplier, qrDataUrl, notices }: InvoicePDFProps) {
+function getDocumentTitle(documentType?: string): string {
+  switch (documentType) {
+    case 'payment_request': return 'VÝZVA K PLATBĚ'
+    case 'proforma': return 'ZÁLOHOVÁ FAKTURA'
+    case 'credit_note': return 'DOBROPIS'
+    default: return 'FAKTURA – DAŇOVÝ DOKLAD'
+  }
+}
+
+export function InvoicePDF({ invoice, supplier, qrDataUrl, notices, documentType }: InvoicePDFProps) {
   // Group items by VAT rate for recap
   const vatRecap = new Map<number, { base: number; vat: number; total: number }>()
   for (const item of invoice.items) {
@@ -315,7 +325,7 @@ export function InvoicePDF({ invoice, supplier, qrDataUrl, notices }: InvoicePDF
               <Image src={supplier.logo_url} style={{ width: 120, maxHeight: 60, objectFit: 'contain' }} />
             )}
             <View>
-              <Text style={styles.title}>FAKTURA – DAŇOVÝ DOKLAD</Text>
+              <Text style={styles.title}>{getDocumentTitle(documentType)}</Text>
               <Text style={styles.subtitle}>Vystaveno v systému Účetní OS</Text>
             </View>
           </View>

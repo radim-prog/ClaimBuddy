@@ -69,7 +69,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // 4. Render PDF to buffer
     const pdfBuffer = await renderToBuffer(
-      InvoicePDF({ invoice, supplier, qrDataUrl, notices })
+      InvoicePDF({ invoice, supplier, qrDataUrl, notices, documentType: row.document_type || 'invoice' })
     )
 
     // 5. Return as downloadable PDF

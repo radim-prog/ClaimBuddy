@@ -89,6 +89,7 @@ const DOCUMENT_TYPE_PREFIX: Record<string, string> = {
   invoice: 'FV',
   proforma: 'ZF',
   credit_note: 'D',
+  payment_request: 'VP',
 }
 
 export function getDocumentTypePrefix(documentType: string): string {
