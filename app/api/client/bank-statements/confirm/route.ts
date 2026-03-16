@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { canAccessCompany } from '@/lib/access-check'
 import { upsertClosureField } from '@/lib/closure-store-db'
 import { autoMatchTransaction, calculateTaxImpact } from '@/lib/bank-matching'
+import { bankStatementConfirmSchema, formatZodErrors } from '@/lib/validations'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,15 +15,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { company_id, period, categories } = body as {
-      company_id: string
-      period: string // 'YYYY-MM'
-      categories?: Record<string, string> // transaction_id → category
+    const parsed = bankStatementConfirmSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
     }
 
-    if (!company_id || !period) {
-      return NextResponse.json({ error: 'company_id and period required' }, { status: 400 })
-    }
+    const { company_id, period, categories } = parsed.data
 
     const userRole = request.headers.get('x-user-role')
     const impersonate = request.headers.get('x-impersonate-company')

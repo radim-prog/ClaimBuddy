@@ -65,14 +65,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   const { configId } = await params
 
-  let body: { action?: string; monthly_fee?: number; notes?: string }
+  let rawBody: unknown
   try {
-    body = await request.json()
+    rawBody = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { action, monthly_fee, notes } = body
+  const { billingConfigPatchSchema, formatZodErrors } = await import('@/lib/validations')
+  const parsed = billingConfigPatchSchema.safeParse(rawBody)
+  if (!parsed.success) {
+    return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
+  }
+
+  const { action, monthly_fee, notes } = parsed.data
 
   try {
     // Verify ownership — only the accountant who created the config can modify it

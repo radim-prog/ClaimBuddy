@@ -6,31 +6,22 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { hashPassword } from '@/lib/auth'
 import { sendVerificationEmail } from '@/lib/email-service'
 import { triggerOnboardingSequence } from '@/lib/marketing-service'
+import { registerSchema, formatZodErrors } from '@/lib/validations'
 
 export async function register(formData: FormData) {
-  const name = (formData.get('name') as string)?.trim()
-  const email = (formData.get('email') as string)?.trim().toLowerCase()
-  const password = formData.get('password') as string
-  const confirmPassword = formData.get('confirmPassword') as string
-
-  // Validation
-  if (!name || !email || !password || !confirmPassword) {
-    return { error: 'Všechna pole jsou povinná' }
+  const raw = {
+    name: (formData.get('name') as string)?.trim() ?? '',
+    email: (formData.get('email') as string)?.trim().toLowerCase() ?? '',
+    password: (formData.get('password') as string) ?? '',
+    confirmPassword: (formData.get('confirmPassword') as string) ?? '',
   }
 
-  // Email format validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(email)) {
-    return { error: 'Neplatný formát emailu' }
+  const result = registerSchema.safeParse(raw)
+  if (!result.success) {
+    return { error: formatZodErrors(result.error) }
   }
 
-  if (password.length < 8) {
-    return { error: 'Heslo musí mít alespoň 8 znaků' }
-  }
-
-  if (password !== confirmPassword) {
-    return { error: 'Hesla se neshodují' }
-  }
+  const { name, email, password } = result.data
 
   try {
     // Check email uniqueness

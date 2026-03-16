@@ -3,20 +3,9 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole, canAccessCompany } from '@/lib/access-check'
 import { createContract } from '@/lib/signi-client'
 import type { SigniSignerInput } from '@/lib/types/signing'
+import { signingCreateSchema, formatZodErrors } from '@/lib/validations'
 
 export const dynamic = 'force-dynamic'
-
-interface CreateSigningRequest {
-  companyId: string
-  documentName: string
-  documentType?: string
-  signatureType?: string
-  templateId?: string
-  signers: { name: string; email: string; phone?: string; role?: string; order?: number }[]
-  fileBase64?: string
-  fileName?: string
-  note?: string
-}
 
 /**
  * POST /api/signing/create
@@ -29,12 +18,13 @@ export async function POST(request: NextRequest) {
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
-    const body: CreateSigningRequest = await request.json()
-    const { companyId, documentName, documentType, signatureType, templateId, signers, fileBase64, fileName, note } = body
-
-    if (!companyId || !documentName || !signers?.length) {
-      return NextResponse.json({ error: 'Missing required fields: companyId, documentName, signers' }, { status: 400 })
+    const body = await request.json()
+    const parsed = signingCreateSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
     }
+
+    const { companyId, documentName, documentType, signatureType, templateId, signers, fileBase64, fileName, note } = parsed.data
 
     // IDOR check
     const impersonate = request.headers.get('x-impersonate-company')
@@ -108,7 +98,7 @@ export async function POST(request: NextRequest) {
 
       try {
         const contract = await createContract(fileBuffer, fileName, documentName, signiSigners, {
-          note,
+          note: note ?? undefined,
           apiKey,
         })
 

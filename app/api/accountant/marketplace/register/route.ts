@@ -16,25 +16,20 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
+
+    const { marketplaceRegisterSchema, formatZodErrors } = await import('@/lib/validations')
+    const parsed = marketplaceRegisterSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
+    }
+
     const {
       company_id, name, ico, dic, legal_form,
       email, phone, website,
       street, city, zip, region,
       description, specializations, capacity_status,
       min_price, max_price, services,
-    } = body
-
-    // Validate required fields
-    if (!name || !ico || !email || !city) {
-      return NextResponse.json({
-        error: 'Povinná pole: název, IČO, email, město',
-      }, { status: 400 })
-    }
-
-    // Validate ICO format (8 digits)
-    if (!/^\d{8}$/.test(ico)) {
-      return NextResponse.json({ error: 'IČO musí mít 8 číslic' }, { status: 400 })
-    }
+    } = parsed.data
 
     // Check for duplicate ICO
     const { data: existing } = await supabaseAdmin
