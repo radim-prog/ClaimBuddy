@@ -24,6 +24,7 @@ import { VehicleForm } from '@/components/client/travel/vehicle-form'
 import { TravelStatsCards } from '@/components/client/travel/travel-stats'
 import { TravelRandomizer } from '@/components/client/travel/travel-randomizer'
 import { toast } from 'sonner'
+import { UpsellBanner } from '@/components/client/upsell-banner'
 import type { TravelTrip, TravelVehicle, TravelDriver, TravelPlace, TravelStats } from '@/lib/types/travel'
 
 type Tab = 'trips' | 'vehicles' | 'places' | 'stats'
@@ -226,6 +227,8 @@ function TravelPageInner() {
         <h1 className="text-2xl font-bold font-display">Kniha jízd</h1>
         <p className="text-muted-foreground">Evidence služebních jízd</p>
       </div>
+
+      <UpsellBanner message="Vedení knihy jízd je časově náročné. Účetní za vás zkontroluje správnost a sazby." />
 
       {/* Big action button */}
       <button

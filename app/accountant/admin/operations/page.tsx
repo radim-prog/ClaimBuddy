@@ -10,6 +10,7 @@ import {
   HardDrive,
   Link2,
   Calculator,
+  Sparkles,
 } from 'lucide-react'
 import { CollapsibleSection } from '@/components/collapsible-section'
 import { TaskTemplates } from '@/components/admin/task-templates'
@@ -20,8 +21,10 @@ import { PricingSettings } from '@/components/admin/pricing-settings'
 import { CompanyDriveMapper } from '@/components/drive/company-drive-mapper'
 import { CompanyRaynetMapper } from '@/components/raynet/company-raynet-mapper'
 import { OperationsTaxRates } from '@/components/admin/operations-tax-rates'
+import { LeadsList } from '@/components/admin/leads-list'
 
 const sections = [
+  { id: 'leads', label: 'Leady — Chci účetní', icon: Sparkles, Component: LeadsList },
   { id: 'templates', label: 'Šablony úkolů', icon: Repeat, Component: TaskTemplates },
   { id: 'workflow', label: 'Workflow pravidla', icon: GitBranch, Component: OperationsWorkflow },
   { id: 'notifications', label: 'Notifikace', icon: Bell, Component: OperationsNotifications },

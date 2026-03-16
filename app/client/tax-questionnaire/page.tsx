@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useClientUser } from '@/lib/contexts/client-user-context'
+import { UpsellBanner } from '@/components/client/upsell-banner'
 import { toast } from 'sonner'
 import {
   TAX_QUESTIONNAIRE_SECTIONS,
@@ -125,8 +126,10 @@ export default function TaxQuestionnairePage() {
 
   return (
     <div className="max-w-3xl mx-auto pb-20">
+      <UpsellBanner message="Daňový dotazník je složitý? Profesionální účetní vám poradí s optimalizací daní." />
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 mt-4">
         <div>
           <h1 className="text-xl font-bold">Daňový dotazník {year}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">

@@ -25,6 +25,7 @@ import { TransactionMatchDialog } from '@/components/client/transaction-match-di
 import { TaxImpactSummary } from '@/components/client/tax-impact-summary'
 import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
 import { CollapsibleSection } from '@/components/collapsible-section'
+import { UpsellBanner } from '@/components/client/upsell-banner'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { Suspense } from 'react'
@@ -64,6 +65,8 @@ function DocumentsPageInner() {
         <h1 className="text-2xl font-bold font-display">Doklady</h1>
         <p className="text-muted-foreground">Nahrajte doklady a spravujte bankovní výpisy</p>
       </div>
+
+      <UpsellBanner message="Nahráváte doklady sami? S profesionální účetní ušetříte čas a vyhnete se chybám." />
 
       {/* Action buttons */}
       <div className="grid grid-cols-2 gap-3">
