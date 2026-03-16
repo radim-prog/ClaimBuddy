@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ClosureDetailModal } from '@/components/closure-detail-modal'
 // settings context removed — no longer needed on dashboard
 import { useAttention } from '@/lib/contexts/attention-context'
-import { Clock, ArrowRight, AlertTriangle, FileX, MessageCircle, Upload, CheckCircle2, Circle, ChevronRight } from 'lucide-react'
+import { Clock, AlertTriangle, FileX, MessageCircle, Upload, CheckCircle2, ChevronRight } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { PaymentMatrix } from '@/components/payment-tracking/payment-matrix'
 import { VatMatrix } from '@/components/tax-tracking/vat-matrix'
@@ -697,90 +697,42 @@ export default function AccountantDashboard() {
   return (
     <div className="min-w-0 overflow-hidden space-y-5">
 
-      {/* Compact info strip — 3 widgets in one row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-
-        {/* Dnešní úkoly */}
-        <Link href="/accountant/work" className="group">
-          <div className="flex items-center gap-3 rounded-xl border border-gray-200/80 dark:border-gray-700/60 bg-white dark:bg-gray-900/60 px-4 py-3 hover:border-purple-300 dark:hover:border-purple-700 transition-all">
-            <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-purple-50 dark:bg-purple-900/20 shrink-0">
-              <Clock className="h-4 w-4 text-purple-500" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">{todayTasks.length}</span>
-                <span className="text-sm text-gray-500">úkolů na dnes</span>
-              </div>
-              {overdueCount > 0 && (
-                <span className="text-xs text-red-600 dark:text-red-400">{overdueCount} po termínu</span>
-              )}
-            </div>
-            <ArrowRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-          </div>
+      {/* Ultra-compact status bar */}
+      <div className="flex items-center gap-4 flex-wrap text-xs text-gray-500 dark:text-gray-400 px-1">
+        <Link href="/accountant/work" className="flex items-center gap-1.5 hover:text-purple-600 transition-colors">
+          <Clock className="h-3.5 w-3.5 text-purple-500" />
+          <span className="font-medium text-gray-900 dark:text-white">{todayTasks.length}</span> úkolů
+          {overdueCount > 0 && <span className="text-red-500 font-medium">({overdueCount} po termínu)</span>}
         </Link>
-
-        {/* Vyžaduje pozornost */}
-        <div className="flex items-center gap-3 rounded-xl border border-gray-200/80 dark:border-gray-700/60 bg-white dark:bg-gray-900/60 px-4 py-3">
-          <div className={`flex items-center justify-center h-9 w-9 rounded-lg shrink-0 ${attentionTotals.total > 0 ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
-            {attentionTotals.total > 0
-              ? <AlertTriangle className="h-4 w-4 text-amber-500" />
-              : <CheckCircle2 className="h-4 w-4 text-green-500" />
-            }
-          </div>
-          <div className="min-w-0 flex-1">
-            {attentionLoading ? (
-              <span className="text-sm text-gray-400">Načítám...</span>
-            ) : attentionTotals.total === 0 ? (
-              <span className="text-sm text-green-600 dark:text-green-400 font-medium">Vše v pořádku</span>
-            ) : (
-              <div className="flex items-center gap-3 flex-wrap">
-                {attentionTotals.missing_documents > 0 && (
-                  <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                    <FileX className="h-3 w-3" />{attentionTotals.missing_documents}
-                  </span>
-                )}
-                {attentionTotals.unread_messages > 0 && (
-                  <span className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
-                    <MessageCircle className="h-3 w-3" />{attentionTotals.unread_messages}
-                  </span>
-                )}
-                {attentionTotals.pending_uploads > 0 && (
-                  <span className="flex items-center gap-1 text-xs text-yellow-600 dark:text-yellow-400">
-                    <Upload className="h-3 w-3" />{attentionTotals.pending_uploads}
-                  </span>
-                )}
-                {attentionTotals.active_tasks > 0 && (
-                  <span className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
-                    <Circle className="h-3 w-3" />{attentionTotals.active_tasks}
-                  </span>
-                )}
-                <span className="text-xs text-gray-400">{attentionTotals.companies_needing_attention} firem</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Můj čas */}
-        <Link href="/accountant/invoicing" className="group">
-          <div className="flex items-center gap-3 rounded-xl border border-gray-200/80 dark:border-gray-700/60 bg-white dark:bg-gray-900/60 px-4 py-3 hover:border-green-300 dark:hover:border-green-700 transition-all">
-            <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-green-50 dark:bg-green-900/20 shrink-0">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-            </div>
-            <div className="min-w-0 flex-1">
-              {!timeSummary || timeSummary.entry_count === 0 ? (
-                <span className="text-sm text-gray-400">Žádný čas za {monthName}</span>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatMinutes(timeSummary.total_minutes)}</span>
-                  {isAdmin && timeSummary.billable_amount > 0 && (
-                    <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">{Math.round(timeSummary.billable_amount).toLocaleString('cs-CZ')} Kč</span>
-                  )}
-                  <span className="text-xs text-gray-400">{monthName}</span>
-                </div>
+        <span className="text-gray-200 dark:text-gray-700">|</span>
+        {attentionLoading ? (
+          <span>...</span>
+        ) : attentionTotals.total === 0 ? (
+          <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+            <CheckCircle2 className="h-3.5 w-3.5" /> OK
+          </span>
+        ) : (
+          <span className="flex items-center gap-2">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+            {attentionTotals.missing_documents > 0 && <span className="flex items-center gap-0.5 text-red-500"><FileX className="h-3 w-3" />{attentionTotals.missing_documents}</span>}
+            {attentionTotals.unread_messages > 0 && <span className="flex items-center gap-0.5 text-blue-500"><MessageCircle className="h-3 w-3" />{attentionTotals.unread_messages}</span>}
+            {attentionTotals.pending_uploads > 0 && <span className="flex items-center gap-0.5 text-yellow-500"><Upload className="h-3 w-3" />{attentionTotals.pending_uploads}</span>}
+          </span>
+        )}
+        <span className="text-gray-200 dark:text-gray-700">|</span>
+        <Link href="/accountant/invoicing" className="flex items-center gap-1.5 hover:text-green-600 transition-colors">
+          <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+          {!timeSummary || timeSummary.entry_count === 0 ? (
+            <span>0h {monthName}</span>
+          ) : (
+            <>
+              <span className="font-medium text-gray-900 dark:text-white">{formatMinutes(timeSummary.total_minutes)}</span>
+              <span>{monthName}</span>
+              {isAdmin && timeSummary.billable_amount > 0 && (
+                <span className="text-purple-600 dark:text-purple-400 font-medium">{Math.round(timeSummary.billable_amount).toLocaleString('cs-CZ')} Kč</span>
               )}
-            </div>
-            <ArrowRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-          </div>
+            </>
+          )}
         </Link>
       </div>
 

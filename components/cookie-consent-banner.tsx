@@ -48,74 +48,70 @@ export function CookieConsentBanner() {
     <>
       <CookieConsent
         location="bottom"
-        buttonText="Přijmout vše"
-        declineButtonText="Odmítnout vše"
+        buttonText="OK"
+        declineButtonText="Odmítnout"
         cookieName="ucetni-os-cookie-consent"
         style={{
-          background: 'rgba(255, 255, 255, 0.98)',
+          background: 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(8px)',
           color: '#1f2937',
-          boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.1)',
-          padding: '20px',
+          boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.06)',
+          padding: '10px 20px',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '20px',
+          justifyContent: 'center',
+          gap: '12px',
           borderTop: '1px solid #e5e7eb',
+          fontSize: '13px',
         }}
         buttonStyle={{
           background: '#7c3aed',
           color: 'white',
-          fontSize: '14px',
-          padding: '10px 24px',
+          fontSize: '13px',
+          padding: '6px 18px',
           borderRadius: '6px',
           fontWeight: '500',
           border: 'none',
           cursor: 'pointer',
+          margin: '0 4px',
         }}
         declineButtonStyle={{
           background: 'transparent',
           color: '#6b7280',
-          fontSize: '14px',
-          padding: '10px 24px',
+          fontSize: '13px',
+          padding: '6px 14px',
           borderRadius: '6px',
           fontWeight: '500',
           border: '1px solid #d1d5db',
           cursor: 'pointer',
+          margin: '0 4px',
         }}
         enableDeclineButton
         onAccept={handleAcceptAll}
         onDecline={handleRejectAll}
         expires={365}
       >
-        <div style={{ flex: 1, maxWidth: '800px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
-            Používáme cookies
-          </h3>
-          <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '0' }}>
-            Tento web používá cookies pro zajištění základních funkcí a analýzu návštěvnosti.
-            Nezbytné cookies jsou vždy aktivní.{' '}
-            <Link href="/legal/cookies" className="text-primary hover:underline font-medium">
-              Více informací
-            </Link>
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <span>
+          Používáme cookies pro fungování webu.{' '}
+          <Link href="/legal/cookies" className="text-primary hover:underline font-medium">
+            Více info
+          </Link>
+          {' · '}
           <button
             onClick={() => setShowSettings(true)}
             style={{
               background: 'transparent',
               color: '#7c3aed',
-              fontSize: '14px',
-              padding: '10px 20px',
-              borderRadius: '6px',
-              fontWeight: '500',
+              fontSize: '13px',
+              padding: '0',
               border: 'none',
               cursor: 'pointer',
               textDecoration: 'underline',
+              fontWeight: '500',
             }}
           >
             Nastavení
           </button>
-        </div>
+        </span>
       </CookieConsent>
 
       <Dialog open={showSettings} onOpenChange={setShowSettings}>

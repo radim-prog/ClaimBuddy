@@ -82,29 +82,46 @@ const formatKc = formatCurrency
 export default function AnalyticsDashboard() {
   const [data, setData] = useState<RevenueData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [year, setYear] = useState(new Date().getFullYear())
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
-    fetchData()
-  }, [year])
-
-  async function fetchData() {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/analytics/revenue?year=${year}`)
-      const json = await res.json()
-      setData(json)
-    } catch {
-      console.error('Failed to fetch revenue data')
-    } finally {
-      setLoading(false)
+    let cancelled = false
+    async function fetchData() {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetch(`/api/analytics/revenue?year=${year}`)
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+          throw new Error(errJson.error || `HTTP ${res.status}`)
+        }
+        const json = await res.json()
+        if (!cancelled) setData(json)
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Nepodařilo se načíst data')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
-  }
+    fetchData()
+    return () => { cancelled = true }
+  }, [year, retryKey])
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-red-500 font-medium mb-2">Chyba: {error}</p>
+        <button onClick={() => setRetryKey(k => k + 1)} className="text-sm text-purple-600 hover:underline">Zkusit znovu</button>
       </div>
     )
   }
