@@ -171,6 +171,20 @@ export async function POST(request: NextRequest) {
     const companyName = name || aresData?.name || `Firma ${ico}`
     const address = aresData?.address || { street: '', city: '', zip: '' }
 
+    // Check if user has an assigned accountant (via existing companies with accountant)
+    const { data: existingWithAccountant } = await supabaseAdmin
+      .from('companies')
+      .select('id')
+      .eq('owner_id', userId)
+      .not('assigned_accountant_id', 'is', null)
+      .is('deleted_at', null)
+      .limit(1)
+
+    // iDoklad mode: client without accountant → company goes straight to active
+    // Client with accountant → pending_review (accountant must approve)
+    const hasAccountant = (existingWithAccountant?.length ?? 0) > 0
+    const status = hasAccountant ? 'pending_review' : 'active'
+
     const company = await createCompany({
       name: companyName,
       ico,
@@ -181,7 +195,7 @@ export async function POST(request: NextRequest) {
       email: email || null,
       phone: phone || null,
       managing_director: managing_director || null,
-      status: 'pending_review',
+      status,
       owner_id: userId,
     })
 

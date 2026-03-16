@@ -479,6 +479,9 @@ const PORTAL_SECTION_LABELS: Record<string, string> = {
   tax_overview: 'Daňový přehled',
   assets: 'Majetek',
   employees: 'Zaměstnanci',
+}
+
+const PORTAL_SECTION_COMING_SOON: Record<string, string> = {
   tasks: 'Úkoly',
   files: 'Soubory',
   insurances: 'Pojištění',

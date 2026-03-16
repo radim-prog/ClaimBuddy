@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Firma nenalezena v ARES' }, { status: 404 })
       }
 
-      return NextResponse.json({ company: result })
+      return NextResponse.json(result)
     }
 
     if (search) {

@@ -110,7 +110,8 @@ export function AddCompanyDialog({ onCompanyAdded, trigger }: AddCompanyDialogPr
       }
 
       setSuccess(true)
-      toast.success('Firma odeslána ke schválení')
+      const isPending = data.company?.status === 'pending_review'
+      toast.success(isPending ? 'Firma odeslána ke schválení' : 'Firma přidána')
       onCompanyAdded?.()
 
       // Close after brief success state
@@ -146,9 +147,9 @@ export function AddCompanyDialog({ onCompanyAdded, trigger }: AddCompanyDialogPr
         {success ? (
           <div className="flex flex-col items-center py-8 gap-3">
             <CheckCircle2 className="h-12 w-12 text-green-500" />
-            <p className="font-medium">Firma odeslána ke schválení</p>
+            <p className="font-medium">Firma byla přidána</p>
             <p className="text-sm text-muted-foreground text-center">
-              Váš účetní firmu zkontroluje a schválí. Poté se vám zobrazí v portálu.
+              Firma je nyní dostupná ve vašem portálu.
             </p>
           </div>
         ) : (
@@ -225,13 +226,9 @@ export function AddCompanyDialog({ onCompanyAdded, trigger }: AddCompanyDialogPr
               {saving ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Odesílám...</>
               ) : (
-                <><Plus className="h-4 w-4 mr-2" />Odeslat ke schválení</>
+                <><Plus className="h-4 w-4 mr-2" />Přidat firmu</>
               )}
             </Button>
-
-            <p className="text-xs text-muted-foreground text-center">
-              Firma bude viditelná po schválení účetním.
-            </p>
           </div>
         )}
       </DialogContent>

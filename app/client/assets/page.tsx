@@ -34,19 +34,30 @@ type Asset = {
 }
 
 export default function ClientAssetsPage() {
-  const { selectedCompanyId } = useClientUser()
+  const { selectedCompanyId, selectedCompany } = useClientUser()
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
 
+  const sectionEnabled = selectedCompany?.portal_sections?.assets !== false
+
   useEffect(() => {
-    if (!selectedCompanyId) return
+    if (!selectedCompanyId || !sectionEnabled) return
     setLoading(true)
     fetch(`/api/client/assets?company_id=${selectedCompanyId}`)
       .then(r => r.json())
       .then(data => setAssets(data.assets || []))
       .catch(() => setAssets([]))
       .finally(() => setLoading(false))
-  }, [selectedCompanyId])
+  }, [selectedCompanyId, sectionEnabled])
+
+  if (!sectionEnabled) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Package className="h-10 w-10 text-muted-foreground/40 mb-3" />
+        <p className="text-muted-foreground">Tato sekce není aktivní. Kontaktujte svou účetní.</p>
+      </div>
+    )
+  }
 
   if (loading) {
     return (

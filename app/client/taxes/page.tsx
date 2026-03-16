@@ -21,15 +21,17 @@ type TaxPeriod = {
 }
 
 export default function ClientTaxesPage() {
-  const { selectedCompanyId } = useClientUser()
+  const { selectedCompanyId, selectedCompany } = useClientUser()
   const [year, setYear] = useState(new Date().getFullYear())
   const [summary, setSummary] = useState<TaxSummary | null>(null)
   const [periods, setPeriods] = useState<TaxPeriod[]>([])
   const [vatPayer, setVatPayer] = useState(false)
   const [loading, setLoading] = useState(true)
 
+  const sectionEnabled = selectedCompany?.portal_sections?.tax_overview !== false
+
   useEffect(() => {
-    if (!selectedCompanyId) return
+    if (!selectedCompanyId || !sectionEnabled) return
     setLoading(true)
     fetch(`/api/client/taxes?company_id=${selectedCompanyId}`)
       .then(r => r.json())
@@ -41,7 +43,16 @@ export default function ClientTaxesPage() {
       })
       .catch(() => { setSummary(null); setPeriods([]) })
       .finally(() => setLoading(false))
-  }, [selectedCompanyId])
+  }, [selectedCompanyId, sectionEnabled])
+
+  if (!sectionEnabled) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Landmark className="h-10 w-10 text-muted-foreground/40 mb-3" />
+        <p className="text-muted-foreground">Tato sekce není aktivní. Kontaktujte svou účetní.</p>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
