@@ -243,9 +243,7 @@ Zbývající P0 (přesunuto do P1):
 | BOD | Co chybí | Proč prioritní |
 |-----|----------|---------------|
 | BOD-011 | Master matice — barevná kolečka jako filtr | UX vylepšení dashboardu |
-| BOD-016 | Sidebar — denní práce vs extras | Navigace se zlepší pro nové uživatele |
-| BOD-017 | Marketplace — admin bez registrace | Radim se musí registrovat = zbytečné tření |
-| BOD-018 | Revenue → Admin/Analytika přesun | Čistší architektura navigace |
+~~BOD-016 ✅ BOD-017 ✅ BOD-018 ✅ — hotovo~~
 | BOD-043 | Time tracking při zpracování dokladů | Pro billing hodinové sazby |
 | BOD-054 | Krizový chatbot (max 10 otázek) | AI feature pro vyšší tarify |
 | BOD-100 | Cross-selling emaily (účetnictví ↔ PU) | Revenue po launchi |
@@ -268,10 +266,12 @@ Zbývající P0 (přesunuto do P1):
 
 ### Doporučené pořadí pro příští sprint
 
-1. **BOD-122** — Vytvořit složku (blocker)
-2. **BOD-039 + BOD-040** — SP/ZP zálohy OSVČ do termínů (zákon)
-3. **BOD-010 + BOD-012** — textové přejmenování (trivia, < 5 min)
-4. **BOD-091** — .env.local.example update
+~~BOD-122, BOD-039, BOD-040, BOD-010, BOD-012, BOD-091, BOD-016, BOD-017, BOD-018 — HOTOVO ✅~~
+
+1. **BOD-006 + BOD-007** — Attention bar UX feedback text (P1)
+2. **BOD-087** — Email adresy systému nastavit (P1)
+3. **BOD-055** — Krizový checklist pro PU klienty (P1)
+4. **BOD-014** — Zpracované doklady → profil klienta (P1)
 5. **BOD-006 + BOD-007** — Attention bar UX feedback
 6. **BOD-087** — Email adresy systému
 7. **BOD-055** — PU checklist "co dělat hned"
