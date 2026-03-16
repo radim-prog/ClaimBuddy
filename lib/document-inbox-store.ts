@@ -160,6 +160,42 @@ export async function getDocumentInboxItems(
   return (data ?? []) as DocumentInboxItem[]
 }
 
+// Get all inbox items across all companies (for global inbox view)
+export async function getAllDocumentInboxItems(
+  status?: string,
+  limit: number = 100
+): Promise<(DocumentInboxItem & { company_name?: string })[]> {
+  let query = supabaseAdmin
+    .from('document_inbox_items')
+    .select('*, document_inboxes!inner(company_id, companies:company_id(name))')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (status) {
+    query = query.eq('status', status)
+  }
+
+  const { data, error } = await query
+  if (error) {
+    // Fallback without join if relation doesn't exist yet
+    let fallbackQuery = supabaseAdmin
+      .from('document_inbox_items')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (status) fallbackQuery = fallbackQuery.eq('status', status)
+    const { data: fallbackData, error: fallbackError } = await fallbackQuery
+    if (fallbackError) throw new Error(`Failed to fetch all inbox items: ${fallbackError.message}`)
+    return (fallbackData ?? []) as DocumentInboxItem[]
+  }
+
+  return (data ?? []).map((row: any) => ({
+    ...row,
+    company_name: row.document_inboxes?.companies?.name || null,
+    document_inboxes: undefined,
+  })) as (DocumentInboxItem & { company_name?: string })[]
+}
+
 // Update inbox item status
 export async function updateDocumentInboxItemStatus(
   itemId: string,
