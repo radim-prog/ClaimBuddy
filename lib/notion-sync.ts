@@ -60,7 +60,10 @@ const NOTION_FIRMA_STATIC: Record<string, string> = {}
 
 function getNotionClient(): Client {
   const token = process.env.NOTION_TOKEN
-  if (!token) throw new Error('NOTION_TOKEN not configured')
+  if (!token) {
+    console.warn('NOTION_TOKEN not set, Notion sync disabled')
+    return null as unknown as Client
+  }
   return new Client({ auth: token })
 }
 
