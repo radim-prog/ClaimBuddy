@@ -44,7 +44,37 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ providers })
+    // Enrich with average ratings
+    const providerIds = providers.map(p => p.id)
+    let ratingMap = new Map<string, { avg: number; count: number }>()
+
+    if (providerIds.length > 0) {
+      const { data: reviews } = await supabaseAdmin
+        .from('marketplace_reviews')
+        .select('provider_id, rating')
+        .in('provider_id', providerIds)
+
+      if (reviews) {
+        const byProvider = new Map<string, number[]>()
+        for (const r of reviews) {
+          const arr = byProvider.get(r.provider_id) || []
+          arr.push(r.rating)
+          byProvider.set(r.provider_id, arr)
+        }
+        for (const [pid, ratings] of byProvider) {
+          const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length
+          ratingMap.set(pid, { avg: Math.round(avg * 10) / 10, count: ratings.length })
+        }
+      }
+    }
+
+    const enriched = providers.map(p => ({
+      ...p,
+      rating_avg: ratingMap.get(p.id)?.avg || null,
+      rating_count: ratingMap.get(p.id)?.count || 0,
+    }))
+
+    return NextResponse.json({ providers: enriched })
   } catch (error) {
     console.error('[Marketplace providers]', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

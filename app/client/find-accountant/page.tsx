@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Sparkles, Send, CheckCircle2, Building2, MapPin, Users, MessageSquare, Search, Loader2, X } from 'lucide-react'
+import { Sparkles, Send, CheckCircle2, Building2, MapPin, Users, MessageSquare, Search, Loader2, X, Star } from 'lucide-react'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { toast } from 'sonner'
 
@@ -37,6 +37,8 @@ interface Provider {
   min_price: number | null
   max_price: number | null
   services: string[]
+  rating_avg: number | null
+  rating_count: number
 }
 
 const CAPACITY_LABELS: Record<string, { label: string; cls: string }> = {
@@ -193,6 +195,12 @@ export default function FindAccountantPage() {
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium shrink-0 ${cap.cls}`}>
                           {cap.label}
                         </span>
+                        {provider.rating_avg && (
+                          <span className="inline-flex items-center gap-1 text-xs text-amber-600 shrink-0">
+                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                            {provider.rating_avg} ({provider.rating_count})
+                          </span>
+                        )}
                       </div>
                       {provider.city && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1 mb-2">
