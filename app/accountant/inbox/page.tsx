@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -26,15 +26,20 @@ import {
   Inbox,
   RefreshCw,
   FileText,
-  Paperclip,
   Check,
   X,
   Eye,
   ArrowRight,
   Clock,
   AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  Timer,
+  CheckCircle2,
+  Building2,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import Link from 'next/link'
 
 // Types
 type InboxItem = {
@@ -52,6 +57,14 @@ type InboxItem = {
   created_at: string
   error_message: string | null
   document_id: string | null
+}
+
+type ClientGroup = {
+  companyId: string
+  companyName: string
+  items: InboxItem[]
+  pendingCount: number
+  totalCount: number
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
@@ -108,7 +121,17 @@ export default function InboxPage() {
   const [items, setItems] = useState<InboxItem[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState('pending')
+
+  // Collapsed client groups
+  const [collapsedClients, setCollapsedClients] = useState<Set<string>>(new Set())
+
+  // Time tracking per client
+  const [timeMinutes, setTimeMinutes] = useState<Record<string, string>>({})
+  const [savingTime, setSavingTime] = useState<Record<string, boolean>>({})
+
+  // Completing client
+  const [completingClient, setCompletingClient] = useState<string | null>(null)
 
   // Process dialog state
   const [processDialogOpen, setProcessDialogOpen] = useState(false)
@@ -121,8 +144,10 @@ export default function InboxPage() {
   const fetchItems = useCallback(async () => {
     setLoading(true)
     try {
-      const params = filter !== 'all' ? `?status=${filter}` : ''
-      const res = await fetch(`/api/accountant/inbox${params}`)
+      // For 'pending' tab, fetch pending + processing + failed
+      // For other tabs, fetch that specific status
+      const statusParam = filter === 'pending' ? '' : `?status=${filter}`
+      const res = await fetch(`/api/accountant/inbox${statusParam}`)
       const data = await res.json()
       setItems(data.items || [])
     } catch {
@@ -132,6 +157,39 @@ export default function InboxPage() {
   }, [filter])
 
   useEffect(() => { fetchItems() }, [fetchItems])
+
+  // Group items by client
+  const clientGroups: ClientGroup[] = useMemo(() => {
+    const groupMap = new Map<string, ClientGroup>()
+
+    const filteredItems = filter === 'pending'
+      ? items.filter(i => i.status === 'pending' || i.status === 'processing' || i.status === 'failed')
+      : items
+
+    for (const item of filteredItems) {
+      const existing = groupMap.get(item.company_id)
+      if (existing) {
+        existing.items.push(item)
+        if (item.status === 'pending') existing.pendingCount++
+        existing.totalCount++
+      } else {
+        groupMap.set(item.company_id, {
+          companyId: item.company_id,
+          companyName: item.company_name,
+          items: [item],
+          pendingCount: item.status === 'pending' ? 1 : 0,
+          totalCount: 1,
+        })
+      }
+    }
+
+    // Sort: clients with most pending items first
+    return Array.from(groupMap.values()).sort((a, b) => b.pendingCount - a.pendingCount || a.companyName.localeCompare(b.companyName, 'cs'))
+  }, [items, filter])
+
+  const totalPending = useMemo(() => items.filter(i => i.status === 'pending').length, [items])
+  const totalImported = useMemo(() => items.filter(i => i.status === 'imported').length, [items])
+  const totalFailed = useMemo(() => items.filter(i => i.status === 'failed').length, [items])
 
   const handleSync = async () => {
     setSyncing(true)
@@ -201,21 +259,87 @@ export default function InboxPage() {
     }
   }
 
-  const tabCounts = {
-    all: items.length,
-    pending: items.filter(i => i.status === 'pending').length,
-    imported: items.filter(i => i.status === 'imported').length,
-    ignored: items.filter(i => i.status === 'ignored').length,
-    failed: items.filter(i => i.status === 'failed').length,
+  const toggleClientCollapse = (companyId: string) => {
+    setCollapsedClients(prev => {
+      const next = new Set(prev)
+      if (next.has(companyId)) next.delete(companyId)
+      else next.add(companyId)
+      return next
+    })
+  }
+
+  // Save time entry for a client
+  const handleSaveTime = async (companyId: string, companyName: string) => {
+    const mins = parseInt(timeMinutes[companyId] || '0', 10)
+    if (!mins || mins <= 0) {
+      toast.error('Zadejte počet minut')
+      return
+    }
+    setSavingTime(prev => ({ ...prev, [companyId]: true }))
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const res = await fetch('/api/time-entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: companyId,
+          date: today,
+          minutes: mins,
+          description: `Zpracování dokladů z inboxu — ${companyName}`,
+          billable: true,
+        }),
+      })
+      if (!res.ok) throw new Error('Chyba')
+      toast.success(`${mins} min zaznamenáno pro ${companyName}`)
+      setTimeMinutes(prev => ({ ...prev, [companyId]: '' }))
+    } catch {
+      toast.error('Chyba při ukládání času')
+    } finally {
+      setSavingTime(prev => ({ ...prev, [companyId]: false }))
+    }
+  }
+
+  // Mark all client items as done (imported → moved out of inbox view)
+  const handleCompleteClient = async (group: ClientGroup) => {
+    const pendingItems = group.items.filter(i => i.status === 'pending' || i.status === 'failed')
+    if (pendingItems.length > 0) {
+      toast.error(`${group.companyName}: Ještě máte ${pendingItems.length} nezpracovaných položek`)
+      return
+    }
+    setCompletingClient(group.companyId)
+    try {
+      // Mark all imported/processing items as "completed" (ignored with completed flag)
+      const itemsToComplete = group.items.filter(i => i.status === 'imported' || i.status === 'processing')
+      await Promise.all(
+        itemsToComplete.map(item =>
+          fetch(`/api/accountant/inbox/${item.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'ignored', completed: true }),
+          })
+        )
+      )
+      toast.success(`${group.companyName}: Klient dokončen`)
+      fetchItems()
+    } catch {
+      toast.error('Chyba při dokončování')
+    } finally {
+      setCompletingClient(null)
+    }
   }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold font-display flex items-center gap-2">
-          <Inbox className="h-6 w-6" /> Inbox dokladů
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold font-display flex items-center gap-2">
+            <Inbox className="h-6 w-6" /> Inbox dokladů
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Seskupeno podle klientů &middot; {clientGroups.length} klientů
+          </p>
+        </div>
         <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
           <RefreshCw className={`h-4 w-4 mr-1 ${syncing ? 'animate-spin' : ''}`} />
           {syncing ? 'Synchronizace...' : 'Synchronizovat'}
@@ -225,12 +349,11 @@ export default function InboxPage() {
       {/* Tabs */}
       <Tabs value={filter} onValueChange={setFilter}>
         <TabsList>
-          <TabsTrigger value="all">Vše</TabsTrigger>
           <TabsTrigger value="pending">
-            Nové
-            {tabCounts.pending > 0 && (
+            K zpracování
+            {totalPending > 0 && (
               <Badge variant="secondary" className="ml-1.5 h-5 min-w-[20px] px-1.5 text-xs">
-                {tabCounts.pending}
+                {totalPending}
               </Badge>
             )}
           </TabsTrigger>
@@ -238,35 +361,33 @@ export default function InboxPage() {
           <TabsTrigger value="ignored">Ignorované</TabsTrigger>
           <TabsTrigger value="failed">
             Chybné
-            {tabCounts.failed > 0 && (
+            {totalFailed > 0 && (
               <Badge variant="destructive" className="ml-1.5 h-5 min-w-[20px] px-1.5 text-xs">
-                {tabCounts.failed}
+                {totalFailed}
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="all">Vše</TabsTrigger>
         </TabsList>
 
         <TabsContent value={filter} className="mt-4">
           {loading ? (
-            /* Loading skeleton */
-            <div className="space-y-2">
+            <div className="space-y-3">
               {[1, 2, 3].map(i => (
                 <Card key={i} className="rounded-xl shadow-soft-sm">
                   <CardContent className="p-4">
                     <div className="animate-pulse flex items-start gap-3">
                       <div className="flex-1 space-y-2">
+                        <div className="h-5 bg-muted rounded w-1/3" />
                         <div className="h-4 bg-muted rounded w-3/4" />
                         <div className="h-3 bg-muted rounded w-1/2" />
-                        <div className="h-3 bg-muted rounded w-1/3" />
                       </div>
-                      <div className="h-8 w-24 bg-muted rounded" />
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-          ) : items.length === 0 ? (
-            /* Empty state */
+          ) : clientGroups.length === 0 ? (
             <Card className="rounded-xl shadow-soft">
               <CardContent className="py-12 text-center">
                 <Inbox className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -274,110 +395,158 @@ export default function InboxPage() {
               </CardContent>
             </Card>
           ) : (
-            /* Item list */
-            <ScrollArea className="h-[600px]">
-              <div className="space-y-2">
-                {items.map(item => {
-                  const statusCfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.pending
-                  const StatusIcon = statusCfg.icon
+            <ScrollArea className="h-[700px]">
+              <div className="space-y-3">
+                {clientGroups.map(group => {
+                  const isCollapsed = collapsedClients.has(group.companyId)
                   return (
-                    <Card key={item.id} className="rounded-xl shadow-soft-sm hover:bg-muted/50 transition-colors">
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          {/* Icon */}
-                          <div className="mt-0.5 shrink-0">
-                            <FileText className="h-5 w-5 text-muted-foreground" />
+                    <Card key={group.companyId} className="rounded-xl shadow-soft-sm overflow-hidden">
+                      {/* Client header */}
+                      <button
+                        onClick={() => toggleClientCollapse(group.companyId)}
+                        className="w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors text-left"
+                      >
+                        {isCollapsed ? (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                        )}
+                        <Building2 className="h-4 w-4 text-purple-500 shrink-0" />
+                        <span className="font-semibold text-sm flex-1">{group.companyName}</span>
+                        {group.pendingCount > 0 && (
+                          <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 text-xs">
+                            {group.pendingCount} nových
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          {group.totalCount} dokladů
+                        </Badge>
+                      </button>
+
+                      {!isCollapsed && (
+                        <CardContent className="pt-0 px-4 pb-4">
+                          {/* Items */}
+                          <div className="space-y-1.5 mb-3">
+                            {group.items.map(item => {
+                              const statusCfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.pending
+                              const StatusIcon = statusCfg.icon
+                              return (
+                                <div
+                                  key={item.id}
+                                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors"
+                                >
+                                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-medium truncate">{item.filename}</span>
+                                      <Badge className={`${statusCfg.color} text-xs rounded-md`}>
+                                        <StatusIcon className="h-3 w-3 mr-1" />
+                                        {statusCfg.label}
+                                      </Badge>
+                                      <span className="text-xs text-muted-foreground hidden sm:inline">
+                                        {getMimeLabel(item.mime_type)} &middot; {formatFileSize(item.file_size_bytes)}
+                                      </span>
+                                    </div>
+                                    {item.subject && (
+                                      <p className="text-xs text-muted-foreground truncate mt-0.5">{item.subject}</p>
+                                    )}
+                                    {item.error_message && (
+                                      <p className="text-xs text-red-600 dark:text-red-400 truncate mt-0.5">{item.error_message}</p>
+                                    )}
+                                    <span className="text-xs text-muted-foreground">
+                                      {formatDate(item.received_at || item.created_at)}
+                                      {item.from_name && ` · ${item.from_name}`}
+                                    </span>
+                                  </div>
+
+                                  {/* Actions */}
+                                  <div className="flex gap-1 shrink-0">
+                                    {item.status === 'pending' && (
+                                      <>
+                                        <Button size="sm" onClick={() => openProcessDialog(item)}>
+                                          <ArrowRight className="h-3.5 w-3.5 mr-1" /> Zpracovat
+                                        </Button>
+                                        <Button variant="ghost" size="sm" onClick={() => handleIgnore(item.id)}>
+                                          <X className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </>
+                                    )}
+                                    {item.status === 'failed' && (
+                                      <Button variant="outline" size="sm" onClick={() => openProcessDialog(item)}>
+                                        <RefreshCw className="h-3.5 w-3.5 mr-1" /> Znovu
+                                      </Button>
+                                    )}
+                                    {item.status === 'ignored' && (
+                                      <Button variant="ghost" size="sm" onClick={() => openProcessDialog(item)}>
+                                        <Eye className="h-3.5 w-3.5 mr-1" /> Zpracovat
+                                      </Button>
+                                    )}
+                                    {item.document_id && (
+                                      <span className="text-xs text-green-600 dark:text-green-400 flex items-center">
+                                        <Check className="h-3 w-3 mr-0.5" /> OK
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            })}
                           </div>
 
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-sm truncate">{item.filename}</span>
-                              <Badge className={`${statusCfg.color} text-xs rounded-md`}>
-                                <StatusIcon className="h-3 w-3 mr-1" />
-                                {statusCfg.label}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs rounded-md">
-                                {getMimeLabel(item.mime_type)}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {formatFileSize(item.file_size_bytes)}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span className="font-medium text-foreground">{item.company_name}</span>
-                              {item.from_address && (
-                                <>
-                                  <span className="text-muted-foreground/50">|</span>
-                                  <span className="truncate">{item.from_name || item.from_address}</span>
-                                </>
-                              )}
-                            </div>
-
-                            {item.subject && (
-                              <p className="text-xs text-muted-foreground mt-1 truncate">
-                                {item.subject}
-                              </p>
-                            )}
-
-                            {item.error_message && (
-                              <p className="text-xs text-red-600 dark:text-red-400 mt-1 truncate">
-                                {item.error_message}
-                              </p>
-                            )}
-
-                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                              <span>{formatDate(item.received_at || item.created_at)}</span>
-                              {item.document_id && (
-                                <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                                  <Check className="h-3 w-3" /> Dokument vytvořen
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex gap-1 shrink-0">
-                            {item.status === 'pending' && (
-                              <>
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() => openProcessDialog(item)}
-                                >
-                                  <ArrowRight className="h-3.5 w-3.5 mr-1" /> Zpracovat
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleIgnore(item.id)}
-                                >
-                                  Ignorovat
-                                </Button>
-                              </>
-                            )}
-                            {item.status === 'failed' && (
+                          {/* Client footer: time tracking + complete */}
+                          <div className="flex items-center gap-3 pt-3 border-t border-border/50">
+                            {/* Time tracking */}
+                            <div className="flex items-center gap-1.5">
+                              <Timer className="h-4 w-4 text-muted-foreground" />
+                              <input
+                                type="number"
+                                min="1"
+                                placeholder="min"
+                                value={timeMinutes[group.companyId] || ''}
+                                onChange={(e) => setTimeMinutes(prev => ({ ...prev, [group.companyId]: e.target.value }))}
+                                className="w-16 h-8 rounded-md border border-input bg-background px-2 text-sm text-center"
+                              />
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => openProcessDialog(item)}
+                                className="h-8"
+                                disabled={savingTime[group.companyId] || !timeMinutes[group.companyId]}
+                                onClick={() => handleSaveTime(group.companyId, group.companyName)}
                               >
-                                <RefreshCw className="h-3.5 w-3.5 mr-1" /> Znovu
+                                {savingTime[group.companyId] ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Zapsat čas'}
                               </Button>
-                            )}
-                            {item.status === 'ignored' && (
+                            </div>
+
+                            <div className="flex-1" />
+
+                            {/* Link to client profile */}
+                            <Link
+                              href={`/accountant/clients/${group.companyId}/inbox`}
+                              className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
+                            >
+                              Profil klienta
+                            </Link>
+
+                            {/* Complete button */}
+                            {filter === 'pending' && (
                               <Button
-                                variant="ghost"
+                                variant={group.pendingCount === 0 ? 'default' : 'outline'}
                                 size="sm"
-                                onClick={() => openProcessDialog(item)}
+                                className={group.pendingCount === 0 ? 'bg-green-600 hover:bg-green-700' : ''}
+                                disabled={completingClient === group.companyId}
+                                onClick={() => handleCompleteClient(group)}
                               >
-                                <Eye className="h-3.5 w-3.5 mr-1" /> Zpracovat
+                                {completingClient === group.companyId ? (
+                                  <RefreshCw className="h-3.5 w-3.5 mr-1 animate-spin" />
+                                ) : (
+                                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                                )}
+                                Dokončeno
                               </Button>
                             )}
                           </div>
-                        </div>
-                      </CardContent>
+                        </CardContent>
+                      )}
                     </Card>
                   )
                 })}
@@ -402,7 +571,6 @@ export default function InboxPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Document type */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Typ dokumentu</label>
               <Select value={documentType} onValueChange={setDocumentType}>
@@ -419,7 +587,6 @@ export default function InboxPage() {
               </Select>
             </div>
 
-            {/* Period */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Období</label>
               <input
@@ -431,7 +598,6 @@ export default function InboxPage() {
               />
             </div>
 
-            {/* Extract checkbox */}
             <div className="flex items-center gap-2">
               <Checkbox
                 id="should-extract"
