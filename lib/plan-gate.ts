@@ -291,12 +291,14 @@ export async function logGatedAction(userId: string, action: string, resourceId?
 const TIER_ALIASES: Record<string, string> = {
   zaklad: 'free',
   profi: 'professional',
-  business: 'enterprise',
+  business: 'business',
   // DB names map to themselves
   free: 'free',
   starter: 'starter',
   professional: 'professional',
-  enterprise: 'enterprise',
+  enterprise: 'business',
+  zaklad: 'zaklad',
+  profi: 'profi',
   // Client tiers
   basic: 'basic',
   plus: 'plus',
