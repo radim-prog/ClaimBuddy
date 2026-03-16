@@ -13,12 +13,6 @@ function getUtilizationColor(pct: number): string {
   return 'text-green-600'
 }
 
-function getProgressColor(pct: number): string {
-  if (pct > 100) return 'bg-red-500'
-  if (pct >= 80) return 'bg-yellow-500'
-  return 'bg-green-500'
-}
-
 export function CapacityOverview() {
   const [workload, setWorkload] = useState<WorkloadSummary[]>([])
   const [loading, setLoading] = useState(true)

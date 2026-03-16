@@ -226,11 +226,6 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
     return Math.floor((due.getTime() - now.getTime()) / (1000 * 60 * 60))
   }
 
-  const getDaysUntil = (dueDate: string) => {
-    const hours = getHoursUntil(dueDate)
-    return Math.floor(hours / 24)
-  }
-
   const formatTimeLeft = (dueDate: string) => {
     const days = getDaysUntilMidnight(dueDate)
     if (days < 0) {
@@ -287,11 +282,6 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
     handleSnoozeTask(taskId, hours)
   }
 
-  const handleDelegateToClient = (item: DeadlineItem) => {
-    // TODO: Implement actual delegation - send email to client with task details
-    toast.success(`Úkol "${item.title}" delegován klientovi ${item.companyName}`)
-  }
-
   const handleSaveNote = (id: string) => {
     if (noteInput.trim()) {
       setNotes({ ...notes, [id]: noteInput.trim() })
@@ -328,45 +318,7 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
     setExpandedTaskId(null)
   }
 
-  const mostUrgent = visibleDeadlines[0]
   const hasOverdue = overdue.length > 0
-
-  // Generate summary text for collapsed bar showing WHO and WHAT is missing
-  const generateCollapsedSummary = () => {
-    if (hasOverdue) {
-      // Show overdue items with company and what's missing
-      const summaryItems = overdue.slice(0, 3).map(item => {
-        const missingItems: string[] = []
-        if (item.checklist) {
-          item.checklist.forEach(c => {
-            if (!c.completed) {
-              // Zkrátit názvy dokumentů
-              if (c.label.toLowerCase().includes('výpis')) missingItems.push('výpis')
-              else if (c.label.toLowerCase().includes('náklad') || c.label.toLowerCase().includes('expense')) missingItems.push('náklady')
-              else if (c.label.toLowerCase().includes('faktur') || c.label.toLowerCase().includes('příjm')) missingItems.push('faktury')
-              else missingItems.push(c.label)
-            }
-          })
-        }
-        const missing = missingItems.length > 0 ? ` (${missingItems.slice(0, 2).join(', ')})` : ''
-        return `${item.companyName || item.title}${missing}`
-      })
-
-      const remaining = overdue.length - 3
-      if (remaining > 0) {
-        return summaryItems.join(', ') + ` a další ${remaining}`
-      }
-      return summaryItems.join(', ')
-    } else {
-      // Show upcoming deadlines
-      const summaryItems = today.slice(0, 2).map(item => item.companyName || item.title)
-      const remaining = visibleDeadlines.length - 2
-      if (remaining > 0) {
-        return summaryItems.join(', ') + ` a další ${remaining}`
-      }
-      return summaryItems.join(', ')
-    }
-  }
 
   const renderDeadlineGroup = (items: DeadlineItem[], title: string, bgColor: string, textColor: string) => {
     if (items.length === 0) return null

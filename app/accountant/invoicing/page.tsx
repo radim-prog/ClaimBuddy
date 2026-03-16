@@ -155,6 +155,9 @@ export default function InvoicingPage() {
   // Expandable card state
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
 
+  // Invoice state
+  const [invoices, setInvoices] = useState<Invoice[]>([])
+
   // Invoice preview modal state
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [previewInvoice, setPreviewInvoice] = useState<InvoicePreview | null>(null)
@@ -293,43 +296,6 @@ export default function InvoicingPage() {
     toast.info('Tato funkce bude dostupná po napojení extra úkolů')
   }
 
-  // Handler: Mark invoice as sent
-  const handleMarkAsSent = async (invoiceId: string) => {
-    try {
-      const response = await fetch(`/api/accountant/invoices/${invoiceId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sent_at: new Date().toISOString() }),
-      })
-      if (!response.ok) throw new Error('Failed to update')
-      const { invoice } = await response.json()
-      setInvoices(prev => prev.map(inv => inv.id === invoiceId ? invoice : inv))
-      toast.success('Faktura označena jako odeslaná')
-    } catch {
-      toast.error('Chyba při aktualizaci faktury')
-    }
-  }
-
-  // Handler: Mark invoice as paid
-  const handleMarkAsPaid = async (invoiceId: string) => {
-    try {
-      const response = await fetch(`/api/accountant/invoices/${invoiceId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          payment_status: 'paid',
-          paid_at: new Date().toISOString(),
-        }),
-      })
-      if (!response.ok) throw new Error('Failed to update')
-      const { invoice } = await response.json()
-      setInvoices(prev => prev.map(inv => inv.id === invoiceId ? invoice : inv))
-      toast.success('Faktura označena jako zaplacená')
-    } catch {
-      toast.error('Chyba při aktualizaci faktury')
-    }
-  }
-
   // Get data for current period
   const periodData = invoicingData.periods.find(p => p.period === currentPeriod)
   const projects = periodData?.projects || []
@@ -466,11 +432,6 @@ export default function InvoicingPage() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount)
-  }
-
-  // Calculate VAT amount
-  const calculateVAT = (amount: number, vatRate: number) => {
-    return amount * (vatRate / 100)
   }
 
   // Loading state

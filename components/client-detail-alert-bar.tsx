@@ -270,10 +270,6 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
     handleSnoozeTask(taskId, hours)
   }
 
-  const handleDelegateToClient = (item: DeadlineItem) => {
-    toast.success(`Úkol "${item.title}" delegován klientovi ${item.companyName}`)
-  }
-
   const handleSaveNote = (id: string) => {
     if (noteInput.trim()) {
       setNotes({ ...notes, [id]: noteInput.trim() })

@@ -236,19 +236,6 @@ export function AnniversaryCalendar({
     })
   }
 
-  const getStatusLabel = (status: AnniversaryEvent['status']) => {
-    switch (status) {
-      case 'overdue':
-        return 'Po termínu'
-      case 'due_soon':
-        return 'Do týdne'
-      case 'upcoming':
-        return 'Do měsíce'
-      case 'future':
-        return 'V budoucnu'
-    }
-  }
-
   const getStatusIcon = (status: AnniversaryEvent['status']) => {
     switch (status) {
       case 'overdue':
