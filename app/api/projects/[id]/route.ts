@@ -10,9 +10,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const { id } = params
 
   const [projectRes, phasesRes, tasksRes] = await Promise.all([
-    supabaseAdmin.from('projects').select('*').eq('id', id).single(),
+    supabaseAdmin.from('projects').select('*').eq('id', id).is('deleted_at', null).single(),
     supabaseAdmin.from('project_phases').select('*').eq('project_id', id).order('position'),
-    supabaseAdmin.from('tasks').select('id, title, status, assigned_to_name, due_date, is_next_action, phase_id, position_in_phase').eq('project_id', id),
+    supabaseAdmin.from('tasks').select('id, title, status, assigned_to_name, due_date, is_next_action, phase_id, position_in_phase').eq('project_id', id).is('deleted_at', null),
   ])
 
   if (projectRes.error) return NextResponse.json({ error: 'Project not found' }, { status: 404 })

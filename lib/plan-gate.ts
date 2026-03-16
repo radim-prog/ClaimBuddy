@@ -29,7 +29,7 @@ export async function checkFeatureAccess(
   }
 
   const sub = await getSubscription(userId, portalType)
-  const tier = sub?.plan_tier ?? 'free'
+  const tier = resolveTier(sub?.plan_tier ?? 'free')
 
   // Check subscription status
   if (sub && sub.status === 'cancelled') {
@@ -77,7 +77,7 @@ export async function checkQuantityLimit(
   }
 
   const sub = await getSubscription(userId, portalType)
-  const tier = sub?.plan_tier ?? 'free'
+  const tier = resolveTier(sub?.plan_tier ?? 'free')
   const limits = await getPlanLimits(portalType, tier)
 
   if (!limits) {
@@ -127,7 +127,7 @@ export async function checkExtractionCredits(
   }
 
   const sub = await getSubscription(userId, portalType)
-  const tier = sub?.plan_tier ?? 'free'
+  const tier = resolveTier(sub?.plan_tier ?? 'free')
   const limits = await getPlanLimits(portalType, tier)
 
   if (!limits) {
@@ -242,10 +242,10 @@ export async function checkMessageLimit(
   }
 
   const sub = await getSubscription(userId, portalType)
-  const tier = sub?.plan_tier ?? 'free'
+  const tier = resolveTier(sub?.plan_tier ?? 'free')
 
-  // Only free/zaklad tier has message limits
-  if (tier !== 'free' && tier !== 'zaklad') {
+  // Only free tier has message limits
+  if (tier !== 'free') {
     return { allowed: true }
   }
 
@@ -263,7 +263,7 @@ export async function checkMessageLimit(
     return {
       allowed: false,
       reason: `Vyčerpali jste limit ${FREE_MESSAGE_LIMIT} zpráv/měsíc na tarifu Free.`,
-      requiredTier: 'profi',
+      requiredTier: 'starter',
       currentTier: tier,
       used,
       limit: FREE_MESSAGE_LIMIT,
@@ -286,10 +286,32 @@ export async function logGatedAction(userId: string, action: string, resourceId?
 // HELPERS
 // ============================================
 
+// Tier aliases: plan-gate accepts both CZ names (zaklad/profi/business)
+// and DB names (free/starter/professional/enterprise)
+const TIER_ALIASES: Record<string, string> = {
+  zaklad: 'free',
+  profi: 'professional',
+  business: 'enterprise',
+  // DB names map to themselves
+  free: 'free',
+  starter: 'starter',
+  professional: 'professional',
+  enterprise: 'enterprise',
+  // Client tiers
+  basic: 'basic',
+  plus: 'plus',
+  premium: 'premium',
+}
+
+/** Resolve tier alias to canonical DB name */
+export function resolveTier(tier: string): string {
+  return TIER_ALIASES[tier] || tier
+}
+
 async function findMinimumTier(portalType: string, feature: string): Promise<string> {
   const tierOrder = portalType === 'accountant'
-    ? ['zaklad', 'profi', 'business']
-    : ['free', 'plus', 'premium']
+    ? ['free', 'starter', 'professional', 'enterprise']
+    : ['free', 'basic', 'plus', 'premium']
 
   for (const tier of tierOrder) {
     const limits = await getPlanLimits(portalType, tier)
@@ -300,10 +322,14 @@ async function findMinimumTier(portalType: string, feature: string): Promise<str
 
 function tierLabel(tier: string): string {
   const labels: Record<string, string> = {
+    free: 'Free',
+    starter: 'Starter',
+    professional: 'Profi',
+    enterprise: 'Business',
     zaklad: 'Základ',
     profi: 'Profi',
     business: 'Business',
-    free: 'Free',
+    basic: 'Basic',
     plus: 'Plus',
     premium: 'Premium',
   }

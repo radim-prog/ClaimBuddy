@@ -43,10 +43,10 @@ export const STRIPE_PRICES = {
   travel_regen: process.env.STRIPE_PRICE_TRAVEL_REGEN || '',                 // 199 Kč — regeneration credit pack
 } as const
 
-// Accountant tiers: zaklad (free), profi, business
-// Client tiers: free, plus, premium
-export type AccountantTier = 'zaklad' | 'profi' | 'business'
-export type ClientTier = 'free' | 'plus' | 'premium'
+// Accountant tiers: free, starter, professional, enterprise (aliases: zaklad, profi, business)
+// Client tiers: free, basic, plus, premium
+export type AccountantTier = 'free' | 'starter' | 'professional' | 'enterprise' | 'zaklad' | 'profi' | 'business'
+export type ClientTier = 'free' | 'basic' | 'plus' | 'premium'
 export type PlanTier = AccountantTier | ClientTier
 export type BillingCycle = 'monthly' | 'yearly'
 

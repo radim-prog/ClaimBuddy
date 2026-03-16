@@ -89,6 +89,7 @@ export async function GET(request: NextRequest) {
     const { data: tasksData } = await supabaseAdmin
       .from('tasks')
       .select('id, title, status, due_date, company_id, company_name')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(200)
 

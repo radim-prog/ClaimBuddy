@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('tasks')
       .select('*', { count: 'exact' })
+      .is('deleted_at', null)
 
     // Apply filters
     if (filters.status) {

@@ -44,7 +44,7 @@ export function usePlanFeatures() {
     } catch {
       // Fallback: monetization disabled or error — allow everything
       const fallback: PlanFeatures = {
-        plan_tier: 'business',
+        plan_tier: 'enterprise',
         portal_type: 'accountant',
         features: {},
         limits: { max_companies: null, max_users: null, max_extractions_month: null },

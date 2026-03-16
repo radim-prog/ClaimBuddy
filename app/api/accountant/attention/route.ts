@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       getClosures({ period: currentPeriod }),
       supabaseAdmin.from('chats').select('id, company_id').eq('type', 'company_chat'),
       supabaseAdmin.from('client_notifications').select('company_id').eq('status', 'active'),
-      supabaseAdmin.from('tasks').select('company_id').in('status', ['pending', 'in_progress', 'accepted']).not('company_id', 'is', null),
+      supabaseAdmin.from('tasks').select('company_id').in('status', ['pending', 'in_progress', 'accepted']).not('company_id', 'is', null).is('deleted_at', null),
     ])
 
     // Build company name map (only active companies)

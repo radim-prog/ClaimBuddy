@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const companyId = searchParams.get('company_id')
   const status = searchParams.get('status')
 
-  let query = supabaseAdmin.from('projects').select('*').order('updated_at', { ascending: false })
+  let query = supabaseAdmin.from('projects').select('*').is('deleted_at', null).order('updated_at', { ascending: false })
 
   if (companyId) query = query.eq('company_id', companyId)
   if (status) query = query.eq('status', status)
