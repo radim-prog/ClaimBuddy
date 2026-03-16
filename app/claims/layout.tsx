@@ -44,7 +44,7 @@ const claimsNavigation = [
   { name: 'Klienti', href: '/claims/clients', icon: Users, activeMatch: ['/claims/clients'] },
   { name: 'Spisy', href: '/claims/cases', icon: FolderOpen, activeMatch: ['/claims/cases'] },
   { name: 'Pojišťovny', href: '/claims/insurers', icon: Building2, activeMatch: ['/claims/insurers'] },
-  { name: 'Dokumenty', href: '/claims/documents', icon: FileText, activeMatch: ['/claims/documents'] },
+  // Documents are per-case, not a standalone page — removed standalone link
   { name: 'Statistiky', href: '/claims/stats', icon: BarChart3, activeMatch: ['/claims/stats'] },
   { name: 'Nastavení', href: '/claims/settings', icon: Settings, activeMatch: ['/claims/settings'] },
 ]

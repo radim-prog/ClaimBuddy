@@ -24,6 +24,8 @@ export async function getInsuranceCases(options: {
   status?: string
   insuranceCompanyId?: string
   search?: string
+  priority?: string
+  insuranceType?: string
   page?: number
   limit?: number
 }): Promise<{ data: InsuranceCase[]; count: number }> {
@@ -33,6 +35,8 @@ export async function getInsuranceCases(options: {
     status,
     insuranceCompanyId,
     search,
+    priority,
+    insuranceType,
     page = 1,
     limit = 50,
   } = options
@@ -51,6 +55,8 @@ export async function getInsuranceCases(options: {
   if (companyId) query = query.eq('company_id', companyId)
   if (status) query = query.eq('status', status)
   if (insuranceCompanyId) query = query.eq('insurance_company_id', insuranceCompanyId)
+  if (priority) query = query.eq('priority', priority)
+  if (insuranceType) query = query.eq('insurance_type', insuranceType)
 
   if (search) {
     // Full-text search across case_number, policy_number and event_description

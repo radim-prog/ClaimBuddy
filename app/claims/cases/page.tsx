@@ -38,7 +38,7 @@ import {
 type ClaimsStats = {
   total: number
   active: number
-  waiting_insurer: number
+  waiting: number
   resolved_this_month: number
 }
 
@@ -197,7 +197,8 @@ export default function ClaimsCasesPage() {
     if (priorityFilter) params.set('priority', priorityFilter)
     if (typeFilter) params.set('insurance_type', typeFilter)
     const res = await fetch(`/api/claims/cases?${params.toString()}`)
-    return res.json() as Promise<InsuranceCase[]>
+    const data = await res.json() as { cases: InsuranceCase[], total: number }
+    return data.cases || []
   }, [search, statusFilter, companyFilter, priorityFilter, typeFilter])
 
   const { data: cases, loading: casesLoading } = useCachedFetch<InsuranceCase[]>(
@@ -254,7 +255,7 @@ export default function ClaimsCasesPage() {
         />
         <KpiCard
           label="Čekající na pojišťovnu"
-          value={statsLoading ? '…' : (stats?.waiting_insurer ?? 0)}
+          value={statsLoading ? '…' : (stats?.waiting ?? 0)}
           icon={<Hourglass className="h-5 w-5" />}
           iconColor="text-orange-600 dark:text-orange-400"
           bgColor="bg-orange-100 dark:bg-orange-900/30"

@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
   const companyId = searchParams.get('company_id') || undefined
   const insuranceCompanyId = searchParams.get('insurance_company_id') || undefined
   const search = searchParams.get('search') || undefined
+  const priority = searchParams.get('priority') || undefined
+  const insuranceType = searchParams.get('insurance_type') || undefined
   const page = parseInt(searchParams.get('page') || '1', 10)
   const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100)
 
@@ -27,6 +29,8 @@ export async function GET(request: NextRequest) {
       status,
       insuranceCompanyId,
       search,
+      priority,
+      insuranceType,
       page,
       limit,
     })
