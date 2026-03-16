@@ -338,6 +338,8 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
             {children}
           </ErrorBoundary>
         </main>
+
+        <TutorialOverlay />
       </div>
 
       {/* Mobile bottom tab bar */}
@@ -379,7 +381,13 @@ export default function ClientLayout({
   return (
     <div className="client-theme">
       <ClientUserProvider>
-        <ClientLayoutInner>{children}</ClientLayoutInner>
+        <TutorialProvider
+          steps={CLIENT_TUTORIAL_STEPS}
+          apiPath="/api/client/tutorial"
+          storageKey="client-tutorial-dismissed"
+        >
+          <ClientLayoutInner>{children}</ClientLayoutInner>
+        </TutorialProvider>
       </ClientUserProvider>
     </div>
   )

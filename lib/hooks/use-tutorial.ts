@@ -118,14 +118,14 @@ export function useTutorial(options?: UseTutorialOptions) {
     if (step.page === '__any__') return
     if (step.page === '__client_detail__') {
       // If not already on a client detail page, navigate to clients
-      if (!pathname.startsWith('/accountant/clients/')) {
+      if (!(pathname ?? '').startsWith('/accountant/clients/')) {
         router.push('/accountant/clients')
       }
       return
     }
 
     // Navigate if not already on the right page
-    if (!pathname.startsWith(step.page)) {
+    if (!(pathname ?? '').startsWith(step.page)) {
       router.push(step.page)
     }
   }, [pathname, router, tutorialSteps])
