@@ -55,7 +55,7 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/70 dark:hover:bg-gray-800/70 rounded-lg transition-colors"
+              className="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100/70 dark:hover:bg-gray-800/70 rounded-lg transition-colors"
             >
               {link.label}
             </Link>
@@ -68,7 +68,7 @@ export function Navbar() {
             onMouseLeave={() => setFeaturesOpen(false)}
           >
             <button
-              className="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/70 dark:hover:bg-gray-800/70 rounded-lg transition-colors flex items-center gap-1"
+              className="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100/70 dark:hover:bg-gray-800/70 rounded-lg transition-colors flex items-center gap-1"
             >
               Funkce
               <ChevronDown className={`h-3.5 w-3.5 transition-transform ${featuresOpen ? 'rotate-180' : ''}`} />
@@ -94,7 +94,7 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100/70 dark:hover:bg-gray-800/70 rounded-lg transition-colors"
+              className="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100/70 dark:hover:bg-gray-800/70 rounded-lg transition-colors"
             >
               {link.label}
             </Link>

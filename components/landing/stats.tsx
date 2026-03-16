@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 
 const STATS = [
-  { value: 15, suffix: '+', label: 'modulů v jedné platformě' },
-  { value: 2, suffix: '', label: 'portály — účetní i klient' },
-  { value: 300, suffix: '+', label: 'API endpointů' },
+  { value: 40, suffix: '+', label: 'modulů v jedné platformě' },
+  { value: 2, suffix: '', label: 'pohledy — účetní i klient' },
+  { value: 100, suffix: '%', label: 'plně automatizováno' },
   { value: 0, suffix: ' Kč', label: 'na prvních 30 dní' },
 ]
 

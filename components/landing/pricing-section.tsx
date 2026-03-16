@@ -70,7 +70,7 @@ const CLIENT_PLANS: Plan[] = [
       { text: 'QR platební kódy', included: true, highlight: true },
       { text: 'Prioritní podpora', included: false },
     ],
-    cta: 'Vyzkoušet 30 dní zdarma',
+    cta: 'Vyzkoušet 90 dní zdarma',
   },
   {
     name: 'Premium',
@@ -89,7 +89,7 @@ const CLIENT_PLANS: Plan[] = [
       { text: 'Extra vytěžování: 7 Kč/ks', included: true },
       { text: 'Prioritní podpora 24/7', included: true },
     ],
-    cta: 'Vyzkoušet 30 dní',
+    cta: 'Vyzkoušet 90 dní',
   },
 ]
 
@@ -131,7 +131,7 @@ const ACCOUNTANT_PLANS: Plan[] = [
       { text: 'Google Drive integrace', included: true },
       { text: 'Analytika nákladů a zisku', included: true },
     ],
-    cta: 'Vyzkoušet 30 dní zdarma',
+    cta: 'Vyzkoušet 90 dní zdarma',
   },
   {
     name: 'Enterprise',
@@ -354,7 +354,7 @@ export function PricingSection() {
           >
             <span
               className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                billing === 'yearly' ? 'translate-x-6' : 'translate-x-0.5'
+                billing === 'yearly' ? 'translate-x-0.5' : 'translate-x-6'
               }`}
             />
           </button>

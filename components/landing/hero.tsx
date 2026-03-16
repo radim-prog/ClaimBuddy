@@ -95,8 +95,8 @@ export function Hero() {
             </Button>
             <Button
               size="lg"
-              variant="outline"
-              className="h-14 px-10 text-base text-gray-300 border-gray-700 hover:border-gray-500 hover:bg-white/5 transition-all duration-300"
+              variant="default"
+              className="h-14 px-10 text-base text-white bg-white/10 border border-white/20 hover:bg-white/20 backdrop-blur-sm transition-all duration-300"
               asChild
             >
               <a href="#pricing">Zobrazit ceník</a>
