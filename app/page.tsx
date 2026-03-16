@@ -26,6 +26,8 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <Hero />
+      {/* Hero → Stats: extra spacing as requested */}
+      <div className="h-24 sm:h-40" />
       <Stats />
       {/* Stats → Features: light to dark */}
       <div className="h-20 sm:h-32 bg-gradient-to-b from-background to-gray-950" />

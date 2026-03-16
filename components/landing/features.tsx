@@ -92,7 +92,7 @@ const FEATURES = [
 
 export function Features() {
   return (
-    <section id="features" className="relative py-20 sm:py-28 bg-gray-950 overflow-hidden">
+    <section id="features" className="relative py-20 sm:py-28 bg-gray-900 dark:bg-gray-950 overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-blue-500/5 rounded-full blur-3xl" />

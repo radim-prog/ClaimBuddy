@@ -70,7 +70,7 @@ const CLIENT_PLANS: Plan[] = [
       { text: 'QR platební kódy', included: true, highlight: true },
       { text: 'Prioritní podpora', included: false },
     ],
-    cta: 'Vyzkoušet 90 dní zdarma',
+    cta: 'Vyzkoušet 30 dní zdarma',
   },
   {
     name: 'Premium',
@@ -86,10 +86,10 @@ const CLIENT_PLANS: Plan[] = [
       { text: 'Rozšířené statistiky a reporty', included: true },
       { text: 'Krizový AI chatbot', included: true, highlight: true },
       { text: 'Cestovní randomizér', included: true },
-      { text: 'Extra vytěžování: 7 Kč/ks', included: true },
+      { text: 'Extra vytěžování: 1,50 Kč/ks', included: true },
       { text: 'Prioritní podpora 24/7', included: true },
     ],
-    cta: 'Vyzkoušet 90 dní',
+    cta: 'Vyzkoušet 90 dní zdarma',
   },
 ]
 
@@ -131,7 +131,7 @@ const ACCOUNTANT_PLANS: Plan[] = [
       { text: 'Google Drive integrace', included: true },
       { text: 'Analytika nákladů a zisku', included: true },
     ],
-    cta: 'Vyzkoušet 90 dní zdarma',
+    cta: 'Vyzkoušet 30 dní zdarma',
   },
   {
     name: 'Enterprise',
@@ -381,7 +381,7 @@ export function PricingSection() {
         {/* Addons note */}
         <div className="mt-14 text-center">
           <p className="text-sm text-muted-foreground">
-            Potřebujete více? Nabízíme doplňky — extra vytěžování od 7 Kč/doklad,
+            Potřebujete více? Nabízíme doplňky — extra vytěžování od 1,50 Kč/doklad,
             další uživatelé od 99 Kč/měsíc.{' '}
             <Link href="/pricing" className={`${accentColor === 'blue' ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'} hover:underline font-medium`}>
               Kompletní ceník →

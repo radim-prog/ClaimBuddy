@@ -30,7 +30,7 @@ const USP_ITEMS = [
 
 export function Hero() {
   return (
-    <section className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden bg-[#0a0118]">
+    <section className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden bg-gradient-to-b from-purple-950 via-indigo-950/80 to-background">
       {/* ── Animated gradient background ── */}
       <div className="absolute inset-0">
         {/* Base gradient */}
@@ -96,7 +96,7 @@ export function Hero() {
             <Button
               size="lg"
               variant="default"
-              className="h-14 px-10 text-base text-white bg-white/10 border border-white/20 hover:bg-white/20 backdrop-blur-sm transition-all duration-300"
+              className="h-14 px-10 text-base text-white bg-white/25 border-2 border-white/40 hover:bg-white/35 backdrop-blur-sm transition-all duration-300 font-semibold"
               asChild
             >
               <a href="#pricing">Zobrazit ceník</a>

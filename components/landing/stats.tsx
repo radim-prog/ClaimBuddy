@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 
 const STATS = [
   { value: 40, suffix: '+', label: 'modulů v jedné platformě' },
-  { value: 2, suffix: '', label: 'pohledy — účetní i klient' },
-  { value: 100, suffix: '%', label: 'plně automatizováno' },
+  { value: 120, suffix: '+', label: 'firem pod správou' },
+  { value: 72, suffix: '', label: 'článků ve znalostní bázi' },
   { value: 0, suffix: ' Kč', label: 'na prvních 30 dní' },
 ]
 
