@@ -8,8 +8,8 @@ if (!AUTH_SECRET) {
   throw new Error('AUTH_SECRET environment variable is required and must not be empty')
 }
 
-const PUBLIC_EXACT = ['/', '/ucetni']  // Exact match only (startsWith '/' would match everything)
-const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-sent', '/api/auth/verify', '/pricing', '/marketplace', '/legal', '/pro-ucetni', '/pro-podnikatele', '/o-nas', '/funkce', '/claims', '/design-variants', '/api/leads', '/api/marketplace', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/setup/first-admin', '/api/cron/drive-sync', '/api/cron/trial-expiry', '/api/cron/credits-reset', '/api/cron/fetch-emails', '/api/cron/fetch-document-emails', '/api/cron/lead-emails', '/api/cron/purge-trash', '/api/cron/sync-ecomail-contacts', '/api/cron/raynet-sync', '/api/cron/health-scores', '/api/cron/generate-notifications', '/api/cron/notion-sync', '/api/cron/reminders', '/api/cron/invoice-reminders', '/api/cron/billing', '/api/cron/snapshots', '/api/cron/calculate-penalties', '/api/signing/webhook', '/api/bridge']
+const PUBLIC_EXACT = ['/', '/ucetni', '/claims']  // Exact match only (startsWith '/' would match everything)
+const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-sent', '/api/auth/verify', '/pricing', '/marketplace', '/legal', '/pro-ucetni', '/pro-podnikatele', '/o-nas', '/funkce', '/claims/new', '/design-variants', '/api/leads', '/api/marketplace', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/setup/first-admin', '/api/cron/drive-sync', '/api/cron/trial-expiry', '/api/cron/credits-reset', '/api/cron/fetch-emails', '/api/cron/fetch-document-emails', '/api/cron/lead-emails', '/api/cron/purge-trash', '/api/cron/sync-ecomail-contacts', '/api/cron/raynet-sync', '/api/cron/health-scores', '/api/cron/generate-notifications', '/api/cron/notion-sync', '/api/cron/reminders', '/api/cron/invoice-reminders', '/api/cron/billing', '/api/cron/snapshots', '/api/cron/calculate-penalties', '/api/signing/webhook', '/api/bridge', '/api/claims/intake', '/api/claims/companies']
 const STATIC_PREFIXES = ['/_next', '/static', '/favicon.ico']
 
 // --- Rate Limiting (in-memory, sliding window) ---
@@ -138,6 +138,7 @@ async function verifySignedCookie(signedValue: string): Promise<string | null> {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const hostname = request.headers.get('host')?.split(':')[0] || ''
 
   // Allow static assets
   if (STATIC_PREFIXES.some(p => pathname.startsWith(p))) {
@@ -145,6 +146,21 @@ export async function middleware(request: NextRequest) {
   }
   if (pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff2?)$/)) {
     return NextResponse.next()
+  }
+
+  // Host-based routing: claims.zajcon.cz → /claims as root
+  if (hostname === 'claims.zajcon.cz') {
+    // Root → redirect to claims dashboard
+    if (pathname === '/' || pathname === '') {
+      return NextResponse.redirect(new URL('/claims/dashboard', request.url))
+    }
+    // /auth paths stay as-is (login/logout)
+    // /api paths stay as-is
+    // /claims paths stay as-is
+    // Everything else that's not claims/api/auth/_next → redirect to /claims/dashboard
+    if (!pathname.startsWith('/claims') && !pathname.startsWith('/api') && !pathname.startsWith('/auth') && !pathname.startsWith('/_next')) {
+      return NextResponse.redirect(new URL('/claims/dashboard', request.url))
+    }
   }
 
   // Landing pages (/ and /ucetni): logged-in users → redirect to dashboard
