@@ -97,6 +97,184 @@ const adminNav = [
   { name: 'Administrace', href: '/accountant/admin', icon: Shield },
 ]
 
+// Nav item type
+type NavItem = {
+  name: string
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+  badge?: 'attention' | 'messages' | 'inbox' | 'dynamic'
+  feature?: string
+  activeMatch?: string[]
+  tourId?: string
+}
+
+// Extracted NavContent to avoid hook issues with renderNavItem
+function NavContent({
+  dailyWorkNav,
+  managementNav,
+  toolsNav,
+  adminNav,
+  pathname,
+  collapsed,
+  showAdmin,
+  managementOpen,
+  toolsOpen,
+  toggleManagement,
+  toggleTools,
+  isLocked,
+  inboxCount,
+  clientsAttentionCount,
+  needsResponseCount,
+  documentInboxCount,
+}: {
+  dailyWorkNav: NavItem[]
+  managementNav: NavItem[]
+  toolsNav: NavItem[]
+  adminNav: NavItem[]
+  pathname: string
+  collapsed: boolean
+  showAdmin: boolean
+  managementOpen: boolean
+  toolsOpen: boolean
+  toggleManagement: () => void
+  toggleTools: () => void
+  isLocked: (feature: string) => boolean
+  inboxCount: number
+  clientsAttentionCount: number
+  needsResponseCount: number
+  documentInboxCount: number
+}) {
+  const renderNavItem = (item: NavItem) => {
+    const isActive = item.activeMatch
+      ? item.activeMatch.some(p => pathname.startsWith(p))
+      : pathname === item.href || pathname.startsWith(item.href + '/')
+    const Icon = item.icon
+    const locked = item.feature ? isLocked(item.feature) : false
+    const linkEl = (
+      <Link
+        href={locked ? '/accountant/admin/subscription' : item.href}
+        data-tour={item.tourId}
+        className={`
+          group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
+          ${locked
+            ? 'text-white/30 hover:bg-white/[0.03] cursor-default'
+            : isActive
+              ? 'bg-white/[0.08] text-white nav-active-indicator'
+              : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
+          }
+        `}
+      >
+        <span className={`flex items-center ${collapsed ? 'relative' : ''}`}>
+          <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${locked ? 'text-white/20' : isActive ? 'text-violet-300' : 'text-white/40 group-hover:text-white/65'}`} />
+          {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+          {!collapsed && locked && <Lock className="ml-1.5 h-3 w-3 text-white/25" />}
+          {collapsed && item.badge === 'dynamic' && inboxCount > 0 && (
+            <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-violet-400 text-white rounded-full">{inboxCount}</span>
+          )}
+          {collapsed && item.badge === 'attention' && clientsAttentionCount > 0 && (
+            <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">{clientsAttentionCount}</span>
+          )}
+          {collapsed && item.badge === 'messages' && needsResponseCount > 0 && (
+            <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">{needsResponseCount}</span>
+          )}
+          {collapsed && item.badge === 'inbox' && documentInboxCount > 0 && (
+            <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-amber-400 text-gray-900 rounded-full">{documentInboxCount}</span>
+          )}
+        </span>
+        {!collapsed && (
+          <span className="flex items-center gap-1.5">
+            {item.badge === 'dynamic' && inboxCount > 0 && (
+              <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-violet-400 text-white rounded-full min-w-[1.25rem]">{inboxCount}</span>
+            )}
+            {item.badge === 'attention' && clientsAttentionCount > 0 && (
+              <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">{clientsAttentionCount}</span>
+            )}
+            {item.badge === 'messages' && needsResponseCount > 0 && (
+              <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">{needsResponseCount}</span>
+            )}
+            {item.badge === 'inbox' && documentInboxCount > 0 && (
+              <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-amber-400 text-gray-900 rounded-full min-w-[1.25rem]">{documentInboxCount}</span>
+            )}
+            {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
+          </span>
+        )}
+      </Link>
+    )
+
+    if (collapsed) {
+      return (
+        <Tooltip key={item.name}>
+          <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
+          <TooltipContent side="right" className="font-medium">
+            {item.name}
+            {item.badge === 'dynamic' && inboxCount > 0 && ` (${inboxCount})`}
+            {item.badge === 'attention' && clientsAttentionCount > 0 && ` (${clientsAttentionCount})`}
+            {item.badge === 'messages' && needsResponseCount > 0 && ` (${needsResponseCount})`}
+            {item.badge === 'inbox' && documentInboxCount > 0 && ` (${documentInboxCount})`}
+          </TooltipContent>
+        </Tooltip>
+      )
+    }
+
+    return <React.Fragment key={item.name}>{linkEl}</React.Fragment>
+  }
+
+  return (
+    <nav className="relative flex-1 px-3 py-4 space-y-0.5">
+      {/* Daily Work — always visible */}
+      {dailyWorkNav.map(renderNavItem)}
+
+      {/* Správa — collapsible */}
+      <div className="pt-3 mt-3 border-t border-white/[0.06]">
+        {!collapsed ? (
+          <button
+            onClick={toggleManagement}
+            className="w-full flex items-center justify-between px-3 mb-1.5 group"
+          >
+            <p className="text-[10px] font-semibold text-violet-300/60 uppercase tracking-widest">
+              Správa
+            </p>
+            <ChevronDown className={`h-3 w-3 text-white/30 transition-transform duration-200 ${managementOpen ? '' : '-rotate-90'}`} />
+          </button>
+        ) : (
+          <div className="w-full h-px bg-white/[0.06] mb-1" />
+        )}
+        {(managementOpen || collapsed) && managementNav.map(renderNavItem)}
+      </div>
+
+      {/* Nástroje — collapsible */}
+      <div className="pt-3 mt-3 border-t border-white/[0.06]">
+        {!collapsed ? (
+          <button
+            onClick={toggleTools}
+            className="w-full flex items-center justify-between px-3 mb-1.5 group"
+          >
+            <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">
+              Nástroje
+            </p>
+            <ChevronDown className={`h-3 w-3 text-white/30 transition-transform duration-200 ${toolsOpen ? '' : '-rotate-90'}`} />
+          </button>
+        ) : (
+          <div className="w-full h-px bg-white/[0.06] mb-1" />
+        )}
+        {(toolsOpen || collapsed) && toolsNav.map(renderNavItem)}
+      </div>
+
+      {/* Admin — bottom, admin-only */}
+      {showAdmin && (
+        <div className="pt-3 mt-3 border-t border-white/[0.06]">
+          {!collapsed && (
+            <p className="px-3 text-[10px] font-semibold text-violet-300/60 uppercase tracking-widest mb-1.5">
+              Admin
+            </p>
+          )}
+          {adminNav.map(renderNavItem)}
+        </div>
+      )}
+    </nav>
+  )
+}
+
 export default function AccountantLayout({
   children,
 }: {
@@ -233,203 +411,24 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
 
           {/* Navigation */}
           <TooltipProvider delayDuration={0}>
-            <nav className="relative flex-1 px-3 py-4 space-y-0.5">
-              {navigation.map((item) => {
-                const isActive = item.activeMatch
-                  ? item.activeMatch.some(p => pathname.startsWith(p))
-                  : pathname === item.href || pathname.startsWith(item.href + '/')
-                const Icon = item.icon
-                const locked = item.feature ? isLocked(item.feature) : false
-                const linkEl = (
-                  <Link
-                    href={locked ? '/accountant/admin/subscription' : item.href}
-                    data-tour={item.tourId}
-                    className={`
-                      group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
-                      ${locked
-                        ? 'text-white/30 hover:bg-white/[0.03] cursor-default'
-                        : isActive
-                          ? 'bg-white/[0.08] text-white nav-active-indicator'
-                          : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
-                      }
-                    `}
-                  >
-                    <span className={`flex items-center ${collapsed ? 'relative' : ''}`}>
-                      <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${locked ? 'text-white/20' : isActive ? 'text-violet-300' : 'text-white/40 group-hover:text-white/65'}`} />
-                      {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
-                      {!collapsed && locked && <Lock className="ml-1.5 h-3 w-3 text-white/25" />}
-                      {/* Badges on icon when collapsed */}
-                      {collapsed && item.badge === 'dynamic' && inboxCount > 0 && (
-                        <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-violet-400 text-white rounded-full">
-                          {inboxCount}
-                        </span>
-                      )}
-                      {collapsed && item.badge === 'attention' && clientsAttentionCount > 0 && (
-                        <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">
-                          {clientsAttentionCount}
-                        </span>
-                      )}
-                      {collapsed && item.badge === 'messages' && needsResponseCount > 0 && (
-                        <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">
-                          {needsResponseCount}
-                        </span>
-                      )}
-                      {collapsed && item.badge === 'inbox' && documentInboxCount > 0 && (
-                        <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-amber-400 text-gray-900 rounded-full">
-                          {documentInboxCount}
-                        </span>
-                      )}
-                    </span>
-                    {!collapsed && (
-                      <span className="flex items-center gap-1.5">
-                        {item.badge === 'dynamic' && inboxCount > 0 && (
-                          <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-violet-400 text-white rounded-full min-w-[1.25rem]">
-                            {inboxCount}
-                          </span>
-                        )}
-                        {item.badge === 'attention' && clientsAttentionCount > 0 && (
-                          <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">
-                            {clientsAttentionCount}
-                          </span>
-                        )}
-                        {item.badge === 'messages' && needsResponseCount > 0 && (
-                          <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">
-                            {needsResponseCount}
-                          </span>
-                        )}
-                        {item.badge === 'inbox' && documentInboxCount > 0 && (
-                          <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-amber-400 text-gray-900 rounded-full min-w-[1.25rem]">
-                            {documentInboxCount}
-                          </span>
-                        )}
-                        {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
-                      </span>
-                    )}
-                  </Link>
-                )
-
-                if (collapsed) {
-                  return (
-                    <Tooltip key={item.name}>
-                      <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
-                      <TooltipContent side="right" className="font-medium">
-                        {item.name}
-                        {item.badge === 'dynamic' && inboxCount > 0 && ` (${inboxCount})`}
-                        {item.badge === 'attention' && clientsAttentionCount > 0 && ` (${clientsAttentionCount})`}
-                        {item.badge === 'messages' && needsResponseCount > 0 && ` (${needsResponseCount})`}
-                        {item.badge === 'inbox' && documentInboxCount > 0 && ` (${documentInboxCount})`}
-                      </TooltipContent>
-                    </Tooltip>
-                  )
-                }
-
-                return <React.Fragment key={item.name}>{linkEl}</React.Fragment>
-              })}
-
-              {/* ADMIN SECTION */}
-              {showAdmin && (
-                <div className={`pt-3 mt-3 border-t border-white/[0.06] ${collapsed ? '' : ''}`}>
-                  {!collapsed && (
-                    <p className="px-3 text-[10px] font-semibold text-violet-300/60 uppercase tracking-widest mb-1.5">
-                      Správa
-                    </p>
-                  )}
-                  {adminNavigation.map((item) => {
-                    const isActive = item.activeMatch
-                      ? item.activeMatch.some(p => pathname.startsWith(p))
-                      : pathname === item.href || pathname.startsWith(item.href + '/')
-                    const Icon = item.icon
-                    const adminLocked = item.feature ? isLocked(item.feature) : false
-                    const adminLink = (
-                      <Link
-                        href={adminLocked ? '/accountant/admin/subscription' : item.href}
-                        data-tour={item.tourId}
-                        className={`
-                          group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
-                          ${adminLocked
-                            ? 'text-white/30 hover:bg-white/[0.03]'
-                            : isActive
-                              ? 'bg-white/[0.08] text-white nav-active-indicator'
-                              : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
-                          }
-                        `}
-                      >
-                        <span className="flex items-center">
-                          <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 ${adminLocked ? 'text-white/20' : isActive ? 'text-violet-300' : 'text-white/40'}`} />
-                          {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
-                          {!collapsed && adminLocked && <Lock className="ml-1.5 h-3 w-3 text-white/25" />}
-                        </span>
-                        {!collapsed && isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
-                      </Link>
-                    )
-
-                    if (collapsed) {
-                      return (
-                        <Tooltip key={item.name}>
-                          <TooltipTrigger asChild>{adminLink}</TooltipTrigger>
-                          <TooltipContent side="right" className="font-medium">
-                            {item.name}
-                          </TooltipContent>
-                        </Tooltip>
-                      )
-                    }
-
-                    return <React.Fragment key={item.name}>{adminLink}</React.Fragment>
-                  })}
-                </div>
-              )}
-
-              {/* DEMO FEATURES SECTION */}
-              {demoFeatures.length > 0 && (
-                <div className="pt-3 mt-3 border-t border-white/[0.06]">
-                  {!collapsed && (
-                    <p className="px-3 text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1.5">
-                      Nové Funkce
-                    </p>
-                  )}
-                  {demoFeatures.map((item) => {
-                    const isActive = pathname === item.href
-                    const Icon = item.icon
-                    const demoLink = (
-                      <Link
-                        href={item.href}
-                        className={`
-                          group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
-                          ${isActive
-                            ? 'bg-white/[0.08] text-white'
-                            : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
-                          }
-                        `}
-                      >
-                        <span className="flex items-center">
-                          <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0`} />
-                          {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
-                        </span>
-                        {!collapsed && (
-                          <span className="px-1.5 py-0.5 text-[10px] font-bold bg-violet-400 text-white rounded-full">
-                            {item.badge}
-                          </span>
-                        )}
-                      </Link>
-                    )
-
-                    if (collapsed) {
-                      return (
-                        <Tooltip key={item.name}>
-                          <TooltipTrigger asChild>{demoLink}</TooltipTrigger>
-                          <TooltipContent side="right" className="font-medium">
-                            {item.name}
-                          </TooltipContent>
-                        </Tooltip>
-                      )
-                    }
-
-                    return <React.Fragment key={item.name}>{demoLink}</React.Fragment>
-                  })}
-                </div>
-              )}
-
-            </nav>
+            <NavContent
+              dailyWorkNav={dailyWorkNav}
+              managementNav={managementNav}
+              toolsNav={toolsNav}
+              adminNav={adminNav}
+              pathname={pathname}
+              collapsed={collapsed}
+              showAdmin={showAdmin}
+              managementOpen={managementOpen}
+              toolsOpen={toolsOpen}
+              toggleManagement={toggleManagement}
+              toggleTools={toggleTools}
+              isLocked={isLocked}
+              inboxCount={inboxCount}
+              clientsAttentionCount={clientsAttentionCount}
+              needsResponseCount={needsResponseCount}
+              documentInboxCount={documentInboxCount}
+            />
           </TooltipProvider>
 
           {/* Tools - Průvodce & Tmavý režim */}
@@ -535,7 +534,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-border/50 safe-area-bottom">
         <nav className="flex items-center justify-around px-1 py-1">
-          {navigation.slice(0, 5).map((item) => {
+          {dailyWorkNav.slice(0, 5).map((item) => {
             const isActive = item.activeMatch
               ? item.activeMatch.some(p => pathname.startsWith(p))
               : pathname === item.href || pathname.startsWith(item.href + '/')
@@ -602,98 +601,84 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
             onClick={e => e.stopPropagation()}
           >
             <div className="w-12 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mt-3 mb-2" />
-            <div className="px-4 pb-4 space-y-1">
-              {demoFeatures.map((item) => {
+            <div className="px-4 pb-4 space-y-1 max-h-[60vh] overflow-y-auto">
+              {/* Správa section */}
+              <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Správa</p>
+              {managementNav.map((item) => {
                 const Icon = item.icon
-                const isActive = pathname === item.href
+                const isActive = item.activeMatch
+                  ? item.activeMatch.some(p => pathname.startsWith(p))
+                  : pathname === item.href || pathname.startsWith(item.href + '/')
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center justify-between gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+                    className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
                       isActive
                         ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
                         : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
                     }`}
                   >
-                    <span className="flex items-center gap-3">
-                      <Icon className="h-5 w-5" />
-                      <span className="text-sm font-medium">{item.name}</span>
-                    </span>
-                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-violet-400 text-white rounded-full">
-                      {item.badge}
-                    </span>
+                    <Icon className="h-5 w-5" />
+                    <span className="text-sm font-medium">{item.name}</span>
                   </Link>
                 )
               })}
 
+              {/* Nástroje section */}
+              <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+              <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Nástroje</p>
+              {toolsNav.map((item) => {
+                const Icon = item.icon
+                const isActive = item.activeMatch
+                  ? item.activeMatch.some(p => pathname.startsWith(p))
+                  : pathname === item.href || pathname.startsWith(item.href + '/')
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                        : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="text-sm font-medium">{item.name}</span>
+                  </Link>
+                )
+              })}
+
+              {/* Admin section */}
               {showAdmin && (
                 <>
                 <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Správa</p>
-                <Link
-                  href="/accountant/analytics"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
-                    pathname.startsWith('/accountant/analytics')
-                      ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                      : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
-                  }`}
-                >
-                  <BarChart3 className="h-5 w-5" />
-                  <span className="text-sm font-medium">Analytika</span>
-                </Link>
-                <Link
-                  href="/accountant/invoicing"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
-                    pathname.startsWith('/accountant/invoicing')
-                      ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                      : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
-                  }`}
-                >
-                  <Receipt className="h-5 w-5" />
-                  <span className="text-sm font-medium">Fakturace</span>
-                </Link>
-                <Link
-                  href="/accountant/billing"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
-                    pathname.startsWith('/accountant/billing')
-                      ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                      : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
-                  }`}
-                >
-                  <CreditCard className="h-5 w-5" />
-                  <span className="text-sm font-medium">Billing</span>
-                </Link>
-                <Link
-                  href="/accountant/settings"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
-                    pathname.startsWith('/accountant/settings')
-                      ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                      : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
-                  }`}
-                >
-                  <Settings className="h-5 w-5" />
-                  <span className="text-sm font-medium">Nastavení</span>
-                </Link>
-                <Link
-                  href="/accountant/admin"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
-                    pathname.startsWith('/accountant/admin')
-                      ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                      : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
-                  }`}
-                >
-                  <Shield className="h-5 w-5" />
-                  <span className="text-sm font-medium">Administrace</span>
-                </Link>
+                <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Admin</p>
+                {adminNav.map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+                        isActive
+                          ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                          : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="text-sm font-medium">{item.name}</span>
+                    </Link>
+                  )
+                })}
                 </>
               )}
+
+              <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
 
               <Link
                 href="/accountant/profile"

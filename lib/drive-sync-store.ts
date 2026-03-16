@@ -19,7 +19,54 @@ const DRIVE_CACHE_BUCKET = 'drive-cache'
 // FOLDER OPERATIONS
 // ============================================================
 
-// --- Init company folders from template ---
+// --- Init company folders from ALL templates (entity-agnostic) ---
+
+export async function initCompanyFoldersFromAllTemplates(
+  companyId: string
+): Promise<DocumentFolder[]> {
+  const { data: templates, error: tErr } = await supabaseAdmin
+    .from('document_folder_templates')
+    .select('*')
+    .order('sort_order')
+
+  if (tErr) throw new Error(`Get templates failed: ${tErr.message}`)
+  if (!templates || templates.length === 0) return []
+
+  // Check existing folders
+  const { data: existing } = await supabaseAdmin
+    .from('document_folders')
+    .select('template_id')
+    .eq('company_id', companyId)
+
+  const existingTemplateIds = new Set((existing || []).map((f) => f.template_id))
+
+  const toInsert = templates
+    .filter((t) => !existingTemplateIds.has(t.id))
+    .map((t: FolderTemplate) => ({
+      company_id: companyId,
+      template_id: t.id,
+      name: t.name,
+      slug: t.slug,
+      icon: t.icon,
+      is_system: true,
+      is_custom: false,
+      has_period_filter: t.has_period_filter,
+      sort_order: t.sort_order,
+      client_visible: true,
+    }))
+
+  if (toInsert.length === 0) return []
+
+  const { data, error } = await supabaseAdmin
+    .from('document_folders')
+    .insert(toInsert)
+    .select('*')
+
+  if (error) throw new Error(`Init folders failed: ${error.message}`)
+  return data as DocumentFolder[]
+}
+
+// --- Init company folders from template (by entity type) ---
 
 export async function initCompanyFolders(
   companyId: string,
@@ -72,13 +119,24 @@ export async function initCompanyFolders(
 // --- Get folder tree ---
 
 export async function getFolderTree(companyId: string): Promise<FolderTreeItem[]> {
-  const { data, error } = await supabaseAdmin
+  let { data, error } = await supabaseAdmin
     .from('document_folders')
     .select('*')
     .eq('company_id', companyId)
     .order('sort_order')
 
   if (error) throw new Error(`Get folder tree failed: ${error.message}`)
+
+  // Auto-provision from templates if company has no folders yet
+  if (!data || data.length === 0) {
+    await initCompanyFoldersFromAllTemplates(companyId)
+    const result = await supabaseAdmin
+      .from('document_folders')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('sort_order')
+    data = result.data
+  }
 
   const folders = (data || []) as DocumentFolder[]
 

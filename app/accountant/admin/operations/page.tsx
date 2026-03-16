@@ -16,6 +16,7 @@ import {
   TrendingUp,
   CreditCard,
   PenLine,
+  FolderTree,
 } from 'lucide-react'
 import { CollapsibleSection } from '@/components/collapsible-section'
 import { TaskTemplates } from '@/components/admin/task-templates'
@@ -32,6 +33,7 @@ import { LeadsList } from '@/components/admin/leads-list'
 import { MarketplaceProviders } from '@/components/admin/marketplace-providers'
 import { OperationsRevenue } from '@/components/admin/operations-revenue'
 import { OperationsBilling } from '@/components/admin/operations-billing'
+import { OperationsFolderTemplates } from '@/components/admin/operations-folder-templates'
 
 const sections = [
   { id: 'marketplace', label: 'Marketplace — registrace', icon: Store, Component: MarketplaceProviders },
@@ -43,6 +45,7 @@ const sections = [
   { id: 'notifications', label: 'Notifikace', icon: Bell, Component: OperationsNotifications },
   { id: 'invoicing', label: 'Fakturace', icon: Receipt, Component: InvoicingSettings },
   { id: 'pricing', label: 'Ceník a sazby', icon: DollarSign, Component: PricingSettings },
+  { id: 'folder-templates', label: 'Struktura složek klientů', icon: FolderTree, Component: OperationsFolderTemplates },
   { id: 'drive', label: 'Google Drive', icon: HardDrive, Component: CompanyDriveMapper },
   { id: 'raynet', label: 'Raynet CRM', icon: Link2, Component: CompanyRaynetMapper },
   { id: 'tax-rates', label: 'Daňové sazby', icon: Calculator, Component: OperationsTaxRates },

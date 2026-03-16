@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Search,
   Upload,
-  FolderPlus,
   RefreshCw,
   ChevronLeft,
   LayoutGrid,
@@ -365,14 +364,7 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
               <Upload className="h-4 w-4 mr-1.5" />
               Nahrat
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-lg border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 transition-colors"
-            >
-              <FolderPlus className="h-4 w-4 mr-1.5" />
-              <span className="hidden sm:inline">Slozka</span>
-            </Button>
+            {/* Folder creation removed — managed by admin in Settings > Struktura složek */}
             <Button
               variant="outline"
               size="sm"
@@ -401,10 +393,10 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
             </div>
           ) : folders.length === 0 ? (
             <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-              <FolderPlus className="h-10 w-10 mx-auto mb-2 opacity-50" />
+              <File className="h-10 w-10 mx-auto mb-2 opacity-50" />
               <p className="text-sm">Zadne slozky</p>
               <p className="text-xs mt-1">
-                Slozky se vytvorit automaticky po synchronizaci s Google Drive
+                Slozky se vytvorit automaticky z nasataveni (Admin &rarr; Provoz &rarr; Struktura slozek)
               </p>
             </div>
           ) : (
