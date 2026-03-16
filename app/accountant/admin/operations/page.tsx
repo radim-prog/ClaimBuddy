@@ -14,6 +14,7 @@ import {
   Mail,
   Store,
   TrendingUp,
+  CreditCard,
 } from 'lucide-react'
 import { CollapsibleSection } from '@/components/collapsible-section'
 import { TaskTemplates } from '@/components/admin/task-templates'
@@ -28,10 +29,12 @@ import { OperationsMarketing } from '@/components/admin/operations-marketing'
 import { LeadsList } from '@/components/admin/leads-list'
 import { MarketplaceProviders } from '@/components/admin/marketplace-providers'
 import { OperationsRevenue } from '@/components/admin/operations-revenue'
+import { OperationsBilling } from '@/components/admin/operations-billing'
 
 const sections = [
   { id: 'marketplace', label: 'Marketplace — registrace', icon: Store, Component: MarketplaceProviders },
   { id: 'revenue', label: 'Revenue sharing', icon: TrendingUp, Component: OperationsRevenue },
+  { id: 'billing', label: 'Billing-as-a-service', icon: CreditCard, Component: OperationsBilling },
   { id: 'leads', label: 'Leady — Chci účetní', icon: Sparkles, Component: LeadsList },
   { id: 'templates', label: 'Šablony úkolů', icon: Repeat, Component: TaskTemplates },
   { id: 'workflow', label: 'Workflow pravidla', icon: GitBranch, Component: OperationsWorkflow },
