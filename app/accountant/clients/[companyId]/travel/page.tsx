@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,6 +20,7 @@ import {
   Gauge,
   Fuel,
   AlertTriangle,
+  Sparkles,
 } from 'lucide-react'
 import { CollapsibleSection } from '@/components/collapsible-section'
 import { FuelGauge } from '@/components/client/travel/fuel-gauge'
@@ -36,8 +37,10 @@ const tripTypeColors: Record<TripType, string> = {
 
 export default function AccountantTravelPage() {
   const params = useParams()
+  const router = useRouter()
   const companyId = params.companyId as string
   const [loading, setLoading] = useState(true)
+  const [generatingSession, setGeneratingSession] = useState(false)
 
   const [trips, setTrips] = useState<TravelTrip[]>([])
   const [vehicles, setVehicles] = useState<TravelVehicle[]>([])
@@ -130,6 +133,51 @@ export default function AccountantTravelPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Generate button */}
+      <Card className="rounded-xl shadow-soft-sm border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/10 dark:to-indigo-900/10">
+        <CardContent className="p-4 flex items-center justify-between gap-4">
+          <div>
+            <h3 className="font-semibold text-purple-900 dark:text-purple-200 flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Generátor knihy jízd
+            </h3>
+            <p className="text-sm text-purple-700/70 dark:text-purple-300/70 mt-0.5">
+              AI vygeneruje kompletní knihu jízd z dokladů o tankování a tachometru
+            </p>
+          </div>
+          <Button
+            onClick={async () => {
+              setGeneratingSession(true)
+              try {
+                const now = new Date()
+                const periodStart = `${now.getFullYear()}-01`
+                const periodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+                const res = await fetch(`/api/accountant/companies/${companyId}/travel/generate`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ period_start: periodStart, period_end: periodEnd }),
+                })
+                if (!res.ok) {
+                  const err = await res.json()
+                  throw new Error(err.error || 'Failed')
+                }
+                const { session } = await res.json()
+                router.push(`/accountant/clients/${companyId}/travel/generate/${session.id}`)
+              } catch (err: any) {
+                toast.error(err.message || 'Nepodařilo se vytvořit session')
+              } finally {
+                setGeneratingSession(false)
+              }
+            }}
+            disabled={generatingSession}
+            className="bg-purple-600 hover:bg-purple-700 text-white shrink-0"
+          >
+            {generatingSession ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+            Generovat
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Filters + export */}
       <div className="flex flex-wrap gap-3 items-end justify-between">
