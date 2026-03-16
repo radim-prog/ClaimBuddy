@@ -26,7 +26,7 @@ const FAQ_ITEMS = [
     accent: 'text-violet-400',
     accentBg: 'bg-violet-500/10',
     q: 'Kolik firem můžu spravovat?',
-    a: 'Záleží na tarifu. Free: 5 firem a 1 uživatel. Starter (490 Kč/měs): 20 firem a 3 uživatelé. Profi (1 290 Kč/měs): 100 firem a 10 uživatelů. Business (2 990 Kč/měs): bez limitu. Firmy můžete organizovat do skupin a spravovat hromadně.',
+    a: 'Záleží na tarifu. Základ (zdarma): 10 firem a 1 uživatel. Profi (699 Kč/měs): 100 firem a 5 uživatelů. Enterprise (3 999 Kč/měs): bez limitu. Firmy můžete organizovat do skupin a spravovat hromadně.',
   },
   {
     icon: MessageCircle,
