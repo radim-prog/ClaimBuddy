@@ -354,7 +354,7 @@ export function PricingSection() {
           >
             <span
               className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                billing === 'yearly' ? 'translate-x-0.5' : 'translate-x-6'
+                billing === 'yearly' ? 'translate-x-6' : 'translate-x-0.5'
               }`}
             />
           </button>
