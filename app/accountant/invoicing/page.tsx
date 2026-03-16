@@ -40,8 +40,6 @@ import {
   CheckCheck,
   AlertTriangle,
   Users,
-  X,
-  Printer,
   ArrowRight,
   Loader2,
   Plus,

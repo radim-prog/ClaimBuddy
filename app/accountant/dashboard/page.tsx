@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+import React, { useState, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { ClosureDetailModal } from '@/components/closure-detail-modal'
 // settings context removed — no longer needed on dashboard
