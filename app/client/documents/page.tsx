@@ -26,6 +26,7 @@ import { TaxImpactSummary } from '@/components/client/tax-impact-summary'
 import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
 import { CollapsibleSection } from '@/components/collapsible-section'
 import { BankReviewSheet } from '@/components/client/bank-review-sheet'
+import { TransactionQuickUpload } from '@/components/client/transaction-quick-upload'
 import { UpsellBanner } from '@/components/client/upsell-banner'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -325,6 +326,14 @@ function BankTab() {
   const [reviewPeriod, setReviewPeriod] = useState<string | null>(null)
   const [reviewTransactions, setReviewTransactions] = useState<BankTransaction[]>([])
   const [loadingReview, setLoadingReview] = useState(false)
+  const [quickUploadTx, setQuickUploadTx] = useState<BankTransaction | null>(null)
+  const [matchSummary, setMatchSummary] = useState<{
+    total_transactions: number
+    income: { total: number; matched: number; unmatched: number }
+    expense: { total: number; matched: number; unmatched: number; private_or_deposit: number }
+    total_tax_impact: number
+    total_vat_impact: number
+  } | null>(null)
 
   useEffect(() => {
     if (companies.length === 1 && !selectedCompany) {
@@ -348,6 +357,20 @@ function BankTab() {
   }, [selectedCompany, filter])
 
   useEffect(() => { fetchTransactions() }, [fetchTransactions])
+
+  // Fetch match summary when transactions change
+  const fetchMatchSummary = useCallback(async () => {
+    if (!selectedCompany || transactions.length === 0) { setMatchSummary(null); return }
+    // Derive period from first transaction
+    const period = transactions[0]?.transaction_date?.substring(0, 7)
+    if (!period) return
+    try {
+      const res = await fetch(`/api/client/bank-transactions/match-summary?company_id=${selectedCompany}&period=${period}`)
+      if (res.ok) setMatchSummary(await res.json())
+    } catch { /* ignore */ }
+  }, [selectedCompany, transactions])
+
+  useEffect(() => { fetchMatchSummary() }, [fetchMatchSummary])
 
   const handleMatch = async (transactionId: string, documentId: string | null, invoiceId: string | null) => {
     try {
@@ -446,6 +469,11 @@ function BankTab() {
         <BankStatementUpload companyId={selectedCompany} onUploadComplete={() => fetchTransactions()} onExtracted={handleExtracted} />
       )}
 
+      {/* Match summary bar */}
+      {matchSummary && matchSummary.total_transactions > 0 && (
+        <MatchSummaryBar summary={matchSummary} />
+      )}
+
       {transactions.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
           {(['all', 'unmatched', 'matched'] as const).map(f => (
@@ -472,6 +500,7 @@ function BankTab() {
         loading={loading}
         onMatchClick={setMatchingTx}
         onCategoryChange={handleCategoryChange}
+        onQuickUpload={setQuickUploadTx}
       />
 
       {matchingTx && selectedCompany && (
@@ -480,6 +509,19 @@ function BankTab() {
           companyId={selectedCompany}
           onMatch={handleMatch}
           onClose={() => setMatchingTx(null)}
+        />
+      )}
+
+      {quickUploadTx && selectedCompany && (
+        <TransactionQuickUpload
+          transaction={quickUploadTx}
+          companyId={selectedCompany}
+          onUploaded={() => {
+            setQuickUploadTx(null)
+            fetchTransactions()
+            fetchMatchSummary()
+          }}
+          onClose={() => setQuickUploadTx(null)}
         />
       )}
 
@@ -501,5 +543,71 @@ function BankTab() {
         />
       )}
     </div>
+  )
+}
+
+// ===== MATCH SUMMARY BAR =====
+
+function MatchSummaryBar({ summary }: {
+  summary: {
+    total_transactions: number
+    income: { total: number; matched: number; unmatched: number }
+    expense: { total: number; matched: number; unmatched: number; private_or_deposit: number }
+    total_tax_impact: number
+    total_vat_impact: number
+  }
+}) {
+  const totalMatched = summary.income.matched + summary.expense.matched
+  const totalUnmatched = summary.expense.unmatched
+  const totalPrivate = summary.expense.private_or_deposit
+  const total = summary.total_transactions
+  const pctMatched = total > 0 ? Math.round((totalMatched / total) * 100) : 0
+  const pctUnmatched = total > 0 ? Math.round((totalUnmatched / total) * 100) : 0
+  const pctPrivate = total > 0 ? Math.round((totalPrivate / total) * 100) : 0
+  const allDone = totalUnmatched === 0
+
+  return (
+    <Card className={cn('rounded-2xl', allDone ? 'border-green-200 dark:border-green-900' : 'border-amber-200 dark:border-amber-800')}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium">{total} transakcí</span>
+          <span className="text-sm font-bold">
+            {allDone ? (
+              <span className="text-green-600">Vše napárováno</span>
+            ) : (
+              <span>{pctMatched}%</span>
+            )}
+          </span>
+        </div>
+        <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden flex">
+          <div className="bg-green-500 h-full transition-all" style={{ width: `${pctMatched}%` }} />
+          <div className="bg-red-500 h-full transition-all" style={{ width: `${pctUnmatched}%` }} />
+          <div className="bg-gray-300 dark:bg-gray-600 h-full transition-all" style={{ width: `${pctPrivate}%` }} />
+        </div>
+        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+            {totalMatched} spárováno
+          </span>
+          {totalUnmatched > 0 && (
+            <span className="flex items-center gap-1 text-red-600">
+              <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+              {totalUnmatched} chybí doklad
+            </span>
+          )}
+          {totalPrivate > 0 && (
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-gray-400 inline-block" />
+              {totalPrivate} soukromé
+            </span>
+          )}
+        </div>
+        {totalUnmatched > 0 && (summary.total_tax_impact > 0 || summary.total_vat_impact > 0) && (
+          <p className="text-xs text-red-600 mt-2 font-medium">
+            Dopad chybějících: {(summary.total_tax_impact + summary.total_vat_impact).toLocaleString('cs-CZ')} Kč
+          </p>
+        )}
+      </CardContent>
+    </Card>
   )
 }

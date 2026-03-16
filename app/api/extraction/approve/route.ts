@@ -70,6 +70,48 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Re-match: trigger auto-match for unmatched transactions after approval
+      if (action === 'approve') {
+        try {
+          const { autoMatchTransaction } = await import('@/lib/bank-matching')
+          const { data: unmatchedTxs } = await supabaseAdmin
+            .from('bank_transactions')
+            .select('*')
+            .eq('company_id', doc.company_id)
+            .is('matched_document_id', null)
+            .is('matched_invoice_id', null)
+            .limit(200)
+
+          if (unmatchedTxs && unmatchedTxs.length > 0) {
+            const newDoc = editedData || {}
+            const matchableDocs = [{
+              id: documentId,
+              variable_symbol: newDoc.variable_symbol || null,
+              total_with_vat: newDoc.total_with_vat || newDoc.total_amount || null,
+              date_issued: newDoc.date_issued || null,
+              supplier_name: newDoc.supplier_name || null,
+              supplier_ico: newDoc.supplier_ico || null,
+            }]
+
+            for (const tx of unmatchedTxs) {
+              const match = autoMatchTransaction(
+                { id: tx.id, amount: tx.amount, variable_symbol: tx.variable_symbol, counterparty_name: tx.counterparty_name, counterparty_account: tx.counterparty_account, transaction_date: tx.transaction_date, description: tx.description },
+                matchableDocs,
+                []
+              )
+              if (match) {
+                await supabaseAdmin
+                  .from('bank_transactions')
+                  .update({ matched_document_id: match.document_id, match_confidence: match.confidence, match_method: match.method, tax_impact: 0, vat_impact: 0, updated_at: new Date().toISOString() })
+                  .eq('id', tx.id)
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[Approve] Re-match warning:', e)
+        }
+      }
+
       return NextResponse.json({ success: true, status })
     } else if (company_id && extracted_data) {
       // Legacy format: verify company ownership before creating

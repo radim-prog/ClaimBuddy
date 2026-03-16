@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,13 @@ export async function GET(request: NextRequest) {
 
     if (!companyId) {
       return NextResponse.json({ error: 'Missing company_id' }, { status: 400 })
+    }
+
+    // IDOR check
+    const userRole = request.headers.get('x-user-role')
+    const impersonate = request.headers.get('x-impersonate-company')
+    if (!(await canAccessCompany(userId, userRole, companyId, impersonate))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Get all transactions for the year

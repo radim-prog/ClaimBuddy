@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { autoMatchTransaction, calculateTaxImpact } from '@/lib/bank-matching'
+import { upsertClosureField } from '@/lib/closure-store-db'
 
 export const dynamic = 'force-dynamic'
 
@@ -150,6 +151,41 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString(),
           })
           .eq('id', tx.id)
+      }
+    }
+
+    // Auto-advance closure for periods where all expenses are matched
+    if (matched > 0) {
+      const periods = [...new Set(transactions.map(t => t.period).filter(Boolean))]
+      for (const period of periods) {
+        // Check unmatched expenses (excluding private/deposit)
+        const { count: unmatchedExpenses } = await supabaseAdmin
+          .from('bank_transactions')
+          .select('id', { count: 'exact', head: true })
+          .eq('company_id', company_id)
+          .eq('period', period)
+          .lt('amount', 0)
+          .is('matched_document_id', null)
+          .is('matched_dohoda_mesic_id', null)
+          .not('category', 'in', '("private_transfer","owner_deposit","loan_repayment","internal_transfer")')
+
+        if ((unmatchedExpenses || 0) === 0) {
+          await upsertClosureField(company_id, period!, 'expense_documents_status', 'approved', userId!)
+        }
+
+        // Check unmatched income
+        const { count: unmatchedIncome } = await supabaseAdmin
+          .from('bank_transactions')
+          .select('id', { count: 'exact', head: true })
+          .eq('company_id', company_id)
+          .eq('period', period)
+          .gt('amount', 0)
+          .is('matched_invoice_id', null)
+          .not('category', 'in', '("other_taxable","private_transfer","owner_deposit","internal_transfer")')
+
+        if ((unmatchedIncome || 0) === 0) {
+          await upsertClosureField(company_id, period!, 'income_invoices_status', 'approved', userId!)
+        }
       }
     }
 

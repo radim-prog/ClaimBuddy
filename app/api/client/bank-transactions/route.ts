@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     if (matched === 'true') {
       query = query.not('matched_document_id', 'is', null)
     } else if (matched === 'false') {
-      query = query.is('matched_document_id', null).is('matched_invoice_id', null)
+      query = query.is('matched_document_id', null).is('matched_invoice_id', null).is('matched_dohoda_mesic_id', null)
     }
 
     const { data, error } = await query.limit(500)

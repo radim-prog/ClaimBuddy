@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { canAccessCompany } from '@/lib/access-check'
 import { upsertClosureField } from '@/lib/closure-store-db'
+import { autoMatchTransaction, calculateTaxImpact } from '@/lib/bank-matching'
 
 export const dynamic = 'force-dynamic'
 
@@ -114,14 +115,107 @@ export async function POST(request: NextRequest) {
     // 4. Advance closure — bank_statement_status → 'approved'
     await upsertClosureField(company_id, period, 'bank_statement_status', 'approved', userId)
 
-    // 5. Check if all expenses are matched → advance expense_documents_status
-    const unmatchedExpenses = transactions.filter(
-      tx => tx.amount < 0
-        && !tx.matched_document_id
-        && !NON_TAXABLE_CATEGORIES.includes(tx.category || '')
-    ).length
+    // 5. Inline auto-match for this period's unmatched transactions
+    const { data: unmatchedTxs } = await supabaseAdmin
+      .from('bank_transactions')
+      .select('*')
+      .eq('company_id', company_id)
+      .eq('period', period)
+      .is('matched_document_id', null)
+      .is('matched_invoice_id', null)
+      .limit(500)
 
-    if (unmatchedExpenses === 0) {
+    let matchedCount = 0
+    if (unmatchedTxs && unmatchedTxs.length > 0) {
+      const { data: company } = await supabaseAdmin
+        .from('companies')
+        .select('legal_form, vat_payer')
+        .eq('id', company_id)
+        .single()
+
+      const [{ data: docs }, { data: invs }] = await Promise.all([
+        supabaseAdmin
+          .from('documents')
+          .select('id, ocr_data, supplier_name, supplier_ico')
+          .eq('company_id', company_id)
+          .neq('type', 'bank_statement')
+          .is('deleted_at', null)
+          .limit(500),
+        supabaseAdmin
+          .from('invoices')
+          .select('id, variable_symbol, total_with_vat, issue_date, partner')
+          .eq('company_id', company_id)
+          .is('deleted_at', null)
+          .limit(500),
+      ])
+
+      const matchableDocs = (docs || []).map(d => ({
+        id: d.id,
+        variable_symbol: d.ocr_data?.variable_symbol || null,
+        total_with_vat: d.ocr_data?.total_amount || d.ocr_data?.total_with_vat || null,
+        date_issued: d.ocr_data?.date_issued || null,
+        supplier_name: d.supplier_name || d.ocr_data?.supplier_name || null,
+        supplier_ico: d.supplier_ico || d.ocr_data?.supplier_ico || null,
+      }))
+
+      const matchableInvs = (invs || []).map(i => ({
+        id: i.id,
+        variable_symbol: i.variable_symbol,
+        total_with_vat: i.total_with_vat,
+        issue_date: i.issue_date,
+        partner: i.partner,
+      }))
+
+      for (const tx of unmatchedTxs) {
+        const match = autoMatchTransaction(
+          {
+            id: tx.id,
+            amount: tx.amount,
+            variable_symbol: tx.variable_symbol,
+            counterparty_name: tx.counterparty_name,
+            counterparty_account: tx.counterparty_account,
+            transaction_date: tx.transaction_date,
+            description: tx.description,
+          },
+          matchableDocs,
+          matchableInvs
+        )
+
+        if (match) {
+          await supabaseAdmin
+            .from('bank_transactions')
+            .update({
+              matched_document_id: match.document_id || null,
+              matched_invoice_id: match.invoice_id || null,
+              match_confidence: match.confidence,
+              match_method: match.method,
+              tax_impact: 0,
+              vat_impact: 0,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', tx.id)
+          matchedCount++
+        } else if (tx.amount < 0 && company) {
+          const impact = calculateTaxImpact(tx.amount, company.legal_form, company.vat_payer)
+          await supabaseAdmin
+            .from('bank_transactions')
+            .update({ tax_impact: impact.tax, vat_impact: impact.vat, updated_at: new Date().toISOString() })
+            .eq('id', tx.id)
+        }
+      }
+    }
+
+    // 6. Re-check unmatched expenses after auto-match
+    const { count: unmatchedExpenses } = await supabaseAdmin
+      .from('bank_transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', company_id)
+      .eq('period', period)
+      .lt('amount', 0)
+      .is('matched_document_id', null)
+      .not('category', 'in', '("private_transfer","owner_deposit","loan_repayment","internal_transfer")')
+
+    if ((unmatchedExpenses || 0) === 0) {
       await upsertClosureField(company_id, period, 'expense_documents_status', 'approved', userId)
     }
 
@@ -131,7 +225,8 @@ export async function POST(request: NextRequest) {
       transaction_count: transactions.length,
       revenue: Math.round(revenue * 100) / 100,
       expenses: Math.round(expenses * 100) / 100,
-      unmatched_expenses: unmatchedExpenses,
+      unmatched_expenses: unmatchedExpenses || 0,
+      matching: { total: unmatchedTxs?.length || 0, matched: matchedCount, unmatched: (unmatchedTxs?.length || 0) - matchedCount },
     })
   } catch (error) {
     console.error('Bank statement confirm error:', error)
