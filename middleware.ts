@@ -163,12 +163,19 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Landing pages (/ and /ucetni): logged-in users → redirect to dashboard
+  // Landing pages (/ and /ucetni and /claims): logged-in users → redirect to dashboard
   if (PUBLIC_EXACT.includes(pathname)) {
     const token = request.cookies.get(COOKIE_NAME)?.value
     if (token) {
       const user = await verifyToken(token)
       if (user) {
+        if (pathname === '/claims') {
+          // Claims landing: logged-in staff → claims dashboard
+          const modules = user.modules || ['accounting']
+          if (modules.includes('claims') && user.role !== 'client') {
+            return NextResponse.redirect(new URL('/claims/dashboard', request.url))
+          }
+        }
         const dest = user.role === 'client' ? '/client/dashboard' : '/accountant/dashboard'
         return NextResponse.redirect(new URL(dest, request.url))
       }
