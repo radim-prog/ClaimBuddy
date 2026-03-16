@@ -52,6 +52,17 @@ export default function ClaimsLayout({
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname() ?? ''
+  // Public paths that should NOT render the authenticated sidebar layout
+  const publicPaths = ['/claims/new', '/claims/landing']
+  const publicExact = ['/claims']
+  const isPublicPage = publicPaths.some(p => pathname.startsWith(p)) || publicExact.includes(pathname)
+
+  // Public pages render without sidebar/auth chrome
+  if (isPublicPage) {
+    return <>{children}</>
+  }
+
   return (
     <TooltipProvider delayDuration={0}>
       <ClaimsLayoutInner>{children}</ClaimsLayoutInner>

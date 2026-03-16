@@ -3,8 +3,9 @@ const nextConfig = {
   images: {
     domains: ['lh3.googleusercontent.com'], // Google avatary
   },
-  // Pro Railway deployment
-  output: 'standalone',
+  // Standalone disabled — Next.js 14.1.0 build trace bugs with Node 22
+  // Use `next start` deployment instead
+  // output: 'standalone',
   typescript: {
     // Pre-existing type errors from Next.js 14 nullable hooks (useParams, usePathname, useSearchParams)
     // These are safe — hooks always return values inside their route segments
