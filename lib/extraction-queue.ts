@@ -57,6 +57,28 @@ class ExtractionQueueManager {
 
   constructor() {
     this.startCleanup()
+    this.resetStuckDocuments()
+  }
+
+  /** Reset documents stuck in 'extracting' status (e.g. after server restart) */
+  private async resetStuckDocuments() {
+    try {
+      const { supabaseAdmin } = await import('@/lib/supabase-admin')
+      const { data: stuck } = await supabaseAdmin
+        .from('documents')
+        .select('id')
+        .eq('status', 'extracting')
+        .eq('ocr_status', 'processing')
+
+      if (stuck && stuck.length > 0) {
+        const ids = stuck.map(d => d.id)
+        await supabaseAdmin
+          .from('documents')
+          .update({ status: 'uploaded', ocr_status: 'pending', updated_at: new Date().toISOString() })
+          .in('id', ids)
+        console.log(`[ExtractionQueue] Reset ${ids.length} stuck document(s) on startup`)
+      }
+    } catch { /* ignore — DB might not be ready yet */ }
   }
 
   /**

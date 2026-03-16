@@ -117,7 +117,7 @@ Rules:
 5. VAT rate: "none" (0%), "low" (12%), "high" (21%)
 6. Estimate confidence_score 0-100 based on data quality`
 
-const VERIFICATION_PROMPT = `You are a Czech accounting document verifier. You receive extracted data and the original document text.
+const VERIFICATION_PROMPT = `You are a Czech accounting document verifier. You receive extracted data and the original document text (and optionally the document image).
 
 Your task is to REVERSE VERIFY each field against the original document:
 
@@ -129,6 +129,12 @@ Your task is to REVERSE VERIFY each field against the original document:
 6. total_without_vat, total_vat, total_with_vat — Verify amounts and math.
 7. items — Verify each item.
 8. If a field is null/empty, try to FIND it in the document.
+9. CRITICAL: If supplier.name is null/empty, this is a HIGH PRIORITY issue.
+   Look carefully at the document header, letterhead, logo area, and footer for the company name.
+   Common locations: top of page, stamp area, signature block, "Dodavatel:" label.
+   If you receive the document image, examine it visually for any text the OCR may have missed.
+10. If any critical field (document_number, supplier.name, total_with_vat) is null,
+    search the ENTIRE document thoroughly before giving up.
 
 Return ONLY valid JSON (no markdown fences):
 {
@@ -277,7 +283,7 @@ export class AIExtractor {
     console.log(`[AIExtractor] Round 3: Reverse verification`)
     onProgress?.('ai_verification')
 
-    const { invoice: verifiedInvoice, corrections } = await this.aiVerify(ocrResult.text, round2Invoice)
+    const { invoice: verifiedInvoice, corrections } = await this.aiVerify(ocrResult.text, round2Invoice, buffer, mimeType)
     allCorrections.push(...corrections)
 
     roundResults.push({
@@ -356,13 +362,41 @@ export class AIExtractor {
 
   /**
    * Round 3: AI reverse verification
+   * When critical fields are missing and buffer is available, uses vision (multimodal) for enhanced verification
    */
   private async aiVerify(
     ocrText: string,
     invoice: ExtractedInvoice,
+    buffer?: Buffer,
+    mimeType?: string,
   ): Promise<{ invoice: ExtractedInvoice; corrections: CorrectionRecord[] }> {
     const now = new Date().toISOString()
     const corrections: CorrectionRecord[] = []
+
+    // Detect missing critical fields
+    const hasMissingCritical = !invoice.supplier?.name || !invoice.document_number || !invoice.total_with_vat
+
+    // Use vision only for image types when critical fields are missing (PDF stays text-only)
+    const canUseVision = hasMissingCritical && buffer && mimeType && mimeType.startsWith('image/')
+
+    console.log(`[AIExtractor] Round 3: ${canUseVision ? 'VISION-ENHANCED' : 'text-only'} verification${hasMissingCritical ? ' (missing critical fields)' : ''}`)
+
+    let userContent: string | Array<{ type: string; image_url?: { url: string }; text?: string }>
+    if (canUseVision) {
+      const base64 = buffer.toString('base64')
+      userContent = [
+        {
+          type: 'image_url',
+          image_url: { url: `data:${mimeType};base64,${base64}` },
+        },
+        {
+          type: 'text',
+          text: `ORIGINAL DOCUMENT TEXT:\n---\n${ocrText}\n---\n\nEXTRACTED DATA:\n${JSON.stringify(invoice, null, 2)}\n\nIMPORTANT: Some critical fields are MISSING (null). Look at the document image carefully to find them. Verify each field against the document.`,
+        },
+      ]
+    } else {
+      userContent = `ORIGINAL DOCUMENT:\n---\n${ocrText}\n---\n\nEXTRACTED DATA:\n${JSON.stringify(invoice, null, 2)}\n\nVerify each field against the document.`
+    }
 
     try {
       const response = await this.client.chat.completions.create({
@@ -373,7 +407,7 @@ export class AIExtractor {
           { role: 'system', content: VERIFICATION_PROMPT },
           {
             role: 'user',
-            content: `ORIGINAL DOCUMENT:\n---\n${ocrText}\n---\n\nEXTRACTED DATA:\n${JSON.stringify(invoice, null, 2)}\n\nVerify each field against the document.`
+            content: userContent as any,
           },
         ],
       })
@@ -434,6 +468,11 @@ export class AIExtractor {
         corrections,
       }
     } catch (error) {
+      // If vision-enhanced verification failed, retry with text-only
+      if (canUseVision) {
+        console.warn('[AIExtractor] Vision verification failed, falling back to text-only:', error)
+        return this.aiVerify(ocrText, invoice) // retry without buffer/mimeType
+      }
       console.error('[AIExtractor] Verification error:', error)
       return { invoice, corrections: [] }
     }
