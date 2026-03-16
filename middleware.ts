@@ -9,7 +9,7 @@ if (!AUTH_SECRET) {
 }
 
 const PUBLIC_EXACT = ['/', '/ucetni']  // Exact match only (startsWith '/' would match everything)
-const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-sent', '/api/auth/verify', '/pricing', '/marketplace', '/legal', '/pro-ucetni', '/pro-podnikatele', '/api/leads', '/api/marketplace', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/setup/first-admin', '/api/cron/drive-sync', '/api/cron/trial-expiry', '/api/cron/credits-reset', '/api/cron/fetch-emails', '/api/cron/fetch-document-emails', '/api/cron/lead-emails', '/api/cron/purge-trash', '/api/cron/sync-ecomail-contacts', '/api/cron/raynet-sync', '/api/cron/health-scores', '/api/cron/generate-notifications', '/api/cron/notion-sync', '/api/cron/reminders', '/api/cron/billing', '/api/signing/webhook']
+const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-sent', '/api/auth/verify', '/pricing', '/marketplace', '/legal', '/pro-ucetni', '/pro-podnikatele', '/api/leads', '/api/marketplace', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/setup/first-admin', '/api/cron/drive-sync', '/api/cron/trial-expiry', '/api/cron/credits-reset', '/api/cron/fetch-emails', '/api/cron/fetch-document-emails', '/api/cron/lead-emails', '/api/cron/purge-trash', '/api/cron/sync-ecomail-contacts', '/api/cron/raynet-sync', '/api/cron/health-scores', '/api/cron/generate-notifications', '/api/cron/notion-sync', '/api/cron/reminders', '/api/cron/billing', '/api/cron/snapshots', '/api/signing/webhook']
 const STATIC_PREFIXES = ['/_next', '/static', '/favicon.ico']
 
 // --- Rate Limiting (in-memory, sliding window) ---
@@ -202,7 +202,7 @@ export async function middleware(request: NextRequest) {
 
   // Role-based access control
   if (pathname.startsWith('/accountant') || pathname.startsWith('/api/accountant')) {
-    if (user.role !== 'accountant' && user.role !== 'admin' && user.role !== 'assistant') {
+    if (user.role !== 'accountant' && user.role !== 'admin' && user.role !== 'assistant' && user.role !== 'junior' && user.role !== 'senior') {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
@@ -211,7 +211,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const rawImpersonate = request.cookies.get('impersonate_company')?.value
-  const isStaffRole = ['accountant', 'admin', 'assistant'].includes(user.role)
+  const isStaffRole = ['junior', 'senior', 'accountant', 'admin', 'assistant'].includes(user.role)
   let impersonateCompany: string | undefined
   if (rawImpersonate && isStaffRole) {
     impersonateCompany = await verifySignedCookie(rawImpersonate) || undefined

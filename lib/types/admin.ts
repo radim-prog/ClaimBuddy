@@ -11,7 +11,7 @@
 // TEAM HIERARCHY
 // ============================================
 
-export type UserRole = 'admin' | 'manager' | 'accountant' | 'client'
+export type UserRole = 'admin' | 'manager' | 'senior' | 'accountant' | 'junior' | 'client'
 
 export interface TeamMember {
   id: string

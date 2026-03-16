@@ -20,7 +20,7 @@ const COOKIE_NAME = 'auth_token'
 // TYPES
 // ============================================
 
-export type UserRole = 'client' | 'accountant' | 'admin' | 'assistant'
+export type UserRole = 'client' | 'junior' | 'senior' | 'accountant' | 'admin' | 'assistant'
 
 export interface AuthUser {
   id: string
@@ -147,7 +147,8 @@ export async function authenticate(
 }
 
 export function getRedirectPath(role: UserRole): string {
-  return role === 'client' ? '/client/dashboard' : '/accountant/dashboard'
+  if (role === 'client') return '/client/dashboard'
+  return '/accountant/dashboard'
 }
 
 export { COOKIE_NAME, TOKEN_MAX_AGE }
