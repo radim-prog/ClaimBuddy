@@ -23,6 +23,7 @@ import {
   MessageCircle,
   ScanLine,
   Send,
+  Inbox,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -49,11 +50,12 @@ import { AttentionProvider, useAttention } from '@/lib/contexts/attention-contex
 import { QuickCaptureButton } from '@/components/quick-capture'
 import { useInboxCount } from '@/components/gtd/use-inbox-count'
 import { useUnreadMessages } from '@/hooks/use-unread-messages'
+import { useDocumentInboxCount } from '@/hooks/use-document-inbox-count'
 import { KeyboardShortcuts } from '@/components/keyboard-shortcuts'
 import { WelcomeModal } from '@/components/accountant/welcome-modal'
 import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
 import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-context'
-import { BookOpen, Lock } from 'lucide-react'
+import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 
@@ -61,11 +63,13 @@ const navigation = [
   { name: 'Přehled', href: '/accountant/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
   { name: 'Klienti', href: '/accountant/clients', icon: Users, badge: 'attention' as const, tourId: 'nav-clients' },
   { name: 'Komunikace', href: '/accountant/komunikace', icon: MessageCircle, badge: 'messages' as const, feature: 'messages' },
+  { name: 'Inbox', href: '/accountant/inbox', icon: Inbox, badge: 'inbox' as const, activeMatch: ['/accountant/inbox'] },
   { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'] },
   { name: 'Vytěžování', href: '/accountant/extraction', icon: ScanLine, activeMatch: ['/accountant/extraction'], feature: 'extraction' },
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
   { name: 'Připomínky', href: '/accountant/reminders', icon: Send, activeMatch: ['/accountant/reminders'] },
   { name: 'Znalostní báze', href: '/accountant/knowledge-base', icon: BookOpen, activeMatch: ['/accountant/knowledge-base'] },
+  { name: 'Marketplace', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'] },
 ]
 
 const adminNavigation = [
@@ -106,6 +110,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const inboxCount = useInboxCount()
   const { totals: attentionTotals } = useAttention()
   const { needsResponseCount } = useUnreadMessages()
+  const documentInboxCount = useDocumentInboxCount()
   const { isLocked } = usePlanFeatures()
   // Attention for Klienti badge: exclude unread_messages (shown on Komunikace instead)
   const clientsAttentionCount = attentionTotals.total - attentionTotals.unread_messages
@@ -217,6 +222,11 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                           {needsResponseCount}
                         </span>
                       )}
+                      {collapsed && item.badge === 'inbox' && documentInboxCount > 0 && (
+                        <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-amber-400 text-gray-900 rounded-full">
+                          {documentInboxCount}
+                        </span>
+                      )}
                     </span>
                     {!collapsed && (
                       <span className="flex items-center gap-1.5">
@@ -235,6 +245,11 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                             {needsResponseCount}
                           </span>
                         )}
+                        {item.badge === 'inbox' && documentInboxCount > 0 && (
+                          <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-amber-400 text-gray-900 rounded-full min-w-[1.25rem]">
+                            {documentInboxCount}
+                          </span>
+                        )}
                         {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
                       </span>
                     )}
@@ -250,6 +265,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                         {item.badge === 'dynamic' && inboxCount > 0 && ` (${inboxCount})`}
                         {item.badge === 'attention' && clientsAttentionCount > 0 && ` (${clientsAttentionCount})`}
                         {item.badge === 'messages' && needsResponseCount > 0 && ` (${needsResponseCount})`}
+                        {item.badge === 'inbox' && documentInboxCount > 0 && ` (${documentInboxCount})`}
                       </TooltipContent>
                     </Tooltip>
                   )
@@ -497,6 +513,11 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                   {item.badge === 'messages' && needsResponseCount > 0 && (
                     <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">
                       {needsResponseCount}
+                    </span>
+                  )}
+                  {item.badge === 'inbox' && documentInboxCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-amber-400 text-gray-900 rounded-full">
+                      {documentInboxCount}
                     </span>
                   )}
                 </div>
