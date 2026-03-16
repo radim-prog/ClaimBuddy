@@ -39,23 +39,32 @@
 - 5 crashujících stránek opraveno (travel, taxes, dohodari, profile, extraction)
 - Attention bar UX (confirmation dialogy, kompaktní, kontextové)
 - Dashboard (peníze skryté, filtry, přejmenování)
-- GTD inbox (nový tab s kartami)
-- Extraction spinner (race condition fix)
+- GTD inbox opraveno (nový tab s kartami)
+- Extraction spinner opraveno (race condition fix)
 - Termíny (8→31 šablon zákonných termínů)
 - Dark mode klientský portál
 - Onboarding wizard (7→14 kroků)
 - Zod validace na klíčových routes
+- Fakturace B2B opraveno (fixer)
+- Admin → Lidé tab opraveno (fixer)
+- Admin Koš 500 error opraveno (fixer)
+- 41 security fixů (role guards na 14 API routes, IDOR fixy, input validation, FK cascade)
+- Inbox UX redesign (grouping po klientech, time tracking integration)
+- Simplify pass (-147 LOC dead code, -30 console.log, -14 unused imports)
+- Multi-tenant správa (accounting_firms tabulka, admin panel)
+- Sidebar zjednodušení (probíhá)
+- Složky — předdefinovaná struktura šablon (probíhá)
 
 ---
 
 ## ❌ NEFUNGUJE / POTŘEBUJE OPRAVU
 
 1. **Emaily se neposílají** — chybí ECOMAIL_API_KEY (KRITICKÉ pro registraci, reset hesla, notifikace)
-2. **Fakturace B2B** — "Chyba při načítání dat" (oprava probíhá)
-3. **Admin → Lidé tab** — chyba (oprava probíhá)
+2. ~~**Fakturace B2B**~~ → ✅ OPRAVENO (fixer)
+3. ~~**Admin → Lidé tab**~~ → ✅ OPRAVENO (fixer)
 4. **Master matice záložky Platby/DPH/Daň** — kód OK ale runtime problém (data?)
 5. **Klientský pohled** — 500 error (pravděpodobně build issue, potřeba rebuild+deploy)
-6. **Soubory/složky** — nelze vytvořit složku, chybí předdefinovaná struktura
+6. **Soubory/složky** — předdefinovaná struktura šablon probíhá
 
 ---
 
@@ -104,9 +113,9 @@
 - [ ] Znalostní báze — 72 článků, kategorie, obsah
 - [ ] Marketplace — registrace, katalog
 - [ ] Revenue — přehled příjmů
-- [ ] Fakturace B2B
+- [ ] Fakturace B2B (opraveno — ověřit)
 - [ ] Billing — správa klientů
-- [ ] Administrace — přehled, lidé, koš
+- [ ] Administrace — přehled, lidé (opraveno), koš (opraveno)
 - [ ] Podepisování (BETA)
 
 ### Klientský portál:
