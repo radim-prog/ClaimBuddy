@@ -248,8 +248,7 @@ function handleUnauthenticated(request: NextRequest, pathname: string): NextResp
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   // All unauthenticated users → landing page (/ has login CTA)
-  const dest = '/'
-  return NextResponse.redirect(new URL(dest, request.url))
+  return NextResponse.redirect(new URL('/', request.url))
 }
 
 export const config = {

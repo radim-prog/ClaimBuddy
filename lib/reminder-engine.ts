@@ -92,7 +92,6 @@ export function generateDeliverySlots(
 ): Date[] {
   const slots: Date[] = []
   const hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-  const weekdays = [1, 2, 3, 4, 5] // Mon-Fri
 
   // Deterministic but varied: spread slots across cycle
   const intervalMs = (cycleDays * 24 * 60 * 60 * 1000) / count

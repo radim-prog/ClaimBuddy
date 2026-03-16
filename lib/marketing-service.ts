@@ -2,7 +2,7 @@
 // Handles segmentation, automation triggers, GDPR consent
 
 import {
-  subscribe, unsubscribe, updateSubscriber, addTags, removeTags,
+  unsubscribe, updateSubscriber,
   triggerAutomation, getLists, getCampaigns, getCampaignStats, getAutomations,
 } from './ecomail-client'
 import { supabaseAdmin } from './supabase-admin'

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Bell, Mail, Clock, Banknote, FileText, AlertTriangle, Smartphone, MessageCircle } from 'lucide-react'
+import { Bell, Mail, Clock, Banknote, FileText, AlertTriangle, Smartphone } from 'lucide-react'
 
 interface NotificationPreferences {
   channels: { in_app: boolean; email: boolean; sms: boolean; whatsapp: boolean }

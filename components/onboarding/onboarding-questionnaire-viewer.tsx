@@ -23,12 +23,18 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   reviewed: { label: 'Zkontrolováno', color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300', icon: CheckCircle2 },
 }
 
+interface QuestionnaireRecord {
+  id: string
+  status: 'draft' | 'sent' | 'in_progress' | 'completed' | 'reviewed'
+  responses: OnboardingResponses
+}
+
 interface OnboardingQuestionnaireViewerProps {
   companyId: string
 }
 
 export function OnboardingQuestionnaireViewer({ companyId }: OnboardingQuestionnaireViewerProps) {
-  const [questionnaire, setQuestionnaire] = useState<any>(null)
+  const [questionnaire, setQuestionnaire] = useState<QuestionnaireRecord | null>(null)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [reviewing, setReviewing] = useState(false)
