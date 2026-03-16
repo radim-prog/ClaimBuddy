@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { updateClosureStatus } from '@/lib/closure-store-db'
 import { addActivity } from '@/lib/activity-store-db'
+import { resolveReminder } from '@/lib/reminder-engine'
 
 // Supabase-backed upload store
 // Replaces lib/upload-store.ts (in-memory globalThis singleton)
@@ -80,6 +81,25 @@ export async function addUpload(data: Omit<UploadRecord, 'id' | 'uploaded_at'>):
     })
   } catch (e) {
     console.warn('Failed to add activity:', e)
+  }
+
+  // Auto-resolve active missing_docs reminders for this company+period
+  try {
+    const { data: activeReminders } = await supabaseAdmin
+      .from('reminders')
+      .select('id, metadata')
+      .eq('company_id', data.company_id)
+      .eq('type', 'missing_docs')
+      .eq('status', 'active')
+
+    for (const reminder of activeReminders || []) {
+      const reminderPeriod = (reminder.metadata as Record<string, unknown>)?.period
+      if (!reminderPeriod || reminderPeriod === data.period) {
+        await resolveReminder(reminder.id)
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to auto-resolve reminders:', e)
   }
 
   return {

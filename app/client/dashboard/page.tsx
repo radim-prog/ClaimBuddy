@@ -14,6 +14,7 @@ import {
   Car,
   Receipt,
   FileSignature,
+  Bell,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -297,6 +298,9 @@ export default function ClientDashboard() {
           </Card>
         )}
 
+        {/* Reminders Widget */}
+        <RemindersWidget />
+
         {/* Dohodari Widget */}
         <DohodariWidget />
 
@@ -452,6 +456,45 @@ export default function ClientDashboard() {
         </>
       )}
     </>
+  )
+}
+
+function RemindersWidget() {
+  const [reminders, setReminders] = useState<Array<{ id: string; type: string; message: string; escalation_level: number; created_at: string }>>([])
+
+  useEffect(() => {
+    fetch('/api/client/reminders?status=active&limit=5')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.reminders) setReminders(d.reminders) })
+      .catch(() => {})
+  }, [])
+
+  if (reminders.length === 0) return null
+
+  const latest = reminders[0]
+  const isUrgent = latest.escalation_level >= 3
+
+  return (
+    <Card className={`rounded-2xl card-hover ${isUrgent ? 'border-red-200 dark:border-red-800' : 'border-orange-200 dark:border-orange-800'}`}>
+      <CardContent className="py-4 px-5">
+        <Link href="/client/reminders" className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-full ${isUrgent ? 'bg-red-100 dark:bg-red-900/50' : 'bg-orange-100 dark:bg-orange-900/50'}`}>
+              <Bell className={`h-5 w-5 ${isUrgent ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'}`} />
+            </div>
+            <div>
+              <p className="font-semibold text-sm text-gray-900 dark:text-white">
+                Vaše připomínky
+              </p>
+              <p className="text-xs text-muted-foreground line-clamp-1">
+                {reminders.length} {reminders.length === 1 ? 'aktivní' : reminders.length < 5 ? 'aktivní' : 'aktivních'} &middot; {latest.message.slice(0, 60)}{latest.message.length > 60 ? '...' : ''}
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+        </Link>
+      </CardContent>
+    </Card>
   )
 }
 
