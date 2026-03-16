@@ -11,6 +11,8 @@ import {
   Link2,
   Calculator,
   Sparkles,
+  Mail,
+  Store,
 } from 'lucide-react'
 import { CollapsibleSection } from '@/components/collapsible-section'
 import { TaskTemplates } from '@/components/admin/task-templates'
@@ -21,9 +23,12 @@ import { PricingSettings } from '@/components/admin/pricing-settings'
 import { CompanyDriveMapper } from '@/components/drive/company-drive-mapper'
 import { CompanyRaynetMapper } from '@/components/raynet/company-raynet-mapper'
 import { OperationsTaxRates } from '@/components/admin/operations-tax-rates'
+import { OperationsMarketing } from '@/components/admin/operations-marketing'
 import { LeadsList } from '@/components/admin/leads-list'
+import { MarketplaceProviders } from '@/components/admin/marketplace-providers'
 
 const sections = [
+  { id: 'marketplace', label: 'Marketplace — registrace', icon: Store, Component: MarketplaceProviders },
   { id: 'leads', label: 'Leady — Chci účetní', icon: Sparkles, Component: LeadsList },
   { id: 'templates', label: 'Šablony úkolů', icon: Repeat, Component: TaskTemplates },
   { id: 'workflow', label: 'Workflow pravidla', icon: GitBranch, Component: OperationsWorkflow },
@@ -33,6 +38,7 @@ const sections = [
   { id: 'drive', label: 'Google Drive', icon: HardDrive, Component: CompanyDriveMapper },
   { id: 'raynet', label: 'Raynet CRM', icon: Link2, Component: CompanyRaynetMapper },
   { id: 'tax-rates', label: 'Daňové sazby', icon: Calculator, Component: OperationsTaxRates },
+  { id: 'marketing', label: 'Email Marketing (Ecomail)', icon: Mail, Component: OperationsMarketing },
 ] as const
 
 export default function OperationsPage() {
