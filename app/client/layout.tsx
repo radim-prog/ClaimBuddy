@@ -212,12 +212,35 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Theme Toggle */}
-          <div className={`relative px-3 pb-2 ${collapsed ? 'flex justify-center' : ''}`}>
-            <ThemeToggle
-              variant={collapsed ? 'icon' : 'full'}
-              className="text-white/40 hover:text-white/70 hover:bg-white/[0.05] rounded-xl"
-            />
+          {/* Tools - Průvodce & Tmavý režim */}
+          <div className="relative flex-shrink-0 border-t border-white/[0.06] px-3 py-3 space-y-0.5">
+            {collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => startTour()}
+                    className="w-full group flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200"
+                  >
+                    <BookOpen className="h-[18px] w-[18px] flex-shrink-0" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="font-medium">Průvodce</TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={() => startTour()}
+                className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200"
+              >
+                <BookOpen className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
+                Průvodce
+              </button>
+            )}
+            <div className={`${collapsed ? 'flex justify-center' : ''}`}>
+              <ThemeToggle
+                variant={collapsed ? 'icon' : 'full'}
+                className="text-white/40 hover:text-white/70 hover:bg-white/[0.05] rounded-xl"
+              />
+            </div>
           </div>
 
           {/* User section */}
