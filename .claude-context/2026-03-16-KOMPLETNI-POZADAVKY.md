@@ -41,12 +41,12 @@
 
 ## Funkce
 
-- ✅ BOD-024: Měsíční uzávěrky — lib/bank-matching.ts + lib/tax-impact.ts + API /bank-transactions/ s tax-impact-detail
-- ✅ BOD-025: Měsíční uzávěrky — automatické párování (bank-matching.ts, 3 strategie: VS, částka, datum)
-- ✅ BOD-026: Měsíční uzávěrky — chybějící doklady sledovány (tax-impact.ts + missing-docs-reminder.ts)
-- ✅ BOD-027: Měsíční uzávěrky — daňový dopad chybějícího dokladu (lib/tax-impact.ts)
-- ⚠️ BOD-028: Měsíční uzávěrky — kumulativní graf daně přes rok — lib/tax-impact.ts existuje, client UI grafu neověřeno
-- ✅ BOD-029: Měsíční uzávěrky — eskalační notifikace (lib/missing-docs-reminder.ts)
+- ✅ BOD-024: Měsíční uzávěrky — lib/bank-matching.ts 283 řádků, 3 matching strategie (VS 95%, částka+datum 70%, fuzzy 40%)
+- ✅ BOD-025: Měsíční uzávěrky — automatické párování (bank-matching.ts, reálný kód, není stub)
+- ✅ BOD-026: Měsíční uzávěrky — chybějící doklady sledovány (tax-impact.ts 236 řádků + missing-docs-reminder.ts 151 řádků)
+- ✅ BOD-027: Měsíční uzávěrky — daňový dopad: reálný výpočet DzP+SP+ZP+DPH, sazby 2025 (SRO 21%, OSVČ 15%)
+- ⚠️ BOD-028: Měsíční uzávěrky — YearlyTaxImpact type v tax-impact.ts, client UI kumulativního grafu ověřit
+- ✅ BOD-029: Měsíční uzávěrky — eskalační notifikace (missing-docs-reminder.ts, standard/aggressive/gentle/off preset)
 - ⚠️ BOD-030: Měsíční uzávěrky — OSVČ soukromé transakce — bank-review-sheet.tsx (client) existuje, označování ověřit
 - ⚠️ BOD-031: Měsíční uzávěrky — SRO speciální transakce (vklad, příplatek) — bank-review-sheet.tsx, typy transakcí ověřit
 - ⚠️ BOD-032: Měsíční uzávěrky — manuální kontrola výsledků — bank-review-sheet.tsx existuje, plná funkce ověřit
@@ -54,8 +54,8 @@
 - ⚠️ BOD-034: Daňový dotazník — napojení na modul daňového přiznání — API existuje, datový tok ověřit
 - ⚠️ BOD-035: Daňový dotazník — upload dokumentu ke každé otázce — questionnaire existuje, per-question upload ověřit
 - ✅ BOD-036: Randomizér — detect-fuel-docs route extrahuje tankování z dokladů
-- ✅ BOD-037: Randomizér — lib/travel-randomizer.ts generuje cesty (AI, OSRM)
-- ⚠️ BOD-038: Randomizér — pouze Opus 4.6 — travel-randomizer.ts existuje, model selection ověřit
+- ✅ BOD-037: Randomizér — lib/travel-randomizer.ts 309 řádků, reálné Anthropic Claude API (není stub)
+- ⚠️ BOD-038: Randomizér — MODEL='claude-sonnet-4-6' použit v crisis, travel-randomizer model ověřit (má být Opus)
 - ❌ BOD-039: Termíny — SP zálohy OSVČ měsíční — CHYBÍ v statutory-deadlines.ts (jen roční přehledy)
 - ❌ BOD-040: Termíny — ZP zálohy OSVČ měsíční — CHYBÍ v statutory-deadlines.ts (jen roční přehledy)
 - ⚠️ BOD-041: Termíny — DPH: přiznání měsíční/čtvrtletní ✅, ale kontrolní hlášení a souhrnné hlášení CHYBÍ
@@ -67,10 +67,10 @@
 - ❌ BOD-047: Snapshots/zálohy per firma — neimplementováno (žádný snapshot lib)
 - ❌ BOD-048: Snapshots/zálohy — obnovení z admin panelu — neimplementováno
 - ✅ BOD-049: GTD clarify flow — tasks/clarify/page.tsx + handleInboxAction('task'|'project'|'delete') v work/page.tsx
-- ✅ BOD-050: Pojistné události — claims/ modul: cases/, intake/, API routes
+- ✅ BOD-050: Pojistné události — claims/cases/page.tsx 513 řádků, reálný plný UI (není stub), typy z lib/types/insurance
 - ✅ BOD-051: Pojistné události — app-switcher.tsx v obou layoutech (accountant + claims)
 - ⚠️ BOD-052: Pojistné události — sdílený profil klienta — app-switcher existuje, ale sdílení DB dat claims/účetnictví neověřeno
-- ✅ BOD-053: Krizový plán — AI generátor: app/api/client/crisis-plan/generate/route.ts existuje
+- ✅ BOD-053: Krizový plán — AI generátor: 239 řádků, Sonnet 4.6, reálný FMEA systémový prompt v češtině, plan-gate (≥ professional)
 - ❌ BOD-054: Krizový plán — chatbot pro krizové řízení (max 10 otázek) — nenalezeno
 - ❌ BOD-055: Krizový plán — checklist pro PU klienty "co dělat hned po pojistné události" — nenalezeno
 - ❌ BOD-056: Připomínky — TELFA.cz API napojení — žádný TELFA kód v projektu
@@ -135,9 +135,9 @@
 - ❌ BOD-100: Cross-selling emaily — účetnictví → PU, PU → účetnictví: specifické kampaně nenalezeny
 - ❌ BOD-101: Cross-selling — 3 měsíce zdarma na druhou službu — nenalezeno
 - ⚠️ BOD-102: Soft launch — reverse trial 30 dní existuje; 3měsíční soft launch je business rozhodnutí
-- ✅ BOD-103: Revenue sharing — lib/revenue-sharing.ts s markup + commission výpočtem
-- ✅ BOD-104: Billing-as-a-service — lib/billing-service.ts + API /billing/ existuje
-- ✅ BOD-105: Markup model — revenue-sharing.ts má markup_pct
+- ✅ BOD-103: Revenue sharing — lib/revenue-sharing.ts 79 řádků, reálné Supabase queries na marketplace_providers
+- ✅ BOD-104: Billing-as-a-service — lib/billing-service.ts 714 řádků, full Stripe + payout tracking (není stub)
+- ✅ BOD-105: Markup model — revenue-sharing.ts má markup_pct + commission výpočet
 - ❌ BOD-106: Reklama — externe (Google Ads, Meta); není code issue
 - ⚠️ BOD-107: Fee model — revenue-sharing.ts má strukturu, konkrétní % zatím nefinalizováno (business decision)
 

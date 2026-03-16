@@ -52,6 +52,9 @@ function LoginForm() {
         setLoading(false)
       }
     } catch {
+      toast.error('Chyba přihlášení', {
+        description: 'Přihlášení se nezdařilo. Zkuste to znovu.',
+      })
       setLoading(false)
     }
   }
