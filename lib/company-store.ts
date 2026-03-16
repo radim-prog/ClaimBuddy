@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { createDocumentInbox } from '@/lib/document-inbox-store'
 
 export interface Company {
   id: string
@@ -173,5 +174,13 @@ export async function createCompany(input: CreateCompanyInput): Promise<Company>
     }
     throw new Error(`Failed to create company: ${error.message}`)
   }
+
+  // Auto-create document inbox for the new company
+  try {
+    await createDocumentInbox(data.id)
+  } catch (inboxErr) {
+    console.error(`[createCompany] Failed to create document inbox for ${data.id}:`, inboxErr)
+  }
+
   return data as Company
 }

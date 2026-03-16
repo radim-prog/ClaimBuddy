@@ -156,6 +156,38 @@ export async function fetchNewEmails(
   return emails
 }
 
+// Download attachment data by attachment ID
+export async function downloadAttachment(messageId: string, attachmentId: string): Promise<Buffer> {
+  const gmail = getGmailClient()
+  const res = await gmail.users.messages.attachments.get({
+    userId: 'me',
+    messageId,
+    id: attachmentId,
+  })
+
+  const data = res.data.data
+  if (!data) throw new Error(`No data for attachment ${attachmentId}`)
+
+  // Gmail uses URL-safe base64
+  return Buffer.from(data, 'base64')
+}
+
+// Parse slug from recipient address: doklady+{slug}@zajcon.cz → slug
+export function parseRecipientSlug(toAddress: string): string | null {
+  // Handle multiple recipients (comma-separated)
+  const addresses = toAddress.split(',').map(a => a.trim())
+
+  for (const addr of addresses) {
+    // Extract email from "Name <email>" format
+    const emailMatch = addr.match(/<(.+?)>/) || [null, addr]
+    const email = (emailMatch[1] || '').toLowerCase().trim()
+
+    const match = email.match(/^doklady\+([a-z0-9]+)@zajcon\.cz$/)
+    if (match) return match[1]
+  }
+  return null
+}
+
 // Mark email as processed by adding a label
 export async function markAsProcessed(messageId: string, labelName: string = 'Processed') {
   try {
