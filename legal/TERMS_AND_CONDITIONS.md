@@ -8,8 +8,8 @@
 ## 1. Úvodní ustanovení
 
 ### 1.1 Poskytovatel služby
-**ZajCon s.r.o.**
-IČO: 123 45 678
+**ZajCon Solutions s.r.o.**
+IČO: 21890331
 Sídlo: Praha, Česká republika
 Email: info@zajcon.cz
 
@@ -201,4 +201,4 @@ Tyto podmínky jsou v češtině. V případě překladu má přednost česká v
 ---
 
 *Tyto Obchodní podmínky jsou účinné od 1. ledna 2026.*
-*Verze 1.0 | ZajCon s.r.o.*
+*Verze 1.0 | ZajCon Solutions s.r.o.*

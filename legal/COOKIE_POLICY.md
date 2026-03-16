@@ -125,4 +125,4 @@ O změnách informujeme notifikací na webu. Zásadní změny oznamujeme min. 30
 ---
 
 *Tyto Zásady používání cookies jsou v souladu s nařízením GDPR (EU) 2016/679 a zákonem č. 127/2005 Sb.*
-*Verze 1.0 | ZajCon s.r.o.*
+*Verze 1.0 | ZajCon Solutions s.r.o.*

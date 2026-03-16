@@ -8,8 +8,8 @@
 ## 1. Kdo jsme a jak nás kontaktovat
 
 ### 1.1 Správce osobních údajů
-**ZajCon s.r.o.**
-IČO: 123 45 678
+**ZajCon Solutions s.r.o.**
+IČO: 21890331
 Sídlo: Praha, Česká republika
 Email: gdpr@zajcon.cz
 
@@ -176,4 +176,4 @@ Viz samostatný dokument: [Zásady používání cookies](/legal/cookies)
 ---
 
 *Tyto Zásady ochrany osobních údajů jsou v souladu s nařízením GDPR (EU) 2016/679 a zákonem č. 110/2019 Sb.*
-*Verze 1.0 | ZajCon s.r.o.*
+*Verze 1.0 | ZajCon Solutions s.r.o.*

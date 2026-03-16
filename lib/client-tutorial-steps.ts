@@ -70,7 +70,7 @@ export const CLIENT_TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Připomínky',
     description: 'Důležité termíny a upozornění — nikdy nezmeškáte daňový termín.',
     targetSelector: '[data-tour="client-reminders"]',
-    page: '/client/dashboard',
+    page: '/client/reminders',
     placement: 'right',
     icon: Bell,
   },
