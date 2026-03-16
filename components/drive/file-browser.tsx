@@ -238,8 +238,10 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
     fileInputRef.current?.click()
   }
 
+  const canManageFolders = userRole === 'admin' || userRole === 'accountant'
+
   const handleCreateFolder = async () => {
-    if (!newFolderName.trim()) return
+    if (!canManageFolders || !newFolderName.trim()) return
     setCreatingFolder(true)
     try {
       const res = await fetch('/api/drive/folders', {
@@ -392,7 +394,7 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
               <Upload className="h-4 w-4 mr-1.5" />
               Nahrat
             </Button>
-            {userRole === 'admin' && !showCreateFolder && (
+            {canManageFolders && !showCreateFolder && (
               <Button
                 variant="outline"
                 size="sm"
@@ -403,7 +405,7 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
                 Vytvořit složku
               </Button>
             )}
-            {userRole === 'admin' && showCreateFolder && (
+            {canManageFolders && showCreateFolder && (
               <div className="flex items-center gap-1">
                 <Input
                   value={newFolderName}

@@ -139,6 +139,18 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
     return
   }
 
+  // Handle addon purchase (one-time payment from addon-checkout)
+  if (session.metadata?.type === 'addon_purchase') {
+    const addonType = session.metadata.addon_type
+    const creditType = session.metadata.credit_type || 'extraction'
+    const credits = parseInt(session.metadata.credits || '0', 10)
+    if (credits > 0) {
+      await addExtraCredits(userId, creditType, credits)
+    }
+    logError({ level: 'info', message: `Addon purchased: user=${userId}, addon=${addonType}, credits=${credits}, creditType=${creditType}`, source: 'stripe-webhook' })
+    return
+  }
+
   // Handle subscription checkout
   const planTier = session.metadata?.plan_tier
   if (!planTier) {
