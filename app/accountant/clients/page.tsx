@@ -978,7 +978,7 @@ function ClientsPageContent() {
                   >
                     <option value="">Všechny stavy</option>
                     <option value="missing">Chybí podklady</option>
-                    <option value="uploaded">Čeká na schválení</option>
+                    <option value="uploaded">K dokončení</option>
                     <option value="complete">V pořádku</option>
                   </select>
                 </div>

@@ -22,9 +22,9 @@
 - ❌ BOD-007: Attention bar — "Přidat poznámku" → kde se poznámka zobrazí, není jasné
 - ⚠️ BOD-008: Dashboard — horní dlaždice: billable_amount skryté pro non-admin ale klikatelnost dlaždic chybí
 - ✅ BOD-009: Dashboard — příjmy/revenue skryté — ověřeno plánovačem ✅
-- ❌ BOD-010: Master matice — "Čeká na schválení" přejmenovat (neověřeno zda hotovo)
+- ✅ BOD-010: Master matice — "Čeká na schválení" → "K dokončení": dashboard ✅ (bylo hotové), clients/page.tsx dropdown + welcome-modal.tsx opraveno
 - ❌ BOD-011: Master matice — barevná kolečka jako filtr (click-to-filter) — nenalezeno
-- ❌ BOD-012: Inbox dokladů — přejmenování na "Inbox podkladů" — neověřeno
+- ✅ BOD-012: Inbox dokladů → "Inbox podkladů": sidebar nav + obě page headings opraveno
 - ✅ BOD-013: Inbox dokladů — seskupení podle klientů (clientGroups v inbox/page.tsx:400)
 - ❌ BOD-014: Inbox dokladů — zpracované doklady přesunout do profilu klienta — logika nenalezena
 - ✅ BOD-015: GTD/Práce — 3 taby Inbox|Úkoly|Projekty + InboxList component (work/page.tsx)
@@ -199,9 +199,9 @@
 
 | Status | Počet | Body |
 |--------|-------|------|
-| ✅ HOTOVO | 47 | BOD-001-002,005,009,013,015,021,023-027,029-030,033,036-037,041-042,044,049-051,053,057,065,079,085-086,088,092-094,096,098,103-105,113-114,116,121,137-138,140,142,144 |
+| ✅ HOTOVO | 49 | BOD-001-002,005,009-010,012-013,015,021,023-027,029-030,033,036-037,041-042,044,049-051,053,057,065,079,085-086,088,092-094,096,098,103-105,113-114,116,121,137-138,140,142,144 |
 | ⚠️ ČÁSTEČNĚ | 49 | Viz výše (potřebuje doladění nebo runtime ověření; 6 triviálních se právě opravuje) |
-| ❌ CHYBÍ | 27 | BOD-006,007,010-012,014,016-018,020,022,039-040,043,046-048,054-056,059,072,078,087,091,100-101,122 |
+| ❌ CHYBÍ | 25 | BOD-006,007,011,014,016-018,020,022,039-040,043,046-048,054-056,059,072,078,087,091,100-101,122 |
 | 🔧 RADIM | 22 | BOD-066-067,069-071,073-075,077,080-082,089-090 + BOD-131-136 |
 
 ### Kritické skupiny

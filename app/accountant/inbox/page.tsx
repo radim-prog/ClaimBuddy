@@ -334,7 +334,7 @@ export default function InboxPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-display flex items-center gap-2">
-            <Inbox className="h-6 w-6" /> Inbox dokladů
+            <Inbox className="h-6 w-6" /> Inbox podkladů
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Seskupeno podle klientů &middot; {clientGroups.length} klientů

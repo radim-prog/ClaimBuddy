@@ -31,7 +31,7 @@ export function WelcomeModal() {
   const items = [
     { label: 'Nepřečtených zpráv', value: totals.unread_messages, icon: MessageCircle, color: 'text-blue-600 dark:text-blue-400' },
     { label: 'Chybějících dokladů', value: totals.missing_documents, icon: FileX, color: 'text-red-600 dark:text-red-400' },
-    { label: 'Čeká na schválení', value: totals.pending_uploads, icon: Upload, color: 'text-yellow-600 dark:text-yellow-400' },
+    { label: 'K dokončení', value: totals.pending_uploads, icon: Upload, color: 'text-yellow-600 dark:text-yellow-400' },
     { label: 'Aktivních notifikací', value: totals.active_notifications, icon: Bell, color: 'text-purple-600 dark:text-purple-400' },
     { label: 'Aktivních úkolů', value: totals.active_tasks, icon: ClipboardList, color: 'text-orange-600 dark:text-orange-400' },
   ].filter(i => i.value > 0)
