@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { authenticate, getRedirectPath, COOKIE_NAME, TOKEN_MAX_AGE } from '@/lib/auth'
