@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTutorialContext } from '@/lib/contexts/tutorial-context'
-import { TUTORIAL_STEPS } from '@/lib/tutorial-steps'
 import { Button } from '@/components/ui/button'
 import { X, ChevronRight, ChevronLeft, PartyPopper, Rocket, Sparkles } from 'lucide-react'
 
@@ -13,6 +12,8 @@ export function TutorialOverlay() {
     isActive,
     currentStep,
     currentStepIndex,
+    totalSteps,
+    tutorialSteps,
     nextStep,
     prevStep,
     stopTour,
@@ -24,7 +25,6 @@ export function TutorialOverlay() {
   const [animating, setAnimating] = useState(false)
   const rafRef = useRef<number>(0)
   const hasShownIntroRef = useRef(false)
-  const totalSteps = TUTORIAL_STEPS.length
 
   // Show intro when tour starts (only once per tour session)
   useEffect(() => {
@@ -143,14 +143,14 @@ export function TutorialOverlay() {
               Vítejte v průvodci
             </h2>
             <p className="text-purple-200 text-sm">
-              Za 7 kroků vám ukážeme vše důležité
+              Za {totalSteps} kroků vám ukážeme vše důležité
             </p>
           </div>
 
           {/* Steps preview */}
           <div className="px-6 py-5">
             <div className="space-y-2 mb-6">
-              {TUTORIAL_STEPS.slice(0, 4).map((step, i) => {
+              {tutorialSteps.slice(0, 4).map((step) => {
                 const Icon = step.icon
                 return (
                   <div key={step.id} className="flex items-center gap-3 text-sm">
@@ -161,12 +161,14 @@ export function TutorialOverlay() {
                   </div>
                 )
               })}
-              <div className="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-500">
-                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-                  <span className="text-xs font-bold">+{totalSteps - 4}</span>
+              {totalSteps > 4 && (
+                <div className="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-500">
+                  <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+                    <span className="text-xs font-bold">+{totalSteps - 4}</span>
+                  </div>
+                  <span>...a další kroky</span>
                 </div>
-                <span>...a další kroky</span>
-              </div>
+              )}
             </div>
 
             <div className="flex gap-3">

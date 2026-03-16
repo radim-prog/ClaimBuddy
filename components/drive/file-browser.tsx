@@ -322,7 +322,7 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
               href={file.web_view_link}
               target="_blank"
               rel="noopener noreferrer"
-              title="Otevrit v Google Drive"
+              title="Otevřít v Google Drive"
             >
               <Button
                 variant="ghost"
@@ -337,7 +337,7 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
             variant="ghost"
             size="icon"
             className="h-7 w-7 rounded-lg"
-            title="Stahnout"
+            title="Stáhnout"
             onClick={() => {
               if (file.web_view_link) {
                 window.open(file.web_view_link, '_blank')
@@ -464,9 +464,9 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
           ) : folders.length === 0 ? (
             <div className="text-center py-12 text-gray-400 dark:text-gray-500">
               <File className="h-10 w-10 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Zadne slozky</p>
+              <p className="text-sm">Žádné složky</p>
               <p className="text-xs mt-1">
-                Slozky se vytvorit automaticky z nasataveni (Admin &rarr; Provoz &rarr; Struktura slozek)
+                Složky se vytvoří automaticky z nastavení (Admin → Provoz → Struktura složek)
               </p>
             </div>
           ) : (
@@ -496,7 +496,7 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
           <div>
             <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5" />
-              Posledni nahrane
+              Poslední nahrané
             </h2>
             <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
               <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
@@ -526,7 +526,7 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
           onClick={handleBack}
         >
           <ChevronLeft className="h-4 w-4 mr-1" />
-          Zpet
+          Zpět
         </Button>
         <div className="h-5 w-px bg-gray-200 dark:bg-gray-700" />
         <h2 className="text-sm font-medium text-gray-900 dark:text-white">
@@ -579,7 +579,7 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
                   ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
                   : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
-              title="Mrizka"
+              title="Mřížka"
             >
               <LayoutGrid className="h-4 w-4" />
             </button>
@@ -605,7 +605,7 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
       ) : files.length === 0 ? (
         <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <File className="h-10 w-10 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Zadne soubory</p>
+          <p className="text-sm">Žádné soubory</p>
           <p className="text-xs mt-1">
             Nahrajte soubory nebo synchronizujte s Google Drive
           </p>
@@ -616,7 +616,7 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
           {/* Table header */}
           <div className="flex items-center gap-3 px-3 py-2 border-b border-gray-100 dark:border-gray-700/50 text-xs text-gray-500 dark:text-gray-400 font-medium">
             <div className="h-8 w-8 shrink-0" />
-            <div className="flex-1">Nazev</div>
+            <div className="flex-1">Název</div>
             <div className="hidden sm:block w-16">Typ</div>
             <div className="w-16 text-right">Velikost</div>
             <div className="w-24 text-right hidden md:block">Datum</div>

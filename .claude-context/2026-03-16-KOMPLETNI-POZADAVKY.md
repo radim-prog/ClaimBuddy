@@ -56,8 +56,8 @@
 - ✅ BOD-036: Randomizér — detect-fuel-docs route extrahuje tankování z dokladů
 - ✅ BOD-037: Randomizér — lib/travel-randomizer.ts 309 řádků, reálné Anthropic Claude API (není stub)
 - ⚠️ BOD-038: Randomizér — MODEL='claude-sonnet-4-6' použit v crisis, travel-randomizer model ověřit (má být Opus)
-- ❌ BOD-039: Termíny — SP zálohy OSVČ měsíční — CHYBÍ v statutory-deadlines.ts (jen roční přehledy)
-- ❌ BOD-040: Termíny — ZP zálohy OSVČ měsíční — CHYBÍ v statutory-deadlines.ts (jen roční přehledy)
+- ✅ BOD-039: Termíny — SP zálohy OSVČ měsíční — sp-zaloha-osvc v statutory-deadlines.ts:110-120 (monthly, day 28) ✅
+- ✅ BOD-040: Termíny — ZP zálohy OSVČ měsíční — zp-zaloha-osvc v statutory-deadlines.ts:121-130 (monthly, day 8 next month) ✅
 - ✅ BOD-041: Termíny — DPH: přiznání měsíční/čtvrtletní + kontrolní hlášení + souhrnné hlášení — ověřeno plánovačem ✅
 - ✅ BOD-042: Termíny — silniční daň (5 šablon incl. zálohy Q1-Q4) + daň z nemovitostí (statutory-deadlines.ts)
 - ❌ BOD-043: Inbox dokladů — evidence odpracovaného času při zpracování — nenalezeno
@@ -118,7 +118,7 @@
 - ✅ BOD-088: Email marketing tracking — lib/marketing-service.ts existuje
 - 🔧 BOD-089: DOCUMENT_INBOX_EMAIL — CHYBÍ v .env.local
 - 🔧 BOD-090: NEXT_PUBLIC_APP_URL — CHYBÍ v .env.local (má fallback app.zajcon.cz)
-- ❌ BOD-091: .env.local.example — stále zastaralý (GDrive service account vars + WhatsApp TOKEN vars)
+- ✅ BOD-091: .env.local.example — aktuální: žádné service account vars, používá správné OAuth vars pro GDrive + Evolution API pro WhatsApp ✅
 
 ---
 
@@ -159,7 +159,7 @@
 - ⚠️ BOD-119: BUG: Master matice záložka DPH — funguje, ale tax_period_data = 0 řádků → prázdný stav; data se naplní až klienti nahrají výpisy
 - ⚠️ BOD-120: BUG: Master matice záložka Daň z příjmu — funguje, tax_annual_config má 3 řádky; prázdný stav dokud klienti nevyplní data
 - ✅ BOD-121: BUG: GTD inbox seznam — InboxList s handleInboxAction implementováno (work/page.tsx)
-- ❌ BOD-122: BUG: Soubory — tlačítko "Vytvořit složku" — createFolder logika nenalezena v files/page.tsx
+- ✅ BOD-122: BUG: Soubory — tlačítko "Vytvořit složku" — admin-only button + inline input form přidáno do file-browser.tsx, POST /api/drive/folders ✅
 - ⚠️ BOD-123: BUG: Master matice filtr — filtr existuje; správnost filtrování ověřit v runtime
 - ⚠️ BOD-124: INFO: Znalostní báze — sessionStorage cache problém, žádný code fix; workaround: hard refresh Ctrl+Shift+R
 
@@ -199,9 +199,9 @@
 
 | Status | Počet | Body |
 |--------|-------|------|
-| ✅ HOTOVO | 52 | BOD-001-002,005,009-010,012-013,015-018,021,023-027,029-030,033,036-037,041-042,044,049-051,053,057,065,079,085-086,088,092-094,096,098,103-105,113-114,116,121,137-138,140,142,144 |
-| ⚠️ ČÁSTEČNĚ | 49 | Viz výše (potřebuje doladění nebo runtime ověření; 6 triviálních se právě opravuje) |
-| ❌ CHYBÍ | 22 | BOD-006,007,011,014,020,022,039-040,043,046-048,054-056,059,072,078,087,091,100-101,122 |
+| ✅ HOTOVO | 56 | BOD-001-002,005,009-010,012-013,015-018,021,023-027,029-030,033,036-037,039-042,044,049-051,053,057,065,079,085-086,088,091-094,096,098,103-105,113-114,116,121-122,137-138,140,142,144 |
+| ⚠️ ČÁSTEČNĚ | 49 | Viz výše (potřebuje doladění nebo runtime ověření) |
+| ❌ CHYBÍ | 19 | BOD-006,007,011,014,020,022,043,046-048,054-056,059,072,078,087,100-101 |
 | 🔧 RADIM | 22 | BOD-066-067,069-071,073-075,077,080-082,089-090 + BOD-131-136 |
 
 ### Kritické skupiny
@@ -223,14 +223,9 @@
 
 ### 🔴 P0 — Triviální opravy, vysoký dopad (1–30 min kódu)
 
-| BOD | Co chybí | Proč prioritní |
-|-----|----------|---------------|
-| BOD-122 | Vytvořit složku — createFolder logika | Uživatelé nemohou vytvořit složky = blocker |
-| BOD-039 | SP zálohy OSVČ měsíční v termínech | Zákonný termín = právní riziko pro klienty |
-| BOD-040 | ZP zálohy OSVČ měsíční v termínech | Zákonný termín = právní riziko pro klienty |
-| BOD-010 | Master matice — "Čeká na schválení" přejmenovat | 1 řádek, zbytečně matoucí label |
-| BOD-012 | Inbox dokladů → "Inbox podkladů" | 1 řádek, správná terminologie |
-| BOD-091 | .env.local.example zastaralý | Matoucí pro budoucí setup; ~5 řádků |
+~~BOD-122 ✅ BOD-039 ✅ BOD-040 ✅ BOD-010 ✅ BOD-012 ✅ BOD-091 ✅ — vše hotovo~~
+
+Zbývající P0 (přesunuto do P1):
 
 ### 🟠 P1 — Důležité pro UX a provoz
 

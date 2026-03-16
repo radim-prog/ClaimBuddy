@@ -160,6 +160,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                 const linkEl = (
                   <Link
                     href={locked ? '/client/subscription' : item.href}
+                    data-tour={item.tourId}
                     className={`
                       group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
                       ${locked
