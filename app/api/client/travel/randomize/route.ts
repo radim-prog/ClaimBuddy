@@ -3,6 +3,7 @@ import { generateTrips, prepareTripsForSave } from '@/lib/travel-randomizer'
 import { getVehicles, getPlaces, getTrips, getFuelLogs, createTrip } from '@/lib/travel-store-db'
 import { checkFeatureAccess, logGatedAction } from '@/lib/plan-gate'
 import { consumeCredit } from '@/lib/subscription-store'
+import { recordRevenueTransaction } from '@/lib/revenue-sharing'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
@@ -115,6 +116,14 @@ export async function POST(request: NextRequest) {
     // Consume credit
     const currentPeriod = new Date().toISOString().slice(0, 7)
     await consumeCredit(userId, 'extraction', currentPeriod)
+
+    // Revenue sharing: record transaction for marketplace provider
+    recordRevenueTransaction({
+      userId,
+      companyId,
+      pluginType: 'travel_randomizer',
+      resourceId: vehicleId,
+    })
 
     // Auto-save if requested
     const savedTrips: string[] = []

@@ -24,6 +24,7 @@ import {
   ScanLine,
   Send,
   Inbox,
+  TrendingUp,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -70,6 +71,7 @@ const navigation = [
   { name: 'Připomínky', href: '/accountant/reminders', icon: Send, activeMatch: ['/accountant/reminders'] },
   { name: 'Znalostní báze', href: '/accountant/knowledge-base', icon: BookOpen, activeMatch: ['/accountant/knowledge-base'] },
   { name: 'Marketplace', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'] },
+  { name: 'Revenue', href: '/accountant/revenue', icon: TrendingUp, activeMatch: ['/accountant/revenue'] },
 ]
 
 const adminNavigation = [

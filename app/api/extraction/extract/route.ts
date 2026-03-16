@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { extractionQueue } from '@/lib/extraction-queue'
 import { checkExtractionCredits, logGatedAction } from '@/lib/plan-gate'
 import { consumeCredit } from '@/lib/subscription-store'
+import { recordRevenueTransaction } from '@/lib/revenue-sharing'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,6 +58,14 @@ export async function POST(request: NextRequest) {
     const currentPeriod = new Date().toISOString().slice(0, 7)
     await consumeCredit(userId, 'extraction', currentPeriod)
     await logGatedAction(userId, 'extraction_used', documentId)
+
+    // Revenue sharing: record transaction for marketplace provider
+    recordRevenueTransaction({
+      userId,
+      companyId,
+      pluginType: 'extraction',
+      resourceId: documentId,
+    })
 
     return NextResponse.json({
       success: true,

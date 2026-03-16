@@ -13,6 +13,7 @@ import {
   Sparkles,
   Mail,
   Store,
+  TrendingUp,
 } from 'lucide-react'
 import { CollapsibleSection } from '@/components/collapsible-section'
 import { TaskTemplates } from '@/components/admin/task-templates'
@@ -26,9 +27,11 @@ import { OperationsTaxRates } from '@/components/admin/operations-tax-rates'
 import { OperationsMarketing } from '@/components/admin/operations-marketing'
 import { LeadsList } from '@/components/admin/leads-list'
 import { MarketplaceProviders } from '@/components/admin/marketplace-providers'
+import { OperationsRevenue } from '@/components/admin/operations-revenue'
 
 const sections = [
   { id: 'marketplace', label: 'Marketplace — registrace', icon: Store, Component: MarketplaceProviders },
+  { id: 'revenue', label: 'Revenue sharing', icon: TrendingUp, Component: OperationsRevenue },
   { id: 'leads', label: 'Leady — Chci účetní', icon: Sparkles, Component: LeadsList },
   { id: 'templates', label: 'Šablony úkolů', icon: Repeat, Component: TaskTemplates },
   { id: 'workflow', label: 'Workflow pravidla', icon: GitBranch, Component: OperationsWorkflow },
