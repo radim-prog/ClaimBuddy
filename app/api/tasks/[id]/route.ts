@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { UpdateTaskInput } from '@/lib/types/tasks'
+import { isStaffRole } from '@/lib/access-check'
 
 /**
  * GET /api/tasks/[id] - Get single task with full relations
@@ -108,6 +109,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
     }
 
+    const userRole = request.headers.get('x-user-role')
+    if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
     const taskId = params.id
     const body: Partial<UpdateTaskInput> = await request.json()
 
@@ -197,6 +201,9 @@ export async function DELETE(
     if (!userId) {
       return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
     }
+
+    const userRole = request.headers.get('x-user-role')
+    if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const taskId = params.id
 

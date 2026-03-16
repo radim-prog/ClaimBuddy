@@ -22,6 +22,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const ALLOWED_MIME_TYPES = [
+      'application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
+      'application/vnd.ms-excel', // xls
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+      'text/csv', 'text/plain', 'application/xml', 'text/xml',
+    ]
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      return NextResponse.json({ error: 'Nepodporovaný typ souboru' }, { status: 400 })
+    }
+
+    // Max 50MB file size
+    if (file.size > 50 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Soubor je příliš velký (max 50 MB)' }, { status: 400 })
+    }
+
     // Optional metadata fields
     const fiscalYearRaw = formData.get('fiscalYear') as string | null
     const periodMonthRaw = formData.get('periodMonth') as string | null

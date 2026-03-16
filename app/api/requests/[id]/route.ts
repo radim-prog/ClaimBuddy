@@ -26,6 +26,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
+import { isStaffRole } from '@/lib/access-check'
 
 /**
  * GET /api/requests/[id] - Get single request by ID
@@ -104,6 +105,9 @@ export async function PUT(
     if (!userId) {
       return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
     }
+
+    const userRole = request.headers.get('x-user-role')
+    if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const { id } = params
 
@@ -202,6 +206,9 @@ export async function DELETE(
     if (!userId) {
       return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
     }
+
+    const userRole = request.headers.get('x-user-role')
+    if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const { id } = params
 

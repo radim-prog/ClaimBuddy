@@ -31,6 +31,9 @@ export async function PATCH(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const userRole = request.headers.get('x-user-role')
+  if (userRole !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   try {
     const body = await request.json()
 

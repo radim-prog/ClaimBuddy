@@ -34,6 +34,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Invalid template. Must be one of: ${VALID_TEMPLATES.join(', ')}` }, { status: 400 })
     }
 
+    // Sanitize HTML — strip script tags and event handlers
+    const sanitizeHtml = (html: string) => html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+      .replace(/javascript:/gi, '')
+    const safeBody = emailBody ? sanitizeHtml(emailBody) : undefined
+
     // Build email config from template type
     let html: string
     let text: string
@@ -70,9 +77,9 @@ export async function POST(request: NextRequest) {
     } else {
       // monthly_summary / missing_documents / generic fallback
       // Use provided emailBody if supplied, otherwise render generic wrapper
-      if (emailBody) {
-        html = emailBody
-        text = emailBody.replace(/<[^>]+>/g, '')
+      if (safeBody) {
+        html = safeBody
+        text = safeBody.replace(/<[^>]+>/g, '')
       } else {
         const rows = Object.entries(body as Record<string, unknown>)
           .filter(([k]) => !['to', 'subject', 'template', 'company_id'].includes(k))

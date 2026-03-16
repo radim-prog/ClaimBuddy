@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { CreateTaskInput, TaskFilter } from '@/lib/types/tasks'
+import { isStaffRole } from '@/lib/access-check'
 
 /**
  * GET /api/tasks - List tasks with filters
@@ -209,6 +210,9 @@ export async function POST(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
     }
+
+    const userRole = request.headers.get('x-user-role')
+    if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const supabase = createServerClient()
 

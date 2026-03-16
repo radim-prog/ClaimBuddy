@@ -185,12 +185,22 @@ async function handleSend(
     const templateBuffer = Buffer.from(await fileData.arrayBuffer())
     const templateData = body.templateData || {}
 
+    // Resolve auto-fill data from CRM/company data
+    const autoFillData = await resolveAutoFillData({
+      companyId: job.company_id,
+      signers: signers.map((s: any) => ({ name: s.name, email: s.email, phone: s.phone })),
+      userId,
+    })
+
+    // Merge: manual templateData overrides auto-fill
+    const mergedData = { ...autoFillData, ...templateData }
+
     try {
       const PizZip = (await import('pizzip')).default
       const Docxtemplater = (await import('docxtemplater')).default
       const zip = new PizZip(templateBuffer)
       const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true })
-      doc.setData(templateData)
+      doc.setData(mergedData)
       doc.render()
       fileBuffer = doc.getZip().generate({ type: 'nodebuffer' }) as Buffer
       fileName = `${template.name || 'document'}.docx`

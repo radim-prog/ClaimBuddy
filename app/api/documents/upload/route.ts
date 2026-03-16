@@ -21,6 +21,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    const ALLOWED_MIME_TYPES = [
+      'application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
+      'application/vnd.ms-excel', // xls
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+      'text/csv', 'text/plain', 'application/xml', 'text/xml',
+    ]
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      return NextResponse.json({ error: 'Nepodporovaný typ souboru' }, { status: 400 })
+    }
+
     const userRole = request.headers.get('x-user-role')
     const impersonate = request.headers.get('x-impersonate-company')
     if (!(await canAccessCompany(userId, userRole, companyId, impersonate))) {

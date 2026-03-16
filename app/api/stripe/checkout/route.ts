@@ -26,6 +26,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing tier or cycle' }, { status: 400 })
   }
 
+  const VALID_TIERS = ['starter', 'professional', 'enterprise']
+  const VALID_CYCLES = ['monthly', 'annual']
+  if (!VALID_TIERS.includes(tier) || !VALID_CYCLES.includes(cycle)) {
+    return NextResponse.json({ error: 'Invalid tier or cycle' }, { status: 400 })
+  }
+
   const priceId = getStripePriceId(tier, cycle)
   if (!priceId) {
     return NextResponse.json(

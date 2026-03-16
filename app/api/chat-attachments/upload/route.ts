@@ -21,6 +21,17 @@ export async function POST(request: NextRequest) {
     if (!file || !chatId) {
       return NextResponse.json({ error: 'Missing required fields (file, chatId)' }, { status: 400 })
     }
+
+    const ALLOWED_MIME_TYPES = [
+      'application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
+      'application/vnd.ms-excel', // xls
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+      'text/csv', 'text/plain', 'application/xml', 'text/xml',
+    ]
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      return NextResponse.json({ error: 'Nepodporovaný typ souboru' }, { status: 400 })
+    }
     if (!companyId && !taskId) {
       return NextResponse.json({ error: 'Either companyId or taskId is required' }, { status: 400 })
     }

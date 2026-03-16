@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { isStaffRole } from '@/lib/access-check'
 
 /**
  * PATCH /api/tasks/reorder - Bulk reorder subtasks
@@ -15,6 +16,9 @@ export async function PATCH(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Nepřihlášen' }, { status: 401 })
     }
+
+    const userRole = request.headers.get('x-user-role')
+    if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const { parent_project_id, task_ids } = await request.json()
 
