@@ -28,10 +28,6 @@ export default function RegisterPage() {
           description: result.error,
         })
         setLoading(false)
-      } else {
-        toast.success('Registrace úspěšná!', {
-          description: 'Přesměrování na dashboard...',
-        })
       }
     } catch {
       toast.error('Chyba registrace', {
@@ -106,9 +102,9 @@ export default function RegisterPage() {
                   id="password"
                   name="password"
                   type="password"
-                  placeholder="Min. 6 znaků"
+                  placeholder="Min. 8 znaků"
                   required
-                  minLength={6}
+                  minLength={8}
                   className="h-11 border-blue-200 dark:border-blue-800/50 focus-visible:ring-blue-500"
                 />
               </div>
@@ -120,7 +116,7 @@ export default function RegisterPage() {
                   type="password"
                   placeholder="Zopakujte heslo"
                   required
-                  minLength={6}
+                  minLength={8}
                   className="h-11 border-blue-200 dark:border-blue-800/50 focus-visible:ring-blue-500"
                 />
               </div>

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,9 +12,32 @@ import { toast } from 'sonner'
 import { Eye, EyeOff, LogIn, ArrowLeft } from 'lucide-react'
 import { login } from './actions'
 
-export default function LoginPage() {
+function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const verified = searchParams.get('verified')
+    const reset = searchParams.get('reset')
+    const error = searchParams.get('error')
+
+    if (verified === 'true') {
+      toast.success('Email ověřen', {
+        description: 'Váš účet byl úspěšně ověřen. Nyní se můžete přihlásit.',
+      })
+    }
+    if (reset === 'true') {
+      toast.success('Heslo změněno', {
+        description: 'Vaše heslo bylo úspěšně změněno. Přihlaste se novým heslem.',
+      })
+    }
+    if (error === 'invalid_token') {
+      toast.error('Neplatný odkaz', {
+        description: 'Ověřovací odkaz je neplatný nebo vypršel.',
+      })
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -127,18 +151,40 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-8 pt-6 border-t border-purple-100 dark:border-purple-800/30">
+            <div className="mt-4 text-center">
+              <Link
+                href="/auth/forgot-password"
+                className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
+              >
+                Zapomněli jste heslo?
+              </Link>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-purple-100 dark:border-purple-800/30 space-y-2">
               <p className="text-xs text-muted-foreground text-center">
-                Nemáte účet? Kontaktujte svého účetního nebo{' '}
+                Nemáte účet?{' '}
+                <Link href="/auth/register" className="text-purple-600 dark:text-purple-400 hover:underline">
+                  Zaregistrujte se
+                </Link>
+              </p>
+              <p className="text-xs text-muted-foreground text-center">
+                nebo{' '}
                 <Link href="/#pricing" className="text-purple-600 dark:text-purple-400 hover:underline">
                   se podívejte na ceník
                 </Link>
-                .
               </p>
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }

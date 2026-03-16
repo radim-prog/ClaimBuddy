@@ -114,6 +114,14 @@ export async function authenticate(
   const user = await getUserByLoginName(loginName)
   if (!user) return null
 
+  // Check account status before verifying password
+  if (user.status === 'pending_verification') {
+    throw new Error('Účet čeká na ověření emailu. Zkontrolujte svou schránku.')
+  }
+  if (user.status && user.status !== 'active') {
+    throw new Error('Účet je neaktivní.')
+  }
+
   const valid = await verifyPassword(password, user.password_hash)
   if (!valid) return null
 

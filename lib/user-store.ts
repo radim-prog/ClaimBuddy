@@ -18,6 +18,11 @@ export interface StoredUser {
   compensation_amount: number
   plan_tier: string
   stripe_customer_id: string | null
+  status: string | null
+  verification_token: string | null
+  verification_token_expires: string | null
+  reset_token: string | null
+  reset_token_expires: string | null
   created_at: string
   updated_at: string
 }

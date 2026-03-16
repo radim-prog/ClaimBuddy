@@ -12,7 +12,14 @@ export async function login(formData: FormData) {
     return { error: 'Jméno a heslo jsou povinné' }
   }
 
-  const result = await authenticate(username, password)
+  let result: Awaited<ReturnType<typeof authenticate>>
+
+  try {
+    result = await authenticate(username, password)
+  } catch (err) {
+    // authenticate() throws for status issues (pending_verification, inactive)
+    return { error: err instanceof Error ? err.message : 'Přihlášení selhalo' }
+  }
 
   if (!result) {
     return { error: 'Neplatné jméno nebo heslo' }

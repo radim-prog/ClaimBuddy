@@ -1,72 +1,88 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import crypto from 'crypto'
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@/lib/supabase-server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { hashPassword } from '@/lib/auth'
+import { sendVerificationEmail } from '@/lib/email-service'
 
 export async function register(formData: FormData) {
-  const name = formData.get('name') as string
-  const email = formData.get('email') as string
+  const name = (formData.get('name') as string)?.trim()
+  const email = (formData.get('email') as string)?.trim().toLowerCase()
   const password = formData.get('password') as string
   const confirmPassword = formData.get('confirmPassword') as string
 
-  // Validace
+  // Validation
   if (!name || !email || !password || !confirmPassword) {
     return { error: 'Všechna pole jsou povinná' }
+  }
+
+  // Email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    return { error: 'Neplatný formát emailu' }
+  }
+
+  if (password.length < 8) {
+    return { error: 'Heslo musí mít alespoň 8 znaků' }
   }
 
   if (password !== confirmPassword) {
     return { error: 'Hesla se neshodují' }
   }
 
-  if (password.length < 6) {
-    return { error: 'Heslo musí mít alespoň 6 znaků' }
-  }
+  try {
+    // Check email uniqueness
+    const { data: existingUser } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single()
 
-  const supabase = createServerClient()
-
-  // Registrace pomocí Supabase Auth
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name,
-      },
-    },
-  })
-
-  if (authError) {
-    console.error('Signup error:', authError)
-    return { error: authError.message }
-  }
-
-  if (!authData.user) {
-    return { error: 'Registrace selhala' }
-  }
-
-  // Vytvořit záznam v users tabulce
-  const { error: userError } = await supabase
-    .from('users')
-    .insert({
-      id: authData.user.id,
-      email: authData.user.email!,
-      name,
-      role: 'client', // Default role je client
-      phone_number: null,
-    })
-
-  if (userError) {
-    console.error('User insert error:', userError)
-    // Pokud už existuje (např. z triggeru), to je OK
-    if (userError.code !== '23505') { // duplicate key error
-      return { error: 'Nepodařilo se vytvořit uživatelský profil' }
+    if (existingUser) {
+      return { error: 'Účet s tímto emailem již existuje' }
     }
+
+    // Hash password
+    const passwordHash = await hashPassword(password)
+
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex')
+    const verificationTokenExpires = new Date(
+      Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+    ).toISOString()
+
+    // Insert user
+    const { error: insertError } = await supabaseAdmin
+      .from('users')
+      .insert({
+        name,
+        email,
+        login_name: email,
+        password_hash: passwordHash,
+        role: 'client',
+        status: 'pending_verification',
+        verification_token: verificationToken,
+        verification_token_expires: verificationTokenExpires,
+      })
+
+    if (insertError) {
+      console.error('User insert error:', insertError)
+      if (insertError.code === '23505') {
+        return { error: 'Účet s tímto emailem již existuje' }
+      }
+      return { error: 'Nepodařilo se vytvořit účet. Zkuste to prosím znovu.' }
+    }
+
+    // Send verification email
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.zajcon.cz'
+    const verifyUrl = `${appUrl}/api/auth/verify?token=${verificationToken}`
+
+    await sendVerificationEmail(email, name, verifyUrl)
+  } catch (err) {
+    console.error('Registration error:', err)
+    return { error: 'Nepodařilo se dokončit registraci. Zkuste to prosím znovu.' }
   }
 
-  // Automaticky přihlásit
-  revalidatePath('/', 'layout')
-
-  // Redirect na client dashboard
-  redirect('/client/dashboard')
+  redirect('/auth/verify-sent')
 }
