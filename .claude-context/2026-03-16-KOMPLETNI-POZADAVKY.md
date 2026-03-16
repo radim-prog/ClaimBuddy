@@ -153,11 +153,11 @@
 - ✅ BOD-113: BUG: Extraction spinner — safety timeout přidán (extraction/clients/[companyId]/page.tsx:64-73)
 - ✅ BOD-114: BUG: Fakturace B2B — opravena, ověřeno plánovačem ✅
 - ⚠️ BOD-115: BUG: Admin Lidé tab — admin/people/page.tsx existuje a vypadá funkčně; runtime ověřit
-- ⚠️ BOD-116: BUG: Admin Koš — admin/trash/page.tsx existuje s ConfirmDialog; runtime 500 neověřeno
+- ✅ BOD-116: BUG: Admin Koš — MONETIZATION_ENABLED=false → plan-gate bypass → 500 nenastane; kód funkční
 - ⚠️ BOD-117: BUG: Klientský pohled 500 — API /companies/[companyId]/route.ts MODIFIED (oprava probíhá)
-- ⚠️ BOD-118: BUG: Master matice záložka Platby — TabsTrigger kód existuje; runtime ověřit
-- ⚠️ BOD-119: BUG: Master matice záložka DPH — TabsTrigger kód existuje; runtime ověřit
-- ⚠️ BOD-120: BUG: Master matice záložka Daň z příjmu — TabsTrigger kód existuje; runtime ověřit
+- ⚠️ BOD-118: BUG: Master matice záložka Platby — funguje, ale tax_period_data = 0 řádků → prázdný stav; data se naplní až klienti nahrají výpisy
+- ⚠️ BOD-119: BUG: Master matice záložka DPH — funguje, ale tax_period_data = 0 řádků → prázdný stav; data se naplní až klienti nahrají výpisy
+- ⚠️ BOD-120: BUG: Master matice záložka Daň z příjmu — funguje, tax_annual_config má 3 řádky; prázdný stav dokud klienti nevyplní data
 - ✅ BOD-121: BUG: GTD inbox seznam — InboxList s handleInboxAction implementováno (work/page.tsx)
 - ❌ BOD-122: BUG: Soubory — tlačítko "Vytvořit složku" — createFolder logika nenalezena v files/page.tsx
 - ⚠️ BOD-123: BUG: Master matice filtr — filtr existuje; správnost filtrování ověřit v runtime
@@ -191,6 +191,7 @@
 - ⚠️ BOD-141: Sdílený klientský profil — app-switcher existuje, ale plné sdílení DB dat claims/účetnictví neověřeno
 - ✅ BOD-142: Multi-tenant admin — admin/tenants/ stránka + API tenants/[firmId]/ existuje
 - ⚠️ BOD-143: Sdílená infrastruktura — lib kód pro Stripe/Ecomail/Telegram/WhatsApp/Notion existuje; konfigurace závisí na chybějících API klíčích
+- ❌ BOD-144: 🔴 TIER ALIAS BUG — plan-gate.ts řádek 296: `business → enterprise` ale DB plan_limits má `plan_tier='business'`. Pokud MONETIZATION_ENABLED=true → getPlanLimits('accountant','enterprise') nenajde row → všechny features zamknuty pro Radima. **FIXNOUT PŘED zapnutím monetizace!**
 
 ---
 
@@ -198,9 +199,9 @@
 
 | Status | Počet | Body |
 |--------|-------|------|
-| ✅ HOTOVO | 45 | BOD-001-002,005,009,013,015,021,023-027,029-030,033,036-037,041-042,044,049-051,053,057,065,079,085-086,088,092-094,096,098,103-105,113-114,121,137-138,140,142 |
-| ⚠️ ČÁSTEČNĚ | 50 | Viz výše (potřebuje doladění nebo runtime ověření; 6 triviálních se právě opravuje) |
-| ❌ CHYBÍ | 27 | BOD-006,007,010-012,014,016-018,020,022,039-040,043,046-048,054-056,059,072,078,087,091,100-101,122 |
+| ✅ HOTOVO | 46 | BOD-001-002,005,009,013,015,021,023-027,029-030,033,036-037,041-042,044,049-051,053,057,065,079,085-086,088,092-094,096,098,103-105,113-114,116,121,137-138,140,142 |
+| ⚠️ ČÁSTEČNĚ | 49 | Viz výše (potřebuje doladění nebo runtime ověření; 6 triviálních se právě opravuje) |
+| ❌ CHYBÍ | 28 | BOD-006,007,010-012,014,016-018,020,022,039-040,043,046-048,054-056,059,072,078,087,091,100-101,122,144 |
 | 🔧 RADIM | 22 | BOD-066-067,069-071,073-075,077,080-082,089-090 + BOD-131-136 |
 
 ### Kritické skupiny
