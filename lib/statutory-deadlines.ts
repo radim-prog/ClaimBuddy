@@ -107,6 +107,26 @@ export const STATUTORY_TEMPLATES: StatutoryDeadlineTemplate[] = [
     applies_to: { vat_payer: true, vat_period: 'quarterly' },
   },
 
+  // === ZÁLOHY POJISTNÉ OSVČ ===
+  {
+    id: 'sp-zaloha-osvc',
+    type: 'insurance',
+    title: 'Záloha SP (OSVČ)',
+    description: 'Měsíční záloha na sociální pojištění OSVČ — splatnost do posledního dne měsíce',
+    frequency: 'monthly',
+    day_of_month: 28, // last business day approximation
+    applies_to: { is_osvc: true },
+  },
+  {
+    id: 'zp-zaloha-osvc',
+    type: 'insurance',
+    title: 'Záloha ZP (OSVČ)',
+    description: 'Měsíční záloha na zdravotní pojištění OSVČ — splatnost do 8. dne následujícího měsíce',
+    frequency: 'monthly',
+    day_of_month: 8,
+    applies_to: { is_osvc: true },
+  },
+
   // === MZDY / ZAMĚSTNANCI ===
   {
     id: 'mzdy-zpracovani',
