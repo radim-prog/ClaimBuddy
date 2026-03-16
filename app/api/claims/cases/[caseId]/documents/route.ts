@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
 import { getInsuranceCase, getCaseDocuments, addCaseDocument } from '@/lib/insurance-store'
-import { addCaseDocumentSchema, formatZodErrors } from '@/lib/validations'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// POST /api/claims/cases/[caseId]/documents
+// POST /api/claims/cases/[caseId]/documents — upload file via FormData
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const userId = request.headers.get('x-user-id')
   const userRole = request.headers.get('x-user-role')
@@ -49,21 +49,45 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const body = await request.json()
-    const parsed = addCaseDocumentSchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
+    const formData = await request.formData()
+    const file = formData.get('file') as File | null
+    const documentType = (formData.get('document_type') as string) || 'other'
+    const note = formData.get('note') as string | null
+
+    if (!file) {
+      return NextResponse.json({ error: 'file is required' }, { status: 400 })
     }
 
+    // Upload to Supabase Storage
+    const timestamp = Date.now()
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const storagePath = `claims/cases/${caseId}/${timestamp}_${safeName}`
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const { error: uploadErr } = await supabaseAdmin.storage
+      .from('documents')
+      .upload(storagePath, buffer, {
+        contentType: file.type,
+        upsert: false,
+      })
+
+    if (uploadErr) throw uploadErr
+
+    // Get public URL
+    const { data: urlData } = supabaseAdmin.storage
+      .from('documents')
+      .getPublicUrl(storagePath)
+
+    // Save document record via insurance-store
     const doc = await addCaseDocument({
       case_id: caseId,
-      name: parsed.data.name,
-      file_path: parsed.data.file_path,
-      file_size: parsed.data.file_size,
-      mime_type: parsed.data.mime_type,
-      document_type: parsed.data.document_type,
+      name: file.name,
+      file_path: urlData.publicUrl,
+      file_size: file.size,
+      mime_type: file.type,
+      document_type: documentType,
       uploaded_by: userId,
-      note: parsed.data.note ?? undefined,
+      note: note ?? undefined,
     })
 
     return NextResponse.json({ document: doc }, { status: 201 })

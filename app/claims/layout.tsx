@@ -92,10 +92,10 @@ function ClaimsLayoutInner({ children }: { children: React.ReactNode }) {
         const res = await fetch('/api/auth/me')
         if (res.ok) {
           const data = await res.json()
-          setUserName(data.user?.name || '')
-          const parts = (data.user?.name || '').split(' ')
+          setUserName(data.name || '')
+          const parts = (data.name || '').split(' ')
           setUserInitials(parts.map((p: string) => p[0]).join('').toUpperCase().slice(0, 2))
-          setUserModules(data.user?.modules || ['accounting'])
+          setUserModules(data.modules || ['accounting'])
         }
       } catch { /* ignore */ }
     }

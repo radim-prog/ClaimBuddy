@@ -17,6 +17,7 @@ import {
   Hourglass,
   Loader2,
   ChevronRight,
+  Download,
 } from 'lucide-react'
 import Link from 'next/link'
 import type {
@@ -229,12 +230,21 @@ export default function ClaimsCasesPage() {
             Evidence a správa pojistných událostí
           </p>
         </div>
-        <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white shrink-0">
-          <Link href="/claims/cases/new">
-            <Plus className="h-4 w-4 mr-1.5" />
-            Nový případ
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <a
+            href="/api/claims/export"
+            className="inline-flex items-center h-10 px-4 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Download className="h-4 w-4 mr-1.5" />
+            Export CSV
+          </a>
+          <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white shrink-0">
+            <Link href="/claims/cases/new">
+              <Plus className="h-4 w-4 mr-1.5" />
+              Nový případ
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* ── KPI cards ── */}

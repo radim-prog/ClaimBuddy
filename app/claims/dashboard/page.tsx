@@ -35,10 +35,10 @@ interface ClaimsStats {
 }
 
 function formatCurrency(amount: number): string {
-  if (amount === 0) return '0 Kc'
-  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)} mil. Kc`
-  if (amount >= 1_000) return `${Math.round(amount / 1_000)} tis. Kc`
-  return `${amount.toLocaleString('cs-CZ')} Kc`
+  if (amount === 0) return '0 Kč'
+  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)} mil. Kč`
+  if (amount >= 1_000) return `${Math.round(amount / 1_000)} tis. Kč`
+  return `${amount.toLocaleString('cs-CZ')} Kč`
 }
 
 export default function ClaimsDashboard() {
@@ -88,8 +88,8 @@ export default function ClaimsDashboard() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Pojistne udalosti</h1>
-          <p className="text-muted-foreground mt-1">Prehled a sprava pojistnych udalosti</p>
+          <h1 className="text-2xl font-bold tracking-tight">Pojistné události</h1>
+          <p className="text-muted-foreground mt-1">Přehled a správa pojistných událostí</p>
         </div>
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -105,17 +105,17 @@ export default function ClaimsDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Pojistne udalosti</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Pojistné události</h1>
           <p className="text-muted-foreground mt-1">
             {hasData
-              ? `${stats.total} spisu celkem, ${stats.active} aktivnich`
-              : 'Prehled a sprava pojistnych udalosti'}
+              ? `${stats.total} spisů celkem, ${stats.active} aktivních`
+              : 'Přehled a správa pojistných událostí'}
           </p>
         </div>
         <Link href="/claims/cases/new">
           <Button className="bg-blue-600 hover:bg-blue-700 text-white">
             <Plus className="h-4 w-4 mr-2" />
-            Novy spis
+            Nový spis
           </Button>
         </Link>
       </div>
@@ -127,7 +127,7 @@ export default function ClaimsDashboard() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Aktivni spisy</p>
+                  <p className="text-sm text-muted-foreground">Aktivní spisy</p>
                   <p className="text-2xl font-bold mt-1">{stats?.active ?? 0}</p>
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -143,7 +143,7 @@ export default function ClaimsDashboard() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Ceka na pojistovnu</p>
+                  <p className="text-sm text-muted-foreground">Čeká na pojišťovnu</p>
                   <p className="text-2xl font-bold mt-1">{stats?.waiting ?? 0}</p>
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
@@ -159,7 +159,7 @@ export default function ClaimsDashboard() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Vyreseno tento mesic</p>
+                  <p className="text-sm text-muted-foreground">Vyřešeno tento měsíc</p>
                   <p className="text-2xl font-bold mt-1">{stats?.resolved_this_month ?? 0}</p>
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
@@ -174,7 +174,7 @@ export default function ClaimsDashboard() {
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Celkem narokovano</p>
+                <p className="text-sm text-muted-foreground">Celkem nárokováno</p>
                 <p className="text-2xl font-bold mt-1">{formatCurrency(stats?.total_claimed ?? 0)}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
@@ -205,7 +205,7 @@ export default function ClaimsDashboard() {
                 <Target className="h-5 w-5 text-sky-600 dark:text-sky-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Uspesnost</p>
+                <p className="text-sm text-muted-foreground">Úspěšnost</p>
                 <p className="text-lg font-bold">{stats.success_rate} %</p>
               </div>
             </CardContent>
@@ -216,7 +216,7 @@ export default function ClaimsDashboard() {
                 <AlertTriangle className="h-5 w-5 text-rose-600 dark:text-rose-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">K doplneni</p>
+                <p className="text-sm text-muted-foreground">K doplnění</p>
                 <p className="text-lg font-bold">{stats.waiting}</p>
               </div>
             </CardContent>
@@ -228,7 +228,7 @@ export default function ClaimsDashboard() {
       <Card className="rounded-xl">
         <div className="p-5 border-b">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold">Nedavne spisy</h2>
+            <h2 className="text-lg font-semibold">Nedávné spisy</h2>
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -241,7 +241,7 @@ export default function ClaimsDashboard() {
               </div>
               <Link href="/claims/cases">
                 <Button variant="outline" size="sm" className="text-sm">
-                  Vsechny spisy
+                  Všechny spisy
                   <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
                 </Button>
               </Link>
@@ -255,18 +255,18 @@ export default function ClaimsDashboard() {
               <Shield className="h-7 w-7 text-blue-600 dark:text-blue-400" />
             </div>
             <h3 className="text-base font-semibold">
-              {search ? 'Zadne vysledky' : 'Zadne spisy'}
+              {search ? 'Žádné výsledky' : 'Žádné spisy'}
             </h3>
             <p className="text-muted-foreground mt-1 text-sm max-w-sm">
               {search
-                ? 'Zkuste upravit hledany vyraz.'
-                : 'Vytvorte prvni spis pojistne udalosti pro zahajeni prace.'}
+                ? 'Zkuste upravit hledaný výraz.'
+                : 'Vytvořte první spis pojistné události pro zahájení práce.'}
             </p>
             {!search && (
               <Link href="/claims/cases/new" className="mt-4">
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Plus className="h-4 w-4 mr-2" />
-                  Novy spis
+                  Nový spis
                 </Button>
               </Link>
             )}
@@ -276,11 +276,11 @@ export default function ClaimsDashboard() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left">
-                  <th className="px-5 py-3 font-medium text-muted-foreground">C. spisu</th>
+                  <th className="px-5 py-3 font-medium text-muted-foreground">Č. spisu</th>
                   <th className="px-5 py-3 font-medium text-muted-foreground">Klient</th>
                   <th className="px-5 py-3 font-medium text-muted-foreground">Typ</th>
                   <th className="px-5 py-3 font-medium text-muted-foreground">Status</th>
-                  <th className="px-5 py-3 font-medium text-muted-foreground text-right">Narokovano</th>
+                  <th className="px-5 py-3 font-medium text-muted-foreground text-right">Nárokováno</th>
                   <th className="px-5 py-3 font-medium text-muted-foreground">Aktualizace</th>
                 </tr>
               </thead>
@@ -312,7 +312,7 @@ export default function ClaimsDashboard() {
                       </td>
                       <td className="px-5 py-3 text-right font-medium">
                         {c.claimed_amount
-                          ? `${c.claimed_amount.toLocaleString('cs-CZ')} Kc`
+                          ? `${c.claimed_amount.toLocaleString('cs-CZ')} Kč`
                           : '—'}
                       </td>
                       <td className="px-5 py-3 text-muted-foreground text-xs">
@@ -338,8 +338,8 @@ export default function ClaimsDashboard() {
                 <Plus className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="font-semibold">Novy spis</p>
-                <p className="text-sm text-muted-foreground">Zalozit novou pojistnou udalost</p>
+                <p className="font-semibold">Nový spis</p>
+                <p className="text-sm text-muted-foreground">Založit novou pojistnou událost</p>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
             </CardContent>
@@ -352,8 +352,8 @@ export default function ClaimsDashboard() {
                 <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <p className="font-semibold">K doplneni</p>
-                <p className="text-sm text-muted-foreground">Spisy cekajici na podklady od klienta</p>
+                <p className="font-semibold">K doplnění</p>
+                <p className="text-sm text-muted-foreground">Spisy čekající na podklady od klienta</p>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
             </CardContent>
