@@ -59,7 +59,7 @@ export function Hero() {
       </div>
 
       {/* ── Content ── */}
-      <div className="relative z-10 container mx-auto px-4 py-20 sm:py-28">
+      <div className="relative z-10 container mx-auto px-4 pt-20 sm:pt-28 pb-36 sm:pb-48">
         <div className="flex flex-col items-center text-center">
           {/* Logo */}
           <div className="mb-8 animate-[fadeInUp_0.6s_ease-out_both]">
