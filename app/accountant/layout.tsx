@@ -58,6 +58,7 @@ import { WelcomeModal } from '@/components/accountant/welcome-modal'
 import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
 import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-context'
 import { BookOpen, Lock, UserPlus } from 'lucide-react'
+import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 
 const navigation = [
@@ -109,7 +110,7 @@ export default function AccountantLayout({
 function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const { userName, userInitials, userRole, permissions } = useAccountantUser()
+  const { userName, userInitials, userRole, permissions, userModules } = useAccountantUser()
   const { startTour } = useTutorialContext()
   const inboxCount = useInboxCount()
   const { totals: attentionTotals } = useAttention()
@@ -187,6 +188,13 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
               )}
             </div>
           </div>
+
+          {/* App Switcher */}
+          {!collapsed && userModules.length > 1 && (
+            <div className="relative px-3 py-2 border-b border-white/[0.06]">
+              <AppSwitcher userModules={userModules} />
+            </div>
+          )}
 
           {/* Navigation */}
           <TooltipProvider delayDuration={0}>

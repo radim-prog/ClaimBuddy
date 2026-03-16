@@ -224,3 +224,241 @@ export function getCategoryGroup(category: InsuranceCategory): string | null {
   }
   return null
 }
+
+// =============================================================================
+// POJISTNÉ UDÁLOSTI (Insurance Claims / Cases)
+// =============================================================================
+
+// --- Enums as union types ---
+
+export type InsuranceType = 'auto' | 'property' | 'life' | 'liability' | 'travel' | 'industrial' | 'other'
+
+export type InsuranceCaseStatus = 'new' | 'gathering_docs' | 'submitted' | 'under_review' | 'additional_info' | 'partially_approved' | 'approved' | 'rejected' | 'appealed' | 'closed' | 'cancelled'
+
+export type CasePriority = 'low' | 'normal' | 'high' | 'urgent'
+
+export type DocumentType = 'claim_report' | 'photo' | 'expert_report' | 'correspondence' | 'decision' | 'invoice' | 'power_of_attorney' | 'police_report' | 'medical_report' | 'other'
+
+export type PaymentType = 'partial' | 'full' | 'advance' | 'refund'
+
+// --- DB row types ---
+
+export interface InsuranceCompany {
+  id: string
+  name: string
+  code: string | null
+  ico: string | null
+  address: string | null
+  phone: string | null
+  email: string | null
+  claims_email: string | null
+  claims_phone: string | null
+  web_url: string | null
+  logo_path: string | null
+  active: boolean
+  created_at: string
+}
+
+export interface InsuranceCase {
+  id: string
+  company_id: string | null
+  assigned_to: string | null
+  case_number: string
+  policy_number: string | null
+  claim_number: string | null
+  insurance_company_id: string | null
+  insurance_type: InsuranceType
+  event_date: string | null
+  event_description: string | null
+  event_location: string | null
+  claimed_amount: number | null
+  approved_amount: number | null
+  paid_amount: number
+  status: InsuranceCaseStatus
+  priority: CasePriority
+  deadline: string | null
+  note: string | null
+  tags: string[]
+  project_id: string | null
+  created_at: string
+  updated_at: string
+  // Joined fields (optional)
+  insurance_company?: InsuranceCompany
+  company?: { id: string; name: string; ico: string | null }
+  assigned_user?: { id: string; name: string }
+  documents_count?: number
+}
+
+export interface InsuranceCaseDocument {
+  id: string
+  case_id: string
+  name: string
+  file_path: string
+  file_size: number | null
+  mime_type: string | null
+  document_type: DocumentType
+  uploaded_by: string | null
+  note: string | null
+  created_at: string
+}
+
+export interface InsuranceCaseEvent {
+  id: string
+  case_id: string
+  event_type: string
+  actor: string
+  description: string
+  metadata: Record<string, unknown> | null
+  created_at: string
+}
+
+export interface InsurancePayment {
+  id: string
+  case_id: string
+  amount: number
+  payment_type: PaymentType
+  payment_date: string
+  reference: string | null
+  note: string | null
+  created_by: string | null
+  created_at: string
+}
+
+// --- Input types for creating/updating ---
+
+export interface CreateCaseInput {
+  company_id?: string
+  assigned_to?: string
+  policy_number?: string
+  claim_number?: string
+  insurance_company_id?: string
+  insurance_type: InsuranceType
+  event_date?: string
+  event_description?: string
+  event_location?: string
+  claimed_amount?: number
+  priority?: CasePriority
+  deadline?: string
+  note?: string
+  tags?: string[]
+}
+
+export interface UpdateCaseInput {
+  assigned_to?: string
+  policy_number?: string
+  claim_number?: string
+  insurance_company_id?: string
+  insurance_type?: InsuranceType
+  event_date?: string
+  event_description?: string
+  event_location?: string
+  claimed_amount?: number
+  approved_amount?: number
+  status?: InsuranceCaseStatus
+  priority?: CasePriority
+  deadline?: string
+  note?: string
+  tags?: string[]
+}
+
+// --- Helper functions ---
+
+export function insuranceTypeLabel(type: InsuranceType): string {
+  const labels: Record<InsuranceType, string> = {
+    auto: 'Autopojištění',
+    property: 'Pojištění majetku',
+    life: 'Životní pojištění',
+    liability: 'Pojištění odpovědnosti',
+    travel: 'Cestovní pojištění',
+    industrial: 'Průmyslové pojištění',
+    other: 'Jiné',
+  }
+  return labels[type] || type
+}
+
+export function insuranceStatusLabel(status: InsuranceCaseStatus): string {
+  const labels: Record<InsuranceCaseStatus, string> = {
+    new: 'Nový',
+    gathering_docs: 'Shromažďování dokumentů',
+    submitted: 'Podáno',
+    under_review: 'V posouzení',
+    additional_info: 'Doplnění informací',
+    partially_approved: 'Částečně schváleno',
+    approved: 'Schváleno',
+    rejected: 'Zamítnuto',
+    appealed: 'Odvolání',
+    closed: 'Uzavřeno',
+    cancelled: 'Zrušeno',
+  }
+  return labels[status] || status
+}
+
+export function insuranceStatusColor(status: InsuranceCaseStatus): string {
+  const colors: Record<InsuranceCaseStatus, string> = {
+    new: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    gathering_docs: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+    submitted: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+    under_review: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+    additional_info: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+    partially_approved: 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300',
+    approved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    appealed: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+    closed: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
+    cancelled: 'bg-gray-100 text-gray-500 dark:bg-gray-900/30 dark:text-gray-400',
+  }
+  return colors[status] || 'bg-gray-100 text-gray-800'
+}
+
+export function priorityLabel(priority: CasePriority): string {
+  const labels: Record<CasePriority, string> = {
+    low: 'Nízká',
+    normal: 'Normální',
+    high: 'Vysoká',
+    urgent: 'Urgentní',
+  }
+  return labels[priority] || priority
+}
+
+export function priorityColor(priority: CasePriority): string {
+  const colors: Record<CasePriority, string> = {
+    low: 'text-gray-500',
+    normal: 'text-blue-600',
+    high: 'text-orange-600',
+    urgent: 'text-red-600',
+  }
+  return colors[priority] || 'text-gray-500'
+}
+
+export function documentTypeLabel(type: DocumentType): string {
+  const labels: Record<DocumentType, string> = {
+    claim_report: 'Hlášení škody',
+    photo: 'Fotodokumentace',
+    expert_report: 'Znalecký posudek',
+    correspondence: 'Korespondence',
+    decision: 'Rozhodnutí pojišťovny',
+    invoice: 'Faktura',
+    power_of_attorney: 'Plná moc',
+    police_report: 'Policejní protokol',
+    medical_report: 'Lékařská zpráva',
+    other: 'Jiné',
+  }
+  return labels[type] || type
+}
+
+export function paymentTypeLabel(type: PaymentType): string {
+  const labels: Record<PaymentType, string> = {
+    partial: 'Částečné plnění',
+    full: 'Plné plnění',
+    advance: 'Záloha',
+    refund: 'Vrácení',
+  }
+  return labels[type] || type
+}
+
+// Case number generator: PU-YYYY-NNN
+export function generateCaseNumber(sequenceNumber: number): string {
+  const year = new Date().getFullYear()
+  const padded = String(sequenceNumber).padStart(3, '0')
+  return `PU-${year}-${padded}`
+}

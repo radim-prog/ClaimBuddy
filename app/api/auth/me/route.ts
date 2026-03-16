@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
       role: user.role,
       login_name: user.login_name,
       permissions: user.permissions,
+      modules: user.modules || ['accounting'],
       impersonate_company: impersonateCompany,
     })
   } catch {

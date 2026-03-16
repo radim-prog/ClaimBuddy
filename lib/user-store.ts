@@ -23,6 +23,7 @@ export interface StoredUser {
   verification_token_expires: string | null
   reset_token: string | null
   reset_token_expires: string | null
+  modules: string[]
   created_at: string
   updated_at: string
 }

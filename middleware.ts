@@ -9,7 +9,7 @@ if (!AUTH_SECRET) {
 }
 
 const PUBLIC_EXACT = ['/', '/ucetni']  // Exact match only (startsWith '/' would match everything)
-const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-sent', '/api/auth/verify', '/pricing', '/marketplace', '/api/marketplace', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/setup/first-admin', '/api/cron/drive-sync', '/api/cron/trial-expiry', '/api/cron/credits-reset', '/api/cron/fetch-emails', '/api/cron/fetch-document-emails', '/api/cron/lead-emails', '/api/cron/purge-trash', '/api/cron/sync-ecomail-contacts', '/api/cron/raynet-sync', '/api/cron/health-scores', '/api/cron/generate-notifications', '/api/cron/notion-sync', '/api/cron/reminders', '/api/cron/billing', '/api/signing/webhook']
+const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-sent', '/api/auth/verify', '/pricing', '/marketplace', '/legal', '/api/marketplace', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/setup/first-admin', '/api/cron/drive-sync', '/api/cron/trial-expiry', '/api/cron/credits-reset', '/api/cron/fetch-emails', '/api/cron/fetch-document-emails', '/api/cron/lead-emails', '/api/cron/purge-trash', '/api/cron/sync-ecomail-contacts', '/api/cron/raynet-sync', '/api/cron/health-scores', '/api/cron/generate-notifications', '/api/cron/notion-sync', '/api/cron/reminders', '/api/cron/billing', '/api/signing/webhook']
 const STATIC_PREFIXES = ['/_next', '/static', '/favicon.ico']
 
 // --- Rate Limiting (in-memory, sliding window) ---
@@ -56,6 +56,7 @@ interface TokenPayload {
   name: string
   role: string
   plan?: string
+  modules?: string[]
   exp: number
 }
 
@@ -226,12 +227,31 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Module-based access control for /claims/*
+  if (pathname.startsWith('/claims') || pathname.startsWith('/api/claims')) {
+    const userModules = user.modules || ['accounting']
+    if (!userModules.includes('claims')) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Module not enabled' }, { status: 403 })
+      }
+      return NextResponse.redirect(new URL('/accountant/dashboard', request.url))
+    }
+    // Claims requires staff role
+    if (!isStaffRole) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      return NextResponse.redirect(new URL('/client/dashboard', request.url))
+    }
+  }
+
   // Add user info to headers
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-user-id', user.id)
   requestHeaders.set('x-user-name', user.name)
   requestHeaders.set('x-user-role', user.role)
   requestHeaders.set('x-user-plan', user.plan || 'free')
+  requestHeaders.set('x-user-modules', JSON.stringify(user.modules || ['accounting']))
 
   // Forward impersonation context if active
   if (isImpersonating) {
