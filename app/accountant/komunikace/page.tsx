@@ -112,6 +112,12 @@ function KomunikaceOrchestrator() {
 
   const selectedConv = currentChatId ? conversations.find(c => c.id === currentChatId) : null
 
+  // Sibling conversations for the same company (for sidebar)
+  const siblingConversations = useMemo(() => {
+    if (!selectedConv?.company_id) return []
+    return conversations.filter(c => c.company_id === selectedConv.company_id)
+  }, [conversations, selectedConv?.company_id])
+
   // Get conversations for current view
   const currentViewConvs = currentView === 'needs_response' ? needsResponse
     : currentView === 'awaiting_client' ? awaitingClient
@@ -152,8 +158,10 @@ function KomunikaceOrchestrator() {
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900" style={{ height: 'calc(100vh - 160px)' }}>
           <KomunikaceChatDetail
             conversation={selectedConv}
+            siblingConversations={siblingConversations}
             onBack={currentView ? handleBackToList : handleBackToOverview}
             onConversationChange={refreshConversations}
+            onSwitchConversation={handleConversationClick}
             breadcrumbLabel={currentView ? `Zpet na seznam` : 'Zpet na prehled'}
           />
         </div>

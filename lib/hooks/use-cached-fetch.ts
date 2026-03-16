@@ -32,14 +32,20 @@ export function useCachedFetch<T>(
 
   const fetcherRef = useRef(fetcher)
   fetcherRef.current = fetcher
+  const lastJsonRef = useRef<string>('')
 
   const refresh = useCallback(async () => {
     try {
       const result = await fetcherRef.current()
-      setData(result)
-      try {
-        sessionStorage.setItem(`cache:${key}`, JSON.stringify(result))
-      } catch {}
+      const json = JSON.stringify(result)
+      // Only update state if data actually changed — prevents unnecessary re-renders
+      if (json !== lastJsonRef.current) {
+        lastJsonRef.current = json
+        setData(result)
+        try {
+          sessionStorage.setItem(`cache:${key}`, json)
+        } catch {}
+      }
     } catch {
       // silent
     } finally {
