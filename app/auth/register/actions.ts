@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { hashPassword } from '@/lib/auth'
 import { sendVerificationEmail } from '@/lib/email-service'
+import { triggerOnboardingSequence } from '@/lib/marketing-service'
 
 export async function register(formData: FormData) {
   const name = (formData.get('name') as string)?.trim()
@@ -79,6 +80,9 @@ export async function register(formData: FormData) {
     const verifyUrl = `${appUrl}/api/auth/verify?token=${verificationToken}`
 
     await sendVerificationEmail(email, name, verifyUrl)
+
+    // Trigger onboarding email sequence (non-blocking)
+    triggerOnboardingSequence(email).catch(() => {})
   } catch (err) {
     console.error('Registration error:', err)
     return { error: 'Nepodařilo se dokončit registraci. Zkuste to prosím znovu.' }

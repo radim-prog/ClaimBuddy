@@ -84,7 +84,17 @@ export async function POST(request: NextRequest) {
       }
 
       case 'invoice.paid': {
-        const subscriptionId = extractSubscriptionId(event.data.object)
+        const paidInvoice: WebhookObject = event.data.object
+
+        // Billing-as-a-service: if the invoice belongs to a billing-service subscription,
+        // mark the corresponding billing_invoices record as paid.
+        // TODO: Enable when Stripe is fully configured for billing-service subscriptions
+        // if (paidInvoice.subscription_details?.metadata?.type === 'billing_service') {
+        //   const { markInvoicePaid } = await import('@/lib/billing-service')
+        //   // Match by stripe_invoice_id stored in billing_invoices metadata
+        // }
+
+        const subscriptionId = extractSubscriptionId(paidInvoice)
         if (subscriptionId) {
           await updateSubscriptionByStripeId(subscriptionId, { status: 'active' })
           logError({ level: 'info', message: `Payment confirmed for subscription: ${subscriptionId}`, source: 'stripe-webhook' })

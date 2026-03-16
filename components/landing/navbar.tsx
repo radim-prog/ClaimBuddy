@@ -9,6 +9,7 @@ import { Menu, X } from 'lucide-react'
 const NAV_LINKS = [
   { href: '#features', label: 'Funkce' },
   { href: '#how-it-works', label: 'Jak to funguje' },
+  { href: '/marketplace', label: 'Marketplace' },
   { href: '#pricing', label: 'Ceník' },
   { href: '#faq', label: 'FAQ' },
 ]
@@ -25,15 +26,25 @@ export function Navbar() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-8">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {link.label}
-            </a>
-          ))}
+          {NAV_LINKS.map((link) =>
+            link.href.startsWith('/') ? (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {link.label}
+              </a>
+            )
+          )}
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
@@ -59,16 +70,27 @@ export function Navbar() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden border-t border-border/40 bg-background p-4 space-y-3">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="block text-sm font-medium text-muted-foreground hover:text-foreground py-2"
-              onClick={() => setMobileOpen(false)}
-            >
-              {link.label}
-            </a>
-          ))}
+          {NAV_LINKS.map((link) =>
+            link.href.startsWith('/') ? (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="block text-sm font-medium text-muted-foreground hover:text-foreground py-2"
+                onClick={() => setMobileOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.href}
+                href={link.href}
+                className="block text-sm font-medium text-muted-foreground hover:text-foreground py-2"
+                onClick={() => setMobileOpen(false)}
+              >
+                {link.label}
+              </a>
+            )
+          )}
           <div className="pt-3 border-t space-y-2">
             <Button variant="outline" size="sm" className="w-full" asChild>
               <Link href="/auth/login">Přihlásit se</Link>

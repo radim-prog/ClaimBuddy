@@ -23,6 +23,7 @@ import {
   Briefcase,
   Activity,
   FileSignature,
+  Inbox,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -300,6 +301,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
             { href: `${basePath}/tasks`, label: 'Úkoly', icon: ClipboardList, match: (p: string) => p.includes('/tasks'), badge: tasksBadge },
             { href: `${basePath}/messages`, label: 'Zprávy', icon: MessageCircle, match: (p: string) => p.includes('/messages'), badge: messagesBadge },
             { href: `${basePath}/documents`, label: 'Doklady', icon: FileText, match: (p: string) => p.includes('/documents'), badge: documentsBadge },
+            { href: `${basePath}/inbox`, label: 'Inbox', icon: Inbox, match: (p: string) => p.includes('/inbox') },
             { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files'), badge: filesBadge },
             { href: `${basePath}/travel`, label: 'Jízdy', icon: Car, match: (p: string) => p.includes('/travel') },
             { href: `${basePath}/taxes`, label: 'Daně', icon: Calculator, match: (p: string) => p.includes('/taxes') },

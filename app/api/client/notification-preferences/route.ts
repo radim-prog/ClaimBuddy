@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 const DEFAULT_PREFERENCES = {
   email: true,
   telegram: false,
+  marketing_emails: true,
   types: {
     missing_document_tax_impact: true,
     invoice_due_reminder: true,
@@ -74,7 +75,7 @@ export async function PATCH(request: NextRequest) {
     if (body.preferences !== undefined) {
       // Client can only toggle channels (email/telegram) and non-forced types
       // Accountant-forced settings are read-only for client
-      const clientAllowed = ['email', 'telegram', 'types']
+      const clientAllowed = ['email', 'telegram', 'types', 'marketing_emails']
       const filtered: Record<string, unknown> = {}
       for (const key of clientAllowed) {
         if (body.preferences[key] !== undefined) {

@@ -1,365 +1,796 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
 import {
-  DollarSign, Users, AlertTriangle, CheckCircle2, Clock,
-  ChevronDown, ChevronUp, Plus, Pause, XCircle, CreditCard, TrendingUp,
+  CreditCard,
+  Users,
+  TrendingUp,
+  CheckCircle,
+  AlertTriangle,
+  Plus,
+  Play,
+  Pause,
+  XCircle,
+  Pencil,
+  RefreshCw,
+  Loader2,
+  Banknote,
+  Clock,
+  ArrowRight,
 } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
-interface Stats {
-  active_clients: number
-  total_mrr: number
-  pending_amount: number
-  overdue_amount: number
-  overdue_count: number
-  paid_this_month: number
+// ── Types ────────────────────────────────────────────────────────────────
+
+interface BillingDashboard {
+  totalClients: number
+  totalMRR: number
+  currentPeriod: string
+  paidThisMonth: number
+  paidCount: number
+  overdueCount: number
+  overdueAmount: number
+  latestPayout: PayoutRecord | null
+  platformFeePct: number
 }
 
-interface Cycle {
+interface BillingConfig {
   id: string
   company_id: string
-  company_name: string | null
-  period: string
-  amount_due: number
-  platform_fee: number
-  provider_payout: number
-  status: string
-  due_date: string
-  paid_at: string | null
-  reminder_count: number
-  escalation_level: number
-}
-
-interface Config {
-  id: string
-  company_id: string
-  company_name: string | null
-  monthly_fee_czk: number
+  company_name: string
+  monthly_fee: number
+  status: 'draft' | 'active' | 'paused' | 'cancelled' | 'suspended'
+  stripe_subscription_id: string | null
   platform_fee_pct: number
-  billing_day: number
-  status: string
+  activated_at: string | null
+  cancelled_at: string | null
+  notes: string | null
 }
 
-const czk = (halere: number) => `${(halere / 100).toLocaleString('cs-CZ')} Kč`
-
-const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-  paid: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  overdue: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  cancelled: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-  written_off: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+interface PayoutRecord {
+  id: string
+  period: string
+  total_collected: number
+  total_fee: number
+  total_payout: number
+  status: 'pending' | 'processing' | 'paid'
+  paid_at: string | null
+  payment_reference: string | null
 }
 
-const statusLabels: Record<string, string> = {
-  pending: 'Čeká', paid: 'Zaplaceno', overdue: 'Po splatnosti',
-  cancelled: 'Zrušeno', written_off: 'Odpis',
+interface Company {
+  id: string
+  name: string
 }
 
-const escalationLabels = ['Nová', 'Připomínka', 'Upomínka', 'Pozastavení']
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+const fmtCZK = (amount: number) =>
+  `${new Intl.NumberFormat('cs-CZ').format(amount)} Kc`
+
+const statusConfig: Record<BillingConfig['status'], { label: string; color: string }> = {
+  draft: { label: 'Koncept', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+  active: { label: 'Aktivni', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  paused: { label: 'Pozastaveno', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  cancelled: { label: 'Zruseno', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  suspended: { label: 'Suspendovano', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 animate-pulse' },
+}
+
+const payoutStatusConfig: Record<PayoutRecord['status'], { label: string; color: string }> = {
+  pending: { label: 'Ceka', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  processing: { label: 'Zpracovava se', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+  paid: { label: 'Vyplaceno', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+}
+
+// ── Skeleton ─────────────────────────────────────────────────────────────
+
+function KpiSkeleton() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {[1, 2, 3, 4].map(i => (
+        <Card key={i} className="animate-pulse">
+          <CardHeader className="pb-2">
+            <div className="h-4 w-24 bg-muted rounded" />
+          </CardHeader>
+          <CardContent>
+            <div className="h-8 w-32 bg-muted rounded mb-1" />
+            <div className="h-3 w-20 bg-muted rounded" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+function TableSkeleton() {
+  return (
+    <div className="space-y-3 animate-pulse">
+      {[1, 2, 3, 4, 5].map(i => (
+        <div key={i} className="flex items-center gap-4 p-4 bg-muted/30 rounded-xl">
+          <div className="h-5 w-40 bg-muted rounded" />
+          <div className="h-5 w-20 bg-muted rounded" />
+          <div className="h-5 w-16 bg-muted rounded" />
+          <div className="ml-auto h-8 w-24 bg-muted rounded" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Main Component ───────────────────────────────────────────────────────
 
 export default function BillingPage() {
-  const [period, setPeriod] = useState(() => new Date().toISOString().slice(0, 7))
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [cycles, setCycles] = useState<Cycle[]>([])
-  const [overdue, setOverdue] = useState<Cycle[]>([])
-  const [configs, setConfigs] = useState<Config[]>([])
+  const [dashboard, setDashboard] = useState<BillingDashboard | null>(null)
+  const [configs, setConfigs] = useState<BillingConfig[]>([])
+  const [payouts, setPayouts] = useState<PayoutRecord[]>([])
+  const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'overview' | 'configs'>('overview')
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [newConfig, setNewConfig] = useState({ company_id: '', monthly_fee_czk: '', billing_day: '1' })
+  const [payoutsLoading, setPayoutsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const fetchOverview = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/accountant/billing?view=overview&period=${period}`)
-      if (res.ok) {
-        const data = await res.json()
-        if (!data.provider) {
-          setStats(null)
-          setCycles([])
-          setOverdue([])
-          return
-        }
-        setStats(data.stats)
-        setCycles(data.cycles || [])
-        setOverdue(data.overdue || [])
-      }
-    } catch { toast.error('Chyba při načítání') }
-    finally { setLoading(false) }
-  }
+  // Dialog states
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingConfig, setEditingConfig] = useState<BillingConfig | null>(null)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
 
-  const fetchConfigs = async () => {
+  // Add form state
+  const [addCompanyId, setAddCompanyId] = useState('')
+  const [addMonthlyFee, setAddMonthlyFee] = useState('')
+  const [addNotes, setAddNotes] = useState('')
+  const [addSubmitting, setAddSubmitting] = useState(false)
+
+  // Edit form state
+  const [editFee, setEditFee] = useState('')
+  const [editNotes, setEditNotes] = useState('')
+  const [editSubmitting, setEditSubmitting] = useState(false)
+
+  // ── Data fetching ──────────────────────────────────────────────────────
+
+  const fetchDashboard = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
-      const res = await fetch('/api/accountant/billing?view=configs')
-      if (res.ok) {
-        const data = await res.json()
-        setConfigs(data.configs || [])
+      const [billingRes, companiesRes] = await Promise.all([
+        fetch('/api/accountant/billing'),
+        fetch('/api/accountant/companies'),
+      ])
+
+      if (!billingRes.ok) throw new Error('Nepodařilo se načíst data fakturace')
+
+      const billingData = await billingRes.json()
+      setDashboard(billingData.dashboard)
+      setConfigs(billingData.configs || [])
+
+      if (companiesRes.ok) {
+        const compData = await companiesRes.json()
+        setCompanies(compData.companies || compData || [])
       }
-    } catch { toast.error('Chyba při načítání') }
-    finally { setLoading(false) }
-  }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Neznámá chyba')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const fetchPayouts = useCallback(async () => {
+    setPayoutsLoading(true)
+    try {
+      const res = await fetch('/api/accountant/billing/payouts')
+      if (!res.ok) throw new Error('Nepodařilo se načíst výplaty')
+      const data = await res.json()
+      setPayouts(data.payouts || [])
+    } catch {
+      toast.error('Chyba při načítání výplat')
+    } finally {
+      setPayoutsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    if (tab === 'overview') fetchOverview()
-    else fetchConfigs()
-  }, [tab, period])
+    fetchDashboard()
+  }, [fetchDashboard])
 
-  const handleAction = async (action: string, payload: Record<string, unknown>) => {
+  // ── Actions ────────────────────────────────────────────────────────────
+
+  const handleAction = async (configId: string, action: string) => {
+    setActionLoading(configId)
     try {
-      const res = await fetch('/api/accountant/billing', {
+      const res = await fetch(`/api/accountant/billing/${configId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ...payload }),
+        body: JSON.stringify({ action }),
       })
-      if (res.ok) {
-        toast.success('Aktualizováno')
-        if (tab === 'overview') fetchOverview()
-        else fetchConfigs()
-      } else {
-        const data = await res.json()
-        toast.error(data.error || 'Chyba')
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || 'Akce se nezdařila')
       }
-    } catch { toast.error('Chyba') }
+      toast.success(
+        action === 'activate' ? 'Fakturace aktivována' :
+        action === 'pause' ? 'Fakturace pozastavena' :
+        action === 'cancel' ? 'Fakturace zrušena' :
+        'Akce provedena'
+      )
+      fetchDashboard()
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Chyba')
+    } finally {
+      setActionLoading(null)
+    }
   }
 
-  const handleAddConfig = async () => {
-    if (!newConfig.company_id || !newConfig.monthly_fee_czk) {
-      toast.error('Vyplňte ID firmy a měsíční poplatek')
+  const handleAddSubmit = async () => {
+    if (!addCompanyId || !addMonthlyFee) {
+      toast.error('Vyplňte klienta a měsíční poplatek')
       return
     }
+    setAddSubmitting(true)
     try {
       const res = await fetch('/api/accountant/billing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          company_id: newConfig.company_id,
-          monthly_fee_czk: Math.round(Number(newConfig.monthly_fee_czk) * 100),
-          billing_day: Number(newConfig.billing_day) || 1,
+          company_id: addCompanyId,
+          monthly_fee: Number(addMonthlyFee),
+          notes: addNotes || undefined,
         }),
       })
-      if (res.ok) {
-        toast.success('Fakturace nastavena')
-        setShowAddForm(false)
-        setNewConfig({ company_id: '', monthly_fee_czk: '', billing_day: '1' })
-        fetchConfigs()
-      } else {
-        const data = await res.json()
-        toast.error(data.error || 'Chyba')
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || 'Nepodařilo se vytvořit')
       }
-    } catch { toast.error('Chyba') }
+      toast.success('Fakturace klienta přidána')
+      setAddDialogOpen(false)
+      setAddCompanyId('')
+      setAddMonthlyFee('')
+      setAddNotes('')
+      fetchDashboard()
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Chyba')
+    } finally {
+      setAddSubmitting(false)
+    }
   }
+
+  const handleEditSubmit = async () => {
+    if (!editingConfig || !editFee) return
+    setEditSubmitting(true)
+    try {
+      const res = await fetch(`/api/accountant/billing/${editingConfig.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          monthly_fee: Number(editFee),
+          notes: editNotes || undefined,
+        }),
+      })
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || 'Nepodařilo se upravit')
+      }
+      toast.success('Měsíční poplatek upraven')
+      setEditDialogOpen(false)
+      setEditingConfig(null)
+      fetchDashboard()
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Chyba')
+    } finally {
+      setEditSubmitting(false)
+    }
+  }
+
+  const openEditDialog = (config: BillingConfig) => {
+    setEditingConfig(config)
+    setEditFee(String(config.monthly_fee))
+    setEditNotes(config.notes || '')
+    setEditDialogOpen(true)
+  }
+
+  // Companies available for adding (not yet having a billing config)
+  const configuredCompanyIds = new Set(configs.map(c => c.company_id))
+  const availableCompanies = companies.filter(c => !configuredCompanyIds.has(c.id))
+
+  // ── Error state ────────────────────────────────────────────────────────
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <AlertTriangle className="h-12 w-12 text-red-400" />
+        <p className="text-lg font-medium text-foreground">{error}</p>
+        <Button onClick={fetchDashboard} variant="outline" className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Zkusit znovu
+        </Button>
+      </div>
+    )
+  }
+
+  // ── Loading state ──────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <div className="h-8 w-64 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-48 bg-muted rounded animate-pulse" />
+        </div>
+        <KpiSkeleton />
+        <TableSkeleton />
+      </div>
+    )
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <CreditCard className="h-5 w-5" /> Fakturace klientů
-        </h2>
-        <div className="flex gap-2">
-          <Button variant={tab === 'overview' ? 'default' : 'outline'} size="sm" onClick={() => setTab('overview')}>
-            Přehled
-          </Button>
-          <Button variant={tab === 'configs' ? 'default' : 'outline'} size="sm" onClick={() => setTab('configs')}>
-            Nastavení
-          </Button>
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-3 mb-1">
+          <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-900/30">
+            <CreditCard className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold font-display text-foreground">
+              Sprava fakturace klientu
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Nastavte mesicni platby a sledujte inkaso
+            </p>
+          </div>
         </div>
       </div>
 
-      {loading ? (
-        <p className="text-center text-muted-foreground py-8">Načítání...</p>
-      ) : tab === 'overview' ? (
-        <div className="space-y-6">
-          {/* Period picker */}
-          <Input type="month" value={period} onChange={e => setPeriod(e.target.value)} className="w-40 h-8 text-sm" />
+      {/* KPI Cards */}
+      {dashboard && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Aktivni klienti
+              </CardTitle>
+              <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{dashboard.totalClients}</div>
+              <p className="text-xs text-muted-foreground mt-1">s aktivni fakturaci</p>
+            </CardContent>
+          </Card>
 
-          {/* KPI */}
-          {stats && (
-            <div className="grid grid-cols-3 gap-4">
-              <div className="rounded-lg border p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground"><Users className="h-4 w-4" />Aktivní klienti</div>
-                <div className="text-2xl font-bold mt-1">{stats.active_clients}</div>
-                <div className="text-xs text-muted-foreground">MRR: {czk(stats.total_mrr)}</div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">MRR</CardTitle>
+              <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <div className="rounded-lg border p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground"><Clock className="h-4 w-4" />Čeká na platbu</div>
-                <div className="text-2xl font-bold mt-1">{czk(stats.pending_amount)}</div>
-                <div className="text-xs text-green-600">Zaplaceno: {czk(stats.paid_this_month)}</div>
-              </div>
-              <div className="rounded-lg border p-4">
-                <div className="flex items-center gap-2 text-sm text-red-600"><AlertTriangle className="h-4 w-4" />Po splatnosti</div>
-                <div className="text-2xl font-bold text-red-600 mt-1">{stats.overdue_count}</div>
-                <div className="text-xs text-red-500">Celkem: {czk(stats.overdue_amount)}</div>
-              </div>
-            </div>
-          )}
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{fmtCZK(dashboard.totalMRR)}</div>
+              <p className="text-xs text-muted-foreground mt-1">mesicni opakovany prijem</p>
+            </CardContent>
+          </Card>
 
-          {/* Current period cycles */}
-          <div>
-            <h3 className="font-medium mb-2">Období {period}</h3>
-            {cycles.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">Žádné fakturační cykly</p>
-            ) : (
-              <div className="space-y-1">
-                {cycles.map(c => (
-                  <div key={c.id} className="border rounded-lg p-3 flex items-center justify-between">
-                    <div>
-                      <span className="font-medium">{c.company_name || c.company_id}</span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        Splatnost: {new Date(c.due_date).toLocaleDateString('cs-CZ')}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{czk(c.amount_due)}</span>
-                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${statusColors[c.status] || ''}`}>
-                        {statusLabels[c.status] || c.status}
-                      </Badge>
-                      {(c.status === 'pending' || c.status === 'overdue') && (
-                        <Button size="sm" variant="outline" onClick={() => handleAction('mark_paid', { cycle_id: c.id })}>
-                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Zaplaceno
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Zaplaceno tento mesic
+              </CardTitle>
+              <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
-            )}
-          </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{fmtCZK(dashboard.paidThisMonth)}</div>
+              <p className="text-xs text-muted-foreground mt-1">{dashboard.paidCount} plateb</p>
+            </CardContent>
+          </Card>
 
-          {/* Overdue section */}
-          {overdue.length > 0 && (
-            <div>
-              <h3 className="font-medium mb-2 text-red-600 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" /> Po splatnosti ({overdue.length})
-              </h3>
-              <div className="space-y-1">
-                {overdue.map(c => (
-                  <div key={c.id} className="border border-red-200 dark:border-red-900/50 rounded-lg p-3 flex items-center justify-between">
-                    <div>
-                      <span className="font-medium">{c.company_name || c.company_id}</span>
-                      <div className="text-xs text-muted-foreground">
-                        {c.period} · Splatnost: {new Date(c.due_date).toLocaleDateString('cs-CZ')} · {c.reminder_count} upomínek
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-red-600">{czk(c.amount_due)}</span>
-                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
-                        c.escalation_level >= 3 ? 'bg-red-200 text-red-900 dark:bg-red-900/50 dark:text-red-200' :
-                        c.escalation_level >= 2 ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
-                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                      }`}>
-                        {escalationLabels[c.escalation_level]}
-                      </Badge>
-                      <Button size="sm" variant="outline" onClick={() => handleAction('mark_paid', { cycle_id: c.id })}>
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={() => handleAction('write_off', { cycle_id: c.id })}>
-                        Odpis
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+          <Card className={dashboard.overdueCount > 0 ? 'border-red-200 dark:border-red-900/50' : ''}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Po splatnosti</CardTitle>
+              <div className={`p-1.5 rounded-lg ${dashboard.overdueCount > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                <AlertTriangle className={`h-4 w-4 ${dashboard.overdueCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`} />
               </div>
-            </div>
-          )}
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${dashboard.overdueCount > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                {dashboard.overdueCount > 0 ? fmtCZK(dashboard.overdueAmount) : '0'}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {dashboard.overdueCount > 0 ? `${dashboard.overdueCount} neuhrazenych` : 'Zadne nedoplatky'}
+              </p>
+            </CardContent>
+          </Card>
         </div>
-      ) : (
-        /* CONFIGS TAB */
-        <div className="space-y-4">
-          <div className="flex justify-end">
-            <Button size="sm" onClick={() => setShowAddForm(!showAddForm)}>
-              <Plus className="h-3.5 w-3.5 mr-1" /> Přidat klienta
+      )}
+
+      {/* Tabs */}
+      <Tabs defaultValue="clients" onValueChange={(v) => { if (v === 'payouts') fetchPayouts() }}>
+        <TabsList>
+          <TabsTrigger value="clients">Klienti</TabsTrigger>
+          <TabsTrigger value="payouts">Vyplaty</TabsTrigger>
+        </TabsList>
+
+        {/* ── Tab: Clients ──────────────────────────────────────────────── */}
+        <TabsContent value="clients" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {configs.length} klientu s nastavenou fakturaci
+            </p>
+            <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Pridat klienta
             </Button>
           </div>
 
-          {showAddForm && (
-            <div className="border rounded-lg p-4 space-y-3 bg-gray-50 dark:bg-gray-800/50">
-              <h4 className="text-sm font-medium">Nová fakturace</h4>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs text-muted-foreground">ID firmy (UUID)</label>
-                  <Input
-                    value={newConfig.company_id}
-                    onChange={e => setNewConfig(v => ({ ...v, company_id: e.target.value }))}
-                    placeholder="UUID firmy"
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Měsíční poplatek (Kč)</label>
-                  <Input
-                    type="number"
-                    value={newConfig.monthly_fee_czk}
-                    onChange={e => setNewConfig(v => ({ ...v, monthly_fee_czk: e.target.value }))}
-                    placeholder="5000"
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Den splatnosti (1-28)</label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={28}
-                    value={newConfig.billing_day}
-                    onChange={e => setNewConfig(v => ({ ...v, billing_day: e.target.value }))}
-                    className="h-8 text-sm"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleAddConfig}>Uložit</Button>
-                <Button size="sm" variant="ghost" onClick={() => setShowAddForm(false)}>Zrušit</Button>
-              </div>
-            </div>
-          )}
-
           {configs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Žádní klienti s nastavenou fakturací</p>
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <CreditCard className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                <p className="text-lg font-medium text-foreground mb-1">Zatim zadni klienti</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Pridejte prvniho klienta a nastavte mu mesicni fakturaci.
+                </p>
+                <Button onClick={() => setAddDialogOpen(true)} variant="outline" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Pridat klienta
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
-            <div className="space-y-1">
-              {configs.map(c => (
-                <div key={c.id} className="border rounded-lg p-3 flex items-center justify-between">
-                  <div>
-                    <span className="font-medium">{c.company_name || c.company_id}</span>
-                    <div className="text-xs text-muted-foreground">
-                      {czk(c.monthly_fee_czk)}/měs · Splatnost {c.billing_day}. den · Fee {c.platform_fee_pct}%
+            <div className="space-y-2">
+              <div className="hidden md:grid md:grid-cols-[1fr_120px_100px_100px_180px] gap-4 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                <span>Klient</span>
+                <span>Poplatek</span>
+                <span>Stav</span>
+                <span>Platf. %</span>
+                <span className="text-right">Akce</span>
+              </div>
+
+              {configs.map(config => {
+                const st = statusConfig[config.status]
+                const isLoading = actionLoading === config.id
+
+                return (
+                  <Card key={config.id} className="overflow-hidden">
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_120px_100px_100px_180px] gap-3 md:gap-4 items-center p-4">
+                      <div>
+                        <p className="font-medium text-foreground">{config.company_name}</p>
+                        {config.activated_at && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            od {new Date(config.activated_at).toLocaleDateString('cs-CZ')}
+                          </p>
+                        )}
+                        {config.cancelled_at && (
+                          <p className="text-xs text-red-500 mt-0.5">
+                            zruseno {new Date(config.cancelled_at).toLocaleDateString('cs-CZ')}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-semibold md:hidden text-muted-foreground">Poplatek: </span>
+                        <span className="text-sm font-semibold">{fmtCZK(config.monthly_fee)}</span>
+                        <span className="text-xs text-muted-foreground">/mes</span>
+                      </div>
+
+                      <div>
+                        <Badge className={`${st.color} border-0`}>{st.label}</Badge>
+                      </div>
+
+                      <div className="text-sm text-muted-foreground">
+                        <span className="md:hidden font-medium text-foreground">Platforma: </span>
+                        {config.platform_fee_pct}%
+                      </div>
+
+                      <div className="flex items-center gap-1.5 md:justify-end flex-wrap">
+                        {isLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        ) : (
+                          <>
+                            {config.status === 'draft' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                                onClick={() => handleAction(config.id, 'activate')}
+                              >
+                                <Play className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline">Aktivovat</span>
+                              </Button>
+                            )}
+                            {config.status === 'active' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                                onClick={() => handleAction(config.id, 'pause')}
+                              >
+                                <Pause className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline">Pozastavit</span>
+                              </Button>
+                            )}
+                            {config.status === 'paused' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                                onClick={() => handleAction(config.id, 'activate')}
+                              >
+                                <Play className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline">Obnovit</span>
+                              </Button>
+                            )}
+                            {(config.status === 'active' || config.status === 'paused' || config.status === 'draft') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                onClick={() => {
+                                  if (confirm(`Opravdu chcete zrusit fakturaci pro ${config.company_name}?`)) {
+                                    handleAction(config.id, 'cancel')
+                                  }
+                                }}
+                              >
+                                <XCircle className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline">Zrusit</span>
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1"
+                              onClick={() => openEditDialog(config)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                              <span className="hidden sm:inline">Upravit</span>
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
-                      c.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                      c.status === 'paused' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                      'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                    }`}>
-                      {c.status === 'active' ? 'Aktivní' : c.status === 'paused' ? 'Pozastaveno' : 'Zrušeno'}
-                    </Badge>
-                    {c.status === 'active' && (
-                      <Button size="sm" variant="ghost" onClick={() => handleAction('update_config', { config_id: c.id, status: 'paused' })}>
-                        <Pause className="h-3.5 w-3.5" />
-                      </Button>
+
+                    {config.notes && (
+                      <div className="px-4 pb-3 -mt-1">
+                        <p className="text-xs text-muted-foreground italic">{config.notes}</p>
+                      </div>
                     )}
-                    {c.status === 'paused' && (
-                      <Button size="sm" variant="ghost" onClick={() => handleAction('update_config', { config_id: c.id, status: 'active' })}>
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                    {c.status !== 'cancelled' && (
-                      <Button size="sm" variant="ghost" className="text-red-500" onClick={() => handleAction('update_config', { config_id: c.id, status: 'cancelled' })}>
-                        <XCircle className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                  </Card>
+                )
+              })}
             </div>
           )}
-        </div>
-      )}
+        </TabsContent>
+
+        {/* ── Tab: Payouts ──────────────────────────────────────────────── */}
+        <TabsContent value="payouts" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Prehled vyplat po jednotlivych obdobich
+            </p>
+            <Button onClick={fetchPayouts} variant="outline" size="sm" className="gap-2">
+              <RefreshCw className="h-3.5 w-3.5" />
+              Obnovit
+            </Button>
+          </div>
+
+          {payoutsLoading ? (
+            <TableSkeleton />
+          ) : payouts.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <Banknote className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                <p className="text-lg font-medium text-foreground mb-1">Zatim zadne vyplaty</p>
+                <p className="text-sm text-muted-foreground">
+                  Vyplaty se vytvori automaticky po inkasu plateb od klientu.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              <div className="hidden md:grid md:grid-cols-[140px_1fr_1fr_1fr_120px_140px] gap-4 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                <span>Obdobi</span>
+                <span>Inkasovano</span>
+                <span>Poplatek platformy</span>
+                <span>K vyplate</span>
+                <span>Stav</span>
+                <span>Reference</span>
+              </div>
+
+              {payouts.map(payout => {
+                const ps = payoutStatusConfig[payout.status]
+                return (
+                  <Card key={payout.id}>
+                    <div className="grid grid-cols-1 md:grid-cols-[140px_1fr_1fr_1fr_120px_140px] gap-3 md:gap-4 items-center p-4">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground md:hidden" />
+                        <span className="text-sm font-semibold">{payout.period}</span>
+                      </div>
+
+                      <div>
+                        <span className="text-sm md:hidden text-muted-foreground">Inkasovano: </span>
+                        <span className="text-sm font-medium">{fmtCZK(payout.total_collected)}</span>
+                      </div>
+
+                      <div>
+                        <span className="text-sm md:hidden text-muted-foreground">Poplatek: </span>
+                        <span className="text-sm text-muted-foreground">-{fmtCZK(payout.total_fee)}</span>
+                      </div>
+
+                      <div>
+                        <span className="text-sm md:hidden text-muted-foreground">K vyplate: </span>
+                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                          {fmtCZK(payout.total_payout)}
+                        </span>
+                      </div>
+
+                      <div>
+                        <Badge className={`${ps.color} border-0`}>{ps.label}</Badge>
+                      </div>
+
+                      <div className="text-sm text-muted-foreground truncate">
+                        {payout.payment_reference || <span className="text-xs italic">-</span>}
+                      </div>
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* ── Add Client Dialog ─────────────────────────────────────────── */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pridat klienta do fakturace</DialogTitle>
+            <DialogDescription>
+              Nastavte mesicni poplatek pro klienta. Fakturace bude ve stavu &quot;Koncept&quot; dokud ji neaktivujete.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="add-company">Klient</Label>
+              <Select value={addCompanyId} onValueChange={setAddCompanyId}>
+                <SelectTrigger id="add-company">
+                  <SelectValue placeholder="Vyberte klienta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableCompanies.length === 0 ? (
+                    <SelectItem value="_none" disabled>
+                      Vsichni klienti jsou pridani
+                    </SelectItem>
+                  ) : (
+                    availableCompanies.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="add-fee">Mesicni poplatek (Kc)</Label>
+              <Input
+                id="add-fee"
+                type="number"
+                min={0}
+                step={100}
+                placeholder="napr. 5000"
+                value={addMonthlyFee}
+                onChange={e => setAddMonthlyFee(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="add-notes">Poznamky (volitelne)</Label>
+              <Textarea
+                id="add-notes"
+                placeholder="Interni poznamky k fakturaci..."
+                value={addNotes}
+                onChange={e => setAddNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Zrusit</Button>
+            <Button
+              onClick={handleAddSubmit}
+              disabled={addSubmitting || !addCompanyId || !addMonthlyFee}
+              className="gap-2"
+            >
+              {addSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              Pridat
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit Fee Dialog ───────────────────────────────────────────── */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upravit poplatek</DialogTitle>
+            <DialogDescription>
+              {editingConfig?.company_name} &mdash; aktualni poplatek {editingConfig ? fmtCZK(editingConfig.monthly_fee) : ''}/mes
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-fee">Novy mesicni poplatek (Kc)</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground line-through">
+                  {editingConfig ? fmtCZK(editingConfig.monthly_fee) : ''}
+                </span>
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="edit-fee"
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={editFee}
+                  onChange={e => setEditFee(e.target.value)}
+                  className="max-w-[160px]"
+                />
+                <span className="text-sm text-muted-foreground">Kc</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-notes">Poznamky</Label>
+              <Textarea
+                id="edit-notes"
+                placeholder="Duvod zmeny, poznamky..."
+                value={editNotes}
+                onChange={e => setEditNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Zrusit</Button>
+            <Button
+              onClick={handleEditSubmit}
+              disabled={editSubmitting || !editFee}
+              className="gap-2"
+            >
+              {editSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              Ulozit zmeny
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

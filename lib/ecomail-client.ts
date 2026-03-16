@@ -114,6 +114,113 @@ export async function triggerAutomation(config: EcomailConfig, automationId: str
   return res.json();
 }
 
+// Get all contact lists
+export async function getLists(config: EcomailConfig): Promise<Array<{ id: number; name: string; subscriber_count: number }>> {
+  const res = await fetch(`${ECOMAIL_BASE}/lists`, {
+    headers: getHeaders(config),
+  })
+  if (!res.ok) { const err = await res.text(); throw new Error(`Ecomail API ${res.status}: ${err}`) }
+  return res.json()
+}
+
+// Get subscribers from a list with pagination
+export async function getListSubscribers(config: EcomailConfig, listId: string, page: number = 1, perPage: number = 100) {
+  const res = await fetch(`${ECOMAIL_BASE}/lists/${listId}/subscribers?page=${page}&per_page=${perPage}`, {
+    headers: getHeaders(config),
+  })
+  if (!res.ok) { const err = await res.text(); throw new Error(`Ecomail API ${res.status}: ${err}`) }
+  return res.json()
+}
+
+// Update subscriber custom fields and tags
+export async function updateSubscriber(config: EcomailConfig, listId: string, email: string, data: {
+  firstName?: string
+  lastName?: string
+  customFields?: Record<string, string>
+  tags?: string[]
+}) {
+  const subscriberData: Record<string, unknown> = {
+    email,
+    ...(data.firstName && { name: data.firstName }),
+    ...(data.lastName && { surname: data.lastName }),
+    ...(data.customFields && { custom_fields: data.customFields }),
+    ...(data.tags && { tags: data.tags }),
+  }
+
+  const res = await fetch(`${ECOMAIL_BASE}/lists/${listId}/subscribe`, {
+    method: 'POST',
+    headers: getHeaders(config),
+    body: JSON.stringify({
+      subscriber_data: subscriberData,
+      resubscribe: true,
+      update_existing: true,
+      skip_confirmation: true,
+    }),
+  })
+  if (!res.ok) { const err = await res.text(); throw new Error(`Ecomail API ${res.status}: ${err}`) }
+  return res.json()
+}
+
+// Unsubscribe a contact from a list
+export async function unsubscribe(config: EcomailConfig, listId: string, email: string) {
+  const res = await fetch(`${ECOMAIL_BASE}/lists/${listId}/unsubscribe`, {
+    method: 'DELETE',
+    headers: getHeaders(config),
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) { const err = await res.text(); throw new Error(`Ecomail API ${res.status}: ${err}`) }
+  return res.json()
+}
+
+// Add tags to a subscriber
+export async function addTags(config: EcomailConfig, email: string, tags: string[]) {
+  const res = await fetch(`${ECOMAIL_BASE}/subscribers/${encodeURIComponent(email)}/tags`, {
+    method: 'POST',
+    headers: getHeaders(config),
+    body: JSON.stringify({ tags }),
+  })
+  if (!res.ok) { const err = await res.text(); throw new Error(`Ecomail API ${res.status}: ${err}`) }
+  return res.json()
+}
+
+// Remove tags from a subscriber
+export async function removeTags(config: EcomailConfig, email: string, tags: string[]) {
+  const res = await fetch(`${ECOMAIL_BASE}/subscribers/${encodeURIComponent(email)}/tags`, {
+    method: 'DELETE',
+    headers: getHeaders(config),
+    body: JSON.stringify({ tags }),
+  })
+  if (!res.ok) { const err = await res.text(); throw new Error(`Ecomail API ${res.status}: ${err}`) }
+  return res.json()
+}
+
+// Get automation list
+export async function getAutomations(config: EcomailConfig) {
+  const res = await fetch(`${ECOMAIL_BASE}/automations`, {
+    headers: getHeaders(config),
+  })
+  if (!res.ok) { const err = await res.text(); throw new Error(`Ecomail API ${res.status}: ${err}`) }
+  return res.json()
+}
+
+// Get campaign stats
+export async function getCampaignStats(config: EcomailConfig, campaignId: number) {
+  const res = await fetch(`${ECOMAIL_BASE}/campaigns/${campaignId}/stats`, {
+    headers: getHeaders(config),
+  })
+  if (!res.ok) { const err = await res.text(); throw new Error(`Ecomail API ${res.status}: ${err}`) }
+  return res.json()
+}
+
+// List campaigns
+export async function getCampaigns(config: EcomailConfig) {
+  const res = await fetch(`${ECOMAIL_BASE}/campaigns`, {
+    headers: getHeaders(config),
+  })
+  if (!res.ok) { const err = await res.text(); throw new Error(`Ecomail API ${res.status}: ${err}`) }
+  return res.json()
+}
+
 export async function ping(apiKey: string): Promise<boolean> {
   try {
     const res = await fetch(`${ECOMAIL_BASE}/lists`, {
