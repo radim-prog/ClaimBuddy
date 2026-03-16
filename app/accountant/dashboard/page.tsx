@@ -708,15 +708,15 @@ export default function AccountantDashboard() {
         {attentionLoading ? (
           <span>...</span>
         ) : attentionTotals.total === 0 ? (
-          <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+          <Link href="/accountant/clients" className="flex items-center gap-1 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors">
             <CheckCircle2 className="h-3.5 w-3.5" /> OK
-          </span>
+          </Link>
         ) : (
           <span className="flex items-center gap-2">
             <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-            {attentionTotals.missing_documents > 0 && <span className="flex items-center gap-0.5 text-red-500"><FileX className="h-3 w-3" />{attentionTotals.missing_documents}</span>}
-            {attentionTotals.unread_messages > 0 && <span className="flex items-center gap-0.5 text-blue-500"><MessageCircle className="h-3 w-3" />{attentionTotals.unread_messages}</span>}
-            {attentionTotals.pending_uploads > 0 && <span className="flex items-center gap-0.5 text-yellow-500"><Upload className="h-3 w-3" />{attentionTotals.pending_uploads}</span>}
+            {attentionTotals.missing_documents > 0 && <Link href="/accountant/clients" className="flex items-center gap-0.5 text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors"><FileX className="h-3 w-3" />{attentionTotals.missing_documents}</Link>}
+            {attentionTotals.unread_messages > 0 && <Link href="/accountant/komunikace" className="flex items-center gap-0.5 text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 transition-colors"><MessageCircle className="h-3 w-3" />{attentionTotals.unread_messages}</Link>}
+            {attentionTotals.pending_uploads > 0 && <Link href="/accountant/clients" className="flex items-center gap-0.5 text-yellow-500 hover:text-yellow-700 dark:hover:text-yellow-400 transition-colors"><Upload className="h-3 w-3" />{attentionTotals.pending_uploads}</Link>}
           </span>
         )}
         <span className="text-gray-200 dark:text-gray-700">|</span>

@@ -12,6 +12,7 @@ import {
   Loader2,
   Circle,
   Upload,
+  Unlink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -42,6 +43,7 @@ interface TransactionListProps {
   onMatchClick: (transaction: BankTransaction) => void
   onCategoryChange: (transactionId: string, category: string) => void
   onQuickUpload?: (transaction: BankTransaction) => void
+  onUnmatch?: (transaction: BankTransaction) => void
 }
 
 const methodLabels: Record<string, string> = {
@@ -98,6 +100,7 @@ export function TransactionList({
   onMatchClick,
   onCategoryChange,
   onQuickUpload,
+  onUnmatch,
 }: TransactionListProps) {
   if (loading) {
     return (
@@ -206,13 +209,26 @@ export function TransactionList({
 
                   {/* Status badge / actions by color */}
                   {color === 'green' ? (
-                    <Badge
-                      variant="outline"
-                      className="bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400 border-green-200"
-                    >
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      {methodLabels[tx.match_method || ''] || 'OK'}
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge
+                        variant="outline"
+                        className="bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400 border-green-200"
+                      >
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        {methodLabels[tx.match_method || ''] || 'OK'}
+                      </Badge>
+                      {onUnmatch && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-muted-foreground hover:text-red-600"
+                          onClick={() => onUnmatch(tx)}
+                          title="Zrušit spárování"
+                        >
+                          <Unlink className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
                   ) : color === 'red' ? (
                     <div className="flex items-center gap-1">
                       {onQuickUpload && (

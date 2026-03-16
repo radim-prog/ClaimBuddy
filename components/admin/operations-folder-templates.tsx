@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Trash2, GripVertical, Loader2, FolderOpen } from 'lucide-react'
+import { Plus, Trash2, GripVertical, Loader2, FolderOpen, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { FolderTemplate } from '@/lib/types/drive'
@@ -11,6 +11,7 @@ export function OperationsFolderTemplates() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [newName, setNewName] = useState('')
+  const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -58,6 +59,25 @@ export function OperationsFolderTemplates() {
     }
   }
 
+  const handleSync = async () => {
+    try {
+      setSyncing(true)
+      setError(null)
+      const res = await fetch('/api/drive/folder-templates', { method: 'PATCH' })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Sync failed')
+      }
+      const data = await res.json()
+      setSuccess(`Synchronizováno: ${data.templates} šablon → ${data.synced} firem`)
+      setTimeout(() => setSuccess(null), 4000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Chyba při synchronizaci')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   const handleDelete = async (template: FolderTemplate) => {
     if (!confirm(`Smazat složku "${template.name}" u všech klientů? Soubory v nich budou ztraceny.`)) return
     try {
@@ -90,9 +110,25 @@ export function OperationsFolderTemplates() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Předdefinovaná struktura složek pro všechny klienty. Přidání složky ji automaticky vytvoří u všech firem.
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Předdefinovaná struktura složek pro všechny klienty. Přidání složky ji automaticky vytvoří u všech firem.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSync}
+          disabled={syncing || saving}
+          className="shrink-0 ml-4"
+        >
+          {syncing ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-1.5" />
+          )}
+          Synchronizovat
+        </Button>
+      </div>
 
       {error && (
         <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-3 text-sm text-red-700 dark:text-red-400">

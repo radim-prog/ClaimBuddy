@@ -413,7 +413,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           <TooltipProvider delayDuration={0}>
             <NavContent
               dailyWorkNav={dailyWorkNav}
-              managementNav={managementNav}
+              managementNav={userRole === 'admin' ? managementNav : managementNav.filter(item => item.href !== '/accountant/revenue')}
               toolsNav={toolsNav}
               adminNav={adminNav}
               pathname={pathname}
@@ -604,7 +604,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="px-4 pb-4 space-y-1 max-h-[60vh] overflow-y-auto">
               {/* Správa section */}
               <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Správa</p>
-              {managementNav.map((item) => {
+              {(userRole === 'admin' ? managementNav : managementNav.filter(i => i.href !== '/accountant/revenue')).map((item) => {
                 const Icon = item.icon
                 const isActive = item.activeMatch
                   ? item.activeMatch.some(p => pathname.startsWith(p))

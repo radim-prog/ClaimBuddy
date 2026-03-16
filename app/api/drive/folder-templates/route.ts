@@ -112,6 +112,76 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// PATCH - Sync all templates to all companies (admin only)
+export async function PATCH(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const userRole = request.headers.get('x-user-role')
+  if (userRole !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden — admin only' }, { status: 403 })
+  }
+
+  try {
+    const { data: templates } = await supabaseAdmin
+      .from('document_folder_templates')
+      .select('*')
+      .order('sort_order')
+
+    if (!templates || templates.length === 0) {
+      return NextResponse.json({ synced: 0, message: 'No templates to sync' })
+    }
+
+    const { data: companies } = await supabaseAdmin
+      .from('companies')
+      .select('id')
+      .is('deleted_at', null)
+
+    if (!companies || companies.length === 0) {
+      return NextResponse.json({ synced: 0, message: 'No companies found' })
+    }
+
+    const foldersToInsert = []
+    for (const t of templates) {
+      for (const c of companies) {
+        foldersToInsert.push({
+          company_id: c.id,
+          template_id: t.id,
+          name: t.name,
+          slug: t.slug,
+          icon: t.icon,
+          is_system: true,
+          is_custom: false,
+          has_period_filter: t.has_period_filter,
+          sort_order: t.sort_order,
+          client_visible: true,
+        })
+      }
+    }
+
+    // Batch upsert — skip existing (company_id + template_id unique)
+    const BATCH_SIZE = 500
+    let synced = 0
+    for (let i = 0; i < foldersToInsert.length; i += BATCH_SIZE) {
+      const batch = foldersToInsert.slice(i, i + BATCH_SIZE)
+      await supabaseAdmin
+        .from('document_folders')
+        .upsert(batch, { onConflict: 'company_id,template_id', ignoreDuplicates: true })
+      synced += batch.length
+    }
+
+    return NextResponse.json({
+      synced: companies.length,
+      templates: templates.length,
+      message: `Synchronized ${templates.length} templates to ${companies.length} companies`,
+    })
+  } catch (error) {
+    console.error('Folder templates PATCH (sync) error:', error)
+    const message = error instanceof Error ? error.message : 'Internal server error'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
 // DELETE - Remove a folder template (admin only)
 export async function DELETE(request: NextRequest) {
   const userId = request.headers.get('x-user-id')

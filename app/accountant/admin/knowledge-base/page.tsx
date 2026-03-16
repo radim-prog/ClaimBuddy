@@ -22,7 +22,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
+import { useCachedFetch, invalidateCache } from '@/lib/hooks/use-cached-fetch'
 
 interface Article {
   id: string
@@ -143,6 +143,7 @@ export default function KnowledgeBasePage() {
         })
       }
       cancelEdit()
+      invalidateCache('knowledge-base')
       refresh()
     } catch (e) {
       console.error('Save error:', e)
@@ -155,6 +156,7 @@ export default function KnowledgeBasePage() {
     try {
       await fetch(`/api/accountant/admin/knowledge-base?id=${id}`, { method: 'DELETE' })
       setDeleteConfirmId(null)
+      invalidateCache('knowledge-base')
       refresh()
     } catch (e) {
       console.error('Delete error:', e)

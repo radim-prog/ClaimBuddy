@@ -514,7 +514,7 @@ function ClientsPageContent() {
         if (closure.bank_statement_status === 'uploaded') uploadedDocs++
         if (closure.expense_documents_status === 'uploaded') uploadedDocs++
         if (closure.income_invoices_status === 'uploaded') uploadedDocs++
-      } else if (company.monthly_reporting !== false && (company as any).status !== 'inactive') {
+      } else if (company.monthly_reporting !== false && (company as any).status !== 'inactive' && (company as any).status !== 'onboarding') {
         // No closure record for current month = all 3 document types missing
         missingDocs = 3
       }
@@ -664,9 +664,10 @@ function ClientsPageContent() {
   const [bulkLoading, setBulkLoading] = useState(false)
   const [showGroupAssign, setShowGroupAssign] = useState(false)
   const [bulkGroupName, setBulkGroupName] = useState('')
+  const [confirmStatusChange, setConfirmStatusChange] = useState<string | null>(null)
+  const [confirmGroupRemove, setConfirmGroupRemove] = useState(false)
 
-  const bulkUpdateStatus = useCallback(async (newStatus: string) => {
-    if (!confirm(`Opravdu chcete změnit stav ${selectedIds.size} klientů na "${newStatus === 'active' ? 'Aktivní' : newStatus === 'inactive' ? 'Neaktivní' : 'Onboarding'}"?`)) return
+  const executeBulkStatusUpdate = useCallback(async (newStatus: string) => {
     setBulkLoading(true)
     let success = 0
     let failed = 0
@@ -690,8 +691,11 @@ function ClientsPageContent() {
     if (failed > 0) toast.error(`${failed} klientů se nepodařilo změnit`)
   }, [selectedIds, fetchCompanies])
 
-  const bulkAssignGroup = useCallback(async () => {
-    if (!bulkGroupName.trim() && !confirm('Chcete odstranit skupinu u vybraných klientů?')) return
+  const bulkUpdateStatus = useCallback((newStatus: string) => {
+    setConfirmStatusChange(newStatus)
+  }, [])
+
+  const executeBulkAssignGroup = useCallback(async () => {
     setBulkLoading(true)
     let success = 0
     let failed = 0
@@ -716,6 +720,14 @@ function ClientsPageContent() {
     }
     if (failed > 0) toast.error(`${failed} klientů se nepodařilo změnit`)
   }, [selectedIds, bulkGroupName, fetchCompanies])
+
+  const bulkAssignGroup = useCallback(async () => {
+    if (!bulkGroupName.trim()) {
+      setConfirmGroupRemove(true)
+      return
+    }
+    executeBulkAssignGroup()
+  }, [bulkGroupName, executeBulkAssignGroup])
 
   // Grouped companies
   const groupedCompanies = useMemo(() => {
@@ -1198,6 +1210,29 @@ function ClientsPageContent() {
         companyName={messagePopup.companyName}
       />
     )}
+    <ConfirmDialog
+      open={confirmStatusChange !== null}
+      onOpenChange={(open) => { if (!open) setConfirmStatusChange(null) }}
+      title="Změna stavu klientů"
+      description={`Opravdu chcete změnit stav ${selectedIds.size} klientů na "${confirmStatusChange === 'active' ? 'Aktivní' : confirmStatusChange === 'inactive' ? 'Neaktivní' : 'Onboarding'}"?`}
+      confirmLabel="Změnit"
+      onConfirm={() => {
+        if (confirmStatusChange) executeBulkStatusUpdate(confirmStatusChange)
+        setConfirmStatusChange(null)
+      }}
+    />
+    <ConfirmDialog
+      open={confirmGroupRemove}
+      onOpenChange={setConfirmGroupRemove}
+      title="Odstranění skupiny"
+      description="Chcete odstranit skupinu u vybraných klientů?"
+      confirmLabel="Odstranit"
+      variant="destructive"
+      onConfirm={() => {
+        setConfirmGroupRemove(false)
+        executeBulkAssignGroup()
+      }}
+    />
     </TooltipProvider>
   )
 }

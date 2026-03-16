@@ -98,6 +98,10 @@ INSERT INTO public.plan_limits (portal_type, plan_tier, max_companies, max_users
     "dashboard": true, "messages": true, "document_upload": true, "basic_invoicing": true, "travel_basic": true,
     "address_book": true, "extraction": true, "travel_randomizer": false
   }'::jsonb),
+  ('client', 'plus', NULL, NULL, 10, '{
+    "dashboard": true, "messages": true, "document_upload": true, "basic_invoicing": true, "travel_basic": true,
+    "address_book": true, "extraction": true, "travel_randomizer": false
+  }'::jsonb),
   ('client', 'premium', NULL, NULL, 20, '{
     "dashboard": true, "messages": true, "document_upload": true, "basic_invoicing": true, "travel_basic": true,
     "address_book": true, "extraction": true, "travel_randomizer": true

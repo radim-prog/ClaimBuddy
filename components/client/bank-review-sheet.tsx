@@ -30,6 +30,7 @@ const ALL_EXPENSE_CATEGORIES = [
   { value: 'loan_repayment', label: 'Splátka úvěru', forms: ['all'] },
   { value: 'private_transfer', label: 'Soukromé', forms: ['osvc'] },
   { value: 'owner_deposit', label: 'Vklad jednatele', forms: ['sro'] },
+  { value: 'owner_surcharge', label: 'Příplatek společníka', forms: ['sro'] },
   { value: 'internal_transfer', label: 'Vnitřní převod', forms: ['all'] },
 ]
 
