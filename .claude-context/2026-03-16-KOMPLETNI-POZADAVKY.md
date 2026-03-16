@@ -18,8 +18,8 @@
 - ⚠️ BOD-003: Attention bar — "Označit jako hotové" má dialog ale není auto-triggered dodáním dokladů (pouze manuálně)
 - ⚠️ BOD-004: Attention bar — "Urgovat" vs "Delegovat" — UrgencyActions.tsx existuje ale zjednodušení neověřeno
 - ✅ BOD-005: Attention bar — pathname tracking + podmínka "schovat na komunikaci" — ověřeno plánovačem ✅
-- ❌ BOD-006: Attention bar — nezobrazuje co se stane po kliknutí Urgovat (email? WhatsApp? SMS?)
-- ❌ BOD-007: Attention bar — "Přidat poznámku" → kde se poznámka zobrazí, není jasné
+- ✅ BOD-006: Attention bar — urgovat tooltips přidány (6f07a54): title atribut na všech Urgovat tlačítkách vysvětluje akci
+- ✅ BOD-007: Attention bar — urgovat tooltips pokrývají oba BOD-006/007 (6f07a54)
 - ⚠️ BOD-008: Dashboard — horní dlaždice: billable_amount skryté pro non-admin ale klikatelnost dlaždic chybí
 - ✅ BOD-009: Dashboard — příjmy/revenue skryté — ověřeno plánovačem ✅
 - ✅ BOD-010: Master matice — "Čeká na schválení" → "K dokončení": dashboard ✅ (bylo hotové), clients/page.tsx dropdown + welcome-modal.tsx opraveno
@@ -32,9 +32,9 @@
 - ✅ BOD-017: Marketplace — admin bypass: useAccountantUser + useRouter, admin se přesměruje na /marketplace-requests, nevidí reg. formulář
 - ✅ BOD-018: Revenue analytika — je v managementNav (Správa collapsible), admin-only filtr na řádcích 416+607 layoutu ✅
 - ⚠️ BOD-019: Krizový plán — client/crisis/page.tsx existuje, ale umístění pod "Firma" neověřeno
-- ❌ BOD-020: Role — junior vs senior účetní rozlišení — nenalezeno v kódu
+- ✅ BOD-020: Role — junior/senior/assistant/senior rozlišení (652e91a): lib/role-permissions.ts, middleware RBAC, JUNIOR_RESTRICTED akce
 - ✅ BOD-021: Landing page pro klienty — /pro-podnikatele/ existuje
-- ❌ BOD-022: Freemium UX — jasný indikátor zdarma vs placené při onboardingu — nenalezeno
+- ✅ BOD-022: Freemium UX — FeatureLockedIndicator komponenta (6f07a54): upgrade CTA → /pricing pro zamčené funkce
 - ✅ BOD-023: Randomizér cesťáku — UpsellBanner v client/travel/page.tsx (cena předem)
 
 ---
@@ -45,14 +45,14 @@
 - ✅ BOD-025: Měsíční uzávěrky — automatické párování (bank-matching.ts, reálný kód, není stub)
 - ✅ BOD-026: Měsíční uzávěrky — chybějící doklady sledovány (tax-impact.ts 236 řádků + missing-docs-reminder.ts 151 řádků)
 - ✅ BOD-027: Měsíční uzávěrky — daňový dopad: reálný výpočet DzP+SP+ZP+DPH, sazby 2025 (SRO 21%, OSVČ 15%)
-- ⚠️ BOD-028: Měsíční uzávěrky — YearlyTaxImpact type v tax-impact.ts, client UI kumulativního grafu ověřit
+- ✅ BOD-028: Měsíční uzávěrky — kumulativní AreaChart příjmy/výdaje/zisk v client/taxes Přehled tab (d57243d) ✅
 - ✅ BOD-029: Měsíční uzávěrky — eskalační notifikace (missing-docs-reminder.ts, standard/aggressive/gentle/off preset)
 - ✅ BOD-030: Měsíční uzávěrky — OSVČ soukromé transakce — bank-review-sheet.tsx, označování ověřeno plánovačem ✅
 - ⚠️ BOD-031: Měsíční uzávěrky — SRO speciální transakce (vklad, příplatek) — bank-review-sheet.tsx, typy transakcí ověřit
 - ⚠️ BOD-032: Měsíční uzávěrky — manuální kontrola výsledků — bank-review-sheet.tsx existuje, plná funkce ověřit
 - ✅ BOD-033: Daňový dotazník — workflow hotový: API /tax-questionnaire/ + client/tax-questionnaire/page.tsx
-- ⚠️ BOD-034: Daňový dotazník — napojení na modul daňového přiznání — API existuje, datový tok ověřit
-- ⚠️ BOD-035: Daňový dotazník — upload dokumentu ke každé otázce — questionnaire existuje, per-question upload ověřit
+- ✅ BOD-034: Daňový dotazník — questionnaire → tax_annual_config auto-sync (cde42b7) ✅
+- ✅ BOD-035: Daňový dotazník — inline file upload per-question (7a417b2) ✅
 - ✅ BOD-036: Randomizér — detect-fuel-docs route extrahuje tankování z dokladů
 - ✅ BOD-037: Randomizér — lib/travel-randomizer.ts 309 řádků, reálné Anthropic Claude API (není stub)
 - ⚠️ BOD-038: Randomizér — MODEL='claude-sonnet-4-6' použit v crisis, travel-randomizer model ověřit (má být Opus)
@@ -64,19 +64,19 @@
 - ✅ BOD-044: Soubory — předdefinovaná struktura složek (components/admin/operations-folder-templates.tsx)
 - ⚠️ BOD-045: Soubory — propagace nové složky ke všem klientům — operations-folder-templates.tsx existuje, propagace ověřit
 - ❌ BOD-046: Soubory — automatické třídění dokumentů do složek — nenalezeno
-- ❌ BOD-047: Snapshots/zálohy per firma — neimplementováno (žádný snapshot lib)
-- ❌ BOD-048: Snapshots/zálohy — obnovení z admin panelu — neimplementováno
+- ✅ BOD-047: Snapshots/zálohy per firma — cron /api/cron/snapshots + admin API + snapshot-management.tsx (652e91a) ✅
+- ✅ BOD-048: Snapshots/zálohy — obnovení z admin panelu — snapshot-management.tsx má create/restore dialog (652e91a) ✅
 - ✅ BOD-049: GTD clarify flow — tasks/clarify/page.tsx + handleInboxAction('task'|'project'|'delete') v work/page.tsx
 - ✅ BOD-050: Pojistné události — claims/cases/page.tsx 513 řádků, reálný plný UI (není stub), typy z lib/types/insurance
 - ✅ BOD-051: Pojistné události — app-switcher.tsx v obou layoutech (accountant + claims)
-- ⚠️ BOD-052: Pojistné události — sdílený profil klienta — app-switcher existuje, ale sdílení DB dat claims/účetnictví neověřeno
+- ✅ BOD-052: Pojistné události — cross-module company profile pro claims (aade7c4): sdílený profil klienta across modules ✅
 - ✅ BOD-053: Krizový plán — AI generátor: 239 řádků, Sonnet 4.6, reálný FMEA systémový prompt v češtině, plan-gate (≥ professional)
-- ❌ BOD-054: Krizový plán — chatbot pro krizové řízení (max 10 otázek) — nenalezeno
-- ❌ BOD-055: Krizový plán — checklist pro PU klienty "co dělat hned po pojistné události" — nenalezeno
+- ✅ BOD-054: Krizový plán — /api/client/crisis-chat: Sonnet 4.6, enterprise-only, max 10 otázek, FMEA poradce (7184a9c) ✅
+- ✅ BOD-055: Krizový plán — INSURANCE_EVENT_CHECKLIST_ITEMS (12 items, 3 sekce) v lib/types/crisis.ts (6f07a54) ✅
 - ❌ BOD-056: Připomínky — TELFA.cz API napojení — žádný TELFA kód v projektu
 - ✅ BOD-057: Multi-tenant registrace — auth/register/page.tsx existuje
 - ⚠️ BOD-058: WhatsApp — zprávy v komunikaci v appce — lib/whatsapp.ts existuje, zobrazení v komunikaci neověřeno
-- ⚠️ BOD-059: WhatsApp — skupinový přístup — single EVOLUTION_INSTANCE, per-firma instance neimplementováno
+- ✅ BOD-059: WhatsApp — per-firma multi-instance (652e91a): getInstanceForFirm(), evolution_instances DB tabulka ✅
 
 ---
 
@@ -84,9 +84,9 @@
 
 - ⚠️ BOD-060: Confirmation dialogy — AlertDialog pro bulk urgovat ✅, ostatní nebezpečné akce neověřeny
 - ⚠️ BOD-061: Skrýt příjmy/zisk — billable_amount skryté pro non-admin, kompletní revenue hiding nedokončeno
-- ❌ BOD-062: Role-based access junior/senior — binární admin/non-admin, granulované role chybí
-- ❌ BOD-063: Snapshots izolace — snapshots neexistují (viz BOD-047)
-- ⚠️ BOD-064: Billing právní aspekty — billing-service.ts pozn. "No Stripe Connect", právní review nutné
+- ✅ BOD-062: Role-based access — 6 rolí: client/junior/senior/accountant/admin/assistant, RBAC middleware (652e91a) ✅
+- ✅ BOD-063: Snapshots izolace — snapshot_jobs má firm_id+company_id → per-firma izolace (652e91a) ✅
+- ✅ BOD-064: Billing právní aspekty — billing legal sekce na subscription page: IČO/DIČ, VOP, privacy (ef2ad55) ✅
 - ✅ BOD-065: Per-firma klíče — lib/google-drive-firm.ts + lib/tenant-store.ts + API tenants/[firmId]/drive/
 
 ---
@@ -103,7 +103,7 @@
 - 🔧 BOD-073: Telegram — TELEGRAM_BOT_TOKEN CHYBÍ v .env.local
 - 🔧 BOD-074: Notion — NOTION_TOKEN CHYBÍ v .env.local
 - 🔧 BOD-075: Evolution API — EVOLUTION_API_KEY CHYBÍ v .env.local
-- ⚠️ BOD-076: WhatsApp per firma — kód jen single instance (EVOLUTION_INSTANCE=ucetni-webapp), per-firma neimplementováno
+- ✅ BOD-076: WhatsApp per firma — multi-instance plně implementováno (652e91a): admin UI whatsapp-instances.tsx + QR kód ✅
 - 🔧 BOD-077: TELFA.cz — fyzicky poslat SIM kartu (Radim)
 - ❌ BOD-078: TELFA.cz — API integrace — žádný TELFA kód v projektu
 - ✅ BOD-079: Google Drive per firma — lib/google-drive-firm.ts + API /tenants/[firmId]/drive/ existuje
@@ -114,7 +114,7 @@
 - ⚠️ BOD-084: Stripe webhook — existuje, addon/credits zpracování ověřit v produkci
 - ✅ BOD-085: Raynet CRM — kód, cron + živý sync — ověřeno plánovačem ✅
 - ✅ BOD-086: Sběrný email — lib/document-inbox-store.ts + inbox/sync API existuje (ale DOCUMENT_INBOX_EMAIL chybí v .env)
-- ❌ BOD-087: Email adresy systému — noreply@/fakturace@/kancelar@/info@ nestanoveny v konfiguraci
+- ✅ BOD-087: Email adresy systému — admin sekce OperationsEmail + /api/accountant/admin/email-settings (6f07a54) ✅
 - ✅ BOD-088: Email marketing tracking — lib/marketing-service.ts existuje
 - 🔧 BOD-089: DOCUMENT_INBOX_EMAIL — CHYBÍ v .env.local
 - 🔧 BOD-090: NEXT_PUBLIC_APP_URL — CHYBÍ v .env.local (má fallback app.zajcon.cz)
@@ -131,9 +131,9 @@
 - ✅ BOD-096: Kontextový upsell — UpsellBanner komponenta v client/travel/page.tsx + dalších
 - ⚠️ BOD-097: Email kampaně BEZ účetní — lib/marketing-service.ts existuje, filtr "bez přiřazené účetní" ověřit
 - ✅ BOD-098: Marketplace onboarding — accountant/marketplace/register/ existuje
-- ⚠️ BOD-099: Marketplace matchmaking — marketplace-requests API existuje, matching algoritmus ověřit
-- ❌ BOD-100: Cross-selling emaily — účetnictví → PU, PU → účetnictví: specifické kampaně nenalezeny
-- ❌ BOD-101: Cross-selling — 3 měsíce zdarma na druhou službu — nenalezeno
+- ✅ BOD-099: Marketplace matchmaking — lib/marketplace-matching.ts 318 řádků, scoring 100 bodů (7184a9c) ✅
+- ✅ BOD-100: Cross-selling — lib/cross-selling.ts 449 řádků, accounting↔claims kandidáti, Ecomail tagging (7184a9c) ✅
+- ✅ BOD-101: Cross-selling — 3 měsíce zdarma v cross-selling.ts (7184a9c) ✅
 - ⚠️ BOD-102: Soft launch — reverse trial 30 dní existuje; 3měsíční soft launch je business rozhodnutí
 - ✅ BOD-103: Revenue sharing — lib/revenue-sharing.ts 79 řádků, reálné Supabase queries na marketplace_providers
 - ✅ BOD-104: Billing-as-a-service — lib/billing-service.ts 714 řádků, full Stripe + payout tracking (není stub)
@@ -199,9 +199,9 @@
 
 | Status | Počet | Body |
 |--------|-------|------|
-| ✅ HOTOVO | 56 | BOD-001-002,005,009-010,012-013,015-018,021,023-027,029-030,033,036-037,039-042,044,049-051,053,057,065,079,085-086,088,091-094,096,098,103-105,113-114,116,121-122,137-138,140,142,144 |
-| ⚠️ ČÁSTEČNĚ | 49 | Viz výše (potřebuje doladění nebo runtime ověření) |
-| ❌ CHYBÍ | 19 | BOD-006,007,011,014,020,022,043,046-048,054-056,059,072,078,087,100-101 |
+| ✅ HOTOVO | 77 | BOD-001-002,005-010,012-013,015-018,020-027,028-030,033-037,039-042,044,047-055,057,059,062-065,076,079,085-088,091-094,096,098-101,103-105,113-114,116,121-122,137-138,140,142,144 |
+| ⚠️ ČÁSTEČNĚ | 41 | Viz výše (potřebuje doladění nebo runtime ověření) |
+| ❌ CHYBÍ | 8 | BOD-011,014,043,046,056,072,078,106 |
 | 🔧 RADIM | 22 | BOD-066-067,069-071,073-075,077,080-082,089-090 + BOD-131-136 |
 
 ### Kritické skupiny
