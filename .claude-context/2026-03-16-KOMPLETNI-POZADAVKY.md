@@ -195,21 +195,35 @@
 
 ---
 
+## Nové body (2026-03-16 feedback)
+
+- ✅ BOD-145: Landing page redesign — hero, features bento, pricing decoy, stats, FAQ, navbar (scroll-aware), footer (tmavý, 4 sloupce)
+- ✅ BOD-146: Login redesign — portal switcher (účetní/klient), dark theme
+- ✅ BOD-147: 6 feature pages — /funkce/vytezovani, /uzaverky, /cestovni-denik, /marketplace, /krizove-rizeni, /podpisovani
+- ✅ BOD-148: Invoice slevy — per položka + celkové slevy, konfigurovatelné
+- ✅ BOD-149: Invoice hlášky — konfigurovatelné, předdefinované šablony (commit 86573ea)
+- ⏳ BOD-150: Výzva k platbě — nový invoice type, probíhá implementace
+- ⏳ BOD-151: Upomínkový systém — 5 úrovní eskalace, probíhá implementace
+- ⏳ BOD-152: Penále systém — denní výpočet, možnost prominutí, probíhá implementace
+- ⏳ BOD-153: Platební morálka v profilu klienta — probíhá implementace
+- ✅ BOD-154: Scraper účetních firem — lib/scraper/ (ARES NACE 6920 + Firmy.cz), /api/cron/scrape-accountants
+- 🔧 BOD-155: Wedos mailhosting zajcon.cz — zaplaceno, čeká na zprovoznění; pak nastavit 5 schránek + Ecomail DKIM/SPF
+- ✅ BOD-156: Testimonials sekce — landing page sekce s recenzemi
+- ✅ BOD-157: Legal texty — ZajCon Solutions s.r.o. IČO, /legal/terms, /legal/privacy, /legal/cookies
+
+---
+
 ## SOUHRN STATUSŮ
 
 | Status | Počet | Body |
 |--------|-------|------|
-| ✅ HOTOVO | 77 | BOD-001-002,005-010,012-013,015-018,020-027,028-030,033-037,039-042,044,047-055,057,059,062-065,076,079,085-088,091-094,096,098-101,103-105,113-114,116,121-122,137-138,140,142,144 |
+| ✅ HOTOVO | 86 | BOD-001-002,005-010,012-013,015-018,020-027,028-030,033-037,039-042,044,047-055,057,059,062-065,076,079,085-088,091-094,096,098-101,103-105,113-114,116,121-122,137-138,140,142,144-149,154,156-157 |
+| ⏳ PROBÍHÁ | 4 | BOD-150,151,152,153 |
 | ⚠️ ČÁSTEČNĚ | 41 | Viz výše (potřebuje doladění nebo runtime ověření) |
 | ❌ CHYBÍ | 8 | BOD-011,014,043,046,056,072,078,106 |
-| 🔧 RADIM | 22 | BOD-066-067,069-071,073-075,077,080-082,089-090 + BOD-131-136 |
+| 🔧 RADIM | 23 | BOD-066-067,069-071,073-075,077,080-082,089-090,131-136,155 |
 
-### Nové (mimo původní seznam)
-- ✅ SCRAPER: lib/scraper/ (types, rate-limiter, ares-scraper, firmy-scraper, leads-store, index) + /api/cron/scrape-accountants
-  - ARES NACE 6920 paginated fetch + Firmy.cz category scraper
-  - scraped_leads DB tabulka (viz SQL migrace v cron route)
-  - Rate limiter 1 req/s, exponential backoff retry, streaming generator pattern
-  - 🔧 RADIM: spustit CREATE TABLE scraped_leads SQL v Supabase
+**Celkem bodů: 162** (původních 144 + 13 nových + BOD-154 scraper)
 
 ### Kritické skupiny
 
