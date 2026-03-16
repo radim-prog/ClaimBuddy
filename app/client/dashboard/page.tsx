@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { generateDeadlinesForCompany } from '@/lib/statutory-deadlines'
-import { TaxImpactSummary } from '@/components/client/tax-impact-summary'
+import { TaxOverviewWidget } from '@/components/client/tax-overview-widget'
 import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
 import { TripOverlay } from '@/components/client/action-hub/trip-overlay'
 import { InvoiceOverlay } from '@/components/client/action-hub/invoice-overlay'
@@ -264,6 +264,9 @@ export default function ClientDashboard() {
           </CardContent>
         </Card>
 
+        {/* Tax Overview Widget */}
+        {selectedCompany && <TaxOverviewWidget companyId={selectedCompany.id} closures={companyClosures} />}
+
         {/* Dashboard Charts */}
         {selectedCompany && <DashboardCharts companyId={selectedCompany.id} />}
 
@@ -296,9 +299,6 @@ export default function ClientDashboard() {
 
         {/* Dohodari Widget */}
         <DohodariWidget />
-
-        {/* Tax Impact Card */}
-        {selectedCompany && <TaxImpactSummary companyId={selectedCompany.id} />}
 
         {/* Two column layout: Messages + Deadlines */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
