@@ -22,6 +22,7 @@ import {
   Landmark,
   Package,
   UserCheck,
+  ShieldAlert,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -57,6 +58,7 @@ const baseNavigation: { name: string; href: string; icon: typeof LayoutDashboard
   { name: 'Cesťák', href: '/client/travel', icon: Car },
   { name: 'Dotazník', href: '/client/tax-questionnaire', icon: ClipboardList },
   { name: 'Vstupní dotazník', href: '/client/onboarding', icon: FileInput },
+  { name: 'Krizový plán', href: '/client/crisis', icon: ShieldAlert },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
   { name: 'Účet', href: '/client/account', icon: UserCircle },
 ]
@@ -164,6 +166,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                       <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${locked ? 'text-white/15' : isActive ? 'text-blue-300' : 'text-white/35 group-hover:text-white/70'}`} />
                       {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
                       {!collapsed && locked && <Lock className="ml-1.5 h-3 w-3 text-white/20" />}
+                      {!collapsed && item.href === '/client/crisis' && (
+                        <span className="ml-2 px-1.5 py-0.5 text-[10px] font-medium rounded-md bg-white/10 text-white/40 leading-none">Bonus</span>
+                      )}
                     </span>
                     {!collapsed && isActive && !locked && <ChevronRight className="h-3.5 w-3.5 text-white/25" />}
                   </Link>

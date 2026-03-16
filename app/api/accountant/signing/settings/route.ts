@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
 import { checkSigniConnection } from '@/lib/signi-client'
+import { encrypt, decrypt, isEncrypted } from '@/lib/crypto'
 
 /**
  * GET /api/accountant/signing/settings
@@ -28,12 +29,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to load settings' }, { status: 500 })
     }
 
-    const key = user?.signi_api_key || null
+    const rawKey = user?.signi_api_key || null
+    let decryptedKey: string | null = null
     let connected = false
 
-    if (key) {
+    if (rawKey) {
       try {
-        const result = await checkSigniConnection(key)
+        decryptedKey = isEncrypted(rawKey) ? decrypt(rawKey) : rawKey
+      } catch {
+        decryptedKey = rawKey // fallback if decryption fails (legacy plaintext)
+      }
+
+      try {
+        const result = await checkSigniConnection(decryptedKey)
         connected = result.connected
       } catch {
         connected = false
@@ -41,9 +49,9 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      configured: !!key,
+      configured: !!rawKey,
       connected,
-      key_preview: key ? '***' + key.slice(-4) : null,
+      key_preview: decryptedKey ? '***' + decryptedKey.slice(-4) : null,
     })
   } catch (error) {
     console.error('[Signing Settings GET] Error:', error)
@@ -81,10 +89,11 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Save the key
+    // Encrypt and save the key
+    const encryptedKey = encrypt(trimmedKey)
     const { error: updateError } = await supabaseAdmin
       .from('users')
-      .update({ signi_api_key: trimmedKey })
+      .update({ signi_api_key: encryptedKey })
       .eq('id', userId)
 
     if (updateError) {

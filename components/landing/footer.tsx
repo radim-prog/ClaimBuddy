@@ -27,10 +27,11 @@ export function Footer() {
 
           {/* Portals */}
           <div>
-            <h4 className="text-sm font-semibold text-foreground mb-3">Portály</h4>
+            <h4 className="text-sm font-semibold text-foreground mb-3">Řešení</h4>
             <ul className="space-y-2">
-              <li><Link href="/auth/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Klientský portál</Link></li>
-              <li><Link href="/auth/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Portál pro účetní</Link></li>
+              <li><Link href="/pro-ucetni" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pro účetní</Link></li>
+              <li><Link href="/pro-podnikatele" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pro podnikatele</Link></li>
+              <li><Link href="/auth/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Přihlášení</Link></li>
             </ul>
           </div>
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole, canAccessCompany } from '@/lib/access-check'
 import { createContract } from '@/lib/signi-client'
+import { decrypt, isEncrypted } from '@/lib/crypto'
 import type { SigniSignerInput } from '@/lib/types/signing'
 import { signingCreateSchema, formatZodErrors } from '@/lib/validations'
 
@@ -40,7 +41,14 @@ export async function POST(request: NextRequest) {
       .eq('id', userId)
       .single()
 
-    const apiKey = user?.signi_api_key || process.env.SIGNI_API_KEY || ''
+    let apiKey = process.env.SIGNI_API_KEY || ''
+    if (user?.signi_api_key) {
+      try {
+        apiKey = isEncrypted(user.signi_api_key) ? decrypt(user.signi_api_key) : user.signi_api_key
+      } catch {
+        apiKey = user.signi_api_key
+      }
+    }
 
     // Create signing job in DB
     const { data: job, error: jobError } = await supabaseAdmin

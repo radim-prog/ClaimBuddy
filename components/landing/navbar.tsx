@@ -8,8 +8,8 @@ import { Menu, X } from 'lucide-react'
 
 const NAV_LINKS = [
   { href: '#features', label: 'Funkce' },
-  { href: '#how-it-works', label: 'Jak to funguje' },
-  { href: '/marketplace', label: 'Marketplace' },
+  { href: '/pro-ucetni', label: 'Pro účetní' },
+  { href: '/pro-podnikatele', label: 'Pro podnikatele' },
   { href: '#pricing', label: 'Ceník' },
   { href: '#faq', label: 'FAQ' },
 ]

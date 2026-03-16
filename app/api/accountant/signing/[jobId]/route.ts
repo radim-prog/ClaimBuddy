@@ -4,7 +4,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
 import { createContract, cancelContract } from '@/lib/signi-client'
+import { decrypt, isEncrypted } from '@/lib/crypto'
 import type { SigniSignerInput } from '@/lib/types/signing'
+
+function decryptApiKey(raw: string | null | undefined): string | undefined {
+  if (!raw) return undefined
+  try {
+    return isEncrypted(raw) ? decrypt(raw) : raw
+  } catch {
+    return raw
+  }
+}
 
 function mapSignerRole(role: string, signatureType: string): 'sign' | 'approve' | 'sign_bank_id_sign' {
   if (role === 'approve') return 'approve'
@@ -144,7 +154,7 @@ async function handleSend(
     .eq('id', userId)
     .single()
 
-  const apiKey = user?.signi_api_key || undefined
+  const apiKey = decryptApiKey(user?.signi_api_key)
 
   // Prepare document buffer
   let fileBuffer: Buffer | null = null
@@ -302,7 +312,7 @@ async function handleCancel(job: any, userId: string): Promise<NextResponse> {
         .eq('id', userId)
         .single()
 
-      await cancelContract(job.signi_contract_id, user?.signi_api_key || undefined)
+      await cancelContract(job.signi_contract_id, decryptApiKey(user?.signi_api_key))
     } catch (cancelError) {
       console.error('[Signing PATCH] Signi cancel error:', cancelError)
       // Continue with local cancellation even if Signi fails
