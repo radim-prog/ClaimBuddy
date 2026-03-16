@@ -1,12 +1,31 @@
 'use client'
 
 import { useClientUser } from '@/lib/contexts/client-user-context'
-import { Building2, ChevronDown } from 'lucide-react'
+import { Building2, ChevronDown, Plus, Clock } from 'lucide-react'
+import { AddCompanyDialog } from '@/components/client/add-company-dialog'
 
 export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
-  const { companies, selectedCompanyId, setSelectedCompanyId, selectedCompany } = useClientUser()
+  const { companies, selectedCompanyId, setSelectedCompanyId, selectedCompany, refetch } = useClientUser()
 
-  if (companies.length === 0) return null
+  if (companies.length === 0) {
+    // No companies — show add button
+    if (collapsed) return null
+    return (
+      <div className="px-3 py-2">
+        <AddCompanyDialog
+          onCompanyAdded={refetch}
+          trigger={
+            <button className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-white/50 hover:text-white/80 hover:bg-white/[0.06] rounded-lg transition-colors">
+              <Plus className="h-3.5 w-3.5" />
+              Přidat firmu
+            </button>
+          }
+        />
+      </div>
+    )
+  }
+
+  const isPending = selectedCompany?.status === 'pending_review'
 
   // Single company — just show name
   if (companies.length === 1) {
@@ -24,12 +43,24 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
         <div className="flex items-center gap-2 text-white/70 text-xs">
           <Building2 className="h-3.5 w-3.5 text-white/40 shrink-0" />
           <span className="truncate font-medium">{companies[0].name}</span>
+          {companies[0].status === 'pending_review' && (
+            <span title="Čeká na schválení"><Clock className="h-3 w-3 text-amber-400 shrink-0" /></span>
+          )}
         </div>
+        <AddCompanyDialog
+          onCompanyAdded={refetch}
+          trigger={
+            <button className="mt-1 flex items-center gap-1 text-[10px] text-white/30 hover:text-white/60 transition-colors">
+              <Plus className="h-3 w-3" />
+              Přidat další
+            </button>
+          }
+        />
       </div>
     )
   }
 
-  // Multiple companies — dropdown
+  // Multiple companies — dropdown + add button
   if (collapsed) {
     return (
       <div className="flex justify-center px-3 py-2">
@@ -41,7 +72,9 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
           style={{ backgroundImage: 'none' }}
         >
           {companies.map(c => (
-            <option key={c.id} value={c.id} className="text-gray-900">{c.name}</option>
+            <option key={c.id} value={c.id} className="text-gray-900">
+              {c.name}{c.status === 'pending_review' ? ' (čeká)' : ''}
+            </option>
           ))}
         </select>
       </div>
@@ -49,7 +82,7 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
   }
 
   return (
-    <div className="px-3 py-2">
+    <div className="px-3 py-2 space-y-1">
       <div className="relative">
         <select
           value={selectedCompanyId}
@@ -57,11 +90,28 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
           className="w-full appearance-none bg-white/[0.08] text-white/80 text-xs font-medium rounded-lg px-3 py-2 pr-7 border border-white/[0.06] hover:bg-white/[0.12] transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-white/20"
         >
           {companies.map(c => (
-            <option key={c.id} value={c.id} className="text-gray-900 bg-white">{c.name}</option>
+            <option key={c.id} value={c.id} className="text-gray-900 bg-white">
+              {c.name}{c.status === 'pending_review' ? ' (čeká na schválení)' : ''}
+            </option>
           ))}
         </select>
         <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40 pointer-events-none" />
       </div>
+      {isPending && (
+        <div className="flex items-center gap-1 px-1 text-[10px] text-amber-400/80">
+          <Clock className="h-3 w-3" />
+          Čeká na schválení účetním
+        </div>
+      )}
+      <AddCompanyDialog
+        onCompanyAdded={refetch}
+        trigger={
+          <button className="flex items-center gap-1 px-1 text-[10px] text-white/30 hover:text-white/60 transition-colors">
+            <Plus className="h-3 w-3" />
+            Přidat firmu
+          </button>
+        }
+      />
     </div>
   )
 }

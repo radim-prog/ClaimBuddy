@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getClosures } from '@/lib/closure-store-db'
+import { createCompany, getCompanyByIco } from '@/lib/company-store'
+import { validateIco, lookupByIco } from '@/lib/ares'
 
 export const dynamic = 'force-dynamic'
 
@@ -125,5 +127,68 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Client Companies API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// POST: Client registers a new company
+export async function POST(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  try {
+    const body = await request.json()
+    const { ico, name, email, phone, managing_director } = body as {
+      ico: string
+      name?: string
+      email?: string
+      phone?: string
+      managing_director?: string
+    }
+
+    if (!ico) {
+      return NextResponse.json({ error: 'IČO je povinné' }, { status: 400 })
+    }
+
+    // Validate ICO format
+    if (!validateIco(ico)) {
+      return NextResponse.json({ error: 'Neplatné IČO (musí být 8 číslic s platným kontrolním součtem)' }, { status: 400 })
+    }
+
+    // Check duplicate
+    const existing = await getCompanyByIco(ico)
+    if (existing) {
+      return NextResponse.json({ error: 'Firma s tímto IČO již v systému existuje' }, { status: 409 })
+    }
+
+    // ARES lookup for auto-fill
+    let aresData = null
+    try {
+      aresData = await lookupByIco(ico)
+    } catch {
+      // ARES may be down — continue with manual data
+    }
+
+    const companyName = name || aresData?.name || `Firma ${ico}`
+    const address = aresData?.address || { street: '', city: '', zip: '' }
+
+    const company = await createCompany({
+      name: companyName,
+      ico,
+      dic: aresData?.dic || null,
+      legal_form: aresData?.legal_form || 'OSVČ',
+      vat_payer: aresData?.vat_payer || false,
+      address,
+      email: email || null,
+      phone: phone || null,
+      managing_director: managing_director || null,
+      status: 'pending_review',
+      owner_id: userId,
+    })
+
+    return NextResponse.json({ company, ares: aresData }, { status: 201 })
+  } catch (error) {
+    console.error('Client POST company error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to create company'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

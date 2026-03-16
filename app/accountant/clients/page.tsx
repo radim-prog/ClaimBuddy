@@ -82,7 +82,7 @@ function Tip({ children, text }: { children: React.ReactNode; text: string }) {
   )
 }
 
-function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelect, attentionCount, healthScore, isFirst, unreadMessages, onMessageClick }: {
+function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelect, attentionCount, healthScore, isFirst, unreadMessages, onMessageClick, onStatusChange }: {
   company: Company
   fullStatus: { status: 'ok' | 'missing' | 'uploaded'; missingDocs: number; uploadedDocs: number }
   clientStatus: string
@@ -93,11 +93,14 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
   isFirst?: boolean
   unreadMessages?: number
   onMessageClick?: (companyId: string, companyName: string) => void
+  onStatusChange?: () => void
 }) {
   const isOnboarding = clientStatus === 'onboarding'
   const isInactive = clientStatus === 'inactive'
+  const isPending = clientStatus === 'pending_review'
   const isFO = company.legal_form === 'OSVČ'
-  const borderColor = isInactive ? 'border-l-red-500' :
+  const borderColor = isPending ? 'border-l-amber-500' :
+                     isInactive ? 'border-l-red-500' :
                      isOnboarding ? 'border-l-purple-500' :
                      isFO ? (company.vat_payer ? 'border-l-emerald-700' : 'border-l-emerald-400') :
                      (company.vat_payer ? 'border-l-blue-700' : 'border-l-blue-400')
@@ -165,6 +168,15 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
                     </span>
                   </Tip>
                 )}
+                {isPending && (
+                  <Tip text="Firma čeká na schválení účetním">
+                    <span>
+                      <Badge className="bg-amber-500 text-white hover:bg-amber-500 text-xs px-1.5 py-0 animate-pulse">
+                        Čeká na schválení
+                      </Badge>
+                    </span>
+                  </Tip>
+                )}
               </div>
 
               {/* DPH + zaměstnanci */}
@@ -200,6 +212,49 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
 
               {/* Stav */}
               <div className="col-span-2 text-right flex items-center justify-end gap-2">
+                {isPending && (
+                  <>
+                    <button
+                      onClick={async (e) => {
+                        e.preventDefault(); e.stopPropagation()
+                        try {
+                          const res = await fetch(`/api/accountant/companies/${company.id}/status`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: 'onboarding' }),
+                          })
+                          if (!res.ok) throw new Error()
+                          toast.success(`${company.name} schválena`)
+                          onStatusChange?.()
+                        } catch { toast.error('Nepodařilo se schválit firmu') }
+                      }}
+                      className="inline-flex items-center gap-1 text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-2 py-1 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors font-medium"
+                    >
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      Schválit
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.preventDefault(); e.stopPropagation()
+                        if (!confirm(`Opravdu odmítnout firmu ${company.name}?`)) return
+                        try {
+                          const res = await fetch(`/api/accountant/companies/${company.id}/status`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: 'inactive' }),
+                          })
+                          if (!res.ok) throw new Error()
+                          toast.success(`${company.name} odmítnuta`)
+                          onStatusChange?.()
+                        } catch { toast.error('Nepodařilo se odmítnout firmu') }
+                      }}
+                      className="inline-flex items-center gap-1 text-xs bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-2 py-1 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors font-medium"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                      Odmítnout
+                    </button>
+                  </>
+                )}
                 {(unreadMessages ?? 0) > 0 && !isInactive && onMessageClick && (
                   <Tip text={`${unreadMessages} neprectenych zprav`}>
                     <button
@@ -739,6 +794,15 @@ function ClientsPageContent() {
               Onboarding
               <span className="ml-1 opacity-60">{companies.filter((c: any) => (c.status) === 'onboarding').length}</span>
             </button>
+            {companies.filter((c: any) => c.status === 'pending_review').length > 0 && (
+              <button
+                onClick={() => setClientStatusFilter(filterClientStatus === 'pending_review' ? 'active' : 'pending_review')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${filterClientStatus === 'pending_review' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 shadow-sm ring-1 ring-amber-200 dark:ring-amber-800' : 'bg-amber-50/50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 ring-1 ring-amber-200/50 dark:ring-amber-800/50'}`}
+              >
+                Ke schválení
+                <span className="ml-1 font-bold">{companies.filter((c: any) => c.status === 'pending_review').length}</span>
+              </button>
+            )}
             <button
               onClick={() => setFilterVatPayer(filterVatPayer === true ? null : true)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${filterVatPayer === true ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 shadow-sm ring-1 ring-blue-200 dark:ring-blue-800' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
@@ -1076,6 +1140,7 @@ function ClientsPageContent() {
                           healthScore={healthScores.get(company.id)}
                           unreadMessages={getCompanyAttention(company.id).unread_messages}
                           onMessageClick={handleMessageClick}
+                          onStatusChange={fetchCompanies}
                         />
                       ))}
                     </div>
@@ -1099,6 +1164,7 @@ function ClientsPageContent() {
               isFirst={idx === 0}
               unreadMessages={getCompanyAttention(company.id).unread_messages}
               onMessageClick={handleMessageClick}
+              onStatusChange={fetchCompanies}
             />
           ))
         )}

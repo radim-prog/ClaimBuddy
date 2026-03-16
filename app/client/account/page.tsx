@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Lock, Save, Building2, Bell, MessageCircle, Mail, Loader2 } from 'lucide-react'
+import { User, Lock, Save, Building2, Bell, MessageCircle, Mail, Loader2, Plus, Clock } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { useClientUser } from '@/lib/contexts/client-user-context'
+import { AddCompanyDialog } from '@/components/client/add-company-dialog'
 
 export default function AccountPage() {
   return (
@@ -163,7 +164,7 @@ function ProfileTab() {
 }
 
 function CompanyTab() {
-  const { companies, loading } = useClientUser()
+  const { companies, loading, refetch } = useClientUser()
 
   if (loading) {
     return (
@@ -173,76 +174,93 @@ function CompanyTab() {
     )
   }
 
-  if (companies.length === 0) {
-    return (
-      <Card className="rounded-2xl">
-        <CardContent className="py-12">
-          <div className="text-center text-muted-foreground">
-            <Building2 className="h-16 w-16 mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium font-display">Žádné firmy</p>
-            <p className="mt-1 text-sm">Kontaktujte svého účetního.</p>
-          </div>
-        </CardContent>
-      </Card>
-    )
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case 'active': return { text: 'Aktivní', cls: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' }
+      case 'pending_review': return { text: 'Čeká na schválení', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' }
+      case 'onboarding': return { text: 'Onboarding', cls: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' }
+      default: return { text: 'Neaktivní', cls: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400' }
+    }
   }
 
   return (
     <div className="space-y-4">
-      {companies.map((company) => (
-        <Card key={company.id} className="rounded-2xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-display">
-              <Building2 className="h-5 w-5 text-blue-600" />
-              {company.name}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              <div>
-                <dt className="text-muted-foreground">IČO</dt>
-                <dd className="font-medium">{company.ico}</dd>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold font-display">Moje firmy</h2>
+        <AddCompanyDialog onCompanyAdded={refetch} />
+      </div>
+
+      {companies.length === 0 ? (
+        <Card className="rounded-2xl">
+          <CardContent className="py-12">
+            <div className="text-center text-muted-foreground">
+              <Building2 className="h-16 w-16 mx-auto mb-4 opacity-30" />
+              <p className="text-lg font-medium font-display">Žádné firmy</p>
+              <p className="mt-1 text-sm">Přidejte svou první firmu pomocí IČO.</p>
+              <div className="mt-4">
+                <AddCompanyDialog onCompanyAdded={refetch} />
               </div>
-              {company.dic && (
-                <div>
-                  <dt className="text-muted-foreground">DIČ</dt>
-                  <dd className="font-medium">{company.dic}</dd>
-                </div>
-              )}
-              {company.managing_director && (
-                <div>
-                  <dt className="text-muted-foreground">Jednatel</dt>
-                  <dd className="font-medium">{company.managing_director}</dd>
-                </div>
-              )}
-              <div>
-                <dt className="text-muted-foreground">Právní forma</dt>
-                <dd className="font-medium">{company.legal_form}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Plátce DPH</dt>
-                <dd className="font-medium">{company.vat_payer ? 'Ano' : 'Ne'}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Zaměstnanci</dt>
-                <dd className="font-medium">{company.has_employees ? 'Ano' : 'Ne'}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Status</dt>
-                <dd>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
-                    company.status === 'active'
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
-                  }`}>
-                    {company.status === 'active' ? 'Aktivní' : 'Neaktivní'}
-                  </span>
-                </dd>
-              </div>
-            </dl>
+            </div>
           </CardContent>
         </Card>
-      ))}
+      ) : (
+        companies.map((company) => {
+          const status = statusLabel(company.status)
+          return (
+            <Card key={company.id} className={`rounded-2xl ${company.status === 'pending_review' ? 'border-amber-200 dark:border-amber-800' : ''}`}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-display">
+                  <Building2 className="h-5 w-5 text-blue-600" />
+                  {company.name}
+                  {company.status === 'pending_review' && (
+                    <Clock className="h-4 w-4 text-amber-500" />
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <dt className="text-muted-foreground">IČO</dt>
+                    <dd className="font-medium">{company.ico}</dd>
+                  </div>
+                  {company.dic && (
+                    <div>
+                      <dt className="text-muted-foreground">DIČ</dt>
+                      <dd className="font-medium">{company.dic}</dd>
+                    </div>
+                  )}
+                  {company.managing_director && (
+                    <div>
+                      <dt className="text-muted-foreground">Jednatel</dt>
+                      <dd className="font-medium">{company.managing_director}</dd>
+                    </div>
+                  )}
+                  <div>
+                    <dt className="text-muted-foreground">Právní forma</dt>
+                    <dd className="font-medium">{company.legal_form}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Plátce DPH</dt>
+                    <dd className="font-medium">{company.vat_payer ? 'Ano' : 'Ne'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Zaměstnanci</dt>
+                    <dd className="font-medium">{company.has_employees ? 'Ano' : 'Ne'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Status</dt>
+                    <dd>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${status.cls}`}>
+                        {status.text}
+                      </span>
+                    </dd>
+                  </div>
+                </dl>
+              </CardContent>
+            </Card>
+          )
+        })
+      )}
     </div>
   )
 }
