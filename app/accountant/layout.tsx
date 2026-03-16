@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useState, useEffect } from 'react'
+import { ErrorBoundary } from '@/components/error-boundary'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -731,7 +732,9 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
         )}
 
         <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-24 md:pb-6 page-enter max-w-screen-2xl mx-auto w-full">
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </main>
         <QuickCaptureButton />
         <KeyboardShortcuts />

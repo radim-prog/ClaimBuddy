@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { ErrorBoundary } from '@/components/error-boundary'
 import Link from 'next/link'
 import { useState, useEffect, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
@@ -24,6 +25,7 @@ import {
   UserCheck,
   ShieldAlert,
   ShieldCheck,
+  BookOpen,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -49,25 +51,28 @@ import { ImpersonationBanner } from '@/components/client/impersonation-banner'
 import { MissingDocsBar } from '@/components/client/missing-docs-bar'
 import { CompanySwitcher } from '@/components/client/company-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
+import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-context'
+import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
+import { CLIENT_TUTORIAL_STEPS } from '@/lib/client-tutorial-steps'
 
 // Static navigation — always visible
-const baseNavigation: { name: string; href: string; icon: typeof LayoutDashboard; feature?: string }[] = [
-  { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard },
-  { name: 'Doklady', href: '/client/documents', icon: FileText },
-  { name: 'Faktury', href: '/client/invoices', icon: Receipt },
+const baseNavigation: { name: string; href: string; icon: typeof LayoutDashboard; feature?: string; tourId?: string }[] = [
+  { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard, tourId: 'client-dashboard' },
+  { name: 'Doklady', href: '/client/documents', icon: FileText, tourId: 'client-documents' },
+  { name: 'Faktury', href: '/client/invoices', icon: Receipt, tourId: 'client-invoicing' },
   { name: 'Adresář', href: '/client/partners', icon: Users, feature: 'address_book' },
-  { name: 'Cesťák', href: '/client/travel', icon: Car },
+  { name: 'Cesťák', href: '/client/travel', icon: Car, tourId: 'client-travel' },
   { name: 'Dotazník', href: '/client/tax-questionnaire', icon: ClipboardList },
   { name: 'Vstupní dotazník', href: '/client/onboarding', icon: FileInput },
   { name: 'Pojistné události', href: '/client/claims', icon: ShieldCheck },
   { name: 'Krizový plán', href: '/client/crisis', icon: ShieldAlert },
-  { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
-  { name: 'Účet', href: '/client/account', icon: UserCircle },
+  { name: 'Zprávy', href: '/client/messages', icon: MessageSquare, tourId: 'client-messages' },
+  { name: 'Účet', href: '/client/account', icon: UserCircle, tourId: 'client-profile' },
 ]
 
 // Dynamic navigation — visible only when portal_sections[key] is true
-const dynamicNavigation: { name: string; href: string; icon: typeof LayoutDashboard; portalKey: string }[] = [
-  { name: 'Daně', href: '/client/taxes', icon: Landmark, portalKey: 'tax_overview' },
+const dynamicNavigation: { name: string; href: string; icon: typeof LayoutDashboard; portalKey: string; tourId?: string }[] = [
+  { name: 'Daně', href: '/client/taxes', icon: Landmark, portalKey: 'tax_overview', tourId: 'client-taxes' },
   { name: 'Majetek', href: '/client/assets', icon: Package, portalKey: 'assets' },
   { name: 'Zaměstnanci', href: '/client/employees', icon: UserCheck, portalKey: 'employees' },
 ]
@@ -76,6 +81,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? ''
   const { userName, userInitials, selectedCompany } = useClientUser()
   const { isLocked, planTier } = usePlanFeatures()
+  const { startTour } = useTutorialContext()
   const [notificationsDismissed, setNotificationsDismissed] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
@@ -304,7 +310,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className={`flex flex-col min-h-screen overflow-hidden transition-all duration-300 ease-in-out ${collapsed ? 'md:pl-[72px]' : 'md:pl-64'}`}>
         <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-20 md:pb-8 min-w-0 page-enter max-w-5xl mx-auto w-full">
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
 
