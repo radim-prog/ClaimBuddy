@@ -7,6 +7,11 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
+    const { message } = body
+    if (!message || typeof message !== 'string' || message.length > 5000) {
+      return NextResponse.json({ error: 'Invalid error log' }, { status: 400 })
+    }
+
     await logError({
       level: 'error',
       message: body.message || 'Unknown client error',
