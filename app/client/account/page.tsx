@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Lock, Save, Building2, Bell, MessageCircle, Mail, Loader2, Plus, Clock, Inbox, FileText, FileSpreadsheet, Receipt, File, Copy, CheckCircle2, AlertCircle } from 'lucide-react'
+import { User, Lock, Save, Building2, Bell, MessageCircle, Mail, Loader2, Clock, Inbox, FileText, FileSpreadsheet, Receipt, File, Copy, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { useClientUser } from '@/lib/contexts/client-user-context'
@@ -60,8 +60,8 @@ function ProfileTab() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       toast.success('Profil uložen')
-    } catch (err: any) {
-      toast.error(err.message || 'Chyba při ukládání')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Chyba při ukládání')
     } finally {
       setSaving(false)
     }
@@ -89,8 +89,8 @@ function ProfileTab() {
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-    } catch (err: any) {
-      toast.error(err.message || 'Chyba při změně hesla')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Chyba při změně hesla')
     } finally {
       setSaving(false)
     }

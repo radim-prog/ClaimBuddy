@@ -529,12 +529,13 @@ ${textBody}
 // ---------------------------------------------------------------------------
 
 export function trialEnding(name: string, daysLeft: number, planName: string): EmailTemplate {
-  const subject = `Zkušební období končí za ${daysLeft} ${daysLeft === 1 ? 'den' : daysLeft < 5 ? 'dny' : 'dní'}`
+  const daysLabel = daysLeft === 1 ? 'den' : daysLeft < 5 ? 'dny' : 'dní'
+  const subject = `Zkušební období končí za ${daysLeft} ${daysLabel}`
 
   const content = `
     <p style="margin: 0 0 16px; font-size: 16px; color: #111827;">Dobrý den, <strong>${name}</strong>,</p>
     <p style="margin: 0 0 16px; font-size: 15px; color: #374151; line-height: 1.6;">
-      váše zkušební období plánu <strong>${planName}</strong> skončí za <strong>${daysLeft} ${daysLeft === 1 ? 'den' : daysLeft < 5 ? 'dny' : 'dní'}</strong>.
+      váše zkušební období plánu <strong>${planName}</strong> skončí za <strong>${daysLeft} ${daysLabel}</strong>.
     </p>
     <p style="margin: 0 0 20px; font-size: 15px; color: #374151; line-height: 1.6;">
       Aby nedošlo k přerušení přístupu, aktivujte prosím předplatné. Všechna vaše data a nastavení zůstanou zachována.
@@ -546,7 +547,7 @@ export function trialEnding(name: string, daysLeft: number, planName: string): E
 
   const text = `Dobrý den, ${name},
 
-váše zkušební období plánu ${planName} skončí za ${daysLeft} ${daysLeft === 1 ? 'den' : daysLeft < 5 ? 'dny' : 'dní'}.
+váše zkušební období plánu ${planName} skončí za ${daysLeft} ${daysLabel}.
 
 Aby nedošlo k přerušení přístupu, aktivujte prosím předplatné na: https://app.zajcon.cz/pricing
 
@@ -715,11 +716,6 @@ Dotazník vyplníte zde: https://app.zajcon.cz/dotazniky
 // Lead nurturing (clients without accountant)
 // ---------------------------------------------------------------------------
 
-const UNSUBSCRIBE_BLOCK = `
-  <p style="margin: 24px 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
-    Nechcete tyto emaily? <a href="https://app.zajcon.cz/client/account" style="color: #9ca3af; text-decoration: underline;">Odhlásit se</a>
-  </p>`
-
 export function leadDeadlineReminder(name: string): EmailTemplate {
   const subject = 'Blíží se daňové termíny — víte o nich?'
 
@@ -740,7 +736,7 @@ export function leadDeadlineReminder(name: string): EmailTemplate {
       S účetním v ÚčetníOS vám žádný termín neuteče — systém hlídá vše automaticky.
     </p>
     ${emailButton('Najít účetního', 'https://app.zajcon.cz/client/find-accountant')}
-    ${UNSUBSCRIBE_BLOCK}`
+    `
 
   const text = `Dobrý den, ${name},
 
@@ -787,7 +783,7 @@ export function leadTipDocuments(name: string): EmailTemplate {
       Chcete mít doklady v pořádku bez stresu? Propojte se s účetním.
     </p>
     ${emailButton('Najít účetního', 'https://app.zajcon.cz/client/find-accountant')}
-    ${UNSUBSCRIBE_BLOCK}`
+    `
 
   const text = `Dobrý den, ${name},
 
@@ -827,7 +823,7 @@ export function leadTaxSaving(name: string): EmailTemplate {
       V ÚčetníOS vidíte svůj <strong>daňový dopad v reálném čase</strong>. S účetním ušetříte ještě víc.
     </p>
     ${emailButton('Najít účetního', 'https://app.zajcon.cz/client/find-accountant')}
-    ${UNSUBSCRIBE_BLOCK}`
+    `
 
   const text = `Dobrý den, ${name},
 
@@ -881,7 +877,7 @@ export function leadAccountantOffer(name: string): EmailTemplate {
       Propojení je zdarma. Účetní vám připraví nabídku na míru.
     </p>
     ${emailButton('Najít účetního zdarma', 'https://app.zajcon.cz/client/find-accountant', '#16a34a')}
-    ${UNSUBSCRIBE_BLOCK}`
+    `
 
   const text = `Dobrý den, ${name},
 

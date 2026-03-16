@@ -78,11 +78,6 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      if (!user.email) {
-        skipped++
-        continue
-      }
-
       const templateFn = LEAD_EMAIL_VARIANTS[variantIndex]
       const template = templateFn(user.name || 'podnikateli')
 

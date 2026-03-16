@@ -12,8 +12,6 @@ import {
   LogOut,
   User,
   Receipt,
-  Sparkles,
-  Eye,
   Shield,
   CalendarCheck,
   MoreHorizontal,
@@ -58,7 +56,6 @@ import { WelcomeModal } from '@/components/accountant/welcome-modal'
 import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
 import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-context'
 import { BookOpen, Lock, UserPlus } from 'lucide-react'
-import { Logo } from '@/components/ui/logo'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 
 const navigation = [
@@ -83,7 +80,7 @@ const adminNavigation = [
   { name: 'Administrace', href: '/accountant/admin', icon: Shield },
 ]
 
-const demoFeatures: { name: string; href: string; icon: typeof Sparkles; badge: string }[] = [
+const demoFeatures: { name: string; href: string; icon: React.ComponentType<{ className?: string }>; badge: string }[] = [
 ]
 
 export default function AccountantLayout({

@@ -116,7 +116,7 @@ export async function sendEmail(config: EmailConfig): Promise<EmailResult> {
       const result: EmailResult = {
         success: true,
         provider: 'ecomail',
-        messageId: (response as { id?: string })?.id ?? undefined,
+        messageId: typeof response.id === 'string' ? response.id : undefined,
       }
       await logEmail(config, result)
       return result
@@ -171,7 +171,7 @@ export async function sendEmail(config: EmailConfig): Promise<EmailResult> {
   }
 
   // ------- Priority 3: Log only (dev / no provider configured) -------
-  console.log('[EmailService] LOG-ONLY mode — email not delivered:', {
+  console.warn('[EmailService] LOG-ONLY mode — email not delivered:', {
     to: recipients,
     from: fromEmail,
     subject: config.subject,

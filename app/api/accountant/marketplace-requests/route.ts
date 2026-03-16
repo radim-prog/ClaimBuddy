@@ -53,19 +53,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ requests: fbData || [], provider_registered: true })
     }
 
-    const requests = (data || []).map((r: any) => ({
-      id: r.id,
-      client_name: r.users?.name || null,
-      client_email: r.users?.email || null,
-      company_name: r.companies?.name || null,
-      company_ico: r.companies?.ico || null,
-      status: r.status,
-      message: r.message,
-      business_type: r.business_type,
-      budget_range: r.budget_range,
-      created_at: r.created_at,
-      responded_at: r.responded_at,
-    }))
+    const requests = ((data || []) as any[]).map((r: any) => {
+      const user = Array.isArray(r.users) ? r.users[0] : r.users
+      const company = Array.isArray(r.companies) ? r.companies[0] : r.companies
+      return {
+        id: r.id,
+        client_name: user?.name || null,
+        client_email: user?.email || null,
+        company_name: company?.name || null,
+        company_ico: company?.ico || null,
+        status: r.status,
+        message: r.message,
+        business_type: r.business_type,
+        budget_range: r.budget_range,
+        created_at: r.created_at,
+        responded_at: r.responded_at,
+      }
+    })
 
     return NextResponse.json({ requests, provider_registered: true })
   } catch (error) {

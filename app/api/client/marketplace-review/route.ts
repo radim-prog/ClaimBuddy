@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         .eq('status', 'accepted')
         .limit(1)
 
-      hasAcceptedRequest = (accepted && accepted.length > 0) || false
+      hasAcceptedRequest = (accepted?.length ?? 0) > 0
     }
 
     if (!isVerifiedClient && !hasAcceptedRequest) {
@@ -133,12 +133,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ reviews: fb || [] })
     }
 
-    const reviews = (data || []).map((r: any) => ({
+    const reviews = ((data || []) as any[]).map((r: any) => ({
       id: r.id,
       rating: r.rating,
       review_text: r.review_text,
       verified_client: r.verified_client,
-      reviewer_name: r.users?.name || 'Anonymní',
+      reviewer_name: (Array.isArray(r.users) ? r.users[0]?.name : r.users?.name) || 'Anonymní',
       created_at: r.created_at,
     }))
 

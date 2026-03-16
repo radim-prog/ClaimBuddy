@@ -98,17 +98,20 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error
 
-    const requests = (data || []).map((r: any) => ({
-      id: r.id,
-      provider_id: r.provider_id,
-      provider_name: r.marketplace_providers?.name || null,
-      provider_city: r.marketplace_providers?.city || null,
-      status: r.status,
-      message: r.message,
-      created_at: r.created_at,
-      responded_at: r.responded_at,
-      rejection_reason: r.rejection_reason,
-    }))
+    const requests = ((data || []) as any[]).map((r: any) => {
+      const provider = Array.isArray(r.marketplace_providers) ? r.marketplace_providers[0] : r.marketplace_providers
+      return {
+        id: r.id,
+        provider_id: r.provider_id,
+        provider_name: provider?.name || null,
+        provider_city: provider?.city || null,
+        status: r.status,
+        message: r.message,
+        created_at: r.created_at,
+        responded_at: r.responded_at,
+        rejection_reason: r.rejection_reason,
+      }
+    })
 
     return NextResponse.json({ requests })
   } catch (error) {
