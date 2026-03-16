@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { autoMatchTransaction } from '@/lib/bank-matching'
 import { calculateDetailedTaxImpact } from '@/lib/tax-impact'
 import { upsertClosureField } from '@/lib/closure-store-db'
+import { triggerMissingDocsReminder } from '@/lib/missing-docs-reminder'
 
 export const dynamic = 'force-dynamic'
 
@@ -191,6 +192,14 @@ export async function POST(request: NextRequest) {
           await upsertClosureField(company_id, period!, 'income_invoices_status', 'approved', userId!)
         }
       }
+    }
+
+    // Trigger missing docs reminders for affected periods
+    const affectedPeriods = [...new Set(transactions.map(t => t.period).filter(Boolean))]
+    for (const period of affectedPeriods) {
+      triggerMissingDocsReminder(company_id, period!, userId!).catch(err => {
+        console.error('[AutoMatch] Reminder trigger error:', err)
+      })
     }
 
     return NextResponse.json({

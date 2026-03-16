@@ -3,6 +3,7 @@ import { getClosures, updateClosureFull, upsertClosureField } from '@/lib/closur
 import type { StatusField, StatusValue } from '@/lib/closure-store-db'
 import { addActivity } from '@/lib/activity-store-db'
 import { isStaffRole } from '@/lib/access-check'
+import { triggerMissingDocsReminder } from '@/lib/missing-docs-reminder'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,6 +64,13 @@ export async function PUT(request: NextRequest) {
       created_by: userName,
     })
 
+    // Trigger missing docs reminder check
+    if (updated.period) {
+      triggerMissingDocsReminder(updated.company_id, updated.period, userId).catch(err => {
+        console.error('[Closures] Reminder trigger error:', err)
+      })
+    }
+
     return NextResponse.json({ closure: updated })
   } catch (error) {
     console.error('Closure update error:', error)
@@ -93,6 +101,12 @@ export async function PATCH(request: NextRequest) {
     }
 
     const closure = await upsertClosureField(company_id, period, field, value, userId)
+
+    // Trigger missing docs reminder check after closure update
+    triggerMissingDocsReminder(company_id, period, userId).catch(err => {
+      console.error('[Closures] Reminder trigger error:', err)
+    })
+
     return NextResponse.json({ closure })
   } catch (error) {
     console.error('Closure PATCH error:', error)

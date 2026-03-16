@@ -3,11 +3,16 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Bell, Mail, Clock, Banknote, FileText } from 'lucide-react'
+import { Bell, Mail, Clock, Banknote, FileText, AlertTriangle } from 'lucide-react'
 
 interface NotificationPreferences {
   channels: { in_app: boolean; email: boolean; sms: boolean; whatsapp: boolean }
   types: { deadline_reminder: boolean; unpaid_invoice: boolean; missing_documents: boolean }
+  missing_docs_reminder?: {
+    enabled: boolean
+    frequency: 'standard' | 'aggressive' | 'gentle' | 'off'
+    max_reminders: number
+  }
 }
 
 interface NotificationSettingsProps {
@@ -26,9 +31,17 @@ const channelConfig: { key: keyof NotificationPreferences['channels']; label: st
   { key: 'email', label: 'E-mail', icon: Mail, note: '(Připraveno)' },
 ]
 
+const frequencyOptions: { value: NonNullable<NotificationPreferences['missing_docs_reminder']>['frequency']; label: string; description: string }[] = [
+  { value: 'gentle', label: 'Jemné', description: 'Týdně, max 10 připomínek' },
+  { value: 'standard', label: 'Standardní', description: 'Každé 3 dny, max 20 připomínek' },
+  { value: 'aggressive', label: 'Agresivní', description: 'Denně, max 30 připomínek' },
+  { value: 'off', label: 'Vypnuto', description: 'Bez automatických připomínek' },
+]
+
 const defaultPrefs: NotificationPreferences = {
   channels: { in_app: true, email: true, sms: false, whatsapp: false },
   types: { deadline_reminder: true, unpaid_invoice: true, missing_documents: true },
+  missing_docs_reminder: { enabled: true, frequency: 'standard', max_reminders: 20 },
 }
 
 export function NotificationSettings({ companyId, notificationPreferences }: NotificationSettingsProps) {
@@ -66,6 +79,21 @@ export function NotificationSettings({ companyId, notificationPreferences }: Not
     save(updated)
   }
 
+  const updateReminderFrequency = (frequency: NonNullable<NotificationPreferences['missing_docs_reminder']>['frequency']) => {
+    const current = prefs.missing_docs_reminder || defaultPrefs.missing_docs_reminder!
+    const updated = {
+      ...prefs,
+      missing_docs_reminder: {
+        ...current,
+        enabled: frequency !== 'off',
+        frequency,
+      },
+    }
+    save(updated)
+  }
+
+  const currentFrequency = prefs.missing_docs_reminder?.frequency || 'standard'
+
   return (
     <Card>
       <CardHeader>
@@ -98,6 +126,36 @@ export function NotificationSettings({ companyId, notificationPreferences }: Not
                 }`}>
                   {prefs.types[key] ? 'Zapnuto' : 'Vypnuto'}
                 </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Missing docs reminder frequency */}
+        <div>
+          <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            Frekvence urgencí chybějících dokladů
+          </h4>
+          <p className="text-xs text-muted-foreground mb-3">
+            Jak často systém upomíná klienta na nedodané doklady. Eskaluje automaticky.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {frequencyOptions.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => updateReminderFrequency(opt.value)}
+                disabled={saving}
+                className={`px-3 py-2.5 rounded-lg border text-left transition-colors ${
+                  currentFrequency === opt.value
+                    ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700'
+                    : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className={`text-sm font-medium ${currentFrequency === opt.value ? 'text-purple-700 dark:text-purple-300' : ''}`}>
+                  {opt.label}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">{opt.description}</div>
               </button>
             ))}
           </div>
