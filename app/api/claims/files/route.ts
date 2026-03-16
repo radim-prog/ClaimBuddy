@@ -19,10 +19,10 @@ export async function GET(request: NextRequest) {
   try {
     const { data, error } = await supabaseAdmin
       .from('documents')
-      .select('id, original_name, file_path, file_size, mime_type, created_at, uploaded_by')
+      .select('id, file_name, storage_path, file_size_bytes, mime_type, uploaded_at, uploaded_by')
       .eq('company_id', companyId)
       .is('deleted_at', null)
-      .order('created_at', { ascending: false })
+      .order('uploaded_at', { ascending: false })
       .limit(200)
 
     if (error) throw error
@@ -30,11 +30,11 @@ export async function GET(request: NextRequest) {
     // Map to frontend expected format
     const files = (data ?? []).map(d => ({
       id: d.id,
-      filename: d.original_name || 'Neznámý soubor',
-      file_url: d.file_path || '',
-      file_size: d.file_size,
+      filename: d.file_name || 'Neznámý soubor',
+      file_url: d.storage_path || '',
+      file_size: d.file_size_bytes,
       mime_type: d.mime_type,
-      uploaded_at: d.created_at,
+      uploaded_at: d.uploaded_at,
       uploaded_by: d.uploaded_by,
     }))
 
@@ -86,13 +86,14 @@ export async function POST(request: NextRequest) {
       .from('documents')
       .insert({
         company_id: companyId,
-        original_name: file.name,
-        file_path: urlData.publicUrl,
-        file_size: file.size,
+        file_name: file.name,
+        storage_path: urlData.publicUrl,
+        file_size_bytes: file.size,
         mime_type: file.type,
         status: 'uploaded',
         uploaded_by: userId,
-        source: 'claims_upload',
+        upload_source: 'claims',
+        uploaded_at: new Date().toISOString(),
       })
       .select()
       .single()
@@ -102,11 +103,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       file: {
         id: doc.id,
-        filename: doc.original_name,
-        file_url: doc.file_path,
-        file_size: doc.file_size,
+        filename: doc.file_name,
+        file_url: doc.storage_path,
+        file_size: doc.file_size_bytes,
         mime_type: doc.mime_type,
-        uploaded_at: doc.created_at,
+        uploaded_at: doc.uploaded_at,
       },
     }, { status: 201 })
   } catch (error) {
