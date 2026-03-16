@@ -896,7 +896,25 @@ function StepSummary({
   onGenerate: () => void
   onBack: () => void
 }) {
-  const estimatedCredits = Math.max(1, Math.ceil(fuelRows.length / 5))
+  // Credit cost calculation
+  const isRegen = session.status === 'generated' || session.status === 'reviewed' || session.status === 'exported'
+  const vehicleCount = odometerRows.length || 1
+  const creditCost = isRegen ? 2 : (vehicleCount > 1 ? 5 : 3)
+  const creditLabel = isRegen ? 'Regenerovani (2 kr.)' : (vehicleCount > 1 ? 'Flotila (5 kr.)' : 'Jednovozidlo (3 kr.)')
+
+  // Check credits availability (client-side — server enforces too)
+  const [creditInfo, setCreditInfo] = useState<{ available: number; sufficient: boolean } | null>(null)
+  useEffect(() => {
+    fetch('/api/subscription/credits?type=travel')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          const available = (data.total_credits ?? 0) - (data.used_credits ?? 0)
+          setCreditInfo({ available, sufficient: available >= creditCost })
+        }
+      })
+      .catch(() => {})
+  }, [creditCost])
 
   return (
     <Card className="rounded-xl shadow-soft-sm">
@@ -918,8 +936,38 @@ function StepSummary({
           <SummaryCard label="Naklady PHM" value={`${totalFuelCost.toLocaleString('cs')} Kc`} />
           <SummaryCard label="Vozidla" value={odometerRows.length.toString()} />
           <SummaryCard label="Celkem km" value={`${totalKm.toLocaleString('cs')} km`} />
-          <SummaryCard label="Kredity" value={`~${estimatedCredits}`} highlight />
+          <SummaryCard label="Kredity" value={`${creditCost}`} highlight />
         </div>
+
+        {/* Credit cost detail */}
+        <div className="flex items-start gap-2 p-3 bg-purple-50 dark:bg-purple-900/10 rounded-lg mb-4 text-sm">
+          <Sparkles className="h-4 w-4 shrink-0 mt-0.5 text-purple-500" />
+          <div>
+            <span className="font-medium text-purple-700 dark:text-purple-300">{creditLabel}</span>
+            {creditInfo && (
+              <span className="text-muted-foreground ml-2">
+                (dostupne: {creditInfo.available} kr.)
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Insufficient credits warning */}
+        {creditInfo && !creditInfo.sufficient && (
+          <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/10 rounded-lg mb-4 text-sm text-red-700 dark:text-red-400">
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-medium">Nedostatek kreditu!</span>
+              <span className="ml-1">Potrebujete {creditCost}, mate {creditInfo.available}.</span>
+              <a
+                href="/accountant/settings?tab=billing"
+                className="ml-2 underline hover:no-underline font-medium"
+              >
+                Dokoupit kredity →
+              </a>
+            </div>
+          </div>
+        )}
 
         {totalKm === 0 && odometerRows.length > 0 && (
           <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg mb-4 text-sm text-amber-700 dark:text-amber-400">
@@ -935,7 +983,7 @@ function StepSummary({
           </Button>
           <Button
             onClick={onGenerate}
-            disabled={saving}
+            disabled={saving || (creditInfo !== null && !creditInfo.sufficient)}
             className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
           >
             {saving ? (
@@ -943,7 +991,7 @@ function StepSummary({
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
             )}
-            Generovat knihu jizd
+            Generovat knihu jizd ({creditCost} kr.)
           </Button>
         </div>
       </CardContent>

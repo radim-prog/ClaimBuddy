@@ -37,6 +37,10 @@ export const STRIPE_PRICES = {
   extra_user: process.env.STRIPE_PRICE_EXTRA_USER || '',
   extra_company: process.env.STRIPE_PRICE_EXTRA_COMPANY || '',
   randomizer: process.env.STRIPE_PRICE_RANDOMIZER || '',
+  // Travel generation (kniha jízd)
+  travel_yearly_single: process.env.STRIPE_PRICE_TRAVEL_YEARLY_SINGLE || '', // 399 Kč — single vehicle annual
+  travel_yearly_fleet: process.env.STRIPE_PRICE_TRAVEL_YEARLY_FLEET || '',   // 599 Kč — fleet (multiple vehicles)
+  travel_regen: process.env.STRIPE_PRICE_TRAVEL_REGEN || '',                 // 199 Kč — regeneration credit pack
 } as const
 
 // Accountant tiers: zaklad (free), profi, business

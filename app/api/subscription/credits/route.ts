@@ -25,15 +25,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const currentPeriod = new Date().toISOString().slice(0, 7)
-  const credits = await getUsageCredits(userId, 'extraction', currentPeriod)
+  const { searchParams } = new URL(request.url)
+  const creditType = searchParams.get('type') || 'extraction'
+
+  // Travel credits are non-periodic (no monthly reset), extraction is monthly
+  const period = creditType === 'travel' ? undefined : new Date().toISOString().slice(0, 7)
+  const credits = await getUsageCredits(userId, creditType, period)
 
   return NextResponse.json({
+    total_credits: credits?.total_credits ?? 0,
+    used_credits: credits?.used_credits ?? 0,
     credits: credits ? {
       total: credits.total_credits,
       used: credits.used_credits,
       remaining: credits.total_credits - credits.used_credits,
-      period: currentPeriod,
+      period: period ?? null,
     } : null,
     packs: Object.entries(CREDIT_PACKS).map(([key, pack]) => ({
       id: key,

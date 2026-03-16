@@ -162,6 +162,72 @@ export async function checkExtractionCredits(
 }
 
 // ============================================
+// TRAVEL GENERATION CREDIT CHECK
+// ============================================
+
+// Credit costs
+export const TRAVEL_CREDIT_COSTS = {
+  yearly_single: 3,  // single vehicle annual generation
+  yearly_fleet: 5,   // fleet (multiple vehicles)
+  regen: 2,          // re-generation
+} as const
+
+export type TravelCreditType = keyof typeof TRAVEL_CREDIT_COSTS
+
+export async function checkTravelCredits(
+  userId: string,
+  creditType: TravelCreditType,
+  portalType: PortalType = 'accountant'
+): Promise<GateResult & { available?: number; required?: number }> {
+  if (!isMonetizationEnabled()) {
+    return { allowed: true }
+  }
+
+  // Feature gate first
+  const featureCheck = await checkFeatureAccess(userId, 'travel_generation', portalType)
+  if (!featureCheck.allowed) return featureCheck
+
+  const required = TRAVEL_CREDIT_COSTS[creditType]
+  const credits = await getUsageCredits(userId, 'travel', undefined)
+  const available = credits ? (credits.total_credits - credits.used_credits) : 0
+
+  if (available < required) {
+    return {
+      allowed: false,
+      reason: `Nedostatek kreditů pro generování knihy jízd. Potřeba: ${required}, dostupné: ${available}.`,
+      currentTier: (await getSubscription(userId, portalType))?.plan_tier ?? 'free',
+      available,
+      required,
+    }
+  }
+
+  return { allowed: true, available, required }
+}
+
+export async function consumeTravelCredits(
+  userId: string,
+  amount: number
+): Promise<boolean> {
+  // Consume multiple credits at once using optimistic locking
+  const credits = await getUsageCredits(userId, 'travel', undefined)
+  if (!credits) return false
+  if (credits.used_credits + amount > credits.total_credits) return false
+
+  const { data: updated, error } = await (await import('@/lib/supabase-admin')).supabaseAdmin
+    .from('usage_credits')
+    .update({ used_credits: credits.used_credits + amount })
+    .eq('id', credits.id)
+    .eq('used_credits', credits.used_credits) // optimistic lock
+    .select('id')
+    .single()
+
+  if (error || !updated) return false
+
+  await logUsage(userId, 'travel_generation', undefined)
+  return true
+}
+
+// ============================================
 // MESSAGE LIMIT CHECK (Free tier: 5/month)
 // ============================================
 
