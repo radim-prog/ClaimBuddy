@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     // Get all transactions for the year
     const { data: transactions, error } = await supabaseAdmin
       .from('bank_transactions')
-      .select('period, amount, tax_impact, vat_impact, matched_document_id, matched_invoice_id, category')
+      .select('period, amount, tax_impact, vat_impact, social_impact, health_impact, total_impact, matched_document_id, matched_invoice_id, category')
       .eq('company_id', companyId)
       .like('period', `${year}-%`)
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { autoMatchTransaction, calculateTaxImpact } from '@/lib/bank-matching'
+import { autoMatchTransaction } from '@/lib/bank-matching'
+import { calculateDetailedTaxImpact } from '@/lib/tax-impact'
 import { upsertClosureField } from '@/lib/closure-store-db'
 
 export const dynamic = 'force-dynamic'
@@ -141,13 +142,16 @@ export async function POST(request: NextRequest) {
 
         matched++
       } else if (tx.amount < 0) {
-        // Recalculate tax impact for still-unmatched expenses
-        const impact = calculateTaxImpact(tx.amount, company.legal_form, company.vat_payer)
+        // Recalculate detailed tax impact for still-unmatched expenses
+        const impact = calculateDetailedTaxImpact(tx.amount, company.legal_form, company.vat_payer)
         await supabaseAdmin
           .from('bank_transactions')
           .update({
-            tax_impact: impact.tax,
+            tax_impact: impact.income_tax,
             vat_impact: impact.vat,
+            social_impact: impact.social_insurance,
+            health_impact: impact.health_insurance,
+            total_impact: impact.total,
             updated_at: new Date().toISOString(),
           })
           .eq('id', tx.id)

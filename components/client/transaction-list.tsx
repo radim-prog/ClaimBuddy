@@ -31,6 +31,9 @@ export interface BankTransaction {
   match_method: string | null
   tax_impact: number
   vat_impact: number
+  social_impact?: number
+  health_impact?: number
+  total_impact?: number
 }
 
 interface TransactionListProps {
@@ -173,9 +176,31 @@ export function TransactionList({
                       {formatAmount(tx.amount, tx.currency)}
                     </p>
                     {color === 'red' && (tx.tax_impact > 0 || tx.vat_impact > 0) && (
-                      <p className="text-xs text-red-600">
-                        -{formatAmount(tx.tax_impact + tx.vat_impact)}
-                      </p>
+                      <div className="relative group">
+                        <p className="text-xs text-red-600 cursor-help">
+                          -{formatAmount(tx.total_impact || (tx.tax_impact + tx.vat_impact))}
+                        </p>
+                        {/* Tooltip breakdown */}
+                        <div className="absolute right-0 top-full mt-1 z-50 hidden group-hover:block bg-white dark:bg-gray-800 border rounded-lg shadow-lg p-2.5 w-48 text-xs">
+                          <div className="font-semibold text-red-600 mb-1.5">Daňový dopad</div>
+                          <div className="space-y-0.5">
+                            <div className="flex justify-between"><span className="text-muted-foreground">DzP:</span><span>{formatAmount(tx.tax_impact)}</span></div>
+                            {(tx.social_impact || 0) > 0 && (
+                              <div className="flex justify-between"><span className="text-muted-foreground">SP:</span><span>{formatAmount(tx.social_impact!)}</span></div>
+                            )}
+                            {(tx.health_impact || 0) > 0 && (
+                              <div className="flex justify-between"><span className="text-muted-foreground">ZP:</span><span>{formatAmount(tx.health_impact!)}</span></div>
+                            )}
+                            {tx.vat_impact > 0 && (
+                              <div className="flex justify-between"><span className="text-muted-foreground">DPH:</span><span>{formatAmount(tx.vat_impact)}</span></div>
+                            )}
+                            <div className="flex justify-between border-t pt-1 mt-1 font-semibold">
+                              <span>Celkem:</span>
+                              <span className="text-red-600">{formatAmount(tx.total_impact || (tx.tax_impact + tx.vat_impact))}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
 

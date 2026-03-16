@@ -32,7 +32,7 @@ const monthNames = [
   'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec'
 ]
 
-type ClosureStatus = 'missing' | 'uploaded' | 'approved'
+type ClosureStatus = 'missing' | 'uploaded' | 'approved' | 'reviewed' | 'skipped'
 type OverlayType = 'scan' | 'invoice' | 'trip' | 'bank_upload' | null
 
 function getMonthDotColor(closure: { bank_statement_status: ClosureStatus; expense_documents_status: ClosureStatus; income_invoices_status: ClosureStatus } | undefined, isFuture: boolean): string {
@@ -40,6 +40,7 @@ function getMonthDotColor(closure: { bank_statement_status: ClosureStatus; expen
   const statuses = [closure.bank_statement_status, closure.expense_documents_status, closure.income_invoices_status]
   if (statuses.some(s => s === 'missing')) return 'bg-red-500'
   if (statuses.some(s => s === 'uploaded')) return 'bg-yellow-500'
+  if (statuses.every(s => s === 'approved' || s === 'reviewed' || s === 'skipped')) return 'bg-green-500'
   return 'bg-green-500'
 }
 
@@ -228,17 +229,21 @@ export default function ClientDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-2">
-              {yearMatrix.map(({ month, closure, isFuture, name }) => (
-                <div
+              {yearMatrix.map(({ month, period, closure, isFuture, name }) => (
+                <button
                   key={month}
+                  disabled={isFuture}
+                  onClick={() => !isFuture && router.push(`/client/closures/${period}`)}
                   className={`
                     text-center p-2 rounded-lg transition-colors
+                    ${!isFuture ? 'cursor-pointer hover:bg-primary/10' : ''}
                     ${month === currentMonth + 1
                       ? 'ring-2 ring-primary/50 bg-primary/5'
                       : 'bg-muted/50'
                     }
                     ${isFuture ? 'opacity-40' : ''}
                   `}
+                  title={!isFuture && closure ? `${name}: Výpis ${closure.bank_statement_status}, Doklady ${closure.expense_documents_status}, Faktury ${closure.income_invoices_status}` : name}
                 >
                   <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">
                     {name.slice(0, 3)}
@@ -247,7 +252,7 @@ export default function ClientDashboard() {
                     w-2.5 h-2.5 rounded-full mx-auto
                     ${getMonthDotColor(closure as any, isFuture)}
                   `} />
-                </div>
+                </button>
               ))}
             </div>
             <div className="flex items-center gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">

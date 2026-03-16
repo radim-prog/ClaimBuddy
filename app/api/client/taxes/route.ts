@@ -72,6 +72,26 @@ export async function GET(request: NextRequest) {
     const totalVatOutput = periods.reduce((s, p) => s + (p.vat_output || 0), 0)
     const totalVatInput = periods.reduce((s, p) => s + (p.vat_input || 0), 0)
 
+    // Missing docs tax impact summary
+    const { data: impactTxs } = await supabaseAdmin
+      .from('bank_transactions')
+      .select('tax_impact, vat_impact, social_impact, health_impact, total_impact')
+      .eq('company_id', companyId)
+      .like('period', `${currentYear}-%`)
+      .lt('amount', 0)
+      .is('matched_document_id', null)
+      .is('matched_invoice_id', null)
+      .not('category', 'in', '("private_transfer","owner_deposit","loan_repayment","internal_transfer")')
+
+    const missingDocsImpact = {
+      income_tax: (impactTxs || []).reduce((s, t) => s + (Number(t.tax_impact) || 0), 0),
+      social_insurance: (impactTxs || []).reduce((s, t) => s + (Number(t.social_impact) || 0), 0),
+      health_insurance: (impactTxs || []).reduce((s, t) => s + (Number(t.health_impact) || 0), 0),
+      vat: (impactTxs || []).reduce((s, t) => s + (Number(t.vat_impact) || 0), 0),
+      total: (impactTxs || []).reduce((s, t) => s + (Number(t.total_impact) || 0), 0),
+      unmatched_count: (impactTxs || []).length,
+    }
+
     return NextResponse.json({
       year: currentYear,
       periods,
@@ -81,6 +101,7 @@ export async function GET(request: NextRequest) {
         profit: totalRevenue - totalExpenses,
         vat_balance: totalVatOutput - totalVatInput,
       },
+      missing_docs_impact: missingDocsImpact,
       vat_payer: company.vat_payer,
     })
   } catch (error) {

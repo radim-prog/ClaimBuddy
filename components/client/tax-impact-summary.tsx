@@ -5,21 +5,34 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertTriangle, TrendingDown, Receipt, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
-interface TaxSummaryData {
-  current_month: {
-    period: string
-    tax_impact: number
-    vat_impact: number
-    unmatched_count: number
+interface MonthData {
+  period: string
+  unmatched_count: number
+  cumulative: {
+    income_tax: number
+    social_insurance: number
+    health_insurance: number
+    vat: number
+    total: number
   }
-  yearly: {
-    tax_impact: number
-    vat_impact: number
-    total_impact: number
-    unmatched_expenses: number
-    total_transactions: number
+}
+
+interface TaxImpactDetailData {
+  year: number
+  legal_form: string
+  vat_payer: boolean
+  months: MonthData[]
+  total: {
+    income_tax: number
+    social_insurance: number
+    health_insurance: number
+    vat: number
+    total: number
   }
+  unmatched_count: number
+  unmatched_total: number
 }
 
 interface TaxImpactSummaryProps {
@@ -34,19 +47,16 @@ function formatCZK(amount: number): string {
   }).format(amount)
 }
 
-const monthNames = [
-  'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
-  'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec',
-]
+const monthLabels = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čvn', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro']
 
 export function TaxImpactSummary({ companyId }: TaxImpactSummaryProps) {
-  const [data, setData] = useState<TaxSummaryData | null>(null)
+  const [data, setData] = useState<TaxImpactDetailData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!companyId) return
     setLoading(true)
-    fetch(`/api/client/bank-transactions/tax-summary?company_id=${companyId}`)
+    fetch(`/api/client/bank-transactions/tax-impact-detail?company_id=${companyId}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d) setData(d)
@@ -65,89 +75,120 @@ export function TaxImpactSummary({ companyId }: TaxImpactSummaryProps) {
     )
   }
 
-  if (!data || data.yearly.total_transactions === 0) {
-    return null // Don't show if no bank data
+  if (!data || data.unmatched_count === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-green-600" />
+            Daňový dopad
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-2">
+            <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+              Všechny výdaje jsou spárované
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
-  const hasImpact = data.yearly.total_impact > 0
-  const currentMonthName = monthNames[new Date().getMonth()]
+  const hasImpact = data.total.total > 0
+
+  // Chart data — only months with data up to current month
+  const currentMonth = new Date().getMonth() // 0-indexed
+  const chartData = data.months
+    .filter((_, i) => i <= currentMonth)
+    .map((m, i) => ({
+      name: monthLabels[i],
+      total: m.cumulative.total,
+      dzp: m.cumulative.income_tax,
+      sp: m.cumulative.social_insurance,
+      zp: m.cumulative.health_insurance,
+      dph: m.cumulative.vat,
+    }))
 
   return (
     <Card className={hasImpact ? 'border-amber-200 dark:border-amber-800' : ''}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
-          {hasImpact ? (
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-          ) : (
-            <Receipt className="h-4 w-4 text-green-600" />
-          )}
-          Daňový dopad
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          Daňový dopad chybějících dokladů
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {hasImpact ? (
-          <div className="space-y-3">
-            {/* Current month */}
-            {data.current_month.tax_impact + data.current_month.vat_impact > 0 && (
-              <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3">
-                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                  {currentMonthName} — nespárované výdaje
-                </p>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-xl font-bold text-amber-700 dark:text-amber-300">
-                    {formatCZK(data.current_month.tax_impact + data.current_month.vat_impact)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    ({data.current_month.unmatched_count} dokladů)
-                  </span>
-                </div>
-                <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                  <span>DzP: {formatCZK(data.current_month.tax_impact)}</span>
-                  {data.current_month.vat_impact > 0 && (
-                    <span>DPH: {formatCZK(data.current_month.vat_impact)}</span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Yearly */}
-            <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
-              <p className="text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
-                <TrendingDown className="h-3 w-3" />
-                Roční kumulativní dopad
-              </p>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-bold text-red-700 dark:text-red-300">
-                  {formatCZK(data.yearly.total_impact)}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  ({data.yearly.unmatched_expenses} výdajů)
-                </span>
-              </div>
-              <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                <span>DzP: {formatCZK(data.yearly.tax_impact)}</span>
-                {data.yearly.vat_impact > 0 && (
-                  <span>DPH: {formatCZK(data.yearly.vat_impact)}</span>
-                )}
-              </div>
+        <div className="space-y-3">
+          {/* Total impact with breakdown */}
+          <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
+            <p className="text-xs text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
+              <TrendingDown className="h-3 w-3" />
+              Roční kumulativní dopad ({data.unmatched_count} nedoložených výdajů)
+            </p>
+            <div className="text-2xl font-bold text-red-700 dark:text-red-300 mt-1">
+              {formatCZK(data.total.total)}
             </div>
+            {/* 4-line breakdown */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Daň z příjmu:</span>
+                <span className="font-medium text-red-600 dark:text-red-400">{formatCZK(data.total.income_tax)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Sociální poj.:</span>
+                <span className="font-medium text-orange-600 dark:text-orange-400">{formatCZK(data.total.social_insurance)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Zdravotní poj.:</span>
+                <span className="font-medium text-amber-600 dark:text-amber-400">{formatCZK(data.total.health_insurance)}</span>
+              </div>
+              {data.vat_payer && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">DPH:</span>
+                  <span className="font-medium text-blue-600 dark:text-blue-400">{formatCZK(data.total.vat)}</span>
+                </div>
+              )}
+            </div>
+          </div>
 
-            <Button asChild variant="outline" size="sm" className="w-full">
-              <Link href="/client/documents?tab=bank">
-                Zobrazit nespárované transakce
-              </Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="text-center py-2">
-            <p className="text-sm text-green-600 dark:text-green-400 font-medium">
-              Všechny výdaje jsou spárované
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {data.yearly.total_transactions} transakcí zpracováno
-            </p>
-          </div>
-        )}
+          {/* Mini area chart — cumulative impact */}
+          {chartData.some(d => d.total > 0) && (
+            <div className="h-24">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="taxGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                  <YAxis hide />
+                  <Tooltip
+                    formatter={(value: number) => formatCZK(value)}
+                    labelFormatter={(label) => `${label} ${data.year}`}
+                    contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="total"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    fill="url(#taxGrad)"
+                    name="Celkem"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          <Button asChild variant="outline" size="sm" className="w-full">
+            <Link href="/client/taxes?tab=missing">
+              Zobrazit detail chybějících dokladů
+            </Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )
