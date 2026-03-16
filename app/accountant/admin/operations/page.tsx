@@ -34,6 +34,7 @@ import { MarketplaceProviders } from '@/components/admin/marketplace-providers'
 import { OperationsRevenue } from '@/components/admin/operations-revenue'
 import { OperationsBilling } from '@/components/admin/operations-billing'
 import { OperationsFolderTemplates } from '@/components/admin/operations-folder-templates'
+import { OperationsEmail } from '@/components/admin/operations-email'
 
 const sections = [
   { id: 'marketplace', label: 'Marketplace — registrace', icon: Store, Component: MarketplaceProviders },
@@ -43,6 +44,7 @@ const sections = [
   { id: 'templates', label: 'Šablony úkolů', icon: Repeat, Component: TaskTemplates },
   { id: 'workflow', label: 'Workflow pravidla', icon: GitBranch, Component: OperationsWorkflow },
   { id: 'notifications', label: 'Notifikace', icon: Bell, Component: OperationsNotifications },
+  { id: 'email-settings', label: 'Email adresy', icon: Mail, Component: OperationsEmail },
   { id: 'invoicing', label: 'Fakturace', icon: Receipt, Component: InvoicingSettings },
   { id: 'pricing', label: 'Ceník a sazby', icon: DollarSign, Component: PricingSettings },
   { id: 'folder-templates', label: 'Struktura složek klientů', icon: FolderTree, Component: OperationsFolderTemplates },

@@ -123,3 +123,28 @@ export const CRISIS_CHECKLIST_ITEMS = [
   { id: 'witnesses', title: 'Zapsat svědky', description: 'Jména a kontakty lidí, kteří byli přítomni nebo mohou potvrdit škodu.' },
   { id: 'professional', title: 'Zvážit odbornou pomoc', description: 'U složitějších případů nebo vyšších škod se vyplatí nechat si pomoci od specialisty.' },
 ] as const
+
+// Insurance event-specific checklist — extended steps for "co dělat hned po pojistné události"
+export const INSURANCE_EVENT_CHECKLIST_ITEMS = [
+  // Immediate (first 24h)
+  { id: 'ie_video', section: 'immediate', title: 'Natočit video škody', description: 'Kromě fotek natočte krátké video poškozené oblasti — ukazuje kontext lépe než samotné fotky.' },
+  { id: 'ie_prevent', section: 'immediate', title: 'Zabránit dalším škodám', description: 'Provizorní oprava (např. zakrytí střechy plachtou). Uchovat doklad o nákladech — pojišťovna je hradí.' },
+  { id: 'ie_hotline', section: 'immediate', title: 'Zavolat na asistenční linku pojišťovny', description: 'Non-stop linka. Zapsat datum, čas hovoru a jméno operátora. Vyžádat číslo hlášení.' },
+  { id: 'ie_police_record', section: 'immediate', title: 'Zajistit policejní protokol', description: 'U krádeže, vandalismu, nehody. Bez protokolu pojišťovna může odmítnout plnění.' },
+  // Documentation (first 3 days)
+  { id: 'ie_inventory', section: 'documentation', title: 'Sepsat soupis poškozených věcí', description: 'Název, stáří, pořizovací cena, stav. Přiložit fotky každé položky a doklady o koupi.' },
+  { id: 'ie_form', section: 'documentation', title: 'Vyplnit formulář hlášení škody', description: 'Online na webu pojišťovny nebo v aplikaci. Alternativně písemně — doporučujeme oboje.' },
+  { id: 'ie_receipts', section: 'documentation', title: 'Shromáždit doklady', description: 'Faktury, účtenky, záruční listy, servisní protokoly. Čím více dokladů, tím rychlejší plnění.' },
+  { id: 'ie_third_party', section: 'documentation', title: 'Dokumentovat škodu třetí strany', description: 'Pokud jste poškodili cizí majetek — zapsat kontakt protistrany, její pojišťovnu a číslo smlouvy.' },
+  // Follow-up (first 2 weeks)
+  { id: 'ie_adjuster', section: 'followup', title: 'Připravit se na likvidátora', description: 'Pojišťovna pošle likvidátora. Připravit dokumentaci, umožnit přístup, nelikvidovat důkazy.' },
+  { id: 'ie_quotes', section: 'followup', title: 'Získat cenové nabídky na opravu', description: 'Minimálně 2 nabídky od odborných firem. Pojišťovna může vyžadovat srovnání.' },
+  { id: 'ie_accountant', section: 'followup', title: 'Informovat účetní', description: 'Pojistné plnění je příjem — účetní potřebuje vědět pro správné zaúčtování a daňové přiznání.' },
+  { id: 'ie_deadlines', section: 'followup', title: 'Hlídat lhůty', description: 'Pojišťovna musí sdělit výši plnění do 3 měsíců. Máte právo na odvolání do 30 dnů od rozhodnutí.' },
+] as const
+
+export const INSURANCE_EVENT_SECTIONS = {
+  immediate: 'Okamžitě (prvních 24 hodin)',
+  documentation: 'Dokumentace (do 3 dnů)',
+  followup: 'Navazující kroky (do 14 dnů)',
+} as const

@@ -102,7 +102,7 @@ export function UrgencyActions({
             size="sm"
             onClick={handleUrge}
             disabled={isLoading}
-            title="Urgovat klienta"
+            title="Odešle email/notifikaci klientovi s výzvou k dodání chybějících dokumentů"
           >
             <Bell size={14} />
           </Button>
@@ -317,6 +317,7 @@ export function QuickUrgencyButton({
       }}
       disabled={isLoading}
       className="h-6 px-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+      title="Odešle email/notifikaci klientovi s výzvou k dodání chybějících dokumentů"
     >
       <Bell size={12} className="mr-1" />
       Urgovat

@@ -542,6 +542,7 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
                         variant="outline"
                         className="text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/30"
                         onClick={() => setUrgencyTarget(item)}
+                        title="Odešle email klientovi s výzvou k dodání chybějících dokumentů"
                       >
                         <Mail className="h-3.5 w-3.5 mr-1" />
                         Urgovat klienta
