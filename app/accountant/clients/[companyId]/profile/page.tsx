@@ -22,6 +22,7 @@ import {
   UserMinus,
   Monitor,
   Send,
+  Wallet,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -44,6 +45,7 @@ import { NotificationPanel } from '@/components/accountant/notification-panel'
 import { NotificationSettings } from '@/components/accountant/notification-settings'
 import { ReminderList } from '@/components/accountant/reminder-list'
 import { ActivityFeed } from '@/components/accountant/activity-feed'
+import { PaymentMoralityTile } from '@/components/payment-morality-tile'
 import { TileContainer } from '@/components/tiles/tile-container'
 import type { TileDefinition } from '@/lib/types/layout'
 import { OnboardingQuestionnaireViewer } from '@/components/onboarding/onboarding-questionnaire-viewer'
@@ -66,6 +68,7 @@ const BASE_TILES: TileDefinition[] = [
   { id: 'portal-sections', label: 'Klientský portál', defaultVisible: true },
   { id: 'onboarding-questionnaire', label: 'Vstupní dotazník', defaultVisible: true },
   { id: 'health-score', label: 'Zdraví klienta', defaultVisible: true },
+  { id: 'payment-morality', label: 'Platební morálka', defaultVisible: true },
   { id: 'reports', label: 'Reporty', defaultVisible: true },
   { id: 'employees', label: 'Zaměstnanci', defaultVisible: true },
   { id: 'assets', label: 'Majetek', defaultVisible: true },
@@ -234,6 +237,12 @@ export default function ProfilePage() {
             return (
               <CollapsibleSection id="health-score" title="Zdraví klienta" icon={BarChart3} defaultOpen={true}>
                 <HealthScoreCard companyId={companyId} />
+              </CollapsibleSection>
+            )
+          case 'payment-morality':
+            return (
+              <CollapsibleSection id="payment-morality" title="Platební morálka" icon={Wallet} defaultOpen={true}>
+                <PaymentMoralityTile companyId={companyId} />
               </CollapsibleSection>
             )
           case 'reports':
