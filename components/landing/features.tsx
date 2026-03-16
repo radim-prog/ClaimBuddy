@@ -92,22 +92,22 @@ const FEATURES = [
 
 export function Features() {
   return (
-    <section id="features" className="relative py-20 sm:py-28 bg-gray-900 dark:bg-gray-950 overflow-hidden">
+    <section id="features" className="relative py-20 sm:py-28 bg-gray-50 dark:bg-gray-950 overflow-hidden">
       {/* Background decoration */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-200/30 dark:from-purple-900/20 via-transparent to-transparent" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-blue-500/5 rounded-full blur-3xl" />
 
       <div className="container relative mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-50 dark:bg-white/5 border border-purple-200 dark:border-white/10 mb-6">
             <Sparkles className="h-4 w-4 text-purple-400" />
-            <span className="text-sm font-medium text-purple-300">Reálné funkce, ne sliby</span>
+            <span className="text-sm font-medium text-purple-600 dark:text-purple-300">Reálné funkce, ne sliby</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display tracking-tight text-white">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display tracking-tight text-gray-900 dark:text-white">
             Vše na jednom místě
           </h2>
-          <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">
+          <p className="mt-4 text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
             Dva portály, jeden systém. Klienti nahrávají — účetní zpracovávají.
             AI automatizuje to, co jde.
           </p>
@@ -148,7 +148,7 @@ function FeatureCard({
   return (
     <Link
       href={feature.href}
-      className={`group relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-sm p-6 hover:bg-white/[0.06] hover:border-white/[0.15] transition-all duration-300 flex flex-col ${className}`}
+      className={`group relative rounded-2xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] backdrop-blur-sm p-6 hover:bg-gray-50 dark:hover:bg-white/[0.06] hover:border-gray-300 dark:hover:border-white/[0.15] transition-all duration-300 flex flex-col ${className}`}
     >
       {/* Gradient glow on hover */}
       <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.accent} opacity-0 group-hover:opacity-[0.04] transition-opacity duration-300`} />
@@ -160,7 +160,7 @@ function FeatureCard({
             <Icon className={`h-5 w-5 ${feature.accentText}`} />
           </div>
           {feature.badge && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 text-xs font-semibold text-purple-300">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-r from-purple-100 dark:from-purple-500/20 to-blue-100 dark:to-blue-500/20 border border-purple-300 dark:border-purple-500/30 text-xs font-semibold text-purple-600 dark:text-purple-300">
               {feature.badge === 'AI' && <Brain className="h-3 w-3" />}
               {feature.badge}
             </span>
@@ -168,10 +168,10 @@ function FeatureCard({
         </div>
 
         {/* Content */}
-        <h3 className="text-base font-semibold text-white mb-2 group-hover:text-white/90">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-gray-800 dark:group-hover:text-white/90">
           {feature.title}
         </h3>
-        <p className="text-sm text-gray-400 leading-relaxed flex-1">
+        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed flex-1">
           {feature.desc}
         </p>
 

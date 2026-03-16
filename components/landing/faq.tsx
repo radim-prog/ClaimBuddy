@@ -69,21 +69,21 @@ export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   return (
-    <section id="faq" className="relative py-20 sm:py-28 bg-gray-800 overflow-hidden">
+    <section id="faq" className="relative py-20 sm:py-28 bg-gray-100 dark:bg-gray-800 overflow-hidden">
       {/* Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-blue-900/10 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-blue-100/20 dark:from-blue-900/10 via-transparent to-transparent" />
 
       <div className="container relative mx-auto px-4 max-w-3xl">
         {/* Header */}
         <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 dark:bg-white/5 border border-blue-200 dark:border-white/10 mb-6">
             <HelpCircle className="h-4 w-4 text-blue-400" />
-            <span className="text-sm font-medium text-blue-300">FAQ</span>
+            <span className="text-sm font-medium text-blue-600 dark:text-blue-300">FAQ</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold font-display tracking-tight text-white">
+          <h2 className="text-3xl sm:text-4xl font-bold font-display tracking-tight text-gray-900 dark:text-white">
             Časté dotazy
           </h2>
-          <p className="mt-4 text-lg text-gray-400">
+          <p className="mt-4 text-lg text-gray-500 dark:text-gray-400">
             Odpovědi na to, co vás zajímá nejvíc.
           </p>
         </div>
@@ -99,8 +99,8 @@ export function FAQ() {
                 key={i}
                 className={`rounded-xl border transition-all duration-300 ${
                   isOpen
-                    ? 'border-white/[0.12] bg-white/[0.05]'
-                    : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.1] hover:bg-white/[0.04]'
+                    ? 'border-gray-300 dark:border-white/[0.12] bg-white dark:bg-white/[0.05]'
+                    : 'border-gray-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.02] hover:border-gray-300 dark:hover:border-white/[0.1] hover:bg-gray-50 dark:hover:bg-white/[0.04]'
                 }`}
               >
                 <button
@@ -110,7 +110,7 @@ export function FAQ() {
                   <div className={`flex-shrink-0 p-2.5 rounded-lg ${item.accentBg}`}>
                     <Icon className={`h-4 w-4 ${item.accent}`} />
                   </div>
-                  <span className="flex-1 text-[15px] font-medium text-white/90">
+                  <span className="flex-1 text-[15px] font-medium text-gray-900 dark:text-white/90">
                     {item.q}
                   </span>
                   <ChevronDown
@@ -127,7 +127,7 @@ export function FAQ() {
                 >
                   <div className="overflow-hidden">
                     <div className="px-5 pb-5 pl-[4.25rem]">
-                      <p className="text-sm text-gray-400 leading-relaxed">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
                         {item.a}
                       </p>
                     </div>

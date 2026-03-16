@@ -43,7 +43,7 @@ const FOOTER_COLS = [
 
 export function Footer() {
   return (
-    <footer className="bg-gray-950 text-gray-300">
+    <footer className="bg-gray-900 text-gray-300">
       <div className="container mx-auto px-6 pt-16 pb-8">
         {/* Top grid */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">

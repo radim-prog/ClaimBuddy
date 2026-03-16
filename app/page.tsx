@@ -30,20 +30,20 @@ export default function LandingPage() {
       <div className="h-24 sm:h-40" />
       <Stats />
       {/* Stats → Features: light to dark */}
-      <div className="h-20 sm:h-32 bg-gradient-to-b from-background to-gray-950" />
+      <div className="h-20 sm:h-32 bg-gradient-to-b from-background to-gray-50 dark:to-gray-950" />
       <Features />
       {/* Features → HowItWorks: dark to light */}
-      <div className="h-20 sm:h-32 bg-gradient-to-b from-gray-950 to-background" />
+      <div className="h-20 sm:h-32 bg-gradient-to-b from-gray-50 dark:from-gray-950 to-background" />
       <HowItWorks />
       <Testimonials />
       {/* Testimonials → Pricing: subtle transition */}
       <div className="h-12 sm:h-20 bg-gradient-to-b from-background to-muted/30" />
       <PricingSection />
       {/* Pricing → FAQ: muted to dark */}
-      <div className="h-16 sm:h-24 bg-gradient-to-b from-muted/30 via-gray-800/50 to-gray-800" />
+      <div className="h-16 sm:h-24 bg-gradient-to-b from-muted/30 via-gray-100 dark:via-gray-800/50 to-gray-100 dark:to-gray-800" />
       <FAQ />
       {/* FAQ → CTA: dark to light */}
-      <div className="h-16 sm:h-24 bg-gradient-to-b from-gray-900 to-background" />
+      <div className="h-16 sm:h-24 bg-gradient-to-b from-gray-100 dark:from-gray-900 to-background" />
       <CTASection />
       <Footer />
     </div>
