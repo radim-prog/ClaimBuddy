@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { mapDbRowToInvoice } from '@/lib/invoice-utils'
+import { notifyAccountantOfDeletion } from '@/lib/client-deletion'
 
 export const dynamic = 'force-dynamic'
 
@@ -151,6 +152,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
     }
 
+    // Get invoice details for notification before deleting
+    const { data: invoiceDetail } = await supabaseAdmin
+      .from('invoices')
+      .select('invoice_number, partner, total_with_vat')
+      .eq('id', id)
+      .single()
+
     // Soft delete
     const { error } = await supabaseAdmin
       .from('invoices')
@@ -160,6 +168,17 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    // Notify accountant if company has one
+    const desc = invoiceDetail
+      ? `${invoiceDetail.invoice_number || 'Faktura'} — ${invoiceDetail.partner || ''} (${invoiceDetail.total_with_vat?.toLocaleString('cs') || '?'} Kč)`
+      : `Faktura #${id}`
+    await notifyAccountantOfDeletion({
+      companyId: invoice.company_id,
+      deletedBy: userId,
+      itemType: 'fakturu',
+      itemDescription: desc,
+    }).catch(() => {}) // Don't fail the delete if notification fails
 
     return NextResponse.json({ success: true })
   } catch (error) {

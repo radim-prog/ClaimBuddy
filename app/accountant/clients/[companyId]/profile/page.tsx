@@ -541,6 +541,17 @@ function PortalSectionsToggle({ companyId, company }: { companyId: string; compa
             {label}
           </button>
         ))}
+        {Object.entries(PORTAL_SECTION_COMING_SOON).map(([key, label]) => (
+          <div
+            key={key}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-60"
+            title="Připravujeme"
+          >
+            <div className="w-3 h-3 rounded-sm border border-gray-200 dark:border-gray-700" />
+            {label}
+            <span className="text-[10px] ml-auto">brzy</span>
+          </div>
+        ))}
       </div>
     </div>
   )

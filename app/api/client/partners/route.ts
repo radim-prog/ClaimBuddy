@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { lookupByIco, validateIco } from '@/lib/ares'
+import { notifyAccountantOfDeletion } from '@/lib/client-deletion'
 
 export const dynamic = 'force-dynamic'
 
@@ -176,11 +177,30 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
   }
 
+  // Get partner details for notification
+  const { data: partnerDetail } = await supabaseAdmin
+    .from('invoice_partners')
+    .select('name, ico')
+    .eq('id', partnerId)
+    .single()
+
   const { error } = await supabaseAdmin
     .from('invoice_partners')
     .delete()
     .eq('id', partnerId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Notify accountant if company has one
+  const desc = partnerDetail
+    ? `${partnerDetail.name || 'Partner'}${partnerDetail.ico ? ` (IČO: ${partnerDetail.ico})` : ''}`
+    : `Partner #${partnerId}`
+  await notifyAccountantOfDeletion({
+    companyId: partner.company_id,
+    deletedBy: userId,
+    itemType: 'partnera z adresáře',
+    itemDescription: desc,
+  }).catch(() => {})
+
   return NextResponse.json({ success: true })
 }
