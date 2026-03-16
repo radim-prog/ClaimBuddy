@@ -146,7 +146,7 @@ export function OnboardingSection({
 
   const completeOnboarding = () => {
     if (!isComplete) {
-      toast.error('Nejprve dokoncete vsechny povinne kroky')
+      toast.error('Nejprve dokončete všechny povinné kroky')
       return
     }
 
@@ -181,7 +181,7 @@ export function OnboardingSection({
       last_activity_at: new Date().toISOString(),
     })
 
-    toast.success(`Onboarding klienta ${companyName} byl uspesne dokoncen!`)
+    toast.success(`Onboarding klienta ${companyName} byl úspěšně dokončen!`)
   }
 
   const handleStepsUpdate = (newSteps: OnboardingStep[]) => {
@@ -575,26 +575,26 @@ export function OnboardingSection({
       {showFeePrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowFeePrompt(false)}>
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-2">Dokonceni onboardingu</h3>
+            <h3 className="text-lg font-semibold mb-2">Dokončení onboardingu</h3>
             <p className="text-sm text-gray-500 mb-4">
-              Kolik bude <strong>{companyName}</strong> mesicne platit? Muzete vyplnit ted nebo pozdeji v profilu klienta.
+              Kolik bude <strong>{companyName}</strong> měsíčně platit? Můžete vyplnit teď nebo později v profilu klienta.
             </p>
             <div className="mb-4">
-              <label className="text-sm font-medium block mb-1">Mesicni pausal (Kc)</label>
+              <label className="text-sm font-medium block mb-1">Měsíční paušál (Kč)</label>
               <Input
                 type="number"
                 value={feeValue}
                 onChange={e => setFeeValue(e.target.value)}
-                placeholder="napr. 8000"
+                placeholder="např. 8000"
                 autoFocus
               />
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => { setFeeValue(''); confirmComplete() }}>
-                Preskocit
+                Přeskočit
               </Button>
               <Button onClick={confirmComplete}>
-                Dokoncit onboarding
+                Dokončit onboarding
               </Button>
             </div>
           </div>

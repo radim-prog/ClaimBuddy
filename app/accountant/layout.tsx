@@ -48,6 +48,7 @@ import { SettingsProvider } from '@/lib/contexts/settings-context'
 import { AccountantUserProvider, useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { AttentionProvider, useAttention } from '@/lib/contexts/attention-context'
 import { QuickCaptureButton } from '@/components/quick-capture'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useInboxCount } from '@/components/gtd/use-inbox-count'
 import { useUnreadMessages } from '@/hooks/use-unread-messages'
 import { useDocumentInboxCount } from '@/hooks/use-document-inbox-count'
@@ -61,13 +62,13 @@ import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 const navigation = [
   { name: 'Přehled', href: '/accountant/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
   { name: 'Klienti', href: '/accountant/clients', icon: Users, badge: 'attention' as const, tourId: 'nav-clients' },
-  { name: 'Komunikace', href: '/accountant/komunikace', icon: MessageCircle, badge: 'messages' as const, feature: 'messages' },
-  { name: 'Inbox', href: '/accountant/inbox', icon: Inbox, badge: 'inbox' as const, activeMatch: ['/accountant/inbox'] },
-  { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'] },
-  { name: 'Vytěžování', href: '/accountant/extraction', icon: ScanLine, activeMatch: ['/accountant/extraction'], feature: 'extraction' },
-  { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
-  { name: 'Připomínky', href: '/accountant/reminders', icon: Send, activeMatch: ['/accountant/reminders'] },
-  { name: 'Znalostní báze', href: '/accountant/knowledge-base', icon: BookOpen, activeMatch: ['/accountant/knowledge-base'] },
+  { name: 'Komunikace', href: '/accountant/komunikace', icon: MessageCircle, badge: 'messages' as const, feature: 'messages', tourId: 'nav-komunikace' },
+  { name: 'Inbox', href: '/accountant/inbox', icon: Inbox, badge: 'inbox' as const, activeMatch: ['/accountant/inbox'], tourId: 'nav-inbox' },
+  { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'], tourId: 'nav-work' },
+  { name: 'Vytěžování', href: '/accountant/extraction', icon: ScanLine, activeMatch: ['/accountant/extraction'], feature: 'extraction', tourId: 'nav-extraction' },
+  { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck, tourId: 'nav-deadlines' },
+  { name: 'Připomínky', href: '/accountant/reminders', icon: Send, activeMatch: ['/accountant/reminders'], tourId: 'nav-reminders' },
+  { name: 'Znalostní báze', href: '/accountant/knowledge-base', icon: BookOpen, activeMatch: ['/accountant/knowledge-base'], tourId: 'nav-knowledge-base' },
   { name: 'Marketplace', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'] },
   { name: 'Revenue', href: '/accountant/revenue', icon: TrendingUp, activeMatch: ['/accountant/revenue'] },
 ]
@@ -116,6 +117,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   // Attention for Klienti badge: exclude unread_messages (shown on Komunikace instead)
   const clientsAttentionCount = attentionTotals.total - attentionTotals.unread_messages
   const [collapsed, setCollapsed] = useState(false)
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('accountant-sidebar-collapsed')
@@ -139,8 +141,12 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
 
   const showAdmin = userRole === 'admin' || permissions?.admin_access === true
 
-  const handleLogout = async () => {
-    if (!confirm('Opravdu se chcete odhlásit?')) return
+  const handleLogout = () => {
+    setShowLogoutDialog(true)
+  }
+
+  const confirmLogout = async () => {
+    setShowLogoutDialog(false)
     await logout()
   }
 
@@ -702,6 +708,16 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
         <WelcomeModal />
 
         <TutorialOverlay />
+
+        <ConfirmDialog
+          open={showLogoutDialog}
+          onOpenChange={setShowLogoutDialog}
+          title="Odhlášení"
+          description="Opravdu se chcete odhlásit?"
+          confirmLabel="Odhlásit se"
+          cancelLabel="Zrušit"
+          onConfirm={confirmLogout}
+        />
       </div>
     </div>
   )
