@@ -16,6 +16,22 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get('status')
   const limit = parseInt(searchParams.get('limit') || '100')
 
+  // Non-admin staff can only see inbox items for their assigned companies
+  let allowedCompanyIds: string[] | null = null
+  if (userRole !== 'admin') {
+    const { data: assignedCompanies } = await supabaseAdmin
+      .from('companies')
+      .select('id')
+      .eq('assigned_accountant_id', userId)
+      .is('deleted_at', null)
+    allowedCompanyIds = (assignedCompanies || []).map(c => c.id)
+
+    // If a specific companyId is requested, verify it is in the allowed set
+    if (companyId && !allowedCompanyIds.includes(companyId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+  }
+
   try {
     let query = supabaseAdmin
       .from('document_inbox_items')
@@ -25,7 +41,14 @@ export async function GET(request: NextRequest) {
 
     if (companyId) {
       query = query.eq('company_id', companyId)
+    } else if (allowedCompanyIds !== null) {
+      // Scope to assigned companies for non-admin staff
+      if (allowedCompanyIds.length === 0) {
+        return NextResponse.json({ items: [], pendingCount: 0 })
+      }
+      query = query.in('company_id', allowedCompanyIds)
     }
+
     if (status && status !== 'all') {
       query = query.eq('status', status)
     }
@@ -44,12 +67,16 @@ export async function GET(request: NextRequest) {
       companyMap = Object.fromEntries((companies || []).map(c => [c.id, c.name]))
     }
 
-    // Get pending count for badge
+    // Get pending count for badge (scoped to the same company set)
     let pendingQuery = supabaseAdmin
       .from('document_inbox_items')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'pending')
-    if (companyId) pendingQuery = pendingQuery.eq('company_id', companyId)
+    if (companyId) {
+      pendingQuery = pendingQuery.eq('company_id', companyId)
+    } else if (allowedCompanyIds !== null && allowedCompanyIds.length > 0) {
+      pendingQuery = pendingQuery.in('company_id', allowedCompanyIds)
+    }
     const { count: pendingCount } = await pendingQuery
 
     return NextResponse.json({

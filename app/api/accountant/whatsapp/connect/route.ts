@@ -9,8 +9,9 @@ export const dynamic = 'force-dynamic'
  * DELETE — Disconnect WhatsApp instance
  */
 export async function GET(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
   const userRole = request.headers.get('x-user-role')
-  if (userRole !== 'admin' && userRole !== 'accountant') {
+  if (!userId || (userRole !== 'admin' && userRole !== 'accountant')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -35,8 +36,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
   const userRole = request.headers.get('x-user-role')
-  if (userRole !== 'admin' && userRole !== 'accountant') {
+  if (!userId || (userRole !== 'admin' && userRole !== 'accountant')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -72,9 +74,10 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const userId = request.headers.get('x-user-id')
   const userRole = request.headers.get('x-user-role')
-  if (userRole !== 'admin' && userRole !== 'accountant') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!userId || userRole !== 'admin') {
+    return NextResponse.json({ error: 'Admin only' }, { status: 403 })
   }
 
   try {

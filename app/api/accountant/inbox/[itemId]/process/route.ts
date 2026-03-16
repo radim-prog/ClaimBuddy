@@ -39,6 +39,20 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 })
     }
 
+    // IDOR: verify the item belongs to a company this user can access
+    if (userRole !== 'admin') {
+      const { data: company } = await supabaseAdmin
+        .from('companies')
+        .select('id')
+        .eq('id', item.company_id)
+        .eq('assigned_accountant_id', userId)
+        .is('deleted_at', null)
+        .maybeSingle()
+      if (!company) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    }
+
     if (item.status === 'imported') {
       return NextResponse.json({ error: 'Item already imported' }, { status: 400 })
     }

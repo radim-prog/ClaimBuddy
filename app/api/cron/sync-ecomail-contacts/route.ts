@@ -7,8 +7,9 @@ export const dynamic = 'force-dynamic'
 // Enhanced cron: sync all active users to Ecomail with tags and segmentation
 // Called daily via Vercel cron or external scheduler
 export async function POST(request: Request) {
+  const cronSecret = process.env.CRON_SECRET
   const authHeader = request.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

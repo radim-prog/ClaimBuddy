@@ -7,6 +7,23 @@ export const dynamic = 'force-dynamic'
 
 type RouteParams = { params: Promise<{ itemId: string }> }
 
+/** Check that a non-admin user has access to the company owning this inbox item. */
+async function canAccessItem(
+  userId: string,
+  userRole: string | null,
+  itemCompanyId: string
+): Promise<boolean> {
+  if (userRole === 'admin') return true
+  const { data } = await supabaseAdmin
+    .from('companies')
+    .select('id')
+    .eq('id', itemCompanyId)
+    .eq('assigned_accountant_id', userId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  return !!data
+}
+
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const userId = request.headers.get('x-user-id')
   const userRole = request.headers.get('x-user-role')
@@ -26,6 +43,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
+  // IDOR: verify the item belongs to a company this user can access
+  if (!(await canAccessItem(userId, userRole, data.company_id))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   return NextResponse.json({ item: data })
 }
 
@@ -42,6 +64,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   if (!['processing', 'imported', 'failed', 'ignored'].includes(status)) {
     return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+  }
+
+  // IDOR: fetch item first and verify ownership
+  const { data: item, error: fetchError } = await supabaseAdmin
+    .from('document_inbox_items')
+    .select('company_id')
+    .eq('id', itemId)
+    .single()
+
+  if (fetchError || !item) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  if (!(await canAccessItem(userId, userRole, item.company_id))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   try {
