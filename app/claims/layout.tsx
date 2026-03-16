@@ -9,6 +9,7 @@ import {
   FolderOpen,
   Building2,
   FileText,
+  Users,
   BarChart3,
   Settings,
   LogOut,
@@ -40,6 +41,7 @@ import { AppSwitcher } from '@/components/app-switcher'
 
 const claimsNavigation = [
   { name: 'Přehled', href: '/claims/dashboard', icon: LayoutDashboard },
+  { name: 'Klienti', href: '/claims/clients', icon: Users, activeMatch: ['/claims/clients'] },
   { name: 'Spisy', href: '/claims/cases', icon: FolderOpen, activeMatch: ['/claims/cases'] },
   { name: 'Pojišťovny', href: '/claims/insurers', icon: Building2, activeMatch: ['/claims/insurers'] },
   { name: 'Dokumenty', href: '/claims/documents', icon: FileText, activeMatch: ['/claims/documents'] },
