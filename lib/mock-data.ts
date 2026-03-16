@@ -48,6 +48,9 @@ export interface InvoiceItem {
   total_without_vat: number
   total_with_vat: number
   task_id?: string
+  discount_type?: 'percent' | 'amount'  // % or fixed Kč
+  discount_value?: number               // the raw discount value
+  discount_amount?: number              // computed discount in Kč
 }
 
 export interface Invoice {
@@ -79,6 +82,9 @@ export interface Invoice {
   specific_symbol?: string
   notes?: string
   footer_text?: string
+  discount_type?: 'percent' | 'amount'
+  discount_value?: number
+  discount_total?: number  // total discount on the invoice (sum of item discounts + overall)
   created_at: string
   created_by: string
   updated_at: string

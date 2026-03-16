@@ -38,6 +38,9 @@ export function mapDbRowToInvoice(row: any): Invoice {
       total_without_vat: base,
       total_with_vat: withVat,
       task_id: item.task_id,
+      discount_type: item.discount_type || undefined,
+      discount_value: item.discount_value ? Number(item.discount_value) : undefined,
+      discount_amount: item.discount_amount ? Number(item.discount_amount) : undefined,
     }
   })
 
@@ -72,6 +75,9 @@ export function mapDbRowToInvoice(row: any): Invoice {
     specific_symbol: row.specific_symbol,
     notes: row.notes,
     footer_text: row.footer_text,
+    discount_type: row.discount_type,
+    discount_value: row.discount_value ? Number(row.discount_value) : undefined,
+    discount_total: row.discount_total ? Number(row.discount_total) : undefined,
     created_at: row.created_at,
     created_by: row.created_by,
     updated_at: row.updated_at,
@@ -158,4 +164,27 @@ export async function generateInvoiceNumber(
     })
 
   return { invoiceNumber, variableSymbol, seriesId: series.id }
+}
+
+/**
+ * Calculate item total after discount.
+ * Used by invoice form to compute totals dynamically.
+ */
+export function calculateItemTotal(item: {
+  quantity: number
+  unit_price: number
+  vat_rate: number
+  discount_type?: 'percent' | 'amount'
+  discount_value?: number
+}): { total_without_vat: number; total_with_vat: number; discount_amount: number } {
+  const base = item.quantity * item.unit_price
+  let discountAmount = 0
+  if (item.discount_value && item.discount_value > 0) {
+    discountAmount = item.discount_type === 'percent'
+      ? Math.round(base * item.discount_value / 100 * 100) / 100
+      : Math.min(item.discount_value, base)
+  }
+  const afterDiscount = base - discountAmount
+  const withVat = Math.round(afterDiscount * (1 + item.vat_rate / 100) * 100) / 100
+  return { total_without_vat: afterDiscount, total_with_vat: withVat, discount_amount: discountAmount }
 }

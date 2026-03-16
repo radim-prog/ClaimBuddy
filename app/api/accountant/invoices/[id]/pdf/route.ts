@@ -48,12 +48,31 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       console.warn('QR generation failed, continuing without QR:', e)
     }
 
-    // 3. Render PDF to buffer
+    // 3. Load invoice notices
+    let notices: string[] = []
+    try {
+      const { data: noticesSetting } = await supabaseAdmin
+        .from('app_settings')
+        .select('setting_value')
+        .eq('setting_key', 'invoice_notices')
+        .single()
+
+      if (noticesSetting?.setting_value) {
+        const config = noticesSetting.setting_value as {
+          predefined?: Array<{ text: string; enabled: boolean }>
+          custom?: Array<{ text: string; enabled: boolean }>
+        }
+        const allNotices = [...(config.predefined || []), ...(config.custom || [])]
+        notices = allNotices.filter(n => n.enabled && n.text.trim()).map(n => n.text)
+      }
+    } catch { /* no notices configured */ }
+
+    // 4. Render PDF to buffer
     const pdfBuffer = await renderToBuffer(
-      InvoicePDF({ invoice, supplier, qrDataUrl })
+      InvoicePDF({ invoice, supplier, qrDataUrl, notices })
     )
 
-    // 4. Return as downloadable PDF
+    // 5. Return as downloadable PDF
     const filename = `${invoice.invoice_number}.pdf`
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {

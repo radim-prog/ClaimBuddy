@@ -17,6 +17,7 @@ import {
   CreditCard,
   PenLine,
   FolderTree,
+  FileText,
 } from 'lucide-react'
 import { CollapsibleSection } from '@/components/collapsible-section'
 import { TaskTemplates } from '@/components/admin/task-templates'
@@ -35,6 +36,7 @@ import { OperationsRevenue } from '@/components/admin/operations-revenue'
 import { OperationsBilling } from '@/components/admin/operations-billing'
 import { OperationsFolderTemplates } from '@/components/admin/operations-folder-templates'
 import { OperationsEmail } from '@/components/admin/operations-email'
+import { InvoiceNoticesSettings } from '@/components/admin/operations-invoice-notices'
 
 const sections = [
   { id: 'marketplace', label: 'Marketplace — registrace', icon: Store, Component: MarketplaceProviders },
@@ -46,6 +48,7 @@ const sections = [
   { id: 'notifications', label: 'Notifikace', icon: Bell, Component: OperationsNotifications },
   { id: 'email-settings', label: 'Email adresy', icon: Mail, Component: OperationsEmail },
   { id: 'invoicing', label: 'Fakturace', icon: Receipt, Component: InvoicingSettings },
+  { id: 'invoice-notices', label: 'Hlášky na fakturách', icon: FileText, Component: InvoiceNoticesSettings },
   { id: 'pricing', label: 'Ceník a sazby', icon: DollarSign, Component: PricingSettings },
   { id: 'folder-templates', label: 'Struktura složek klientů', icon: FolderTree, Component: OperationsFolderTemplates },
   { id: 'drive', label: 'Google Drive', icon: HardDrive, Component: CompanyDriveMapper },

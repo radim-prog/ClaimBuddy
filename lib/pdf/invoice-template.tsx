@@ -160,12 +160,13 @@ const styles = StyleSheet.create({
   },
   // Column widths
   colNum: { width: '5%' },
-  colDesc: { width: '35%' },
+  colDesc: { width: '30%' },
   colQty: { width: '10%', textAlign: 'right' },
-  colUnit: { width: '8%', textAlign: 'center' },
-  colPrice: { width: '14%', textAlign: 'right' },
+  colUnit: { width: '7%', textAlign: 'center' },
+  colPrice: { width: '13%', textAlign: 'right' },
   colVat: { width: '8%', textAlign: 'right' },
-  colTotal: { width: '20%', textAlign: 'right' },
+  colDisc: { width: '12%', textAlign: 'right' },
+  colTotal: { width: '15%', textAlign: 'right' },
   // Totals
   totalsBox: {
     marginLeft: 'auto',
@@ -249,6 +250,23 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
+  // Notices
+  noticesSection: {
+    marginBottom: 12,
+  },
+  noticesTitle: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#6b7280',
+    marginBottom: 4,
+    textTransform: 'uppercase' as const,
+  },
+  noticeText: {
+    fontSize: 7.5,
+    color: '#4b5563',
+    marginBottom: 3,
+    paddingLeft: 8,
+  },
   // Footer
   footer: {
     position: 'absolute',
@@ -272,9 +290,10 @@ interface InvoicePDFProps {
   invoice: Invoice
   supplier: SupplierInfo
   qrDataUrl?: string
+  notices?: string[]
 }
 
-export function InvoicePDF({ invoice, supplier, qrDataUrl }: InvoicePDFProps) {
+export function InvoicePDF({ invoice, supplier, qrDataUrl, notices }: InvoicePDFProps) {
   // Group items by VAT rate for recap
   const vatRecap = new Map<number, { base: number; vat: number; total: number }>()
   for (const item of invoice.items) {
@@ -365,6 +384,7 @@ export function InvoicePDF({ invoice, supplier, qrDataUrl }: InvoicePDFProps) {
             <Text style={[styles.tableHeaderText, styles.colUnit]}>Jed.</Text>
             <Text style={[styles.tableHeaderText, styles.colPrice]}>Cena/jed.</Text>
             <Text style={[styles.tableHeaderText, styles.colVat]}>DPH</Text>
+            <Text style={[styles.tableHeaderText, styles.colDisc]}>Sleva</Text>
             <Text style={[styles.tableHeaderText, styles.colTotal]}>Celkem</Text>
           </View>
           {/* Rows */}
@@ -376,6 +396,14 @@ export function InvoicePDF({ invoice, supplier, qrDataUrl }: InvoicePDFProps) {
               <Text style={styles.colUnit}>{item.unit || 'ks'}</Text>
               <Text style={styles.colPrice}>{formatAmount(item.unit_price)}</Text>
               <Text style={styles.colVat}>{item.vat_rate}%</Text>
+              <Text style={styles.colDisc}>
+                {item.discount_value
+                  ? item.discount_type === 'percent'
+                    ? `${item.discount_value}%`
+                    : `${formatAmount(item.discount_value)} Kč`
+                  : '-'
+                }
+              </Text>
               <Text style={styles.colTotal}>{formatAmount(item.total_with_vat)}</Text>
             </View>
           ))}
@@ -407,6 +435,14 @@ export function InvoicePDF({ invoice, supplier, qrDataUrl }: InvoicePDFProps) {
               {formatAmount(invoice.total_vat)} Kč
             </Text>
           </View>
+          {(invoice.discount_total != null && invoice.discount_total > 0) && (
+            <View style={styles.totalRow}>
+              <Text style={[styles.totalLabel, { color: '#dc2626' }]}>Sleva celkem</Text>
+              <Text style={[styles.totalValue, { color: '#dc2626' }]}>
+                -{formatAmount(invoice.discount_total)} Kč
+              </Text>
+            </View>
+          )}
           <View style={styles.totalRowFinal}>
             <Text style={styles.totalLabelFinal}>CELKEM K ÚHRADĚ</Text>
             <Text style={styles.totalValueFinal}>
@@ -443,6 +479,16 @@ export function InvoicePDF({ invoice, supplier, qrDataUrl }: InvoicePDFProps) {
             </View>
           )}
         </View>
+
+        {/* Notices */}
+        {notices && notices.length > 0 && (
+          <View style={styles.noticesSection}>
+            <Text style={styles.noticesTitle}>Upozornění</Text>
+            {notices.map((text, i) => (
+              <Text key={i} style={styles.noticeText}>• {text}</Text>
+            ))}
+          </View>
+        )}
 
         {/* Footer */}
         <View style={styles.footer}>
