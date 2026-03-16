@@ -51,7 +51,7 @@ type MonthlyClosure = {
   income_invoices_status: StatusType
 }
 
-export type AlertContext = 'dashboard' | 'clients' | 'client-detail' | 'tasks' | 'onboarding' | 'other'
+export type AlertContext = 'dashboard' | 'clients' | 'client-detail' | 'tasks' | 'onboarding' | 'hidden' | 'other'
 
 const months = [
   'Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čer',
@@ -333,7 +333,12 @@ export function GlobalDeadlineAlert() {
     if (pathname.includes('/accountant/onboarding')) return 'onboarding'
     if (pathname.includes('/accountant/tasks')) return 'tasks'
     if (pathname.includes('/accountant/dashboard')) return 'dashboard'
-    return 'dashboard' // default to dashboard for other pages
+    if (pathname.includes('/accountant/komunikace')) return 'hidden'
+    if (pathname.includes('/accountant/inbox')) return 'hidden'
+    if (pathname.includes('/accountant/extraction')) return 'hidden'
+    if (pathname.includes('/accountant/work-preview')) return 'hidden'
+    if (pathname.includes('/accountant/signing')) return 'hidden'
+    return 'dashboard'
   }, [pathname])
 
   // Extract companyId from URL if on client detail page
@@ -434,6 +439,9 @@ export function GlobalDeadlineAlert() {
 
     case 'tasks':
       // TODO: Na stránce úkolů zobrazit task deadlines z API
+      return null
+
+    case 'hidden':
       return null
 
     case 'dashboard':

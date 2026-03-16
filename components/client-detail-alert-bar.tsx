@@ -30,6 +30,16 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import Link from 'next/link'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 type StatusType = 'missing' | 'uploaded' | 'approved'
 
@@ -98,6 +108,7 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
   const [completionNote, setCompletionNote] = useState('')
   const [showCompleteConfirm, setShowCompleteConfirm] = useState<string | null>(null)
   const [recurringReminders, setRecurringReminders] = useState<Record<string, number>>({})
+  const [urgencyTarget, setUrgencyTarget] = useState<DeadlineItem | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Close dropdown when clicking outside
@@ -378,7 +389,7 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
                 </div>
 
                 {isTaskExpanded && (
-                  <div className="border-t dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 p-4 space-y-4" onClick={e => e.stopPropagation()}>
+                  <div className="border-t dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 p-3 space-y-3" onClick={e => e.stopPropagation()}>
                     {item.description && (
                       <div>
                         <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Popis</div>
@@ -400,37 +411,23 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
                     </div>
 
                     {hasChecklist && (
-                      <div>
-                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-2">
-                          Stav dokumentů
-                          <span className="text-purple-600">
-                            ({checklistProgress.completed}/{checklistProgress.total})
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Dokumenty:</span>
+                        {item.checklist!.map(checkItem => (
+                          <span
+                            key={checkItem.id}
+                            className={`text-xs font-medium ${
+                              checkItem.completed
+                                ? 'text-green-600 dark:text-green-400'
+                                : 'text-red-600 dark:text-red-400'
+                            }`}
+                          >
+                            {checkItem.label.replace('Výpis z banky', 'Výpis').replace('Nákladové doklady', 'Náklady').replace('Příjmové faktury', 'Příjmy')} {checkItem.completed ? '\u2705' : '\u274C'}
                           </span>
-                        </div>
-                        <div className="space-y-1.5">
-                          {item.checklist!.map(checkItem => (
-                            <div
-                              key={checkItem.id}
-                              className={`flex items-center gap-2 p-2 rounded ${
-                                checkItem.completed
-                                  ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                                  : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
-                              }`}
-                            >
-                              {checkItem.completed ? (
-                                <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                              ) : (
-                                <Circle className="h-4 w-4 text-red-400 flex-shrink-0" />
-                              )}
-                              <span className={`text-sm ${checkItem.completed ? '' : 'font-medium'}`}>
-                                {checkItem.label}
-                              </span>
-                              {!checkItem.completed && (
-                                <span className="text-xs text-red-500 ml-auto">Chybí</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
+                        ))}
+                        <span className="text-xs text-gray-400">
+                          ({checklistProgress.completed}/{checklistProgress.total})
+                        </span>
                       </div>
                     )}
 
@@ -548,23 +545,14 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
                         size="sm"
                         variant="outline"
                         className="text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/30"
-                        onClick={() => handleSendReminder(item)}
+                        onClick={() => setUrgencyTarget(item)}
                       >
                         <Mail className="h-3.5 w-3.5 mr-1" />
                         Urgovat klienta
                       </Button>
 
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
-                        onClick={() => handleDelegateToClient(item)}
-                      >
-                        <Users className="h-3.5 w-3.5 mr-1" />
-                        Delegovat na klienta
-                      </Button>
-
-                      {showCompleteConfirm === item.id ? (
+                      {(!hasChecklist || checklistProgress.completed === checklistProgress.total) && (
+                      showCompleteConfirm === item.id ? (
                         <div className="flex-1 flex flex-col gap-2 bg-green-50 dark:bg-green-900/20 p-2 rounded border border-green-200">
                           <div className="text-xs text-green-700 dark:text-green-300 font-medium">
                             Opravdu označit jako hotové?
@@ -605,6 +593,7 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
                           <Check className="h-3.5 w-3.5 mr-1" />
                           Označit jako hotové
                         </Button>
+                      )
                       )}
                     </div>
 
@@ -757,6 +746,29 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
           </div>
         </div>
       )}
+
+      <AlertDialog open={!!urgencyTarget} onOpenChange={(open) => !open && setUrgencyTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Urgovat klienta</AlertDialogTitle>
+            <AlertDialogDescription>
+              Klientovi {urgencyTarget?.companyName || displayName} bude odeslan email s vyzvou k dodani chybejicich dokumentu pro danou uzaverku.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrusit</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-orange-600 hover:bg-orange-700"
+              onClick={() => {
+                if (urgencyTarget) handleSendReminder(urgencyTarget)
+                setUrgencyTarget(null)
+              }}
+            >
+              Odeslat upominku
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
