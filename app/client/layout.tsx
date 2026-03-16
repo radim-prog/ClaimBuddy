@@ -23,6 +23,7 @@ import {
   Package,
   UserCheck,
   ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -58,6 +59,7 @@ const baseNavigation: { name: string; href: string; icon: typeof LayoutDashboard
   { name: 'Cesťák', href: '/client/travel', icon: Car },
   { name: 'Dotazník', href: '/client/tax-questionnaire', icon: ClipboardList },
   { name: 'Vstupní dotazník', href: '/client/onboarding', icon: FileInput },
+  { name: 'Pojistné události', href: '/client/claims', icon: ShieldCheck },
   { name: 'Krizový plán', href: '/client/crisis', icon: ShieldAlert },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
   { name: 'Účet', href: '/client/account', icon: UserCircle },

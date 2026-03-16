@@ -78,11 +78,11 @@ const dailyWorkNav = [
 const managementNav = [
   { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck, tourId: 'nav-deadlines' },
   { name: 'Připomínky', href: '/accountant/reminders', icon: Send, activeMatch: ['/accountant/reminders'], tourId: 'nav-reminders' },
-  { name: 'Marketplace', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'] },
-  { name: 'Revenue', href: '/accountant/revenue', icon: TrendingUp, activeMatch: ['/accountant/revenue'] },
+  { name: 'Tržiště', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'] },
+  { name: 'Příjmy', href: '/accountant/revenue', icon: TrendingUp, activeMatch: ['/accountant/revenue'] },
   { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics'], feature: 'analytics' },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices'], tourId: 'nav-invoicing', feature: 'client_invoicing' },
-  { name: 'Billing', href: '/accountant/billing', icon: CreditCard, activeMatch: ['/accountant/billing'] },
+  { name: 'Účtování', href: '/accountant/billing', icon: CreditCard, activeMatch: ['/accountant/billing'] },
 ]
 
 // Group 3: Tools — collapsible (2 items)

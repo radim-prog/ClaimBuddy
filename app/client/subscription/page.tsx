@@ -20,7 +20,9 @@ import {
   Car,
   ScanLine,
   MessageSquare,
+  ScrollText,
 } from 'lucide-react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 
@@ -340,6 +342,35 @@ export default function ClientSubscriptionPage() {
               <p className="font-medium text-gray-900 dark:text-white">Chytrý cesťák</p>
               <p className="text-gray-500 dark:text-gray-400 mt-1">AI sestaví cestovní deník z vašich dokladů.</p>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Billing details & legal */}
+      <Card>
+        <CardContent className="py-6">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+            Fakturační údaje poskytovatele
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
+            <div><span className="text-gray-500">Společnost:</span> ZajCon Solutions s.r.o.</div>
+            <div><span className="text-gray-500">IČO:</span> 21890331</div>
+            <div><span className="text-gray-500">Sídlo:</span> Česká republika</div>
+            <div><span className="text-gray-500">DIČ:</span> CZ21890331</div>
+          </div>
+
+          <div className="mt-4 pt-4 border-t flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <ScrollText className="h-4 w-4" />
+            <span>
+              Zakoupením předplatného souhlasíte s{' '}
+              <Link href="/legal/terms" className="text-blue-600 hover:underline" target="_blank">
+                Všeobecnými obchodními podmínkami
+              </Link>
+              {' '}a{' '}
+              <Link href="/legal/privacy" className="text-blue-600 hover:underline" target="_blank">
+                Zásadami ochrany osobních údajů
+              </Link>.
+            </span>
           </div>
         </CardContent>
       </Card>
