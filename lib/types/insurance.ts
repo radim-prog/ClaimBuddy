@@ -344,20 +344,20 @@ export interface CreateCaseInput {
 }
 
 export interface UpdateCaseInput {
-  assigned_to?: string
-  policy_number?: string
-  claim_number?: string
-  insurance_company_id?: string
+  assigned_to?: string | null
+  policy_number?: string | null
+  claim_number?: string | null
+  insurance_company_id?: string | null
   insurance_type?: InsuranceType
-  event_date?: string
-  event_description?: string
-  event_location?: string
-  claimed_amount?: number
-  approved_amount?: number
+  event_date?: string | null
+  event_description?: string | null
+  event_location?: string | null
+  claimed_amount?: number | null
+  approved_amount?: number | null
   status?: InsuranceCaseStatus
   priority?: CasePriority
-  deadline?: string
-  note?: string
+  deadline?: string | null
+  note?: string | null
   tags?: string[]
 }
 

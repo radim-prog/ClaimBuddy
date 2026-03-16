@@ -84,6 +84,80 @@ export const marketplaceRegisterSchema = z.object({
 })
 
 // ============================================
+// INSURANCE CLAIMS — CASES
+// ============================================
+
+export const createCaseSchema = z.object({
+  company_id: z.string().uuid().optional().nullable(),
+  assigned_to: z.string().uuid().optional().nullable(),
+  policy_number: z.string().max(100).optional().nullable(),
+  claim_number: z.string().max(100).optional().nullable(),
+  insurance_company_id: z.string().uuid().optional().nullable(),
+  insurance_type: z.enum(['auto', 'property', 'life', 'liability', 'travel', 'industrial', 'other']),
+  event_date: z.string().optional().nullable(),
+  event_description: z.string().max(5000).optional().nullable(),
+  event_location: z.string().max(500).optional().nullable(),
+  claimed_amount: z.number().min(0).optional().nullable(),
+  priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
+  deadline: z.string().optional().nullable(),
+  note: z.string().max(5000).optional().nullable(),
+  tags: z.array(z.string()).optional(),
+})
+
+export const updateCaseSchema = z.object({
+  assigned_to: z.string().uuid().optional().nullable(),
+  policy_number: z.string().max(100).optional().nullable(),
+  claim_number: z.string().max(100).optional().nullable(),
+  insurance_company_id: z.string().uuid().optional().nullable(),
+  insurance_type: z.enum(['auto', 'property', 'life', 'liability', 'travel', 'industrial', 'other']).optional(),
+  event_date: z.string().optional().nullable(),
+  event_description: z.string().max(5000).optional().nullable(),
+  event_location: z.string().max(500).optional().nullable(),
+  claimed_amount: z.number().min(0).optional().nullable(),
+  approved_amount: z.number().min(0).optional().nullable(),
+  status: z.enum(['new', 'gathering_docs', 'submitted', 'under_review', 'additional_info', 'partially_approved', 'approved', 'rejected', 'appealed', 'closed', 'cancelled']).optional(),
+  priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
+  deadline: z.string().optional().nullable(),
+  note: z.string().max(5000).optional().nullable(),
+  tags: z.array(z.string()).optional(),
+})
+
+// ============================================
+// INSURANCE CLAIMS — DOCUMENTS
+// ============================================
+
+export const addCaseDocumentSchema = z.object({
+  name: z.string().min(1, 'Název dokumentu je povinný').max(500),
+  file_path: z.string().min(1, 'Cesta k souboru je povinná'),
+  file_size: z.number().int().min(0).optional(),
+  mime_type: z.string().max(100).optional(),
+  document_type: z.enum(['claim_report', 'photo', 'expert_report', 'correspondence', 'decision', 'invoice', 'power_of_attorney', 'police_report', 'medical_report', 'other']),
+  note: z.string().max(2000).optional().nullable(),
+})
+
+// ============================================
+// INSURANCE CLAIMS — EVENTS
+// ============================================
+
+export const addCaseEventSchema = z.object({
+  event_type: z.string().min(1).max(100),
+  description: z.string().min(1, 'Popis je povinný').max(5000),
+  metadata: z.record(z.unknown()).optional(),
+})
+
+// ============================================
+// INSURANCE CLAIMS — PAYMENTS
+// ============================================
+
+export const addCasePaymentSchema = z.object({
+  amount: z.number().min(0.01, 'Částka musí být kladná'),
+  payment_type: z.enum(['partial', 'full', 'advance', 'refund']),
+  payment_date: z.string().min(1, 'Datum platby je povinné'),
+  reference: z.string().max(200).optional().nullable(),
+  note: z.string().max(2000).optional().nullable(),
+})
+
+// ============================================
 // HELPER
 // ============================================
 
