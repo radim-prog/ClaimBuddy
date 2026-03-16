@@ -10,7 +10,7 @@ export default function SettingsLayout({
 }: {
   children: React.ReactNode
 }) {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
 
   const tabs = [
     {

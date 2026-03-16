@@ -23,7 +23,7 @@ const analyticsTabs = [
 
 export default function AnalyticsLayout({ children }: { children: React.ReactNode }) {
   const { userRole, loading } = useAccountantUser()
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
 
   if (loading) {
     return (

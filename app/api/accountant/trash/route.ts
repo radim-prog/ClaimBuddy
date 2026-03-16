@@ -56,19 +56,24 @@ export async function GET(request: NextRequest) {
     for (const type of types) {
       if (!VALID_TYPES.includes(type)) continue
 
-      const fetched = await fetchDeletedItems(type, companyId, Math.ceil(limit / types.length))
-      items.push(...fetched)
+      try {
+        const fetched = await fetchDeletedItems(type, companyId, Math.ceil(limit / types.length))
+        items.push(...fetched)
+      } catch (typeError) {
+        // Log per-type errors but continue with other types
+        console.error(`[Trash GET] Error fetching ${type}:`, typeError)
+      }
     }
 
     // Sort by deleted_at descending
     items.sort((a, b) => new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime())
 
-    // Get retention settings
+    // Get retention settings (maybeSingle avoids PGRST116 when table is empty)
     const { data: globalSettings } = await supabaseAdmin
       .from('trash_settings')
       .select('retention_days')
       .is('company_id', null)
-      .single()
+      .maybeSingle()
 
     const retentionDays = globalSettings?.retention_days || 30
 
@@ -126,13 +131,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to restore' }, { status: 500 })
       }
     } else if (type === 'tasks') {
-      // Tasks: clear deleted_at and set status back to 'todo'
+      // Tasks: clear deleted_at and set status back to 'pending' (GTD workflow)
       const { error } = await supabaseAdmin
         .from(table)
         .update({
           deleted_at: null,
           deleted_by: null,
-          status: 'todo',
+          status: 'pending',
           updated_at: new Date().toISOString(),
         })
         .eq('id', id)
@@ -302,17 +307,23 @@ async function fetchDeletedItems(
       if (companyId) q = q.eq('company_id', companyId)
 
       const { data } = await q
-      return (data || []).map((i: any) => ({
-        id: i.id,
-        type: 'invoices',
-        type_label: 'Faktura',
-        name: `${i.invoice_number || 'Bez čísla'} — ${i.partner || ''}`,
-        company_id: i.company_id,
-        company_name: i.companies?.name || null,
-        deleted_at: i.deleted_at,
-        deleted_by: i.deleted_by,
-        metadata: { invoice_type: i.type, total: i.total_with_vat },
-      }))
+      return (data || []).map((i: any) => {
+        // partner is JSONB {name, ico, ...} — extract name for display
+        const partnerName = typeof i.partner === 'object' && i.partner?.name
+          ? i.partner.name
+          : typeof i.partner === 'string' ? i.partner : ''
+        return {
+          id: i.id,
+          type: 'invoices' as const,
+          type_label: 'Faktura',
+          name: `${i.invoice_number || 'Bez čísla'} — ${partnerName}`,
+          company_id: i.company_id,
+          company_name: i.companies?.name || null,
+          deleted_at: i.deleted_at,
+          deleted_by: i.deleted_by,
+          metadata: { invoice_type: i.type, total: i.total_with_vat },
+        }
+      })
     }
 
     case 'tasks': {
@@ -341,7 +352,7 @@ async function fetchDeletedItems(
     case 'projects': {
       let q = supabaseAdmin
         .from('projects')
-        .select('id, name, company_id, deleted_at, deleted_by, companies(name)')
+        .select('id, title, company_id, deleted_at, deleted_by, companies(name)')
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false })
         .limit(limit)
@@ -352,7 +363,7 @@ async function fetchDeletedItems(
         id: p.id,
         type: 'projects',
         type_label: 'Projekt',
-        name: p.name || 'Bez názvu',
+        name: p.title || 'Bez názvu',
         company_id: p.company_id,
         company_name: p.companies?.name || null,
         deleted_at: p.deleted_at,

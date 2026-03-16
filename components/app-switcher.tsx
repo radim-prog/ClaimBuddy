@@ -41,7 +41,7 @@ const APP_MODULES: AppModule[] = [
 ]
 
 export function AppSwitcher({ userModules }: { userModules: string[] }) {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const router = useRouter()
 
   const availableModules = APP_MODULES.filter(m => userModules.includes(m.id))

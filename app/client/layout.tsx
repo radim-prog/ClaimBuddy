@@ -69,7 +69,7 @@ const dynamicNavigation: { name: string; href: string; icon: typeof LayoutDashbo
 ]
 
 function ClientLayoutInner({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const { userName, userInitials, selectedCompany } = useClientUser()
   const { isLocked, planTier } = usePlanFeatures()
   const [notificationsDismissed, setNotificationsDismissed] = useState(false)

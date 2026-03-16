@@ -314,7 +314,7 @@ function generateOnboardingDeadlines(
 // Momentálně task deadlines nejsou implementované (data v Supabase, ne v mock)
 
 export function GlobalDeadlineAlert() {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const alertSettings = useAlertSettings()
   const { userName } = useAccountantUser()
   const [data, setData] = useState<{ companies: Company[], closures: MonthlyClosure[] } | null>(null)

@@ -131,8 +131,8 @@ export function useCompany() {
 export default function ClientDetailLayout({ children }: { children: ReactNode }) {
   const params = useParams()
   const router = useRouter()
-  const pathname = usePathname()
-  const companyId = params.companyId as string
+  const pathname = usePathname() ?? ''
+  const companyId = params?.companyId as string
 
   const [company, setCompany] = useState<Company | null>(null)
   const [closures, setClosures] = useState<MonthlyClosure[]>([])

@@ -347,7 +347,7 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
 function ClientsPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const { getCompanyAttention } = useAttention()
   const [healthScores, setHealthScores] = useState<Map<string, number | null>>(() => {
     if (typeof window === 'undefined') return new Map()
@@ -387,10 +387,10 @@ function ClientsPageContent() {
   const [filterClientStatus, setFilterClientStatus] = useState<string | null>('active')
 
   // Read status filter from URL params
-  const filterStatus = searchParams.get('status')
+  const filterStatus = searchParams?.get('status') ?? null
 
   // Read client status from URL (for onboarding filter from navigation)
-  const urlClientStatus = searchParams.get('clientStatus')
+  const urlClientStatus = searchParams?.get('clientStatus') ?? null
 
   // Sync URL clientStatus with state - pokud URL specifikuje status, použij ho; jinak zachovej default 'active'
   useEffect(() => {

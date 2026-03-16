@@ -30,7 +30,7 @@ type ByConfidence = {
 }
 
 export default function ExtractionLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const { userId } = useAccountantUser()
   const [stats, setStats] = useState<Stats | null>(null)
   const [byConfidence, setByConfidence] = useState<ByConfidence | null>(null)

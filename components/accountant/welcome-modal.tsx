@@ -12,7 +12,7 @@ export function WelcomeModal() {
   const { totals, loading } = useAttention()
   const { userName } = useAccountantUser()
   const router = useRouter()
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const isOnDashboard = pathname === '/accountant/dashboard'
 
   useEffect(() => {

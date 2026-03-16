@@ -108,7 +108,7 @@ export default function AccountantLayout({
 }
 
 function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { userName, userInitials, userRole, permissions, userModules } = useAccountantUser()
   const { startTour } = useTutorialContext()

@@ -19,12 +19,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Get global retention setting
+    // Get global retention setting (maybeSingle avoids PGRST116 when table is empty)
     const { data: settings } = await supabaseAdmin
       .from('trash_settings')
       .select('retention_days')
       .is('company_id', null)
-      .single()
+      .maybeSingle()
 
     const retentionDays = settings?.retention_days || 30
     const cutoffDate = new Date()

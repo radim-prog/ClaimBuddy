@@ -60,7 +60,7 @@ export default function ClaimsLayout({
 }
 
 function ClaimsLayoutInner({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)

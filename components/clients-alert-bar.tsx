@@ -91,7 +91,7 @@ interface ClientsAlertBarProps {
 export function ClientsAlertBar({ companies, closures, deadlines = [] }: ClientsAlertBarProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const currentFilter = searchParams.get('status')
 
   // Expanded state for dropdown
