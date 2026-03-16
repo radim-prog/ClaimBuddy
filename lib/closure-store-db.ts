@@ -90,7 +90,7 @@ export async function getClosuresByCompany(companyId: string): Promise<ClosureRe
 }
 
 export type StatusField = 'bank_statement_status' | 'expense_documents_status' | 'income_invoices_status'
-export type StatusValue = 'missing' | 'uploaded' | 'approved' | 'skipped'
+export type StatusValue = 'missing' | 'uploaded' | 'approved' | 'reviewed' | 'skipped'
 
 // Map old field names to DB column names
 function mapFieldToColumn(field: StatusField): string {
@@ -100,7 +100,7 @@ function mapFieldToColumn(field: StatusField): string {
 
 function computeOverallStatus(bank: string, expense: string, income: string): string {
   const vals = [bank, expense, income]
-  const allDone = vals.every(v => v === 'approved' || v === 'skipped')
+  const allDone = vals.every(v => v === 'approved' || v === 'reviewed' || v === 'skipped')
   const anyMissing = vals.some(v => v === 'missing')
   return allDone ? 'closed' : anyMissing ? 'open' : 'in_progress'
 }
