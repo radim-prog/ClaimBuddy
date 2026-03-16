@@ -40,6 +40,14 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer())
     const result = await extractBankStatement(buffer, file.name, file.type)
 
+    const period = result.period_from?.substring(0, 7) || new Date().toISOString().substring(0, 7)
+
+    // Upload file to Supabase Storage
+    const storagePath = `bank-statements/${companyId}/${period}/${Date.now()}-${file.name}`
+    await supabaseAdmin.storage
+      .from('documents')
+      .upload(storagePath, buffer, { contentType: file.type, upsert: false })
+
     // Save document reference
     const { data: docRecord } = await supabaseAdmin
       .from('documents')
@@ -48,8 +56,10 @@ export async function POST(request: NextRequest) {
         file_name: file.name,
         type: 'bank_statement',
         status: 'uploaded',
-        period: result.period_from?.substring(0, 7) || new Date().toISOString().substring(0, 7),
+        period,
         uploaded_by: userId,
+        storage_path: storagePath,
+        file_size_bytes: buffer.length,
       })
       .select('id')
       .single()

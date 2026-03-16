@@ -25,6 +25,7 @@ import { TransactionMatchDialog } from '@/components/client/transaction-match-di
 import { TaxImpactSummary } from '@/components/client/tax-impact-summary'
 import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
 import { CollapsibleSection } from '@/components/collapsible-section'
+import { BankReviewSheet } from '@/components/client/bank-review-sheet'
 import { UpsellBanner } from '@/components/client/upsell-banner'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -321,6 +322,9 @@ function BankTab() {
   const [matchingTx, setMatchingTx] = useState<BankTransaction | null>(null)
   const [filter, setFilter] = useState<'all' | 'unmatched' | 'matched'>('all')
   const [autoMatching, setAutoMatching] = useState(false)
+  const [reviewPeriod, setReviewPeriod] = useState<string | null>(null)
+  const [reviewTransactions, setReviewTransactions] = useState<BankTransaction[]>([])
+  const [loadingReview, setLoadingReview] = useState(false)
 
   useEffect(() => {
     if (companies.length === 1 && !selectedCompany) {
@@ -378,6 +382,21 @@ function BankTab() {
     }
   }
 
+  const handleExtracted = async (period: string) => {
+    if (!selectedCompany) return
+    setLoadingReview(true)
+    try {
+      const res = await fetch(`/api/client/bank-transactions?company_id=${selectedCompany}&period=${period}`)
+      if (res.ok) {
+        const data = await res.json()
+        setReviewTransactions(data.transactions || [])
+        setReviewPeriod(period)
+      }
+    } finally {
+      setLoadingReview(false)
+    }
+  }
+
   const handleAutoMatch = async () => {
     if (!selectedCompany) return
     setAutoMatching(true)
@@ -424,7 +443,7 @@ function BankTab() {
       {selectedCompany && <TaxImpactSummary companyId={selectedCompany} />}
 
       {selectedCompany && (
-        <BankStatementUpload companyId={selectedCompany} onUploadComplete={() => fetchTransactions()} />
+        <BankStatementUpload companyId={selectedCompany} onUploadComplete={() => fetchTransactions()} onExtracted={handleExtracted} />
       )}
 
       {transactions.length > 0 && (
@@ -461,6 +480,24 @@ function BankTab() {
           companyId={selectedCompany}
           onMatch={handleMatch}
           onClose={() => setMatchingTx(null)}
+        />
+      )}
+
+      {reviewPeriod && reviewTransactions.length > 0 && selectedCompany && (
+        <BankReviewSheet
+          transactions={reviewTransactions}
+          companyId={selectedCompany}
+          period={reviewPeriod}
+          legalForm={companies.find(c => c.id === selectedCompany)?.legal_form}
+          onConfirmed={() => {
+            setReviewPeriod(null)
+            setReviewTransactions([])
+            fetchTransactions()
+          }}
+          onClose={() => {
+            setReviewPeriod(null)
+            setReviewTransactions([])
+          }}
         />
       )}
     </div>

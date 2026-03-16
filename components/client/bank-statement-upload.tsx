@@ -15,9 +15,10 @@ interface BankStatementUploadProps {
     tax_impact: number
     vat_impact: number
   }) => void
+  onExtracted?: (period: string) => void
 }
 
-export function BankStatementUpload({ companyId, onUploadComplete }: BankStatementUploadProps) {
+export function BankStatementUpload({ companyId, onUploadComplete, onExtracted }: BankStatementUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [result, setResult] = useState<{
     inserted: number
@@ -54,6 +55,8 @@ export function BankStatementUpload({ companyId, onUploadComplete }: BankStateme
         vat_impact: data.vat_impact,
       })
       onUploadComplete(data)
+      const period = data.statement?.period_from?.substring(0, 7) || new Date().toISOString().substring(0, 7)
+      onExtracted?.(period)
       toast.success(`Zpracováno ${data.inserted} transakcí`)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Zpracování selhalo')

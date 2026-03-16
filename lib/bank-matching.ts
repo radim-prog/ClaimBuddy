@@ -259,9 +259,10 @@ export function calculateTaxImpact(
   // Only expenses (negative amounts) have tax impact from missing docs
   if (amount >= 0) return { tax: 0, vat: 0 }
 
-  // Income tax rates
+  // Income tax rates — normalize legal_form (DB stores various formats)
+  const normalizedForm = (legalForm || '').toLowerCase().replace(/[.\s]/g, '')
   let taxRate: number
-  if (legalForm === 's.r.o.' || legalForm === 'sro') {
+  if (normalizedForm === 'sro' || normalizedForm.includes('sro')) {
     taxRate = 0.21 // Corporate income tax 21%
   } else {
     taxRate = 0.15 // Personal income tax 15% (OSVC)
