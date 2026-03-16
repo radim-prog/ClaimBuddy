@@ -7,6 +7,8 @@ const STEPS = [
     title: 'Klient nahraje doklady',
     desc: 'Fotkou, emailem nebo přes sběrný inbox. Doklady se automaticky roztřídí ke správné firmě.',
     accent: 'from-blue-500 to-cyan-500',
+    accentBorder: 'border-blue-500/20',
+    accentBg: 'bg-blue-500/5',
   },
   {
     icon: Cpu,
@@ -14,6 +16,8 @@ const STEPS = [
     title: 'AI vytěží a napáruje',
     desc: 'Trojkrokový AI pipeline rozpozná data z dokladu. Systém je napáruje na bankovní transakce.',
     accent: 'from-purple-500 to-violet-500',
+    accentBorder: 'border-purple-500/20',
+    accentBg: 'bg-purple-500/5',
   },
   {
     icon: CheckCircle,
@@ -21,6 +25,8 @@ const STEPS = [
     title: 'Účetní zkontroluje a uzavře',
     desc: 'Účetní vidí co chybí, urguje klienta automaticky. Měsíční uzávěrka na pár kliknutí.',
     accent: 'from-emerald-500 to-green-500',
+    accentBorder: 'border-emerald-500/20',
+    accentBg: 'bg-emerald-500/5',
   },
   {
     icon: TrendingUp,
@@ -28,6 +34,8 @@ const STEPS = [
     title: 'Klient vidí svou daň průběžně',
     desc: 'Žádné překvapení v březnu. Klient sleduje odhadovanou daň měsíc po měsíci v reálném čase.',
     accent: 'from-amber-500 to-orange-500',
+    accentBorder: 'border-amber-500/20',
+    accentBg: 'bg-amber-500/5',
   },
 ]
 
@@ -48,35 +56,37 @@ export function HowItWorks() {
           </h2>
         </div>
 
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto relative">
+          {/* Vertical timeline line */}
+          <div className="hidden sm:block absolute left-[2.75rem] sm:left-1/2 top-0 bottom-0 w-px sm:-translate-x-px">
+            <div className="w-full h-full bg-gradient-to-b from-purple-500/30 via-blue-500/20 to-emerald-500/30" />
+          </div>
+
           {STEPS.map((s, i) => (
             <div
               key={s.step}
-              className={`flex items-start gap-6 sm:gap-10 mb-16 last:mb-0 ${
+              className={`relative flex items-start gap-6 sm:gap-10 mb-12 last:mb-0 ${
                 i % 2 === 1 ? 'sm:flex-row-reverse sm:text-right' : ''
               }`}
             >
               {/* Number + icon */}
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 relative z-10">
                 <div className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br ${s.accent} p-[2px]`}>
                   <div className="w-full h-full rounded-2xl bg-background flex items-center justify-center">
                     <s.icon className="h-8 w-8 sm:h-10 sm:w-10 text-foreground" />
                   </div>
-                  <span className="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-foreground text-background text-xs font-black flex items-center justify-center">
+                  <span className="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-foreground text-background text-xs font-black flex items-center justify-center shadow-lg">
                     {s.step}
                   </span>
                 </div>
-                {i < STEPS.length - 1 && (
-                  <div className="hidden sm:block w-px h-16 mx-auto bg-gradient-to-b from-border to-transparent" />
-                )}
               </div>
 
-              {/* Text */}
-              <div className="pt-2 sm:pt-4">
+              {/* Card */}
+              <div className={`flex-1 pt-1 sm:pt-2 rounded-xl border ${s.accentBorder} ${s.accentBg} p-5 sm:p-6 backdrop-blur-sm`}>
                 <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
                   {s.title}
                 </h3>
-                <p className="text-base text-muted-foreground leading-relaxed max-w-md">
+                <p className="text-base text-muted-foreground leading-relaxed">
                   {s.desc}
                 </p>
               </div>

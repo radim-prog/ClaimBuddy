@@ -11,9 +11,9 @@ const FEATURES = [
     accentBg: 'bg-blue-500/10',
     accentText: 'text-blue-400',
     title: 'AI vytěžování dokladů',
-    desc: 'Nahrajte fakturu nebo účtenku — AI přečte údaje, rozpozná dodavatele a navrhne předkontaci. Tříkrokový pipeline: OCR → extrakce → verifikace.',
+    desc: 'Nahrajte fakturu nebo účtenku — AI přečte údaje za 5 sekund. Rozpozná dodavatele, IČO, částky, DPH sazbu i datum splatnosti. Automaticky navrhne předkontaci podle českých účetních standardů (197 účtů, 27 pravidel). Tříkrokový pipeline: OCR rozpoznání → AI extrakce dat → split-screen verifikace. Podporuje faktury, paragony, bankovní výpisy i pokladní doklady.',
     badge: 'AI',
-    href: '/pro-podnikatele',
+    href: '/funkce/vytezovani',
     size: 'large' as const,
   },
   {
