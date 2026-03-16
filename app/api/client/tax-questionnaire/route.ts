@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { canAccessCompany } from '@/lib/access-check'
+import { syncQuestionnaireToTaxConfig } from '@/lib/questionnaire-tax-mapper'
 
 export const dynamic = 'force-dynamic'
 
@@ -96,7 +97,7 @@ export async function PATCH(request: NextRequest) {
   // Verify access via company_id
   const { data: existing } = await supabaseAdmin
     .from('tax_questionnaires')
-    .select('company_id, status')
+    .select('company_id, year, status, responses')
     .eq('id', id)
     .single()
 
@@ -133,6 +134,20 @@ export async function PATCH(request: NextRequest) {
   if (error) {
     console.error('Update questionnaire error:', error)
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+  }
+
+  // Sync questionnaire responses → tax_annual_config when completed
+  if (status === 'completed' && data) {
+    const finalResponses = responses ?? existing.responses ?? {}
+    const syncResult = await syncQuestionnaireToTaxConfig(
+      existing.company_id,
+      existing.year,
+      finalResponses,
+      userId
+    )
+    if (!syncResult.success) {
+      console.error('[Questionnaire→Tax] Sync failed:', syncResult.error)
+    }
   }
 
   return NextResponse.json({ questionnaire: data })
