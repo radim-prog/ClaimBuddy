@@ -241,6 +241,23 @@ export default function ExtractionClientsPage() {
         <Progress value={extractProgress} className="h-2" />
       )}
 
+      {/* Error banner */}
+      {error && (
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />
+          <p className="text-sm text-red-700 dark:text-red-300 flex-1">{error}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
+            onClick={() => { setError(null); setLoading(true); fetchClients() }}
+          >
+            <Loader2 className="h-3.5 w-3.5 mr-1" />
+            Zkusit znovu
+          </Button>
+        </div>
+      )}
+
       {/* Client List */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
