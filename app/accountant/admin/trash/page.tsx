@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 type ResourceType = 'documents' | 'invoices' | 'tasks' | 'projects' | 'invoice_partners'
 
@@ -55,6 +56,7 @@ export default function TrashPage() {
   const { hasFeature } = usePlanFeatures()
   const isAdmin = userRole === 'admin'
 
+  const [deleteConfirm, setDeleteConfirm] = useState<TrashItem | null>(null)
   const [items, setItems] = useState<TrashItem[]>([])
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState<ResourceType | 'all'>('all')
@@ -111,8 +113,6 @@ export default function TrashPage() {
   }
 
   const handlePermanentDelete = async (item: TrashItem) => {
-    if (!confirm(`Opravdu TRVALE smazat "${item.name}"? Tuto akci nelze vrátit zpět.`)) return
-
     try {
       const res = await fetch(`/api/accountant/trash?id=${item.id}&type=${item.type}`, {
         method: 'DELETE',
@@ -319,7 +319,7 @@ export default function TrashPage() {
                         size="sm"
                         variant="ghost"
                         className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                        onClick={() => handlePermanentDelete(item)}
+                        onClick={() => setDeleteConfirm(item)}
                         title="Trvale smazat"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -332,6 +332,21 @@ export default function TrashPage() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => { if (!open) setDeleteConfirm(null) }}
+        title="Trvalé smazání"
+        description={`Opravdu TRVALE smazat "${deleteConfirm?.name}"? Tuto akci nelze vrátit zpět.`}
+        confirmLabel="Trvale smazat"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteConfirm) {
+            handlePermanentDelete(deleteConfirm)
+          }
+          setDeleteConfirm(null)
+        }}
+      />
     </div>
   )
 }

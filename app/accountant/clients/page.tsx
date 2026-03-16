@@ -37,6 +37,7 @@ import { NewClientForm } from '@/components/new-client-form'
 import { MessagePopupDialog } from '@/components/komunikace/message-popup-dialog'
 import { useAttention } from '@/lib/contexts/attention-context'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 type Company = {
   id: string
@@ -95,6 +96,21 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
   onMessageClick?: (companyId: string, companyName: string) => void
   onStatusChange?: () => void
 }) {
+  const [rejectConfirm, setRejectConfirm] = useState<{ id: string; name: string } | null>(null)
+
+  const handleRejectCompany = async (companyId: string, companyName: string) => {
+    try {
+      const res = await fetch(`/api/accountant/companies/${companyId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'inactive' }),
+      })
+      if (!res.ok) throw new Error()
+      toast.success(`${companyName} odmítnuta`)
+      onStatusChange?.()
+    } catch { toast.error('Nepodařilo se odmítnout firmu') }
+  }
+
   const isOnboarding = clientStatus === 'onboarding'
   const isInactive = clientStatus === 'inactive'
   const isPending = clientStatus === 'pending_review'
@@ -234,19 +250,9 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
                       Schválit
                     </button>
                     <button
-                      onClick={async (e) => {
+                      onClick={(e) => {
                         e.preventDefault(); e.stopPropagation()
-                        if (!confirm(`Opravdu odmítnout firmu ${company.name}?`)) return
-                        try {
-                          const res = await fetch(`/api/accountant/companies/${company.id}/status`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ status: 'inactive' }),
-                          })
-                          if (!res.ok) throw new Error()
-                          toast.success(`${company.name} odmítnuta`)
-                          onStatusChange?.()
-                        } catch { toast.error('Nepodařilo se odmítnout firmu') }
+                        setRejectConfirm({ id: company.id, name: company.name })
                       }}
                       className="inline-flex items-center gap-1 text-xs bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-2 py-1 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors font-medium"
                     >
@@ -320,6 +326,20 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
           </CardContent>
         </Card>
       </Link>
+      <ConfirmDialog
+        open={!!rejectConfirm}
+        onOpenChange={(open) => { if (!open) setRejectConfirm(null) }}
+        title="Odmítnout firmu"
+        description={`Opravdu odmítnout firmu ${rejectConfirm?.name}?`}
+        confirmLabel="Odmítnout"
+        variant="destructive"
+        onConfirm={() => {
+          if (rejectConfirm) {
+            handleRejectCompany(rejectConfirm.id, rejectConfirm.name)
+          }
+          setRejectConfirm(null)
+        }}
+      />
     </div>
   )
 }

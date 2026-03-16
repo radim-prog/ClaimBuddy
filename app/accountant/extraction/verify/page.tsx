@@ -33,6 +33,7 @@ import { ExtractionStep, STEP_LABELS } from '@/lib/extraction-types'
 import { cn } from '@/lib/utils'
 import { useExtractionPresence } from '@/lib/hooks/use-extraction-presence'
 import { LockIndicator } from '@/components/extraction/presence-bar'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 type VerifyDocument = {
   id: string
@@ -149,6 +150,7 @@ function VerificationPageContent() {
   const [zoom, setZoom] = useState(100)
   const [approving, setApproving] = useState(false)
   const [reextracting, setReextracting] = useState(false)
+  const [approveAllConfirm, setApproveAllConfirm] = useState(false)
   const viewerRef = useRef<HTMLDivElement>(null)
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([])
   const [loadingPredkontace, setLoadingPredkontace] = useState(false)
@@ -511,7 +513,6 @@ function VerificationPageContent() {
 
   const handleApproveAllFiltered = async () => {
     const docsToApprove = category === 'ok' ? documents : documents
-    if (!confirm(`Schválit ${docsToApprove.length} dokladů?`)) return
     for (const doc of docsToApprove) {
       try {
         await fetch(`/api/extraction/approve`, {
@@ -726,7 +727,7 @@ function VerificationPageContent() {
                   variant="outline"
                   size="sm"
                   className="h-7 text-xs text-green-700 border-green-300 hover:bg-green-50"
-                  onClick={handleApproveAllFiltered}
+                  onClick={() => setApproveAllConfirm(true)}
                 >
                   <CheckCheck className="h-3.5 w-3.5 mr-1" />
                   Vše OK({counts.ok})
@@ -736,7 +737,7 @@ function VerificationPageContent() {
                   variant="outline"
                   size="sm"
                   className="h-7 text-xs"
-                  onClick={handleApproveAllFiltered}
+                  onClick={() => setApproveAllConfirm(true)}
                 >
                   <CheckCheck className="h-3.5 w-3.5 mr-1" />
                   Vše({documents.length})
@@ -1165,6 +1166,17 @@ function VerificationPageContent() {
           </div>
         </>
       )}
+      <ConfirmDialog
+        open={approveAllConfirm}
+        onOpenChange={setApproveAllConfirm}
+        title="Schválit všechny doklady"
+        description={`Opravdu schválit ${documents.length} dokladů? Tato akce je nevratná.`}
+        confirmLabel="Schválit vše"
+        onConfirm={() => {
+          setApproveAllConfirm(false)
+          handleApproveAllFiltered()
+        }}
+      />
     </div>
   )
 }
