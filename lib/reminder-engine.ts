@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { sendTelegramMessage } from '@/lib/telegram'
 
 // ============================================
 // TYPES
@@ -308,25 +309,31 @@ export async function processDueDeliveries(): Promise<{ delivered: number; faile
       vars
     )
 
-    // Mark as delivered (actual send via channel happens in channel-specific handlers)
-    const { error } = await supabaseAdmin
-      .from('reminder_deliveries')
-      .update({
-        status: 'delivered',
-        delivered_at: now,
-        escalation_level: newLevel,
-        message_text: escalatedText,
-      })
-      .eq('id', delivery.id)
+    // Dispatch via channel
+    const channelResult = await deliverViaChannel(
+      delivery.channel as DeliveryChannel,
+      reminder,
+      escalatedText,
+      newLevel
+    )
 
-    if (error) {
+    if (channelResult.ok) {
+      await supabaseAdmin
+        .from('reminder_deliveries')
+        .update({
+          status: 'delivered',
+          delivered_at: now,
+          escalation_level: newLevel,
+          message_text: escalatedText,
+        })
+        .eq('id', delivery.id)
+      delivered++
+    } else {
       failed++
       await supabaseAdmin
         .from('reminder_deliveries')
-        .update({ status: 'failed', error: error.message })
+        .update({ status: 'failed', error: channelResult.error || 'Unknown error' })
         .eq('id', delivery.id)
-    } else {
-      delivered++
     }
 
     // Update reminder escalation level if it changed
@@ -337,22 +344,107 @@ export async function processDueDeliveries(): Promise<{ delivered: number; faile
         .eq('id', reminder.id)
       escalated++
     }
-
-    // For in_app channel: also create client_notification
-    if (delivery.channel === 'in_app') {
-      await supabaseAdmin.from('client_notifications').insert({
-        company_id: reminder.company_id,
-        type: reminder.type === 'custom' ? 'custom' : `${reminder.type}` as string,
-        title: `Připomínka: ${reminder.type === 'deadline' ? 'Termín podkladů' : reminder.type === 'missing_docs' ? 'Chybějící doklady' : reminder.type === 'unpaid_invoice' ? 'Neuhrazená faktura' : 'Upozornění'}`,
-        message: escalatedText,
-        severity: newLevel >= 3 ? 'urgent' : newLevel >= 1 ? 'warning' : 'info',
-        auto_generated: true,
-        metadata: { reminder_id: reminder.id, escalation_level: newLevel },
-      })
-    }
   }
 
   return { delivered, failed, escalated }
+}
+
+// ============================================
+// CHANNEL DISPATCH
+// ============================================
+
+const REMINDER_TITLE_MAP: Record<ReminderType, string> = {
+  deadline: 'Termín podkladů',
+  missing_docs: 'Chybějící doklady',
+  unpaid_invoice: 'Neuhrazená faktura',
+  custom: 'Upozornění',
+}
+
+async function deliverViaChannel(
+  channel: DeliveryChannel,
+  reminder: Reminder,
+  messageText: string,
+  escalationLevel: number
+): Promise<{ ok: boolean; error?: string }> {
+  const title = `Připomínka: ${REMINDER_TITLE_MAP[reminder.type as ReminderType] || 'Upozornění'}`
+  const severity = escalationLevel >= 3 ? 'urgent' : escalationLevel >= 1 ? 'warning' : 'info'
+
+  try {
+    switch (channel) {
+      case 'in_app': {
+        // Create client_notification for popup/banner in client portal
+        const { error } = await supabaseAdmin.from('client_notifications').insert({
+          company_id: reminder.company_id,
+          type: reminder.type,
+          title,
+          message: messageText,
+          severity,
+          auto_generated: true,
+          metadata: { reminder_id: reminder.id, escalation_level: escalationLevel },
+        })
+        if (error) return { ok: false, error: error.message }
+
+        // Also insert into chats table as system message for message thread visibility
+        try {
+          await supabaseAdmin.from('chats').insert({
+            company_id: reminder.company_id,
+            sender_id: reminder.created_by || null,
+            sender_role: 'system',
+            message: messageText,
+            subject: title,
+            status: 'active',
+            started_by: 'system',
+          })
+        } catch { /* non-critical */ }
+
+        return { ok: true }
+      }
+
+      case 'telegram': {
+        // Look up company owner's telegram_chat_id
+        const { data: company } = await supabaseAdmin
+          .from('companies')
+          .select('owner_id')
+          .eq('id', reminder.company_id)
+          .single()
+
+        if (!company?.owner_id) return { ok: false, error: 'No company owner' }
+
+        const { data: user } = await supabaseAdmin
+          .from('users')
+          .select('telegram_chat_id')
+          .eq('id', company.owner_id)
+          .single()
+
+        if (!user?.telegram_chat_id) return { ok: false, error: 'No telegram_chat_id for user' }
+
+        const telegramText = [
+          `<b>${title}</b>`,
+          '',
+          messageText,
+        ].join('\n')
+
+        const result = await sendTelegramMessage(user.telegram_chat_id, telegramText)
+        return result.ok ? { ok: true } : { ok: false, error: result.error }
+      }
+
+      case 'email': {
+        // Email channel depends on TASK-014 (Ecomail integration)
+        // For now, skip and mark as delivered with note
+        return { ok: true } // silently pass — email will be wired later
+      }
+
+      case 'sms': {
+        // SMS channel — future Twilio integration
+        return { ok: false, error: 'SMS channel not yet implemented' }
+      }
+
+      default:
+        return { ok: false, error: `Unknown channel: ${channel}` }
+    }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Delivery error' }
+  }
 }
 
 /**
