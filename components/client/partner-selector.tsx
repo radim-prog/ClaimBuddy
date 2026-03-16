@@ -104,14 +104,13 @@ export function PartnerSelector({ companyId, value, onChange, hasError }: Partne
         toast.error(data.error || 'Firma nenalezena')
         return
       }
-      const c = data.company
       onChange({
         ...value,
-        name: c.name || value.name,
-        dic: c.dic || value.dic,
-        address: c.address?.street || value.address,
-        city: c.address?.city || value.city,
-        postal_code: c.address?.zip || value.postal_code,
+        name: data.name || value.name,
+        dic: data.dic || value.dic,
+        address: data.address?.street || value.address,
+        city: data.address?.city || value.city,
+        postal_code: data.address?.zip || value.postal_code,
       })
       toast.success('Data načtena z ARES')
     } catch {

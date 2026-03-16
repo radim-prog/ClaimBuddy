@@ -150,16 +150,15 @@ export function NewClientForm({ open, onOpenChange, onSuccess, onboardingSteps }
         setError(data.error || 'Firma nenalezena')
         return
       }
-      const company = data.company
       setFormData(prev => ({
         ...prev,
-        name: company.name || prev.name,
-        dic: company.dic || prev.dic,
-        legal_form: company.legal_form || prev.legal_form,
-        vat_payer: company.vat_payer ?? prev.vat_payer,
-        street: company.address?.street || prev.street,
-        city: company.address?.city || prev.city,
-        zip: company.address?.zip || prev.zip,
+        name: data.name || prev.name,
+        dic: data.dic || prev.dic,
+        legal_form: data.legal_form || prev.legal_form,
+        vat_payer: data.vat_payer ?? prev.vat_payer,
+        street: data.address?.street || prev.street,
+        city: data.address?.city || prev.city,
+        zip: data.address?.zip || prev.zip,
       }))
       toast.success('Data načtena z ARES')
     } catch {

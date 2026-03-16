@@ -43,19 +43,26 @@ export default function TaxQuestionnairePage() {
   const [responses, setResponses] = useState<QuestionnaireResponses>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['income']))
   const year = new Date().getFullYear()
 
   const fetchQuestionnaire = useCallback(async () => {
     if (!selectedCompanyId) return
+    setError(null)
     try {
       const res = await fetch(`/api/client/tax-questionnaire?company_id=${selectedCompanyId}&year=${year}`)
+      if (!res.ok) {
+        throw new Error(`Načtení dotazníku selhalo (${res.status})`)
+      }
       const data = await res.json()
       if (data.questionnaire) {
         setQuestionnaire(data.questionnaire)
         setResponses(data.questionnaire.responses || {})
       }
-    } catch { /* silent */ }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nepodařilo se načíst dotazník. Zkuste to prosím znovu.')
+    }
     finally { setLoading(false) }
   }, [selectedCompanyId, year])
 
@@ -74,14 +81,16 @@ export default function TaxQuestionnairePage() {
           status: submit ? 'completed' : 'in_progress',
         }),
       })
-      if (res.ok) {
-        const data = await res.json()
-        setQuestionnaire(data.questionnaire)
-        toast.success(submit ? 'Dotazník odeslán účetní' : 'Uloženo')
-      } else {
-        toast.error('Chyba při ukládání')
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '')
+        throw new Error(errText || `Ukládání selhalo (${res.status})`)
       }
-    } catch { toast.error('Chyba při ukládání') }
+      const data = await res.json()
+      setQuestionnaire(data.questionnaire)
+      toast.success(submit ? 'Dotazník odeslán účetní' : 'Uloženo')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Chyba při ukládání')
+    }
     finally { setSaving(false) }
   }, [questionnaire?.id, responses])
 
@@ -107,6 +116,19 @@ export default function TaxQuestionnairePage() {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto py-12 text-center">
+        <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500 opacity-75" />
+        <h2 className="text-lg font-semibold mb-2">Chyba načítání</h2>
+        <p className="text-sm text-muted-foreground mb-4">{error}</p>
+        <Button variant="outline" size="sm" onClick={() => { setLoading(true); fetchQuestionnaire() }}>
+          Zkusit znovu
+        </Button>
       </div>
     )
   }

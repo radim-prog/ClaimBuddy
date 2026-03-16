@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   Building2, Phone, Calculator, Banknote, FileText, Info,
   ChevronDown, ChevronRight, Check, Loader2, Save, Send,
-  CheckCircle2,
+  CheckCircle2, AlertCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useClientUser } from '@/lib/contexts/client-user-context'
@@ -40,18 +40,25 @@ export default function OnboardingQuestionnairePage() {
   const [responses, setResponses] = useState<OnboardingResponses>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['company_info']))
 
   const fetchQuestionnaire = useCallback(async () => {
     if (!selectedCompanyId) return
+    setError(null)
     try {
       const res = await fetch(`/api/client/onboarding-questionnaire?company_id=${selectedCompanyId}`)
+      if (!res.ok) {
+        throw new Error(`Načtení dotazníku selhalo (${res.status})`)
+      }
       const data = await res.json()
       if (data.questionnaire) {
         setQuestionnaire(data.questionnaire)
         setResponses(data.questionnaire.responses || {})
       }
-    } catch { /* silent */ }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nepodařilo se načíst dotazník. Zkuste to prosím znovu.')
+    }
     finally { setLoading(false) }
   }, [selectedCompanyId])
 

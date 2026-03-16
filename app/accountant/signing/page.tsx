@@ -17,6 +17,8 @@ import {
   ChevronLeft,
   X,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -139,6 +141,10 @@ export default function SigningPage() {
   const [testingConnection, setTestingConnection] = useState(false)
   const [settingsMessage, setSettingsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
+  // Cancel confirmation dialog state
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
+  const [pendingCancelId, setPendingCancelId] = useState<string | null>(null)
+
   // Template upload state
   const [templateName, setTemplateName] = useState('')
   const [templateFile, setTemplateFile] = useState<File | null>(null)
@@ -202,19 +208,27 @@ export default function SigningPage() {
       await fetchJobs()
     } catch (err: unknown) {
       console.error('Error sending contract:', err)
-      alert('Nepodařilo se odeslat smlouvu k podpisu.')
+      toast.error('Nepodařilo se odeslat smlouvu k podpisu.')
     }
   }
 
-  const handleCancelContract = async (id: string) => {
-    if (!confirm('Opravdu chcete zrušit tuto smlouvu?')) return
+  const handleCancelContract = (id: string) => {
+    setPendingCancelId(id)
+    setCancelConfirmOpen(true)
+  }
+
+  const executeCancelContract = async () => {
+    if (!pendingCancelId) return
+    setCancelConfirmOpen(false)
     try {
-      const res = await fetch(`/api/accountant/signing/${id}/cancel`, { method: 'POST' })
+      const res = await fetch(`/api/accountant/signing/${pendingCancelId}/cancel`, { method: 'POST' })
       if (!res.ok) throw new Error('Nepodařilo se zrušit smlouvu')
       await fetchJobs()
     } catch (err: unknown) {
       console.error('Error cancelling contract:', err)
-      alert('Nepodařilo se zrušit smlouvu.')
+      toast.error('Nepodařilo se zrušit smlouvu.')
+    } finally {
+      setPendingCancelId(null)
     }
   }
 
@@ -242,7 +256,7 @@ export default function SigningPage() {
       await fetchJobs()
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Nepodařilo se vytvořit smlouvu'
-      alert(message)
+      toast.error(message)
     } finally {
       setSubmitting(false)
     }
@@ -265,7 +279,7 @@ export default function SigningPage() {
       await fetchTemplates()
     } catch (err: unknown) {
       console.error('Error uploading template:', err)
-      alert('Nepodařilo se nahrát šablonu.')
+      toast.error('Nepodařilo se nahrát šablonu.')
     } finally {
       setUploadingTemplate(false)
     }
@@ -947,6 +961,21 @@ export default function SigningPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Cancel contract confirmation */}
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        onOpenChange={(open) => {
+          setCancelConfirmOpen(open)
+          if (!open) setPendingCancelId(null)
+        }}
+        title="Zrušit smlouvu"
+        description="Opravdu chcete zrušit tuto smlouvu? Tuto akci nelze vrátit zpět."
+        confirmLabel="Zrušit smlouvu"
+        cancelLabel="Ponechat"
+        variant="destructive"
+        onConfirm={executeCancelContract}
+      />
     </div>
   )
 }
