@@ -2,13 +2,21 @@
 
 import { createContext, useContext, ReactNode } from 'react'
 import { useTutorial } from '@/lib/hooks/use-tutorial'
+import { TutorialStep } from '@/lib/tutorial-steps'
 
 type TutorialContextType = ReturnType<typeof useTutorial>
 
 const TutorialContext = createContext<TutorialContextType | null>(null)
 
-export function TutorialProvider({ children }: { children: ReactNode }) {
-  const tutorial = useTutorial()
+type TutorialProviderProps = {
+  children: ReactNode
+  steps?: TutorialStep[]
+  apiPath?: string
+  storageKey?: string
+}
+
+export function TutorialProvider({ children, steps, apiPath, storageKey }: TutorialProviderProps) {
+  const tutorial = useTutorial({ steps, apiPath, storageKey })
   return (
     <TutorialContext.Provider value={tutorial}>
       {children}

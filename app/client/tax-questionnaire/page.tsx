@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   Banknote, Percent, Receipt, Clock, Shield, HeartPulse, Info,
   ChevronDown, ChevronRight, Check, Loader2, Save, Send,
-  Plus, Trash2, CheckCircle2, AlertCircle,
+  Plus, Trash2, CheckCircle2, AlertCircle, FileCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useClientUser } from '@/lib/contexts/client-user-context'
@@ -192,6 +192,9 @@ export default function TaxQuestionnairePage() {
           />
         ))}
       </div>
+
+      {/* Required documents checklist */}
+      <RequiredDocumentsChecklist />
 
       {/* Footer actions */}
       {!isReadOnly && (
@@ -442,4 +445,127 @@ function QuestionField({
   }
 
   return null
+}
+
+// --- Required Documents Checklist (BOD-072) ---
+
+const REQUIRED_DOCUMENTS = [
+  {
+    section: '§ 6 Příjmy ze závislé činnosti',
+    items: [
+      'Potvrzení o zdanitelných příjmech od všech zaměstnavatelů',
+      'Potvrzení o vyplacených příjmech a sražené dani (DPP, DPČ)',
+      'Zahraniční příjmy: potvrzení od zahraničního správce daně',
+      'Evidence Úřad práce: doložení doby evidence',
+    ],
+  },
+  {
+    section: '§ 8 Příjmy z kapitálového majetku',
+    items: [
+      'Podklady z investičních platforem',
+      'Potvrzení o příjmech ze zdrojů v zahraničí (podíly na zisku, úroky z CP)',
+    ],
+  },
+  {
+    section: '§ 9 Příjmy z pronájmu',
+    items: [
+      'Skutečné výdaje: výše příjmů a výdajů',
+      'Paušální výdaje: výše příjmů (nájemné BEZ záloh, pokud nejsou vyúčtovány)',
+    ],
+  },
+  {
+    section: '§ 10 Ostatní příjmy',
+    items: [
+      'Prodej cenných papírů, nemovitostí, příležitostné příjmy — podklady',
+    ],
+  },
+  {
+    section: 'Nezdanitelné části daně',
+    items: [
+      'Doklad o poskytnutém daru',
+      'Potvrzení o hypotéčních úrocích (1. rok: + kopie smlouvy)',
+      'Potvrzení o penzijním pojištění / DIP',
+      'Potvrzení o životním pojištění',
+    ],
+  },
+  {
+    section: 'Daňové zvýhodnění na děti',
+    items: [
+      'Potvrzení druhého rodiče, že neuplatňuje',
+      'Potvrzení o studiu (od 18 let)',
+    ],
+  },
+  {
+    section: 'Slevy na dani',
+    items: [
+      'Sleva na manželku: čestné prohlášení (max příjmy 68 000 Kč + péče o dítě do 3 let)',
+      'Sleva na invaliditu: potvrzení',
+    ],
+  },
+  {
+    section: 'SP a ZP u OSVČ',
+    items: [
+      'Info o zdravotní pojišťovně',
+      'Potvrzení o zaplacených zálohách na SP (ePortál ČSSZ)',
+      'Přehled záloh ZP (portál zdravotní pojišťovny)',
+    ],
+  },
+  {
+    section: 'Příjmy ze zahraničí',
+    items: [
+      'Potvrzení zahraničního správce daně',
+      'Podklady pro určení daňové rezidence (délka pobytu, rodina, aktivity)',
+    ],
+  },
+]
+
+function RequiredDocumentsChecklist() {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <Card className="mt-6">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+            <FileCheck className="h-4 w-4 text-amber-600" />
+          </div>
+          <div>
+            <span className="font-medium text-sm">Požadované podklady pro DPFO</span>
+            <span className="text-xs text-muted-foreground ml-2">
+              {REQUIRED_DOCUMENTS.reduce((sum, s) => sum + s.items.length, 0)} položek
+            </span>
+          </div>
+        </div>
+        {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+      </button>
+
+      {expanded && (
+        <CardContent className="pt-0 pb-4">
+          <p className="text-xs text-muted-foreground mb-4">
+            Připravte si tyto dokumenty podle toho, které se vás týkají. Nemusíte doložit vše — jen to, co odpovídá vašim příjmům a situaci.
+          </p>
+          <div className="space-y-4">
+            {REQUIRED_DOCUMENTS.map((group) => (
+              <div key={group.section}>
+                <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  {group.section}
+                </h4>
+                <ul className="space-y-1">
+                  {group.items.map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <Check className="h-3.5 w-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  )
 }

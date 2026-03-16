@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { TUTORIAL_STEPS } from '@/lib/tutorial-steps'
+import { TUTORIAL_STEPS, TutorialStep } from '@/lib/tutorial-steps'
 
 type TutorialStepProgress = {
   id: string
@@ -13,7 +13,17 @@ type TutorialStepProgress = {
   completed_at: string | null
 }
 
-export function useTutorial() {
+type UseTutorialOptions = {
+  steps?: TutorialStep[]
+  apiPath?: string
+  storageKey?: string
+}
+
+export function useTutorial(options?: UseTutorialOptions) {
+  const tutorialSteps = options?.steps ?? TUTORIAL_STEPS
+  const apiPath = options?.apiPath ?? '/api/accountant/tutorial'
+  const storageKey = options?.storageKey ?? 'tutorial-dismissed'
+
   const [steps, setSteps] = useState<TutorialStepProgress[]>([])
   const [completedCount, setCompletedCount] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
@@ -27,11 +37,11 @@ export function useTutorial() {
   const router = useRouter()
   const pathname = usePathname()
 
-  const currentStep = isActive ? TUTORIAL_STEPS[currentStepIndex] ?? null : null
+  const currentStep = isActive ? tutorialSteps[currentStepIndex] ?? null : null
 
   const fetchProgress = useCallback(async () => {
     try {
-      const res = await fetch('/api/accountant/tutorial')
+      const res = await fetch(apiPath)
       if (!res.ok) return
       const data = await res.json()
       setSteps(data.steps)
@@ -42,13 +52,13 @@ export function useTutorial() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [apiPath])
 
   useEffect(() => {
-    const wasDismissed = localStorage.getItem('tutorial-dismissed') === '1'
+    const wasDismissed = localStorage.getItem(storageKey) === '1'
     setDismissed(wasDismissed)
     fetchProgress()
-  }, [fetchProgress])
+  }, [fetchProgress, storageKey])
 
   const completeStep = useCallback(async (stepId: string) => {
     // Optimistic update
@@ -66,7 +76,7 @@ export function useTutorial() {
     })
 
     try {
-      await fetch('/api/accountant/tutorial', {
+      await fetch(apiPath, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ step_id: stepId }),
@@ -75,19 +85,19 @@ export function useTutorial() {
       // revert on error
       fetchProgress()
     }
-  }, [steps, fetchProgress])
+  }, [steps, fetchProgress, apiPath])
 
   const dismiss = useCallback(() => {
     setDismissed(true)
-    localStorage.setItem('tutorial-dismissed', '1')
-  }, [])
+    localStorage.setItem(storageKey, '1')
+  }, [storageKey])
 
   const reset = useCallback(async () => {
     setDismissed(false)
-    localStorage.removeItem('tutorial-dismissed')
-    await fetch('/api/accountant/tutorial', { method: 'DELETE' })
+    localStorage.removeItem(storageKey)
+    await fetch(apiPath, { method: 'DELETE' })
     fetchProgress()
-  }, [fetchProgress])
+  }, [fetchProgress, storageKey, apiPath])
 
   // --- Interactive tour methods ---
 
@@ -101,7 +111,7 @@ export function useTutorial() {
   }, [])
 
   const navigateToStepPage = useCallback((stepIndex: number) => {
-    const step = TUTORIAL_STEPS[stepIndex]
+    const step = tutorialSteps[stepIndex]
     if (!step) return
 
     // Special pages
@@ -118,16 +128,16 @@ export function useTutorial() {
     if (!pathname.startsWith(step.page)) {
       router.push(step.page)
     }
-  }, [pathname, router])
+  }, [pathname, router, tutorialSteps])
 
   const nextStep = useCallback(() => {
-    const step = TUTORIAL_STEPS[currentStepIndex]
+    const step = tutorialSteps[currentStepIndex]
     if (step) {
       completeStep(step.id)
     }
 
     const nextIdx = currentStepIndex + 1
-    if (nextIdx >= TUTORIAL_STEPS.length) {
+    if (nextIdx >= tutorialSteps.length) {
       // Tour complete
       setIsActive(false)
       return
@@ -135,7 +145,7 @@ export function useTutorial() {
 
     setCurrentStepIndex(nextIdx)
     navigateToStepPage(nextIdx)
-  }, [currentStepIndex, completeStep, navigateToStepPage])
+  }, [currentStepIndex, completeStep, navigateToStepPage, tutorialSteps])
 
   const prevStep = useCallback(() => {
     const prevIdx = currentStepIndex - 1
@@ -164,6 +174,8 @@ export function useTutorial() {
     isActive,
     currentStep,
     currentStepIndex,
+    totalSteps: tutorialSteps.length,
+    tutorialSteps,
     startTour,
     stopTour,
     nextStep,

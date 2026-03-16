@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Landmark, Loader2, TrendingUp, TrendingDown, ArrowRightLeft, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react'
 import { useClientUser } from '@/lib/contexts/client-user-context'
@@ -177,6 +177,29 @@ function OverviewTab({
   periods: TaxPeriod[]
   vatPayer: boolean
 }) {
+  const chartData = useMemo(() => {
+    const sorted = [...periods].sort((a, b) => a.period.localeCompare(b.period))
+    let cumRevenue = 0
+    let cumExpenses = 0
+    return sorted.map(p => {
+      cumRevenue += p.revenue || 0
+      cumExpenses += p.expenses || 0
+      return {
+        period: p.period,
+        label: p.period.slice(5) + '/' + p.period.slice(2, 4),
+        cumRevenue,
+        cumExpenses,
+        cumProfit: cumRevenue - cumExpenses,
+      }
+    })
+  }, [periods])
+
+  const fmtCzkAxis = (v: number) => {
+    if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M Kč`
+    if (Math.abs(v) >= 1_000) return `${(v / 1_000).toFixed(0)}tis Kč`
+    return `${v.toLocaleString('cs-CZ')} Kč`
+  }
+
   if (!summary) {
     return (
       <Card className="rounded-xl">
@@ -233,6 +256,45 @@ function OverviewTab({
           </Card>
         )}
       </div>
+
+      {chartData.length > 1 && (
+        <Card className="rounded-xl">
+          <CardContent className="pt-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-green-500" />
+              Kumulativní přehled příjmů a výdajů
+            </h3>
+            <div className="h-[300px] sm:h-[400px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gradCumRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradCumExpenses" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={fmtCzkAxis} />
+                  <Tooltip
+                    formatter={(value: number, name: string) => [formatCZK(value), name]}
+                    labelFormatter={(label: string) => `Období: ${label}`}
+                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Area type="monotone" dataKey="cumRevenue" name="Příjmy" stroke="#10b981" fill="url(#gradCumRevenue)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="cumExpenses" name="Výdaje" stroke="#ef4444" fill="url(#gradCumExpenses)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="cumProfit" name="Zisk" stroke="#3b82f6" fill="none" strokeWidth={2} strokeDasharray="5 3" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {periods.length > 0 && (
         <Card className="rounded-xl">

@@ -19,10 +19,13 @@ export function WelcomeModal() {
     if (loading) return
     if (totals.total === 0) return
 
-    const shown = sessionStorage.getItem('accountant-welcome-shown')
-    if (shown) return
+    // Check localStorage first (persistent across sessions), then sessionStorage (legacy)
+    const shownPersistent = localStorage.getItem('accountant-welcome-shown')
+    const shownSession = sessionStorage.getItem('accountant-welcome-shown')
+    if (shownPersistent || shownSession) return
 
     setOpen(true)
+    localStorage.setItem('accountant-welcome-shown', '1')
     sessionStorage.setItem('accountant-welcome-shown', '1')
   }, [loading, totals.total])
 

@@ -16,6 +16,9 @@ import {
   File,
   Clock,
   Loader2,
+  FolderPlus,
+  X,
+  Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +26,7 @@ import { Badge } from '@/components/ui/badge'
 import { PeriodFilter } from '@/components/drive/period-filter'
 import { FolderCard } from '@/components/drive/folder-card'
 import type { DocumentFolder, DriveFile, FileViewMode } from '@/lib/types/drive'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 // ============================================
 // PROPS
@@ -123,6 +127,7 @@ function TableSkeleton() {
 // ============================================
 
 export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
+  const { userRole } = useAccountantUser()
   // --- State ---
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [currentFolderName, setCurrentFolderName] = useState<string>('')
@@ -137,6 +142,9 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
   const [search, setSearch] = useState('')
   const [viewMode, setViewMode] = useState<FileViewMode>('list')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [showCreateFolder, setShowCreateFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [creatingFolder, setCreatingFolder] = useState(false)
 
   // --- Fetch folders (root) ---
   const fetchFolders = useCallback(async () => {
@@ -228,6 +236,26 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
 
   const handleUploadClick = () => {
     fileInputRef.current?.click()
+  }
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return
+    setCreatingFolder(true)
+    try {
+      const res = await fetch('/api/drive/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId, name: newFolderName.trim() }),
+      })
+      if (!res.ok) throw new Error('Chyba při vytváření složky')
+      setNewFolderName('')
+      setShowCreateFolder(false)
+      await fetchFolders()
+    } catch {
+      // silent — toast not imported
+    } finally {
+      setCreatingFolder(false)
+    }
   }
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -364,7 +392,49 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
               <Upload className="h-4 w-4 mr-1.5" />
               Nahrat
             </Button>
-            {/* Folder creation removed — managed by admin in Settings > Struktura složek */}
+            {userRole === 'admin' && !showCreateFolder && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-lg border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 transition-colors"
+                onClick={() => setShowCreateFolder(true)}
+              >
+                <FolderPlus className="h-4 w-4 mr-1.5" />
+                Vytvořit složku
+              </Button>
+            )}
+            {userRole === 'admin' && showCreateFolder && (
+              <div className="flex items-center gap-1">
+                <Input
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="Název složky"
+                  className="h-8 w-36 text-sm rounded-lg"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCreateFolder()
+                    if (e.key === 'Escape') { setShowCreateFolder(false); setNewFolderName('') }
+                  }}
+                  autoFocus
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0"
+                  onClick={handleCreateFolder}
+                  disabled={creatingFolder || !newFolderName.trim()}
+                >
+                  {creatingFolder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4 text-green-600" />}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0"
+                  onClick={() => { setShowCreateFolder(false); setNewFolderName('') }}
+                >
+                  <X className="h-4 w-4 text-gray-400" />
+                </Button>
+              </div>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -383,7 +453,7 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
         {/* Folders grid */}
         <div>
           <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
-            Slozky
+            Složky
           </h2>
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
