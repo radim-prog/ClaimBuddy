@@ -289,16 +289,15 @@ export async function logGatedAction(userId: string, action: string, resourceId?
 // Tier aliases: plan-gate accepts both CZ names (zaklad/profi/business)
 // and DB names (free/starter/professional/enterprise)
 const TIER_ALIASES: Record<string, string> = {
-  zaklad: 'free',
-  profi: 'professional',
+  // CZ names → DB names
+  zaklad: 'zaklad',
+  profi: 'profi',
   business: 'business',
-  // DB names map to themselves
+  // DB names → themselves
   free: 'free',
   starter: 'starter',
   professional: 'professional',
-  enterprise: 'business',
-  zaklad: 'zaklad',
-  profi: 'profi',
+  enterprise: 'enterprise',
   // Client tiers
   basic: 'basic',
   plus: 'plus',
