@@ -25,6 +25,7 @@ export default function PartnersPage() {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [aresLoading, setAresLoading] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   // Form state
   const [form, setForm] = useState({
@@ -277,52 +278,90 @@ export default function PartnersPage() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {filtered.map(p => (
-            <Card key={p.id} className="rounded-2xl hover:shadow-md transition-shadow">
-              <CardContent className="py-3 px-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 shrink-0 mt-0.5">
-                    <Building2 className="h-4 w-4 text-blue-600" />
+          {filtered.map(p => {
+            const isExpanded = expandedId === p.id
+            return (
+              <Card key={p.id} className={cn('rounded-2xl hover:shadow-md transition-shadow cursor-pointer', isExpanded && 'ring-1 ring-blue-300 dark:ring-blue-700')}>
+                <CardContent className="py-3 px-4">
+                  <div
+                    className="flex items-start gap-3"
+                    onClick={() => setExpandedId(isExpanded ? null : p.id)}
+                  >
+                    <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 shrink-0 mt-0.5">
+                      <Building2 className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold truncate">{p.name}</p>
+                        {(p.usage_count || 0) >= 3 && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
+                            {p.usage_count}x
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-muted-foreground">
+                        {p.ico && <span>IČO: {p.ico}</span>}
+                        {p.dic && <span>DIČ: {p.dic}</span>}
+                        {p.city && <span>{[p.address, p.city, p.postal_code].filter(Boolean).join(', ')}</span>}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => openEdit(p)} className="p-1.5 hover:bg-muted rounded-md" title="Upravit">
+                        <Edit3 className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                      <button onClick={() => handleDelete(p)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-md" title="Smazat">
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold truncate">{p.name}</p>
-                      {(p.usage_count || 0) >= 3 && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
-                          {p.usage_count}x
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-muted-foreground">
-                      {p.ico && <span>IČO: {p.ico}</span>}
-                      {p.dic && <span>DIČ: {p.dic}</span>}
-                      {p.city && <span>{[p.address, p.city, p.postal_code].filter(Boolean).join(', ')}</span>}
-                    </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-muted-foreground">
+
+                  {/* Expanded detail */}
+                  {isExpanded && (
+                    <div className="mt-3 pt-3 border-t border-border space-y-2 ml-11">
                       {p.email && (
-                        <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{p.email}</span>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <a href={`mailto:${p.email}`} className="text-blue-600 hover:underline">{p.email}</a>
+                        </div>
                       )}
                       {p.phone && (
-                        <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{p.phone}</span>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <a href={`tel:${p.phone}`} className="text-blue-600 hover:underline">{p.phone}</a>
+                        </div>
+                      )}
+                      {(p.address || p.city || p.postal_code) && (
+                        <div className="flex items-start gap-2 text-sm">
+                          <Building2 className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                          <span>{[p.address, p.city, p.postal_code].filter(Boolean).join(', ')}</span>
+                        </div>
+                      )}
+                      {p.ico && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <CreditCard className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span>IČO: <span className="font-mono">{p.ico}</span></span>
+                          {p.dic && <span className="text-muted-foreground">| DIČ: <span className="font-mono">{p.dic}</span></span>}
+                        </div>
                       )}
                       {p.bank_account && (
-                        <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" />{p.bank_account}</span>
+                        <div className="flex items-center gap-2 text-sm">
+                          <CreditCard className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="font-mono">{p.bank_account}</span>
+                          {p.iban && <span className="text-muted-foreground text-xs">({p.iban})</span>}
+                        </div>
+                      )}
+                      {p.note && (
+                        <p className="text-sm text-muted-foreground italic mt-1">{p.note}</p>
+                      )}
+                      {!p.email && !p.phone && !p.address && !p.bank_account && (
+                        <p className="text-sm text-muted-foreground">Žádné další údaje</p>
                       )}
                     </div>
-                    {p.note && <p className="text-xs text-muted-foreground mt-1 italic">{p.note}</p>}
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <button onClick={() => openEdit(p)} className="p-1.5 hover:bg-muted rounded-md" title="Upravit">
-                      <Edit3 className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                    <button onClick={() => handleDelete(p)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-md" title="Smazat">
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  )}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
 

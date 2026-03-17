@@ -18,6 +18,7 @@ import {
   Banknote,
   Clock,
   ArrowRight,
+  Shield,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -41,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -142,6 +144,7 @@ function TableSkeleton() {
 // ── Main Component ───────────────────────────────────────────────────────
 
 export default function BillingPage() {
+  const { userRole, loading: authLoading } = useAccountantUser()
   const [dashboard, setDashboard] = useState<BillingDashboard | null>(null)
   const [configs, setConfigs] = useState<BillingConfig[]>([])
   const [payouts, setPayouts] = useState<PayoutRecord[]>([])
@@ -312,6 +315,28 @@ export default function BillingPage() {
   // Companies available for adding (not yet having a billing config)
   const configuredCompanyIds = new Set(configs.map(c => c.company_id))
   const availableCompanies = companies.filter(c => !configuredCompanyIds.has(c.id))
+
+  // ── Auth guard ─────────────────────────────────────────────────────────
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
+      </div>
+    )
+  }
+
+  if (userRole !== 'admin') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
+          <Shield className="h-8 w-8 text-red-500" />
+        </div>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Nedostatecna opravneni</h2>
+        <p className="text-gray-500 dark:text-gray-400">Tato sekce je dostupna pouze pro administratory.</p>
+      </div>
+    )
+  }
 
   // ── Error state ────────────────────────────────────────────────────────
 

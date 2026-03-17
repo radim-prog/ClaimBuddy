@@ -284,12 +284,13 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
         vat_rate: fav.data.vat_rate ?? 21,
       }
       // Fill first empty item instead of always adding a new one
-      const emptyIndex = items.findIndex(item => !item.description && item.unit_price === 0)
-      if (emptyIndex !== -1) {
-        setItems(prev => prev.map((item, i) => i === emptyIndex ? favItem : item))
-      } else {
-        setItems(prev => [...prev, favItem])
-      }
+      setItems(prev => {
+        const emptyIndex = prev.findIndex(item => !item.description && item.unit_price === 0)
+        if (emptyIndex !== -1) {
+          return prev.map((item, i) => i === emptyIndex ? favItem : item)
+        }
+        return [...prev, favItem]
+      })
     }
   }
 
