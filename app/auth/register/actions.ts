@@ -66,6 +66,21 @@ export async function register(formData: FormData) {
       return { error: 'Nepodařilo se vytvořit účet. Zkuste to prosím znovu.' }
     }
 
+    // Link orphaned insurance cases with matching contact_email
+    const { data: newUser } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single()
+
+    if (newUser) {
+      await supabaseAdmin
+        .from('insurance_cases')
+        .update({ contact_user_id: newUser.id })
+        .eq('contact_email', email)
+        .is('contact_user_id', null)
+    }
+
     // Send verification email
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.zajcon.cz'
     const verifyUrl = `${appUrl}/api/auth/verify?token=${verificationToken}`

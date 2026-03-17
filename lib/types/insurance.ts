@@ -316,6 +316,11 @@ export interface InsuranceCase {
   success_fee_percent: number | null
   ai_report: string | null
   ai_processed_at: string | null
+  // Structured contact info (from intake form)
+  contact_name: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  contact_user_id: string | null
   created_at: string
   updated_at: string
   // Joined fields (optional)
@@ -381,6 +386,10 @@ export interface CreateCaseInput {
   deadline?: string
   note?: string
   tags?: string[]
+  contact_name?: string
+  contact_email?: string
+  contact_phone?: string
+  contact_user_id?: string
 }
 
 export interface UpdateCaseInput {

@@ -139,6 +139,10 @@ export async function createInsuranceCase(
       deadline: input.deadline ?? null,
       note: input.note ?? null,
       tags: input.tags ?? [],
+      contact_name: input.contact_name ?? null,
+      contact_email: input.contact_email ?? null,
+      contact_phone: input.contact_phone ?? null,
+      contact_user_id: input.contact_user_id ?? null,
     })
     .select(
       `*,

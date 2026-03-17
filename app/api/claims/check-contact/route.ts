@@ -43,6 +43,18 @@ export async function GET(request: NextRequest) {
     }
 
     if (phone) {
+      // Check users table by phone
+      const { data: userByPhone } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('phone', phone)
+        .limit(1)
+        .single()
+
+      if (userByPhone) {
+        return NextResponse.json({ exists: true })
+      }
+
       // Check companies table by phone
       const { data: company } = await supabaseAdmin
         .from('companies')

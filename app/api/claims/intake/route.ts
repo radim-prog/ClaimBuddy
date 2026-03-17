@@ -71,18 +71,16 @@ export async function POST(request: NextRequest) {
     const customCompanyName = payload.custom_company_name as string | undefined
     const eventLocation = payload.event_location as string | undefined
     const estimatedDamage = payload.estimated_damage ? Number(payload.estimated_damage) : undefined
+    const normalizedEmail = contactEmail.toLowerCase().trim()
 
     // (a) Reject duplicate: same email + same insurance company + last 30 days
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-    // Escape ILIKE wildcards in email to prevent false positives
-    const escapedEmail = contactEmail.replace(/[%_\\]/g, '\\$&')
-
     let duplicateQuery = supabaseAdmin
       .from('insurance_cases')
       .select('id, case_number', { count: 'exact', head: false })
-      .ilike('note', `%${escapedEmail}%`)
+      .eq('contact_email', normalizedEmail)
       .gte('created_at', thirtyDaysAgo.toISOString())
 
     if (insuranceCompanyId) {
@@ -100,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     // (b) Link existing user by email → find their company
     let linkedCompanyId: string | undefined
-    const normalizedEmail = contactEmail.toLowerCase().trim()
+    let linkedUserId: string | undefined
 
     const { data: existingUser } = await supabaseAdmin
       .from('users')
@@ -110,6 +108,8 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existingUser) {
+      linkedUserId = existingUser.id
+
       // Find company owned by this user
       const { data: ownedCompany } = await supabaseAdmin
         .from('companies')
@@ -157,9 +157,8 @@ export async function POST(request: NextRequest) {
 
     // --- Create the case ---
 
-    // Build note with contact info + custom company name
+    // Build note with custom company name + metadata
     const noteParts: string[] = []
-    noteParts.push(`Kontakt: ${contactName}, ${contactEmail}, ${contactPhone}`)
     if (customCompanyName) noteParts.push(`Pojišťovna (jiná): ${customCompanyName}`)
     if (estimatedDamage) noteParts.push(`Odhadovaná škoda: ${new Intl.NumberFormat('cs-CZ').format(estimatedDamage)} Kč`)
     noteParts.push('Zdroj: Veřejný formulář')
@@ -176,6 +175,10 @@ export async function POST(request: NextRequest) {
         priority: 'normal',
         note: noteParts.join('\n'),
         tags: ['intake', 'public-form'],
+        contact_name: contactName.trim(),
+        contact_email: normalizedEmail,
+        contact_phone: contactPhone.trim(),
+        contact_user_id: linkedUserId,
       },
       'system' // created by system (public form)
     )
