@@ -45,7 +45,7 @@ const BENEFITS = [
   {
     icon: CheckCircle,
     title: 'Vyšší plnění',
-    desc: 'V průměru získáme o 23% vyšší pojistné plnění než klienti sami.',
+    desc: 'V průměru získáme o 32% vyšší pojistné plnění než klienti sami.',
   },
   {
     icon: Clock,
@@ -100,9 +100,9 @@ const PRICING_TIERS = [
 
 const STATS = [
   { value: '500+', label: 'vyřízených případů' },
-  { value: 'Ø 23%', label: 'vyšší plnění' },
+  { value: 'Ø 32%', label: 'vyšší plnění' },
   { value: 'Do 14 dnů', label: 'vyřízení' },
-  { value: '4.9/5', label: 'hodnocení' },
+  { value: '4.7/5', label: 'hodnocení' },
 ]
 
 export default function ClaimsLandingPage() {
@@ -354,7 +354,7 @@ export default function ClaimsLandingPage() {
             <p className="text-sm text-muted-foreground">
               Jste náš klient?{' '}
               <Link
-                href="/auth/login"
+                href="/auth/login?portal=client"
                 className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
               >
                 Přihlaste se

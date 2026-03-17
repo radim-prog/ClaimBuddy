@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Suspense, useCallback } from 'react'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -11,6 +12,7 @@ import { useClientUser } from '@/lib/contexts/client-user-context'
 import { ClientInvoiceForm } from '@/components/client/invoice-form'
 import { InvoiceDetailOverlay } from '@/components/client/invoice-detail-overlay'
 import { InvoiceOverlay } from '@/components/client/action-hub/invoice-overlay'
+import { useUrlFilters } from '@/lib/hooks/use-url-filters'
 import { toast } from 'sonner'
 
 type FormMode = { type: 'new' } | { type: 'edit'; invoice: any } | { type: 'duplicate'; invoice: any }
@@ -46,16 +48,50 @@ function isInvoiceOverdue(inv: any): boolean {
 }
 
 export default function InvoicesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-32"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>}>
+      <InvoicesPageInner />
+    </Suspense>
+  )
+}
+
+function InvoicesPageInner() {
   const { companies, loading: companiesLoading, selectedCompanyId } = useClientUser()
-  const [formMode, setFormMode] = useState<FormMode | null>(null)
-  const [showOverlay, setShowOverlay] = useState(false)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const selectedCompany = selectedCompanyId
 
+  // URL-based form/overlay state (Krok 6)
+  const action = searchParams.get('action') as 'new' | 'edit' | 'duplicate' | null
+  const [formInvoice, setFormInvoice] = useState<any>(null)
+
+  const formMode: FormMode | null = useMemo(() => {
+    if (action === 'edit' && formInvoice) return { type: 'edit', invoice: formInvoice }
+    if (action === 'duplicate' && formInvoice) return { type: 'duplicate', invoice: formInvoice }
+    return null
+  }, [action, formInvoice])
+
+  const showOverlay = action === 'new'
+
   const [refreshKey, setRefreshKey] = useState(0)
+
+  const updateUrlParams = useCallback((updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString())
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === null || value === '') params.delete(key)
+      else params.set(key, value)
+    }
+    const qs = params.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+  }, [searchParams, pathname, router])
+
   const handleCreated = () => {
-    setFormMode(null)
+    const wasEdit = formMode?.type === 'edit'
+    updateUrlParams({ action: null, invoiceId: null })
+    setFormInvoice(null)
     setRefreshKey(k => k + 1)
-    toast.success(formMode?.type === 'edit' ? 'Faktura uložena' : 'Faktura vytvořena')
+    toast.success(wasEdit ? 'Faktura uložena' : 'Faktura vytvořena')
   }
 
   if (companiesLoading) {
@@ -78,7 +114,7 @@ export default function InvoicesPage() {
       {/* Action button */}
       <div>
         <button
-          onClick={() => setShowOverlay(true)}
+          onClick={() => updateUrlParams({ action: 'new' })}
           className="action-btn h-14 w-full flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-base"
         >
           <Receipt className="h-5 w-5 flex-shrink-0" />
@@ -87,10 +123,10 @@ export default function InvoicesPage() {
       </div>
 
 
-      {formMode && selectedCompany && (
+      {formMode && (formMode.type === 'edit' || formMode.type === 'duplicate') && selectedCompany && (
         <ClientInvoiceForm
           companyId={selectedCompany}
-          onClose={() => setFormMode(null)}
+          onClose={() => { updateUrlParams({ action: null, invoiceId: null }); setFormInvoice(null) }}
           onCreated={handleCreated}
           editInvoice={formMode.type === 'edit' ? formMode.invoice : undefined}
           duplicateFrom={formMode.type === 'duplicate' ? formMode.invoice : undefined}
@@ -101,8 +137,14 @@ export default function InvoicesPage() {
         <ClientInvoiceListView
           key={refreshKey}
           companyId={selectedCompany}
-          onEdit={(inv) => setFormMode({ type: 'edit', invoice: inv })}
-          onDuplicate={(inv) => setFormMode({ type: 'duplicate', invoice: inv })}
+          onEdit={(inv) => {
+            setFormInvoice(inv)
+            updateUrlParams({ action: 'edit', invoiceId: inv.id, detail: null })
+          }}
+          onDuplicate={(inv) => {
+            setFormInvoice(inv)
+            updateUrlParams({ action: 'duplicate', invoiceId: inv.id, detail: null })
+          }}
           onRefresh={() => setRefreshKey(k => k + 1)}
         />
       )}
@@ -112,7 +154,7 @@ export default function InvoicesPage() {
         open={showOverlay}
         companyId={companyId}
         onClose={() => {
-          setShowOverlay(false)
+          updateUrlParams({ action: null })
           setRefreshKey(k => k + 1)
         }}
       />
@@ -133,12 +175,22 @@ function ClientInvoiceListView({
 }) {
   const [invoices, setInvoices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [docTypeFilter, setDocTypeFilter] = useState<DocTypeFilter>('all')
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all')
-  const [sortOrder, setSortOrder] = useState<SortOrder>('newest')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [detailInvoice, setDetailInvoice] = useState<any | null>(null)
+
+  // URL-based filters (Krok 2)
+  const { filters, setFilter } = useUrlFilters({
+    status: 'all',
+    docType: 'all',
+    date: 'all',
+    sort: 'newest',
+    q: '',
+    detail: '',
+  })
+
+  const statusFilter = filters.status as StatusFilter
+  const docTypeFilter = filters.docType as DocTypeFilter
+  const dateFilter = filters.date as DateFilter
+  const sortOrder = filters.sort as SortOrder
+  const searchQuery = filters.q
 
   const fetchInvoices = () => {
     setLoading(true)
@@ -150,13 +202,19 @@ function ClientInvoiceListView({
 
   useEffect(() => { fetchInvoices() }, [companyId])
 
+  // Derive detail invoice from URL param
+  const detailInvoice = useMemo(() => {
+    if (!filters.detail) return null
+    return invoices.find(inv => inv.id === filters.detail) || null
+  }, [filters.detail, invoices])
+
   const handleDelete = async (inv: any) => {
     if (!confirm('Opravdu chcete smazat tento doklad?')) return
     try {
       const res = await fetch(`/api/client/invoices/${inv.id}`, { method: 'DELETE' })
       if (res.ok) {
         toast.success('Doklad smazán')
-        setDetailInvoice(null)
+        setFilter('detail', '')
         fetchInvoices()
         onRefresh()
       } else {
@@ -179,7 +237,7 @@ function ClientInvoiceListView({
         throw new Error(data.error || 'Konverze selhala')
       }
       toast.success(targetType === 'credit_note' ? 'Dobropis vytvořen' : 'Faktura vytvořena ze zálohové faktury')
-      setDetailInvoice(null)
+      setFilter('detail', '')
       fetchInvoices()
       onRefresh()
     } catch (err) {
@@ -291,10 +349,10 @@ function ClientInvoiceListView({
             <Input
               placeholder="Hledat číslo, partner..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => setFilter('q', e.target.value)}
               className="h-8 text-xs flex-1 min-w-[160px]"
             />
-            <Select value={docTypeFilter} onValueChange={v => setDocTypeFilter(v as DocTypeFilter)}>
+            <Select value={docTypeFilter} onValueChange={v => setFilter('docType', v)}>
               <SelectTrigger className="h-8 text-xs w-[140px]">
                 <SelectValue />
               </SelectTrigger>
@@ -305,7 +363,7 @@ function ClientInvoiceListView({
                 <SelectItem value="credit_note">Dobropisy ({docTypeCounts.credit_note})</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={dateFilter} onValueChange={v => setDateFilter(v as DateFilter)}>
+            <Select value={dateFilter} onValueChange={v => setFilter('date', v)}>
               <SelectTrigger className="h-8 text-xs w-[130px]">
                 <SelectValue />
               </SelectTrigger>
@@ -315,7 +373,7 @@ function ClientInvoiceListView({
                 <SelectItem value="this_year">Tento rok</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={sortOrder} onValueChange={v => setSortOrder(v as SortOrder)}>
+            <Select value={sortOrder} onValueChange={v => setFilter('sort', v)}>
               <SelectTrigger className="h-8 text-xs w-[120px]">
                 <SelectValue />
               </SelectTrigger>
@@ -340,7 +398,7 @@ function ClientInvoiceListView({
               return (
                 <button
                   key={f}
-                  onClick={() => setStatusFilter(f)}
+                  onClick={() => setFilter('status', f)}
                   className={cn(
                     'filter-pill',
                     statusFilter === f ? 'filter-pill-active' : 'filter-pill-inactive'
@@ -383,7 +441,7 @@ function ClientInvoiceListView({
                   '',
                   rowBg
                 )}
-                onClick={() => setDetailInvoice(inv)}
+                onClick={() => setFilter('detail', inv.id)}
               >
                 <CardContent className="py-3 px-4">
                   <div className="flex items-center gap-3">
@@ -469,12 +527,12 @@ function ClientInvoiceListView({
         <InvoiceDetailOverlay
           invoice={detailInvoice}
           open={!!detailInvoice}
-          onClose={() => setDetailInvoice(null)}
-          onEdit={() => { setDetailInvoice(null); onEdit(detailInvoice) }}
-          onDuplicate={() => { setDetailInvoice(null); onDuplicate(detailInvoice) }}
+          onClose={() => setFilter('detail', '')}
+          onEdit={() => { onEdit(detailInvoice) }}
+          onDuplicate={() => { onDuplicate(detailInvoice) }}
           onDelete={() => handleDelete(detailInvoice)}
           onConvert={(targetType) => handleConvert(detailInvoice, targetType)}
-          onStatusChange={() => { setDetailInvoice(null); fetchInvoices(); onRefresh() }}
+          onStatusChange={() => { setFilter('detail', ''); fetchInvoices(); onRefresh() }}
         />
       )}
     </div>

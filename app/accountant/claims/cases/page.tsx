@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { Suspense, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
+import { useUrlFilters } from '@/lib/hooks/use-url-filters'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -158,14 +159,30 @@ function EmptyState({ hasFilters }: { hasFilters: boolean }) {
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function ClaimsCasesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div>}>
+      <ClaimsCasesPageInner />
+    </Suspense>
+  )
+}
+
+function ClaimsCasesPageInner() {
   const router = useRouter()
 
-  // ── Filter state ──
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<InsuranceCaseStatus | ''>('')
-  const [companyFilter, setCompanyFilter] = useState('')
-  const [priorityFilter, setPriorityFilter] = useState<CasePriority | ''>('')
-  const [typeFilter, setTypeFilter] = useState<InsuranceType | ''>('')
+  // ── URL-based filter state (Krok 4) ──
+  const { filters, setFilter, clearFilters } = useUrlFilters({
+    search: '',
+    status: '',
+    company: '',
+    priority: '',
+    type: '',
+  })
+
+  const search = filters.search
+  const statusFilter = filters.status as InsuranceCaseStatus | ''
+  const companyFilter = filters.company
+  const priorityFilter = filters.priority as CasePriority | ''
+  const typeFilter = filters.type as InsuranceType | ''
 
   // ── Stats ──
   const { data: stats, loading: statsLoading } = useCachedFetch<ClaimsStats>(
@@ -208,14 +225,6 @@ export default function ClaimsCasesPage() {
   )
 
   const hasFilters = !!(search || statusFilter || companyFilter || priorityFilter || typeFilter)
-
-  const clearFilters = useCallback(() => {
-    setSearch('')
-    setStatusFilter('')
-    setCompanyFilter('')
-    setPriorityFilter('')
-    setTypeFilter('')
-  }, [])
 
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -290,7 +299,7 @@ export default function ClaimsCasesPage() {
               <Input
                 placeholder="Hledat spis, pojistku, popis…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => setFilter('search', e.target.value)}
                 className="pl-9 bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
               />
             </div>
@@ -300,7 +309,7 @@ export default function ClaimsCasesPage() {
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as InsuranceCaseStatus | '')}
+                onChange={(e) => setFilter('status', e.target.value)}
                 className="h-10 pl-9 pr-3 rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px]"
               >
                 <option value="">Všechny stavy</option>
@@ -316,7 +325,7 @@ export default function ClaimsCasesPage() {
             <div className="relative">
               <select
                 value={companyFilter}
-                onChange={(e) => setCompanyFilter(e.target.value)}
+                onChange={(e) => setFilter('company', e.target.value)}
                 className="h-10 px-3 rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px]"
               >
                 <option value="">Všechny pojišťovny</option>
@@ -332,7 +341,7 @@ export default function ClaimsCasesPage() {
             <div className="relative">
               <select
                 value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value as CasePriority | '')}
+                onChange={(e) => setFilter('priority', e.target.value)}
                 className="h-10 px-3 rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[150px]"
               >
                 <option value="">Všechny priority</option>
@@ -348,7 +357,7 @@ export default function ClaimsCasesPage() {
             <div className="relative">
               <select
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as InsuranceType | '')}
+                onChange={(e) => setFilter('type', e.target.value)}
                 className="h-10 px-3 rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[170px]"
               >
                 <option value="">Všechny typy</option>
@@ -428,11 +437,11 @@ export default function ClaimsCasesPage() {
                     onClick={() => router.push(`/accountant/claims/cases/${c.id}`)}
                     className="hover:bg-blue-50/40 dark:hover:bg-blue-900/10 cursor-pointer transition-colors"
                   >
-                    {/* Číslo spisu */}
+                    {/* Číslo spisu — Link (Krok 7) */}
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="font-mono font-medium text-blue-700 dark:text-blue-400">
+                      <Link href={`/accountant/claims/cases/${c.id}`} onClick={(e) => e.stopPropagation()} className="font-mono font-medium text-blue-700 dark:text-blue-400 hover:underline">
                         {c.case_number}
-                      </span>
+                      </Link>
                       {c.policy_number && (
                         <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                           {c.policy_number}

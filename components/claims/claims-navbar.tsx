@@ -55,7 +55,7 @@ export function ClaimsNavbar() {
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-3">
           <Link
-            href="/auth/login"
+            href="/auth/login?portal=client"
             className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
             Přihlášení
@@ -95,7 +95,7 @@ export function ClaimsNavbar() {
 
           <div className="pt-3 mt-2 border-t border-gray-100 dark:border-gray-800 space-y-2">
             <Link
-              href="/auth/login"
+              href="/auth/login?portal=client"
               className="flex items-center justify-center py-2.5 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               onClick={() => setMobileOpen(false)}
             >

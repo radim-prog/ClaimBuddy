@@ -28,6 +28,7 @@ import {
   StickyNote,
   ShieldAlert,
   FileImage,
+  Star,
   FileBadge,
   Mail,
   Scale,
@@ -194,6 +195,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ caseId: s
   // Document upload
   const [uploadingDoc, setUploadingDoc] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Review request
+  const [requestingReview, setRequestingReview] = useState(false)
 
   // Payment form
   const [paymentForm, setPaymentForm] = useState({
@@ -587,6 +591,42 @@ export default function CaseDetailPage({ params }: { params: Promise<{ caseId: s
           <Button variant="outline" size="sm" onClick={() => setActiveTab('settings')}>
             <Settings className="mr-2 h-3.5 w-3.5" />
             Upravit
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={requestingReview}
+            onClick={async () => {
+              setRequestingReview(true)
+              try {
+                const res = await fetch('/api/claims/reviews/request', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ case_id: caseId }),
+                })
+                const data = await res.json()
+                if (res.ok && data.url) {
+                  await navigator.clipboard.writeText(data.url)
+                  alert('Odkaz pro hodnocení byl zkopírován do schránky.')
+                } else if (res.status === 409) {
+                  alert('Pro tento spis již existuje aktivní žádost o hodnocení.')
+                } else {
+                  alert(data.error || 'Nepodařilo se vytvořit žádost.')
+                }
+              } catch {
+                alert('Nepodařilo se vytvořit žádost o hodnocení.')
+              } finally {
+                setRequestingReview(false)
+              }
+            }}
+          >
+            {requestingReview ? (
+              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Star className="mr-2 h-3.5 w-3.5" />
+            )}
+            Požádat o hodnocení
           </Button>
 
           {canDelete && (

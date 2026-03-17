@@ -297,7 +297,9 @@ export default function ClaimsDashboard() {
                       onClick={() => router.push(`/accountant/claims/cases/${c.id}`)}
                     >
                       <td className="px-5 py-3 font-mono text-xs font-medium">
-                        {c.case_number || '—'}
+                        <Link href={`/accountant/claims/cases/${c.id}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
+                          {c.case_number || '—'}
+                        </Link>
                       </td>
                       <td className="px-5 py-3 font-medium truncate max-w-[200px]">
                         {companyName}

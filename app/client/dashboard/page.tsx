@@ -203,13 +203,13 @@ export default function ClientDashboard() {
             <Car className="h-4 w-4 flex-shrink-0" />
             Jízda
           </button>
-          <button
+          <Link
+            href="/client/messages"
             className="action-btn h-12 flex items-center justify-center gap-2 text-sm bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 dark:hover:bg-gray-600 text-white"
-            onClick={() => router.push('/client/messages')}
           >
             <MessageCircle className="h-4 w-4 flex-shrink-0" />
             Zprávy
-          </button>
+          </Link>
           <button
             className="action-btn h-12 flex items-center justify-center gap-2 text-sm bg-slate-500 hover:bg-slate-600 text-white"
             onClick={() => setActiveOverlay('bank_upload')}

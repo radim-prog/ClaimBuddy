@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
 
 type ActiveModule = 'accounting' | 'claims'
 
@@ -13,18 +14,27 @@ const ActiveModuleContext = createContext<ActiveModuleContextType | null>(null)
 
 const STORAGE_KEY = 'active-module'
 
+function deriveModuleFromPath(pathname: string): ActiveModule | null {
+  if (pathname.startsWith('/accountant/claims')) return 'claims'
+  if (pathname.startsWith('/accountant')) return 'accounting'
+  return null
+}
+
 export function ActiveModuleProvider({ children }: { children: ReactNode }) {
-  const [activeModule, setActiveModuleState] = useState<ActiveModule>('accounting')
+  const pathname = usePathname()
+  const [fallbackModule, setFallbackModule] = useState<ActiveModule>('accounting')
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored === 'accounting' || stored === 'claims') {
-      setActiveModuleState(stored)
+      setFallbackModule(stored)
     }
   }, [])
 
+  const activeModule = deriveModuleFromPath(pathname) ?? fallbackModule
+
   const setActiveModule = (module: ActiveModule) => {
-    setActiveModuleState(module)
+    setFallbackModule(module)
     localStorage.setItem(STORAGE_KEY, module)
   }
 

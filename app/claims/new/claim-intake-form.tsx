@@ -417,7 +417,7 @@ export function ClaimIntakeForm() {
       </div>
 
       {/* Progress Bar */}
-      <ProgressBar currentStep={step} />
+      <ProgressBar currentStep={step} filesCount={files.length} />
 
       {/* Step content with animation */}
       <div
@@ -476,8 +476,8 @@ export function ClaimIntakeForm() {
           <div>
             <StepHeader
               icon={Building2}
-              title="U které pojišťovny jste pojištěni?"
-              subtitle="Vyberte Vaši pojišťovnu ze seznamu nebo zadejte jinou."
+              title="Pojišťovna, u které uplatňujete nárok"
+              subtitle="Vyberte pojišťovnu ze seznamu nebo zadejte jinou."
             />
             <div className="mt-6 space-y-4">
               {!useCustomCompany && (
@@ -660,6 +660,12 @@ export function ClaimIntakeForm() {
                   placeholder="0"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
+                {Number(formData.estimated_damage) >= 100000 && (
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                    <span>Při škodě nad 100 000 Kč je povinnost přivolat Policii ČR.</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -817,7 +823,7 @@ export function ClaimIntakeForm() {
                   <span className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                     Souhlasím se{' '}
                     <a
-                      href="/legal/privacy"
+                      href="/claims/legal/privacy"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 dark:text-blue-400 underline hover:no-underline"
@@ -974,13 +980,15 @@ export function ClaimIntakeForm() {
 
 // --------------- Sub-components ---------------
 
-function ProgressBar({ currentStep }: { currentStep: number }) {
+function ProgressBar({ currentStep, filesCount }: { currentStep: number; filesCount: number }) {
   return (
     <div className="flex items-center gap-0 mb-10">
       {STEPS.map((s, idx) => {
         const stepNum = idx + 1
         const isCompleted = stepNum < currentStep
         const isActive = stepNum === currentStep
+        // Documents step (4): orange if completed but no files uploaded
+        const isDocWarning = stepNum === 4 && isCompleted && filesCount === 0
 
         return (
           <div key={stepNum} className="flex items-center flex-1">
@@ -988,15 +996,19 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
               <div
                 className={`
                   h-10 w-10 rounded-full flex items-center justify-center transition-all duration-300 border-2
-                  ${isCompleted
-                    ? 'bg-green-500 border-green-500 text-white shadow-md shadow-green-500/20'
-                    : isActive
-                      ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/20'
-                      : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'
+                  ${isDocWarning
+                    ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-500/20'
+                    : isCompleted
+                      ? 'bg-green-500 border-green-500 text-white shadow-md shadow-green-500/20'
+                      : isActive
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/20'
+                        : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'
                   }
                 `}
               >
-                {isCompleted ? (
+                {isDocWarning ? (
+                  <AlertTriangle className="h-5 w-5" />
+                ) : isCompleted ? (
                   <CheckCircle className="h-5 w-5" />
                 ) : (
                   <span className="text-sm font-bold">{stepNum}</span>
@@ -1004,11 +1016,13 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
               </div>
               <span
                 className={`text-xs mt-1.5 font-medium whitespace-nowrap hidden sm:block ${
-                  isCompleted
-                    ? 'text-green-600 dark:text-green-400'
-                    : isActive
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-gray-400 dark:text-gray-500'
+                  isDocWarning
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : isCompleted
+                      ? 'text-green-600 dark:text-green-400'
+                      : isActive
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-gray-400 dark:text-gray-500'
                 }`}
               >
                 {s.label}
@@ -1018,7 +1032,7 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
             {idx < STEPS.length - 1 && (
               <div
                 className={`h-0.5 flex-1 mx-2 sm:mt-[-18px] mt-0 transition-colors duration-300 ${
-                  stepNum < currentStep ? 'bg-green-400' : 'bg-gray-200 dark:bg-gray-700'
+                  stepNum < currentStep ? (isDocWarning ? 'bg-amber-400' : 'bg-green-400') : 'bg-gray-200 dark:bg-gray-700'
                 }`}
               />
             )}

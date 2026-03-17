@@ -15,7 +15,6 @@ import {
   Download,
   Eye,
   ChevronRight,
-  AlertCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useClientUser } from '@/lib/contexts/client-user-context'
@@ -30,8 +29,8 @@ import { BankReviewSheet } from '@/components/client/bank-review-sheet'
 import { TransactionQuickUpload } from '@/components/client/transaction-quick-upload'
 import { UpsellBanner } from '@/components/client/upsell-banner'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
 import { Suspense } from 'react'
+import { useUrlFilters } from '@/lib/hooks/use-url-filters'
 
 export default function DocumentsPage() {
   return (
@@ -42,7 +41,6 @@ export default function DocumentsPage() {
 }
 
 function DocumentsPageInner() {
-  const router = useRouter()
   const [showScanOverlay, setShowScanOverlay] = useState(false)
   const [bankExpanded, setBankExpanded] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -182,7 +180,8 @@ function DocumentListTab() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
-  const [filter, setFilter] = useState<ListFilter>('all')
+  const { filters: urlFilters, setFilter: setUrlParam } = useUrlFilters({ filter: 'all' })
+  const filter = urlFilters.filter as ListFilter
 
   const fetchDocs = async () => {
     setLoading(true)
@@ -214,7 +213,7 @@ function DocumentListTab() {
         {(['all', 'draft', 'submitted', 'approved'] as const).map(f => (
           <button
             key={f}
-            onClick={() => setFilter(f)}
+            onClick={() => setUrlParam('filter', f)}
             className={cn(
               'filter-pill',
               filter === f ? 'filter-pill-active' : 'filter-pill-inactive'
@@ -337,7 +336,8 @@ function BankTab() {
   const [transactions, setTransactions] = useState<BankTransaction[]>([])
   const [loading, setLoading] = useState(false)
   const [matchingTx, setMatchingTx] = useState<BankTransaction | null>(null)
-  const [filter, setFilter] = useState<'all' | 'unmatched' | 'matched'>('all')
+  const { filters: bankUrlFilters, setFilter: setBankUrlParam } = useUrlFilters({ bankFilter: 'all' })
+  const filter = bankUrlFilters.bankFilter as 'all' | 'unmatched' | 'matched'
   const [autoMatching, setAutoMatching] = useState(false)
   const [reviewPeriod, setReviewPeriod] = useState<string | null>(null)
   const [reviewTransactions, setReviewTransactions] = useState<BankTransaction[]>([])
@@ -495,7 +495,7 @@ function BankTab() {
           {(['all', 'unmatched', 'matched'] as const).map(f => (
             <button
               key={f}
-              onClick={() => setFilter(f)}
+              onClick={() => setBankUrlParam('bankFilter', f)}
               className={cn(
                 'filter-pill',
                 filter === f ? 'filter-pill-active' : 'filter-pill-inactive'
