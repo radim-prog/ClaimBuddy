@@ -12,12 +12,15 @@ import { generateInvoiceNumber } from './invoice-utils'
 
 export type BillingConfigStatus = 'draft' | 'active' | 'paused' | 'cancelled' | 'suspended'
 
+export type BillingFrequency = 'monthly' | 'quarterly'
+
 export type BillingConfig = {
   id: string
   company_id: string
   provider_id: string
   monthly_fee_czk: number
   currency: string
+  billing_frequency: BillingFrequency
   stripe_subscription_id: string | null
   stripe_price_id: string | null
   stripe_customer_id: string | null
@@ -101,6 +104,7 @@ export async function updateBillingConfig(
   configId: string,
   updates: {
     monthly_fee_czk?: number
+    billing_frequency?: BillingFrequency
     notes?: string
     status?: BillingConfigStatus
   }
@@ -336,7 +340,7 @@ export async function suspendBilling(configId: string, reason: string): Promise<
 // BILLING INVOICES
 // ============================================
 
-export async function generateMonthlyInvoices(period: string): Promise<{ generated: number; errors: number }> {
+export async function generateMonthlyInvoices(period: string): Promise<{ generated: number; errors: number; skipped_quarterly: number }> {
   // Fetch all active billing configs
   const { data: configs } = await supabaseAdmin
     .from('billing_configs')
@@ -345,26 +349,45 @@ export async function generateMonthlyInvoices(period: string): Promise<{ generat
 
   let generated = 0
   let errors = 0
+  let skipped_quarterly = 0
+
+  const [periodYear, periodMonth] = period.split('-').map(Number)
+  // Quarterly months: January(1), April(4), July(7), October(10)
+  const isQuarterlyMonth = [1, 4, 7, 10].includes(periodMonth)
 
   for (const config of configs || []) {
     try {
+      // Skip quarterly configs in non-quarterly months
+      if (config.billing_frequency === 'quarterly' && !isQuarterlyMonth) {
+        skipped_quarterly++
+        continue
+      }
+
+      // For quarterly: use Q-period format, for monthly: YYYY-MM
+      const invoicePeriod = config.billing_frequency === 'quarterly'
+        ? `${periodYear}-Q${Math.ceil(periodMonth / 3)}`
+        : period
+
       // Check if invoice already exists for this period
       const { data: existing } = await supabaseAdmin
         .from('billing_invoices')
         .select('id')
         .eq('config_id', config.id)
-        .eq('period', period)
+        .eq('period', invoicePeriod)
         .maybeSingle()
 
       if (existing) continue // already generated
 
-      const platformFee = Math.round(config.monthly_fee_czk * (config.platform_fee_pct / 100))
-      const providerPayout = config.monthly_fee_czk - platformFee
+      // Quarterly = 3x monthly fee
+      const amount = config.billing_frequency === 'quarterly'
+        ? config.monthly_fee_czk * 3
+        : config.monthly_fee_czk
+      const platformFee = Math.round(amount * (config.platform_fee_pct / 100))
+      const providerPayout = amount - platformFee
 
       // Due date: 15th of next month
-      const [year, month] = period.split('-').map(Number)
-      const nextMonth = month === 12 ? 1 : month + 1
-      const nextYear = month === 12 ? year + 1 : year
+      const nextMonth = periodMonth === 12 ? 1 : periodMonth + 1
+      const nextYear = periodMonth === 12 ? periodYear + 1 : periodYear
       const dueDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-15`
 
       const { data: billingInvoice, error } = await supabaseAdmin
@@ -372,8 +395,8 @@ export async function generateMonthlyInvoices(period: string): Promise<{ generat
         .insert({
           config_id: config.id,
           company_id: config.company_id,
-          period,
-          amount_due: config.monthly_fee_czk,
+          period: invoicePeriod,
+          amount_due: amount,
           platform_fee: platformFee,
           provider_payout: providerPayout,
           status: 'pending',
@@ -391,7 +414,7 @@ export async function generateMonthlyInvoices(period: string): Promise<{ generat
         try {
           const issueDate = new Date().toISOString().split('T')[0]
           const { invoiceNumber, variableSymbol, seriesId } = await generateInvoiceNumber(
-            supabaseAdmin, Number(period.split('-')[0])
+            supabaseAdmin, periodYear
           )
 
           // Fetch company name for the invoice
@@ -400,6 +423,11 @@ export async function generateMonthlyInvoices(period: string): Promise<{ generat
             .select('name, ico, dic, address')
             .eq('id', config.company_id)
             .single()
+
+          const periodLabel = config.billing_frequency === 'quarterly'
+            ? `Q${Math.ceil(periodMonth / 3)}/${periodYear}`
+            : invoicePeriod
+          const unitLabel = config.billing_frequency === 'quarterly' ? 'kvart' : 'měs'
 
           await supabaseAdmin
             .from('invoices')
@@ -412,7 +440,7 @@ export async function generateMonthlyInvoices(period: string): Promise<{ generat
               issue_date: issueDate,
               due_date: dueDate,
               tax_date: issueDate,
-              period,
+              period: invoicePeriod,
               partner: {
                 name: company?.name || '',
                 ico: company?.ico || '',
@@ -423,17 +451,17 @@ export async function generateMonthlyInvoices(period: string): Promise<{ generat
               },
               items: [{
                 id: 'item-0',
-                description: `Účetní služby za období ${period}`,
+                description: `Účetní služby za období ${periodLabel}`,
                 quantity: 1,
-                unit: 'měs',
-                unit_price: config.monthly_fee_czk,
+                unit: unitLabel,
+                unit_price: amount,
                 vat_rate: 21,
-                total_without_vat: config.monthly_fee_czk,
-                total_with_vat: Math.round(config.monthly_fee_czk * 1.21),
+                total_without_vat: amount,
+                total_with_vat: Math.round(amount * 1.21),
               }],
-              total_without_vat: config.monthly_fee_czk,
-              total_vat: Math.round(config.monthly_fee_czk * 0.21),
-              total_with_vat: Math.round(config.monthly_fee_czk * 1.21),
+              total_without_vat: amount,
+              total_vat: Math.round(amount * 0.21),
+              total_with_vat: Math.round(amount * 1.21),
               number_series_id: seriesId,
               payment_status: 'unpaid',
               billing_invoice_id: billingInvoice.id,

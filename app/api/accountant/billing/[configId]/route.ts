@@ -78,7 +78,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
   }
 
-  const { action, monthly_fee_czk, notes } = parsed.data
+  const { action, monthly_fee_czk, billing_frequency, notes } = parsed.data
 
   try {
     // Verify ownership — only the accountant who created the config can modify it
@@ -107,7 +107,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         await cancelBilling(configId)
         return NextResponse.json({ success: true })
       case 'update':
-        await updateBillingConfig(configId, { monthly_fee_czk, notes })
+        await updateBillingConfig(configId, { monthly_fee_czk, billing_frequency, notes })
         return NextResponse.json({ success: true })
       default:
         return NextResponse.json({ error: 'Invalid action. Use: activate, pause, cancel, update' }, { status: 400 })

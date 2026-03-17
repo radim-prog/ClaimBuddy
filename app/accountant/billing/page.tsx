@@ -63,6 +63,7 @@ interface BillingConfig {
   company_id: string
   company_name: string
   monthly_fee_czk: number
+  billing_frequency: 'monthly' | 'quarterly'
   status: 'draft' | 'active' | 'paused' | 'cancelled' | 'suspended'
   stripe_subscription_id: string | null
   platform_fee_pct: number
@@ -162,11 +163,13 @@ export default function BillingPage() {
   // Add form state
   const [addCompanyId, setAddCompanyId] = useState('')
   const [addMonthlyFee, setAddMonthlyFee] = useState('')
+  const [addFrequency, setAddFrequency] = useState<'monthly' | 'quarterly'>('monthly')
   const [addNotes, setAddNotes] = useState('')
   const [addSubmitting, setAddSubmitting] = useState(false)
 
   // Edit form state
   const [editFee, setEditFee] = useState('')
+  const [editFrequency, setEditFrequency] = useState<'monthly' | 'quarterly'>('monthly')
   const [editNotes, setEditNotes] = useState('')
   const [editSubmitting, setEditSubmitting] = useState(false)
 
@@ -257,6 +260,7 @@ export default function BillingPage() {
         body: JSON.stringify({
           company_id: addCompanyId,
           monthly_fee_czk: Number(addMonthlyFee),
+          billing_frequency: addFrequency,
           notes: addNotes || undefined,
         }),
       })
@@ -268,6 +272,7 @@ export default function BillingPage() {
       setAddDialogOpen(false)
       setAddCompanyId('')
       setAddMonthlyFee('')
+      setAddFrequency('monthly')
       setAddNotes('')
       fetchDashboard()
     } catch (err: unknown) {
@@ -287,6 +292,7 @@ export default function BillingPage() {
         body: JSON.stringify({
           action: 'update',
           monthly_fee_czk: Number(editFee),
+          billing_frequency: editFrequency,
           notes: editNotes || undefined,
         }),
       })
@@ -308,6 +314,7 @@ export default function BillingPage() {
   const openEditDialog = (config: BillingConfig) => {
     setEditingConfig(config)
     setEditFee(String(config.monthly_fee_czk))
+    setEditFrequency(config.billing_frequency || 'monthly')
     setEditNotes(config.notes || '')
     setEditDialogOpen(true)
   }
@@ -521,7 +528,9 @@ export default function BillingPage() {
                       <div className="flex items-center gap-1">
                         <span className="text-sm font-semibold md:hidden text-muted-foreground">Poplatek: </span>
                         <span className="text-sm font-semibold">{fmtCZK(config.monthly_fee_czk)}</span>
-                        <span className="text-xs text-muted-foreground">/mes</span>
+                        <span className="text-xs text-muted-foreground">
+                          /{config.billing_frequency === 'quarterly' ? 'kvart' : 'mes'}
+                        </span>
                       </div>
 
                       <div>
@@ -735,6 +744,19 @@ export default function BillingPage() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="add-frequency">Frekvence fakturace</Label>
+              <Select value={addFrequency} onValueChange={(v) => setAddFrequency(v as 'monthly' | 'quarterly')}>
+                <SelectTrigger id="add-frequency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Mesicne</SelectItem>
+                  <SelectItem value="quarterly">Ctvrtletne (3x mesicni poplatek)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="add-notes">Poznamky (volitelne)</Label>
               <Textarea
                 id="add-notes"
@@ -789,6 +811,19 @@ export default function BillingPage() {
                 />
                 <span className="text-sm text-muted-foreground">Kc</span>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-frequency">Frekvence fakturace</Label>
+              <Select value={editFrequency} onValueChange={(v) => setEditFrequency(v as 'monthly' | 'quarterly')}>
+                <SelectTrigger id="edit-frequency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Mesicne</SelectItem>
+                  <SelectItem value="quarterly">Ctvrtletne (3x mesicni poplatek)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

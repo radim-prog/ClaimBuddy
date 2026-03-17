@@ -27,6 +27,7 @@ import {
   FolderOpen,
   FilePlus,
   Shield,
+  CreditCard,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -67,6 +68,7 @@ const accountingNavigation: NavItem[] = [
   { name: 'Faktury', href: '/client/invoices', icon: Receipt, tourId: 'client-invoicing' },
   { name: 'Cesťák', href: '/client/travel', icon: Car, tourId: 'client-travel' },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare, tourId: 'client-messages' },
+  { name: 'Platby', href: '/client/billing', icon: CreditCard },
   // ── Doplňkové ──
   { name: 'Pojistné události', href: '/client/claims', icon: ShieldCheck, divider: true },
   { name: 'Adresář', href: '/client/partners', icon: Users, feature: 'address_book' },

@@ -55,6 +55,7 @@ export const signingCreateSchema = z.object({
 export const billingConfigPatchSchema = z.object({
   action: z.enum(['activate', 'pause', 'cancel', 'update']),
   monthly_fee_czk: z.number().min(0).optional(),
+  billing_frequency: z.enum(['monthly', 'quarterly']).optional(),
   notes: z.string().max(2000).optional(),
 })
 

@@ -187,7 +187,7 @@ export default function PipelinePage() {
         </div>
         <Button size="sm" onClick={() => { setForm(emptyForm); setEditingId(null); setShowForm(true) }}>
           <Plus className="h-4 w-4 mr-1" />
-          Pridat lead
+          Pridat do pipeline
         </Button>
       </div>
 
@@ -207,7 +207,7 @@ export default function PipelinePage() {
         </Card>
         <Card className="rounded-xl">
           <CardContent className="pt-3 pb-3">
-            <div className="text-xs text-muted-foreground">Aktivni MRR</div>
+            <div className="text-xs text-muted-foreground" title="Monthly Recurring Revenue — mesicni opakujici se prijem">Aktivni MRR</div>
             <div className="text-2xl font-bold text-green-600">{activeTotal.toLocaleString('cs-CZ')} Kc</div>
           </CardContent>
         </Card>
@@ -363,16 +363,27 @@ export default function PipelinePage() {
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">{item.source}</Badge>
                       )}
 
-                      {/* Stage change select */}
-                      <select
-                        value={item.stage}
-                        onChange={e => handleStageChange(item.id, e.target.value as Stage)}
-                        className="w-full mt-1 h-7 px-2 rounded border border-input bg-background text-xs"
-                      >
-                        {STAGES.map(s => (
-                          <option key={s.value} value={s.value}>{s.label}</option>
-                        ))}
-                      </select>
+                      {/* Stage change select + quick activate */}
+                      <div className="flex items-center gap-1 mt-1">
+                        <select
+                          value={item.stage}
+                          onChange={e => handleStageChange(item.id, e.target.value as Stage)}
+                          className="flex-1 h-7 px-2 rounded border border-input bg-background text-xs"
+                        >
+                          {STAGES.map(s => (
+                            <option key={s.value} value={s.value}>{s.label}</option>
+                          ))}
+                        </select>
+                        {item.stage !== 'active' && (
+                          <button
+                            onClick={() => handleStageChange(item.id, 'active')}
+                            className="shrink-0 h-7 px-2 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-[10px] font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                            title="Presunout do Aktivni (plati)"
+                          >
+                            <Check className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

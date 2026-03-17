@@ -29,6 +29,14 @@ interface ClientRow {
 
 type FilterStatus = 'all' | 'active' | 'churned' | 'paused' | 'onboarding'
 
+// Sort by surname for people, full name for companies
+function getSurnameKey(name: string): string {
+  if (/s\.r\.o\.|a\.s\.|spol\.|v\.o\.s\.|k\.s\./i.test(name)) return name.toLowerCase()
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) return parts[parts.length - 1].toLowerCase()
+  return name.toLowerCase()
+}
+
 const STATUS_LABELS: Record<string, string> = {
   active: 'Aktivní',
   churned: 'Odešel',
@@ -96,10 +104,10 @@ export default function ClientsRevenuePage() {
       )
     }
     return list.sort((a, b) => {
-      const aKey = (a.group_name || a.name).toLowerCase()
-      const bKey = (b.group_name || b.name).toLowerCase()
-      if (aKey !== bKey) return aKey.localeCompare(bKey, 'cs')
-      return a.name.localeCompare(b.name, 'cs')
+      const aGroup = a.group_name?.toLowerCase() || getSurnameKey(a.name)
+      const bGroup = b.group_name?.toLowerCase() || getSurnameKey(b.name)
+      if (aGroup !== bGroup) return aGroup.localeCompare(bGroup, 'cs')
+      return getSurnameKey(a.name).localeCompare(getSurnameKey(b.name), 'cs')
     })
   }, [companies, filter, search])
 
@@ -281,23 +289,34 @@ export default function ClientsRevenuePage() {
                     : false
                   if (currentGroup && isCollapsed && !showGroupHeader && !isBillingEntity) return null
 
+                  // Compute group info for header
+                  const groupCompanies = currentGroup ? filtered.filter(f => f.group_name === currentGroup) : []
+                  const groupTotalFee = groupCompanies.reduce((sum, f) => sum + (f.billing_settings?.monthly_fee || 0), 0)
+                  // Check if this is the last company in the group (for bottom border)
+                  const nextCompany = index < filtered.length - 1 ? filtered[index + 1] : null
+                  const isLastInGroup = currentGroup && (!nextCompany || nextCompany.group_name !== currentGroup)
+
                   return (
                     <Fragment key={c.id}>
                       {showGroupHeader && (
                         <tr
-                          className="bg-purple-50 dark:bg-purple-900/20 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                          className="bg-purple-50 dark:bg-purple-900/20 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors border-t-2 border-t-purple-200 dark:border-t-purple-800"
                           onClick={() => toggleGroup(currentGroup!)}
                         >
                           <td colSpan={5} className="px-4 py-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300 select-none">
-                            <span className="inline-flex items-center gap-1">
+                            <span className="inline-flex items-center gap-2">
                               <ChevronRight className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
                               {currentGroup}
+                              <span className="text-[10px] font-normal text-purple-500 dark:text-purple-400">
+                                {groupCompanies.length} firem
+                                {groupTotalFee > 0 && ` · ${formatCurrency(groupTotalFee)}`}
+                              </span>
                             </span>
                           </td>
                         </tr>
                       )}
                       {!isCollapsed && (
-                        <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                        <tr className={`border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/30 ${currentGroup ? 'border-l-2 border-l-purple-300 dark:border-l-purple-700' : ''} ${isLastInGroup ? 'border-b-2 border-b-purple-200 dark:border-b-purple-800' : ''}`}>
                           <td className="px-4 py-3">
                             <Link href={`/accountant/clients/${c.id}/profile`} className="font-medium text-gray-900 dark:text-white hover:text-purple-600 transition-colors">
                               {c.name}

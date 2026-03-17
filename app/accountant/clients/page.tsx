@@ -39,6 +39,14 @@ import { useAttention } from '@/lib/contexts/attention-context'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
+// Sort by surname for people, full name for companies
+function getSurnameKey(name: string): string {
+  if (/s\.r\.o\.|a\.s\.|spol\.|v\.o\.s\.|k\.s\./i.test(name)) return name.toLowerCase()
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) return parts[parts.length - 1].toLowerCase()
+  return name.toLowerCase()
+}
+
 type Company = {
   id: string
   name: string
@@ -628,16 +636,16 @@ function ClientsPageContent() {
         const bInactive = (b as any).status === 'inactive' ? 1 : 0
         if (aInactive !== bInactive) return aInactive - bInactive
 
-        // Řadit podle skupiny (pokud existuje) nebo názvu firmy - vše v jedné abecedě
-        const sortKeyA = a.group_name || a.name
-        const sortKeyB = b.group_name || b.name
+        // Řadit podle skupiny (pokud existuje) nebo příjmení - vše v jedné abecedě
+        const sortKeyA = a.group_name?.toLowerCase() || getSurnameKey(a.name)
+        const sortKeyB = b.group_name?.toLowerCase() || getSurnameKey(b.name)
 
         if (sortKeyA !== sortKeyB) {
           return sortKeyA.localeCompare(sortKeyB, 'cs')
         }
 
-        // V rámci stejné skupiny řadit podle názvu firmy
-        return a.name.localeCompare(b.name, 'cs')
+        // V rámci stejné skupiny řadit podle příjmení
+        return getSurnameKey(a.name).localeCompare(getSurnameKey(b.name), 'cs')
       })
   }, [companies, debouncedSearch, filterGroup, filterLegalForm, filterVatPayer, filterVatPeriod, filterHasEmployees, filterMonthlyReporting, filterStatus, filterClientStatus, getCompanyFullStatus, getClientStatus])
 
@@ -739,7 +747,9 @@ function ClientsPageContent() {
       existing.push(company)
       groups.set(groupKey, existing)
     })
-    return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0], 'cs'))
+    // Sort groups, then sort companies within each group by surname
+    const sorted = Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0], 'cs'))
+    return sorted.map(([name, comps]) => [name, comps.sort((a, b) => getSurnameKey(a.name).localeCompare(getSurnameKey(b.name), 'cs'))] as [string, typeof comps])
   }, [filteredCompanies, groupView])
 
   if (loading) {
@@ -1139,8 +1149,10 @@ function ClientsPageContent() {
             )}
             {groupedCompanies.map(([groupName, groupCompanies]) => {
               const isCollapsed = collapsedGroups.has(groupName)
+              const isUngrouped = groupName === 'Bez skupiny'
+              const groupTotalFee = groupCompanies.reduce((sum, c) => sum + ((c as any).billing_settings?.monthly_fee || 0), 0)
               return (
-                <div key={groupName} className="space-y-2">
+                <div key={groupName} className={isUngrouped ? 'space-y-2' : 'rounded-xl border-2 border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-950/10 p-2 space-y-2'}>
                   <button
                     onClick={() => setCollapsedGroups(prev => {
                       const next = new Set(prev)
@@ -1157,9 +1169,14 @@ function ClientsPageContent() {
                     <Layers className="h-4 w-4 text-purple-500" />
                     <h3 className="font-semibold text-gray-900 dark:text-white">{groupName}</h3>
                     <Badge variant="outline" className="text-xs">{groupCompanies.length}</Badge>
+                    {groupTotalFee > 0 && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+                        {groupTotalFee.toLocaleString('cs-CZ')} Kc/mes
+                      </span>
+                    )}
                   </button>
                   {!isCollapsed && (
-                    <div className="space-y-1 pl-2 border-l-2 border-purple-200 dark:border-purple-800">
+                    <div className="space-y-1">
                       {groupCompanies.map(company => (
                         <CompanyRow
                           key={company.id}

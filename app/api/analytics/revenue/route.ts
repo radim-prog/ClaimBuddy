@@ -21,6 +21,19 @@ export async function GET(request: NextRequest) {
 
     if (compError) throw compError
 
+    // 1b. Get billing_configs for unified MRR source (preferred over billing_settings)
+    const { data: billingConfigs } = await supabaseAdmin
+      .from('billing_configs')
+      .select('company_id, monthly_fee_czk, status')
+      .in('status', ['active', 'paused'])
+
+    const billingConfigMap = new Map<string, number>()
+    for (const bc of billingConfigs || []) {
+      if (bc.status === 'active') {
+        billingConfigMap.set(bc.company_id, bc.monthly_fee_czk)
+      }
+    }
+
     // 2. Get revenue goal for the year
     const { data: goal } = await supabaseAdmin
       .from('revenue_goals')
@@ -51,17 +64,21 @@ export async function GET(request: NextRequest) {
       .lte('date', `${year}-12-31`)
 
     // Calculate current MRR from active companies
+    // Unified source: billing_configs.monthly_fee_czk preferred, fallback to companies.billing_settings.monthly_fee
     const activeCompanies = (companies || []).filter(c => c.status === 'active')
-    const currentMRR = activeCompanies.reduce((sum, c) => {
-      const fee = c.billing_settings?.monthly_fee || 0
-      return sum + Number(fee)
-    }, 0)
+    const getCompanyFee = (c: typeof activeCompanies[0]): number => {
+      // Prefer billing_configs (single source of truth when available)
+      if (billingConfigMap.has(c.id)) return billingConfigMap.get(c.id)!
+      return Number(c.billing_settings?.monthly_fee || 0)
+    }
+
+    const currentMRR = activeCompanies.reduce((sum, c) => sum + getCompanyFee(c), 0)
 
     // Calculate total active clients
     const totalActiveClients = activeCompanies.length
-    const clientsWithFee = activeCompanies.filter(c => (c.billing_settings?.monthly_fee || 0) > 0)
+    const clientsWithFee = activeCompanies.filter(c => getCompanyFee(c) > 0)
     const avgFee = clientsWithFee.length > 0
-      ? clientsWithFee.reduce((sum, c) => sum + Number(c.billing_settings?.monthly_fee || 0), 0) / clientsWithFee.length
+      ? clientsWithFee.reduce((sum, c) => sum + getCompanyFee(c), 0) / clientsWithFee.length
       : 0
 
     // Events this month

@@ -13,6 +13,14 @@ import { IncomeTaxMatrix } from '@/components/tax-tracking/income-tax-matrix'
 import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
+// Sort by surname for people, full name for companies
+function getSurnameKey(name: string): string {
+  if (/s\.r\.o\.|a\.s\.|spol\.|v\.o\.s\.|k\.s\./i.test(name)) return name.toLowerCase()
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) return parts[parts.length - 1].toLowerCase()
+  return name.toLowerCase()
+}
+
 type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
 
 type Company = {
@@ -413,15 +421,14 @@ export default function AccountantDashboard() {
   }, [allCompanies])
 
   // Exclude inactive clients and those without monthly reporting from dashboard matrix
-  // Fully alphabetical sort: group_name takes priority over company name
+  // Sort: group_name takes priority, then sort by surname (people) or full name (companies)
   const companies = useMemo(() => {
     const filtered = allCompanies.filter(c => c.status !== 'inactive' && c.monthly_reporting !== false)
     return filtered.sort((a, b) => {
-      const aKey = (a.group_name || a.name).toLowerCase()
-      const bKey = (b.group_name || b.name).toLowerCase()
+      const aKey = a.group_name?.toLowerCase() || getSurnameKey(a.name)
+      const bKey = b.group_name?.toLowerCase() || getSurnameKey(b.name)
       if (aKey !== bKey) return aKey.localeCompare(bKey, 'cs')
-      // Within same group, sort by company name
-      return a.name.localeCompare(b.name, 'cs')
+      return getSurnameKey(a.name).localeCompare(getSurnameKey(b.name), 'cs')
     })
   }, [allCompanies])
 
@@ -618,7 +625,7 @@ export default function AccountantDashboard() {
                         <React.Fragment key={company.id}>
                           {showGroupHeader && (
                             <tr
-                              className="bg-purple-50 dark:bg-purple-900/20 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                              className="bg-purple-50 dark:bg-purple-900/20 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors border-t-2 border-t-purple-200 dark:border-t-purple-800"
                               onClick={() => setCollapsedGroups(prev => {
                                 const next = new Set(prev)
                                 if (next.has(currentGroup!)) next.delete(currentGroup!)
@@ -627,20 +634,18 @@ export default function AccountantDashboard() {
                               })}
                             >
                               <td colSpan={13} className="px-2 sm:px-4 py-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300 sticky left-0 z-10 bg-purple-50 dark:bg-purple-900/20 select-none">
-                                <span className="inline-flex items-center gap-1">
+                                <span className="inline-flex items-center gap-2">
                                   <ChevronRight className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
                                   {currentGroup}
-                                  {isCollapsed && (
-                                    <span className="ml-1 text-[10px] font-normal text-purple-500 dark:text-purple-400">
-                                      ({groupMembers.length} firem)
-                                    </span>
-                                  )}
+                                  <span className="text-[10px] font-normal text-purple-500 dark:text-purple-400">
+                                    {groupMembers.length} firem
+                                  </span>
                                 </span>
                               </td>
                             </tr>
                           )}
                           {(!isCollapsed || isBillingEntity) && (
-                          <tr className={companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}>
+                          <tr className={`${companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'} ${currentGroup ? 'border-l-2 border-l-purple-300 dark:border-l-purple-700' : ''}`}>
                             <td className={`px-2 sm:px-4 py-2 sm:py-3 text-sm font-medium text-gray-900 dark:text-white sticky left-0 z-10 max-w-[100px] sm:max-w-none ${companyIndex % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
                               <Link href={`/accountant/clients/${company.id}`} className="hover:text-purple-600 transition-colors">
                                 <div>

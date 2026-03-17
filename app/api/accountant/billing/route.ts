@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
+import { markInvoicePaid } from '@/lib/billing-service'
 
 export const dynamic = 'force-dynamic'
 
@@ -108,10 +109,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { company_id, monthly_fee_czk, platform_fee_pct, billing_day, notes } = body
+    const { company_id, monthly_fee_czk, platform_fee_pct, billing_day, billing_frequency, notes } = body
 
     if (!company_id || !monthly_fee_czk || monthly_fee_czk < 0) {
       return NextResponse.json({ error: 'company_id and monthly_fee_czk required' }, { status: 400 })
+    }
+
+    if (billing_frequency && !['monthly', 'quarterly'].includes(billing_frequency)) {
+      return NextResponse.json({ error: 'billing_frequency must be monthly or quarterly' }, { status: 400 })
     }
 
     // Find provider for this user
@@ -134,6 +139,7 @@ export async function POST(request: NextRequest) {
         monthly_fee_czk,
         platform_fee_pct: platform_fee_pct ?? 5.00,
         billing_day: billing_day ?? 1,
+        billing_frequency: billing_frequency || 'monthly',
         notes: notes || null,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'provider_id,company_id' })
@@ -173,18 +179,30 @@ export async function PATCH(request: NextRequest) {
       const { cycle_id, payment_method } = body
       if (!cycle_id) return NextResponse.json({ error: 'cycle_id required' }, { status: 400 })
 
-      const { error } = await supabaseAdmin
+      // Verify the invoice belongs to this provider and is in a payable state
+      const { data: invoice } = await supabaseAdmin
         .from('billing_invoices')
-        .update({
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-          payment_method: payment_method || null,
-        })
+        .select('id, status')
         .eq('id', cycle_id)
         .eq('provider_id', provider.id)
         .in('status', ['pending', 'overdue'])
+        .maybeSingle()
 
-      if (error) return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+      if (!invoice) return NextResponse.json({ error: 'Invoice not found or already paid' }, { status: 404 })
+
+      // Use centralized markInvoicePaid (handles monthly_payments bridge + Raynet push)
+      try {
+        await markInvoicePaid(cycle_id)
+        // Save payment_method separately if provided
+        if (payment_method) {
+          await supabaseAdmin
+            .from('billing_invoices')
+            .update({ payment_method })
+            .eq('id', cycle_id)
+        }
+      } catch (err) {
+        return NextResponse.json({ error: 'Failed to mark paid' }, { status: 500 })
+      }
       return NextResponse.json({ success: true })
     }
 
