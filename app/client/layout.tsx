@@ -56,18 +56,17 @@ import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
 import { CLIENT_TUTORIAL_STEPS } from '@/lib/client-tutorial-steps'
 
 // Static navigation — always visible
-const baseNavigation: { name: string; href: string; icon: typeof LayoutDashboard; feature?: string; tourId?: string }[] = [
+const baseNavigation: { name: string; href: string; icon: typeof LayoutDashboard; feature?: string; tourId?: string; divider?: boolean }[] = [
+  // ── Hlavní sekce ──
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard, tourId: 'client-dashboard' },
   { name: 'Doklady', href: '/client/documents', icon: FileText, tourId: 'client-documents' },
   { name: 'Faktury', href: '/client/invoices', icon: Receipt, tourId: 'client-invoicing' },
-  { name: 'Adresář', href: '/client/partners', icon: Users, feature: 'address_book' },
   { name: 'Cesťák', href: '/client/travel', icon: Car, tourId: 'client-travel' },
-  { name: 'Dotazník', href: '/client/tax-questionnaire', icon: ClipboardList },
-  { name: 'Vstupní dotazník', href: '/client/onboarding', icon: FileInput },
-  { name: 'Pojistné události', href: '/client/claims', icon: ShieldCheck },
-  { name: 'Krizový plán', href: '/client/crisis', icon: ShieldAlert },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare, tourId: 'client-messages' },
-  { name: 'Účet', href: '/client/account', icon: UserCircle, tourId: 'client-profile' },
+  // ── Doplňkové ──
+  { name: 'Pojistné události', href: '/client/claims', icon: ShieldCheck, divider: true },
+  { name: 'Adresář', href: '/client/partners', icon: Users, feature: 'address_book' },
+  { name: 'Dotazník', href: '/client/tax-questionnaire', icon: ClipboardList },
 ]
 
 // Dynamic navigation — visible only when portal_sections[key] is true
@@ -157,6 +156,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                 const Icon = item.icon
                 const locked = item.feature ? isLocked(item.feature) : false
+                const showDivider = 'divider' in item && item.divider
                 const linkEl = (
                   <Link
                     href={locked ? '/client/subscription' : item.href}
@@ -185,16 +185,19 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
                 if (collapsed) {
                   return (
-                    <Tooltip key={item.name}>
-                      <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
-                      <TooltipContent side="right" className="font-medium">
-                        {item.name}
-                      </TooltipContent>
-                    </Tooltip>
+                    <React.Fragment key={item.name}>
+                      {showDivider && <div className="border-t border-white/[0.06] my-2" />}
+                      <Tooltip>
+                        <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
+                        <TooltipContent side="right" className="font-medium">
+                          {item.name}
+                        </TooltipContent>
+                      </Tooltip>
+                    </React.Fragment>
                   )
                 }
 
-                return <React.Fragment key={item.name}>{linkEl}</React.Fragment>
+                return <React.Fragment key={item.name}>{showDivider && <div className="border-t border-white/[0.06] my-2" />}{linkEl}</React.Fragment>
               })}
             </nav>
           </TooltipProvider>

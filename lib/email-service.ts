@@ -126,7 +126,43 @@ export async function sendEmail(config: EmailConfig): Promise<EmailResult> {
     }
   }
 
-  // ------- Priority 2: SendGrid -------
+  // ------- Priority 2: SMTP (Wedos / nodemailer) -------
+  const smtpHost = process.env.SMTP_HOST
+  const smtpUser = process.env.SMTP_USER
+  const smtpPass = process.env.SMTP_PASS
+  if (smtpHost && smtpUser && smtpPass) {
+    try {
+      const nodemailer = (await import('nodemailer')).default
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: parseInt(process.env.SMTP_PORT || '465'),
+        secure: (process.env.SMTP_PORT || '465') === '465',
+        auth: { user: smtpUser, pass: smtpPass },
+      })
+
+      const info = await transporter.sendMail({
+        from: `${DEFAULT_FROM_NAME} <${fromEmail}>`,
+        to: recipients.join(', '),
+        subject: config.subject,
+        html: config.html,
+        text: config.text,
+        ...(config.replyTo && { replyTo: config.replyTo }),
+      })
+
+      const result: EmailResult = {
+        success: true,
+        provider: 'sendgrid' as const, // reuse type — SMTP is our new priority
+        messageId: info.messageId,
+      }
+      await logEmail(config, result)
+      return result
+    } catch (err) {
+      console.error('[EmailService] SMTP error:', err)
+      // Fall through to next provider
+    }
+  }
+
+  // ------- Priority 3: SendGrid -------
   const sendgridKey = process.env.SENDGRID_API_KEY
   if (sendgridKey) {
     try {
@@ -325,8 +361,8 @@ export async function sendWelcomeEmail(
     </p>
     ${ctaButton('https://app.zajcon.cz', 'Přejít do aplikace')}
     <p style="margin:20px 0 0;font-size:13px;color:#6b7280;line-height:1.5;">
-      Máte otázky? Odpovídáme na <a href="mailto:podpora@ucetnios.cz"
-      style="color:#1a56db;">podpora@ucetnios.cz</a>.
+      Máte otázky? Odpovídáme na <a href="mailto:podpora@zajcon.cz"
+      style="color:#1a56db;">podpora@zajcon.cz</a>.
     </p>`
 
   return sendEmail({
