@@ -25,6 +25,7 @@ import {
   BASIC_RATES_PER_KM,
 } from '@/lib/types/travel'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getDistance } from '@/lib/distance-client'
 
 // ── Hard Limits ──
 
@@ -688,6 +689,45 @@ export async function runPipeline(sessionId: string): Promise<void> {
       setProgress(sessionId, { step: 'fixing', pct: 85, message: `Opravuji ${fixableIssues.length} problemu...` })
       const allWorkingDays = months.flatMap(m => getWorkingDays(m, allVacation, allSick))
       finalTrips = applyFixes(allTrips, validationReport.issues, allWorkingDays)
+    }
+
+    // ── STEP 4b: Enrich with real OSRM distances ──
+    setProgress(sessionId, { step: 'fixing', pct: 87, message: 'Doplňuji reálné vzdálenosti (OSRM)...' })
+
+    // Collect unique origin→destination pairs
+    const pairMap = new Map<string, { origin: string; destination: string }>()
+    for (const t of finalTrips) {
+      const key = `${t.origin.toLowerCase().trim()}|${t.destination.toLowerCase().trim()}`
+      if (!pairMap.has(key)) {
+        pairMap.set(key, { origin: t.origin, destination: t.destination })
+      }
+    }
+
+    // Fetch real distances (sequential due to rate limiting)
+    const distanceCache = new Map<string, number>()
+    for (const pair of pairMap.values()) {
+      try {
+        const result = await getDistance(pair.origin, pair.destination)
+        if (result.source !== 'fallback' && result.distance_km > 0) {
+          const key = `${pair.origin.toLowerCase().trim()}|${pair.destination.toLowerCase().trim()}`
+          distanceCache.set(key, result.distance_km)
+        }
+      } catch {
+        // Non-fatal — keep AI estimate
+      }
+    }
+
+    // Apply real distances to trips
+    if (distanceCache.size > 0) {
+      for (const t of finalTrips) {
+        const key = `${t.origin.toLowerCase().trim()}|${t.destination.toLowerCase().trim()}`
+        const realKm = distanceCache.get(key)
+        if (realKm && realKm > 0) {
+          t.distance_km = realKm
+        }
+      }
+      // Recalculate odometers after distance updates
+      recalculateOdometers(finalTrips)
     }
 
     // ── STEP 5: Save trips ──

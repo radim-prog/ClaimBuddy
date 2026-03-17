@@ -28,7 +28,7 @@ interface GeoCoord {
 
 const OSRM_BASE = 'https://router.project-osrm.org'
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org'
-const USER_AGENT = 'UcetniWebApp/1.0 (accounting travel book generator)'
+const USER_AGENT = 'UcetniOS-Travel/1.0 (info@zajcon.cz)'
 const REQUEST_DELAY_MS = 1100 // ~1 req/s rate limit for public APIs
 
 // Semaphore to prevent parallel requests to public APIs
