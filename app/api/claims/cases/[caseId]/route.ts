@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isStaffRole } from '@/lib/access-check'
 import { getInsuranceCase, updateInsuranceCase, deleteInsuranceCase, addCaseEvent } from '@/lib/insurance-store'
 import { updateCaseSchema, formatZodErrors } from '@/lib/validations'
+import { canTransition } from '@/lib/claims-workflow'
 
 export const dynamic = 'force-dynamic'
 
@@ -101,6 +102,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const parsed = updateCaseSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
+    }
+
+    // Validate status transition if status is being changed
+    if (parsed.data.status && parsed.data.status !== existing.status) {
+      if (!canTransition(existing.status, parsed.data.status)) {
+        return NextResponse.json(
+          { error: `Nepovolený přechod stavu: ${existing.status} → ${parsed.data.status}` },
+          { status: 422 }
+        )
+      }
     }
 
     const updated = await updateInsuranceCase(caseId, parsed.data, userId)

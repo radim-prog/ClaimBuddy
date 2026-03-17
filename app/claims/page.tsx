@@ -12,6 +12,7 @@ import {
   HeartHandshake,
   ArrowRight,
   Star,
+  Check,
 } from 'lucide-react'
 
 export const metadata: Metadata = {
@@ -60,7 +61,7 @@ const BENEFITS = [
   {
     icon: Shield,
     title: 'Bez rizika',
-    desc: 'Success fee — neuspějeme, neplatíte. Žádné vstupní poplatky.',
+    desc: 'Success fee — neuspějeme, neplatíte. Vstupní poplatek od 199 Kč.',
   },
   {
     icon: Smartphone,
@@ -76,25 +77,47 @@ const BENEFITS = [
 
 const PRICING_TIERS = [
   {
-    name: 'Základní',
-    target: 'Běžné škody do 50 000 Kč',
-    fee: '15%',
-    desc: 'Autopojištění, domácnost, drobné škody',
+    name: 'Self-service',
+    price: 'Zdarma',
+    priceNote: 'bez asistence',
+    desc: 'Nahlásíte událost, nahrajete dokumenty a řešíte si vše sami.',
+    features: [
+      'Formulář nahlášení PU',
+      'Upload dokumentů a fotek',
+      'Přehled vašich událostí',
+    ],
     featured: false,
+    cta: 'Začít zdarma',
   },
   {
-    name: 'Standard',
-    target: 'Škody 50 000 – 500 000 Kč',
-    fee: '12%',
-    desc: 'Majetkové škody, odpovědnost, úrazy',
+    name: 'Konzultace',
+    price: '1 499 Kč',
+    priceNote: 'jednorázově',
+    desc: 'Analyzujeme vaše podklady a poradíme, jak postupovat.',
+    features: [
+      'Vše ze Self-service',
+      'Analýza podkladů (~1h)',
+      'Chat s poradcem',
+      'Doporučení postupu',
+      'Pomoc se sepsáním hlášení',
+    ],
     featured: true,
+    cta: 'Objednat konzultaci',
   },
   {
-    name: 'Premium',
-    target: 'Škody nad 500 000 Kč',
-    fee: '10%',
-    desc: 'Průmyslové škody, složité případy, odvolání',
+    name: 'Plné zastoupení',
+    price: '1 499 Kč',
+    priceNote: '+ 10 % z plnění',
+    desc: 'Převezmeme komunikaci s pojišťovnou a řešíme za vás.',
+    features: [
+      'Vše z Konzultace',
+      'Plná moc (elektronický podpis)',
+      'Komunikace s pojišťovnou za vás',
+      'Průběžný reporting',
+      'Success fee 10 % z celkového plnění',
+    ],
     featured: false,
+    cta: 'Chci zastoupení',
   },
 ]
 
@@ -122,7 +145,7 @@ export default function ClaimsLandingPage() {
         <div className="relative max-w-7xl mx-auto px-4 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 dark:border-blue-800/50 bg-blue-50 dark:bg-blue-950/30 px-4 py-1.5 text-sm text-blue-700 dark:text-blue-300 mb-8">
             <Shield className="h-3.5 w-3.5" />
-            Platíte jen za výsledek
+            Základní nahlášení ZDARMA
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display tracking-tight text-foreground max-w-4xl mx-auto leading-tight">
@@ -134,7 +157,7 @@ export default function ClaimsLandingPage() {
 
           <p className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Vyřídíme vše za vás — od nahlášení škody po vyplacení pojistného plnění.
-            Platíte jen za výsledek.
+            Od analýzy podkladů po vyplacení plnění.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -252,15 +275,15 @@ export default function ClaimsLandingPage() {
               Transparentní ceník
             </h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Platíte jen za výsledek. Žádné vstupní poplatky.
+              Vyberte si úroveň služby, která vám vyhovuje. Začněte zdarma.
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div className="grid sm:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {PRICING_TIERS.map((tier) => (
               <div
                 key={tier.name}
-                className={`relative rounded-2xl border p-6 text-center transition-all duration-200 ${
+                className={`relative rounded-2xl border p-6 flex flex-col transition-all duration-200 ${
                   tier.featured
                     ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 shadow-lg shadow-blue-500/10 scale-[1.02]'
                     : 'border-border/50 bg-card hover:shadow-md'
@@ -273,36 +296,47 @@ export default function ClaimsLandingPage() {
                   </div>
                 )}
 
-                <h3 className="text-lg font-semibold text-foreground mt-2">
+                <h3 className="text-lg font-semibold text-foreground mt-2 text-center">
                   {tier.name}
                 </h3>
-                <p className="text-sm text-muted-foreground mt-1">{tier.target}</p>
 
-                <div className="my-6">
-                  <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
-                    {tier.fee}
+                <div className="my-4 text-center">
+                  <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                    {tier.price}
                   </span>
-                  <span className="text-sm text-muted-foreground ml-1">success fee</span>
+                  <p className="text-sm text-muted-foreground mt-1">{tier.priceNote}</p>
                 </div>
 
-                <p className="text-sm text-muted-foreground">{tier.desc}</p>
+                <p className="text-sm text-muted-foreground text-center mb-4">{tier.desc}</p>
+
+                <ul className="space-y-2 mb-6 flex-1">
+                  {tier.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-sm text-foreground">
+                      <Check className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
 
                 <Link
                   href="/claims/new"
-                  className={`mt-6 inline-flex items-center justify-center w-full h-10 rounded-md text-sm font-medium transition-colors ${
+                  className={`inline-flex items-center justify-center w-full h-10 rounded-md text-sm font-medium transition-colors ${
                     tier.featured
                       ? 'bg-blue-600 text-white hover:bg-blue-700'
                       : 'border border-border bg-background text-foreground hover:bg-muted'
                   }`}
                 >
-                  Nahlásit událost
+                  {tier.cta}
                 </Link>
               </div>
             ))}
           </div>
 
           <p className="text-center text-sm text-muted-foreground mt-8 max-w-2xl mx-auto">
-            Success fee se počítá z vymoženého plnění nad rámec toho, co pojišťovna nabídla původně.
+            Podrobné srovnání služeb najdete na{' '}
+            <Link href="/claims/pricing" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">
+              stránce ceníku
+            </Link>.
           </p>
         </div>
       </section>

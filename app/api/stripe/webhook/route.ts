@@ -8,6 +8,7 @@ import {
 } from '@/lib/subscription-store'
 import type Stripe from 'stripe'
 import { logError } from '@/lib/error-logger'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -135,6 +136,25 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
     if (credits > 0) {
       await addExtraCredits(userId, 'extraction', credits)
       logError({ level: 'info', message: `Credits purchased: user=${userId}, credits=${credits}`, source: 'stripe-webhook' })
+    }
+    return
+  }
+
+  // Handle claims service payment
+  if (session.metadata?.type === 'claims_service') {
+    const caseId = session.metadata.case_id
+    const serviceMode = session.metadata.service_mode
+    if (caseId) {
+      await supabaseAdmin
+        .from('insurance_cases')
+        .update({
+          payment_status: 'paid',
+          payment_id: session.payment_intent as string || session.id,
+          service_mode: serviceMode || 'consultation',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', caseId)
+      logError({ level: 'info', message: `Claims payment completed: case=${caseId}, mode=${serviceMode}`, source: 'stripe-webhook' })
     }
     return
   }

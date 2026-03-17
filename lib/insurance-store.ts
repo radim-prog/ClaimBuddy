@@ -44,7 +44,7 @@ export async function getInsuranceCases(options: {
   let query = supabaseAdmin
     .from('insurance_cases')
     .select(
-      `*,
+      `*, service_mode,
        insurance_company:insurance_companies(*),
        company:companies!insurance_cases_company_id_fkey(id, name, ico),
        assigned_user:users!assigned_to(id, name)`,
@@ -309,13 +309,23 @@ export async function deleteCaseDocument(docId: string): Promise<void> {
 // EVENTS (timeline)
 // ============================================================
 
-/** Return the full event timeline for a case, newest first. */
-export async function getCaseEvents(caseId: string): Promise<InsuranceCaseEvent[]> {
-  const { data, error } = await supabaseAdmin
+/**
+ * Return the event timeline for a case.
+ * @param visibility - 'all' returns everything (staff), 'client' returns only client+all visibility
+ */
+export async function getCaseEvents(caseId: string, visibility?: 'client'): Promise<InsuranceCaseEvent[]> {
+  let query = supabaseAdmin
     .from('insurance_case_events')
     .select('*')
     .eq('case_id', caseId)
-    .order('created_at', { ascending: false })
+
+  if (visibility === 'client') {
+    query = query.in('visibility', ['client', 'all'])
+  }
+
+  query = query.order('created_at', { ascending: false })
+
+  const { data, error } = await query
 
   if (error) throw new Error(`Failed to fetch case events: ${error.message}`)
   return (data ?? []) as InsuranceCaseEvent[]
@@ -328,6 +338,8 @@ export async function addCaseEvent(event: {
   actor: string
   description: string
   metadata?: Record<string, unknown>
+  visibility?: 'internal' | 'client' | 'all'
+  attachment_url?: string
 }): Promise<InsuranceCaseEvent> {
   const { data, error } = await supabaseAdmin
     .from('insurance_case_events')
@@ -337,6 +349,8 @@ export async function addCaseEvent(event: {
       actor: event.actor,
       description: event.description,
       metadata: event.metadata ?? null,
+      visibility: event.visibility ?? 'internal',
+      attachment_url: event.attachment_url ?? null,
     })
     .select('*')
     .single()

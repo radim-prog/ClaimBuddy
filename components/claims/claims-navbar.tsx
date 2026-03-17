@@ -6,7 +6,7 @@ import { Menu, X, Shield } from 'lucide-react'
 
 const NAV_LINKS = [
   { href: '#how-it-works', label: 'Jak to funguje' },
-  { href: '#pricing', label: 'Ceník' },
+  { href: '/claims/pricing', label: 'Ceník' },
   { href: '#faq', label: 'FAQ' },
 ]
 

@@ -10,7 +10,7 @@ import {
 const FAQ_ITEMS = [
   {
     q: 'Kolik to stojí?',
-    a: 'Platíte pouze success fee z vymoženého plnění. Pokud neuspějeme, neplatíte nic. Žádné vstupní poplatky, žádné měsíční paušály.',
+    a: 'Základní nahlášení a self-service je zdarma. Konzultaci s poradcem pořídíte za jednorázových 1 499 Kč. U plného zastoupení platíte navíc success fee z vyplaceného pojistného plnění — neuspějeme-li, success fee neplatíte.',
   },
   {
     q: 'Jak dlouho to trvá?',

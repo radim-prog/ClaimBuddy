@@ -7,7 +7,7 @@ const FOOTER_COLS = [
     links: [
       { href: '/claims/new', label: 'Nahlásit událost' },
       { href: '#how-it-works', label: 'Jak to funguje' },
-      { href: '#pricing', label: 'Ceník' },
+      { href: '/claims/pricing', label: 'Ceník' },
       { href: '#faq', label: 'FAQ' },
     ],
   },

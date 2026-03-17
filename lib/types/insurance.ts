@@ -241,6 +241,33 @@ export type DocumentType = 'claim_report' | 'photo' | 'expert_report' | 'corresp
 
 export type PaymentType = 'partial' | 'full' | 'advance' | 'refund'
 
+// --- Service modes ---
+export type ServiceMode = 'self_service' | 'consultation' | 'full_representation'
+
+export type PowerOfAttorneyStatus = 'not_required' | 'pending' | 'signed' | 'revoked'
+
+export type PaymentStatus = 'not_required' | 'pending' | 'paid' | 'refunded'
+
+export const SERVICE_MODE_LABELS: Record<ServiceMode, string> = {
+  self_service: 'Samoobsluha',
+  consultation: 'Konzultace',
+  full_representation: 'Plné zastoupení',
+}
+
+export const POWER_OF_ATTORNEY_STATUS_LABELS: Record<PowerOfAttorneyStatus, string> = {
+  not_required: 'Není třeba',
+  pending: 'Čeká na podpis',
+  signed: 'Podepsána',
+  revoked: 'Zrušena',
+}
+
+export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  not_required: 'Není třeba',
+  pending: 'Čeká na platbu',
+  paid: 'Zaplaceno',
+  refunded: 'Vráceno',
+}
+
 // --- DB row types ---
 
 export interface InsuranceCompany {
@@ -280,6 +307,12 @@ export interface InsuranceCase {
   note: string | null
   tags: string[]
   project_id: string | null
+  // Service mode fields
+  service_mode: ServiceMode
+  payment_status: PaymentStatus
+  payment_id: string | null
+  power_of_attorney_status: PowerOfAttorneyStatus
+  success_fee_percent: number | null
   created_at: string
   updated_at: string
   // Joined fields (optional)
@@ -302,6 +335,8 @@ export interface InsuranceCaseDocument {
   created_at: string
 }
 
+export type EventVisibility = 'internal' | 'client' | 'all'
+
 export interface InsuranceCaseEvent {
   id: string
   case_id: string
@@ -309,6 +344,8 @@ export interface InsuranceCaseEvent {
   actor: string
   description: string
   metadata: Record<string, unknown> | null
+  visibility: EventVisibility
+  attachment_url: string | null
   created_at: string
 }
 

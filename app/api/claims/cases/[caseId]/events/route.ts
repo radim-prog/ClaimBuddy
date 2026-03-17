@@ -24,7 +24,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const events = await getCaseEvents(caseId)
+    const visibility = request.nextUrl.searchParams.get('visibility')
+    const events = await getCaseEvents(caseId, visibility === 'client' ? 'client' : undefined)
     return NextResponse.json({ events })
   } catch (error) {
     console.error('[Claims events] GET error:', error)

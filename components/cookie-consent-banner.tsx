@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import CookieConsent from 'react-cookie-consent'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -14,6 +15,9 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 
 export function CookieConsentBanner() {
+  const pathname = usePathname()
+  const isClaims = pathname.startsWith('/claims')
+  const accentColor = isClaims ? '#2563eb' : '#7c3aed'
   const [showSettings, setShowSettings] = useState(false)
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true)
   const [marketingEnabled, setMarketingEnabled] = useState(false)
@@ -64,7 +68,7 @@ export function CookieConsentBanner() {
           fontSize: '13px',
         }}
         buttonStyle={{
-          background: '#7c3aed',
+          background: accentColor,
           color: 'white',
           fontSize: '13px',
           padding: '6px 18px',
@@ -100,7 +104,7 @@ export function CookieConsentBanner() {
             onClick={() => setShowSettings(true)}
             style={{
               background: 'transparent',
-              color: '#7c3aed',
+              color: accentColor,
               fontSize: '13px',
               padding: '0',
               border: 'none',

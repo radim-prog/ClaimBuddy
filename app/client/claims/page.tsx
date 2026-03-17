@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -152,7 +153,8 @@ function CaseCard({
   const isOverdue = c.deadline && new Date(c.deadline) < new Date() && !['closed', 'cancelled', 'approved', 'rejected'].includes(c.status)
 
   return (
-    <Card className={isOverdue ? 'border-red-300 dark:border-red-800' : ''}>
+    <Link href={`/client/claims/${c.id}`} className="block">
+    <Card className={`hover:shadow-md transition-shadow cursor-pointer ${isOverdue ? 'border-red-300 dark:border-red-800' : ''}`}>
       <CardContent className="py-4">
         <div className="flex flex-col sm:flex-row sm:items-start gap-3">
           {/* Header */}
@@ -235,5 +237,6 @@ function CaseCard({
         </div>
       </CardContent>
     </Card>
+    </Link>
   )
 }

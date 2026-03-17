@@ -74,9 +74,20 @@ const STEPS = [
   { label: 'Souhrn', icon: Eye },
 ]
 
-const MAX_FILES = 10
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
-const ACCEPTED_TYPES = '.jpg,.jpeg,.png,.heic,.pdf,.docx'
+const MAX_PHOTO_SIZE = 10 * 1024 * 1024  // 10 MB per photo
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024  // 50 MB per video
+const MAX_PHOTO_COUNT = 20
+const MAX_VIDEO_COUNT = 3
+const MAX_FILES = MAX_PHOTO_COUNT + MAX_VIDEO_COUNT
+const ACCEPTED_TYPES = '.jpg,.jpeg,.png,.heic,.pdf,.docx,.mp4,.mov,.avi,.webm'
+
+function isVideoFile(file: File): boolean {
+  return file.type.startsWith('video/')
+}
+
+function isImageFile(file: File): boolean {
+  return file.type.startsWith('image/') || file.type === 'application/pdf' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+}
 
 // --------------- Helpers ---------------
 
@@ -101,9 +112,6 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function isImageFile(file: File): boolean {
-  return file.type.startsWith('image/')
-}
 
 // --------------- Main Component ---------------
 
@@ -249,19 +257,36 @@ export function ClaimIntakeForm() {
     e.target.value = '' // Reset so same file can be selected again
   }
 
+  const photoCount = files.filter(f => !isVideoFile(f)).length
+  const videoCount = files.filter(f => isVideoFile(f)).length
+
   const addFiles = (newFiles: File[]) => {
     setError('')
-    const remaining = MAX_FILES - files.length
-    if (remaining <= 0) {
-      setError(`Maximální počet souborů je ${MAX_FILES}.`)
-      return
-    }
+    let currentPhotos = photoCount
+    let currentVideos = videoCount
 
     const valid: File[] = []
-    for (const file of newFiles.slice(0, remaining)) {
-      if (file.size > MAX_FILE_SIZE) {
-        setError(`Soubor "${file.name}" je příliš velký (max 10 MB).`)
-        continue
+    for (const file of newFiles) {
+      if (isVideoFile(file)) {
+        if (currentVideos >= MAX_VIDEO_COUNT) {
+          setError(`Maximální počet videí je ${MAX_VIDEO_COUNT}.`)
+          continue
+        }
+        if (file.size > MAX_VIDEO_SIZE) {
+          setError(`Video "${file.name}" je příliš velké (max 50 MB).`)
+          continue
+        }
+        currentVideos++
+      } else {
+        if (currentPhotos >= MAX_PHOTO_COUNT) {
+          setError(`Maximální počet fotek/dokumentů je ${MAX_PHOTO_COUNT}.`)
+          continue
+        }
+        if (file.size > MAX_PHOTO_SIZE) {
+          setError(`Soubor "${file.name}" je příliš velký (max 10 MB).`)
+          continue
+        }
+        currentPhotos++
       }
       valid.push(file)
     }
@@ -700,7 +725,7 @@ export function ClaimIntakeForm() {
                   Přetáhněte soubory sem nebo <span className="text-blue-600 dark:text-blue-400">klikněte pro výběr</span>
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  JPG, PNG, HEIC, PDF, DOCX &mdash; max {MAX_FILES} souborů, max 10 MB / soubor
+                  JPG, PNG, HEIC, PDF, DOCX, MP4, MOV &mdash; fotky max 10 MB, videa max 50 MB
                 </p>
               </div>
 
@@ -708,7 +733,7 @@ export function ClaimIntakeForm() {
               {files.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Nahrané soubory ({files.length}/{MAX_FILES})
+                    Nahrané soubory &mdash; Fotky: {photoCount}/{MAX_PHOTO_COUNT}, Videa: {videoCount}/{MAX_VIDEO_COUNT}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {files.map((file, idx) => {
