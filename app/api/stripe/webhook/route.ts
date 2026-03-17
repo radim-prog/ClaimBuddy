@@ -104,32 +104,13 @@ export async function POST(request: NextRequest) {
           await handleStripeInvoicePaid(paidInvoice.id, paidSubId)
           logError({ level: 'info', message: `Billing-service payment confirmed: invoice=${paidInvoice.id}, sub=${paidSubId}`, source: 'stripe-webhook' })
 
-          // Bridge: auto-upsert monthly_payments so the payment matrix stays in sync
-          const companyId = paidInvoice.subscription_details?.metadata?.company_id
-          if (companyId) {
-            const now = new Date()
-            const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-            await supabaseAdmin
-              .from('monthly_payments')
-              .upsert(
-                {
-                  company_id: companyId,
-                  period,
-                  paid: true,
-                  paid_at: new Date().toISOString(),
-                  updated_by: 'stripe-webhook',
-                  updated_at: new Date().toISOString(),
-                },
-                { onConflict: 'company_id,period' }
-              )
-            logError({ level: 'info', message: `Monthly payment synced: company=${companyId}, period=${period}`, source: 'stripe-webhook' })
-          }
+          // Note: monthly_payments upsert is handled inside markInvoicePaid() in billing-service
         }
 
-        const subscriptionId = extractSubscriptionId(paidInvoice)
-        if (subscriptionId) {
-          await updateSubscriptionByStripeId(subscriptionId, { status: 'active' })
-          logError({ level: 'info', message: `Payment confirmed for subscription: ${subscriptionId}`, source: 'stripe-webhook' })
+        // SaaS subscription: mark as active on successful payment
+        if (paidSubId) {
+          await updateSubscriptionByStripeId(paidSubId, { status: 'active' })
+          logError({ level: 'info', message: `Payment confirmed for subscription: ${paidSubId}`, source: 'stripe-webhook' })
         }
         break
       }

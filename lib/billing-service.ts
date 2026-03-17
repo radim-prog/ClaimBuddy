@@ -477,7 +477,7 @@ export async function generateMonthlyInvoices(period: string): Promise<{ generat
     }
   }
 
-  return { generated, errors }
+  return { generated, errors, skipped_quarterly }
 }
 
 export async function getBillingInvoices(params: {

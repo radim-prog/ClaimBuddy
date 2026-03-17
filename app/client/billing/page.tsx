@@ -15,7 +15,6 @@ import {
   AlertTriangle,
   FileText,
   Loader2,
-  ExternalLink,
   X,
 } from 'lucide-react'
 
