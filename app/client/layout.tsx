@@ -26,6 +26,10 @@ import {
   ShieldAlert,
   ShieldCheck,
   BookOpen,
+  FolderOpen,
+  FilePlus,
+  Shield,
+  Calculator,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -45,19 +49,22 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { logout } from '@/app/auth/login/actions'
 import { ClientUserProvider, useClientUser } from '@/lib/contexts/client-user-context'
+import { ActiveModuleProvider, useActiveModule } from '@/lib/contexts/active-module-context'
 import { NotificationModal } from '@/components/client/notification-modal'
 import { NotificationBanner } from '@/components/client/notification-banner'
 import { ImpersonationBanner } from '@/components/client/impersonation-banner'
 import { MissingDocsBar } from '@/components/client/missing-docs-bar'
 import { CompanySwitcher } from '@/components/client/company-switcher'
+import { ClientModuleSwitcher } from '@/components/client/client-module-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-context'
 import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
 import { CLIENT_TUTORIAL_STEPS } from '@/lib/client-tutorial-steps'
 
-// Static navigation — always visible
-const baseNavigation: { name: string; href: string; icon: typeof LayoutDashboard; feature?: string; tourId?: string; divider?: boolean }[] = [
-  // ── Hlavní sekce ──
+type NavItem = { name: string; href: string; icon: typeof LayoutDashboard; feature?: string; tourId?: string; divider?: boolean }
+
+// Accounting context navigation
+const accountingNavigation: NavItem[] = [
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard, tourId: 'client-dashboard' },
   { name: 'Doklady', href: '/client/documents', icon: FileText, tourId: 'client-documents' },
   { name: 'Faktury', href: '/client/invoices', icon: Receipt, tourId: 'client-invoicing' },
@@ -69,7 +76,16 @@ const baseNavigation: { name: string; href: string; icon: typeof LayoutDashboard
   { name: 'Dotazník', href: '/client/tax-questionnaire', icon: ClipboardList },
 ]
 
-// Dynamic navigation — visible only when portal_sections[key] is true
+// Claims context navigation
+const claimsNavigation: NavItem[] = [
+  { name: 'Přehled', href: '/client/claims', icon: LayoutDashboard },
+  { name: 'Moje spisy', href: '/client/claims', icon: FolderOpen },
+  { name: 'Soubory', href: '/client/documents', icon: FileText },
+  { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
+  { name: 'Nahlásit událost', href: '/claims/new', icon: FilePlus, divider: true },
+]
+
+// Dynamic navigation — visible only when portal_sections[key] is true (accounting only)
 const dynamicNavigation: { name: string; href: string; icon: typeof LayoutDashboard; portalKey: string; tourId?: string }[] = [
   { name: 'Daně', href: '/client/taxes', icon: Landmark, portalKey: 'tax_overview', tourId: 'client-taxes' },
   { name: 'Majetek', href: '/client/assets', icon: Package, portalKey: 'assets' },
@@ -78,23 +94,27 @@ const dynamicNavigation: { name: string; href: string; icon: typeof LayoutDashbo
 
 function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? ''
-  const { userName, userInitials, selectedCompany } = useClientUser()
+  const { userName, userInitials, selectedCompany, userModules } = useClientUser()
   const { isLocked, planTier } = usePlanFeatures()
   const { startTour } = useTutorialContext()
+  const { activeModule } = useActiveModule()
+  const isClaims = activeModule === 'claims'
   const [notificationsDismissed, setNotificationsDismissed] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
   // Build navigation: base + dynamic sections enabled for this company
   const portalSections = selectedCompany?.portal_sections || {}
   const enabledDynamic = dynamicNavigation.filter(item => portalSections[item.portalKey])
+  const baseNavigation = isClaims ? claimsNavigation : accountingNavigation
   const navigation = useMemo(() => {
+    if (isClaims) return claimsNavigation
     // Insert dynamic items before "Zprávy" (second to last group)
     const messagesIdx = baseNavigation.findIndex(n => n.name === 'Zprávy')
     const result = [...baseNavigation]
     const insertAt = messagesIdx >= 0 ? messagesIdx : result.length
     result.splice(insertAt, 0, ...enabledDynamic)
     return result
-  }, [enabledDynamic.length, selectedCompany?.id])
+  }, [enabledDynamic.length, selectedCompany?.id, isClaims])
 
   useEffect(() => {
     const saved = localStorage.getItem('client-sidebar-collapsed')
@@ -134,13 +154,21 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <div className={`relative flex items-center h-16 flex-shrink-0 border-b border-white/[0.06] transition-all duration-300 ${collapsed ? 'justify-center px-3' : 'px-5'}`}>
             <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-soft-sm flex-shrink-0">
-                <span className="text-sm font-bold text-white font-display">U</span>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-soft-sm flex-shrink-0 ${isClaims ? 'bg-gradient-to-br from-blue-400 to-blue-500' : 'bg-gradient-to-br from-blue-400 to-indigo-500'}`}>
+                {isClaims ? (
+                  <Shield className="h-4 w-4 text-white" />
+                ) : (
+                  <span className="text-sm font-bold text-white font-display">U</span>
+                )}
               </div>
               {!collapsed && (
                 <div className="overflow-hidden">
-                  <h1 className="text-base font-semibold text-white/95 font-display tracking-tight whitespace-nowrap">Účetní OS</h1>
-                  <p className="text-[10px] text-white/40 font-medium whitespace-nowrap">Klientský portál</p>
+                  <h1 className="text-base font-semibold text-white/95 font-display tracking-tight whitespace-nowrap">
+                    {isClaims ? 'PU Portál' : 'Účetní OS'}
+                  </h1>
+                  <p className="text-[10px] text-white/40 font-medium whitespace-nowrap">
+                    {isClaims ? 'Pojistné události' : 'Klientský portál'}
+                  </p>
                 </div>
               )}
             </div>
@@ -148,6 +176,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
           {/* Company Switcher */}
           <CompanySwitcher collapsed={collapsed} />
+
+          {/* Module Switcher */}
+          <ClientModuleSwitcher userModules={userModules} collapsed={collapsed} />
 
           {/* Navigation */}
           <TooltipProvider delayDuration={0}>
@@ -348,7 +379,10 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom tab bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-950/90 backdrop-blur-2xl border-t border-gray-200/60 dark:border-gray-800/60 z-50 safe-area-bottom">
         <nav className="flex justify-around px-1 pt-1 pb-1">
-          {navigation.filter(n => ['Přehled', 'Doklady', 'Faktury', 'Adresář', 'Zprávy'].includes(n.name)).map((item) => {
+          {navigation.filter(n => isClaims
+            ? ['Přehled', 'Moje spisy', 'Soubory', 'Zprávy', 'Nahlásit událost'].includes(n.name)
+            : ['Přehled', 'Doklady', 'Faktury', 'Adresář', 'Zprávy'].includes(n.name)
+          ).map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
             const Icon = item.icon
             return (
@@ -384,13 +418,15 @@ export default function ClientLayout({
   return (
     <div className="client-theme">
       <ClientUserProvider>
-        <TutorialProvider
-          steps={CLIENT_TUTORIAL_STEPS}
-          apiPath="/api/client/tutorial"
-          storageKey="client-tutorial-dismissed"
-        >
-          <ClientLayoutInner>{children}</ClientLayoutInner>
-        </TutorialProvider>
+        <ActiveModuleProvider>
+          <TutorialProvider
+            steps={CLIENT_TUTORIAL_STEPS}
+            apiPath="/api/client/tutorial"
+            storageKey="client-tutorial-dismissed"
+          >
+            <ClientLayoutInner>{children}</ClientLayoutInner>
+          </TutorialProvider>
+        </ActiveModuleProvider>
       </ClientUserProvider>
     </div>
   )
