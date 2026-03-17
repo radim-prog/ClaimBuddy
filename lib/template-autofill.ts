@@ -32,6 +32,8 @@ interface ResolvedContext {
   signers?: Array<{ name: string; email: string; phone?: string }>
   accountant?: any
   firm?: any
+  insuranceCase?: any
+  insuranceCompany?: any
 }
 
 const CRM_FIELD_MAP: Record<string, (ctx: ResolvedContext) => string> = {
@@ -67,6 +69,24 @@ const CRM_FIELD_MAP: Record<string, (ctx: ResolvedContext) => string> = {
   'ucetni_jmeno': (ctx) => ctx.accountant?.name || '',
   'ucetni_email': (ctx) => ctx.accountant?.email || '',
   'ucetni_firma': (ctx) => ctx.firm?.name || '',
+
+  // Insurance case (PU)
+  'pu_cislo': (ctx) => ctx.insuranceCase?.case_number || '',
+  'pojistovna_nazev': (ctx) => ctx.insuranceCompany?.name || '',
+  'pu_popis': (ctx) => ctx.insuranceCase?.event_description || '',
+  'pu_datum': (ctx) => {
+    const d = ctx.insuranceCase?.event_date
+    if (!d) return ''
+    try { return new Date(d).toLocaleDateString('cs-CZ') } catch { return d }
+  },
+  'success_fee_procent': (ctx) => ctx.insuranceCase?.success_fee_percent?.toString() || '',
+  'fixni_odmena': (ctx) => {
+    const mode = ctx.insuranceCase?.service_mode
+    if (mode === 'ai_processing') return '199'
+    if (mode === 'consultation') return '1 499'
+    if (mode === 'full_representation') return '1 499'
+    return ''
+  },
 }
 
 /**
@@ -107,6 +127,25 @@ export async function resolveAutoFillData(
         .eq('id', firmId)
         .single()
       resolved.firm = firm
+    }
+  }
+
+  // Load insurance case data
+  if (context.insuranceCaseId) {
+    const { data: ic } = await supabaseAdmin
+      .from('insurance_cases')
+      .select('case_number, event_description, event_date, service_mode, success_fee_percent, insurance_company_id')
+      .eq('id', context.insuranceCaseId)
+      .single()
+    resolved.insuranceCase = ic
+
+    if (ic?.insurance_company_id) {
+      const { data: ico } = await supabaseAdmin
+        .from('insurance_companies')
+        .select('name')
+        .eq('id', ic.insurance_company_id)
+        .single()
+      resolved.insuranceCompany = ico
     }
   }
 
@@ -164,5 +203,11 @@ export function getAvailableAutoFillFields(): Array<{ field: string; description
     { field: 'ucetni_jmeno', description: 'Jméno účetního', category: 'Účetní' },
     { field: 'ucetni_email', description: 'Email účetního', category: 'Účetní' },
     { field: 'ucetni_firma', description: 'Název účetní firmy', category: 'Účetní' },
+    { field: 'pu_cislo', description: 'Číslo pojistné události', category: 'Pojistná událost' },
+    { field: 'pojistovna_nazev', description: 'Název pojišťovny', category: 'Pojistná událost' },
+    { field: 'pu_popis', description: 'Popis pojistné události', category: 'Pojistná událost' },
+    { field: 'pu_datum', description: 'Datum pojistné události', category: 'Pojistná událost' },
+    { field: 'success_fee_procent', description: 'Success fee (%)', category: 'Pojistná událost' },
+    { field: 'fixni_odmena', description: 'Fixní odměna (Kč)', category: 'Pojistná událost' },
   ]
 }

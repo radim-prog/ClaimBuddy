@@ -15,6 +15,8 @@ import {
   Loader2,
   Star,
   Fuel,
+  Download,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TripList } from '@/components/client/travel/trip-list'
@@ -481,10 +483,34 @@ function TravelPageInner() {
           {activeTab === 'stats' && (
             <div className="space-y-6">
               {stats && (
-                <>
-                  <TravelStatsCards stats={stats} label={`Přehled za ${monthFilter}`} />
-                </>
+                <TravelStatsCards stats={stats} label={`Přehled za ${monthFilter}`} />
               )}
+
+              {/* Export buttons */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const [y, m] = monthFilter.split('-')
+                    window.open(`/api/client/travel/export?format=pdf&year=${y}&month=${Number(m)}`, '_blank')
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Stáhnout PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const [y, m] = monthFilter.split('-')
+                    window.open(`/api/client/travel/export?format=csv&year=${y}&month=${Number(m)}`, '_blank')
+                  }}
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                  Stáhnout CSV
+                </Button>
+              </div>
             </div>
           )}
         </>

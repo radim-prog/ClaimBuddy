@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -17,7 +17,14 @@ import {
   Activity,
   Brain,
   Sparkles,
+  ScrollText,
+  PenTool,
+  Check,
+  Square,
+  CheckSquare,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import {
   insuranceStatusLabel,
   insuranceStatusColor,
@@ -60,6 +67,10 @@ export default function ClientCaseDetailPage({ params }: { params: Promise<{ cas
   const [caseData, setCaseData] = useState<InsuranceCase | null>(null)
   const [events, setEvents] = useState<InsuranceCaseEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [contracts, setContracts] = useState<any[]>([])
+  const [signingJob, setSigningJob] = useState<string | null>(null)
+  const [consent, setConsent] = useState<Record<string, boolean>>({})
+  const [expandedContract, setExpandedContract] = useState<string | null>(null)
 
   useEffect(() => {
     params.then(p => setCaseId(p.caseId))
@@ -93,6 +104,40 @@ export default function ClientCaseDetailPage({ params }: { params: Promise<{ cas
     }
     load()
   }, [caseId])
+
+  const fetchContracts = useCallback(async () => {
+    if (!caseId) return
+    try {
+      const res = await fetch(`/api/client/claims/${caseId}/contracts`)
+      if (res.ok) {
+        const data = await res.json()
+        setContracts(data.contracts || [])
+      }
+    } catch { /* silent */ }
+  }, [caseId])
+
+  useEffect(() => {
+    if (caseId) fetchContracts()
+  }, [caseId, fetchContracts])
+
+  const handleSign = async (jobId: string) => {
+    if (!caseId || !consent[jobId]) return
+    setSigningJob(jobId)
+    try {
+      const res = await fetch(`/api/client/claims/${caseId}/contracts`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, consent: true }),
+      })
+      if (!res.ok) throw new Error('Podpis selhal')
+      toast.success('Dokument podepsán')
+      fetchContracts()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Chyba')
+    } finally {
+      setSigningJob(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -199,6 +244,100 @@ export default function ClientCaseDetailPage({ params }: { params: Promise<{ cas
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Contracts to sign */}
+      {contracts.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold mb-4">Dokumenty k podpisu</h2>
+          <div className="space-y-3">
+            {contracts.map((job: any) => {
+              const isSigned = job.status === 'signed'
+              const isDraft = job.status === 'draft'
+              const isPending = job.status === 'pending' || isDraft
+              return (
+                <Card key={job.id} className={isSigned ? 'border-green-200 dark:border-green-800' : isPending ? 'border-amber-200 dark:border-amber-800' : ''}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        {job.document_type === 'power_of_attorney' ? (
+                          <PenTool className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ScrollText className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <span className="font-medium text-sm">{job.document_name}</span>
+                      </div>
+                      <Badge className={
+                        isSigned ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                        'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                      }>
+                        {isSigned ? 'Podepsáno' : 'Čeká na podpis'}
+                      </Badge>
+                    </div>
+
+                    {/* Expandable document text */}
+                    {job.note && (
+                      <div className="mt-3">
+                        <button
+                          onClick={() => setExpandedContract(expandedContract === job.id ? null : job.id)}
+                          className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                        >
+                          {expandedContract === job.id ? 'Skrýt text smlouvy' : 'Zobrazit text smlouvy'}
+                        </button>
+                        {expandedContract === job.id && (
+                          <pre className="mt-2 p-3 bg-muted rounded text-xs whitespace-pre-wrap max-h-[400px] overflow-y-auto">
+                            {job.note}
+                          </pre>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Consent + Sign button */}
+                    {!isSigned && (
+                      <div className="mt-4 space-y-3 border-t pt-3">
+                        <label className="flex items-start gap-2 cursor-pointer select-none">
+                          <button
+                            onClick={() => setConsent(prev => ({ ...prev, [job.id]: !prev[job.id] }))}
+                            className="mt-0.5"
+                          >
+                            {consent[job.id] ? (
+                              <CheckSquare className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <Square className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </button>
+                          <span className="text-xs text-muted-foreground">
+                            Souhlasím s obsahem tohoto dokumentu a potvrzuji, že jsem oprávněn/a jednat
+                            za výše uvedenou společnost. Beru na vědomí zpracování osobních údajů dle GDPR.
+                          </span>
+                        </label>
+                        <Button
+                          size="sm"
+                          onClick={() => handleSign(job.id)}
+                          disabled={!consent[job.id] || signingJob === job.id}
+                        >
+                          {signingJob === job.id ? (
+                            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Check className="mr-2 h-3.5 w-3.5" />
+                          )}
+                          Podepsat
+                        </Button>
+                      </div>
+                    )}
+
+                    {isSigned && (
+                      <p className="mt-2 text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                        <Check className="h-3 w-3" />
+                        Podepsáno {job.signed_at ? new Date(job.signed_at).toLocaleDateString('cs-CZ') : ''}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
       )}
 
       {/* Timeline */}

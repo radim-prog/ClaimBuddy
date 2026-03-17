@@ -36,6 +36,8 @@ import {
   Gavel,
   HeartPulse,
   AlertTriangle,
+  ScrollText,
+  PenTool,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -222,6 +224,11 @@ export default function CaseDetailPage({ params }: { params: Promise<{ caseId: s
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
+  // Contracts (signing jobs linked to this case)
+  const [contracts, setContracts] = useState<any[]>([])
+  const [loadingContracts, setLoadingContracts] = useState(false)
+  const [generatingContract, setGeneratingContract] = useState<string | null>(null)
+
   // --------------- Resolve params ---------------
 
   useEffect(() => {
@@ -264,12 +271,48 @@ export default function CaseDetailPage({ params }: { params: Promise<{ caseId: s
     }
   }, [])
 
+  const fetchContracts = useCallback(async () => {
+    if (!caseId) return
+    setLoadingContracts(true)
+    try {
+      const res = await fetch(`/api/accountant/claims/${caseId}/generate-contract`)
+      if (res.ok) {
+        const json = await res.json()
+        setContracts(json.jobs || [])
+      }
+    } catch { /* silent */ }
+    finally { setLoadingContracts(false) }
+  }, [caseId])
+
   useEffect(() => {
     if (caseId) {
       fetchData()
       fetchUsers()
+      fetchContracts()
     }
-  }, [caseId, fetchData, fetchUsers])
+  }, [caseId, fetchData, fetchUsers, fetchContracts])
+
+  const handleGenerateContract = async (type: 'contract' | 'power_of_attorney') => {
+    if (!caseId) return
+    setGeneratingContract(type)
+    try {
+      const res = await fetch(`/api/accountant/claims/${caseId}/generate-contract`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || 'Generování selhalo')
+      }
+      toast.success(type === 'contract' ? 'Příkazní smlouva vygenerována' : 'Plná moc vygenerována')
+      fetchContracts()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Chyba')
+    } finally {
+      setGeneratingContract(null)
+    }
+  }
 
   // Close status dropdown on outside click
   useEffect(() => {
@@ -843,6 +886,13 @@ export default function CaseDetailPage({ params }: { params: Promise<{ caseId: s
               <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">{payments.length}</Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="contracts" className="flex items-center gap-1.5">
+            <ScrollText className="h-3.5 w-3.5" />
+            Smlouvy
+            {contracts.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">{contracts.length}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-1.5">
             <Settings className="h-3.5 w-3.5" />
             Nastavení
@@ -1279,6 +1329,95 @@ export default function CaseDetailPage({ params }: { params: Promise<{ caseId: s
                 </div>
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        {/* ======== Tab: Contracts ======== */}
+        <TabsContent value="contracts" className="mt-4 space-y-4">
+          {/* Generate buttons */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              onClick={() => handleGenerateContract('contract')}
+              disabled={!!generatingContract}
+            >
+              {generatingContract === 'contract' ? (
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ScrollText className="mr-2 h-3.5 w-3.5" />
+              )}
+              Vygenerovat příkazní smlouvu
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleGenerateContract('power_of_attorney')}
+              disabled={!!generatingContract}
+            >
+              {generatingContract === 'power_of_attorney' ? (
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <PenTool className="mr-2 h-3.5 w-3.5" />
+              )}
+              Vygenerovat plnou moc
+            </Button>
+          </div>
+
+          {/* Contract list */}
+          {loadingContracts ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : contracts.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <ScrollText className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                <p className="text-sm text-muted-foreground">Zatím žádné smlouvy</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">
+                  Vygenerujte příkazní smlouvu nebo plnou moc
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {contracts.map((job: any) => (
+                <Card key={job.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          {job.document_type === 'power_of_attorney' ? (
+                            <PenTool className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          ) : (
+                            <ScrollText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          )}
+                          <span className="font-medium text-sm truncate">{job.document_name}</span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                          <span>{formatDate(job.created_at)}</span>
+                          {job.signers?.length > 0 && (
+                            <span>{job.signers.length} podepisující</span>
+                          )}
+                        </div>
+                      </div>
+                      <Badge className={
+                        job.status === 'signed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                        job.status === 'pending' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
+                        job.status === 'rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                        'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                      }>
+                        {job.status === 'draft' ? 'Koncept' :
+                         job.status === 'pending' ? 'Čeká na podpis' :
+                         job.status === 'signed' ? 'Podepsáno' :
+                         job.status === 'rejected' ? 'Zamítnuto' :
+                         job.status === 'expired' ? 'Vypršelo' :
+                         job.status}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </TabsContent>
       </Tabs>

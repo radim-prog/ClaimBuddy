@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
 
     // Consume credit
     const currentPeriod = new Date().toISOString().slice(0, 7)
-    await consumeCredit(userId, 'extraction', currentPeriod)
+    await consumeCredit(userId, 'travel', currentPeriod)
 
     // Revenue sharing: record transaction for marketplace provider
     recordRevenueTransaction({
