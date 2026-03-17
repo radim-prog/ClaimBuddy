@@ -76,10 +76,20 @@ export async function POST(request: NextRequest) {
       }
 
       case 'invoice.payment_failed': {
-        const subscriptionId = extractSubscriptionId(event.data.object)
-        if (subscriptionId) {
-          await updateSubscriptionByStripeId(subscriptionId, { status: 'past_due' })
-          logError({ level: 'warn', message: `Payment failed for subscription: ${subscriptionId}`, source: 'stripe-webhook' })
+        const failedInvoice: WebhookObject = event.data.object
+        const failedSubId = extractSubscriptionId(failedInvoice)
+
+        // Billing-as-a-service: mark billing_invoice as failed
+        if (failedInvoice.subscription_details?.metadata?.type === 'billing_service' && failedSubId) {
+          const { handleStripeInvoiceFailed } = await import('@/lib/billing-service')
+          await handleStripeInvoiceFailed(failedSubId)
+          logError({ level: 'warn', message: `Billing-service payment failed for subscription: ${failedSubId}`, source: 'stripe-webhook' })
+        }
+
+        // SaaS subscription: mark as past_due
+        if (failedSubId) {
+          await updateSubscriptionByStripeId(failedSubId, { status: 'past_due' })
+          logError({ level: 'warn', message: `Payment failed for subscription: ${failedSubId}`, source: 'stripe-webhook' })
         }
         break
       }
@@ -87,13 +97,34 @@ export async function POST(request: NextRequest) {
       case 'invoice.paid': {
         const paidInvoice: WebhookObject = event.data.object
 
-        // Billing-as-a-service: if the invoice belongs to a billing-service subscription,
-        // mark the corresponding billing_invoices record as paid.
-        // TODO: Enable when Stripe is fully configured for billing-service subscriptions
-        // if (paidInvoice.subscription_details?.metadata?.type === 'billing_service') {
-        //   const { markInvoicePaid } = await import('@/lib/billing-service')
-        //   // Match by stripe_invoice_id stored in billing_invoices metadata
-        // }
+        // Billing-as-a-service: mark billing_invoice as paid + bridge to monthly_payments
+        const paidSubId = extractSubscriptionId(paidInvoice)
+        if (paidInvoice.subscription_details?.metadata?.type === 'billing_service' && paidSubId) {
+          const { handleStripeInvoicePaid } = await import('@/lib/billing-service')
+          await handleStripeInvoicePaid(paidInvoice.id, paidSubId)
+          logError({ level: 'info', message: `Billing-service payment confirmed: invoice=${paidInvoice.id}, sub=${paidSubId}`, source: 'stripe-webhook' })
+
+          // Bridge: auto-upsert monthly_payments so the payment matrix stays in sync
+          const companyId = paidInvoice.subscription_details?.metadata?.company_id
+          if (companyId) {
+            const now = new Date()
+            const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+            await supabaseAdmin
+              .from('monthly_payments')
+              .upsert(
+                {
+                  company_id: companyId,
+                  period,
+                  paid: true,
+                  paid_at: new Date().toISOString(),
+                  updated_by: 'stripe-webhook',
+                  updated_at: new Date().toISOString(),
+                },
+                { onConflict: 'company_id,period' }
+              )
+            logError({ level: 'info', message: `Monthly payment synced: company=${companyId}, period=${period}`, source: 'stripe-webhook' })
+          }
+        }
 
         const subscriptionId = extractSubscriptionId(paidInvoice)
         if (subscriptionId) {

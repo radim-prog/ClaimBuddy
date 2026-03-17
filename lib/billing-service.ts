@@ -4,6 +4,7 @@
 
 import { supabaseAdmin } from './supabase-admin'
 import { getStripe, findOrCreateStripeCustomer } from './stripe'
+import { generateInvoiceNumber } from './invoice-utils'
 
 // ============================================
 // TYPES
@@ -366,7 +367,7 @@ export async function generateMonthlyInvoices(period: string): Promise<{ generat
       const nextYear = month === 12 ? year + 1 : year
       const dueDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-15`
 
-      const { error } = await supabaseAdmin
+      const { data: billingInvoice, error } = await supabaseAdmin
         .from('billing_invoices')
         .insert({
           config_id: config.id,
@@ -378,11 +379,70 @@ export async function generateMonthlyInvoices(period: string): Promise<{ generat
           status: 'pending',
           due_date: dueDate,
         })
+        .select('id')
+        .single()
 
       if (error) {
         errors++
       } else {
         generated++
+
+        // Bridge: create corresponding record in invoices table
+        try {
+          const issueDate = new Date().toISOString().split('T')[0]
+          const { invoiceNumber, variableSymbol, seriesId } = await generateInvoiceNumber(
+            supabaseAdmin, Number(period.split('-')[0])
+          )
+
+          // Fetch company name for the invoice
+          const { data: company } = await supabaseAdmin
+            .from('companies')
+            .select('name, ico, dic, address')
+            .eq('id', config.company_id)
+            .single()
+
+          await supabaseAdmin
+            .from('invoices')
+            .insert({
+              company_id: config.company_id,
+              company_name: company?.name || '',
+              type: 'income',
+              invoice_number: invoiceNumber,
+              variable_symbol: variableSymbol,
+              issue_date: issueDate,
+              due_date: dueDate,
+              tax_date: issueDate,
+              period,
+              partner: {
+                name: company?.name || '',
+                ico: company?.ico || '',
+                dic: company?.dic || '',
+                address: typeof company?.address === 'object'
+                  ? `${(company?.address as Record<string, string>)?.street || ''}, ${(company?.address as Record<string, string>)?.city || ''} ${(company?.address as Record<string, string>)?.zip || ''}`.trim()
+                  : company?.address || '',
+              },
+              items: [{
+                id: 'item-0',
+                description: `Účetní služby za období ${period}`,
+                quantity: 1,
+                unit: 'měs',
+                unit_price: config.monthly_fee_czk,
+                vat_rate: 21,
+                total_without_vat: config.monthly_fee_czk,
+                total_with_vat: Math.round(config.monthly_fee_czk * 1.21),
+              }],
+              total_without_vat: config.monthly_fee_czk,
+              total_vat: Math.round(config.monthly_fee_czk * 0.21),
+              total_with_vat: Math.round(config.monthly_fee_czk * 1.21),
+              number_series_id: seriesId,
+              payment_status: 'unpaid',
+              billing_invoice_id: billingInvoice.id,
+              created_by: config.provider_id,
+            })
+        } catch {
+          // Non-fatal: billing_invoice was created, invoices bridge failed
+          // Will be retried or manually linked
+        }
       }
     } catch {
       errors++
@@ -422,15 +482,60 @@ export async function getBillingInvoices(params: {
 }
 
 export async function markInvoicePaid(invoiceId: string, stripeInvoiceId?: string): Promise<void> {
+  const now = new Date().toISOString()
+
+  // 1. Mark billing_invoice as paid
   await supabaseAdmin
     .from('billing_invoices')
     .update({
       status: 'paid',
-      paid_at: new Date().toISOString(),
+      paid_at: now,
       stripe_invoice_id: stripeInvoiceId || null,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     })
     .eq('id', invoiceId)
+
+  // 2. Fetch invoice to get company_id + period for master matice bridge
+  const { data: invoice } = await supabaseAdmin
+    .from('billing_invoices')
+    .select('company_id, period')
+    .eq('id', invoiceId)
+    .single()
+
+  if (!invoice) return
+
+  // 3. Upsert into monthly_payments (master matice)
+  await supabaseAdmin
+    .from('monthly_payments')
+    .upsert(
+      {
+        company_id: invoice.company_id,
+        period: invoice.period,
+        paid: true,
+        paid_at: now,
+        updated_at: now,
+      },
+      { onConflict: 'company_id,period' }
+    )
+
+  // 4. Bridge: mark corresponding invoices record as paid
+  await supabaseAdmin
+    .from('invoices')
+    .update({
+      payment_status: 'paid',
+      paid_at: now,
+      updated_at: now,
+    })
+    .eq('billing_invoice_id', invoiceId)
+
+  // 5. Fire & forget Raynet push
+  import('@/lib/raynet-store').then(({ pushPaymentToRaynet }) => {
+    pushPaymentToRaynet(invoice.company_id, invoice.period, true).catch(err =>
+      console.error('[billing-service] Raynet auto-push error:', err)
+    )
+  }).catch(() => {
+    // Raynet module not available, skip
+  })
 }
 
 export async function waiveInvoice(invoiceId: string): Promise<void> {
@@ -444,53 +549,30 @@ export async function waiveInvoice(invoiceId: string): Promise<void> {
 }
 
 // ============================================
-// DUNNING (payment reminders)
+// DUNNING (overdue marking only)
+// Actual reminders/escalation handled by invoice-reminders cron + reminder-engine
 // ============================================
 
-export async function processOverdueInvoices(): Promise<{ reminded: number; escalated: number }> {
+export async function processOverdueInvoices(): Promise<{ marked_overdue: number }> {
   const now = new Date()
-  let reminded = 0
-  let escalated = 0
+  let marked_overdue = 0
 
-  // Find overdue invoices (pending/failed + past due date)
-  const { data: overdue } = await supabaseAdmin
+  // Find invoices past due date that aren't already marked overdue/paid/written_off
+  const { data: pastDue } = await supabaseAdmin
     .from('billing_invoices')
-    .select('*, billing_configs!inner(company_id, provider_id)')
-    .in('status', ['pending', 'failed'])
+    .select('id, status')
+    .in('status', ['pending'])
     .lt('due_date', now.toISOString().slice(0, 10))
 
-  for (const invoice of overdue || []) {
-    // Mark as overdue if not yet
-    if (invoice.status !== 'overdue') {
-      await supabaseAdmin
-        .from('billing_invoices')
-        .update({ status: 'overdue', updated_at: now.toISOString() })
-        .eq('id', invoice.id)
-    }
-
-    // Increment escalation level
-    const newLevel = (invoice.escalation_level || 0) + 1
-
+  for (const invoice of pastDue || []) {
     await supabaseAdmin
       .from('billing_invoices')
-      .update({
-        escalation_level: newLevel,
-        updated_at: now.toISOString(),
-      })
+      .update({ status: 'overdue', updated_at: now.toISOString() })
       .eq('id', invoice.id)
-    reminded++
-
-    // Auto-suspend billing after escalation level 3
-    if (newLevel >= 3) {
-      await suspendBilling(
-        invoice.config_id,
-        'Neplaceni — automaticke pozastaveni po eskalaci'
-      )
-      escalated++
-    }
+    marked_overdue++
   }
 
-  return { reminded, escalated }
+  return { marked_overdue }
 }
 
 // ============================================
