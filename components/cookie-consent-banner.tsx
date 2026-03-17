@@ -16,7 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 
 export function CookieConsentBanner() {
   const pathname = usePathname()
-  const isClaims = pathname.startsWith('/claims')
+  const isClaims = pathname.startsWith('/claims') || (typeof window !== 'undefined' && window.location.hostname === 'claims.zajcon.cz')
   const accentColor = isClaims ? '#2563eb' : '#7c3aed'
   const [showSettings, setShowSettings] = useState(false)
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true)
