@@ -62,6 +62,8 @@ import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-co
 import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
+import { ActiveModuleProvider, useActiveModule } from '@/lib/contexts/active-module-context'
+import { Building2, FolderOpen, ClipboardList } from 'lucide-react'
 
 // === NAVIGATION GROUPS ===
 
@@ -108,6 +110,26 @@ type NavItem = {
   activeMatch?: string[]
   tourId?: string
 }
+
+// === CLAIMS MODULE NAVIGATION ===
+
+// Claims: Daily work
+const claimsDailyNav: NavItem[] = [
+  { name: 'Přehled PU', href: '/accountant/claims/dashboard', icon: LayoutDashboard },
+  { name: 'Klienti', href: '/accountant/clients', icon: Users },
+  { name: 'Spisy', href: '/accountant/claims/cases', icon: FolderOpen },
+  { name: 'Pojišťovny', href: '/accountant/claims/insurers', icon: Building2 },
+  { name: 'Komunikace', href: '/accountant/komunikace', icon: MessageCircle, badge: 'messages' as const },
+]
+
+// Claims: Management
+const claimsManagementNav: NavItem[] = [
+  { name: 'Úkoly', href: '/accountant/gtd', icon: ClipboardList },
+  { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
+  { name: 'Statistiky PU', href: '/accountant/claims/stats', icon: BarChart3 },
+  { name: 'Připomínky', href: '/accountant/reminders', icon: Send, activeMatch: ['/accountant/reminders'] },
+  { name: 'Nastavení PU', href: '/accountant/claims/settings', icon: Settings },
+]
 
 // Extracted NavContent to avoid hook issues with renderNavItem
 function NavContent({
@@ -243,23 +265,25 @@ function NavContent({
         {(managementOpen || collapsed) && managementNav.map(renderNavItem)}
       </div>
 
-      {/* Nástroje — collapsible */}
-      <div className="pt-3 mt-3 border-t border-white/[0.06]">
-        {!collapsed ? (
-          <button
-            onClick={toggleTools}
-            className="w-full flex items-center justify-between px-3 mb-1.5 group"
-          >
-            <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">
-              Nástroje
-            </p>
-            <ChevronDown className={`h-3 w-3 text-white/30 transition-transform duration-200 ${toolsOpen ? '' : '-rotate-90'}`} />
-          </button>
-        ) : (
-          <div className="w-full h-px bg-white/[0.06] mb-1" />
-        )}
-        {(toolsOpen || collapsed) && toolsNav.map(renderNavItem)}
-      </div>
+      {/* Nástroje — collapsible (hidden when empty) */}
+      {toolsNav.length > 0 && (
+        <div className="pt-3 mt-3 border-t border-white/[0.06]">
+          {!collapsed ? (
+            <button
+              onClick={toggleTools}
+              className="w-full flex items-center justify-between px-3 mb-1.5 group"
+            >
+              <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">
+                Nástroje
+              </p>
+              <ChevronDown className={`h-3 w-3 text-white/30 transition-transform duration-200 ${toolsOpen ? '' : '-rotate-90'}`} />
+            </button>
+          ) : (
+            <div className="w-full h-px bg-white/[0.06] mb-1" />
+          )}
+          {(toolsOpen || collapsed) && toolsNav.map(renderNavItem)}
+        </div>
+      )}
 
       {/* Admin — bottom, admin-only */}
       {showAdmin && (
@@ -286,9 +310,11 @@ export default function AccountantLayout({
       <SettingsProvider>
         <AttentionProvider>
           <TutorialProvider>
-            <TooltipProvider delayDuration={0}>
-              <AccountantLayoutInner>{children}</AccountantLayoutInner>
-            </TooltipProvider>
+            <ActiveModuleProvider>
+              <TooltipProvider delayDuration={0}>
+                <AccountantLayoutInner>{children}</AccountantLayoutInner>
+              </TooltipProvider>
+            </ActiveModuleProvider>
           </TutorialProvider>
         </AttentionProvider>
       </SettingsProvider>
@@ -306,6 +332,8 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const { needsResponseCount } = useUnreadMessages()
   const documentInboxCount = useDocumentInboxCount()
   const { isLocked } = usePlanFeatures()
+  const { activeModule } = useActiveModule()
+  const isClaims = activeModule === 'claims'
   // Attention for Klienti badge: exclude unread_messages (shown on Komunikace instead)
   const clientsAttentionCount = attentionTotals.total - attentionTotals.unread_messages
   const [collapsed, setCollapsed] = useState(false)
@@ -391,13 +419,21 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <div className={`relative flex items-center h-16 flex-shrink-0 border-b border-white/[0.06] transition-all duration-300 ${collapsed ? 'justify-center px-3' : 'px-5'}`}>
             <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-400 to-violet-500 flex items-center justify-center shadow-soft-sm flex-shrink-0">
-                <span className="text-sm font-bold text-white font-display">U</span>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-soft-sm flex-shrink-0 ${isClaims ? 'bg-gradient-to-br from-blue-400 to-blue-500' : 'bg-gradient-to-br from-violet-400 to-violet-500'}`}>
+                {isClaims ? (
+                  <Shield className="h-4 w-4 text-white" />
+                ) : (
+                  <span className="text-sm font-bold text-white font-display">U</span>
+                )}
               </div>
               {!collapsed && (
                 <div className="overflow-hidden">
-                  <h1 className="text-base font-semibold text-white/95 font-display tracking-tight whitespace-nowrap">Účetní OS</h1>
-                  <p className="text-[10px] text-white/40 font-medium whitespace-nowrap">Portál pro účetní</p>
+                  <h1 className="text-base font-semibold text-white/95 font-display tracking-tight whitespace-nowrap">
+                    {isClaims ? 'PU Manager' : 'Účetní OS'}
+                  </h1>
+                  <p className="text-[10px] text-white/40 font-medium whitespace-nowrap">
+                    {isClaims ? 'Pojistné události' : 'Portál pro účetní'}
+                  </p>
                 </div>
               )}
             </div>
@@ -413,9 +449,9 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Navigation */}
           <TooltipProvider delayDuration={0}>
             <NavContent
-              dailyWorkNav={dailyWorkNav}
-              managementNav={userRole === 'admin' ? managementNav : managementNav.filter(item => item.href !== '/accountant/revenue')}
-              toolsNav={toolsNav}
+              dailyWorkNav={isClaims ? claimsDailyNav : dailyWorkNav}
+              managementNav={isClaims ? claimsManagementNav : (userRole === 'admin' ? managementNav : managementNav.filter(item => item.href !== '/accountant/revenue'))}
+              toolsNav={isClaims ? [] : toolsNav}
               adminNav={adminNav}
               pathname={pathname}
               collapsed={collapsed}
@@ -521,10 +557,14 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
       <div className="md:hidden">
         <div className="flex items-center justify-between sidebar-purple px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-400 to-violet-500 flex items-center justify-center">
-              <span className="text-xs font-bold text-white font-display">U</span>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isClaims ? 'bg-gradient-to-br from-blue-400 to-blue-500' : 'bg-gradient-to-br from-violet-400 to-violet-500'}`}>
+              {isClaims ? (
+                <Shield className="h-3.5 w-3.5 text-white" />
+              ) : (
+                <span className="text-xs font-bold text-white font-display">U</span>
+              )}
             </div>
-            <span className="text-sm font-semibold text-white/90 font-display">Účetní OS</span>
+            <span className="text-sm font-semibold text-white/90 font-display">{isClaims ? 'PU Manager' : 'Účetní OS'}</span>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle variant="icon" className="text-white/50 hover:text-white hover:bg-white/10 rounded-lg" />

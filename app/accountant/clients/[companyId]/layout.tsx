@@ -38,6 +38,7 @@ import { Insurance } from '@/lib/types/insurance'
 import { ClientOnboarding } from '@/lib/types/onboarding'
 import type { Task } from '@/lib/types/tasks'
 import { useAttention } from '@/lib/contexts/attention-context'
+import { useActiveModule } from '@/lib/contexts/active-module-context'
 import type { HubStats } from '@/lib/types/drive'
 import { czechPlural } from '@/lib/utils'
 import { MessagePopupDialog } from '@/components/komunikace/message-popup-dialog'
@@ -152,6 +153,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
   const [healthScore, setHealthScore] = useState<number | null>(null)
   const attentionCtx = useAttention()
   const attention = attentionCtx.getCompanyAttention(companyId)
+  const { activeModule } = useActiveModule()
 
   // Current period for urgency modal
   const currentYear = new Date().getFullYear()
@@ -297,18 +299,26 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
           const filesBadge = hubStats?.files?.recent || 0
           const notificationsBadge = attention.active_notifications || 0
 
-          const tabs: Array<{ href: string; label: string; icon: typeof Clock; match: (p: string) => boolean; badge?: number }> = [
-            { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile'), badge: notificationsBadge },
-            { href: `${basePath}/work`, label: 'Práce', icon: Clock, match: (p: string) => p.includes('/work') },
-            { href: `${basePath}/tasks`, label: 'Úkoly', icon: ClipboardList, match: (p: string) => p.includes('/tasks'), badge: tasksBadge },
-            { href: `${basePath}/messages`, label: 'Zprávy', icon: MessageCircle, match: (p: string) => p.includes('/messages'), badge: messagesBadge },
-            { href: `${basePath}/documents`, label: 'Doklady', icon: FileText, match: (p: string) => p.includes('/documents'), badge: documentsBadge },
-            { href: `${basePath}/inbox`, label: 'Inbox', icon: Inbox, match: (p: string) => p.includes('/inbox') },
-            { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files'), badge: filesBadge },
-            { href: `${basePath}/taxes`, label: 'Daně a mzdy', icon: Calculator, match: (p: string) => p.includes('/taxes') || p.includes('/dohodari') || p.includes('/agreements') },
-            { href: `${basePath}/travel`, label: 'Jízdy', icon: Car, match: (p: string) => p.includes('/travel') },
-            { href: `${basePath}/claims`, label: 'PU', icon: Shield, match: (p: string) => p.includes('/claims') },
-          ]
+          const tabs: Array<{ href: string; label: string; icon: typeof Clock; match: (p: string) => boolean; badge?: number }> = activeModule === 'claims'
+            ? [
+                { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile'), badge: notificationsBadge },
+                { href: `${basePath}/claims`, label: 'Spisy PÚ', icon: Shield, match: (p: string) => p.includes('/claims') },
+                { href: `${basePath}/tasks`, label: 'Úkoly', icon: ClipboardList, match: (p: string) => p.includes('/tasks'), badge: tasksBadge },
+                { href: `${basePath}/messages`, label: 'Zprávy', icon: MessageCircle, match: (p: string) => p.includes('/messages'), badge: messagesBadge },
+                { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files'), badge: filesBadge },
+              ]
+            : [
+                { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile'), badge: notificationsBadge },
+                { href: `${basePath}/work`, label: 'Práce', icon: Clock, match: (p: string) => p.includes('/work') },
+                { href: `${basePath}/tasks`, label: 'Úkoly', icon: ClipboardList, match: (p: string) => p.includes('/tasks'), badge: tasksBadge },
+                { href: `${basePath}/messages`, label: 'Zprávy', icon: MessageCircle, match: (p: string) => p.includes('/messages'), badge: messagesBadge },
+                { href: `${basePath}/documents`, label: 'Doklady', icon: FileText, match: (p: string) => p.includes('/documents'), badge: documentsBadge },
+                { href: `${basePath}/inbox`, label: 'Inbox', icon: Inbox, match: (p: string) => p.includes('/inbox') },
+                { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files'), badge: filesBadge },
+                { href: `${basePath}/taxes`, label: 'Daně a mzdy', icon: Calculator, match: (p: string) => p.includes('/taxes') || p.includes('/dohodari') || p.includes('/agreements') },
+                { href: `${basePath}/travel`, label: 'Jízdy', icon: Car, match: (p: string) => p.includes('/travel') },
+                { href: `${basePath}/claims`, label: 'PU', icon: Shield, match: (p: string) => p.includes('/claims') },
+              ]
 
           // Latest closure status
           const latestClosure = closures.length > 0

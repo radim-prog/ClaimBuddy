@@ -156,7 +156,7 @@ export async function middleware(request: NextRequest) {
       if (token) {
         const user = await verifyToken(token)
         if (user) {
-          return NextResponse.redirect(new URL('/claims/dashboard', request.url))
+          return NextResponse.redirect(new URL('/accountant/claims/dashboard', request.url))
         }
       }
       // Not authenticated → rewrite to /claims landing page (no redirect loop)
@@ -166,10 +166,10 @@ export async function middleware(request: NextRequest) {
     }
     // /auth paths stay as-is (login/logout)
     // /api paths stay as-is
-    // /claims paths stay as-is
-    // Everything else that's not claims/api/auth/_next → redirect to /claims/dashboard
-    if (!pathname.startsWith('/claims') && !pathname.startsWith('/api') && !pathname.startsWith('/auth') && !pathname.startsWith('/_next')) {
-      return NextResponse.redirect(new URL('/claims/dashboard', request.url))
+    // /claims and /accountant paths stay as-is
+    // Everything else that's not claims/accountant/api/auth/_next → redirect to /accountant/claims/dashboard
+    if (!pathname.startsWith('/claims') && !pathname.startsWith('/accountant') && !pathname.startsWith('/api') && !pathname.startsWith('/auth') && !pathname.startsWith('/_next')) {
+      return NextResponse.redirect(new URL('/accountant/claims/dashboard', request.url))
     }
   }
 
@@ -183,7 +183,7 @@ export async function middleware(request: NextRequest) {
           // Claims landing: logged-in staff → claims dashboard
           const modules = user.modules || ['accounting']
           if (modules.includes('claims') && user.role !== 'client') {
-            return NextResponse.redirect(new URL('/claims/dashboard', request.url))
+            return NextResponse.redirect(new URL('/accountant/claims/dashboard', request.url))
           }
         }
         const dest = user.role === 'client' ? '/client/dashboard' : '/accountant/dashboard'
@@ -260,8 +260,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Module-based access control for /claims/*
-  if (pathname.startsWith('/claims') || pathname.startsWith('/api/claims')) {
+  // Module-based access control for /claims/* and /accountant/claims/*
+  if (pathname.startsWith('/accountant/claims') || pathname.startsWith('/claims') || pathname.startsWith('/api/claims')) {
     const userModules = user.modules || ['accounting']
     if (!userModules.includes('claims')) {
       if (pathname.startsWith('/api/')) {
