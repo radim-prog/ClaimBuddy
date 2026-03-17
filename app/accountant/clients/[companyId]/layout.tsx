@@ -22,9 +22,9 @@ import {
   Calendar,
   Briefcase,
   Activity,
-  FileSignature,
   Inbox,
   Shield,
+  Hourglass,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -151,6 +151,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
   const [hubStats, setHubStats] = useState<HubStats | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
   const [healthScore, setHealthScore] = useState<number | null>(null)
+  const [claimsMetrics, setClaimsMetrics] = useState<{ total: number; active: number; totalClaimed: number; waiting: number } | null>(null)
   const attentionCtx = useAttention()
   const attention = attentionCtx.getCompanyAttention(companyId)
   const { activeModule } = useActiveModule()
@@ -207,6 +208,21 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
         }
       } catch {
         // health score optional
+      }
+
+      // Fetch claims metrics for PU context
+      try {
+        const claimsRes = await fetch(`/api/claims/cases?company_id=${companyId}&limit=100`)
+        if (claimsRes.ok) {
+          const claimsData = await claimsRes.json()
+          const allCases = claimsData.cases || []
+          const activeCases = allCases.filter((c: { status: string }) => !['closed', 'cancelled', 'rejected'].includes(c.status))
+          const waitingCases = allCases.filter((c: { status: string }) => ['submitted', 'under_review', 'additional_info'].includes(c.status))
+          const claimed = allCases.reduce((sum: number, c: { claimed_amount?: number }) => sum + (c.claimed_amount || 0), 0)
+          setClaimsMetrics({ total: allCases.length, active: activeCases.length, totalClaimed: claimed, waiting: waitingCases.length })
+        }
+      } catch {
+        // claims metrics optional
       }
 
       // Fetch onboarding data if company is in onboarding status
@@ -319,51 +335,6 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                 { href: `${basePath}/travel`, label: 'Jízdy', icon: Car, match: (p: string) => p.includes('/travel') },
                 { href: `${basePath}/claims`, label: 'PU', icon: Shield, match: (p: string) => p.includes('/claims') },
               ]
-
-          // Latest closure status
-          const latestClosure = closures.length > 0
-            ? [...closures].sort((a, b) => b.period.localeCompare(a.period))[0]
-            : null
-          const closureComplete = latestClosure
-            ? latestClosure.bank_statement_status !== 'missing' &&
-              latestClosure.expense_documents_status !== 'missing' &&
-              latestClosure.income_invoices_status !== 'missing'
-            : false
-
-          // Attention items for banner
-          const attentionItems: Array<{ message: string; severity: 'high' | 'medium' | 'low' }> = []
-          if (hubStats?.attention?.items) {
-            attentionItems.push(...hubStats.attention.items)
-          }
-          if (latestClosure && !closureComplete) {
-            const missingCategories: string[] = []
-            if (latestClosure.bank_statement_status === 'missing') missingCategories.push('bankovní výpis')
-            if (latestClosure.expense_documents_status === 'missing') missingCategories.push('výdaje')
-            if (latestClosure.income_invoices_status === 'missing') missingCategories.push('příjmy')
-            if (missingCategories.length > 0) {
-              attentionItems.push({
-                message: `Uzávěrka: chybí ${missingCategories.join(', ')}`,
-                severity: 'high',
-              })
-            }
-          }
-          {
-            const pendingDocs = hubStats?.documents?.pending || 0
-            if (pendingDocs > 0) {
-              attentionItems.push({
-                message: `${pendingDocs} ${pendingDocs === 1 ? 'doklad' : pendingDocs < 5 ? 'doklady' : 'dokladů'} ke zpracování`,
-                severity: 'medium',
-              })
-            }
-          }
-          if (attention.unread_messages > 0) {
-            attentionItems.push({
-              message: `${attention.unread_messages} nepřečten${attention.unread_messages > 1 ? 'ých zpráv' : 'á zpráva'}`,
-              severity: 'medium',
-            })
-          }
-
-          const s = (val: number | undefined) => statsLoading ? '—' : (val ?? '—')
 
           return (
             <>
@@ -606,6 +577,45 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
 
               {/* Metrics Strip */}
               {(() => {
+                const czk = new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK', maximumFractionDigits: 0 })
+
+                if (activeModule === 'claims') {
+                  // Claims metrics strip
+                  const cm = claimsMetrics
+                  return (
+                    <div className="flex items-center gap-6 flex-wrap py-1 w-fit mx-auto">
+                      {/* Active cases */}
+                      <div className="flex items-center gap-2">
+                        <Shield className={`h-4 w-4 ${(cm?.active ?? 0) > 0 ? 'text-blue-500' : 'text-gray-400'}`} />
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{cm?.active ?? '—'}</span>
+                        <span className="text-sm text-gray-500">{czechPlural(cm?.active ?? 0, 'aktivní spis', 'aktivní spisy', 'aktivních spisů')}</span>
+                      </div>
+                      {/* Claimed amount */}
+                      <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-purple-500" />
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{cm ? czk.format(cm.totalClaimed) : '—'}</span>
+                        <span className="text-sm text-gray-500">nárokováno</span>
+                      </div>
+                      {/* Waiting */}
+                      <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                      <div className="flex items-center gap-2">
+                        <Hourglass className={`h-4 w-4 ${(cm?.waiting ?? 0) > 0 ? 'text-amber-500' : 'text-gray-400'}`} />
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{cm?.waiting ?? '—'}</span>
+                        <span className="text-sm text-gray-500">čekající</span>
+                      </div>
+                      {/* Total */}
+                      <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">{cm?.total ?? '—'}</span>
+                        <span className="text-sm text-gray-500">celkem</span>
+                      </div>
+                    </div>
+                  )
+                }
+
+                // Accounting metrics strip (default)
                 const projectCount = tasks.filter(t => t.is_project && !['completed', 'cancelled'].includes(t.status)).length
                 const docTotal = hubStats?.documents?.total
                 const fileTotal = hubStats?.files?.total

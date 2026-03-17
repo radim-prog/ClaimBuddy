@@ -38,6 +38,28 @@ const ACCOUNTING_FOLDER_SLUGS = new Set([
   'danova-priznani',
 ])
 
+// Folder metadata: workflow-based ordering, descriptions, and visual groups
+type FolderMeta = { sortOrder: number; description: string; group: string }
+const FOLDER_METADATA: Record<string, FolderMeta> = {
+  'faktury-prijate':  { sortOrder: 10, description: 'Dodavatelské faktury a paragony', group: 'Fakturace' },
+  'faktury-vydane':   { sortOrder: 20, description: 'Odběratelské faktury a dobropisy', group: 'Fakturace' },
+  'pokladni-doklady': { sortOrder: 30, description: 'Příjmové a výdajové pokladní doklady', group: 'Fakturace' },
+  'vypisy-z-uctu':    { sortOrder: 40, description: 'Měsíční bankovní výpisy', group: 'Finance' },
+  'mzdy':             { sortOrder: 50, description: 'Mzdové listy a výplatní pásky', group: 'Finance' },
+  'danova-priznani':  { sortOrder: 60, description: 'Přiznání k DPH, dani z příjmů apod.', group: 'Daně' },
+  'ucetni-zaverka':   { sortOrder: 70, description: 'Rozvaha, výsledovka, přílohy', group: 'Daně' },
+  'smlouvy':          { sortOrder: 80, description: 'Obchodní a pracovní smlouvy', group: 'Ostatní' },
+  'pojistne-smlouvy': { sortOrder: 90, description: 'Pojistky majetku, odpovědnosti a osob', group: 'Ostatní' },
+  'ostatni':          { sortOrder: 100, description: 'Další dokumenty a přílohy', group: 'Ostatní' },
+}
+
+function getFolderMeta(slug: string): FolderMeta | null {
+  return FOLDER_METADATA[slug] || null
+}
+
+// Group labels in display order
+const GROUP_ORDER = ['Fakturace', 'Finance', 'Daně', 'Ostatní']
+
 // ============================================
 // PROPS
 // ============================================
@@ -482,28 +504,74 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
                 Složky se vytvoří automaticky z nastavení (Admin → Provoz → Struktura složek)
               </p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {folders
-                .filter((f) => {
-                  // Hide accounting-specific folders in claims module
-                  if (activeModule === 'claims' && f.slug && ACCOUNTING_FOLDER_SLUGS.has(f.slug)) {
-                    return false
-                  }
-                  return search.trim()
-                    ? f.name.toLowerCase().includes(search.trim().toLowerCase())
-                    : true
-                })
-                .sort((a, b) => a.sort_order - b.sort_order)
-                .map((folder) => (
-                  <FolderCard
-                    key={folder.id}
-                    folder={folder}
-                    onClick={() => handleFolderClick(folder)}
-                  />
-                ))}
-            </div>
-          )}
+          ) : (() => {
+            const filtered = folders
+              .filter((f) => {
+                if (activeModule === 'claims' && f.slug && ACCOUNTING_FOLDER_SLUGS.has(f.slug)) {
+                  return false
+                }
+                return search.trim()
+                  ? f.name.toLowerCase().includes(search.trim().toLowerCase())
+                  : true
+              })
+              .sort((a, b) => {
+                const metaA = getFolderMeta(a.slug)
+                const metaB = getFolderMeta(b.slug)
+                const orderA = metaA?.sortOrder ?? (a.sort_order + 200)
+                const orderB = metaB?.sortOrder ?? (b.sort_order + 200)
+                return orderA - orderB
+              })
+
+            // Group folders — known groups first, then ungrouped custom folders
+            const grouped: Record<string, typeof filtered> = {}
+            const ungrouped: typeof filtered = []
+            for (const f of filtered) {
+              const meta = getFolderMeta(f.slug)
+              if (meta) {
+                ;(grouped[meta.group] ??= []).push(f)
+              } else {
+                ungrouped.push(f)
+              }
+            }
+
+            return (
+              <div className="space-y-5">
+                {GROUP_ORDER.map(group => {
+                  const items = grouped[group]
+                  if (!items || items.length === 0) return null
+                  return (
+                    <div key={group}>
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 px-0.5">{group}</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {items.map((folder) => (
+                          <FolderCard
+                            key={folder.id}
+                            folder={folder}
+                            description={getFolderMeta(folder.slug)?.description}
+                            onClick={() => handleFolderClick(folder)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+                {ungrouped.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 px-0.5">Vlastní složky</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {ungrouped.map((folder) => (
+                        <FolderCard
+                          key={folder.id}
+                          folder={folder}
+                          onClick={() => handleFolderClick(folder)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
         </div>
 
         {/* Recent files */}

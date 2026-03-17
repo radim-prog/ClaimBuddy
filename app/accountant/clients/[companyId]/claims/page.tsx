@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
   Shield,
@@ -83,7 +82,7 @@ export default function ClientClaimsPage() {
   const [filterType, setFilterType] = useState<InsuranceType | ''>('')
 
   const fetchCases = useCallback(async () => {
-    if (!userId) { setLoading(false); return }
+    if (!userId) return
     try {
       const params = new URLSearchParams()
       params.set('company_id', companyId)

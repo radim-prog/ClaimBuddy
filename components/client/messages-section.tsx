@@ -291,7 +291,7 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
                 className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
               >
                 <ArrowLeft className="h-4 w-4" />
-                <span className="text-xs md:hidden">Zpět</span>
+                <span className="text-xs">Zpět</span>
               </button>
               <MessageSquare className="h-4 w-4 text-blue-600 flex-shrink-0" />
               <span className="font-medium text-sm truncate">{selectedConversation.subject}</span>

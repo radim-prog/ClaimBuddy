@@ -9,6 +9,8 @@ import {
   Loader2, Send, CheckCircle2, Clock, AlertCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   TAX_QUESTIONNAIRE_SECTIONS,
   HEALTH_INSURANCE_OPTIONS,
@@ -35,6 +37,7 @@ export function QuestionnaireViewer({ companyId, year }: QuestionnaireViewerProp
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [reviewing, setReviewing] = useState(false)
+  const [confirmSendOpen, setConfirmSendOpen] = useState(false)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -65,8 +68,13 @@ export function QuestionnaireViewer({ companyId, year }: QuestionnaireViewerProp
       if (res.ok) {
         const data = await res.json()
         setQuestionnaire(data.questionnaire)
+        toast.success('Dotazník odeslán klientovi')
+      } else {
+        toast.error('Nepodařilo se odeslat dotazník')
       }
-    } catch { /* silent */ }
+    } catch {
+      toast.error('Nepodařilo se odeslat dotazník')
+    }
     finally { setSending(false) }
   }
 
@@ -99,23 +107,33 @@ export function QuestionnaireViewer({ companyId, year }: QuestionnaireViewerProp
   // No questionnaire — offer to create one
   if (!questionnaire) {
     return (
-      <Card>
-        <CardContent className="py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <ClipboardList className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Daňový dotazník {year}</p>
-                <p className="text-xs text-muted-foreground">Dosud neodeslán</p>
+      <>
+        <Card>
+          <CardContent className="py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <ClipboardList className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Daňový dotazník {year}</p>
+                  <p className="text-xs text-muted-foreground">Dosud neodeslán</p>
+                </div>
               </div>
+              <Button size="sm" onClick={() => setConfirmSendOpen(true)} disabled={sending}>
+                {sending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
+                Odeslat klientovi
+              </Button>
             </div>
-            <Button size="sm" onClick={sendToClient} disabled={sending}>
-              {sending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
-              Odeslat klientovi
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        <ConfirmDialog
+          open={confirmSendOpen}
+          onOpenChange={setConfirmSendOpen}
+          title="Odeslat dotazník klientovi?"
+          description={`Klient obdrží daňový dotazník za rok ${year} k vyplnění. Chcete pokračovat?`}
+          confirmLabel="Odeslat"
+          onConfirm={sendToClient}
+        />
+      </>
     )
   }
 

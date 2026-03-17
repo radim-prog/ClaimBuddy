@@ -156,7 +156,8 @@ export async function middleware(request: NextRequest) {
       if (token) {
         const user = await verifyToken(token)
         if (user) {
-          return NextResponse.redirect(new URL('/accountant/claims/dashboard', request.url))
+          const dest = user.role === 'client' ? '/client/claims' : '/accountant/claims/dashboard'
+          return NextResponse.redirect(new URL(dest, request.url))
         }
       }
       // Not authenticated → rewrite to /claims landing page (no redirect loop)
@@ -168,7 +169,7 @@ export async function middleware(request: NextRequest) {
     // /api paths stay as-is
     // /claims and /accountant paths stay as-is
     // Everything else that's not claims/accountant/api/auth/_next → redirect to /accountant/claims/dashboard
-    if (!pathname.startsWith('/claims') && !pathname.startsWith('/accountant') && !pathname.startsWith('/api') && !pathname.startsWith('/auth') && !pathname.startsWith('/_next')) {
+    if (!pathname.startsWith('/claims') && !pathname.startsWith('/accountant') && !pathname.startsWith('/client') && !pathname.startsWith('/api') && !pathname.startsWith('/auth') && !pathname.startsWith('/_next')) {
       return NextResponse.redirect(new URL('/accountant/claims/dashboard', request.url))
     }
   }

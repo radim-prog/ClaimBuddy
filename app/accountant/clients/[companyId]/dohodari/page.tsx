@@ -20,7 +20,14 @@ import {
   AlertTriangle,
   Lock,
   Filter,
+  Info,
 } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Dohoda, DohodaMesic, DohodaStatus } from '@/lib/types/dohodari'
@@ -201,6 +208,19 @@ export default function DohodariPage() {
                 <option value="active">Aktivní</option>
                 <option value="terminated">Ukončená</option>
               </select>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button size="sm" disabled>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Přidat dohodáře
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Připravujeme</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </CardHeader>

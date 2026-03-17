@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Receipt, Loader2, Download, ArrowUpDown } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Receipt, Loader2, Download } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { ClientInvoiceForm } from '@/components/client/invoice-form'
@@ -282,40 +283,60 @@ function ClientInvoiceListView({
         </div>
       )}
 
-      {/* Document type tabs */}
+      {/* Compact filter bar */}
       {invoices.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex border-b">
-            {(['all', 'invoice', 'proforma', 'credit_note'] as DocTypeFilter[]).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setDocTypeFilter(tab)}
-                className={cn(
-                  'px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px',
-                  docTypeFilter === tab
-                    ? 'border-violet-600 text-violet-600'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {docTypeTabLabels[tab]}
-                {docTypeCounts[tab] > 0 && (
-                  <span className={cn(
-                    'ml-1.5 text-xs px-1.5 py-0.5 rounded-full',
-                    docTypeFilter === tab ? 'bg-violet-100 text-violet-700' : 'bg-muted text-muted-foreground'
-                  )}>
-                    {docTypeCounts[tab]}
-                  </span>
-                )}
-              </button>
-            ))}
+        <div className="space-y-2">
+          {/* Row 1: Search + dropdowns */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              placeholder="Hledat číslo, partner..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="h-8 text-xs flex-1 min-w-[160px]"
+            />
+            <Select value={docTypeFilter} onValueChange={v => setDocTypeFilter(v as DocTypeFilter)}>
+              <SelectTrigger className="h-8 text-xs w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Všechny typy</SelectItem>
+                <SelectItem value="invoice">Faktury ({docTypeCounts.invoice})</SelectItem>
+                <SelectItem value="proforma">Zálohové ({docTypeCounts.proforma})</SelectItem>
+                <SelectItem value="credit_note">Dobropisy ({docTypeCounts.credit_note})</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={dateFilter} onValueChange={v => setDateFilter(v as DateFilter)}>
+              <SelectTrigger className="h-8 text-xs w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Celé období</SelectItem>
+                <SelectItem value="this_month">Tento měsíc</SelectItem>
+                <SelectItem value="this_year">Tento rok</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortOrder} onValueChange={v => setSortOrder(v as SortOrder)}>
+              <SelectTrigger className="h-8 text-xs w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Nejnovější</SelectItem>
+                <SelectItem value="oldest">Nejstarší</SelectItem>
+                <SelectItem value="amount_desc">Částka ↓</SelectItem>
+                <SelectItem value="amount_asc">Částka ↑</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Status filter */}
+          {/* Row 2: Status pills */}
           <div className="flex items-center gap-1 flex-wrap">
             {(['all', 'draft', 'sent', 'unpaid', 'paid', 'overdue'] as StatusFilter[]).map(f => {
-              const label = f === 'all' ? 'Vše' : f === 'draft' ? 'Koncept' : f === 'sent' ? 'Odesláno'
+              const label = f === 'all' ? 'Vše'
+                : f === 'draft' ? 'Koncept'
+                : f === 'sent' ? 'Odesláno'
                 : f === 'unpaid' ? `Nezaplaceno${unpaidCount > 0 ? ` (${unpaidCount})` : ''}`
-                : f === 'paid' ? 'Zaplaceno' : `Po splatnosti${overdueCount > 0 ? ` (${overdueCount})` : ''}`
+                : f === 'paid' ? 'Zaplaceno'
+                : `Po splatnosti${overdueCount > 0 ? ` (${overdueCount})` : ''}`
               return (
                 <button
                   key={f}
@@ -329,40 +350,6 @@ function ClientInvoiceListView({
                 </button>
               )
             })}
-          </div>
-
-          {/* Date filter + sort + search */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1">
-              {(['all', 'this_month', 'this_year'] as DateFilter[]).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setDateFilter(f)}
-                  className={cn(
-                    'filter-pill',
-                    dateFilter === f ? 'filter-pill-active' : 'filter-pill-inactive'
-                  )}
-                >
-                  {f === 'all' ? 'Vše' : f === 'this_month' ? 'Tento měsíc' : 'Tento rok'}
-                </button>
-              ))}
-            </div>
-            <select
-              value={sortOrder}
-              onChange={e => setSortOrder(e.target.value as SortOrder)}
-              className="h-7 px-2 rounded-md border border-input bg-background text-xs cursor-pointer"
-            >
-              <option value="newest">Nejnovější</option>
-              <option value="oldest">Nejstarší</option>
-              <option value="amount_desc">Částka ↓</option>
-              <option value="amount_asc">Částka ↑</option>
-            </select>
-            <Input
-              placeholder="Hledat číslo, partner..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="h-7 text-xs flex-1 min-w-[120px]"
-            />
           </div>
         </div>
       )}

@@ -18,13 +18,16 @@ export const VEHICLE_CATEGORY_LABELS: Record<VehicleCategory, string> = {
 }
 
 export const PURPOSE_SUGGESTIONS = [
+  'Pracovní cesta',
   'Obchodní schůzka',
   'Jednání s klientem',
   'Jednání s dodavatelem',
+  'Pracovní schůzka mimo kancelář',
+  'Jednání na úřadě',
+  'Školení / kurz',
+  'Školení / konference',
   'Nákup materiálu / zboží',
   'Doručení zboží / zásilky',
-  'Pracovní schůzka mimo kancelář',
-  'Školení / konference',
   'Servis / údržba',
   'Výroba / montáž',
   'Kontrola na stavbě / provozovně',

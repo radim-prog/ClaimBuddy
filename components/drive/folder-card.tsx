@@ -19,6 +19,7 @@ import type { DocumentFolder } from '@/lib/types/drive'
 
 type FolderCardProps = {
   folder: DocumentFolder
+  description?: string
   onClick: () => void
 }
 
@@ -40,7 +41,7 @@ function getFolderIcon(iconName: string): LucideIcon {
   return ICON_MAP[iconName] || Folder
 }
 
-export function FolderCard({ folder, onClick }: FolderCardProps) {
+export function FolderCard({ folder, description, onClick }: FolderCardProps) {
   const Icon = getFolderIcon(folder.icon)
 
   return (
@@ -60,6 +61,9 @@ export function FolderCard({ folder, onClick }: FolderCardProps) {
           <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
             {folder.name}
           </p>
+          {description && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{description}</p>
+          )}
           <div className="flex items-center gap-2 mt-1.5">
             <Badge
               variant="outline"

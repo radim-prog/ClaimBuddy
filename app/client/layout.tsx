@@ -19,17 +19,14 @@ import {
   Lock,
   Crown,
   ClipboardList,
-  FileInput,
   Landmark,
   Package,
   UserCheck,
-  ShieldAlert,
   ShieldCheck,
   BookOpen,
   FolderOpen,
   FilePlus,
   Shield,
-  Calculator,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -78,7 +75,6 @@ const accountingNavigation: NavItem[] = [
 
 // Claims context navigation
 const claimsNavigation: NavItem[] = [
-  { name: 'Přehled', href: '/client/claims', icon: LayoutDashboard },
   { name: 'Moje spisy', href: '/client/claims', icon: FolderOpen },
   { name: 'Soubory', href: '/client/documents', icon: FileText },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
@@ -380,7 +376,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-950/90 backdrop-blur-2xl border-t border-gray-200/60 dark:border-gray-800/60 z-50 safe-area-bottom">
         <nav className="flex justify-around px-1 pt-1 pb-1">
           {navigation.filter(n => isClaims
-            ? ['Přehled', 'Moje spisy', 'Soubory', 'Zprávy', 'Nahlásit událost'].includes(n.name)
+            ? ['Moje spisy', 'Soubory', 'Zprávy', 'Nahlásit událost'].includes(n.name)
             : ['Přehled', 'Doklady', 'Faktury', 'Adresář', 'Zprávy'].includes(n.name)
           ).map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
