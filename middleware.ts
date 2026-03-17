@@ -165,10 +165,14 @@ export async function middleware(request: NextRequest) {
       url.pathname = '/claims'
       return NextResponse.rewrite(url)
     }
+    // Client on claims hostname trying to reach accounting dashboard → redirect to claims
+    if (pathname === '/client/dashboard') {
+      return NextResponse.redirect(new URL('/client/claims', request.url))
+    }
     // /auth paths stay as-is (login/logout)
     // /api paths stay as-is
     // /claims and /accountant paths stay as-is
-    // Everything else that's not claims/accountant/api/auth/_next → redirect to /accountant/claims/dashboard
+    // Everything else that's not claims/accountant/client/api/auth/_next → redirect to claims dashboard
     if (!pathname.startsWith('/claims') && !pathname.startsWith('/accountant') && !pathname.startsWith('/client') && !pathname.startsWith('/api') && !pathname.startsWith('/auth') && !pathname.startsWith('/_next')) {
       return NextResponse.redirect(new URL('/accountant/claims/dashboard', request.url))
     }
@@ -181,14 +185,21 @@ export async function middleware(request: NextRequest) {
       const user = await verifyToken(token)
       if (user) {
         if (pathname === '/claims') {
-          // Claims landing: logged-in staff → claims dashboard
+          // Claims landing: logged-in staff → claims dashboard, client → client claims
+          if (user.role === 'client') {
+            return NextResponse.redirect(new URL('/client/claims', request.url))
+          }
           const modules = user.modules || ['accounting']
-          if (modules.includes('claims') && user.role !== 'client') {
+          if (modules.includes('claims')) {
             return NextResponse.redirect(new URL('/accountant/claims/dashboard', request.url))
           }
         }
-        const dest = user.role === 'client' ? '/client/dashboard' : '/accountant/dashboard'
-        return NextResponse.redirect(new URL(dest, request.url))
+        // Default: claims hostname clients → /client/claims, otherwise /client/dashboard
+        if (user.role === 'client') {
+          const dest = hostname === 'claims.zajcon.cz' ? '/client/claims' : '/client/dashboard'
+          return NextResponse.redirect(new URL(dest, request.url))
+        }
+        return NextResponse.redirect(new URL('/accountant/dashboard', request.url))
       }
     }
     return NextResponse.next()
@@ -277,12 +288,13 @@ export async function middleware(request: NextRequest) {
       }
       return NextResponse.redirect(new URL('/accountant/dashboard', request.url))
     }
-    // Claims requires staff role
-    if (!isStaffRole) {
+    // Claims requires staff role (except /claims/new which is public intake)
+    if (!isStaffRole && !pathname.startsWith('/claims/new')) {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
-      return NextResponse.redirect(new URL('/client/dashboard', request.url))
+      const clientDest = hostname === 'claims.zajcon.cz' ? '/client/claims' : '/client/dashboard'
+      return NextResponse.redirect(new URL(clientDest, request.url))
     }
   }
 

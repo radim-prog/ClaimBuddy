@@ -16,8 +16,15 @@ const STORAGE_KEY = 'active-module'
 
 function deriveModuleFromPath(pathname: string): ActiveModule | null {
   if (pathname.startsWith('/accountant/claims')) return 'claims'
+  if (pathname.startsWith('/client/claims')) return 'claims'
   if (pathname.startsWith('/accountant')) return 'accounting'
   return null
+}
+
+/** Detect claims hostname (claims.zajcon.cz) */
+function isClaimsHostname(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.location.hostname === 'claims.zajcon.cz'
 }
 
 export function ActiveModuleProvider({ children }: { children: ReactNode }) {
@@ -25,13 +32,18 @@ export function ActiveModuleProvider({ children }: { children: ReactNode }) {
   const [fallbackModule, setFallbackModule] = useState<ActiveModule>('accounting')
 
   useEffect(() => {
+    // claims.zajcon.cz → always force claims module
+    if (isClaimsHostname()) {
+      setFallbackModule('claims')
+      return
+    }
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored === 'accounting' || stored === 'claims') {
       setFallbackModule(stored)
     }
   }, [])
 
-  const activeModule = deriveModuleFromPath(pathname) ?? fallbackModule
+  const activeModule = isClaimsHostname() ? 'claims' : (deriveModuleFromPath(pathname) ?? fallbackModule)
 
   const setActiveModule = (module: ActiveModule) => {
     setFallbackModule(module)
