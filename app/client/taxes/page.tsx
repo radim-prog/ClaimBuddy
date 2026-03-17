@@ -66,7 +66,7 @@ const monthNamesFull = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červe
 
 export default function ClientTaxesPage() {
   const { selectedCompanyId, selectedCompany } = useClientUser()
-  const [year, setYear] = useState(new Date().getFullYear() - 1)
+  const [year, setYear] = useState(new Date().getFullYear())
   const [summary, setSummary] = useState<TaxSummary | null>(null)
   const [periods, setPeriods] = useState<TaxPeriod[]>([])
   const [vatPayer, setVatPayer] = useState(false)
