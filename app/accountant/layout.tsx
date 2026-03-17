@@ -193,9 +193,9 @@ function NavContent({
         `}
       >
         <span className={`flex items-center ${collapsed ? 'relative' : ''}`}>
-          <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${locked ? theme.textMuted : isActive ? theme.activeIcon : iconGroupColor || `${theme.textMuted} group-hover:text-white/65`}`} />
+          <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${locked ? theme.textMuted : isActive ? theme.activeIcon : iconGroupColor || `${theme.textMuted} ${theme.hoverText.replace('hover:', 'group-hover:')}`}`} />
           {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
-          {!collapsed && locked && <Lock className="ml-1.5 h-3 w-3 text-white/25" />}
+          {!collapsed && locked && <Lock className={`ml-1.5 h-3 w-3 ${theme.textMuted}`} />}
           {collapsed && item.badge === 'dynamic' && inboxCount > 0 && (
             <span className={`absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold ${theme.badgeAccent} text-white rounded-full`}>{inboxCount}</span>
           )}
@@ -223,7 +223,7 @@ function NavContent({
             {item.badge === 'inbox' && documentInboxCount > 0 && (
               <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-amber-400 text-gray-900 rounded-full min-w-[1.25rem]">{documentInboxCount}</span>
             )}
-            {isActive && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
+            {isActive && <ChevronRight className={`h-3.5 w-3.5 ${theme.textMuted}`} />}
           </span>
         )}
       </Link>
@@ -262,7 +262,7 @@ function NavContent({
             <p className={`text-[10px] font-semibold ${theme.groupLabel} uppercase tracking-widest`}>
               Správa
             </p>
-            <ChevronDown className={`h-3 w-3 text-white/30 transition-transform duration-200 ${managementOpen ? '' : '-rotate-90'}`} />
+            <ChevronDown className={`h-3 w-3 ${theme.textMuted} transition-transform duration-200 ${managementOpen ? '' : '-rotate-90'}`} />
           </button>
         ) : (
           <div className={`w-full h-px ${theme.border.replace('border-', 'bg-')} mb-1`} />
@@ -281,7 +281,7 @@ function NavContent({
               <p className={`text-[10px] font-semibold ${theme.groupLabel} uppercase tracking-widest`}>
                 Nástroje
               </p>
-              <ChevronDown className={`h-3 w-3 text-white/30 transition-transform duration-200 ${toolsOpen ? '' : '-rotate-90'}`} />
+              <ChevronDown className={`h-3 w-3 ${theme.textMuted} transition-transform duration-200 ${toolsOpen ? '' : '-rotate-90'}`} />
             </button>
           ) : (
             <div className={`w-full h-px ${theme.border.replace('border-', 'bg-')} mb-1`} />
@@ -537,15 +537,15 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 {isClaims ? (
                   <Shield className="h-4 w-4 text-white" />
                 ) : (
-                  <span className={`text-sm font-bold font-display ${sidebarThemeId === 'minimal' ? 'text-white' : 'text-white'}`}>U</span>
+                  <span className="text-sm font-bold font-display text-white">U</span>
                 )}
               </div>
               {!collapsed && (
                 <div className="overflow-hidden">
-                  <h1 className="text-base font-semibold text-white/95 font-display tracking-tight whitespace-nowrap">
+                  <h1 className={`text-base font-semibold ${sidebarTheme.textActive} font-display tracking-tight whitespace-nowrap`}>
                     {isClaims ? 'PU Manager' : 'Účetní OS'}
                   </h1>
-                  <p className="text-[10px] text-white/40 font-medium whitespace-nowrap">
+                  <p className={`text-[10px] ${sidebarTheme.textMuted} font-medium whitespace-nowrap`}>
                     {isClaims ? 'Pojistné události' : 'Portál pro účetní'}
                   </p>
                 </div>
@@ -555,7 +555,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
 
           {/* App Switcher */}
           {!collapsed && userModules.length > 1 && (
-            <div className="relative px-3 py-2 border-b border-white/[0.06]">
+            <div className={`relative px-3 py-2 border-b ${sidebarTheme.border}`}>
               <AppSwitcher userModules={userModules} />
             </div>
           )}
@@ -633,7 +633,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                       {!isCurrentPageBookmarked && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleAddBookmark() }}
-                          className={`${sidebarTheme.textMuted} hover:text-white/80 transition-colors p-0.5`}
+                          className={`${sidebarTheme.textMuted} ${sidebarTheme.hoverText} transition-colors p-0.5`}
                           title="Přidat tuto stránku do záložek"
                         >
                           <Plus className="h-3 w-3" />
@@ -798,13 +798,13 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
 
           {/* User impersonation — admin only */}
           {showAdmin && staffUsers.length > 0 && collapsed && (
-            <div className="relative flex-shrink-0 border-t border-white/[0.06] px-3 py-2">
+            <div className={`relative flex-shrink-0 border-t ${sidebarTheme.border} px-3 py-2`}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button className={`w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
-                        impersonatedUser ? 'text-amber-400 bg-amber-400/10' : 'text-white/40 hover:bg-white/[0.05] hover:text-white/70'
+                        impersonatedUser ? 'text-amber-400 bg-amber-400/10' : `${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} ${sidebarTheme.hoverText}`
                       }`}>
                         <UserCog className="h-[18px] w-[18px] flex-shrink-0" />
                       </button>
@@ -841,10 +841,10 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
             </div>
           )}
           {showAdmin && staffUsers.length > 0 && !collapsed && (
-            <div className="relative flex-shrink-0 border-t border-white/[0.06] px-3 py-2">
+            <div className={`relative flex-shrink-0 border-t ${sidebarTheme.border} px-3 py-2`}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200">
+                  <button className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl ${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} ${sidebarTheme.hoverText} transition-all duration-200`}>
                     <UserCog className="h-[18px] w-[18px] flex-shrink-0" />
                     <span className="whitespace-nowrap">
                       {impersonatedUser ? `Jako: ${impersonatedUser.name}` : 'Přepnout pohled'}
@@ -879,20 +879,20 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           )}
 
           {/* User section */}
-          <div className="relative flex-shrink-0 border-t border-white/[0.06] p-3">
+          <div className={`relative flex-shrink-0 border-t ${sidebarTheme.border} p-3`}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full group hover:bg-white/[0.05] rounded-xl p-2 transition-all duration-200`}>
+                <button className={`flex items-center ${collapsed ? 'justify-center' : ''} w-full group ${sidebarTheme.hoverBg} rounded-xl p-2 transition-all duration-200`}>
                   <Avatar className="h-9 w-9 flex-shrink-0">
-                    <AvatarFallback className="bg-white/10 text-white/80 text-sm font-semibold">
+                    <AvatarFallback className={`${sidebarThemeId === 'minimal' ? 'bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white/80' : 'bg-white/10 text-white/80'} text-sm font-semibold`}>
                       {userInitials || '..'}
                     </AvatarFallback>
                   </Avatar>
                   {!collapsed && (
                     <>
                       <div className="ml-3 text-left overflow-hidden">
-                        <p className="text-sm font-medium text-white/90 truncate">{userName || 'Načítání...'}</p>
-                        <p className="text-[11px] text-white/40">{roleLabel}</p>
+                        <p className={`text-sm font-medium ${sidebarTheme.textActive} truncate`}>{userName || 'Načítání...'}</p>
+                        <p className={`text-[11px] ${sidebarTheme.textMuted}`}>{roleLabel}</p>
                       </div>
                       {userRole === 'admin' && (
                         <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-violet-400/20 text-violet-300 rounded-md border border-violet-400/20">
@@ -943,10 +943,10 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 <span className="text-xs font-bold text-white font-display">U</span>
               )}
             </div>
-            <span className="text-sm font-semibold text-white/90 font-display">{isClaims ? 'PU Manager' : 'Účetní OS'}</span>
+            <span className="text-sm font-semibold text-white/[0.90] font-display">{isClaims ? 'PU Manager' : 'Účetní OS'}</span>
           </div>
           <div className="flex items-center gap-2">
-            <ThemeToggle variant="icon" className="text-white/50 hover:text-white hover:bg-white/10 rounded-lg" />
+            <ThemeToggle variant="icon" className="text-white/[0.50] hover:text-white hover:bg-white/10 rounded-lg" />
           </div>
         </div>
       </div>
