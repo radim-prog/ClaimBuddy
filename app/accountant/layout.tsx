@@ -482,7 +482,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           )}
 
           {/* Logo */}
-          <div className={`relative flex items-center h-16 flex-shrink-0 border-b border-white/[0.06] transition-all duration-300 ${collapsed ? 'justify-center px-3' : 'px-5'}`}>
+          <div className={`relative flex items-center h-16 flex-shrink-0 border-b ${sidebarTheme.border} transition-all duration-300 ${collapsed ? 'justify-center px-3' : 'px-5'}`}>
             <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-soft-sm flex-shrink-0 ${isClaims ? 'bg-gradient-to-br from-blue-400 to-blue-500' : `bg-gradient-to-br ${sidebarTheme.logoGradient}`}`}>
                 {isClaims ? (
@@ -534,33 +534,91 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
             />
           </TooltipProvider>
 
-          {/* Tools - Průvodce & Tmavý režim */}
-          <div className="relative flex-shrink-0 border-t border-white/[0.06] px-3 py-3 space-y-0.5">
+          {/* Tools - Průvodce, Styl menu, Tmavý režim */}
+          <div className={`relative flex-shrink-0 border-t ${sidebarTheme.border} px-3 py-3 space-y-0.5`}>
             {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => startTour()}
-                    className="w-full group flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200"
-                  >
-                    <BookOpen className="h-[18px] w-[18px] flex-shrink-0" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="font-medium">Průvodce</TooltipContent>
-              </Tooltip>
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => startTour()}
+                      className={`w-full group flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl ${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} transition-all duration-200`}
+                    >
+                      <BookOpen className="h-[18px] w-[18px] flex-shrink-0" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="font-medium">Průvodce</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenu open={themePickerOpen} onOpenChange={setThemePickerOpen}>
+                      <DropdownMenuTrigger asChild>
+                        <button className={`w-full group flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl ${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} transition-all duration-200`}>
+                          <Palette className="h-[18px] w-[18px] flex-shrink-0" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent side="right" align="end" className="w-48">
+                        <DropdownMenuLabel>Styl menu</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {SIDEBAR_THEME_LIST.map(t => (
+                          <DropdownMenuItem
+                            key={t.id}
+                            onClick={() => handleThemeChange(t.id)}
+                            className="gap-3 cursor-pointer"
+                          >
+                            <div className={`w-5 h-5 rounded-md ${t.preview.bg} ${t.id === sidebarThemeId ? 'ring-2 ring-primary ring-offset-1' : ''}`} />
+                            <div>
+                              <p className="font-medium text-sm">{t.name}</p>
+                              <p className="text-[10px] text-muted-foreground">{t.description}</p>
+                            </div>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="font-medium">Styl menu</TooltipContent>
+                </Tooltip>
+              </>
             ) : (
-              <button
-                onClick={() => startTour()}
-                className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200"
-              >
-                <BookOpen className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
-                Průvodce
-              </button>
+              <>
+                <button
+                  onClick={() => startTour()}
+                  className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl ${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} transition-all duration-200`}
+                >
+                  <BookOpen className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
+                  Průvodce
+                </button>
+                <DropdownMenu open={themePickerOpen} onOpenChange={setThemePickerOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <button className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl ${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} transition-all duration-200`}>
+                      <Palette className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
+                      Styl menu
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent side="right" align="end" className="w-52">
+                    <DropdownMenuLabel>Styl menu</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {SIDEBAR_THEME_LIST.map(t => (
+                      <DropdownMenuItem
+                        key={t.id}
+                        onClick={() => handleThemeChange(t.id)}
+                        className="gap-3 cursor-pointer"
+                      >
+                        <div className={`w-5 h-5 rounded-md ${t.preview.bg} ${t.id === sidebarThemeId ? 'ring-2 ring-primary ring-offset-1' : ''}`} />
+                        <div>
+                          <p className="font-medium text-sm">{t.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{t.description}</p>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             )}
             <div className={`${collapsed ? 'flex justify-center' : ''}`}>
               <ThemeToggle
                 variant={collapsed ? 'icon' : 'full'}
-                className="text-white/40 hover:text-white/70 hover:bg-white/[0.05] rounded-xl"
+                className={`${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} rounded-xl`}
               />
             </div>
           </div>
