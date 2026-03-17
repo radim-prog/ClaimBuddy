@@ -21,13 +21,17 @@ import {
   Lock,
   Filter,
   Info,
+  Loader2,
 } from 'lucide-react'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Dohoda, DohodaMesic, DohodaStatus } from '@/lib/types/dohodari'
@@ -47,6 +51,17 @@ export default function DohodariPage() {
   const [selectedPeriod, setSelectedPeriod] = useState(() => {
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  })
+
+  // Add dohodář dialog
+  const [showAddDialog, setShowAddDialog] = useState(false)
+  const [addSubmitting, setAddSubmitting] = useState(false)
+  const [addForm, setAddForm] = useState({
+    first_name: '',
+    last_name: '',
+    typ: 'dpp' as 'dpp' | 'dpc',
+    sazba: '',
+    platnost_od: new Date().toISOString().slice(0, 10),
   })
 
   const fetchData = useCallback(async () => {
@@ -78,6 +93,50 @@ export default function DohodariPage() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  async function handleAddDohodar() {
+    if (!addForm.first_name.trim() || !addForm.last_name.trim() || !addForm.sazba) return
+    setAddSubmitting(true)
+    try {
+      // 1. Create employee
+      const empRes = await fetch('/api/accountant/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: companyId,
+          first_name: addForm.first_name.trim(),
+          last_name: addForm.last_name.trim(),
+          employment_start: addForm.platnost_od,
+          contract_type: addForm.typ,
+        }),
+      })
+      if (!empRes.ok) throw new Error('Failed to create employee')
+      const { employee } = await empRes.json()
+
+      // 2. Create dohoda
+      const dohodaRes = await fetch(`/api/accountant/companies/${companyId}/dohodari`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employee_id: employee.id,
+          typ: addForm.typ,
+          sazba: Number(addForm.sazba),
+          platnost_od: addForm.platnost_od,
+          status: 'draft',
+        }),
+      })
+      if (!dohodaRes.ok) throw new Error('Failed to create dohoda')
+
+      // Reset and refresh
+      setShowAddDialog(false)
+      setAddForm({ first_name: '', last_name: '', typ: 'dpp', sazba: '', platnost_od: new Date().toISOString().slice(0, 10) })
+      fetchData()
+    } catch (err) {
+      console.error('Add dohodář error:', err)
+    } finally {
+      setAddSubmitting(false)
+    }
+  }
 
   // Plan gate
   if (isLocked('dohodari') && isLocked('agreements')) {
@@ -208,19 +267,10 @@ export default function DohodariPage() {
                 <option value="active">Aktivní</option>
                 <option value="terminated">Ukončená</option>
               </select>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <Button size="sm" disabled>
-                        <Plus className="h-4 w-4 mr-1" />
-                        Přidat dohodáře
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>Připravujeme</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Button size="sm" onClick={() => setShowAddDialog(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                Přidat dohodáře
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -305,6 +355,106 @@ export default function DohodariPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Add dohodář dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Přidat dohodáře</DialogTitle>
+            <DialogDescription>Vytvořte novou dohodu o provedení práce (DPP) nebo pracovní činnosti (DPČ).</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="add-first-name">Jméno</Label>
+                <Input
+                  id="add-first-name"
+                  value={addForm.first_name}
+                  onChange={e => setAddForm(f => ({ ...f, first_name: e.target.value }))}
+                  placeholder="Jan"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="add-last-name">Příjmení</Label>
+                <Input
+                  id="add-last-name"
+                  value={addForm.last_name}
+                  onChange={e => setAddForm(f => ({ ...f, last_name: e.target.value }))}
+                  placeholder="Novák"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Typ dohody</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="dohodaTyp"
+                    checked={addForm.typ === 'dpp'}
+                    onChange={() => setAddForm(f => ({ ...f, typ: 'dpp' }))}
+                    className="h-4 w-4 text-blue-600"
+                  />
+                  <span className="text-sm font-medium">DPP</span>
+                  <span className="text-xs text-muted-foreground">— max 300 hod/rok</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="dohodaTyp"
+                    checked={addForm.typ === 'dpc'}
+                    onChange={() => setAddForm(f => ({ ...f, typ: 'dpc' }))}
+                    className="h-4 w-4 text-purple-600"
+                  />
+                  <span className="text-sm font-medium">DPČ</span>
+                  <span className="text-xs text-muted-foreground">— max 20 hod/týden</span>
+                </label>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="add-sazba">Odměna (Kč/hod)</Label>
+                <Input
+                  id="add-sazba"
+                  type="number"
+                  min="0"
+                  value={addForm.sazba}
+                  onChange={e => setAddForm(f => ({ ...f, sazba: e.target.value }))}
+                  placeholder="200"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="add-platnost">Platnost od</Label>
+                <Input
+                  id="add-platnost"
+                  type="date"
+                  value={addForm.platnost_od}
+                  onChange={e => setAddForm(f => ({ ...f, platnost_od: e.target.value }))}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Zrušit</Button>
+            <Button
+              onClick={handleAddDohodar}
+              disabled={addSubmitting || !addForm.first_name.trim() || !addForm.last_name.trim() || !addForm.sazba}
+            >
+              {addSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Ukládám...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Vytvořit
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Tax impact calculator */}
       {stats && (

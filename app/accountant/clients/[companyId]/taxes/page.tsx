@@ -12,7 +12,8 @@ import type { TaxAnnualConfigRow } from '@/lib/types/tax'
 
 export default function TaxesPage() {
   const { company, companyId, employees } = useCompany()
-  const [year, setYear] = useState(new Date().getFullYear())
+  // Tax filing is typically for the previous year (e.g., filing 2025 return in 2026)
+  const [year, setYear] = useState(new Date().getFullYear() - 1)
   const [rates, setRates] = useState<TaxRates | null>(null)
   const [config, setConfig] = useState<Partial<TaxAnnualConfigRow> | null>(null)
   const [yearTotals, setYearTotals] = useState({ revenue: 0, expenses: 0 })

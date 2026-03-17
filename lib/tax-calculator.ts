@@ -25,6 +25,7 @@ export type TaxRates = {
   social_minimum_advance_secondary: number  // 1574
   health_minimum_advance_secondary: number  // 0
   social_max_assessment_base: number // 2110416
+  health_min_assessment_base: number // Min. VZ ZP = 0.5 × průměrná mzda × 12 (2025: 279342)
   disability_credit_1: number     // Invalidita 1./2. stupně (2520)
   disability_credit_2: number     // Invalidita 3. stupně (5040)
   disability_credit_3: number     // ZTP/P (16140)
@@ -53,6 +54,7 @@ export const DEFAULT_TAX_RATES: TaxRates = {
   social_minimum_advance_secondary: 1574,
   health_minimum_advance_secondary: 0,
   social_max_assessment_base: 2110416,
+  health_min_assessment_base: 279342, // 0.5 × 46557 × 12 (2025 average wage 46557)
   disability_credit_1: 2520,
   disability_credit_2: 5040,
   disability_credit_3: 16140,
@@ -267,15 +269,18 @@ export function calculateIncomeTax(
     : Math.max(socialFromRate, socialMinimumAnnual)
   const socialDue = socialCalculated - config.social_advances_paid
 
-  // Health insurance: profit × base_percentage × rate, enforce minimum
-  const healthBase = profit * rates.health_base_percentage
+  // Health insurance: profit × base_percentage × rate, enforce minimum assessment base
+  const healthBaseRaw = profit * rates.health_base_percentage
+  // Minimum assessment base applies for main activity (0.5 × avg wage × 12)
+  const healthMinBase = config.is_secondary_activity ? 0 : (rates.health_min_assessment_base || 0)
+  const healthBase = Math.max(healthBaseRaw, healthMinBase)
   const healthFromRate = Math.round(healthBase * rates.health_insurance_rate)
 
   const healthMinMonthly = config.is_secondary_activity
     ? rates.health_minimum_advance_secondary
     : rates.health_minimum_advance
   const healthMinimumAnnual = healthMinMonthly * 12
-  const healthMinimumApplied = healthFromRate < healthMinimumAnnual && healthMinimumAnnual > 0
+  const healthMinimumApplied = healthBase > healthBaseRaw
   const healthCalculated = Math.max(healthFromRate, healthMinimumAnnual)
   const healthDue = healthCalculated - config.health_advances_paid
 
@@ -427,8 +432,13 @@ export function calculateEmployeeTax(
 
   const studentCredit = config.student ? rates.student_credit : 0
 
-  const totalCredits = taxpayerCredit + childrenCredit + disabilityCredit + ztppCredit + studentCredit + config.other_credits
-  const netTax = grossTax - totalCredits
+  // Non-refundable credits (cannot reduce tax below 0)
+  const nonRefundableCredits = taxpayerCredit + disabilityCredit + ztppCredit + studentCredit + config.other_credits
+  const taxAfterNonRefundable = Math.max(0, grossTax - nonRefundableCredits)
+
+  // Refundable credit (children = daňový bonus, can go negative)
+  const totalCredits = nonRefundableCredits + childrenCredit
+  const netTax = taxAfterNonRefundable - childrenCredit
   const taxDue = netTax - config.tax_advances_paid
 
   return {
