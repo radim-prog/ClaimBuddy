@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Navbar } from '@/components/landing/navbar'
-import { Footer } from '@/components/landing/footer'
+import { ClaimsNavbar } from '@/components/claims/claims-navbar'
+import { ClaimsFooter } from '@/components/claims/claims-footer'
 import { ClaimsFAQ } from '@/components/claims/claims-faq'
 import {
   CheckCircle,
@@ -11,7 +11,6 @@ import {
   Smartphone,
   HeartHandshake,
   ArrowRight,
-  Phone,
   Star,
 } from 'lucide-react'
 
@@ -109,7 +108,7 @@ const STATS = [
 export default function ClaimsLandingPage() {
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      <ClaimsNavbar />
 
       {/* ── Hero ───────────────────────────────────────────────── */}
       <section className="relative overflow-hidden py-20 sm:py-28 lg:py-36">
@@ -344,14 +343,29 @@ export default function ClaimsLandingPage() {
             </Link>
           </div>
 
-          <p className="mt-4 text-sm text-muted-foreground flex items-center justify-center gap-2">
-            <Phone className="h-4 w-4" />
-            Nebo zavolejte: +420 XXX XXX XXX
+          <p className="mt-4 text-sm text-muted-foreground">
+            Nebo nám napište na{' '}
+            <a href="mailto:podpora@zajcon.cz" className="text-blue-600 hover:underline">
+              podpora@zajcon.cz
+            </a>
           </p>
+
+          <div className="mt-6 pt-6 border-t border-blue-200/30 dark:border-blue-800/30">
+            <p className="text-sm text-muted-foreground">
+              Jste náš klient?{' '}
+              <Link
+                href="/auth/login"
+                className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
+              >
+                Přihlaste se
+              </Link>{' '}
+              a sledujte stav svého případu online.
+            </p>
+          </div>
         </div>
       </section>
 
-      <Footer />
+      <ClaimsFooter />
     </div>
   )
 }

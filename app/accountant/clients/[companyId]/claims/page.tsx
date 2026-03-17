@@ -90,12 +90,7 @@ export default function ClientClaimsPage() {
       if (filterStatus) params.set('status', filterStatus)
       if (search) params.set('search', search)
 
-      const res = await fetch(`/api/claims/cases?${params}`, {
-        headers: {
-          'x-user-id': userId,
-          'x-user-role': 'accountant',
-        },
-      })
+      const res = await fetch(`/api/claims/cases?${params}`)
 
       if (res.ok) {
         const data = await res.json()
@@ -174,7 +169,7 @@ export default function ClientClaimsPage() {
               <Shield className="h-5 w-5 text-indigo-600" />
               Pojistné události
             </CardTitle>
-            <Link href="/claims/cases/new">
+            <Link href="/accountant/claims/cases/new">
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1" />
                 Nový případ
@@ -250,7 +245,7 @@ export default function ClientClaimsPage() {
               {filteredCases.map(c => (
                 <Link
                   key={c.id}
-                  href={`/claims/cases/${c.id}`}
+                  href={`/accountant/claims/cases/${c.id}`}
                   className="block border rounded-lg p-4 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center justify-between">

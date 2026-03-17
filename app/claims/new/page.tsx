@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import { Navbar } from '@/components/landing/navbar'
-import { Footer } from '@/components/landing/footer'
+import { ClaimsNavbar } from '@/components/claims/claims-navbar'
+import { ClaimsFooter } from '@/components/claims/claims-footer'
 import { ClaimIntakeForm } from './claim-intake-form'
 
 export const metadata: Metadata = {
@@ -12,11 +12,11 @@ export const metadata: Metadata = {
 export default function ClaimIntakePage() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col">
-      <Navbar />
+      <ClaimsNavbar />
       <main className="flex-1 pt-8 pb-16">
         <ClaimIntakeForm />
       </main>
-      <Footer />
+      <ClaimsFooter />
     </div>
   )
 }

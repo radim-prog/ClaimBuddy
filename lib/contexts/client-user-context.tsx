@@ -40,6 +40,7 @@ type ClientUserContextType = {
   selectedCompanyId: string
   setSelectedCompanyId: (id: string) => void
   selectedCompany: Company | undefined
+  userModules: string[]
 }
 
 const ClientUserContext = createContext<ClientUserContextType | undefined>(undefined)
@@ -55,6 +56,7 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedCompanyId, setSelectedCompanyIdState] = useState('')
+  const [userModules, setUserModules] = useState<string[]>(['accounting'])
 
   const setSelectedCompanyId = useCallback((id: string) => {
     setSelectedCompanyIdState(id)
@@ -67,9 +69,18 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch('/api/client/companies')
+      const [response, meResponse] = await Promise.all([
+        fetch('/api/client/companies'),
+        fetch('/api/auth/me'),
+      ])
       if (!response.ok) throw new Error('Failed to fetch companies')
       const data = await response.json()
+
+      // Load user modules from /api/auth/me
+      if (meResponse.ok) {
+        const meData = await meResponse.json()
+        setUserModules(meData.modules || ['accounting'])
+      }
 
       const companiesList: Company[] = data.companies || []
       setCompanies(companiesList)

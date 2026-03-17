@@ -27,6 +27,16 @@ import { PeriodFilter } from '@/components/drive/period-filter'
 import { FolderCard } from '@/components/drive/folder-card'
 import type { DocumentFolder, DriveFile, FileViewMode } from '@/lib/types/drive'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { useActiveModule } from '@/lib/contexts/active-module-context'
+
+// Accounting-only folder slugs — hidden in claims module
+const ACCOUNTING_FOLDER_SLUGS = new Set([
+  'faktury-prijate',
+  'faktury-vydane',
+  'vypisy-z-uctu',
+  'mzdy',
+  'danova-priznani',
+])
 
 // ============================================
 // PROPS
@@ -128,6 +138,7 @@ function TableSkeleton() {
 
 export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
   const { userRole } = useAccountantUser()
+  const { activeModule } = useActiveModule()
   // --- State ---
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
   const [currentFolderName, setCurrentFolderName] = useState<string>('')
@@ -474,13 +485,15 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {folders
-                .filter((f) =>
-                  search.trim()
-                    ? f.name
-                        .toLowerCase()
-                        .includes(search.trim().toLowerCase())
+                .filter((f) => {
+                  // Hide accounting-specific folders in claims module
+                  if (activeModule === 'claims' && f.slug && ACCOUNTING_FOLDER_SLUGS.has(f.slug)) {
+                    return false
+                  }
+                  return search.trim()
+                    ? f.name.toLowerCase().includes(search.trim().toLowerCase())
                     : true
-                )
+                })
                 .sort((a, b) => a.sort_order - b.sort_order)
                 .map((folder) => (
                   <FolderCard
