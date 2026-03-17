@@ -24,6 +24,7 @@ export interface AutoFillContext {
   signers?: Array<{ name: string; email: string; phone?: string }>
   userId?: string  // accountant user ID
   firmId?: string  // accounting firm ID
+  insuranceCaseId?: string  // PU case for insurance contract fields
 }
 
 interface ResolvedContext {
