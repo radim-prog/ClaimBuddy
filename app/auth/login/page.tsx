@@ -42,7 +42,7 @@ function LoginForm() {
     const error = searchParams.get('error')
     const p = searchParams.get('portal')
 
-    if (p === 'client') setPortal('client')
+    if (p === 'client' || window.location.hostname === 'claims.zajcon.cz') setPortal('client')
     if (verified === 'true') {
       toast.success('Email ověřen', {
         description: 'Váš účet byl úspěšně ověřen. Nyní se můžete přihlásit.',
