@@ -155,6 +155,17 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
         })
         .eq('id', caseId)
       logError({ level: 'info', message: `Claims payment completed: case=${caseId}, mode=${serviceMode}`, source: 'stripe-webhook' })
+
+      // Auto-trigger AI processing for ai_processing mode
+      if (serviceMode === 'ai_processing') {
+        try {
+          const { processClaimWithAI } = await import('@/lib/claims-ai-processor')
+          await processClaimWithAI(caseId)
+          logError({ level: 'info', message: `AI processing completed: case=${caseId}`, source: 'stripe-webhook' })
+        } catch (aiErr) {
+          logError({ level: 'error', message: `AI processing failed: case=${caseId}, error=${aiErr instanceof Error ? aiErr.message : 'unknown'}`, source: 'stripe-webhook' })
+        }
+      }
     }
     return
   }

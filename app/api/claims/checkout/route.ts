@@ -4,7 +4,11 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
-const CLAIMS_SERVICE_PRICE_CZK = 149900 // 1 499 Kč in haléřů
+const PRICE_MAP: Record<string, { amount: number; label: string }> = {
+  ai_processing: { amount: 19900, label: 'Pojistná Pomoc — AI analýza' }, // 199 Kč
+  consultation: { amount: 149900, label: 'Pojistná Pomoc — Konzultace' }, // 1 499 Kč
+  full_representation: { amount: 149900, label: 'Pojistná Pomoc — Plné zastoupení' }, // 1 499 Kč
+}
 
 // POST /api/claims/checkout — create Stripe Checkout Session for claims service
 export async function POST(request: NextRequest) {
@@ -19,8 +23,9 @@ export async function POST(request: NextRequest) {
     if (!caseId) {
       return NextResponse.json({ error: 'caseId is required' }, { status: 400 })
     }
-    if (!serviceMode || !['consultation', 'full_representation'].includes(serviceMode)) {
-      return NextResponse.json({ error: 'serviceMode must be consultation or full_representation' }, { status: 400 })
+    const priceConfig = PRICE_MAP[serviceMode]
+    if (!serviceMode || !priceConfig) {
+      return NextResponse.json({ error: 'serviceMode must be ai_processing, consultation, or full_representation' }, { status: 400 })
     }
 
     // Verify the case exists
@@ -50,11 +55,9 @@ export async function POST(request: NextRequest) {
         {
           price_data: {
             currency: 'czk',
-            unit_amount: CLAIMS_SERVICE_PRICE_CZK,
+            unit_amount: priceConfig.amount,
             product_data: {
-              name: serviceMode === 'consultation'
-                ? 'Pojistná Pomoc — Konzultace'
-                : 'Pojistná Pomoc — Plné zastoupení',
+              name: priceConfig.label,
               description: `Spis: ${caseData.case_number || caseId}`,
             },
           },

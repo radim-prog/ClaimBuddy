@@ -15,14 +15,14 @@ const FOOTER_COLS = [
     heading: 'Kontakt',
     links: [
       { href: 'mailto:podpora@zajcon.cz', label: 'podpora@zajcon.cz' },
-      { href: '/auth/login', label: 'Přihlášení klienta' },
+      { href: '/auth/login?portal=client', label: 'Přihlášení klienta' },
     ],
   },
   {
     heading: 'Právní',
     links: [
       { href: '/legal/terms', label: 'Obchodní podmínky' },
-      { href: '/legal/privacy', label: 'Ochrana osobních údajů' },
+      { href: '/claims/legal/privacy', label: 'Ochrana osobních údajů' },
       { href: '/legal/cookies', label: 'Cookies' },
     ],
   },
@@ -92,7 +92,7 @@ export function ClaimsFooter() {
             <Link href="/legal/terms" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
               Podmínky
             </Link>
-            <Link href="/legal/privacy" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+            <Link href="/claims/legal/privacy" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
               Soukromí
             </Link>
           </div>

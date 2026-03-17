@@ -242,7 +242,7 @@ export type DocumentType = 'claim_report' | 'photo' | 'expert_report' | 'corresp
 export type PaymentType = 'partial' | 'full' | 'advance' | 'refund'
 
 // --- Service modes ---
-export type ServiceMode = 'self_service' | 'consultation' | 'full_representation'
+export type ServiceMode = 'self_service' | 'consultation' | 'full_representation' | 'ai_processing'
 
 export type PowerOfAttorneyStatus = 'not_required' | 'pending' | 'signed' | 'revoked'
 
@@ -252,6 +252,7 @@ export const SERVICE_MODE_LABELS: Record<ServiceMode, string> = {
   self_service: 'Samoobsluha',
   consultation: 'Konzultace',
   full_representation: 'Plné zastoupení',
+  ai_processing: 'AI zpracování',
 }
 
 export const POWER_OF_ATTORNEY_STATUS_LABELS: Record<PowerOfAttorneyStatus, string> = {
@@ -313,6 +314,8 @@ export interface InsuranceCase {
   payment_id: string | null
   power_of_attorney_status: PowerOfAttorneyStatus
   success_fee_percent: number | null
+  ai_report: string | null
+  ai_processed_at: string | null
   created_at: string
   updated_at: string
   // Joined fields (optional)

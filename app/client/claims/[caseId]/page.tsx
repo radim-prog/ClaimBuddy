@@ -15,6 +15,8 @@ import {
   Paperclip,
   AlertCircle,
   Activity,
+  Brain,
+  Sparkles,
 } from 'lucide-react'
 import {
   insuranceStatusLabel,
@@ -151,6 +153,50 @@ export default function ClientCaseDetailPage({ params }: { params: Promise<{ cas
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Report */}
+      {caseData?.ai_report && (
+        <Card className="border-purple-200 dark:border-purple-800">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                <Brain className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-semibold">AI Analýza</h2>
+                  <Sparkles className="h-4 w-4 text-purple-500" />
+                </div>
+                {caseData.ai_processed_at && (
+                  <p className="text-xs text-muted-foreground">
+                    Vygenerováno: {new Date(caseData.ai_processed_at).toLocaleDateString('cs-CZ', {
+                      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                    })}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              {caseData.ai_report}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Processing pending */}
+      {caseData?.service_mode === 'ai_processing' && caseData?.payment_status === 'paid' && !caseData?.ai_report && (
+        <Card className="border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10">
+          <CardContent className="py-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-3" />
+            <p className="text-sm font-medium text-purple-800 dark:text-purple-300">
+              AI analýza se zpracovává...
+            </p>
+            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+              Zpráva bude dostupná během několika minut.
+            </p>
           </CardContent>
         </Card>
       )}

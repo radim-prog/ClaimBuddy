@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id, case_number, insurance_type, event_date, event_description, event_location,
         claimed_amount, approved_amount, paid_amount, status, priority, deadline, created_at,
+        service_mode, payment_status, ai_report, ai_processed_at,
         insurance_company:insurance_companies(id, name)
       `)
       .eq('company_id', clientUser.company_id)

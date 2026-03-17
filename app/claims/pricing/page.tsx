@@ -38,6 +38,21 @@ const TIERS = [
     cta: 'Začít zdarma',
   },
   {
+    name: 'AI zpracování',
+    price: '199 Kč',
+    priceNote: 'jednorázově',
+    desc: 'AI analyzuje vaše fotky a dokumenty a sestaví hlášenku automaticky.',
+    features: [
+      'Vše ze Self-service',
+      'AI analýza fotek a dokumentů',
+      'Automatická hlášenka',
+      'Posouzení nároku',
+      'Hotovo do 15 minut',
+    ],
+    featured: false,
+    cta: 'Vyzkoušet AI',
+  },
+  {
     name: 'Konzultace',
     price: '1 499 Kč',
     priceNote: 'jednorázově',
@@ -73,19 +88,21 @@ const TIERS = [
 
 const SUCCESS_FEE_FLAT = '10 %'
 
-const COMPARISON_ROWS: { label: string; self: boolean; consult: boolean; full: boolean }[] = [
-  { label: 'Nahlášení PU online', self: true, consult: true, full: true },
-  { label: 'Upload dokumentů a fotek', self: true, consult: true, full: true },
-  { label: 'Přehled vašich událostí', self: true, consult: true, full: true },
-  { label: 'Online sledování stavu', self: true, consult: true, full: true },
-  { label: 'Analýza podkladů', self: false, consult: true, full: true },
-  { label: 'Chat s poradcem', self: false, consult: true, full: true },
-  { label: 'Doporučení postupu', self: false, consult: true, full: true },
-  { label: 'Pomoc se sepsáním hlášení', self: false, consult: true, full: true },
-  { label: 'Plná moc (elektronický podpis)', self: false, consult: false, full: true },
-  { label: 'Komunikace s pojišťovnou', self: false, consult: false, full: true },
-  { label: 'Průběžný reporting', self: false, consult: false, full: true },
-  { label: 'Odvolání proti zamítnutí', self: false, consult: false, full: true },
+const COMPARISON_ROWS: { label: string; self: boolean; ai: boolean; consult: boolean; full: boolean }[] = [
+  { label: 'Nahlášení PU online', self: true, ai: true, consult: true, full: true },
+  { label: 'Upload dokumentů a fotek', self: true, ai: true, consult: true, full: true },
+  { label: 'Přehled vašich událostí', self: true, ai: true, consult: true, full: true },
+  { label: 'Online sledování stavu', self: true, ai: true, consult: true, full: true },
+  { label: 'AI analýza fotek a dokumentů', self: false, ai: true, consult: false, full: false },
+  { label: 'Automatická hlášenka (AI)', self: false, ai: true, consult: false, full: false },
+  { label: 'Analýza podkladů (poradce)', self: false, ai: false, consult: true, full: true },
+  { label: 'Chat s poradcem', self: false, ai: false, consult: true, full: true },
+  { label: 'Doporučení postupu', self: false, ai: false, consult: true, full: true },
+  { label: 'Pomoc se sepsáním hlášení', self: false, ai: false, consult: true, full: true },
+  { label: 'Plná moc (elektronický podpis)', self: false, ai: false, consult: false, full: true },
+  { label: 'Komunikace s pojišťovnou', self: false, ai: false, consult: false, full: true },
+  { label: 'Průběžný reporting', self: false, ai: false, consult: false, full: true },
+  { label: 'Odvolání proti zamítnutí', self: false, ai: false, consult: false, full: true },
 ]
 
 const PRICING_FAQ = [
@@ -170,8 +187,8 @@ export default function ClaimsPricingPage() {
 
       {/* ── Pricing karty ─────────────────────────────────────── */}
       <section className="py-8 md:py-16">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="grid sm:grid-cols-3 gap-6">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {TIERS.map((tier) => (
               <div
                 key={tier.name}
@@ -245,7 +262,7 @@ export default function ClaimsPricingPage() {
 
       {/* ── Srovnávací tabulka ────────────────────────────────── */}
       <section className="py-12 md:py-20 bg-muted/30">
-        <div className="max-w-4xl mx-auto px-4">
+        <div className="max-w-5xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-foreground">
               Srovnání služeb
@@ -256,19 +273,22 @@ export default function ClaimsPricingPage() {
           </div>
 
           <div className="rounded-xl border border-border/50 bg-card overflow-x-auto">
-            <table className="w-full min-w-[500px]">
+            <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="border-b border-border/50">
-                  <th className="text-left text-sm font-semibold text-foreground px-6 py-4 w-[45%]">
+                  <th className="text-left text-sm font-semibold text-foreground px-6 py-4 w-[36%]">
                     Funkce
                   </th>
-                  <th className="text-center text-sm font-semibold text-foreground px-4 py-4">
+                  <th className="text-center text-sm font-semibold text-foreground px-3 py-4">
                     Self-service
                   </th>
-                  <th className="text-center text-sm font-semibold text-blue-600 dark:text-blue-400 px-4 py-4">
+                  <th className="text-center text-sm font-semibold text-purple-600 dark:text-purple-400 px-3 py-4">
+                    AI zpracování
+                  </th>
+                  <th className="text-center text-sm font-semibold text-blue-600 dark:text-blue-400 px-3 py-4">
                     Konzultace
                   </th>
-                  <th className="text-center text-sm font-semibold text-foreground px-4 py-4">
+                  <th className="text-center text-sm font-semibold text-foreground px-3 py-4">
                     Plné zastoupení
                   </th>
                 </tr>
@@ -280,17 +300,22 @@ export default function ClaimsPricingPage() {
                     className={i < COMPARISON_ROWS.length - 1 ? 'border-b border-border/30' : ''}
                   >
                     <td className="text-sm text-foreground px-6 py-3">{row.label}</td>
-                    <td className="text-center px-4 py-3">
+                    <td className="text-center px-3 py-3">
                       <span className="inline-flex justify-center">
                         <FeatureIcon included={row.self} />
                       </span>
                     </td>
-                    <td className="text-center px-4 py-3 bg-blue-50/30 dark:bg-blue-950/10">
+                    <td className="text-center px-3 py-3 bg-purple-50/30 dark:bg-purple-950/10">
+                      <span className="inline-flex justify-center">
+                        <FeatureIcon included={row.ai} />
+                      </span>
+                    </td>
+                    <td className="text-center px-3 py-3 bg-blue-50/30 dark:bg-blue-950/10">
                       <span className="inline-flex justify-center">
                         <FeatureIcon included={row.consult} />
                       </span>
                     </td>
-                    <td className="text-center px-4 py-3">
+                    <td className="text-center px-3 py-3">
                       <span className="inline-flex justify-center">
                         <FeatureIcon included={row.full} />
                       </span>
@@ -300,13 +325,16 @@ export default function ClaimsPricingPage() {
                 {/* Price row */}
                 <tr className="border-t-2 border-border/50 bg-muted/30">
                   <td className="text-sm font-semibold text-foreground px-6 py-4">Cena</td>
-                  <td className="text-center px-4 py-4">
+                  <td className="text-center px-3 py-4">
                     <span className="text-sm font-bold text-foreground">Zdarma</span>
                   </td>
-                  <td className="text-center px-4 py-4 bg-blue-50/30 dark:bg-blue-950/10">
+                  <td className="text-center px-3 py-4 bg-purple-50/30 dark:bg-purple-950/10">
+                    <span className="text-sm font-bold text-purple-600 dark:text-purple-400">199 Kč</span>
+                  </td>
+                  <td className="text-center px-3 py-4 bg-blue-50/30 dark:bg-blue-950/10">
                     <span className="text-sm font-bold text-blue-600 dark:text-blue-400">1 499 Kč</span>
                   </td>
-                  <td className="text-center px-4 py-4">
+                  <td className="text-center px-3 py-4">
                     <span className="text-sm font-bold text-foreground">1 499 Kč + fee</span>
                   </td>
                 </tr>

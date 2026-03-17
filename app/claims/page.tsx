@@ -90,6 +90,20 @@ const PRICING_TIERS = [
     cta: 'Začít zdarma',
   },
   {
+    name: 'AI zpracování',
+    price: '199 Kč',
+    priceNote: 'jednorázově',
+    desc: 'AI analyzuje vaše fotky a dokumenty a sestaví hlášenku automaticky.',
+    features: [
+      'AI analýza fotek a dokumentů',
+      'Automatická hlášenka',
+      'Posouzení nároku',
+      'Hotovo do 15 minut',
+    ],
+    featured: false,
+    cta: 'Vyzkoušet AI',
+  },
+  {
     name: 'Konzultace',
     price: '1 499 Kč',
     priceNote: 'jednorázově',
@@ -157,7 +171,6 @@ export default function ClaimsLandingPage() {
 
           <p className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Vyřídíme vše za vás — od nahlášení škody po vyplacení pojistného plnění.
-            Od analýzy podkladů po vyplacení plnění.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -279,7 +292,7 @@ export default function ClaimsLandingPage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {PRICING_TIERS.map((tier) => (
               <div
                 key={tier.name}

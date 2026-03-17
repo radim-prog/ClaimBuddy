@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Scale,
   ArrowRight,
+  Brain,
 } from 'lucide-react'
 
 const SERVICE_OPTIONS = [
@@ -31,6 +32,24 @@ const SERVICE_OPTIONS = [
       'Nahrávání dokumentů online',
     ],
     note: 'Vhodné pokud máte zkušenosti s pojistnými událostmi.',
+  },
+  {
+    mode: 'ai_processing' as const,
+    title: 'AI analýza',
+    subtitle: '199 Kč',
+    price: 199,
+    icon: Brain,
+    color: 'border-purple-200 dark:border-purple-800',
+    iconBg: 'bg-purple-100 dark:bg-purple-900/30',
+    iconColor: 'text-purple-600 dark:text-purple-400',
+    features: [
+      'AI analýza všech dokumentů a fotek',
+      'Posouzení oprávněnosti nároku',
+      'Odhad výše plnění',
+      'Doporučení dalšího postupu',
+      'Zpráva do 5 minut',
+    ],
+    note: 'Rychlá a dostupná analýza pomocí umělé inteligence.',
   },
   {
     mode: 'consultation' as const,
@@ -105,7 +124,7 @@ function ChooseServiceInner() {
   }
 
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-12">
+    <div className="container mx-auto max-w-6xl px-4 py-12">
       <div className="text-center mb-10">
         <div className="h-12 w-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
           <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
@@ -118,7 +137,7 @@ function ChooseServiceInner() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {SERVICE_OPTIONS.map((option) => {
           const Icon = option.icon
           const isSelected = selected === option.mode
