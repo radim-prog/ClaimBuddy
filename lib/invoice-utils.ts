@@ -1,6 +1,40 @@
 // Shared invoice utilities for DB ↔ frontend mapping
 // Used by: /api/accountant/invoices, /api/accountant/invoicing, export-xml
 
+// ============================================
+// INVOICE ROUNDING
+// ============================================
+
+export type RoundingMode = 'none' | 'units' | 'halves' | 'tens'
+
+/**
+ * Round invoice total according to Czech accounting conventions.
+ * - 'none': no rounding (return as-is)
+ * - 'units': round to whole CZK (nearest 1 Kč)
+ * - 'halves': round to nearest 0.50 Kč
+ * - 'tens': round to nearest 10 Kč
+ */
+export function roundInvoiceTotal(amount: number, mode: RoundingMode): number {
+  switch (mode) {
+    case 'none':
+      return amount
+    case 'units':
+      return Math.round(amount)
+    case 'halves':
+      return Math.round(amount * 2) / 2
+    case 'tens':
+      return Math.round(amount / 10) * 10
+  }
+}
+
+/**
+ * Calculate the rounding difference for display on invoice.
+ * Returns positive value if rounded up, negative if rounded down.
+ */
+export function getRoundingDifference(amount: number, mode: RoundingMode): number {
+  return Math.round((roundInvoiceTotal(amount, mode) - amount) * 100) / 100
+}
+
 import type { Invoice, InvoiceItem, InvoiceStatus, InvoiceType } from '@/lib/mock-data'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
