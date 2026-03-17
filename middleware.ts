@@ -150,9 +150,19 @@ export async function middleware(request: NextRequest) {
 
   // Host-based routing: claims.zajcon.cz → /claims as root
   if (hostname === 'claims.zajcon.cz') {
-    // Root → redirect to claims dashboard
+    // Root → check auth first to avoid redirect loop
     if (pathname === '/' || pathname === '') {
-      return NextResponse.redirect(new URL('/claims/dashboard', request.url))
+      const token = request.cookies.get(COOKIE_NAME)?.value
+      if (token) {
+        const user = await verifyToken(token)
+        if (user) {
+          return NextResponse.redirect(new URL('/claims/dashboard', request.url))
+        }
+      }
+      // Not authenticated → rewrite to /claims landing page (no redirect loop)
+      const url = request.nextUrl.clone()
+      url.pathname = '/claims'
+      return NextResponse.rewrite(url)
     }
     // /auth paths stay as-is (login/logout)
     // /api paths stay as-is
@@ -289,6 +299,11 @@ export async function middleware(request: NextRequest) {
 function handleUnauthenticated(request: NextRequest, pathname: string): NextResponse {
   if (pathname.startsWith('/api/')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  // claims.zajcon.cz → redirect to /claims landing (not / which would loop)
+  const hostname = request.headers.get('host')?.split(':')[0] || ''
+  if (hostname === 'claims.zajcon.cz') {
+    return NextResponse.redirect(new URL('/claims', request.url))
   }
   // All unauthenticated users → landing page (/ has login CTA)
   return NextResponse.redirect(new URL('/', request.url))
