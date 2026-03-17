@@ -51,7 +51,11 @@ function LoginForm() {
     const p = searchParams.get('portal')
     const claimsHost = window.location.hostname === 'claims.zajcon.cz'
 
-    if (claimsHost) setIsClaims(true)
+    if (claimsHost) {
+      setIsClaims(true)
+      // Override favicon for claims domain
+      document.querySelector('link[rel="icon"]')?.setAttribute('href', '/favicon-claims.svg')
+    }
     if (p === 'client' || claimsHost) setPortal('client')
     if (verified === 'true') {
       toast.success('Email ověřen', {
@@ -94,14 +98,14 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 relative overflow-hidden">
+    <div className={`min-h-screen relative overflow-hidden ${isClaims ? 'bg-white' : 'bg-gray-950'}`}>
       {/* Background gradients — shift with portal */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className={`absolute -top-[30%] -left-[10%] w-[50vw] h-[50vw] rounded-full blur-[120px] transition-colors duration-700 ${
-          isAccountant ? 'bg-purple-600/15' : 'bg-blue-600/15'
+          isClaims ? 'bg-blue-100/50' : isAccountant ? 'bg-purple-600/15' : 'bg-blue-600/15'
         }`} />
         <div className={`absolute -bottom-[20%] right-[10%] w-[40vw] h-[40vw] rounded-full blur-[100px] transition-colors duration-700 ${
-          isAccountant ? 'bg-violet-500/10' : 'bg-cyan-500/10'
+          isClaims ? 'bg-cyan-100/50' : isAccountant ? 'bg-violet-500/10' : 'bg-cyan-500/10'
         }`} />
       </div>
 
@@ -112,7 +116,9 @@ function LoginForm() {
           {/* Back + Logo */}
           <Link
             href={isClaims ? '/claims' : '/'}
-            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-300 transition-colors mb-10 self-start"
+            className={`inline-flex items-center gap-1.5 text-sm transition-colors mb-10 self-start ${
+              isClaims ? 'text-gray-500 hover:text-gray-700' : 'text-gray-500 hover:text-gray-300'
+            }`}
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             {isClaims ? 'Zpět na Pojistná Pomoc' : 'Zpět na hlavní stránku'}
@@ -122,7 +128,7 @@ function LoginForm() {
             <Logo size="lg" variant={isAccountant ? 'purple' : 'blue'} />
           </div>
 
-          <h2 className="text-3xl xl:text-4xl font-bold text-white leading-tight mb-3 transition-all duration-500">
+          <h2 className={`text-3xl xl:text-4xl font-bold leading-tight mb-3 transition-all duration-500 ${isClaims ? 'text-gray-900' : 'text-white'}`}>
             {isClaims ? (
               <>
                 Pojistná Pomoc
@@ -150,7 +156,7 @@ function LoginForm() {
             )}
           </h2>
 
-          <p className="text-gray-400 text-base mb-10 max-w-md">
+          <p className={`text-base mb-10 max-w-md ${isClaims ? 'text-gray-600' : 'text-gray-400'}`}>
             {isClaims
               ? 'Profesionální zpracování pojistných událostí. Nahlaste, sledujte a vyřešte — vše online.'
               : isAccountant
@@ -173,8 +179,8 @@ function LoginForm() {
                   }`} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white">{item.title}</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed mt-0.5">{item.desc}</p>
+                  <h3 className={`text-sm font-semibold ${isClaims ? 'text-gray-900' : 'text-white'}`}>{item.title}</h3>
+                  <p className={`text-xs leading-relaxed mt-0.5 ${isClaims ? 'text-gray-500' : 'text-gray-500'}`}>{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -199,7 +205,7 @@ function LoginForm() {
 
           <div className="w-full max-w-md">
             {/* Portal switcher — hide on claims.zajcon.cz */}
-            <div className={`flex rounded-xl bg-white/[0.04] border border-white/[0.08] p-1 mb-6 ${isClaims ? 'hidden' : ''}`}>
+            <div className={`flex rounded-xl p-1 mb-6 ${isClaims ? 'hidden' : 'bg-white/[0.04] border border-white/[0.08]'}`}>
               <button
                 type="button"
                 onClick={() => setPortal('accountant')}
@@ -227,26 +233,30 @@ function LoginForm() {
             </div>
 
             {/* Login card */}
-            <div className={`rounded-2xl border bg-white/[0.03] backdrop-blur-sm p-8 transition-colors duration-300 ${
-              isAccountant
-                ? 'border-purple-500/20'
-                : 'border-blue-500/20'
+            <div className={`rounded-2xl border backdrop-blur-sm p-8 transition-colors duration-300 ${
+              isClaims
+                ? 'bg-gray-50 border-gray-200'
+                : isAccountant
+                  ? 'bg-white/[0.03] border-purple-500/20'
+                  : 'bg-white/[0.03] border-blue-500/20'
             }`}>
               <div className="text-center mb-8">
-                <h1 className="text-xl font-semibold text-white font-display">
-                  {isAccountant ? 'Portál pro účetní' : 'Klientský portál'}
+                <h1 className={`text-xl font-semibold font-display ${isClaims ? 'text-gray-900' : 'text-white'}`}>
+                  {isClaims ? 'Pojistná Pomoc' : isAccountant ? 'Portál pro účetní' : 'Klientský portál'}
                 </h1>
-                <p className="text-gray-400 text-sm mt-1">
-                  {isAccountant
-                    ? 'Přihlaste se ke správě klientů a uzávěrek'
-                    : 'Přihlaste se ke správě dokladů a faktur'
+                <p className={`text-sm mt-1 ${isClaims ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {isClaims
+                    ? 'Přihlaste se ke správě pojistných událostí'
+                    : isAccountant
+                      ? 'Přihlaste se ke správě klientů a uzávěrek'
+                      : 'Přihlaste se ke správě dokladů a faktur'
                   }
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-sm font-medium text-gray-300">
+                  <Label htmlFor="username" className={`text-sm font-medium ${isClaims ? 'text-gray-700' : 'text-gray-300'}`}>
                     Uživatelské jméno
                   </Label>
                   <Input
@@ -257,15 +267,17 @@ function LoginForm() {
                     required
                     autoFocus
                     autoComplete="username"
-                    className={`h-11 bg-white/[0.05] border-white/[0.1] text-white placeholder:text-gray-500 transition-colors duration-300 ${
-                      isAccountant
-                        ? 'focus-visible:ring-purple-500 focus-visible:border-purple-500/50'
-                        : 'focus-visible:ring-blue-500 focus-visible:border-blue-500/50'
+                    className={`h-11 transition-colors duration-300 ${
+                      isClaims
+                        ? 'bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus-visible:ring-blue-500 focus-visible:border-blue-500/50'
+                        : isAccountant
+                          ? 'bg-white/[0.05] border-white/[0.1] text-white placeholder:text-gray-500 focus-visible:ring-purple-500 focus-visible:border-purple-500/50'
+                          : 'bg-white/[0.05] border-white/[0.1] text-white placeholder:text-gray-500 focus-visible:ring-blue-500 focus-visible:border-blue-500/50'
                     }`}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-gray-300">
+                  <Label htmlFor="password" className={`text-sm font-medium ${isClaims ? 'text-gray-700' : 'text-gray-300'}`}>
                     Heslo
                   </Label>
                   <div className="relative">
@@ -276,17 +288,21 @@ function LoginForm() {
                       placeholder="Zadejte heslo"
                       required
                       autoComplete="current-password"
-                      className={`h-11 pr-10 bg-white/[0.05] border-white/[0.1] text-white placeholder:text-gray-500 transition-colors duration-300 ${
-                        isAccountant
-                          ? 'focus-visible:ring-purple-500 focus-visible:border-purple-500/50'
-                          : 'focus-visible:ring-blue-500 focus-visible:border-blue-500/50'
+                      className={`h-11 pr-10 transition-colors duration-300 ${
+                        isClaims
+                          ? 'bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus-visible:ring-blue-500 focus-visible:border-blue-500/50'
+                          : isAccountant
+                            ? 'bg-white/[0.05] border-white/[0.1] text-white placeholder:text-gray-500 focus-visible:ring-purple-500 focus-visible:border-purple-500/50'
+                            : 'bg-white/[0.05] border-white/[0.1] text-white placeholder:text-gray-500 focus-visible:ring-blue-500 focus-visible:border-blue-500/50'
                       }`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       aria-label={showPassword ? 'Skrýt heslo' : 'Zobrazit heslo'}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${
+                        isClaims ? 'text-gray-400 hover:text-gray-600' : 'text-gray-500 hover:text-gray-300'
+                      }`}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -325,7 +341,7 @@ function LoginForm() {
                 </Link>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-white/[0.06] space-y-2">
+              <div className={`mt-6 pt-6 border-t space-y-2 ${isClaims ? 'border-gray-200' : 'border-white/[0.06]'}`}>
                 <p className="text-xs text-gray-500 text-center">
                   Nemáte účet?{' '}
                   <Link href="/auth/register" className={`hover:underline ${
@@ -346,8 +362,8 @@ function LoginForm() {
             </div>
 
             {/* Footer */}
-            <p className="text-center text-xs text-gray-600 mt-6">
-              Jeden účet, dva portály — systém vás přesměruje automaticky.
+            <p className={`text-center text-xs mt-6 ${isClaims ? 'text-gray-400' : 'text-gray-600'}`}>
+              {isClaims ? 'Pojistná Pomoc — profesionální zpracování pojistných událostí.' : 'Jeden účet, dva portály — systém vás přesměruje automaticky.'}
             </p>
           </div>
         </div>

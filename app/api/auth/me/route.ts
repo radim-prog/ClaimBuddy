@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     const impersonateCompany = request.headers.get('x-impersonate-company') || null
+    const impersonateUser = request.headers.get('x-impersonate-user') || null
 
     return NextResponse.json({
       id: user.id,
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
       permissions: user.permissions,
       modules: user.modules || ['accounting'],
       impersonate_company: impersonateCompany,
+      impersonate_user: impersonateUser,
     })
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -252,6 +252,13 @@ export async function middleware(request: NextRequest) {
   }
   const isImpersonating = !!impersonateCompany
 
+  // User impersonation (admin-only)
+  const rawImpersonateUser = request.cookies.get('impersonate_user')?.value
+  let impersonateUserId: string | undefined
+  if (rawImpersonateUser && user.role === 'admin') {
+    impersonateUserId = await verifySignedCookie(rawImpersonateUser) || undefined
+  }
+
   if (pathname.startsWith('/client') || pathname.startsWith('/api/client')) {
     if (!isImpersonating && user.role !== 'client' && user.role !== 'admin') {
       if (pathname.startsWith('/api/')) {
@@ -281,7 +288,7 @@ export async function middleware(request: NextRequest) {
 
   // Add user info to headers
   const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-user-id', user.id)
+  requestHeaders.set('x-user-id', impersonateUserId || user.id)
   requestHeaders.set('x-user-name', user.name)
   requestHeaders.set('x-user-role', user.role)
   requestHeaders.set('x-user-plan', user.plan || 'free')
@@ -290,6 +297,10 @@ export async function middleware(request: NextRequest) {
   // Forward impersonation context if active
   if (isImpersonating) {
     requestHeaders.set('x-impersonate-company', impersonateCompany as string)
+  }
+  if (impersonateUserId) {
+    requestHeaders.set('x-impersonate-user', impersonateUserId)
+    requestHeaders.set('x-real-user-id', user.id)
   }
 
   return NextResponse.next({

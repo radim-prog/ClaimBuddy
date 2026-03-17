@@ -63,7 +63,7 @@ import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { ActiveModuleProvider, useActiveModule } from '@/lib/contexts/active-module-context'
-import { Building2, FolderOpen, ClipboardList } from 'lucide-react'
+import { Building2, FolderOpen, ClipboardList, UserCog, X } from 'lucide-react'
 
 // === NAVIGATION GROUPS ===
 
@@ -350,6 +350,51 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
     return false
   })
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [staffUsers, setStaffUsers] = useState<{ id: string; name: string }[]>([])
+  const [impersonatedUser, setImpersonatedUser] = useState<{ id: string; name: string } | null>(null)
+
+  // Fetch staff users list + check if currently impersonating (admin only)
+  useEffect(() => {
+    if (userRole !== 'admin') return
+    fetch('/api/users')
+      .then(r => r.json())
+      .then(data => { if (data.users) setStaffUsers(data.users) })
+      .catch(() => {})
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(data => {
+        if (data.impersonate_user) {
+          // Find user name from staff list or fetch it
+          fetch('/api/users')
+            .then(r => r.json())
+            .then(uData => {
+              const found = (uData.users || []).find((u: { id: string }) => u.id === data.impersonate_user)
+              if (found) setImpersonatedUser({ id: found.id, name: found.name })
+            })
+            .catch(() => {})
+        }
+      })
+      .catch(() => {})
+  }, [userRole])
+
+  const handleImpersonateUser = async (userId: string) => {
+    const res = await fetch('/api/auth/impersonate-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    })
+    const data = await res.json()
+    if (data.success) {
+      setImpersonatedUser(data.user)
+      window.location.reload()
+    }
+  }
+
+  const handleStopImpersonation = async () => {
+    await fetch('/api/auth/impersonate-user', { method: 'DELETE' })
+    setImpersonatedUser(null)
+    window.location.reload()
+  }
 
   useEffect(() => {
     const saved = localStorage.getItem('accountant-sidebar-collapsed')
@@ -498,6 +543,88 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
               />
             </div>
           </div>
+
+          {/* User impersonation — admin only */}
+          {showAdmin && staffUsers.length > 0 && collapsed && (
+            <div className="relative flex-shrink-0 border-t border-white/[0.06] px-3 py-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className={`w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+                        impersonatedUser ? 'text-amber-400 bg-amber-400/10' : 'text-white/40 hover:bg-white/[0.05] hover:text-white/70'
+                      }`}>
+                        <UserCog className="h-[18px] w-[18px] flex-shrink-0" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="font-medium">
+                      {impersonatedUser ? `Jako: ${impersonatedUser.name}` : 'Přepnout pohled'}
+                    </TooltipContent>
+                  </Tooltip>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 max-h-64 overflow-y-auto">
+                  <DropdownMenuLabel>Přepnout na účetního</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {impersonatedUser && (
+                    <>
+                      <DropdownMenuItem onClick={handleStopImpersonation} className="text-amber-600 focus:text-amber-600 cursor-pointer">
+                        <X className="mr-2 h-4 w-4" />
+                        Zpět na admin
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  {staffUsers.map(u => (
+                    <DropdownMenuItem
+                      key={u.id}
+                      onClick={() => handleImpersonateUser(u.id)}
+                      className={`cursor-pointer ${impersonatedUser?.id === u.id ? 'bg-amber-50 dark:bg-amber-900/20 font-semibold' : ''}`}
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      {u.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+          {showAdmin && staffUsers.length > 0 && !collapsed && (
+            <div className="relative flex-shrink-0 border-t border-white/[0.06] px-3 py-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl text-white/40 hover:bg-white/[0.05] hover:text-white/70 transition-all duration-200">
+                    <UserCog className="h-[18px] w-[18px] flex-shrink-0" />
+                    <span className="whitespace-nowrap">
+                      {impersonatedUser ? `Jako: ${impersonatedUser.name}` : 'Přepnout pohled'}
+                    </span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 max-h-64 overflow-y-auto">
+                  <DropdownMenuLabel>Přepnout na účetního</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {impersonatedUser && (
+                    <>
+                      <DropdownMenuItem onClick={handleStopImpersonation} className="text-amber-600 focus:text-amber-600 cursor-pointer">
+                        <X className="mr-2 h-4 w-4" />
+                        Zpět na admin
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  {staffUsers.map(u => (
+                    <DropdownMenuItem
+                      key={u.id}
+                      onClick={() => handleImpersonateUser(u.id)}
+                      className={`cursor-pointer ${impersonatedUser?.id === u.id ? 'bg-amber-50 dark:bg-amber-900/20 font-semibold' : ''}`}
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      {u.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
 
           {/* User section */}
           <div className="relative flex-shrink-0 border-t border-white/[0.06] p-3">
@@ -767,6 +894,23 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <div className={`flex flex-col min-h-screen transition-all duration-300 ease-in-out ${collapsed ? 'md:pl-[72px]' : 'md:pl-64'}`}>
+        {/* Impersonation banner */}
+        {impersonatedUser && (
+          <div className="bg-amber-500 text-white px-4 py-2 flex items-center justify-between text-sm z-[100] relative">
+            <div className="flex items-center gap-2">
+              <UserCog className="h-4 w-4" />
+              <span>Pracujete jako: <strong>{impersonatedUser.name}</strong></span>
+            </div>
+            <button
+              onClick={handleStopImpersonation}
+              className="flex items-center gap-1 bg-white/20 hover:bg-white/30 rounded px-3 py-1 transition-colors"
+            >
+              <X className="h-4 w-4" />
+              Zpět na admin
+            </button>
+          </div>
+        )}
+
         {!pathname.startsWith('/accountant/admin') && !pathname.startsWith('/accountant/settings') && (
           <GlobalDeadlineAlert />
         )}
