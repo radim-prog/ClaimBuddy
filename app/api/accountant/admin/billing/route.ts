@@ -20,16 +20,16 @@ export async function GET(request: NextRequest) {
     // Platform-wide billing stats
     const [configsRes, cyclesRes, overdueRes] = await Promise.all([
       supabaseAdmin
-        .from('client_billing_config')
+        .from('billing_configs')
         .select('id, provider_id, monthly_fee_czk, platform_fee_pct, status, marketplace_providers(name)')
         .eq('status', 'active'),
       supabaseAdmin
-        .from('billing_cycles')
+        .from('billing_invoices')
         .select('*, companies(name), marketplace_providers(name)')
         .eq('period', period)
         .order('status', { ascending: true }),
       supabaseAdmin
-        .from('billing_cycles')
+        .from('billing_invoices')
         .select('id, amount_due, platform_fee, provider_id, company_id, due_date, escalation_level, companies(name), marketplace_providers(name)')
         .eq('status', 'overdue')
         .order('escalation_level', { ascending: false }),
@@ -89,7 +89,7 @@ export async function PATCH(request: NextRequest) {
 
       // Find all active configs
       const { data: configs } = await supabaseAdmin
-        .from('client_billing_config')
+        .from('billing_configs')
         .select('*')
         .eq('status', 'active')
 
@@ -100,7 +100,7 @@ export async function PATCH(request: NextRequest) {
       let created = 0
       for (const config of configs) {
         const { data: existing } = await supabaseAdmin
-          .from('billing_cycles')
+          .from('billing_invoices')
           .select('id')
           .eq('config_id', config.id)
           .eq('period', period)
@@ -114,7 +114,7 @@ export async function PATCH(request: NextRequest) {
         const dueDate = new Date(year, month - 1, config.billing_day).toISOString().split('T')[0]
 
         const { error } = await supabaseAdmin
-          .from('billing_cycles')
+          .from('billing_invoices')
           .insert({
             config_id: config.id,
             provider_id: config.provider_id,
@@ -140,7 +140,7 @@ export async function PATCH(request: NextRequest) {
       }
 
       const { error } = await supabaseAdmin
-        .from('client_billing_config')
+        .from('billing_configs')
         .update({ platform_fee_pct, updated_at: new Date().toISOString() })
         .eq('id', config_id)
 

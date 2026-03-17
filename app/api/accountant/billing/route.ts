@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     if (view === 'configs') {
       const { data } = await supabaseAdmin
-        .from('client_billing_config')
+        .from('billing_configs')
         .select('*, companies(name)')
         .eq('provider_id', provider.id)
         .order('created_at', { ascending: false })
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     if (view === 'cycles') {
       const { data } = await supabaseAdmin
-        .from('billing_cycles')
+        .from('billing_invoices')
         .select('*, companies(name)')
         .eq('provider_id', provider.id)
         .eq('period', period)
@@ -62,17 +62,17 @@ export async function GET(request: NextRequest) {
     // Default overview: stats + current period cycles + overdue
     const [configsRes, cyclesRes, overdueRes] = await Promise.all([
       supabaseAdmin
-        .from('client_billing_config')
+        .from('billing_configs')
         .select('monthly_fee_czk, status, companies(name)')
         .eq('provider_id', provider.id)
         .eq('status', 'active'),
       supabaseAdmin
-        .from('billing_cycles')
+        .from('billing_invoices')
         .select('*, companies(name)')
         .eq('provider_id', provider.id)
         .eq('period', period),
       supabaseAdmin
-        .from('billing_cycles')
+        .from('billing_invoices')
         .select('*, companies(name)')
         .eq('provider_id', provider.id)
         .eq('status', 'overdue')
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data, error } = await supabaseAdmin
-      .from('client_billing_config')
+      .from('billing_configs')
       .upsert({
         provider_id: provider.id,
         company_id,
@@ -174,7 +174,7 @@ export async function PATCH(request: NextRequest) {
       if (!cycle_id) return NextResponse.json({ error: 'cycle_id required' }, { status: 400 })
 
       const { error } = await supabaseAdmin
-        .from('billing_cycles')
+        .from('billing_invoices')
         .update({
           status: 'paid',
           paid_at: new Date().toISOString(),
@@ -198,7 +198,7 @@ export async function PATCH(request: NextRequest) {
       if (typeof notes === 'string') updates.notes = notes
 
       const { error } = await supabaseAdmin
-        .from('client_billing_config')
+        .from('billing_configs')
         .update(updates)
         .eq('id', config_id)
         .eq('provider_id', provider.id)
@@ -212,7 +212,7 @@ export async function PATCH(request: NextRequest) {
       if (!cycle_id) return NextResponse.json({ error: 'cycle_id required' }, { status: 400 })
 
       const { error } = await supabaseAdmin
-        .from('billing_cycles')
+        .from('billing_invoices')
         .update({ status: 'written_off', notes: 'Odpis pohledávky' })
         .eq('id', cycle_id)
         .eq('provider_id', provider.id)
