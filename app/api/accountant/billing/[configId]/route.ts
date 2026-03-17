@@ -28,7 +28,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .from('billing_configs')
       .select('*')
       .eq('id', configId)
-      .eq('accountant_user_id', userId)
+      .eq('provider_id', userId)
       .single()
 
     if (error || !config) {
@@ -78,17 +78,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: formatZodErrors(parsed.error) }, { status: 400 })
   }
 
-  const { action, monthly_fee, notes } = parsed.data
+  const { action, monthly_fee_czk, notes } = parsed.data
 
   try {
     // Verify ownership — only the accountant who created the config can modify it
     const { data: config } = await supabaseAdmin
       .from('billing_configs')
-      .select('accountant_user_id')
+      .select('provider_id')
       .eq('id', configId)
       .single()
 
-    if (!config || config.accountant_user_id !== userId) {
+    if (!config || config.provider_id !== userId) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
@@ -107,7 +107,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         await cancelBilling(configId)
         return NextResponse.json({ success: true })
       case 'update':
-        await updateBillingConfig(configId, { monthly_fee, notes })
+        await updateBillingConfig(configId, { monthly_fee_czk, notes })
         return NextResponse.json({ success: true })
       default:
         return NextResponse.json({ error: 'Invalid action. Use: activate, pause, cancel, update' }, { status: 400 })

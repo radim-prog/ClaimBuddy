@@ -62,7 +62,7 @@ interface BillingConfig {
   id: string
   company_id: string
   company_name: string
-  monthly_fee: number
+  monthly_fee_czk: number
   status: 'draft' | 'active' | 'paused' | 'cancelled' | 'suspended'
   stripe_subscription_id: string | null
   platform_fee_pct: number
@@ -256,7 +256,7 @@ export default function BillingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           company_id: addCompanyId,
-          monthly_fee: Number(addMonthlyFee),
+          monthly_fee_czk: Number(addMonthlyFee),
           notes: addNotes || undefined,
         }),
       })
@@ -286,7 +286,7 @@ export default function BillingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'update',
-          monthly_fee: Number(editFee),
+          monthly_fee_czk: Number(editFee),
           notes: editNotes || undefined,
         }),
       })
@@ -307,7 +307,7 @@ export default function BillingPage() {
 
   const openEditDialog = (config: BillingConfig) => {
     setEditingConfig(config)
-    setEditFee(String(config.monthly_fee))
+    setEditFee(String(config.monthly_fee_czk))
     setEditNotes(config.notes || '')
     setEditDialogOpen(true)
   }
@@ -520,7 +520,7 @@ export default function BillingPage() {
 
                       <div className="flex items-center gap-1">
                         <span className="text-sm font-semibold md:hidden text-muted-foreground">Poplatek: </span>
-                        <span className="text-sm font-semibold">{fmtCZK(config.monthly_fee)}</span>
+                        <span className="text-sm font-semibold">{fmtCZK(config.monthly_fee_czk)}</span>
                         <span className="text-xs text-muted-foreground">/mes</span>
                       </div>
 
@@ -766,7 +766,7 @@ export default function BillingPage() {
           <DialogHeader>
             <DialogTitle>Upravit poplatek</DialogTitle>
             <DialogDescription>
-              {editingConfig?.company_name} &mdash; aktualni poplatek {editingConfig ? fmtCZK(editingConfig.monthly_fee) : ''}/mes
+              {editingConfig?.company_name} &mdash; aktualni poplatek {editingConfig ? fmtCZK(editingConfig.monthly_fee_czk) : ''}/mes
             </DialogDescription>
           </DialogHeader>
 
@@ -775,7 +775,7 @@ export default function BillingPage() {
               <Label htmlFor="edit-fee">Novy mesicni poplatek (Kc)</Label>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground line-through">
-                  {editingConfig ? fmtCZK(editingConfig.monthly_fee) : ''}
+                  {editingConfig ? fmtCZK(editingConfig.monthly_fee_czk) : ''}
                 </span>
                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
                 <Input

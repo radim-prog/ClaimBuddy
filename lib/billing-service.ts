@@ -14,8 +14,8 @@ export type BillingConfigStatus = 'draft' | 'active' | 'paused' | 'cancelled' | 
 export type BillingConfig = {
   id: string
   company_id: string
-  accountant_user_id: string
-  monthly_fee: number
+  provider_id: string
+  monthly_fee_czk: number
   currency: string
   stripe_subscription_id: string | null
   stripe_price_id: string | null
@@ -35,19 +35,17 @@ export type BillingInvoiceStatus = 'pending' | 'paid' | 'failed' | 'overdue' | '
 
 export type BillingInvoice = {
   id: string
-  billing_config_id: string
+  config_id: string
   company_id: string
   period: string
-  amount: number
+  amount_due: number
   platform_fee: number
-  accountant_payout: number
+  provider_payout: number
   status: BillingInvoiceStatus
   stripe_invoice_id: string | null
   paid_at: string | null
   due_date: string
-  reminder_count: number
-  last_reminder_at: string | null
-  escalated: boolean
+  escalation_level: number
   created_at: string
   updated_at: string
 }
@@ -56,7 +54,7 @@ export type BillingPayoutStatus = 'pending' | 'processing' | 'paid' | 'failed'
 
 export type BillingPayout = {
   id: string
-  accountant_user_id: string
+  provider_id: string
   period: string
   total_collected: number
   total_fee: number
@@ -76,8 +74,8 @@ const DEFAULT_PLATFORM_FEE_PCT = 10
 
 export async function createBillingConfig(data: {
   company_id: string
-  accountant_user_id: string
-  monthly_fee: number
+  provider_id: string
+  monthly_fee_czk: number
   notes?: string
   platform_fee_pct?: number
 }): Promise<BillingConfig> {
@@ -85,8 +83,8 @@ export async function createBillingConfig(data: {
     .from('billing_configs')
     .insert({
       company_id: data.company_id,
-      accountant_user_id: data.accountant_user_id,
-      monthly_fee: data.monthly_fee,
+      provider_id: data.provider_id,
+      monthly_fee_czk: data.monthly_fee_czk,
       platform_fee_pct: data.platform_fee_pct ?? DEFAULT_PLATFORM_FEE_PCT,
       notes: data.notes || null,
       status: 'draft',
@@ -101,7 +99,7 @@ export async function createBillingConfig(data: {
 export async function updateBillingConfig(
   configId: string,
   updates: {
-    monthly_fee?: number
+    monthly_fee_czk?: number
     notes?: string
     status?: BillingConfigStatus
   }
@@ -146,7 +144,7 @@ export async function getAccountantBillingConfigs(accountantUserId: string): Pro
   const { data, error } = await supabaseAdmin
     .from('billing_configs')
     .select('*')
-    .eq('accountant_user_id', accountantUserId)
+    .eq('provider_id', accountantUserId)
     .order('created_at', { ascending: false })
 
   if (error) throw new Error(`Failed to fetch billing configs: ${error.message}`)
@@ -210,13 +208,13 @@ export async function activateBilling(configId: string): Promise<{ success: bool
 
     // Create a Stripe Price for this specific monthly fee
     const price = await stripe.prices.create({
-      unit_amount: config.monthly_fee * 100, // CZK -> halere
+      unit_amount: config.monthly_fee_czk * 100, // CZK -> halere
       currency: 'czk',
       recurring: { interval: 'month' },
       product_data: {
         name: `Ucetni sluzby — ${company.name}`,
         metadata: {
-          billing_config_id: configId,
+          config_id: configId,
           company_id: config.company_id,
         },
       },
@@ -230,9 +228,9 @@ export async function activateBilling(configId: string): Promise<{ success: bool
       payment_settings: { save_default_payment_method: 'on_subscription' },
       metadata: {
         type: 'billing_service',
-        billing_config_id: configId,
+        config_id: configId,
         company_id: config.company_id,
-        accountant_user_id: config.accountant_user_id,
+        provider_id: config.provider_id,
       },
     })
 
@@ -353,14 +351,14 @@ export async function generateMonthlyInvoices(period: string): Promise<{ generat
       const { data: existing } = await supabaseAdmin
         .from('billing_invoices')
         .select('id')
-        .eq('billing_config_id', config.id)
+        .eq('config_id', config.id)
         .eq('period', period)
         .maybeSingle()
 
       if (existing) continue // already generated
 
-      const platformFee = Math.round(config.monthly_fee * (config.platform_fee_pct / 100))
-      const accountantPayout = config.monthly_fee - platformFee
+      const platformFee = Math.round(config.monthly_fee_czk * (config.platform_fee_pct / 100))
+      const providerPayout = config.monthly_fee_czk - platformFee
 
       // Due date: 15th of next month
       const [year, month] = period.split('-').map(Number)
@@ -371,12 +369,12 @@ export async function generateMonthlyInvoices(period: string): Promise<{ generat
       const { error } = await supabaseAdmin
         .from('billing_invoices')
         .insert({
-          billing_config_id: config.id,
+          config_id: config.id,
           company_id: config.company_id,
           period,
-          amount: config.monthly_fee,
+          amount_due: config.monthly_fee_czk,
           platform_fee: platformFee,
-          accountant_payout: accountantPayout,
+          provider_payout: providerPayout,
           status: 'pending',
           due_date: dueDate,
         })
@@ -402,11 +400,11 @@ export async function getBillingInvoices(params: {
 }): Promise<BillingInvoice[]> {
   let query = supabaseAdmin
     .from('billing_invoices')
-    .select('*, billing_configs!inner(accountant_user_id)')
+    .select('*, billing_configs!inner(provider_id)')
     .order('period', { ascending: false })
 
   if (params.accountantUserId) {
-    query = query.eq('billing_configs.accountant_user_id', params.accountantUserId)
+    query = query.eq('billing_configs.provider_id', params.accountantUserId)
   }
   if (params.companyId) {
     query = query.eq('company_id', params.companyId)
@@ -457,7 +455,7 @@ export async function processOverdueInvoices(): Promise<{ reminded: number; esca
   // Find overdue invoices (pending/failed + past due date)
   const { data: overdue } = await supabaseAdmin
     .from('billing_invoices')
-    .select('*, billing_configs!inner(company_id, accountant_user_id)')
+    .select('*, billing_configs!inner(company_id, provider_id)')
     .in('status', ['pending', 'failed'])
     .lt('due_date', now.toISOString().slice(0, 10))
 
@@ -470,37 +468,25 @@ export async function processOverdueInvoices(): Promise<{ reminded: number; esca
         .eq('id', invoice.id)
     }
 
-    // Escalation: after 3 reminders, flag for manual review
-    if (invoice.reminder_count >= 3 && !invoice.escalated) {
-      await supabaseAdmin
-        .from('billing_invoices')
-        .update({ escalated: true, updated_at: now.toISOString() })
-        .eq('id', invoice.id)
+    // Increment escalation level
+    const newLevel = (invoice.escalation_level || 0) + 1
+
+    await supabaseAdmin
+      .from('billing_invoices')
+      .update({
+        escalation_level: newLevel,
+        updated_at: now.toISOString(),
+      })
+      .eq('id', invoice.id)
+    reminded++
+
+    // Auto-suspend billing after escalation level 3
+    if (newLevel >= 3) {
+      await suspendBilling(
+        invoice.config_id,
+        'Neplaceni — automaticke pozastaveni po eskalaci'
+      )
       escalated++
-
-      // Auto-suspend billing after 5 reminders
-      if (invoice.reminder_count >= 5) {
-        await suspendBilling(
-          invoice.billing_config_id,
-          'Neplaceni — automaticke pozastaveni po 5 upomienkach'
-        )
-      }
-    }
-
-    // Rate-limit reminders: max 1 per 3 days
-    const lastReminder = invoice.last_reminder_at ? new Date(invoice.last_reminder_at) : null
-    const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
-
-    if (!lastReminder || lastReminder < threeDaysAgo) {
-      await supabaseAdmin
-        .from('billing_invoices')
-        .update({
-          reminder_count: invoice.reminder_count + 1,
-          last_reminder_at: now.toISOString(),
-          updated_at: now.toISOString(),
-        })
-        .eq('id', invoice.id)
-      reminded++
     }
   }
 
@@ -512,34 +498,33 @@ export async function processOverdueInvoices(): Promise<{ reminded: number; esca
 // ============================================
 
 export async function generatePayouts(period: string): Promise<{ generated: number }> {
-  // Aggregate paid invoices by accountant for the period
+  // Aggregate paid invoices by provider for the period
   const { data: invoices } = await supabaseAdmin
     .from('billing_invoices')
-    .select('amount, platform_fee, accountant_payout, billing_configs!inner(accountant_user_id)')
+    .select('amount_due, platform_fee, provider_payout, billing_configs!inner(provider_id)')
     .eq('period', period)
     .eq('status', 'paid')
 
-  // Group by accountant
-  const accountantMap = new Map<string, { collected: number; fees: number; payout: number }>()
+  // Group by provider
+  const providerMap = new Map<string, { collected: number; fees: number; payout: number }>()
 
   for (const inv of invoices || []) {
-    // Extract accountant_user_id from the joined billing_configs
-    const billingConfigs = inv.billing_configs as unknown as { accountant_user_id: string }
-    const accId = billingConfigs.accountant_user_id
-    const existing = accountantMap.get(accId) || { collected: 0, fees: 0, payout: 0 }
-    existing.collected += inv.amount
+    const billingConfigs = inv.billing_configs as unknown as { provider_id: string }
+    const providerId = billingConfigs.provider_id
+    const existing = providerMap.get(providerId) || { collected: 0, fees: 0, payout: 0 }
+    existing.collected += inv.amount_due
     existing.fees += inv.platform_fee
-    existing.payout += inv.accountant_payout
-    accountantMap.set(accId, existing)
+    existing.payout += inv.provider_payout
+    providerMap.set(providerId, existing)
   }
 
   let generated = 0
-  for (const [accountantId, totals] of accountantMap) {
+  for (const [providerId, totals] of providerMap) {
     const { error } = await supabaseAdmin
       .from('billing_payouts')
       .upsert(
         {
-          accountant_user_id: accountantId,
+          provider_id: providerId,
           period,
           total_collected: totals.collected,
           total_fee: totals.fees,
@@ -547,7 +532,7 @@ export async function generatePayouts(period: string): Promise<{ generated: numb
           status: 'pending',
           updated_at: new Date().toISOString(),
         },
-        { onConflict: 'accountant_user_id,period' }
+        { onConflict: 'provider_id,period' }
       )
 
     if (!error) generated++
@@ -560,7 +545,7 @@ export async function getPayouts(accountantUserId: string): Promise<BillingPayou
   const { data, error } = await supabaseAdmin
     .from('billing_payouts')
     .select('*')
-    .eq('accountant_user_id', accountantUserId)
+    .eq('provider_id', accountantUserId)
     .order('period', { ascending: false })
 
   if (error) throw new Error(`Failed to fetch payouts: ${error.message}`)
@@ -597,12 +582,12 @@ export async function getBillingDashboard(accountantUserId: string) {
   // Fetch all configs for this accountant
   const { data: configs } = await supabaseAdmin
     .from('billing_configs')
-    .select('id, company_id, monthly_fee, status')
-    .eq('accountant_user_id', accountantUserId)
+    .select('id, company_id, monthly_fee_czk, status')
+    .eq('provider_id', accountantUserId)
 
   const allConfigs = configs || []
   const activeConfigs = allConfigs.filter((c) => c.status === 'active')
-  const totalMRR = activeConfigs.reduce((sum, c) => sum + c.monthly_fee, 0)
+  const totalMRR = activeConfigs.reduce((sum, c) => sum + c.monthly_fee_czk, 0)
 
   // Current period
   const now = new Date()
@@ -618,17 +603,17 @@ export async function getBillingDashboard(accountantUserId: string) {
   if (activeIds.length > 0) {
     const { data: currentInvoices } = await supabaseAdmin
       .from('billing_invoices')
-      .select('status, amount')
-      .in('billing_config_id', activeIds)
+      .select('status, amount_due')
+      .in('config_id', activeIds)
       .eq('period', currentPeriod)
 
     for (const inv of currentInvoices || []) {
       if (inv.status === 'paid') {
         paidCount++
-        paidAmount += inv.amount
+        paidAmount += inv.amount_due
       } else if (inv.status === 'overdue' || inv.status === 'failed') {
         overdueCount++
-        overdueAmount += inv.amount
+        overdueAmount += inv.amount_due
       }
     }
   }
@@ -637,7 +622,7 @@ export async function getBillingDashboard(accountantUserId: string) {
   const { data: latestPayout } = await supabaseAdmin
     .from('billing_payouts')
     .select('*')
-    .eq('accountant_user_id', accountantUserId)
+    .eq('provider_id', accountantUserId)
     .order('period', { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -681,7 +666,7 @@ export async function handleStripeInvoicePaid(stripeInvoiceId: string, subscript
   const { data: invoice } = await supabaseAdmin
     .from('billing_invoices')
     .select('id')
-    .eq('billing_config_id', config.id)
+    .eq('config_id', config.id)
     .eq('period', period)
     .in('status', ['pending', 'overdue', 'failed'])
     .maybeSingle()
@@ -709,6 +694,6 @@ export async function handleStripeInvoiceFailed(subscriptionId: string): Promise
   await supabaseAdmin
     .from('billing_invoices')
     .update({ status: 'failed', updated_at: now.toISOString() })
-    .eq('billing_config_id', config.id)
+    .eq('config_id', config.id)
     .eq('period', period)
 }
