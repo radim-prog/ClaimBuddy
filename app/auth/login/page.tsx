@@ -30,10 +30,18 @@ const CLIENT_USP = [
   { icon: Clock, title: 'Daňový dotazník online', desc: 'Vyplňte daňový dotazník z pohodlí domova, přiložte doklady.' },
 ]
 
+const CLAIMS_USP = [
+  { icon: ShieldCheck, title: 'Profesionální zpracování', desc: 'Analyzujeme vaši pojistnou událost a připravíme kompletní dokumentaci.' },
+  { icon: MessageSquare, title: 'Komunikace s pojišťovnou', desc: 'Řešíme vše za vás — od nahlášení po vyplacení plnění.' },
+  { icon: FileSearch, title: 'AI analýza podkladů', desc: 'Umělá inteligence analyzuje fotky a dokumenty za vás.' },
+  { icon: Clock, title: 'Přehled vašich spisů', desc: 'Sledujte průběh řešení online, kdykoli a odkudkoli.' },
+]
+
 function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [portal, setPortal] = useState<Portal>('accountant')
+  const [isClaims, setIsClaims] = useState(false)
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -41,8 +49,10 @@ function LoginForm() {
     const reset = searchParams.get('reset')
     const error = searchParams.get('error')
     const p = searchParams.get('portal')
+    const claimsHost = window.location.hostname === 'claims.zajcon.cz'
 
-    if (p === 'client' || window.location.hostname === 'claims.zajcon.cz') setPortal('client')
+    if (claimsHost) setIsClaims(true)
+    if (p === 'client' || claimsHost) setPortal('client')
     if (verified === 'true') {
       toast.success('Email ověřen', {
         description: 'Váš účet byl úspěšně ověřen. Nyní se můžete přihlásit.',
@@ -61,7 +71,7 @@ function LoginForm() {
   }, [searchParams])
 
   const isAccountant = portal === 'accountant'
-  const usp = isAccountant ? ACCOUNTANT_USP : CLIENT_USP
+  const usp = isClaims ? CLAIMS_USP : isAccountant ? ACCOUNTANT_USP : CLIENT_USP
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -101,11 +111,11 @@ function LoginForm() {
         <div className="hidden lg:flex flex-col justify-center px-12 xl:px-20 py-16">
           {/* Back + Logo */}
           <Link
-            href="/"
+            href={isClaims ? '/claims' : '/'}
             className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-300 transition-colors mb-10 self-start"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Zpět na hlavní stránku
+            {isClaims ? 'Zpět na Pojistná Pomoc' : 'Zpět na hlavní stránku'}
           </Link>
 
           <div className="mb-8">
@@ -113,7 +123,15 @@ function LoginForm() {
           </div>
 
           <h2 className="text-3xl xl:text-4xl font-bold text-white leading-tight mb-3 transition-all duration-500">
-            {isAccountant ? (
+            {isClaims ? (
+              <>
+                Pojistná Pomoc
+                <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+                  na vaší straně
+                </span>
+              </>
+            ) : isAccountant ? (
               <>
                 Správa účetnictví
                 <br />
@@ -133,7 +151,9 @@ function LoginForm() {
           </h2>
 
           <p className="text-gray-400 text-base mb-10 max-w-md">
-            {isAccountant
+            {isClaims
+              ? 'Profesionální zpracování pojistných událostí. Nahlaste, sledujte a vyřešte — vše online.'
+              : isAccountant
               ? 'Platforma nové generace pro účetní firmy. Doklady, uzávěrky, komunikace a AI na jednom místě.'
               : 'Nahrajte doklady, sledujte uzávěrky a komunikujte s účetním — vše z jednoho místa.'
             }
@@ -178,8 +198,8 @@ function LoginForm() {
           </div>
 
           <div className="w-full max-w-md">
-            {/* Portal switcher */}
-            <div className="flex rounded-xl bg-white/[0.04] border border-white/[0.08] p-1 mb-6">
+            {/* Portal switcher — hide on claims.zajcon.cz */}
+            <div className={`flex rounded-xl bg-white/[0.04] border border-white/[0.08] p-1 mb-6 ${isClaims ? 'hidden' : ''}`}>
               <button
                 type="button"
                 onClick={() => setPortal('accountant')}

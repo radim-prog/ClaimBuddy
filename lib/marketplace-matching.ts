@@ -221,7 +221,7 @@ export async function findMatches(
   const { data: providers, error: provError } = await supabaseAdmin
     .from('marketplace_providers')
     .select('id, name, city, region, specializations, services, min_price, max_price, capacity_status, featured')
-    .eq('verified', true)
+    .eq('status', 'verified')
 
   if (provError) throw new Error(`Failed to fetch providers: ${provError.message}`)
   if (!providers || providers.length === 0) return []
