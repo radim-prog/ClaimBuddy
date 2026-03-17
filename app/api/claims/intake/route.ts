@@ -66,11 +66,96 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: errors.join(' ') }, { status: 400 })
     }
 
-    // --- Create the case ---
+    // --- Duplicate & linkage checks ---
     const insuranceCompanyId = payload.insurance_company_id as string | undefined
     const customCompanyName = payload.custom_company_name as string | undefined
     const eventLocation = payload.event_location as string | undefined
     const estimatedDamage = payload.estimated_damage ? Number(payload.estimated_damage) : undefined
+
+    // (a) Reject duplicate: same email + same insurance company + last 30 days
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    // Escape ILIKE wildcards in email to prevent false positives
+    const escapedEmail = contactEmail.replace(/[%_\\]/g, '\\$&')
+
+    let duplicateQuery = supabaseAdmin
+      .from('insurance_cases')
+      .select('id, case_number', { count: 'exact', head: false })
+      .ilike('note', `%${escapedEmail}%`)
+      .gte('created_at', thirtyDaysAgo.toISOString())
+
+    if (insuranceCompanyId) {
+      duplicateQuery = duplicateQuery.eq('insurance_company_id', insuranceCompanyId)
+    }
+
+    const { data: duplicates } = await duplicateQuery.limit(1)
+
+    if (duplicates && duplicates.length > 0) {
+      return NextResponse.json(
+        { error: 'Událost s tímto emailem již byla nahlášena. Pokud chcete doplnit informace, kontaktujte nás.' },
+        { status: 409 }
+      )
+    }
+
+    // (b) Link existing user by email → find their company
+    let linkedCompanyId: string | undefined
+    const normalizedEmail = contactEmail.toLowerCase().trim()
+
+    const { data: existingUser } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('email', normalizedEmail)
+      .limit(1)
+      .single()
+
+    if (existingUser) {
+      // Find company owned by this user
+      const { data: ownedCompany } = await supabaseAdmin
+        .from('companies')
+        .select('id')
+        .eq('owner_id', existingUser.id)
+        .is('deleted_at', null)
+        .limit(1)
+        .single()
+
+      if (ownedCompany) {
+        linkedCompanyId = ownedCompany.id
+      }
+    }
+
+    // (b2) Fallback: find company by matching email directly
+    if (!linkedCompanyId) {
+      const { data: companyByEmail } = await supabaseAdmin
+        .from('companies')
+        .select('id')
+        .eq('email', normalizedEmail)
+        .is('deleted_at', null)
+        .limit(1)
+        .single()
+
+      if (companyByEmail) {
+        linkedCompanyId = companyByEmail.id
+      }
+    }
+
+    // (c) Link existing company by IČO (if provided in payload)
+    const contactIco = payload.contact_ico as string | undefined
+    if (!linkedCompanyId && contactIco) {
+      const { data: existingCompany } = await supabaseAdmin
+        .from('companies')
+        .select('id')
+        .eq('ico', contactIco.trim())
+        .is('deleted_at', null)
+        .limit(1)
+        .single()
+
+      if (existingCompany) {
+        linkedCompanyId = existingCompany.id
+      }
+    }
+
+    // --- Create the case ---
 
     // Build note with contact info + custom company name
     const noteParts: string[] = []
@@ -83,6 +168,7 @@ export async function POST(request: NextRequest) {
       {
         insurance_type: insuranceType,
         insurance_company_id: insuranceCompanyId || undefined,
+        company_id: linkedCompanyId,
         event_date: eventDate,
         event_description: eventDescription.trim(),
         event_location: eventLocation || undefined,

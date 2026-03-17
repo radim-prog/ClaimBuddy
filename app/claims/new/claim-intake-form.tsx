@@ -145,6 +145,30 @@ export function ClaimIntakeForm() {
   const [companySearch, setCompanySearch] = useState('')
   const [useCustomCompany, setUseCustomCompany] = useState(false)
 
+  // Duplicate hints (non-blocking)
+  const [emailHint, setEmailHint] = useState('')
+  const [phoneHint, setPhoneHint] = useState('')
+
+  const checkExistingContact = useCallback(async (field: 'email' | 'phone', value: string) => {
+    if (!value.trim()) return
+    try {
+      const res = await fetch(`/api/claims/check-contact?${field}=${encodeURIComponent(value.trim())}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.exists) {
+          const hint = 'Tento kontakt už máme v systému — pokud máte účet, přihlaste se.'
+          if (field === 'email') setEmailHint(hint)
+          else setPhoneHint(hint)
+        } else {
+          if (field === 'email') setEmailHint('')
+          else setPhoneHint('')
+        }
+      }
+    } catch {
+      // Non-blocking — ignore errors
+    }
+  }, [])
+
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -815,10 +839,23 @@ export function ClaimIntakeForm() {
                 <input
                   type="email"
                   value={formData.contact_email}
-                  onChange={e => update({ contact_email: e.target.value })}
+                  onChange={e => { update({ contact_email: e.target.value }); setEmailHint('') }}
+                  onBlur={e => {
+                    const v = e.target.value.trim()
+                    if (v && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+                      checkExistingContact('email', v)
+                    }
+                  }}
                   placeholder="jan.novak@email.cz"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
+                {emailHint && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5 mt-1">
+                    <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                    {emailHint}{' '}
+                    <a href="/auth/login" className="underline hover:no-underline font-medium">Přihlásit se</a>
+                  </p>
+                )}
               </div>
               {/* Phone */}
               <div className="space-y-2">
@@ -829,10 +866,23 @@ export function ClaimIntakeForm() {
                 <input
                   type="tel"
                   value={formData.contact_phone}
-                  onChange={e => update({ contact_phone: e.target.value })}
+                  onChange={e => { update({ contact_phone: e.target.value }); setPhoneHint('') }}
+                  onBlur={e => {
+                    const v = e.target.value.replace(/\s+/g, '').trim()
+                    if (v && /^\+?420\d{9}$/.test(v)) {
+                      checkExistingContact('phone', v)
+                    }
+                  }}
                   placeholder="+420 777 123 456"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
+                {phoneHint && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5 mt-1">
+                    <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                    {phoneHint}{' '}
+                    <a href="/auth/login" className="underline hover:no-underline font-medium">Přihlásit se</a>
+                  </p>
+                )}
               </div>
               {/* GDPR */}
               <div className="pt-2">
