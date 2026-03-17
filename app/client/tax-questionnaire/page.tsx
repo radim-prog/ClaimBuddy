@@ -24,6 +24,7 @@ import {
   type Question,
 } from '@/lib/tax-questionnaire-def'
 import { QuestionnaireUpload } from '@/components/client/questionnaire-upload'
+import { QuestionUpload } from '@/components/client/question-upload'
 
 const ICON_MAP: Record<string, React.ElementType> = {
   banknote: Banknote, percent: Percent, receipt: Receipt, clock: Clock,
@@ -316,7 +317,10 @@ function SectionCard({
               value={responses[q.id]}
               responses={responses}
               onChange={(val) => onResponse(q.id, val)}
+              onResponse={onResponse}
               readOnly={readOnly}
+              questionnaireId={questionnaireId}
+              companyId={companyId}
             />
           ))}
           {section.allowDocUpload && questionnaireId && companyId && (
@@ -336,52 +340,93 @@ function SectionCard({
 // --- Question Field ---
 
 function QuestionField({
-  question, value, responses, onChange, readOnly,
+  question, value, responses, onChange, onResponse, readOnly, questionnaireId, companyId, depth = 0,
 }: {
   question: Question
   value: unknown
   responses: QuestionnaireResponses
   onChange: (val: string | boolean | ChildEntry[] | null) => void
+  onResponse?: (key: string, value: string | boolean | ChildEntry[] | null) => void
   readOnly: boolean
+  questionnaireId?: string
+  companyId?: string
+  depth?: number
 }) {
   // Conditional visibility
   if (question.conditionalOn && responses[question.conditionalOn] !== true) {
     return null
   }
 
+  const showFollowUp = value === true && question.followUp && question.followUp.length > 0 && depth < 2
+  const showUpload = value === true && question.uploadField && questionnaireId && companyId
+
   if (question.type === 'yesno') {
     return (
-      <div className="flex items-center justify-between py-1.5">
-        <div className="flex items-center gap-1 pr-4">
-          <span className="text-sm">{question.label}</span>
-          {question.hint && <HintIcon hint={question.hint} />}
+      <div>
+        <div className="flex items-center justify-between py-1.5">
+          <div className="flex items-center gap-1 pr-4">
+            <span className="text-sm">{question.label}</span>
+            {question.hint && <HintIcon hint={question.hint} />}
+          </div>
+          <div className="flex gap-1 flex-shrink-0">
+            <button
+              disabled={readOnly}
+              onClick={() => onChange(true)}
+              className={cn(
+                'px-3 py-1 rounded-md text-xs font-medium transition-colors',
+                value === true
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground hover:bg-gray-200'
+              )}
+            >
+              Ano
+            </button>
+            <button
+              disabled={readOnly}
+              onClick={() => onChange(false)}
+              className={cn(
+                'px-3 py-1 rounded-md text-xs font-medium transition-colors',
+                value === false
+                  ? 'bg-red-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground hover:bg-gray-200'
+              )}
+            >
+              Ne
+            </button>
+          </div>
         </div>
-        <div className="flex gap-1 flex-shrink-0">
-          <button
-            disabled={readOnly}
-            onClick={() => onChange(true)}
-            className={cn(
-              'px-3 py-1 rounded-md text-xs font-medium transition-colors',
-              value === true
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground hover:bg-gray-200'
-            )}
-          >
-            Ano
-          </button>
-          <button
-            disabled={readOnly}
-            onClick={() => onChange(false)}
-            className={cn(
-              'px-3 py-1 rounded-md text-xs font-medium transition-colors',
-              value === false
-                ? 'bg-red-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground hover:bg-gray-200'
-            )}
-          >
-            Ne
-          </button>
-        </div>
+        {/* Follow-up questions */}
+        {showFollowUp && onResponse && (
+          <div className="border-l-2 border-blue-200 dark:border-blue-800 pl-4 ml-2 space-y-1">
+            {question.followUp!.map(fq => (
+              <QuestionField
+                key={fq.id}
+                question={fq}
+                value={responses[fq.id]}
+                responses={responses}
+                onChange={(val) => onResponse(fq.id, val)}
+                onResponse={onResponse}
+                readOnly={readOnly}
+                questionnaireId={questionnaireId}
+                companyId={companyId}
+                depth={depth + 1}
+              />
+            ))}
+          </div>
+        )}
+        {/* Inline upload */}
+        {showUpload && (
+          <div className="border-l-2 border-blue-200 dark:border-blue-800 pl-4 ml-2">
+            <QuestionUpload
+              questionnaireId={questionnaireId!}
+              questionId={question.id}
+              companyId={companyId!}
+              hint={question.uploadField!.hint}
+              accept={question.uploadField!.accept}
+              readOnly={readOnly}
+            />
+          </div>
+        )}
       </div>
     )
   }

@@ -90,13 +90,27 @@ const dynamicNavigation: { name: string; href: string; icon: typeof LayoutDashbo
 
 function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? ''
-  const { userName, userInitials, selectedCompany, userModules } = useClientUser()
+  const { userName, userInitials, selectedCompany, selectedCompanyId, userModules } = useClientUser()
   const { isLocked, planTier } = usePlanFeatures()
   const { startTour } = useTutorialContext()
   const { activeModule } = useActiveModule()
   const isClaims = activeModule === 'claims'
   const [notificationsDismissed, setNotificationsDismissed] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [questionnaireNew, setQuestionnaireNew] = useState(false)
+
+  // Check if there's a questionnaire with status='sent' (new for client)
+  useEffect(() => {
+    if (!selectedCompanyId) return
+    const year = new Date().getFullYear()
+    fetch(`/api/client/tax-questionnaire?company_id=${selectedCompanyId}&year=${year}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.questionnaire?.status === 'sent') setQuestionnaireNew(true)
+        else setQuestionnaireNew(false)
+      })
+      .catch(() => {})
+  }, [selectedCompanyId])
 
   // Build navigation: base + dynamic sections enabled for this company
   const portalSections = selectedCompany?.portal_sections || {}
@@ -202,6 +216,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                       <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${locked ? 'text-white/15' : isActive ? 'text-blue-300' : 'text-white/35 group-hover:text-white/70'}`} />
                       {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
                       {!collapsed && locked && <Lock className="ml-1.5 h-3 w-3 text-white/20" />}
+                      {!collapsed && item.href === '/client/tax-questionnaire' && questionnaireNew && (
+                        <span className="ml-2 px-1.5 py-0.5 text-[10px] font-semibold rounded-md bg-blue-500 text-white leading-none animate-pulse">Nový</span>
+                      )}
                       {!collapsed && item.href === '/client/crisis' && (
                         <span className="ml-2 px-1.5 py-0.5 text-[10px] font-medium rounded-md bg-white/10 text-white/40 leading-none">Bonus</span>
                       )}

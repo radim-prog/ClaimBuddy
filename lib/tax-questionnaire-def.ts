@@ -2,6 +2,12 @@
 
 export type QuestionType = 'yesno' | 'text' | 'select' | 'children'
 
+export interface UploadField {
+  hint: string
+  required?: boolean
+  accept?: string
+}
+
 export interface Question {
   id: string
   label: string
@@ -12,6 +18,8 @@ export interface Question {
   options?: { value: string; label: string }[] // for select type
   hint?: string // optional tooltip / explanatory note
   forEntity?: 'FO' | 'PO' // show only for this entity type (undefined = both)
+  followUp?: Question[] // nested questions shown when parent answer = true (max 2 levels)
+  uploadField?: UploadField // inline upload shown when answer = true
 }
 
 export interface Section {
@@ -90,6 +98,19 @@ export const TAX_QUESTIONNAIRE_SECTIONS: Section[] = [
         label: 'Příjmy ze závislé činnosti (pracovní poměr/brigády)?',
         type: 'yesno',
         hint: 'Příjmy z HPP, DPP nebo DPČ. Účetní potřebuje Potvrzení o zdanitelných příjmech od každého zaměstnavatele.',
+        followUp: [
+          {
+            id: 'income_employment_count',
+            label: 'Kolik zaměstnavatelů?',
+            type: 'text',
+            placeholder: '1',
+          },
+        ],
+        uploadField: {
+          hint: 'Potvrzení o zdanitelných příjmech od zaměstnavatele',
+          required: true,
+          accept: 'image/*,application/pdf',
+        },
       },
       {
         id: 'income_business',
@@ -150,6 +171,10 @@ export const TAX_QUESTIONNAIRE_SECTIONS: Section[] = [
         type: 'yesno',
         forEntity: 'FO',
         hint: 'Daňové zvýhodnění: 1. dítě 15 204 Kč/rok, 2. dítě 22 320 Kč/rok, 3. a každé další 27 840 Kč/rok. Uplatnit lze i jako daňový bonus (vrácení přeplatku).',
+        uploadField: {
+          hint: 'Potvrzení o studiu dítěte / Čestné prohlášení',
+          accept: 'image/*,application/pdf',
+        },
       },
       {
         id: 'deduction_children_list',
@@ -210,12 +235,30 @@ export const TAX_QUESTIONNAIRE_SECTIONS: Section[] = [
         label: 'Poskytnutý dar?',
         type: 'yesno',
         hint: 'Dar musí být min. 2 % základu daně nebo alespoň 1 000 Kč. Lze odečíst max. 15 % základu daně. Nutné potvrzení od obdarované organizace.',
+        followUp: [
+          {
+            id: 'ded_donation_amount',
+            label: 'Celková výše darů (Kč)',
+            type: 'text',
+            placeholder: '5 000',
+          },
+        ],
+        uploadField: {
+          hint: 'Potvrzení o daru',
+          required: true,
+          accept: 'image/*,application/pdf',
+        },
       },
       {
         id: 'ded_mortgage',
         label: 'Hypotéční úroky?',
         type: 'yesno',
         hint: 'Úroky z hypotéky nebo úvěru ze stavebního spoření na vlastní bydlení. Max. 150 000 Kč/rok (pro smlouvy uzavřené do 31. 12. 2020) nebo 300 000 Kč (smlouvy od 1. 1. 2021). Nutné potvrzení banky.',
+        uploadField: {
+          hint: 'Potvrzení banky o zaplacených úrocích',
+          required: true,
+          accept: 'image/*,application/pdf',
+        },
       },
       {
         id: 'ded_pension',
@@ -223,6 +266,11 @@ export const TAX_QUESTIONNAIRE_SECTIONS: Section[] = [
         type: 'yesno',
         forEntity: 'FO',
         hint: 'Příspěvky nad 12 000 Kč/rok lze odečíst (max. 24 000 Kč odpočtu). Platí pro starý produkt penzijního připojištění i nové doplňkové penzijní spoření.',
+        uploadField: {
+          hint: 'Potvrzení o penzijním pojištění',
+          required: true,
+          accept: 'image/*,application/pdf',
+        },
       },
       {
         id: 'ded_dip',
@@ -230,6 +278,11 @@ export const TAX_QUESTIONNAIRE_SECTIONS: Section[] = [
         type: 'yesno',
         forEntity: 'FO',
         hint: 'DIP je spoření na důchod přes investiční účet (akcie, ETF, fondy). Příspěvky nad 12 000 Kč/rok lze odečíst, max. 48 000 Kč/rok. Nový produkt platný od 1. 1. 2024 — potvrzení vydává finanční instituce.',
+        uploadField: {
+          hint: 'Potvrzení o DIP',
+          required: true,
+          accept: 'image/*,application/pdf',
+        },
       },
       {
         id: 'ded_life_insurance',
@@ -237,6 +290,11 @@ export const TAX_QUESTIONNAIRE_SECTIONS: Section[] = [
         type: 'yesno',
         forEntity: 'FO',
         hint: 'Životní pojištění s rezervotvornou složkou (kapitálové nebo investiční). Max. odpočet 24 000 Kč/rok. Smlouvy uzavřené po 1. 1. 2024 již nárok na odpočet nenabízejí.',
+        uploadField: {
+          hint: 'Potvrzení o životním pojištění',
+          required: true,
+          accept: 'image/*,application/pdf',
+        },
       },
       {
         id: 'ded_union',
