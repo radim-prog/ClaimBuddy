@@ -4,10 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
-const PRICE_MAP: Record<string, { amount: number; label: string }> = {
-  ai_processing: { amount: 19900, label: 'Pojistná Pomoc — AI analýza' }, // 199 Kč
-  consultation: { amount: 149900, label: 'Pojistná Pomoc — Konzultace' }, // 1 499 Kč
-  full_representation: { amount: 149900, label: 'Pojistná Pomoc — Plné zastoupení' }, // 1 499 Kč
+const PRICE_MAP: Record<string, { priceId: string | undefined; amount: number; label: string }> = {
+  ai_processing: { priceId: process.env.STRIPE_CLAIMS_AI_PRICE_ID, amount: 19900, label: 'Pojistná Pomoc — AI analýza' },
+  consultation: { priceId: process.env.STRIPE_CLAIMS_CONSULTATION_PRICE_ID, amount: 149900, label: 'Pojistná Pomoc — Konzultace' },
+  full_representation: { priceId: process.env.STRIPE_CLAIMS_REPRESENTATION_PRICE_ID, amount: 149900, label: 'Pojistná Pomoc — Plné zastoupení' },
 }
 
 // POST /api/claims/checkout — create Stripe Checkout Session for claims service
@@ -48,13 +48,11 @@ export async function POST(request: NextRequest) {
 
     const origin = request.nextUrl.origin
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      payment_method_types: ['card'],
-      line_items: [
-        {
+    const lineItem = priceConfig.priceId
+      ? { price: priceConfig.priceId, quantity: 1 }
+      : {
           price_data: {
-            currency: 'czk',
+            currency: 'czk' as const,
             unit_amount: priceConfig.amount,
             product_data: {
               name: priceConfig.label,
@@ -62,8 +60,12 @@ export async function POST(request: NextRequest) {
             },
           },
           quantity: 1,
-        },
-      ],
+        }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      line_items: [lineItem],
       metadata: {
         type: 'claims_service',
         case_id: caseId,
