@@ -133,7 +133,8 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
     selectedCompanyId,
     setSelectedCompanyId,
     selectedCompany,
-  }), [userId, userName, userInitials, companies, closures, loading, error, selectedCompanyId, setSelectedCompanyId, selectedCompany])
+    userModules,
+  }), [userId, userName, userInitials, companies, closures, loading, error, selectedCompanyId, setSelectedCompanyId, selectedCompany, userModules])
 
   return (
     <ClientUserContext.Provider value={value}>
