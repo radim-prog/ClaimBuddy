@@ -99,6 +99,12 @@ function ChooseServiceInner() {
 
   const [selected, setSelected] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [consentImmediate, setConsentImmediate] = useState(false)
+  const [consentWithdrawal, setConsentWithdrawal] = useState(false)
+
+  const selectedOption = SERVICE_OPTIONS.find((o) => o.mode === selected)
+  const isPaid = selectedOption?.price != null && selectedOption.price > 0
+  const consentsGiven = !isPaid || (consentImmediate && consentWithdrawal)
 
   async function handleContinue() {
     if (!selected || !caseId) return
@@ -145,7 +151,7 @@ function ChooseServiceInner() {
             <button
               key={option.mode}
               type="button"
-              onClick={() => setSelected(option.mode)}
+              onClick={() => { setSelected(option.mode); setConsentImmediate(false); setConsentWithdrawal(false) }}
               className={`relative text-left rounded-2xl border-2 p-6 transition-all duration-200 ${
                 isSelected
                   ? 'border-blue-500 dark:border-blue-400 shadow-lg shadow-blue-100 dark:shadow-blue-900/20 ring-1 ring-blue-500 dark:ring-blue-400'
@@ -186,10 +192,38 @@ function ChooseServiceInner() {
         })}
       </div>
 
-      <div className="mt-8 flex justify-center">
+      {/* GDPR consents for paid tiers */}
+      {selected && isPaid && (
+        <div className="mt-8 max-w-xl mx-auto space-y-3">
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={consentImmediate}
+              onChange={(e) => setConsentImmediate(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-600 dark:text-gray-400 leading-snug group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">
+              Souhlasím se zahájením poskytování služby ihned, před uplynutím lhůty pro odstoupení od smlouvy.
+            </span>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={consentWithdrawal}
+              onChange={(e) => setConsentWithdrawal(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-600 dark:text-gray-400 leading-snug group-hover:text-gray-900 dark:group-hover:text-gray-200 transition-colors">
+              Beru na vědomí, že u digitálních služeb (AI zpracování) tím ztrácím právo na odstoupení po dokončení služby.
+            </span>
+          </label>
+        </div>
+      )}
+
+      <div className="mt-6 flex justify-center">
         <button
           type="button"
-          disabled={!selected || submitting}
+          disabled={!selected || !consentsGiven || submitting}
           onClick={handleContinue}
           className="inline-flex items-center justify-center h-12 px-8 text-sm font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
         >
@@ -197,6 +231,11 @@ function ChooseServiceInner() {
             <>
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
               Zpracovávám...
+            </>
+          ) : isPaid ? (
+            <>
+              Objednat s povinností platby
+              <ArrowRight className="h-4 w-4 ml-2" />
             </>
           ) : (
             <>

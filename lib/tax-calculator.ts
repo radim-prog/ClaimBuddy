@@ -244,9 +244,13 @@ export function calculateIncomeTax(
     }
   }
 
-  const totalCredits = taxpayerCredit + childrenCredit + config.other_credits
-  // Tax after credits can go negative (bonus for children)
-  const netTax = grossTax - totalCredits
+  // Non-refundable credits (cannot reduce tax below 0): taxpayer, other
+  const nonRefundableCredits = taxpayerCredit + config.other_credits
+  const taxAfterNonRefundable = Math.max(0, grossTax - nonRefundableCredits)
+
+  // Refundable credits (can create tax bonus = negative tax): children
+  const totalCredits = nonRefundableCredits + childrenCredit
+  const netTax = taxAfterNonRefundable - childrenCredit
 
   // Social insurance: profit × base_percentage × rate, enforce minimum
   const profit = Math.max(0, effectiveBase)
