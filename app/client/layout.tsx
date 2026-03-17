@@ -28,6 +28,7 @@ import {
   FilePlus,
   Shield,
   CreditCard,
+  LifeBuoy,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -70,7 +71,8 @@ const accountingNavigation: NavItem[] = [
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare, tourId: 'client-messages' },
   { name: 'Platby', href: '/client/billing', icon: CreditCard },
   // ── Doplňkové ──
-  { name: 'Pojistné události', href: '/client/claims', icon: ShieldCheck, divider: true },
+  { name: 'Požadavky', href: '/client/requests', icon: LifeBuoy, divider: true },
+  { name: 'Pojistné události', href: '/client/claims', icon: ShieldCheck },
   { name: 'Adresář', href: '/client/partners', icon: Users, feature: 'address_book' },
   { name: 'Dotazník', href: '/client/tax-questionnaire', icon: ClipboardList },
 ]

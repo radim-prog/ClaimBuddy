@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period')
     const companyId = searchParams.get('company_id')
     const status = searchParams.get('status') // frontend status: draft/sent/paid
+    const overdue = searchParams.get('overdue') // 'true' = only overdue invoices
+    const dueSoon = searchParams.get('due_soon') // 'true' = due within 7 days
 
     let query = supabaseAdmin
       .from('invoices')
@@ -23,6 +25,28 @@ export async function GET(request: NextRequest) {
 
     if (period) query = query.eq('period', period)
     if (companyId) query = query.eq('company_id', companyId)
+
+    // Overdue filter: unpaid invoices past due date
+    if (overdue === 'true') {
+      const today = new Date().toISOString().split('T')[0]
+      query = query
+        .is('paid_at', null)
+        .neq('payment_status', 'paid')
+        .lt('due_date', today)
+    }
+
+    // Due soon filter: unpaid invoices due within 7 days (not yet overdue)
+    if (dueSoon === 'true') {
+      const today = new Date().toISOString().split('T')[0]
+      const weekLater = new Date()
+      weekLater.setDate(weekLater.getDate() + 7)
+      const weekLaterStr = weekLater.toISOString().split('T')[0]
+      query = query
+        .is('paid_at', null)
+        .neq('payment_status', 'paid')
+        .gte('due_date', today)
+        .lte('due_date', weekLaterStr)
+    }
 
     const { data, error } = await query.limit(500)
 

@@ -36,6 +36,18 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error
 
+    // 1b. Auto-update payment_status to 'overdue' for all unpaid invoices past due date
+    let overdueUpdated = 0
+    if (unpaidInvoices && unpaidInvoices.length > 0) {
+      const overdueIds = unpaidInvoices.map(inv => inv.id)
+      const { count } = await supabaseAdmin
+        .from('invoices')
+        .update({ payment_status: 'overdue', updated_at: new Date().toISOString() })
+        .in('id', overdueIds)
+        .neq('payment_status', 'overdue')
+      overdueUpdated = count ?? 0
+    }
+
     let scheduled = 0
     let resolved = 0
     let skipped = 0
@@ -123,6 +135,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       processed: (unpaidInvoices || []).length,
+      overdueUpdated,
       scheduled,
       resolved,
       skipped,

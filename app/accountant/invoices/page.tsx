@@ -33,7 +33,7 @@ import type { Invoice, InvoiceStatus } from '@/lib/mock-data'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
 
-type FilterStatus = 'all' | InvoiceStatus
+type FilterStatus = 'all' | InvoiceStatus | 'overdue' | 'due_this_week'
 
 const statusConfig: Record<InvoiceStatus, { label: string; color: string; icon: typeof FileText }> = {
   draft: {

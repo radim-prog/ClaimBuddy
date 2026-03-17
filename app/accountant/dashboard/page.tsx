@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ClosureDetailModal } from '@/components/closure-detail-modal'
 // settings context removed — no longer needed on dashboard
 import { useAttention } from '@/lib/contexts/attention-context'
-import { Clock, AlertTriangle, FileX, MessageCircle, Upload, CheckCircle2, ChevronRight } from 'lucide-react'
+import { Clock, AlertTriangle, FileX, MessageCircle, Upload, CheckCircle2, ChevronRight, Receipt } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { PaymentMatrix } from '@/components/payment-tracking/payment-matrix'
 import { VatMatrix } from '@/components/tax-tracking/vat-matrix'
@@ -327,10 +327,16 @@ const StatusCell = React.memo(function StatusCell({
 
 // Dashboard tiles removed — using direct compact layout
 
+type OverdueInvoiceStats = {
+  count: number
+  totalAmount: number
+}
+
 type DashboardData = {
   matrix: MatrixData
   todayTasks: GtdTask[]
   timeSummary: TimeSummary | null
+  overdueInvoices: OverdueInvoiceStats
 }
 
 export default function AccountantDashboard() {
@@ -345,20 +351,31 @@ export default function AccountantDashboard() {
   const fetchDashboard = useCallback(async (): Promise<DashboardData> => {
     const today = new Date().toISOString().split('T')[0]
     const period = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
-    const [matrixRes, tasksRes, timeRes] = await Promise.all([
+    const [matrixRes, tasksRes, timeRes, overdueRes] = await Promise.all([
       fetch('/api/accountant/matrix'),
       fetch(`/api/tasks?status=inbox,next_action,waiting_for&due_date_to=${today}&sort_by=due_date&sort_order=asc&page_size=20`),
       fetch(`/api/time-entries/summary?period=${period}`),
+      fetch('/api/accountant/invoices?overdue=true'),
     ])
-    const [matrix, tasksJson, timeJson] = await Promise.all([
+    const [matrix, tasksJson, timeJson, overdueJson] = await Promise.all([
       matrixRes.ok ? matrixRes.json() : null,
       tasksRes.ok ? tasksRes.json() : null,
       timeRes.ok ? timeRes.json() : null,
+      overdueRes.ok ? overdueRes.json() : null,
     ])
+
+    // Calculate overdue stats from invoices
+    const overdueInvoices = (overdueJson?.invoices || []) as Array<{ total_with_vat: number }>
+    const overdueStats: OverdueInvoiceStats = {
+      count: overdueInvoices.length,
+      totalAmount: overdueInvoices.reduce((sum: number, inv: { total_with_vat: number }) => sum + (inv.total_with_vat || 0), 0),
+    }
+
     return {
       matrix: matrix || { companies: [], closures: [], stats: { total: 0, missing: 0, uploaded: 0, approved: 0 } },
       todayTasks: tasksJson?.tasks || [],
       timeSummary: timeJson || null,
+      overdueInvoices: overdueStats,
     }
   }, [])
 
@@ -366,6 +383,7 @@ export default function AccountantDashboard() {
   const data = dashboardData?.matrix ?? null
   const todayTasks = dashboardData?.todayTasks ?? []
   const timeSummary = dashboardData?.timeSummary ?? null
+  const overdueInvoices = dashboardData?.overdueInvoices ?? { count: 0, totalAmount: 0 }
 
   const handleCellClick = useCallback((closure: MonthlyClosure, companyName: string) => {
     setSelectedClosure(closure)
@@ -725,6 +743,17 @@ export default function AccountantDashboard() {
           </span>
         )}
         <span className="text-gray-200 dark:text-gray-700">|</span>
+        {overdueInvoices.count > 0 && (
+          <>
+            <Link href="/accountant/invoices?filter=overdue" className="flex items-center gap-1.5 hover:text-red-600 transition-colors">
+              <Receipt className="h-3.5 w-3.5 text-red-500" />
+              <span className="font-medium text-red-600 dark:text-red-400">{overdueInvoices.count}</span>
+              <span className="text-red-500">po splatnosti</span>
+              <span className="text-red-600 dark:text-red-400 font-medium">({Math.round(overdueInvoices.totalAmount).toLocaleString('cs-CZ')} Kč)</span>
+            </Link>
+            <span className="text-gray-200 dark:text-gray-700">|</span>
+          </>
+        )}
         <Link href="/accountant/invoicing" className="flex items-center gap-1.5 hover:text-green-600 transition-colors">
           <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
           {!timeSummary || timeSummary.entry_count === 0 ? (

@@ -10,6 +10,7 @@ import {
   Gauge,
   Shield,
   GitBranchPlus,
+  TrendingUp,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
@@ -21,6 +22,7 @@ const analyticsTabs = [
   { href: '/accountant/analytics/time-reports', label: 'Odpracovano', icon: Clock },
   { href: '/accountant/analytics/capacity', label: 'Kapacity', icon: Gauge },
   { href: '/accountant/analytics/pipeline', label: 'Pipeline', icon: GitBranchPlus },
+  { href: '/accountant/analytics/profitability', label: 'Ziskovost', icon: TrendingUp },
 ]
 
 export default function AnalyticsLayout({ children }: { children: React.ReactNode }) {
