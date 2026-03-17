@@ -279,12 +279,12 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
       {/* Main chat area — hidden on mobile when no conversation selected */}
       <div className={`flex-1 flex flex-col min-w-0 ${!selectedChatId ? 'hidden md:flex' : ''}`}>
         {/* Chat header */}
         {selectedConversation && (
-          <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50 dark:bg-gray-800/50">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/80 dark:to-gray-900">
             <div className="flex items-center gap-2 min-w-0">
               <button
                 onClick={() => setSelectedChatId(null)}
@@ -328,7 +328,7 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto space-y-4 p-4">
+        <div className="flex-1 overflow-y-auto space-y-4 p-4 bg-gray-50/50 dark:bg-gray-950/30">
           {!selectedChatId ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-30" />
@@ -354,12 +354,12 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
                   key={message.id}
                   className={`flex gap-3 ${isClient ? 'flex-row-reverse' : ''}`}
                 >
-                  <Avatar className="h-8 w-8 flex-shrink-0">
+                  <Avatar className="h-8 w-8 flex-shrink-0 ring-2 ring-offset-1 ring-offset-gray-50 dark:ring-offset-gray-950 shadow-sm">
                     <AvatarFallback
                       className={
                         isClient
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                          : 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 ring-blue-200 dark:ring-blue-800'
+                          : 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 ring-purple-200 dark:ring-purple-800'
                       }
                     >
                       {message.sender_name
@@ -381,10 +381,10 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
                     </div>
 
                     <div
-                      className={`p-3 rounded-lg ${
+                      className={`p-3 rounded-xl shadow-sm ${
                         isClient
-                          ? 'bg-blue-600 text-white rounded-br-none'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-none'
+                          ? 'bg-blue-600 text-white rounded-br-none shadow-blue-600/20'
+                          : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none border border-gray-100 dark:border-gray-700'
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -424,7 +424,7 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
 
         {/* Message input */}
         {selectedChatId && (
-          <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
+          <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900/80 backdrop-blur-sm">
             {/* Pending attachments */}
             {pendingAttachments.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
@@ -489,9 +489,9 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
       </div>
 
       {/* Conversation sidebar — full width on mobile when no conversation selected, hidden when viewing a chat */}
-      <div className={`border-l bg-gray-50 dark:bg-gray-800/30 flex flex-col ${selectedChatId ? 'hidden md:flex md:w-72' : 'w-full md:w-72'}`}>
+      <div className={`border-l border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/50 flex flex-col ${selectedChatId ? 'hidden md:flex md:w-72' : 'w-full md:w-72'}`}>
         {/* New conversation button */}
-        <div className="p-3 border-b">
+        <div className="p-3 border-b border-gray-200 dark:border-gray-700">
           {showNewConversation ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -545,11 +545,11 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
               <button
                 key={conv.id}
                 onClick={() => setSelectedChatId(conv.id)}
-                className={`w-full text-left px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/50 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/30 ${
+                className={`w-full text-left px-3 py-3 border-b border-gray-100 dark:border-gray-700/50 transition-all duration-150 ${
                   conv.id === selectedChatId
-                    ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-l-blue-600'
-                    : ''
-                } ${conv.status === 'completed' ? 'opacity-60' : ''}`}
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-l-[3px] border-l-blue-600 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.1)]'
+                    : 'hover:bg-gray-100/80 dark:hover:bg-gray-700/40 hover:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)] border-l-[3px] border-l-transparent'
+                } ${conv.status === 'completed' ? 'opacity-50' : ''}`}
               >
                 <div className="flex items-start gap-2">
                   <div className="flex-1 min-w-0">
@@ -559,7 +559,7 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
                       ) : (
                         <MessageSquare className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                       )}
-                      <span className="text-sm font-medium truncate">{conv.subject}</span>
+                      <span className={`text-sm truncate ${conv.unread_count > 0 ? 'font-semibold text-gray-900 dark:text-white' : 'font-medium text-gray-700 dark:text-gray-300'}`}>{conv.subject}</span>
                     </div>
                     {conv.last_message_preview && (
                       <p className="text-xs text-muted-foreground truncate mt-0.5 pl-5">
@@ -572,7 +572,7 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
                       {formatConversationTime(conv.last_message_at || conv.created_at)}
                     </span>
                     {conv.unread_count > 0 && (
-                      <Badge className="h-4 min-w-[16px] text-[10px] px-1 bg-blue-600 hover:bg-blue-600">
+                      <Badge className="h-5 min-w-[20px] text-[10px] px-1.5 bg-blue-600 hover:bg-blue-600 text-white font-semibold shadow-sm shadow-blue-600/30 animate-in fade-in">
                         {conv.unread_count}
                       </Badge>
                     )}
