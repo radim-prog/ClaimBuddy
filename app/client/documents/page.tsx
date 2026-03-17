@@ -15,6 +15,7 @@ import {
   Download,
   Eye,
   ChevronRight,
+  AlertCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useClientUser } from '@/lib/contexts/client-user-context'
@@ -92,7 +93,20 @@ function DocumentsPageInner() {
       {/* Document list - always visible */}
       <DocumentListTab />
 
-      {/* Bank section - collapsible */}
+      {/* Bank section - prominent with callout */}
+      {!bankExpanded && (
+        <button
+          onClick={toggleBank}
+          className="w-full flex items-center gap-3 p-3 rounded-xl border-2 border-dashed border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors text-left"
+        >
+          <Landmark className="h-5 w-5 text-blue-600 shrink-0" />
+          <div className="flex-1">
+            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Bankovní výpisy</span>
+            <span className="text-xs text-blue-600/70 dark:text-blue-400/70 ml-2">Nahrávejte výpisy a párujte transakce</span>
+          </div>
+          <ChevronRight className="h-4 w-4 text-blue-400" />
+        </button>
+      )}
       <CollapsibleSection
         id="documents-bank"
         label="Bankovní výpisy"

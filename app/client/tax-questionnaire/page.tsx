@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   Banknote, Percent, Receipt, Clock, Shield, HeartPulse, Info,
   ChevronDown, ChevronRight, Check, Loader2, Save, Send,
-  Plus, Trash2, CheckCircle2, AlertCircle, FileCheck,
+  Plus, Trash2, CheckCircle2, AlertCircle, FileCheck, HelpCircle, Zap,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useClientUser } from '@/lib/contexts/client-user-context'
@@ -27,7 +27,7 @@ import { QuestionnaireUpload } from '@/components/client/questionnaire-upload'
 
 const ICON_MAP: Record<string, React.ElementType> = {
   banknote: Banknote, percent: Percent, receipt: Receipt, clock: Clock,
-  shield: Shield, 'heart-pulse': HeartPulse, info: Info,
+  shield: Shield, 'heart-pulse': HeartPulse, info: Info, zap: Zap,
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -45,8 +45,15 @@ export default function TaxQuestionnairePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['income']))
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['precheck']))
   const year = new Date().getFullYear()
+
+  // Entity type detection: FO (fyzická osoba) or PO (právnická osoba)
+  const entityType = (responses['precheck_legal_form'] as string) === 'PO' ? 'PO' : 'FO'
+
+  // Minimal mode: paušální daň + příjem do 2M → most sections don't apply
+  const isMinimalMode =
+    responses['precheck_flat_tax'] === true && responses['precheck_revenue_limit'] === true
 
   const fetchQuestionnaire = useCallback(async () => {
     if (!selectedCompanyId) return
@@ -108,7 +115,7 @@ export default function TaxQuestionnairePage() {
     })
   }
 
-  const { answered, total } = countAnswered(responses)
+  const { answered, total } = countAnswered(responses, entityType)
   const progress = total > 0 ? Math.round((answered / total) * 100) : 0
   const isReadOnly = questionnaire?.status === 'completed' || questionnaire?.status === 'reviewed'
   const statusInfo = STATUS_LABELS[questionnaire?.status || 'sent']
@@ -162,6 +169,17 @@ export default function TaxQuestionnairePage() {
         <Badge className={statusInfo?.color}>{statusInfo?.label}</Badge>
       </div>
 
+      {/* Minimal mode banner */}
+      {isMinimalMode && (
+        <div className="mb-4 flex items-start gap-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+          <Zap className="h-4 w-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-emerald-800 dark:text-emerald-200">
+            <span className="font-medium">Paušální daň — zjednodušený dotazník.</span>
+            {' '}Sekce Sociální pojištění, Zdravotní pojištění a Zálohy se vás pravděpodobně netýkají. Vyplňte jen sekce <span className="font-medium">Příjmy</span> a <span className="font-medium">Doplňující informace</span>.
+          </div>
+        </div>
+      )}
+
       {/* Progress bar */}
       <div className="mb-6">
         <div className="flex items-center justify-between text-xs mb-1">
@@ -189,6 +207,7 @@ export default function TaxQuestionnairePage() {
             readOnly={isReadOnly}
             questionnaireId={questionnaire.id}
             companyId={selectedCompanyId ?? ''}
+            entityType={entityType}
           />
         ))}
       </div>
@@ -232,7 +251,7 @@ export default function TaxQuestionnairePage() {
 // --- Section Card ---
 
 function SectionCard({
-  section, responses, expanded, onToggle, onResponse, readOnly, questionnaireId, companyId,
+  section, responses, expanded, onToggle, onResponse, readOnly, questionnaireId, companyId, entityType,
 }: {
   section: Section
   responses: QuestionnaireResponses
@@ -242,14 +261,21 @@ function SectionCard({
   readOnly: boolean
   questionnaireId: string
   companyId: string
+  entityType: 'FO' | 'PO'
 }) {
   const Icon = ICON_MAP[section.icon] || Info
-  const sectionAnswered = section.questions.filter(q => {
+
+  // Filter questions by entity type
+  const visibleQuestions = section.questions.filter(q =>
+    !q.forEntity || q.forEntity === entityType
+  )
+
+  const sectionAnswered = visibleQuestions.filter(q => {
     if (q.conditionalOn && responses[q.conditionalOn] !== true) return false
     const val = responses[q.id]
     return val !== undefined && val !== null && val !== ''
   }).length
-  const sectionTotal = section.questions.filter(q => {
+  const sectionTotal = visibleQuestions.filter(q => {
     if (q.conditionalOn && responses[q.conditionalOn] !== true) return false
     return true
   }).length
@@ -283,7 +309,7 @@ function SectionCard({
 
       {expanded && (
         <CardContent className="pt-0 pb-4 space-y-3">
-          {section.questions.map(q => (
+          {visibleQuestions.map(q => (
             <QuestionField
               key={q.id}
               question={q}
@@ -326,7 +352,10 @@ function QuestionField({
   if (question.type === 'yesno') {
     return (
       <div className="flex items-center justify-between py-1.5">
-        <span className="text-sm pr-4">{question.label}</span>
+        <div className="flex items-center gap-1 pr-4">
+          <span className="text-sm">{question.label}</span>
+          {question.hint && <HintIcon hint={question.hint} />}
+        </div>
         <div className="flex gap-1 flex-shrink-0">
           <button
             disabled={readOnly}
@@ -360,7 +389,10 @@ function QuestionField({
   if (question.type === 'text') {
     return (
       <div className="py-1.5">
-        <label className="text-sm font-medium block mb-1">{question.label}</label>
+        <div className="flex items-center gap-1 mb-1">
+          <label className="text-sm font-medium">{question.label}</label>
+          {question.hint && <HintIcon hint={question.hint} />}
+        </div>
         <Input
           value={(value as string) || ''}
           onChange={(e) => onChange(e.target.value)}
@@ -375,7 +407,10 @@ function QuestionField({
   if (question.type === 'select') {
     return (
       <div className="py-1.5">
-        <label className="text-sm font-medium block mb-1">{question.label}</label>
+        <div className="flex items-center gap-1 mb-1">
+          <label className="text-sm font-medium">{question.label}</label>
+          {question.hint && <HintIcon hint={question.hint} />}
+        </div>
         <select
           value={(value as string) || ''}
           onChange={(e) => onChange(e.target.value)}
@@ -445,6 +480,20 @@ function QuestionField({
   }
 
   return null
+}
+
+// --- Hint Icon (tooltip on hover) ---
+
+function HintIcon({ hint }: { hint: string }) {
+  return (
+    <div className="relative group inline-flex">
+      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help flex-shrink-0" />
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block w-64 bg-popover text-popover-foreground text-xs rounded-md p-2.5 shadow-md border z-20 leading-relaxed">
+        {hint}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-popover" />
+      </div>
+    </div>
+  )
 }
 
 // --- Required Documents Checklist (BOD-072) ---

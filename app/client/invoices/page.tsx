@@ -378,6 +378,9 @@ function ClientInvoiceListView({
                 key={inv.id}
                 className={cn(
                   'rounded-2xl cursor-pointer transition-colors hover:shadow-md',
+                  invDocType === 'proforma' ? 'border-l-4 border-l-orange-400 dark:border-l-orange-500' :
+                  invDocType === 'credit_note' ? 'border-l-4 border-l-red-400 dark:border-l-red-500' :
+                  '',
                   rowBg
                 )}
                 onClick={() => setDetailInvoice(inv)}
@@ -402,9 +405,14 @@ function ClientInvoiceListView({
                         <p className="text-sm font-medium truncate">
                           {inv.invoice_number} — {inv.partner?.name || inv.partner_name || 'Neuvedeno'}
                         </p>
-                        {invDocType !== 'invoice' && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
-                            {docTypeBadgeLabel[invDocType] || invDocType}
+                        {invDocType === 'proforma' && (
+                          <Badge className="text-[10px] px-1.5 py-0 shrink-0 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-0">
+                            Záloha
+                          </Badge>
+                        )}
+                        {invDocType === 'credit_note' && (
+                          <Badge className="text-[10px] px-1.5 py-0 shrink-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-0">
+                            Dobropis
                           </Badge>
                         )}
                       </div>

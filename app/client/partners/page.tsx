@@ -318,16 +318,39 @@ export default function PartnersPage() {
                   {/* Expanded detail */}
                   {isExpanded && (
                     <div className="mt-3 pt-3 border-t border-border space-y-2 ml-11">
+                      {/* Action buttons */}
+                      {(p.phone || p.email) && (
+                        <div className="flex gap-2 mb-3" onClick={e => e.stopPropagation()}>
+                          {p.phone && (
+                            <a
+                              href={`tel:${p.phone}`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors"
+                            >
+                              <Phone className="h-3.5 w-3.5" />
+                              Zavolat
+                            </a>
+                          )}
+                          {p.email && (
+                            <a
+                              href={`mailto:${p.email}`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950/50 transition-colors"
+                            >
+                              <Mail className="h-3.5 w-3.5" />
+                              Napsat email
+                            </a>
+                          )}
+                        </div>
+                      )}
                       {p.email && (
                         <div className="flex items-center gap-2 text-sm">
                           <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <a href={`mailto:${p.email}`} className="text-blue-600 hover:underline">{p.email}</a>
+                          <span className="text-muted-foreground">{p.email}</span>
                         </div>
                       )}
                       {p.phone && (
                         <div className="flex items-center gap-2 text-sm">
                           <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <a href={`tel:${p.phone}`} className="text-blue-600 hover:underline">{p.phone}</a>
+                          <span className="text-muted-foreground">{p.phone}</span>
                         </div>
                       )}
                       {(p.address || p.city || p.postal_code) && (
