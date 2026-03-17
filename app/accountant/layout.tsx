@@ -63,7 +63,7 @@ import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { ActiveModuleProvider, useActiveModule } from '@/lib/contexts/active-module-context'
-import { Building2, FolderOpen, ClipboardList, UserCog, X, Palette } from 'lucide-react'
+import { Building2, FolderOpen, ClipboardList, UserCog, X, Palette, Star, Bookmark, Plus, Pencil, Trash2 } from 'lucide-react'
 import { getSavedThemeId, saveThemeId, getTheme, SIDEBAR_THEME_LIST } from '@/lib/sidebar-themes'
 import type { SidebarThemeId, SidebarTheme } from '@/lib/sidebar-themes'
 
@@ -371,6 +371,55 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const [staffUsers, setStaffUsers] = useState<{ id: string; name: string }[]>([])
   const [impersonatedUser, setImpersonatedUser] = useState<{ id: string; name: string } | null>(null)
 
+  // Bookmarks
+  interface UserBookmark { id: string; label: string; url: string; icon: string | null; position: number }
+  const [bookmarks, setBookmarks] = useState<UserBookmark[]>([])
+  const [bookmarksOpen, setBookmarksOpen] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('sidebar-bookmarks-open') !== 'false'
+    return true
+  })
+
+  const fetchBookmarks = () => {
+    fetch('/api/accountant/bookmarks')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.bookmarks) setBookmarks(data.bookmarks) })
+      .catch(() => {})
+  }
+
+  useEffect(() => { fetchBookmarks() }, [])
+
+  const isCurrentPageBookmarked = bookmarks.some(b => b.url === pathname)
+
+  const handleAddBookmark = async () => {
+    // Auto-generate label from pathname
+    const segments = pathname.split('/').filter(Boolean)
+    const last = segments[segments.length - 1] || 'Stránka'
+    const label = last.charAt(0).toUpperCase() + last.slice(1).replace(/-/g, ' ')
+
+    const res = await fetch('/api/accountant/bookmarks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label, url: pathname }),
+    })
+    if (res.ok) fetchBookmarks()
+  }
+
+  const handleRemoveBookmark = async (id: string) => {
+    const res = await fetch('/api/accountant/bookmarks', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    if (res.ok) fetchBookmarks()
+  }
+
+  const toggleBookmarks = () => {
+    setBookmarksOpen(prev => {
+      localStorage.setItem('sidebar-bookmarks-open', String(!prev))
+      return !prev
+    })
+  }
+
   // Fetch staff users list + check if currently impersonating (admin only)
   useEffect(() => {
     if (userRole !== 'admin') return
@@ -510,6 +559,130 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
               <AppSwitcher userModules={userModules} />
             </div>
           )}
+
+          {/* Bookmarks */}
+          {bookmarks.length > 0 || !collapsed ? (
+            <div className={`relative flex-shrink-0 border-b ${sidebarTheme.border} px-3 py-2`}>
+              {collapsed ? (
+                /* Collapsed: just a star icon with tooltip dropdown */
+                <DropdownMenu>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <button className={`w-full flex items-center justify-center px-2 py-2 rounded-xl ${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} transition-all duration-200`}>
+                          <Bookmark className="h-[18px] w-[18px] flex-shrink-0" />
+                        </button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="font-medium">Záložky</TooltipContent>
+                  </Tooltip>
+                  <DropdownMenuContent side="right" align="start" className="w-52">
+                    <DropdownMenuLabel className="flex items-center justify-between">
+                      Záložky
+                      {!isCurrentPageBookmarked && (
+                        <button onClick={handleAddBookmark} className="text-muted-foreground hover:text-foreground">
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {bookmarks.length === 0 && (
+                      <div className="px-2 py-3 text-xs text-muted-foreground text-center">Žádné záložky</div>
+                    )}
+                    {bookmarks.map(bm => (
+                      <DropdownMenuItem key={bm.id} asChild className="cursor-pointer group/bm">
+                        <Link href={bm.url} className="flex items-center justify-between w-full">
+                          <span className="truncate text-sm">{bm.label}</span>
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveBookmark(bm.id) }}
+                            className="opacity-0 group-hover/bm:opacity-100 text-muted-foreground hover:text-destructive ml-2 flex-shrink-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                    {!isCurrentPageBookmarked && bookmarks.length > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleAddBookmark} className="cursor-pointer text-xs text-muted-foreground">
+                          <Plus className="mr-2 h-3.5 w-3.5" />
+                          Přidat tuto stránku
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                /* Expanded: collapsible section with bookmark list */
+                <>
+                  <button
+                    onClick={toggleBookmarks}
+                    className="w-full flex items-center justify-between px-2 mb-1 group"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Bookmark className={`h-3 w-3 ${sidebarTheme.groupLabel}`} />
+                      <p className={`text-[10px] font-semibold ${sidebarTheme.groupLabel} uppercase tracking-widest`}>
+                        Záložky
+                      </p>
+                      {bookmarks.length > 0 && (
+                        <span className={`text-[9px] ${sidebarTheme.textMuted}`}>({bookmarks.length})</span>
+                      )}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      {!isCurrentPageBookmarked && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleAddBookmark() }}
+                          className={`${sidebarTheme.textMuted} hover:text-white/80 transition-colors p-0.5`}
+                          title="Přidat tuto stránku do záložek"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      )}
+                      {isCurrentPageBookmarked && (
+                        <Star className={`h-3 w-3 text-amber-400 fill-amber-400`} />
+                      )}
+                      <ChevronDown className={`h-3 w-3 ${sidebarTheme.textMuted} transition-transform duration-200 ${bookmarksOpen ? '' : '-rotate-90'}`} />
+                    </span>
+                  </button>
+                  {bookmarksOpen && (
+                    <div className="space-y-0.5">
+                      {bookmarks.length === 0 && (
+                        <p className={`text-[11px] ${sidebarTheme.textMuted} px-2 py-1`}>
+                          Klikněte + pro přidání záložky
+                        </p>
+                      )}
+                      {bookmarks.map(bm => {
+                        const bmActive = pathname === bm.url
+                        return (
+                          <div key={bm.id} className="group/bm flex items-center">
+                            <Link
+                              href={bm.url}
+                              className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-[12px] rounded-lg transition-all duration-150 ${
+                                bmActive
+                                  ? `${sidebarTheme.activeBg} ${sidebarTheme.textActive}`
+                                  : `${sidebarTheme.textDefault} ${sidebarTheme.hoverBg} ${sidebarTheme.hoverText}`
+                              }`}
+                            >
+                              <Star className={`h-3 w-3 flex-shrink-0 ${bmActive ? 'text-amber-400 fill-amber-400' : sidebarTheme.textMuted}`} />
+                              <span className="truncate">{bm.label}</span>
+                            </Link>
+                            <button
+                              onClick={() => handleRemoveBookmark(bm.id)}
+                              className={`opacity-0 group-hover/bm:opacity-100 px-1 py-1 ${sidebarTheme.textMuted} hover:text-red-400 transition-all duration-150 flex-shrink-0`}
+                              title="Odebrat záložku"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ) : null}
 
           {/* Navigation */}
           <TooltipProvider delayDuration={0}>
