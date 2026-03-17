@@ -18,6 +18,7 @@ import {
   RotateCcw,
   MessageSquare,
   X,
+  ArrowLeft,
 } from 'lucide-react'
 import { format, isToday, isYesterday } from 'date-fns'
 import { cs } from 'date-fns/locale'
@@ -279,12 +280,19 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
 
   return (
     <div className="flex h-full">
-      {/* Main chat area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main chat area — hidden on mobile when no conversation selected */}
+      <div className={`flex-1 flex flex-col min-w-0 ${!selectedChatId ? 'hidden md:flex' : ''}`}>
         {/* Chat header */}
         {selectedConversation && (
           <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50 dark:bg-gray-800/50">
             <div className="flex items-center gap-2 min-w-0">
+              <button
+                onClick={() => setSelectedChatId(null)}
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="text-xs md:hidden">Zpět</span>
+              </button>
               <MessageSquare className="h-4 w-4 text-blue-600 flex-shrink-0" />
               <span className="font-medium text-sm truncate">{selectedConversation.subject}</span>
               {selectedConversation.status === 'completed' && (
@@ -480,8 +488,8 @@ export function MessagesSection({ companyId, companyName, userName }: MessagesSe
         )}
       </div>
 
-      {/* Conversation sidebar */}
-      <div className="w-72 border-l bg-gray-50 dark:bg-gray-800/30 flex flex-col">
+      {/* Conversation sidebar — full width on mobile when no conversation selected, hidden when viewing a chat */}
+      <div className={`border-l bg-gray-50 dark:bg-gray-800/30 flex flex-col ${selectedChatId ? 'hidden md:flex md:w-72' : 'w-full md:w-72'}`}>
         {/* New conversation button */}
         <div className="p-3 border-b">
           {showNewConversation ? (

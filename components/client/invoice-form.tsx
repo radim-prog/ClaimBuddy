@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { X, Plus, Trash2, Loader2, Download, ChevronDown, ChevronRight, FileText, Hash } from 'lucide-react'
+import { X, Plus, Trash2, Loader2, Download, ChevronDown, ChevronRight, FileText, Hash, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { PartnerSelector } from '@/components/client/partner-selector'
 import { useClientUser } from '@/lib/contexts/client-user-context'
@@ -276,13 +276,20 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
 
   const addFromFavorite = (fav: Favorite) => {
     if (fav.type === 'item' && fav.data) {
-      setItems(prev => [...prev, {
+      const favItem = {
         description: fav.data.description || fav.name,
         quantity: fav.data.quantity || 1,
         unit: fav.data.unit || 'ks',
         unit_price: fav.data.unit_price || 0,
         vat_rate: fav.data.vat_rate ?? 21,
-      }])
+      }
+      // Fill first empty item instead of always adding a new one
+      const emptyIndex = items.findIndex(item => !item.description && item.unit_price === 0)
+      if (emptyIndex !== -1) {
+        setItems(prev => prev.map((item, i) => i === emptyIndex ? favItem : item))
+      } else {
+        setItems(prev => [...prev, favItem])
+      }
     }
   }
 
@@ -430,7 +437,13 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
     <Card ref={formRef}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">{formTitle}</CardTitle>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={onClose} className="gap-1 text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Zpět</span>
+            </Button>
+            <CardTitle className="text-lg">{formTitle}</CardTitle>
+          </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>

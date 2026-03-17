@@ -39,10 +39,10 @@ export async function GET(request: NextRequest) {
 
     const rows = invoices || []
 
-    // Monthly income/expense for last 6 months
+    // Monthly income/expense for all 12 months of current year
     const now = new Date()
     const monthly: Array<{ month: string; income: number; expense: number }> = []
-    for (let i = 5; i >= 0; i--) {
+    for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
       const monthRows = rows.filter(r => r.issue_date?.startsWith(key))

@@ -9,6 +9,7 @@ type Company = {
   dic?: string
   legal_form: string
   vat_payer: boolean
+  vat_period?: 'monthly' | 'quarterly' | null
   has_employees: boolean
   status: string
   address?: string

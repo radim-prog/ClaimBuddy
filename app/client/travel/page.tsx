@@ -76,16 +76,17 @@ function TravelPageInner() {
       if (monthFilter) params.set('month', monthFilter)
       if (vehicleFilter) params.set('vehicleId', vehicleFilter)
 
-      const [tripsRes, vehiclesRes, driversRes, placesRes, statsRes] = await Promise.all([
-        fetch(`/api/client/travel/trips?${params}`),
-        fetch('/api/client/travel/vehicles'),
-        fetch('/api/client/travel/drivers'),
-        fetch('/api/client/travel/places'),
-        fetch(`/api/client/travel/stats?year=${monthFilter.split('-')[0]}&month=${monthFilter.split('-')[1]}`),
-      ])
+      const safeJson = async (res: Response) => {
+        if (!res.ok) return {}
+        try { return await res.json() } catch { return {} }
+      }
 
       const [tripsData, vehiclesData, driversData, placesData, statsData] = await Promise.all([
-        tripsRes.json(), vehiclesRes.json(), driversRes.json(), placesRes.json(), statsRes.json(),
+        fetch(`/api/client/travel/trips?${params}`).then(safeJson),
+        fetch('/api/client/travel/vehicles').then(safeJson),
+        fetch('/api/client/travel/drivers').then(safeJson),
+        fetch('/api/client/travel/places').then(safeJson),
+        fetch(`/api/client/travel/stats?year=${monthFilter.split('-')[0]}&month=${monthFilter.split('-')[1]}`).then(safeJson),
       ])
 
       setTrips(tripsData.trips || [])

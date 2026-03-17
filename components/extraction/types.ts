@@ -14,8 +14,9 @@ export type ExtractionDocumentType =
   | 'other'
 
 // Status flow for extraction
-export type ExtractionStatus = 
+export type ExtractionStatus =
   | 'uploaded'        // Initial state
+  | 'uploaded_only'   // File saved, extraction unavailable/failed
   | 'extracting'      // OCR in progress
   | 'extracted'       // Data extracted, needs validation
   | 'validated'       // Data validated

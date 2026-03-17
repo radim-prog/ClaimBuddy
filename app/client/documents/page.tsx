@@ -146,6 +146,7 @@ const statusColors: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   uploaded: 'Nahráno',
+  uploaded_only: 'Čeká na zpracování',
   approved: 'Schváleno',
   rejected: 'Zamítnuto',
   pending: 'Čeká',

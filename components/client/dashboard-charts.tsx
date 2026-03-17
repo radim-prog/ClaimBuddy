@@ -69,17 +69,17 @@ export function DashboardCharts({ companyId }: { companyId: string }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Bar Chart: Income vs Expense */}
+      {/* Bar Chart: Income vs Expense — full width for 12 months */}
       {hasMonthlyData && (
-        <Card>
+        <Card className="md:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-display flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
-              Příjmy vs Výdaje
+              Příjmy vs Výdaje — {new Date().getFullYear()}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-48">
+            <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />

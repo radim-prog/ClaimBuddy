@@ -94,8 +94,13 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
         body: formData,
       })
 
-      if (!response.ok) throw new Error('Extrakce selhala')
       const data = await response.json()
+
+      // Extraction not available or failed — save file without extraction
+      if (!response.ok || data.extractionAvailable === false) {
+        await saveFileWithoutExtraction(scanJob)
+        return
+      }
 
       const updatedJob: ScanJob = {
         ...scanJob,
@@ -112,6 +117,57 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
 
       // Auto-save draft
       saveDraft(updatedJob, data.extractedData)
+    } catch {
+      // Network error or other failure — still try to save the file
+      try {
+        await saveFileWithoutExtraction(scanJob)
+      } catch {
+        setJob(prev => prev ? { ...prev, status: 'error' } : prev)
+      }
+    }
+  }
+
+  const saveFileWithoutExtraction = async (scanJob: ScanJob) => {
+    // Upload file to storage via documents/upload API
+    const now = new Date()
+    const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+    const uploadForm = new FormData()
+    uploadForm.append('file', scanJob.file)
+    uploadForm.append('companyId', companyId)
+    uploadForm.append('period', period)
+    uploadForm.append('type', scanJob.documentType === 'receipt' ? 'receipt' : 'expense_invoice')
+
+    try {
+      const uploadRes = await fetch('/api/documents/upload', {
+        method: 'POST',
+        body: uploadForm,
+      })
+
+      if (uploadRes.ok) {
+        const uploadData = await uploadRes.json()
+        setJob(prev => prev ? { ...prev, status: 'uploaded_only', draftId: uploadData.document?.id } : prev)
+        toast.success('Doklad nahrán, čeká na zpracování')
+      } else {
+        // Fallback: save as draft without file storage
+        const res = await fetch('/api/client/drafts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_id: companyId,
+            file_name: scanJob.file.name,
+            document_type: scanJob.documentType,
+            extracted_data: null,
+          }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setJob(prev => prev ? { ...prev, status: 'uploaded_only', draftId: data.id } : prev)
+          toast.success('Doklad nahrán, čeká na zpracování')
+        } else {
+          setJob(prev => prev ? { ...prev, status: 'error' } : prev)
+        }
+      }
     } catch {
       setJob(prev => prev ? { ...prev, status: 'error' } : prev)
     }
@@ -341,13 +397,33 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
           </div>
         )}
 
+        {/* Uploaded without extraction */}
+        {job?.status === 'uploaded_only' && (
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-8 h-8 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Doklad nahrán</h3>
+            <p className="text-muted-foreground mb-4">Čeká na zpracování účetní.</p>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={onClose}>
+                Zavřít
+              </Button>
+              <Button variant="outline" onClick={() => { setJob(null) }}>
+                Nahrát další
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Error */}
         {job?.status === 'error' && (
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="w-8 h-8 text-red-600" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Vytěžování selhalo</h3>
+            <h3 className="text-lg font-semibold mb-2">Nahrání selhalo</h3>
+            <p className="text-muted-foreground mb-4">Zkuste to prosím znovu.</p>
             <div className="flex gap-2 justify-center mt-4">
               <Button variant="outline" onClick={handleRetry}>
                 <RotateCcw className="w-4 h-4 mr-1" />

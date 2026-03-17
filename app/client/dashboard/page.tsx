@@ -101,11 +101,26 @@ export default function ClientDashboard() {
 
   const deadlines = useMemo(() => {
     if (!selectedCompany) return []
-    return generateDeadlinesForCompany(
-      selectedCompany as any,
-      currentYear,
-      currentMonth + 1
-    ).slice(0, 3)
+    // Generate deadlines for the next 3 months to always show upcoming ones
+    const allDeadlines: ReturnType<typeof generateDeadlinesForCompany> = []
+    for (let offset = 0; offset < 3; offset++) {
+      const d = new Date(currentYear, currentMonth + offset, 1)
+      const y = d.getFullYear()
+      const m = d.getMonth() + 1
+      allDeadlines.push(...generateDeadlinesForCompany(selectedCompany as any, y, m))
+    }
+    // Remove duplicates by id, filter only future deadlines, sort by date
+    const seen = new Set<string>()
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return allDeadlines
+      .filter(dl => {
+        if (seen.has(dl.id)) return false
+        seen.add(dl.id)
+        return new Date(dl.due_date) >= today
+      })
+      .sort((a, b) => a.due_date.localeCompare(b.due_date))
+      .slice(0, 5)
   }, [selectedCompany, currentYear, currentMonth])
 
   const yearMatrix = useMemo(() => {
@@ -256,11 +271,35 @@ export default function ClientDashboard() {
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Chybí</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Nahráno</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Schváleno</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" /> Budoucí</span>
+            <div className="flex flex-wrap items-start gap-x-5 gap-y-2 mt-3 text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex items-start gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">Chybějící doklady</span>
+                  <p className="text-[10px] leading-tight">Doklady nebyly nahrány</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-yellow-500 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">Nahráno dokladů</span>
+                  <p className="text-[10px] leading-tight">Čeká na schválení účetním</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-green-500 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">Schválené doklady</span>
+                  <p className="text-[10px] leading-tight">Zkontrolováno a zpracováno</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">Budoucí měsíce</span>
+                  <p className="text-[10px] leading-tight">Ještě nenastaly</p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -371,7 +410,8 @@ export default function ClientDashboard() {
               {deadlines.length === 0 ? (
                 <div className="text-center py-6 text-gray-500 dark:text-gray-400">
                   <CalendarDays className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">Žádné blížící se termíny</p>
+                  <p className="text-sm">Žádné blížící se zákonné termíny</p>
+                  <p className="text-xs mt-1">Termíny se zobrazí podle nastavení vaší firmy (DPH, zaměstnanci apod.)</p>
                 </div>
               ) : (
                 <div className="space-y-3">

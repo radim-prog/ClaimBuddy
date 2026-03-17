@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { extractInvoiceFast } from '@/lib/ai-extractor'
+import { extractInvoiceFast, getExtractorConfig } from '@/lib/ai-extractor'
 import { mapKimiToExtractedData } from '@/components/extraction/types'
 
 export const dynamic = 'force-dynamic'
@@ -27,6 +27,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File too large (max 10MB)' }, { status: 413 })
     }
 
+    // Check if extraction is available before trying
+    let extractionAvailable = false
+    try {
+      const config = await getExtractorConfig()
+      extractionAvailable = !!config.apiKey
+    } catch {
+      extractionAvailable = false
+    }
+
+    if (!extractionAvailable) {
+      return NextResponse.json({
+        extractionAvailable: false,
+        message: 'Extraction service not configured',
+      })
+    }
+
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
@@ -37,6 +53,7 @@ export async function POST(request: NextRequest) {
     const extractedData = mapKimiToExtractedData(invoice)
 
     return NextResponse.json({
+      extractionAvailable: true,
       extractedData,
       confidenceScore: invoice.confidence_score,
       corrections: invoice.corrections || [],
@@ -45,9 +62,11 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('[Client Extract] Error:', error)
-    return NextResponse.json(
-      { error: 'Extraction failed', message: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    )
+    // Return graceful response instead of 500 — file can still be saved as draft
+    return NextResponse.json({
+      extractionAvailable: false,
+      extractionError: error instanceof Error ? error.message : 'Unknown error',
+      message: 'Extraction failed, document can be saved without extraction',
+    })
   }
 }

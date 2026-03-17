@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     let companies: any[] = []
 
-    const companySelect = 'id, name, ico, dic, legal_form, vat_payer, has_employees, status, address, managing_director, portal_sections, assigned_accountant_id'
+    const companySelect = 'id, name, ico, dic, legal_form, vat_payer, vat_period, has_employees, status, address, managing_director, portal_sections, assigned_accountant_id'
 
     if (impersonateCompany) {
       // Impersonation mode - load specific company
@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
         dic: company.dic,
         legal_form: company.legal_form,
         vat_payer: company.vat_payer,
+        vat_period: company.vat_period || null,
         has_employees: company.has_employees,
         status: company.status,
         address: company.address,
