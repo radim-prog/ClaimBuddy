@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
+import { ChevronLeft, ChevronRight, Calculator, FileSignature } from 'lucide-react'
 import { useCompany } from '../layout'
 import { OsvcTaxWorkspace } from '@/components/taxes/osvc-tax-workspace'
 import { SroTaxWorkspace } from '@/components/taxes/sro-tax-workspace'
@@ -38,9 +39,28 @@ export default function TaxesPage() {
   }, [companyId, year])
 
   const isFO = company.legal_form === 'OSVČ'
+  const basePath = `/accountant/clients/${companyId}`
 
   return (
     <div className="space-y-4">
+      {/* Sub-navigation: Daně / Dohodáři */}
+      <div className="flex items-center gap-1 border-b border-border pb-2">
+        <Link
+          href={`${basePath}/taxes`}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800"
+        >
+          <Calculator className="h-3.5 w-3.5" />
+          Daně
+        </Link>
+        <Link
+          href={`${basePath}/dohodari`}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-muted-foreground hover:bg-muted/50 transition-colors"
+        >
+          <FileSignature className="h-3.5 w-3.5" />
+          Dohodáři
+        </Link>
+      </div>
+
       {/* Year selector */}
       <div className="flex items-center gap-3">
         <button

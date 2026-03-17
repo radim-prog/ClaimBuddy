@@ -110,8 +110,27 @@ export default function DohodariPage() {
     return <span className={`px-2 py-0.5 rounded text-xs font-medium ${color}`}>{typ.toUpperCase()}</span>
   }
 
+  const basePath = `/accountant/clients/${companyId}`
+
   return (
     <div className="space-y-6">
+      {/* Sub-navigation: Daně / Dohodáři */}
+      <div className="flex items-center gap-1 border-b border-border pb-2">
+        <a
+          href={`${basePath}/taxes`}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-muted-foreground hover:bg-muted/50 transition-colors"
+        >
+          <Calculator className="h-3.5 w-3.5" />
+          Daně
+        </a>
+        <span
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800"
+        >
+          <FileSignature className="h-3.5 w-3.5" />
+          Dohodáři
+        </span>
+      </div>
+
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>

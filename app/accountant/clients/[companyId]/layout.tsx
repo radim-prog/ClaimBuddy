@@ -298,17 +298,16 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
           const notificationsBadge = attention.active_notifications || 0
 
           const tabs: Array<{ href: string; label: string; icon: typeof Clock; match: (p: string) => boolean; badge?: number }> = [
+            { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile'), badge: notificationsBadge },
             { href: `${basePath}/work`, label: 'Práce', icon: Clock, match: (p: string) => p.includes('/work') },
             { href: `${basePath}/tasks`, label: 'Úkoly', icon: ClipboardList, match: (p: string) => p.includes('/tasks'), badge: tasksBadge },
             { href: `${basePath}/messages`, label: 'Zprávy', icon: MessageCircle, match: (p: string) => p.includes('/messages'), badge: messagesBadge },
             { href: `${basePath}/documents`, label: 'Doklady', icon: FileText, match: (p: string) => p.includes('/documents'), badge: documentsBadge },
             { href: `${basePath}/inbox`, label: 'Inbox', icon: Inbox, match: (p: string) => p.includes('/inbox') },
             { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files'), badge: filesBadge },
+            { href: `${basePath}/taxes`, label: 'Daně a mzdy', icon: Calculator, match: (p: string) => p.includes('/taxes') || p.includes('/dohodari') || p.includes('/agreements') },
             { href: `${basePath}/travel`, label: 'Jízdy', icon: Car, match: (p: string) => p.includes('/travel') },
-            { href: `${basePath}/taxes`, label: 'Daně', icon: Calculator, match: (p: string) => p.includes('/taxes') },
-            { href: `${basePath}/dohodari`, label: 'Dohodáři', icon: FileSignature, match: (p: string) => p.includes('/dohodari') || p.includes('/agreements') },
-            { href: `${basePath}/claims`, label: 'Pojistné události', icon: Shield, match: (p: string) => p.includes('/claims') },
-            { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile'), badge: notificationsBadge },
+            { href: `${basePath}/claims`, label: 'PU', icon: Shield, match: (p: string) => p.includes('/claims') },
           ]
 
           // Latest closure status
