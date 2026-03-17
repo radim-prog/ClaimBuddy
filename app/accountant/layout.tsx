@@ -63,7 +63,9 @@ import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { ActiveModuleProvider, useActiveModule } from '@/lib/contexts/active-module-context'
-import { Building2, FolderOpen, ClipboardList, UserCog, X } from 'lucide-react'
+import { Building2, FolderOpen, ClipboardList, UserCog, X, Palette } from 'lucide-react'
+import { getSavedThemeId, saveThemeId, getTheme, SIDEBAR_THEME_LIST } from '@/lib/sidebar-themes'
+import type { SidebarThemeId, SidebarTheme } from '@/lib/sidebar-themes'
 
 // === NAVIGATION GROUPS ===
 
@@ -149,6 +151,7 @@ function NavContent({
   clientsAttentionCount,
   needsResponseCount,
   documentInboxCount,
+  theme,
 }: {
   dailyWorkNav: NavItem[]
   managementNav: NavItem[]
@@ -166,13 +169,15 @@ function NavContent({
   clientsAttentionCount: number
   needsResponseCount: number
   documentInboxCount: number
+  theme: SidebarTheme
 }) {
-  const renderNavItem = (item: NavItem) => {
+  const renderNavItem = (item: NavItem, _index?: number, groupKey?: string) => {
     const isActive = item.activeMatch
       ? item.activeMatch.some(p => pathname.startsWith(p))
       : pathname === item.href || pathname.startsWith(item.href + '/')
     const Icon = item.icon
     const locked = item.feature ? isLocked(item.feature) : false
+    const iconGroupColor = theme.iconGroups && groupKey ? theme.iconGroups[groupKey as keyof typeof theme.iconGroups] : undefined
     const linkEl = (
       <Link
         href={locked ? '/accountant/admin/subscription' : item.href}
@@ -180,19 +185,19 @@ function NavContent({
         className={`
           group flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
           ${locked
-            ? 'text-white/30 hover:bg-white/[0.03] cursor-default'
+            ? `${theme.textMuted} hover:bg-white/[0.03] cursor-default`
             : isActive
-              ? 'bg-white/[0.08] text-white nav-active-indicator'
-              : 'text-white/55 hover:bg-white/[0.05] hover:text-white/85'
+              ? `${theme.activeBg} ${theme.textActive} ${theme.activeIndicator}`
+              : `${theme.textDefault} ${theme.hoverBg} ${theme.hoverText}`
           }
         `}
       >
         <span className={`flex items-center ${collapsed ? 'relative' : ''}`}>
-          <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${locked ? 'text-white/20' : isActive ? 'text-violet-300' : 'text-white/40 group-hover:text-white/65'}`} />
+          <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${locked ? theme.textMuted : isActive ? theme.activeIcon : iconGroupColor || `${theme.textMuted} group-hover:text-white/65`}`} />
           {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
           {!collapsed && locked && <Lock className="ml-1.5 h-3 w-3 text-white/25" />}
           {collapsed && item.badge === 'dynamic' && inboxCount > 0 && (
-            <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-violet-400 text-white rounded-full">{inboxCount}</span>
+            <span className={`absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold ${theme.badgeAccent} text-white rounded-full`}>{inboxCount}</span>
           )}
           {collapsed && item.badge === 'attention' && clientsAttentionCount > 0 && (
             <span className="absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold bg-red-500 text-white rounded-full">{clientsAttentionCount}</span>
@@ -207,7 +212,7 @@ function NavContent({
         {!collapsed && (
           <span className="flex items-center gap-1.5">
             {item.badge === 'dynamic' && inboxCount > 0 && (
-              <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-violet-400 text-white rounded-full min-w-[1.25rem]">{inboxCount}</span>
+              <span className={`inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold ${theme.badgeAccent} text-white rounded-full min-w-[1.25rem]`}>{inboxCount}</span>
             )}
             {item.badge === 'attention' && clientsAttentionCount > 0 && (
               <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[1.25rem]">{clientsAttentionCount}</span>
@@ -245,55 +250,55 @@ function NavContent({
   return (
     <nav className="relative flex-1 px-3 py-4 space-y-0.5">
       {/* Daily Work — always visible */}
-      {dailyWorkNav.map(renderNavItem)}
+      {dailyWorkNav.map((item, i) => renderNavItem(item, i, 'daily'))}
 
       {/* Správa — collapsible */}
-      <div className="pt-3 mt-3 border-t border-white/[0.06]">
+      <div className={`pt-3 mt-3 border-t ${theme.border}`}>
         {!collapsed ? (
           <button
             onClick={toggleManagement}
             className="w-full flex items-center justify-between px-3 mb-1.5 group"
           >
-            <p className="text-[10px] font-semibold text-violet-300/60 uppercase tracking-widest">
+            <p className={`text-[10px] font-semibold ${theme.groupLabel} uppercase tracking-widest`}>
               Správa
             </p>
             <ChevronDown className={`h-3 w-3 text-white/30 transition-transform duration-200 ${managementOpen ? '' : '-rotate-90'}`} />
           </button>
         ) : (
-          <div className="w-full h-px bg-white/[0.06] mb-1" />
+          <div className={`w-full h-px ${theme.border.replace('border-', 'bg-')} mb-1`} />
         )}
-        {(managementOpen || collapsed) && managementNav.map(renderNavItem)}
+        {(managementOpen || collapsed) && managementNav.map((item, i) => renderNavItem(item, i, 'management'))}
       </div>
 
       {/* Nástroje — collapsible (hidden when empty) */}
       {toolsNav.length > 0 && (
-        <div className="pt-3 mt-3 border-t border-white/[0.06]">
+        <div className={`pt-3 mt-3 border-t ${theme.border}`}>
           {!collapsed ? (
             <button
               onClick={toggleTools}
               className="w-full flex items-center justify-between px-3 mb-1.5 group"
             >
-              <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">
+              <p className={`text-[10px] font-semibold ${theme.groupLabel} uppercase tracking-widest`}>
                 Nástroje
               </p>
               <ChevronDown className={`h-3 w-3 text-white/30 transition-transform duration-200 ${toolsOpen ? '' : '-rotate-90'}`} />
             </button>
           ) : (
-            <div className="w-full h-px bg-white/[0.06] mb-1" />
+            <div className={`w-full h-px ${theme.border.replace('border-', 'bg-')} mb-1`} />
           )}
-          {(toolsOpen || collapsed) && toolsNav.map(renderNavItem)}
+          {(toolsOpen || collapsed) && toolsNav.map((item, i) => renderNavItem(item, i, 'tools'))}
         </div>
       )}
 
       {/* Admin — bottom, admin-only */}
       {showAdmin && (
-        <div className="pt-3 mt-3 border-t border-white/[0.06]">
+        <div className={`pt-3 mt-3 border-t ${theme.border}`}>
           {!collapsed && (
-            <p className="px-3 text-[10px] font-semibold text-violet-300/60 uppercase tracking-widest mb-1.5">
+            <p className={`px-3 text-[10px] font-semibold ${theme.groupLabel} uppercase tracking-widest mb-1.5`}>
               Admin
             </p>
           )}
-          {adminNav.map(renderNavItem)}
+          {adminNav.map((item, i) => renderNavItem(item, i, 'admin'))}
         </div>
       )}
     </nav>
@@ -336,6 +341,19 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const isClaims = activeModule === 'claims'
   // Attention for Klienti badge: exclude unread_messages (shown on Komunikace instead)
   const clientsAttentionCount = attentionTotals.total - attentionTotals.unread_messages
+  const [sidebarThemeId, setSidebarThemeId] = useState<SidebarThemeId>('classic')
+  const sidebarTheme = getTheme(sidebarThemeId)
+  const [themePickerOpen, setThemePickerOpen] = useState(false)
+
+  useEffect(() => {
+    setSidebarThemeId(getSavedThemeId())
+  }, [])
+
+  const handleThemeChange = (id: SidebarThemeId) => {
+    setSidebarThemeId(id)
+    saveThemeId(id)
+  }
+
   const [collapsed, setCollapsed] = useState(false)
   const [managementOpen, setManagementOpen] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -455,20 +473,22 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
         </button>
 
-        <div className="flex flex-col flex-grow sidebar-purple shadow-sidebar overflow-y-auto custom-scrollbar">
-          {/* Subtle texture overlay */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Cpath d=\'M0 40L40 0H20L0 20M40 40V20L20 40\'/%3E%3C/g%3E%3C/svg%3E")' }}
-          />
+        <div className={`flex flex-col flex-grow ${sidebarTheme.sidebarClass} shadow-sidebar overflow-y-auto custom-scrollbar`}>
+          {/* Subtle texture overlay (skip on minimal) */}
+          {sidebarThemeId !== 'minimal' && (
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+              style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\' fill-rule=\'evenodd\'%3E%3Cpath d=\'M0 40L40 0H20L0 20M40 40V20L20 40\'/%3E%3C/g%3E%3C/svg%3E")' }}
+            />
+          )}
 
           {/* Logo */}
           <div className={`relative flex items-center h-16 flex-shrink-0 border-b border-white/[0.06] transition-all duration-300 ${collapsed ? 'justify-center px-3' : 'px-5'}`}>
             <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-soft-sm flex-shrink-0 ${isClaims ? 'bg-gradient-to-br from-blue-400 to-blue-500' : 'bg-gradient-to-br from-violet-400 to-violet-500'}`}>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-soft-sm flex-shrink-0 ${isClaims ? 'bg-gradient-to-br from-blue-400 to-blue-500' : `bg-gradient-to-br ${sidebarTheme.logoGradient}`}`}>
                 {isClaims ? (
                   <Shield className="h-4 w-4 text-white" />
                 ) : (
-                  <span className="text-sm font-bold text-white font-display">U</span>
+                  <span className={`text-sm font-bold font-display ${sidebarThemeId === 'minimal' ? 'text-white' : 'text-white'}`}>U</span>
                 )}
               </div>
               {!collapsed && (
@@ -510,6 +530,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
               clientsAttentionCount={clientsAttentionCount}
               needsResponseCount={needsResponseCount}
               documentInboxCount={documentInboxCount}
+              theme={sidebarTheme}
             />
           </TooltipProvider>
 

@@ -898,6 +898,102 @@ Odhlásit se: https://app.zajcon.cz/client/account
   return { subject, html: wrapInLayout(subject, content, { showUnsubscribe: true }), text }
 }
 
+// ---------------------------------------------------------------------------
+// Auto-reporty
+// ---------------------------------------------------------------------------
+
+export interface ReportKpi {
+  label: string
+  value: string
+  change?: string // e.g. "+5 %" or "−2 klienti"
+  color?: string  // hex color for the value
+}
+
+export function reportEmailTemplate(
+  name: string,
+  reportTitle: string,
+  periodLabel: string,
+  kpis: ReportKpi[],
+  tableRows: { label: string; value: string }[],
+  dashboardUrl: string
+): EmailTemplate {
+  const subject = `${reportTitle} — ${periodLabel}`
+
+  const kpiBlocks = kpis
+    .map(
+      (kpi) => `
+        <td style="padding: 12px; background-color: #f9fafb; border-radius: 6px; text-align: center; vertical-align: top;">
+          <p style="margin: 0 0 4px; font-size: 12px; color: #6b7280; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">
+            ${kpi.label}
+          </p>
+          <p style="margin: 0; font-size: 20px; font-weight: 700; color: ${kpi.color || '#111827'};">
+            ${kpi.value}
+          </p>
+          ${kpi.change ? `<p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">${kpi.change}</p>` : ''}
+        </td>
+        <td style="width: 8px;"></td>`
+    )
+    .join('')
+
+  const detailRows = tableRows
+    .map(
+      (row) => `
+        <tr>
+          <td style="padding: 8px 12px; font-size: 14px; color: #6b7280; border-bottom: 1px solid #f3f4f6;">${row.label}</td>
+          <td style="padding: 8px 12px; font-size: 14px; color: #111827; font-weight: 600; text-align: right; border-bottom: 1px solid #f3f4f6;">${row.value}</td>
+        </tr>`
+    )
+    .join('')
+
+  const content = `
+    <p style="margin: 0 0 8px; font-size: 16px; color: #111827;">Dobrý den, <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 20px; font-size: 15px; color: #374151; line-height: 1.6;">
+      zde je váš pravidelný přehled za období <strong>${periodLabel}</strong>.
+    </p>
+
+    <!-- KPI Cards -->
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">
+      <tr>
+        ${kpiBlocks}
+      </tr>
+    </table>
+
+    <!-- Detail Table -->
+    ${
+      detailRows
+        ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%"
+                  style="border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; margin-bottom: 24px;">
+             <tbody>${detailRows}</tbody>
+           </table>`
+        : ''
+    }
+
+    ${emailButton('Otevřít dashboard', dashboardUrl)}
+
+    <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+      Tento report můžete vypnout v <a href="https://app.zajcon.cz/accountant/settings" style="color: #9ca3af;">nastavení</a>.
+    </p>`
+
+  const textKpis = kpis.map((k) => `${k.label}: ${k.value}`).join('\n')
+  const textDetails = tableRows.map((r) => `${r.label}: ${r.value}`).join('\n')
+
+  const text = `Dobrý den, ${name},
+
+přehled za období ${periodLabel}:
+
+${textKpis}
+
+${textDetails}
+
+Dashboard: ${dashboardUrl}
+
+Tento report můžete vypnout v nastavení: https://app.zajcon.cz/accountant/settings
+
+ÚčetníOS • ucetnios.cz`
+
+  return { subject, html: wrapInLayout(subject, content, { showUnsubscribe: true }), text }
+}
+
 /** All lead email generators indexed for rotation */
 export const LEAD_EMAIL_VARIANTS = [
   leadDeadlineReminder,

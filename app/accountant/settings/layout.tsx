@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Settings as SettingsIcon, Building2, MapPin } from 'lucide-react'
+import { Settings as SettingsIcon, Building2, MapPin, Mail } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
 export default function SettingsLayout({
@@ -27,6 +27,11 @@ export default function SettingsLayout({
       name: 'Místa',
       href: '/accountant/settings/locations',
       icon: MapPin,
+    },
+    {
+      name: 'Reporty',
+      href: '/accountant/settings/reports',
+      icon: Mail,
     },
   ]
 

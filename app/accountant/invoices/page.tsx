@@ -65,6 +65,15 @@ export default function InvoicesListPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
 
+  // Read initial filter from URL query params (e.g., ?filter=overdue from dashboard link)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const urlFilter = params.get('filter')
+    if (urlFilter === 'overdue' || urlFilter === 'due_this_week') {
+      setFilterStatus(urlFilter)
+    }
+  }, [])
+
   useEffect(() => {
     fetch('/api/accountant/invoices')
       .then(r => r.ok ? r.json() : { invoices: [] })
@@ -83,18 +92,30 @@ export default function InvoicesListPage() {
         (inv.customer?.name || '').toLowerCase().includes(q)
       )
     }
-    if (filterStatus !== 'all') {
+    if (filterStatus === 'overdue') {
+      const today = new Date().toISOString().split('T')[0]
+      result = result.filter(inv => inv.status !== 'paid' && inv.status !== 'cancelled' && inv.due_date < today)
+    } else if (filterStatus === 'due_this_week') {
+      const today = new Date().toISOString().split('T')[0]
+      const weekLater = new Date()
+      weekLater.setDate(weekLater.getDate() + 7)
+      const weekLaterStr = weekLater.toISOString().split('T')[0]
+      result = result.filter(inv => inv.status !== 'paid' && inv.status !== 'cancelled' && inv.due_date >= today && inv.due_date <= weekLaterStr)
+    } else if (filterStatus !== 'all') {
       result = result.filter(inv => inv.status === filterStatus)
     }
     return result
   }, [invoices, searchQuery, filterStatus])
 
   const summary = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0]
     const total = invoices.reduce((s, inv) => s + inv.total_with_vat, 0)
     const paid = invoices.filter(i => i.status === 'paid').reduce((s, inv) => s + inv.total_with_vat, 0)
     const unpaid = invoices.filter(i => i.status !== 'paid' && i.status !== 'cancelled').reduce((s, inv) => s + inv.total_with_vat, 0)
+    const overdueList = invoices.filter(i => i.status !== 'paid' && i.status !== 'cancelled' && i.due_date < today)
+    const overdueAmount = overdueList.reduce((s, inv) => s + inv.total_with_vat, 0)
     const sentCount = invoices.filter(i => i.status === 'sent').length
-    return { total, paid, unpaid, sentCount, count: invoices.length }
+    return { total, paid, unpaid, overdueCount: overdueList.length, overdueAmount, sentCount, count: invoices.length }
   }, [invoices])
 
   const handleMarkAsPaid = async (invoiceId: string) => {
@@ -171,7 +192,7 @@ export default function InvoicesListPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <Card>
           <CardContent className="pt-5 pb-4">
             <div className="flex items-center gap-3">
@@ -224,6 +245,24 @@ export default function InvoicesListPage() {
             </div>
           </CardContent>
         </Card>
+        <Card
+          className={`cursor-pointer transition-all ${summary.overdueCount > 0 ? 'ring-2 ring-red-300 dark:ring-red-700' : ''} ${filterStatus === 'overdue' ? 'ring-2 ring-red-500' : ''}`}
+          onClick={() => setFilterStatus(filterStatus === 'overdue' ? 'all' : 'overdue')}
+        >
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Po splatnosti</p>
+                <p className="text-lg font-bold text-red-600 dark:text-red-400">
+                  {summary.overdueCount > 0 ? `${summary.overdueCount} (${formatCurrency(summary.overdueAmount)})` : '0'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters */}
@@ -240,11 +279,13 @@ export default function InvoicesListPage() {
               />
             </div>
             <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as FilterStatus)}>
-              <SelectTrigger className="w-[160px] h-9">
+              <SelectTrigger className="w-[180px] h-9">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Všechny statusy</SelectItem>
+                <SelectItem value="overdue">Po splatnosti</SelectItem>
+                <SelectItem value="due_this_week">Splatné tento týden</SelectItem>
                 <SelectItem value="draft">Koncept</SelectItem>
                 <SelectItem value="sent">Odesláno</SelectItem>
                 <SelectItem value="paid">Zaplaceno</SelectItem>
@@ -296,12 +337,15 @@ export default function InvoicesListPage() {
                 {filtered.map((inv) => {
                   const config = statusConfig[inv.status] || statusConfig.draft
                   const StatusIcon = config.icon
-                  const isOverdue = inv.status === 'sent' && new Date(inv.due_date) < new Date()
+                  const isOverdue = inv.status !== 'paid' && inv.status !== 'cancelled' && new Date(inv.due_date) < new Date()
+                  const daysOverdue = isOverdue ? Math.floor((new Date().getTime() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24)) : 0
 
                   return (
                     <tr
                       key={inv.id}
-                      className="border-b border-border/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      className={`border-b border-border/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
+                        isOverdue ? 'bg-red-50/50 dark:bg-red-900/10 border-l-4 border-l-red-500' : ''
+                      }`}
                     >
                       <td className="py-3 px-4">
                         <Link
@@ -320,17 +364,28 @@ export default function InvoicesListPage() {
                       <td className="py-3 px-4 text-sm">
                         <span className={isOverdue ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-600 dark:text-gray-400'}>
                           {formatDate(inv.due_date)}
-                          {isOverdue && ' !'}
+                          {isOverdue && (
+                            <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+                              {daysOverdue}d
+                            </span>
+                          )}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right text-sm font-semibold text-gray-900 dark:text-white">
                         {formatCurrency(inv.total_with_vat)}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <Badge className={config.color}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {config.label}
-                        </Badge>
+                        {isOverdue ? (
+                          <Badge className="bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-300">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            Po splatnosti
+                          </Badge>
+                        ) : (
+                          <Badge className={config.color}>
+                            <StatusIcon className="h-3 w-3 mr-1" />
+                            {config.label}
+                          </Badge>
+                        )}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center justify-end gap-1">
