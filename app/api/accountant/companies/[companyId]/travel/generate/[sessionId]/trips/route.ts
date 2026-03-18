@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isStaffRole } from '@/lib/access-check'
 import { getSession } from '@/lib/travel-generation-store'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,11 @@ export async function GET(
   const userRole = request.headers.get('x-user-role')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const firmId = getFirmId(request)
+  if (!await verifyCompanyAccess(params.companyId, firmId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   try {
     const session = await getSession(params.sessionId)
@@ -52,6 +58,11 @@ export async function PATCH(
   const userRole = request.headers.get('x-user-role')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const firmIdPatch = getFirmId(request)
+  if (!await verifyCompanyAccess(params.companyId, firmIdPatch)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   try {
     const session = await getSession(params.sessionId)
