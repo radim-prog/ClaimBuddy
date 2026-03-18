@@ -142,6 +142,14 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
     return result
   }, [enabledDynamic.length, selectedCompany?.id, isClaims, hasMultipleCompanies])
 
+  // Claims branding: override favicon + title on claims.zajcon.cz
+  useEffect(() => {
+    if (!isClaims) return
+    document.title = document.title.replace('Účetní OS', 'Pojistná Pomoc')
+    const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+    if (favicon) favicon.href = '/favicon-claims.svg'
+  }, [isClaims, pathname])
+
   useEffect(() => {
     const saved = localStorage.getItem('client-sidebar-collapsed')
     if (saved === 'true') setCollapsed(true)
