@@ -1,0 +1,9 @@
+[Unit]
+Description=UcetniWebApp nightly deploy (dev-features → main)
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/root/Projects/UcetniWebApp/scripts/nightly-deploy.sh
+WorkingDirectory=/root/Projects/UcetniWebApp
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.nvm/versions/node/v20.18.0/bin

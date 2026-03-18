@@ -1,6 +1,6 @@
 {
   "name": "ucetni-os",
-  "version": "1.0.0",
+  "version": "0.9.0",
   "private": true,
   "description": "Kompletní webová aplikace pro účetní firmu - samoobslužný portál pro klienty a master dashboard pro účetní",
   "scripts": {
