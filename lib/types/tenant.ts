@@ -20,6 +20,23 @@ export interface FirmDriveCredentials {
   connected_by?: string
 }
 
+export interface FirmBillingSettings {
+  billing_day?: number        // 1-28 (den fakturace)
+  payment_due_days?: number   // splatnost (default 14)
+  penalty_rate?: number       // per-day (default 0.0005 = 0.05%)
+  currency?: string           // default 'CZK'
+}
+
+export interface FirmDunningLevel {
+  days_overdue: number
+  channels: string[]          // ['email', 'in_app']
+}
+
+export interface FirmDunningSettings {
+  enabled?: boolean
+  levels?: FirmDunningLevel[]
+}
+
 export interface FirmSettings {
   default_signature_type?: string
   auto_fill_templates?: boolean
@@ -29,6 +46,8 @@ export interface FirmSettings {
     primary_color?: string
     logo_url?: string
   }
+  billing?: FirmBillingSettings
+  dunning?: FirmDunningSettings
 }
 
 export interface AccountingFirm {

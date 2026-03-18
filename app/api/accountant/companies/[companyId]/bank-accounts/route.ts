@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
+import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,6 +12,11 @@ export async function GET(
   const userId = request.headers.get('x-user-id')
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const firmId = getFirmId(request)
+  if (!await verifyCompanyAccess(params.companyId, firmId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   try {
@@ -44,6 +50,11 @@ export async function POST(
   }
   if (userRole === 'assistant') return NextResponse.json({ error: 'Forbidden: assistants cannot manage bank accounts' }, { status: 403 })
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const firmId = getFirmId(request)
+  if (!await verifyCompanyAccess(params.companyId, firmId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   try {
     const body = await request.json()
@@ -101,6 +112,11 @@ export async function PATCH(
   }
   if (userRole === 'assistant') return NextResponse.json({ error: 'Forbidden: assistants cannot manage bank accounts' }, { status: 403 })
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const firmId = getFirmId(request)
+  if (!await verifyCompanyAccess(params.companyId, firmId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   try {
     const body = await request.json()

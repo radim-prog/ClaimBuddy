@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole, canAccessCompany } from '@/lib/access-check'
+import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { companyId } = await params
+
+  const firmId = getFirmId(request)
+  if (!await verifyCompanyAccess(companyId, firmId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const impersonate = request.headers.get('x-impersonate-company')
   if (!(await canAccessCompany(userId!, userRole, companyId, impersonate))) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -36,6 +43,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { companyId } = await params
+
+  const firmId = getFirmId(request)
+  if (!await verifyCompanyAccess(companyId, firmId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const impersonate = request.headers.get('x-impersonate-company')
   if (!(await canAccessCompany(userId!, userRole, companyId, impersonate))) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -73,6 +86,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { companyId } = await params
+
+  const firmId = getFirmId(request)
+  if (!await verifyCompanyAccess(companyId, firmId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const impersonate = request.headers.get('x-impersonate-company')
   if (!(await canAccessCompany(userId!, userRole, companyId, impersonate))) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

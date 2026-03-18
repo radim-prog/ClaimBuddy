@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ companyId: string }> }
 ) {
   const userId = request.headers.get('x-user-id')
@@ -12,6 +13,11 @@ export async function GET(
 
   try {
     const { companyId } = await params
+
+    const firmId = getFirmId(request)
+    if (!await verifyCompanyAccess(companyId, firmId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     const { data, error } = await supabaseAdmin
       .from('projects')
@@ -32,7 +38,7 @@ export async function GET(
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ companyId: string }> }
 ) {
   const userId = request.headers.get('x-user-id')
@@ -41,6 +47,12 @@ export async function POST(
 
   try {
     const { companyId } = await params
+
+    const firmId = getFirmId(request)
+    if (!await verifyCompanyAccess(companyId, firmId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await request.json()
     const { name, case_type_id, case_opposing_party, case_reference, hourly_rate } = body
 

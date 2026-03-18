@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
       login_name: user.login_name,
       permissions: user.permissions,
       modules: user.modules || ['accounting'],
+      firm_id: user.firm_id || null,
       impersonate_company: impersonateCompany,
       impersonate_user: impersonateUser,
     })

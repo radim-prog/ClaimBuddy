@@ -1,5 +1,21 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import type { AccountingFirm, CreateFirmInput, UpdateFirmInput, FirmWithStats } from '@/lib/types/tenant'
+import type { AccountingFirm, CreateFirmInput, UpdateFirmInput, FirmWithStats, FirmBillingSettings, FirmDunningSettings } from '@/lib/types/tenant'
+
+export const DEFAULT_BILLING_SETTINGS: Required<FirmBillingSettings> = {
+  billing_day: 1,
+  payment_due_days: 14,
+  penalty_rate: 0.0005,
+  currency: 'CZK',
+}
+
+export const DEFAULT_DUNNING_SETTINGS: Required<FirmDunningSettings> = {
+  enabled: true,
+  levels: [
+    { days_overdue: 7, channels: ['email', 'in_app'] },
+    { days_overdue: 14, channels: ['email', 'in_app'] },
+    { days_overdue: 30, channels: ['email', 'in_app'] },
+  ],
+}
 
 export async function getAllFirms(): Promise<FirmWithStats[]> {
   const { data: firms, error } = await supabaseAdmin
@@ -151,6 +167,16 @@ export async function getFirmCompanies(firmId: string) {
     .order('name', { ascending: true })
 
   return data || []
+}
+
+export async function getFirmBillingSettings(firmId: string): Promise<FirmBillingSettings> {
+  const firm = await getFirmById(firmId)
+  if (!firm) return { ...DEFAULT_BILLING_SETTINGS }
+
+  return {
+    ...DEFAULT_BILLING_SETTINGS,
+    ...firm.settings?.billing,
+  }
 }
 
 // Create firm from marketplace registration
