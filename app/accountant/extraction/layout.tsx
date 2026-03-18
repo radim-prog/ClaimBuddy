@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Users, CheckSquare, ScanLine, FileText, CheckCircle2, Clock, AlertCircle, ShieldCheck, AlertTriangle, XCircle } from 'lucide-react'
+import { Inbox, Users, CheckSquare, ScanLine, FileText, CheckCircle2, Clock, AlertCircle, ShieldCheck, AlertTriangle, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { useExtractionPresence } from '@/lib/hooks/use-extraction-presence'
 import { PresenceBar } from '@/components/extraction/presence-bar'
 
 const tabs = [
+  { name: 'Inbox', href: '/accountant/extraction', icon: Inbox, exact: true },
   { name: 'Klienti', href: '/accountant/extraction/clients', icon: Users },
   { name: 'Verifikace', href: '/accountant/extraction/verify', icon: CheckSquare },
 ]
@@ -38,7 +39,7 @@ export default function ExtractionLayout({ children }: { children: React.ReactNo
   // Derive page from pathname for presence tracking
   const presencePage = pathname.includes('/verify') ? 'verify'
     : pathname.includes('/clients') ? 'clients'
-    : pathname.includes('/settings') ? 'settings' : 'verify'
+    : pathname.includes('/settings') ? 'settings' : 'inbox'
 
   const { otherUsers } = useExtractionPresence({
     userId,
@@ -98,13 +99,15 @@ export default function ExtractionLayout({ children }: { children: React.ReactNo
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-soft-sm flex-shrink-0">
             <ScanLine className="h-4 w-4 text-white" />
           </div>
-          <h1 className="text-lg font-bold font-display flex-shrink-0">Vytěžování</h1>
+          <h1 className="text-lg font-bold font-display flex-shrink-0">Doklady</h1>
 
           <div className="w-px h-5 bg-border flex-shrink-0" />
 
           <nav className="flex items-center gap-0.5">
             {tabs.map((tab) => {
-              const isActive = pathname.startsWith(tab.href)
+              const isActive = 'exact' in tab && tab.exact
+                ? pathname === tab.href
+                : pathname.startsWith(tab.href)
               const Icon = tab.icon
               return (
                 <Link
