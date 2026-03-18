@@ -7,6 +7,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { Calculator, Shield, ChevronDown } from 'lucide-react'
 import { useActiveModule } from '@/lib/contexts/active-module-context'
 
@@ -41,7 +46,7 @@ const APP_MODULES: AppModule[] = [
   },
 ]
 
-export function AppSwitcher({ userModules }: { userModules: string[] }) {
+export function AppSwitcher({ userModules, collapsed = false }: { userModules: string[]; collapsed?: boolean }) {
   const router = useRouter()
   const { activeModule, setActiveModule } = useActiveModule()
 
@@ -54,16 +59,16 @@ export function AppSwitcher({ userModules }: { userModules: string[] }) {
 
   const CurrentIcon = currentModule.icon
 
-  return (
+  const dropdown = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.08] transition-all duration-200 text-white/70 hover:text-white/90">
+        <button className={`flex items-center gap-2 ${collapsed ? 'justify-center w-full' : ''} px-2 py-1.5 rounded-lg hover:bg-white/[0.08] transition-all duration-200 text-white/70 hover:text-white/90`}>
           <CurrentIcon className={`h-4 w-4 ${currentModule.color}`} />
-          <span className="text-xs font-medium hidden sm:inline">{currentModule.name}</span>
-          <ChevronDown className="h-3 w-3 text-white/40" />
+          {!collapsed && <span className="text-xs font-medium">{currentModule.name}</span>}
+          {!collapsed && <ChevronDown className="h-3 w-3 text-white/40" />}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
+      <DropdownMenuContent align={collapsed ? 'center' : 'start'} side={collapsed ? 'right' : undefined} className="w-64">
         {availableModules.map((mod) => {
           const Icon = mod.icon
           const isActive = mod.id === activeModule
@@ -87,4 +92,19 @@ export function AppSwitcher({ userModules }: { userModules: string[] }) {
       </DropdownMenuContent>
     </DropdownMenu>
   )
+
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div>{dropdown}</div>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="font-medium">
+          {currentModule.name}
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return dropdown
 }

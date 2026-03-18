@@ -63,7 +63,7 @@ import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { ActiveModuleProvider, useActiveModule } from '@/lib/contexts/active-module-context'
-import { Building2, FolderOpen, ClipboardList, UserCog, X, Palette, Star, Bookmark, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Building2, FolderOpen, ClipboardList, UserCog, X, Palette, Star, Bookmark, Plus } from 'lucide-react'
 import { getSavedThemeId, saveThemeId, getTheme, SIDEBAR_THEME_LIST } from '@/lib/sidebar-themes'
 import type { SidebarThemeId, SidebarTheme } from '@/lib/sidebar-themes'
 
@@ -374,10 +374,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   // Bookmarks
   interface UserBookmark { id: string; label: string; url: string; icon: string | null; position: number }
   const [bookmarks, setBookmarks] = useState<UserBookmark[]>([])
-  const [bookmarksOpen, setBookmarksOpen] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('sidebar-bookmarks-open') !== 'false'
-    return true
-  })
+  // bookmarksOpen removed — bookmarks are now horizontal bar in content area
 
   const fetchBookmarks = () => {
     fetch('/api/accountant/bookmarks')
@@ -413,12 +410,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
     if (res.ok) fetchBookmarks()
   }
 
-  const toggleBookmarks = () => {
-    setBookmarksOpen(prev => {
-      localStorage.setItem('sidebar-bookmarks-open', String(!prev))
-      return !prev
-    })
-  }
+  // toggleBookmarks removed — bookmarks are now horizontal bar in content area
 
   // Fetch staff users list + check if currently impersonating (admin only)
   useEffect(() => {
@@ -554,135 +546,11 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* App Switcher */}
-          {!collapsed && userModules.length > 1 && (
+          {userModules.length > 1 && (
             <div className={`relative px-3 py-2 border-b ${sidebarTheme.border}`}>
-              <AppSwitcher userModules={userModules} />
+              <AppSwitcher userModules={userModules} collapsed={collapsed} />
             </div>
           )}
-
-          {/* Bookmarks */}
-          {bookmarks.length > 0 || !collapsed ? (
-            <div className={`relative flex-shrink-0 border-b ${sidebarTheme.border} px-3 py-2`}>
-              {collapsed ? (
-                /* Collapsed: just a star icon with tooltip dropdown */
-                <DropdownMenu>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <DropdownMenuTrigger asChild>
-                        <button className={`w-full flex items-center justify-center px-2 py-2 rounded-xl ${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} transition-all duration-200`}>
-                          <Bookmark className="h-[18px] w-[18px] flex-shrink-0" />
-                        </button>
-                      </DropdownMenuTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="font-medium">Záložky</TooltipContent>
-                  </Tooltip>
-                  <DropdownMenuContent side="right" align="start" className="w-52">
-                    <DropdownMenuLabel className="flex items-center justify-between">
-                      Záložky
-                      {!isCurrentPageBookmarked && (
-                        <button onClick={handleAddBookmark} className="text-muted-foreground hover:text-foreground">
-                          <Plus className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {bookmarks.length === 0 && (
-                      <div className="px-2 py-3 text-xs text-muted-foreground text-center">Žádné záložky</div>
-                    )}
-                    {bookmarks.map(bm => (
-                      <DropdownMenuItem key={bm.id} asChild className="cursor-pointer group/bm">
-                        <Link href={bm.url} className="flex items-center justify-between w-full">
-                          <span className="truncate text-sm">{bm.label}</span>
-                          <button
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveBookmark(bm.id) }}
-                            className="opacity-0 group-hover/bm:opacity-100 text-muted-foreground hover:text-destructive ml-2 flex-shrink-0"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
-                    {!isCurrentPageBookmarked && bookmarks.length > 0 && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleAddBookmark} className="cursor-pointer text-xs text-muted-foreground">
-                          <Plus className="mr-2 h-3.5 w-3.5" />
-                          Přidat tuto stránku
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                /* Expanded: collapsible section with bookmark list */
-                <>
-                  <button
-                    onClick={toggleBookmarks}
-                    className="w-full flex items-center justify-between px-2 mb-1 group"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <Bookmark className={`h-3 w-3 ${sidebarTheme.groupLabel}`} />
-                      <p className={`text-[10px] font-semibold ${sidebarTheme.groupLabel} uppercase tracking-widest`}>
-                        Záložky
-                      </p>
-                      {bookmarks.length > 0 && (
-                        <span className={`text-[9px] ${sidebarTheme.textMuted}`}>({bookmarks.length})</span>
-                      )}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      {!isCurrentPageBookmarked && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleAddBookmark() }}
-                          className={`${sidebarTheme.textMuted} ${sidebarTheme.hoverText} transition-colors p-0.5`}
-                          title="Přidat tuto stránku do záložek"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      )}
-                      {isCurrentPageBookmarked && (
-                        <Star className={`h-3 w-3 text-amber-400 fill-amber-400`} />
-                      )}
-                      <ChevronDown className={`h-3 w-3 ${sidebarTheme.textMuted} transition-transform duration-200 ${bookmarksOpen ? '' : '-rotate-90'}`} />
-                    </span>
-                  </button>
-                  {bookmarksOpen && (
-                    <div className="space-y-0.5">
-                      {bookmarks.length === 0 && (
-                        <p className={`text-[11px] ${sidebarTheme.textMuted} px-2 py-1`}>
-                          Klikněte + pro přidání záložky
-                        </p>
-                      )}
-                      {bookmarks.map(bm => {
-                        const bmActive = pathname === bm.url
-                        return (
-                          <div key={bm.id} className="group/bm flex items-center">
-                            <Link
-                              href={bm.url}
-                              className={`flex-1 flex items-center gap-2 px-2 py-1.5 text-[12px] rounded-lg transition-all duration-150 ${
-                                bmActive
-                                  ? `${sidebarTheme.activeBg} ${sidebarTheme.textActive}`
-                                  : `${sidebarTheme.textDefault} ${sidebarTheme.hoverBg} ${sidebarTheme.hoverText}`
-                              }`}
-                            >
-                              <Star className={`h-3 w-3 flex-shrink-0 ${bmActive ? 'text-amber-400 fill-amber-400' : sidebarTheme.textMuted}`} />
-                              <span className="truncate">{bm.label}</span>
-                            </Link>
-                            <button
-                              onClick={() => handleRemoveBookmark(bm.id)}
-                              className={`opacity-0 group-hover/bm:opacity-100 px-1 py-1 ${sidebarTheme.textMuted} hover:text-red-400 transition-all duration-150 flex-shrink-0`}
-                              title="Odebrat záložku"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          ) : null}
 
           {/* Navigation */}
           <TooltipProvider delayDuration={0}>
@@ -1165,6 +1033,66 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
 
         {!pathname.startsWith('/accountant/admin') && !pathname.startsWith('/accountant/settings') && (
           <GlobalDeadlineAlert />
+        )}
+
+        {/* Horizontal bookmarks bar */}
+        {bookmarks.length > 0 && (
+          <div className="border-b border-border/50 bg-muted/30">
+            <div className="max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center gap-1.5 py-1.5 overflow-x-auto scrollbar-none">
+                <Bookmark className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                {bookmarks.map(bm => {
+                  const bmActive = pathname === bm.url
+                  return (
+                    <div key={bm.id} className="group/bm flex items-center flex-shrink-0">
+                      <Link
+                        href={bm.url}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all duration-150 ${
+                          bmActive
+                            ? 'bg-primary/10 text-primary border border-primary/20'
+                            : 'bg-background text-muted-foreground hover:text-foreground hover:bg-muted border border-border/50'
+                        }`}
+                      >
+                        <Star className={`h-3 w-3 flex-shrink-0 ${bmActive ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/50'}`} />
+                        <span className="whitespace-nowrap">{bm.label}</span>
+                      </Link>
+                      <button
+                        onClick={() => handleRemoveBookmark(bm.id)}
+                        className="opacity-0 group-hover/bm:opacity-100 -ml-0.5 p-0.5 text-muted-foreground hover:text-destructive transition-all duration-150 flex-shrink-0"
+                        title="Odebrat záložku"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )
+                })}
+                {!isCurrentPageBookmarked && (
+                  <button
+                    onClick={handleAddBookmark}
+                    className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground rounded-md hover:bg-muted border border-dashed border-border/50 transition-all duration-150 flex-shrink-0"
+                    title="Přidat tuto stránku do záložek"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span className="whitespace-nowrap hidden sm:inline">Přidat</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add bookmark button when no bookmarks exist */}
+        {bookmarks.length === 0 && !isCurrentPageBookmarked && (
+          <div className="max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-2">
+            <button
+              onClick={handleAddBookmark}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-muted-foreground/60 hover:text-muted-foreground rounded-md hover:bg-muted/50 border border-dashed border-transparent hover:border-border/50 transition-all duration-150"
+              title="Přidat tuto stránku do záložek"
+            >
+              <Star className="h-3 w-3" />
+              <span>Přidat záložku</span>
+            </button>
+          </div>
         )}
 
         <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8 pb-24 md:pb-6 page-enter max-w-screen-2xl mx-auto w-full">
