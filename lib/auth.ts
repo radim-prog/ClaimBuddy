@@ -64,6 +64,7 @@ export interface TokenPayload {
   role: UserRole
   plan: string
   modules: string[]
+  firm_id: string | null
   exp: number
 }
 
@@ -132,6 +133,7 @@ export async function authenticate(
     role: user.role,
     plan: user.plan_tier || 'free',
     modules: user.modules || ['accounting'],
+    firm_id: user.firm_id || null,
   })
 
   return {

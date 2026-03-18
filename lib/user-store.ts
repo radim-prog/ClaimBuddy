@@ -24,6 +24,7 @@ export interface StoredUser {
   reset_token: string | null
   reset_token_expires: string | null
   modules: string[]
+  firm_id: string | null
   created_at: string
   updated_at: string
 }

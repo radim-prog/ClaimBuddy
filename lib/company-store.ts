@@ -40,12 +40,18 @@ export interface Company {
   updated_at: string
 }
 
-export async function getAllCompanies(): Promise<Company[]> {
-  const { data, error } = await supabaseAdmin
+export async function getAllCompanies(firmId?: string | null): Promise<Company[]> {
+  let query = supabaseAdmin
     .from('companies')
     .select('*')
     .is('deleted_at', null)
     .order('name')
+
+  if (firmId) {
+    query = query.eq('firm_id', firmId)
+  }
+
+  const { data, error } = await query
 
   if (error) throw new Error(`Failed to fetch companies: ${error.message}`)
   return (data ?? []) as Company[]

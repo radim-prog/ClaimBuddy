@@ -63,7 +63,7 @@ import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { ActiveModuleProvider, useActiveModule } from '@/lib/contexts/active-module-context'
-import { Building2, FolderOpen, ClipboardList, UserCog, X, Palette, Star } from 'lucide-react'
+import { Building2, FolderOpen, ClipboardList, UserCog, X, Palette, Star, Plus } from 'lucide-react'
 import { getSavedThemeId, saveThemeId, getTheme, SIDEBAR_THEME_LIST } from '@/lib/sidebar-themes'
 import type { SidebarThemeId, SidebarTheme } from '@/lib/sidebar-themes'
 
@@ -1183,7 +1183,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                   return (
                     <div
                       key={tab.url}
-                      className="group/tab flex items-center flex-shrink-0 relative"
+                      className="flex items-center flex-shrink-0 relative"
                       onContextMenu={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
@@ -1192,37 +1192,49 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                     >
                       <Link
                         href={tab.url}
-                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-all duration-150 ${
+                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all duration-150 ${
                           isActive
                             ? 'bg-background text-foreground border-primary'
                             : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-transparent'
-                        } ${!tab.pinned ? 'pr-6' : ''}`}
+                        }`}
                       >
-                        {tab.pinned && <Star className="h-3 w-3 text-amber-400 fill-amber-400 flex-shrink-0" />}
+                        {tab.pinned && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              const bm = bookmarks.find(b => b.url === tab.url)
+                              if (bm) unpinTab(bm.id, tab.url, tab.label)
+                            }}
+                            className="flex-shrink-0"
+                            title="Odepnout záložku"
+                          >
+                            <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400 hover:text-amber-300 transition-colors" />
+                          </button>
+                        )}
                         <span className="whitespace-nowrap">{tab.label}</span>
                       </Link>
                       {!tab.pinned && (
                         <button
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); closeTab(tab.url) }}
-                          className="opacity-0 group-hover/tab:opacity-100 absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-150"
+                          className="ml-[-8px] mr-1 p-1 rounded text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-all duration-150"
                           title="Zavřít záložku"
                         >
-                          <X className="h-3 w-3" />
+                          <X className="h-3.5 w-3.5" />
                         </button>
                       )}
                     </div>
                   )
                 })}
-                {/* Pin current page button */}
-                {!isCurrentPageBookmarked && (
-                  <button
-                    onClick={handleAddBookmark}
-                    className="flex items-center gap-1 px-2.5 py-2 text-xs text-muted-foreground/60 hover:text-muted-foreground border-b-2 border-transparent transition-all duration-150 flex-shrink-0"
-                    title="Připnout tuto stránku"
-                  >
-                    <Star className="h-3 w-3" />
-                  </button>
-                )}
+                {/* Add new tab / pin current page */}
+                <button
+                  onClick={handleAddBookmark}
+                  className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 border-b-2 border-transparent transition-all duration-150 flex-shrink-0"
+                  title={isCurrentPageBookmarked ? 'Stránka již připnuta' : 'Připnout tuto stránku'}
+                  disabled={isCurrentPageBookmarked}
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
               </div>
             </div>
           </div>

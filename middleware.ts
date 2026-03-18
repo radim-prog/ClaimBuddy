@@ -57,6 +57,7 @@ interface TokenPayload {
   role: string
   plan?: string
   modules?: string[]
+  firm_id?: string | null
   exp: number
 }
 
@@ -305,6 +306,9 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-user-role', user.role)
   requestHeaders.set('x-user-plan', user.plan || 'free')
   requestHeaders.set('x-user-modules', JSON.stringify(user.modules || ['accounting']))
+  if (user.firm_id) {
+    requestHeaders.set('x-firm-id', user.firm_id)
+  }
 
   // Forward impersonation context if active
   if (isImpersonating) {
