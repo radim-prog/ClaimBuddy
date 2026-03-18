@@ -6,7 +6,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Receipt, Loader2, Download } from 'lucide-react'
+import { Receipt, Loader2, Download, Plus, HelpCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { ClientInvoiceForm } from '@/components/client/invoice-form'
@@ -360,7 +362,21 @@ function ClientInvoiceListView({
                 <SelectItem value="all">Všechny typy</SelectItem>
                 <SelectItem value="invoice">Faktury ({docTypeCounts.invoice})</SelectItem>
                 <SelectItem value="proforma">Zálohové ({docTypeCounts.proforma})</SelectItem>
-                <SelectItem value="credit_note">Dobropisy ({docTypeCounts.credit_note})</SelectItem>
+                <SelectItem value="credit_note">
+                  <span className="inline-flex items-center gap-1">
+                    Dobropisy ({docTypeCounts.credit_note})
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p className="text-xs">Opravný doklad — snižuje původní fakturovanou částku</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
             <Select value={dateFilter} onValueChange={v => setFilter('date', v)}>
@@ -414,9 +430,14 @@ function ClientInvoiceListView({
 
       {invoices.length === 0 && (
         <Card className="rounded-2xl">
-          <CardContent className="py-12 text-center">
-            <Receipt className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
-            <p className="text-muted-foreground">Zatím nemáte žádné vydané doklady</p>
+          <CardContent className="py-16 text-center">
+            <Receipt className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
+            <p className="font-semibold text-gray-900 dark:text-white mb-1">Zatím nemáte žádné faktury</p>
+            <p className="text-sm text-muted-foreground mb-5">Vystavte svou první fakturu — jednoduše a rychle.</p>
+            <Button onClick={() => updateUrlParams({ action: 'new' })} size="sm">
+              <Plus className="mr-1.5 h-4 w-4" />
+              Vystavit fakturu
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -469,9 +490,18 @@ function ClientInvoiceListView({
                           </Badge>
                         )}
                         {invDocType === 'credit_note' && (
-                          <Badge className="text-[10px] px-1.5 py-0 shrink-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-0">
-                            Dobropis
-                          </Badge>
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge className="text-[10px] px-1.5 py-0 shrink-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-0 cursor-help">
+                                  Dobropis
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Opravný doklad — snižuje původní fakturovanou částku</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">

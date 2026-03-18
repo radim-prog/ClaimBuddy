@@ -321,10 +321,10 @@ export default function ClientDashboard() {
                   </div>
                   <div>
                     <p className="font-semibold text-sm text-gray-900 dark:text-white">
-                      Vaše spisy
+                      Vaše případy
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {casesCount} {casesCount === 1 ? 'aktivní spis' : casesCount < 5 ? 'aktivní spisy' : 'aktivních spisů'}
+                      {casesCount} {casesCount === 1 ? 'aktivní případ' : casesCount < 5 ? 'aktivní případy' : 'aktivních případů'}
                       {lastCaseActivity && (
                         <> &middot; Poslední aktivita {new Date(lastCaseActivity).toLocaleDateString('cs-CZ')}</>
                       )}
@@ -447,7 +447,7 @@ export default function ClientDashboard() {
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Vaše účetní</p>
-                <p className="font-semibold text-gray-900 dark:text-white">{'Klient'}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{selectedCompany?.accountant_name || 'Účetní OS tým'}</p>
               </div>
               <div className="flex gap-2">
                 <Button asChild variant="outline" size="sm">
@@ -560,7 +560,8 @@ function DohodariWidget() {
             <div>
               <p className="font-semibold text-sm text-gray-900 dark:text-white">Vaše dohody</p>
               <p className="text-xs text-muted-foreground">
-                {count} {count === 1 ? 'aktivní dohoda' : count < 5 ? 'aktivní dohody' : 'aktivních dohod'} (DPP/DPČ)
+                {count} {count === 1 ? 'aktivní dohoda' : count < 5 ? 'aktivní dohody' : 'aktivních dohod'}{' '}
+                <span title="Dohoda o provedení práce / Dohoda o pracovní činnosti" className="underline decoration-dotted cursor-help">(DPP/DPČ)</span>
               </p>
             </div>
           </div>

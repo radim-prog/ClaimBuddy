@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Check } from 'lucide-react'
+import { Footer } from '@/components/landing/footer'
 
 // ============================================
 // FADE-IN ON SCROLL HOOK
@@ -131,6 +132,8 @@ export default function Variant2Page() {
           </Link>
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-gray-500 hover:text-gray-950 transition-colors">Funkce</a>
+            <Link href="/pro-podnikatele" className="text-sm text-gray-500 hover:text-gray-950 transition-colors">Pro podnikatele</Link>
+            <Link href="/pro-ucetni" className="text-sm text-gray-500 hover:text-gray-950 transition-colors">Pro účetní</Link>
             <a href="#pricing" className="text-sm text-gray-500 hover:text-gray-950 transition-colors">Ceník</a>
           </div>
           <div className="flex items-center gap-3">
@@ -360,32 +363,7 @@ export default function Variant2Page() {
       </FadeIn>
 
       {/* ─── FOOTER ─── */}
-      <footer className="border-t border-gray-100">
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Link href="/" className="text-lg font-bold tracking-tight text-gray-950">
-              Účetní<span className="text-purple-700">OS</span>
-            </Link>
-            <div className="flex items-center gap-6">
-              <Link href="/legal/terms" className="text-sm text-gray-400 hover:text-gray-950 transition-colors">
-                Podmínky
-              </Link>
-              <Link href="/legal/privacy" className="text-sm text-gray-400 hover:text-gray-950 transition-colors">
-                Soukromí
-              </Link>
-              <Link href="/legal/cookies" className="text-sm text-gray-400 hover:text-gray-950 transition-colors">
-                Cookies
-              </Link>
-              <a href="mailto:info@zajcon.cz" className="text-sm text-gray-400 hover:text-gray-950 transition-colors">
-                Kontakt
-              </a>
-            </div>
-            <p className="text-xs text-gray-400">
-              &copy; {new Date().getFullYear()} Účetní OS s.r.o.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

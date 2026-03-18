@@ -68,7 +68,7 @@ const accountingNavigation: NavItem[] = [
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard, tourId: 'client-dashboard' },
   { name: 'Doklady', href: '/client/documents', icon: FileText, tourId: 'client-documents' },
   { name: 'Faktury', href: '/client/invoices', icon: Receipt, tourId: 'client-invoicing' },
-  { name: 'Cesťák', href: '/client/travel', icon: Car, tourId: 'client-travel' },
+  { name: 'Kniha jízd', href: '/client/travel', icon: Car, tourId: 'client-travel' },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare, tourId: 'client-messages' },
   { name: 'Platby', href: '/client/billing', icon: CreditCard },
   // ── Doplňkové ──
@@ -80,7 +80,7 @@ const accountingNavigation: NavItem[] = [
 
 // Claims context navigation
 const claimsNavigation: NavItem[] = [
-  { name: 'Moje spisy', href: '/client/claims', icon: FolderOpen },
+  { name: 'Moje případy', href: '/client/claims', icon: FolderOpen },
   { name: 'Soubory', href: '/client/documents', icon: FileText },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
   { name: 'Nahlásit událost', href: '/claims/new', icon: FilePlus, divider: true },
