@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,14 @@ export async function GET(
             return NextResponse.json(
                 { error: 'Company ID is required' },
                 { status: 400 }
+            );
+        }
+
+        const firmId = getFirmId(request);
+        if (!await verifyCompanyAccess(companyId, firmId)) {
+            return NextResponse.json(
+                { error: 'Forbidden' },
+                { status: 403 }
             );
         }
 

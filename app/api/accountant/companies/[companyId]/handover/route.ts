@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { generatePredavaciProtokol, DEFAULT_HANDOVER_ITEMS } from '@/lib/contract-templates/predavaci-protokol'
 import type { HandoverItem } from '@/lib/contract-templates/predavaci-protokol'
+import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,6 +18,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 
   const { companyId } = await params
+
+  const firmId = getFirmId(request)
+  if (!await verifyCompanyAccess(companyId, firmId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   try {
     const { data, error } = await supabaseAdmin
@@ -43,6 +49,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   const { companyId } = await params
+
+  const firmIdPost = getFirmId(request)
+  if (!await verifyCompanyAccess(companyId, firmIdPost)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   try {
     const body = await request.json()
