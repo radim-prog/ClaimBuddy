@@ -120,6 +120,26 @@ export default function RegisterPage() {
                   className="h-11 border-blue-200 dark:border-blue-800/50 focus-visible:ring-blue-500"
                 />
               </div>
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="gdprConsent"
+                  name="gdprConsent"
+                  required
+                  className="mt-1 h-4 w-4 rounded border-gray-300"
+                />
+                <label htmlFor="gdprConsent" className="text-xs text-muted-foreground leading-tight">
+                  Souhlasím se{' '}
+                  <Link href="/legal/privacy" target="_blank" className="text-blue-600 hover:underline">
+                    zpracováním osobních údajů
+                  </Link>
+                  {' '}a{' '}
+                  <Link href="/legal/terms" target="_blank" className="text-blue-600 hover:underline">
+                    obchodními podmínkami
+                  </Link>
+                  . *
+                </label>
+              </div>
               <Button
                 type="submit"
                 className="w-full h-11 font-semibold bg-blue-600 hover:bg-blue-700 text-white"
