@@ -46,6 +46,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { logout } from '@/app/auth/login/actions'
 import { SettingsProvider } from '@/lib/contexts/settings-context'
 import { AccountantUserProvider, useAccountantUser } from '@/lib/contexts/accountant-user-context'
@@ -132,6 +133,32 @@ const claimsManagementNav: NavItem[] = [
   { name: 'Připomínky', href: '/accountant/reminders', icon: Send, activeMatch: ['/accountant/reminders'] },
   { name: 'Nastavení PU', href: '/accountant/claims/settings', icon: Settings },
 ]
+
+// === TAB SYSTEM ===
+const OPEN_TABS_KEY = 'accountant_open_tabs'
+const TAB_EXCLUDED_PREFIXES = ['/accountant/settings', '/accountant/admin']
+
+function getTabLabelFromPathname(pathname: string): string {
+  const allNavItems = [...dailyWorkNav, ...managementNav, ...toolsNav, ...adminNav, ...claimsDailyNav, ...claimsManagementNav]
+  for (const item of allNavItems) {
+    if (pathname === item.href) return item.name
+    if (item.activeMatch?.some(p => pathname.startsWith(p))) return item.name
+    if (pathname.startsWith(item.href + '/')) return item.name
+  }
+  const segments = pathname.split('/').filter(Boolean)
+  const last = segments[segments.length - 1] || 'Stránka'
+  return last.charAt(0).toUpperCase() + last.slice(1).replace(/-/g, ' ')
+}
+
+function isTabActiveForPath(tabUrl: string, pathname: string): boolean {
+  if (pathname === tabUrl || pathname.startsWith(tabUrl + '/')) return true
+  const allNavItems = [...dailyWorkNav, ...managementNav, ...toolsNav, ...claimsDailyNav, ...claimsManagementNav]
+  const navItem = allNavItems.find(item => item.href === tabUrl)
+  if (navItem?.activeMatch) {
+    return navItem.activeMatch.some(p => pathname.startsWith(p))
+  }
+  return false
+}
 
 // Extracted NavContent to avoid hook issues with renderNavItem
 function NavContent({
@@ -393,21 +420,40 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
     const last = segments[segments.length - 1] || 'Stránka'
     const label = last.charAt(0).toUpperCase() + last.slice(1).replace(/-/g, ' ')
 
-    const res = await fetch('/api/accountant/bookmarks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ label, url: pathname }),
-    })
-    if (res.ok) fetchBookmarks()
+    try {
+      const res = await fetch('/api/accountant/bookmarks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label, url: pathname }),
+      })
+      if (res.ok) {
+        fetchBookmarks()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        console.error('Bookmark add failed:', res.status, data)
+        toast.error(data.error || 'Nepodařilo se přidat záložku')
+      }
+    } catch (err) {
+      console.error('Bookmark add error:', err)
+      toast.error('Nepodařilo se přidat záložku')
+    }
   }
 
   const handleRemoveBookmark = async (id: string) => {
-    const res = await fetch('/api/accountant/bookmarks', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    })
-    if (res.ok) fetchBookmarks()
+    try {
+      const res = await fetch('/api/accountant/bookmarks', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      if (res.ok) {
+        fetchBookmarks()
+      } else {
+        toast.error('Nepodařilo se odebrat záložku')
+      }
+    } catch {
+      toast.error('Nepodařilo se odebrat záložku')
+    }
   }
 
   // toggleBookmarks removed — bookmarks are now horizontal bar in content area

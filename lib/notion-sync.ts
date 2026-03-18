@@ -115,6 +115,13 @@ function getNotionPeople(page: NotionPage, prop: string): string[] {
   return page.properties[prop]?.people?.map((p: any) => p.name || p.id) || []
 }
 
+function getNotionSelectScore(page: NotionPage, prop: string): number | null {
+  const name = page.properties[prop]?.select?.name
+  if (!name) return null
+  const match = name.match(/^(\d+)/)
+  return match ? parseInt(match[1], 10) : null
+}
+
 function clampScore<T extends number>(val: number | null, max: number): T | undefined {
   if (val === null || val === undefined) return undefined
   return Math.min(Math.max(Math.round(val), 0), max) as T
@@ -254,18 +261,18 @@ function notionPageToTaskData(
     : null
 
   // Delegated To
-  const delegatedTo = getNotionRichText(page, 'Delegated To')
+  const delegatedTo = getNotionSelect(page, 'Delegated To')
 
   // Firma → company
   const firmaName = getNotionSelect(page, 'Firma')
   const companyId = resolveCompany(firmaName, companyMap)
 
-  // R-Tasks scores
-  const scoreMoney = clampScore<ScoreMoney>(getNotionNumber(page, 'Money Value'), 3)
-  const scoreFire = clampScore<ScoreFire>(getNotionNumber(page, 'Fire Fire'), 3)
-  const scoreTime = clampScore<ScoreTime>(getNotionNumber(page, 'Time Value'), 3)
-  const scoreDistance = clampScore<ScoreDistance>(getNotionNumber(page, 'Distance Value'), 2)
-  const scorePersonal = clampScore<ScorePersonal>(getNotionNumber(page, 'Personal Rating'), 1)
+  // R-Tasks scores (Select fields with number prefix, e.g. "3 - High")
+  const scoreMoney = clampScore<ScoreMoney>(getNotionSelectScore(page, 'Money Value'), 3)
+  const scoreFire = clampScore<ScoreFire>(getNotionSelectScore(page, 'Fire Fire'), 3)
+  const scoreTime = clampScore<ScoreTime>(getNotionSelectScore(page, 'Time Value'), 3)
+  const scoreDistance = clampScore<ScoreDistance>(getNotionSelectScore(page, 'Distance Value'), 2)
+  const scorePersonal = clampScore<ScorePersonal>(getNotionSelectScore(page, 'Personal Rating'), 1)
 
   const totalScore = (scoreMoney || 0) + (scoreFire || 0) + (scoreTime || 0) + (scoreDistance || 0) + (scorePersonal || 0)
 
@@ -273,8 +280,8 @@ function notionPageToTaskData(
   const deadline = getNotionDate(page, 'Deadline')
 
   // Metadata from Notion
-  const lastAction = getNotionRichText(page, 'Last Action')
-  const spentTime = getNotionNumber(page, 'Utracený čas')
+  const lastAction = getNotionDate(page, 'Last Action')
+  const spentTime = getNotionNumber(page, 'Utracený čas (h)')
 
   return {
     title,

@@ -9,4 +9,5 @@ CREATE TABLE IF NOT EXISTS user_bookmarks (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_bookmarks_user_url ON user_bookmarks(user_id, url);
 CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON user_bookmarks(user_id, position);

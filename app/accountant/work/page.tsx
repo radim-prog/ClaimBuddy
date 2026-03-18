@@ -18,6 +18,8 @@ import {
 } from 'lucide-react'
 import { PrioritySwimlanes, WorkItem } from '@/components/gtd/priority-swimlanes'
 import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { Users, User } from 'lucide-react'
 
 type TypeFilter = 'all' | 'inbox' | 'tasks' | 'projects'
 
@@ -192,7 +194,10 @@ function InboxList({ items, searchQuery, onAction }: {
 }
 
 export default function WorkPage() {
+  const { userId, userRole } = useAccountantUser()
+  const isAdmin = userRole === 'admin'
   const [searchQuery, setSearchQuery] = useState('')
+  const [showMyOnly, setShowMyOnly] = useState(true)
   const [typeFilter, setTypeFilter] = useState<TypeFilter>(() => {
     if (typeof window !== 'undefined') {
       const urlType = new URLSearchParams(window.location.search).get('type')
@@ -202,12 +207,13 @@ export default function WorkPage() {
   })
 
   const fetchWorkData = useCallback(async () => {
+    const assignedFilter = showMyOnly && userId ? `&assigned_to=${userId}` : ''
     const [tasksData, projectsData] = await Promise.all([
-      fetch('/api/tasks?page_size=500').then(r => r.json()),
+      fetch(`/api/tasks?page_size=500${assignedFilter}`).then(r => r.json()),
       fetch('/api/projects').then(r => r.json()),
     ])
     return { tasks: (tasksData.tasks || []) as TaskFromAPI[], projects: (projectsData.projects || []) as ProjectFromAPI[] }
-  }, [])
+  }, [showMyOnly, userId])
 
   const { data: workData, loading } = useCachedFetch('work-page', fetchWorkData)
   const tasks = workData?.tasks ?? []
@@ -408,6 +414,20 @@ export default function WorkPage() {
             </button>
           ))}
         </div>
+
+        {isAdmin && (
+          <button
+            onClick={() => setShowMyOnly(prev => !prev)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ${
+              showMyOnly
+                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+            }`}
+          >
+            {showMyOnly ? <User className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
+            {showMyOnly ? 'Moje úkoly' : 'Všechny úkoly'}
+          </button>
+        )}
 
         <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700 text-white shrink-0 self-start sm:self-auto">
           <Link href="/accountant/work/new">

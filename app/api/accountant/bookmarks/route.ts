@@ -49,13 +49,16 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await supabaseAdmin
       .from('user_bookmarks')
-      .insert({
-        user_id: userId,
-        label: label.trim(),
-        url: url.trim(),
-        icon: icon?.trim() || null,
-        position: nextPosition,
-      })
+      .upsert(
+        {
+          user_id: userId,
+          label: label.trim(),
+          url: url.trim(),
+          icon: icon?.trim() || null,
+          position: nextPosition,
+        },
+        { onConflict: 'user_id,url' }
+      )
       .select('*')
       .single()
 
