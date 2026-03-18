@@ -15,6 +15,9 @@ import {
   Receipt,
   FileSignature,
   Bell,
+  CheckCircle2,
+  Circle,
+  X,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -53,10 +56,16 @@ export default function ClientDashboard() {
   const [lastCaseActivity, setLastCaseActivity] = useState<string | null>(null)
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null)
   const [showQuickActions, setShowQuickActions] = useState(false)
+  const [checklistDismissed, setChecklistDismissed] = useState(true)
   const [recentMessages, setRecentMessages] = useState<Array<{
     id: string; subject: string; last_message_preview: string | null;
     last_message_at: string | null; unread_count: number; status: string;
   }>>([])
+
+  // Load checklist state
+  useEffect(() => {
+    setChecklistDismissed(localStorage.getItem('onboarding-checklist-dismissed') === 'true')
+  }, [])
 
   // Fetch draft count + cases
   useEffect(() => {
@@ -218,6 +227,59 @@ export default function ClientDashboard() {
             <span className="hidden sm:inline">Nahrát</span> výpis
           </button>
         </div>
+
+        {/* Onboarding checklist */}
+        {!checklistDismissed && selectedCompany && (() => {
+          const hasDocuments = draftCount > 0
+          const hasMessages = recentMessages.length > 0
+          const hasProfile = !!(selectedCompany.name && selectedCompany.ico)
+          const allDone = hasDocuments && hasMessages && hasProfile
+          if (allDone) return null
+          const items = [
+            { done: hasDocuments, label: 'Nahrát první doklad', href: '/client/documents' },
+            { done: hasMessages, label: 'Odeslat zprávu účetnímu', href: '/client/messages' },
+            { done: hasProfile, label: 'Vyplnit profil firmy', href: '/client/account' },
+          ]
+          return (
+            <Card className="rounded-2xl border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+              <CardContent className="py-4 px-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100">Začínáme</h3>
+                  <button
+                    onClick={() => {
+                      setChecklistDismissed(true)
+                      localStorage.setItem('onboarding-checklist-dismissed', 'true')
+                    }}
+                    className="p-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-400"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {items.map(item => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="flex items-center gap-2.5 text-sm group"
+                    >
+                      {item.done ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                      ) : (
+                        <Circle className="h-4 w-4 text-blue-300 dark:text-blue-600 shrink-0" />
+                      )}
+                      <span className={item.done
+                        ? 'text-green-700 dark:text-green-400 line-through'
+                        : 'text-blue-800 dark:text-blue-200 group-hover:underline'
+                      }>
+                        {item.label}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })()}
 
         {/* Draft badge */}
         {draftCount > 0 && (

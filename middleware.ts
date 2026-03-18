@@ -12,6 +12,17 @@ const PUBLIC_EXACT = ['/', '/ucetni', '/claims']  // Exact match only (startsWit
 const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-sent', '/api/auth/verify', '/pricing', '/marketplace', '/legal', '/pro-ucetni', '/pro-podnikatele', '/o-nas', '/funkce', '/claims/new', '/design-variants', '/api/leads', '/api/marketplace', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/setup/first-admin', '/api/cron/drive-sync', '/api/cron/trial-expiry', '/api/cron/credits-reset', '/api/cron/fetch-emails', '/api/cron/fetch-document-emails', '/api/cron/lead-emails', '/api/cron/purge-trash', '/api/cron/sync-ecomail-contacts', '/api/cron/raynet-sync', '/api/cron/health-scores', '/api/cron/generate-notifications', '/api/cron/notion-sync', '/api/cron/reminders', '/api/cron/invoice-reminders', '/api/cron/billing', '/api/cron/snapshots', '/api/cron/calculate-penalties', '/api/cron/auto-reports', '/api/cron/account-cleanup', '/api/client/account/cancel-deletion', '/auth/cancel-deletion', '/api/signing/webhook', '/api/bridge', '/api/claims/intake', '/api/claims/companies']
 const STATIC_PREFIXES = ['/_next', '/static', '/favicon.ico']
 
+// Claims hostname URL rewrites: clean URL → internal path
+const CLAIMS_REWRITES: Record<string, string> = {
+  '/dashboard': '/accountant/claims/dashboard',
+  '/cases': '/accountant/claims/cases',
+  '/insurers': '/accountant/claims/insurers',
+  '/stats': '/accountant/claims/stats',
+  '/settings': '/accountant/claims/settings',
+  '/clients': '/accountant/clients',
+  '/komunikace': '/accountant/komunikace',
+}
+
 // --- Rate Limiting (in-memory, sliding window) ---
 const RATE_LIMITS = {
   login: { window: 60_000, max: 5 },   // 5 login attempts per minute
@@ -149,7 +160,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Host-based routing: claims.zajcon.cz → /claims as root
+  // Host-based routing: claims.zajcon.cz → clean URLs
   if (hostname === 'claims.zajcon.cz') {
     // Root → check auth first to avoid redirect loop
     if (pathname === '/' || pathname === '') {
@@ -157,28 +168,37 @@ export async function middleware(request: NextRequest) {
       if (token) {
         const user = await verifyToken(token)
         if (user) {
-          const dest = user.role === 'client' ? '/client/claims' : '/accountant/claims/dashboard'
+          const dest = user.role === 'client' ? '/client/claims' : '/dashboard'
           return NextResponse.redirect(new URL(dest, request.url))
         }
       }
-      // Not authenticated → rewrite to /claims landing page (no redirect loop)
       const url = request.nextUrl.clone()
       url.pathname = '/claims'
       return NextResponse.rewrite(url)
     }
-    // Claims hostname: redirect standard dashboards to claims dashboards
+    // Clean URL rewrites: /dashboard → /accountant/claims/dashboard, etc.
+    if (CLAIMS_REWRITES[pathname]) {
+      const url = request.nextUrl.clone()
+      url.pathname = CLAIMS_REWRITES[pathname]
+      return NextResponse.rewrite(url)
+    }
+    // Redirect old full paths to clean URLs on claims hostname
+    for (const [clean, internal] of Object.entries(CLAIMS_REWRITES)) {
+      if (pathname === internal) {
+        return NextResponse.redirect(new URL(clean, request.url))
+      }
+    }
+    // Standard dashboards → claims clean URLs
     if (pathname === '/client/dashboard') {
       return NextResponse.redirect(new URL('/client/claims', request.url))
     }
     if (pathname === '/accountant/dashboard') {
-      return NextResponse.redirect(new URL('/accountant/claims/dashboard', request.url))
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
-    // /auth paths stay as-is (login/logout)
-    // /api paths stay as-is
-    // /claims and /accountant paths stay as-is
-    // Everything else that's not claims/accountant/client/api/auth/_next → redirect to claims dashboard
+    // /auth, /api, /claims, /accountant, /client paths stay as-is
+    // Everything else → redirect to clean /dashboard
     if (!pathname.startsWith('/claims') && !pathname.startsWith('/accountant') && !pathname.startsWith('/client') && !pathname.startsWith('/api') && !pathname.startsWith('/auth') && !pathname.startsWith('/_next')) {
-      return NextResponse.redirect(new URL('/accountant/claims/dashboard', request.url))
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
 

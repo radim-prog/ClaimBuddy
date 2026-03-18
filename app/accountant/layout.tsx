@@ -111,6 +111,17 @@ type NavItem = {
 
 // === CLAIMS MODULE NAVIGATION ===
 
+// Claims: internal paths → clean URLs (for claims.zajcon.cz hostname)
+const CLAIMS_CLEAN_URLS: Record<string, string> = {
+  '/accountant/claims/dashboard': '/dashboard',
+  '/accountant/clients': '/clients',
+  '/accountant/komunikace': '/komunikace',
+  '/accountant/claims/cases': '/cases',
+  '/accountant/claims/insurers': '/insurers',
+  '/accountant/claims/stats': '/stats',
+  '/accountant/claims/settings': '/settings',
+}
+
 // Claims: Daily work
 const claimsDailyNav: NavItem[] = [
   { name: 'Přehled PU', href: '/accountant/claims/dashboard', icon: LayoutDashboard },
@@ -357,6 +368,9 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const { isLocked } = usePlanFeatures()
   const { activeModule } = useActiveModule()
   const isClaims = activeModule === 'claims'
+  const isClaimsHostname = typeof window !== 'undefined' && window.location.hostname === 'claims.zajcon.cz'
+  const toCleanUrl = (items: NavItem[]) =>
+    isClaimsHostname ? items.map(item => ({ ...item, href: CLAIMS_CLEAN_URLS[item.href] || item.href })) : items
   // Attention for Klienti badge: exclude unread_messages (shown on Komunikace instead)
   const clientsAttentionCount = attentionTotals.total - attentionTotals.unread_messages
   const [sidebarThemeId, setSidebarThemeId] = useState<SidebarThemeId>('classic')
@@ -609,8 +623,8 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Navigation */}
           <TooltipProvider delayDuration={0}>
             <NavContent
-              dailyWorkNav={isClaims ? claimsDailyNav : dailyWorkNav}
-              managementNav={isClaims ? claimsManagementNav : (userRole === 'admin' ? managementNav.filter(item => !item.firmOnly || firmId) : managementNav.filter(item => item.href !== '/accountant/revenue' && (!item.firmOnly || firmId)))}
+              dailyWorkNav={isClaims ? toCleanUrl(claimsDailyNav) : dailyWorkNav}
+              managementNav={isClaims ? toCleanUrl(claimsManagementNav) : (userRole === 'admin' ? managementNav.filter(item => !item.firmOnly || firmId) : managementNav.filter(item => item.href !== '/accountant/revenue' && (!item.firmOnly || firmId)))}
               toolsNav={isClaims ? [] : toolsNav}
               adminNav={adminNav}
               pathname={pathname}
@@ -818,7 +832,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-border/50 safe-area-bottom">
         <nav className="flex items-center justify-around px-1 py-1">
-          {dailyWorkNav.slice(0, 5).map((item) => {
+          {(isClaims ? toCleanUrl(claimsDailyNav) : dailyWorkNav).slice(0, 5).map((item) => {
             const isActive = item.activeMatch
               ? item.activeMatch.some(p => pathname.startsWith(p))
               : pathname === item.href || pathname.startsWith(item.href + '/')
