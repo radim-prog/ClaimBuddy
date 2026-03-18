@@ -22,9 +22,6 @@ import {
   MessageCircle,
   ScanLine,
   Send,
-  Inbox,
-  TrendingUp,
-  CreditCard,
   FileSignature,
   ChevronDown,
 } from 'lucide-react'
@@ -69,25 +66,21 @@ import type { SidebarThemeId, SidebarTheme } from '@/lib/sidebar-themes'
 
 // === NAVIGATION GROUPS ===
 
-// Group 1: Daily work — always visible (6 items)
+// Group 1: Daily work — always visible (5 items)
 const dailyWorkNav = [
   { name: 'Přehled', href: '/accountant/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
   { name: 'Klienti', href: '/accountant/clients', icon: Users, badge: 'attention' as const, tourId: 'nav-clients' },
   { name: 'Komunikace', href: '/accountant/komunikace', icon: MessageCircle, badge: 'messages' as const, feature: 'messages', tourId: 'nav-komunikace' },
-  { name: 'Inbox podkladů', href: '/accountant/inbox', icon: Inbox, badge: 'inbox' as const, activeMatch: ['/accountant/inbox'], tourId: 'nav-inbox' },
+  { name: 'Doklady', href: '/accountant/extraction', icon: ScanLine, badge: 'inbox' as const, activeMatch: ['/accountant/extraction', '/accountant/inbox'], feature: 'extraction', tourId: 'nav-extraction' },
   { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'], tourId: 'nav-work' },
-  { name: 'Vytěžování', href: '/accountant/extraction', icon: ScanLine, activeMatch: ['/accountant/extraction'], feature: 'extraction', tourId: 'nav-extraction' },
 ]
 
-// Group 2: Management — collapsible (7 items)
+// Group 2: Management — collapsible (5 items)
 const managementNav = [
-  { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck, tourId: 'nav-deadlines' },
-  { name: 'Připomínky', href: '/accountant/reminders', icon: Send, activeMatch: ['/accountant/reminders'], tourId: 'nav-reminders' },
+  { name: 'Kalendář', href: '/accountant/deadlines', icon: CalendarCheck, activeMatch: ['/accountant/deadlines', '/accountant/reminders'], tourId: 'nav-deadlines' },
+  { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices', '/accountant/billing'], tourId: 'nav-invoicing', feature: 'client_invoicing' },
+  { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics', '/accountant/revenue'], feature: 'analytics' },
   { name: 'Tržiště', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'] },
-  { name: 'Příjmy', href: '/accountant/revenue', icon: TrendingUp, activeMatch: ['/accountant/revenue'] },
-  { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics'], feature: 'analytics' },
-  { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices'], tourId: 'nav-invoicing', feature: 'client_invoicing' },
-  { name: 'Účtování', href: '/accountant/billing', icon: CreditCard, activeMatch: ['/accountant/billing'] },
   { name: 'Můj tým', href: '/accountant/firm/team', icon: Users, activeMatch: ['/accountant/firm/team'], firmOnly: true },
 ]
 
@@ -97,7 +90,7 @@ const toolsNav = [
   { name: 'Podepisování', href: '/accountant/signing', icon: FileSignature, activeMatch: ['/accountant/signing'] },
 ]
 
-// Group 4: Admin — bottom section, admin-only (2 items)
+// Group 4: Admin — bottom section, admin-only (3 items)
 const adminNav = [
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings, tourId: 'nav-settings' },
   { name: 'Moje firma', href: '/accountant/firm', icon: Building2, activeMatch: ['/accountant/firm'] },
@@ -122,22 +115,18 @@ type NavItem = {
 const claimsDailyNav: NavItem[] = [
   { name: 'Přehled PU', href: '/accountant/claims/dashboard', icon: LayoutDashboard },
   { name: 'Klienti', href: '/accountant/clients', icon: Users },
-  { name: 'Spisy', href: '/accountant/claims/cases', icon: FolderOpen },
-  { name: 'Pojišťovny', href: '/accountant/claims/insurers', icon: Building2 },
   { name: 'Komunikace', href: '/accountant/komunikace', icon: MessageCircle, badge: 'messages' as const },
+  { name: 'Spisy', href: '/accountant/claims/cases', icon: FolderOpen },
 ]
 
 // Claims: Management
 const claimsManagementNav: NavItem[] = [
-  { name: 'Úkoly', href: '/accountant/gtd', icon: ClipboardList },
-  { name: 'Termíny', href: '/accountant/deadlines', icon: CalendarCheck },
+  { name: 'Pojišťovny', href: '/accountant/claims/insurers', icon: Building2 },
   { name: 'Statistiky PU', href: '/accountant/claims/stats', icon: BarChart3 },
-  { name: 'Připomínky', href: '/accountant/reminders', icon: Send, activeMatch: ['/accountant/reminders'] },
   { name: 'Nastavení PU', href: '/accountant/claims/settings', icon: Settings },
 ]
 
 // === TAB SYSTEM ===
-const OPEN_TABS_KEY = 'accountant_open_tabs'
 const TAB_EXCLUDED_PREFIXES = ['/accountant/settings', '/accountant/admin', '/accountant/firm']
 
 function getTabLabelFromPathname(pathname: string): string {
@@ -378,6 +367,14 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
     setSidebarThemeId(getSavedThemeId())
   }, [])
 
+  // Claims branding override: favicon + title (re-run on navigation since Next.js resets title)
+  useEffect(() => {
+    if (!isClaims) return
+    document.title = document.title.replace('Účetní OS', 'Pojistná Pomoc')
+    const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+    if (favicon) favicon.href = '/favicon-claims.svg'
+  }, [isClaims, pathname])
+
   const handleThemeChange = (id: SidebarThemeId) => {
     setSidebarThemeId(id)
     saveThemeId(id)
@@ -413,39 +410,8 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { fetchBookmarks() }, [])
 
-  // Open tabs (localStorage-backed, session-like)
-  type OpenTab = { url: string; label: string }
-  const [openTabs, setOpenTabs] = useState<OpenTab[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem(OPEN_TABS_KEY)
-        return stored ? JSON.parse(stored) : []
-      } catch { return [] }
-    }
-    return []
-  })
-
-  // Context menu for tabs
-  const [tabContextMenu, setTabContextMenu] = useState<{ x: number; y: number; url: string; label: string; pinned: boolean; bookmarkId?: string } | null>(null)
-
-  // Persist open tabs to localStorage
-  useEffect(() => {
-    localStorage.setItem(OPEN_TABS_KEY, JSON.stringify(openTabs))
-  }, [openTabs])
-
-  // Auto-open tab for current pathname (only for nav items, not sub-pages)
-  useEffect(() => {
-    if (TAB_EXCLUDED_PREFIXES.some(p => pathname.startsWith(p))) return
-    if (bookmarks.some(b => b.url === pathname)) return
-    const allNavItems = [...dailyWorkNav, ...managementNav, ...toolsNav, ...(isClaims ? claimsDailyNav : []), ...(isClaims ? claimsManagementNav : [])]
-    const isNavItem = allNavItems.some(item => item.href === pathname)
-    if (!isNavItem) return
-    const label = getTabLabelFromPathname(pathname)
-    setOpenTabs(prev => {
-      if (prev.some(t => t.url === pathname)) return prev
-      return [...prev, { url: pathname, label }]
-    })
-  }, [pathname, bookmarks, isClaims])
+  // Context menu for bookmark tabs
+  const [tabContextMenu, setTabContextMenu] = useState<{ x: number; y: number; url: string; label: string; bookmarkId?: string } | null>(null)
 
   // Close context menu on click/right-click outside
   useEffect(() => {
@@ -458,59 +424,6 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
       document.removeEventListener('contextmenu', handler)
     }
   }, [tabContextMenu])
-
-  // Merged tabs: pinned (from DB) + open (from localStorage)
-  const pinnedTabs = bookmarks.map(bm => ({ url: bm.url, label: bm.label, pinned: true as const, bookmarkId: bm.id }))
-  const pinnedUrls = new Set(bookmarks.map(b => b.url))
-  const sessionTabs = openTabs.filter(t => !pinnedUrls.has(t.url)).map(t => ({ ...t, pinned: false as const, bookmarkId: undefined as string | undefined }))
-  const allTabs = [...pinnedTabs, ...sessionTabs]
-
-  const closeTab = (url: string) => {
-    setOpenTabs(prev => prev.filter(t => t.url !== url))
-  }
-
-  const closeOtherTabs = (keepUrl: string) => {
-    setOpenTabs(prev => prev.filter(t => t.url === keepUrl))
-  }
-
-  const pinTab = async (url: string, label: string) => {
-    try {
-      const res = await fetch('/api/accountant/bookmarks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label, url }),
-      })
-      if (res.ok) {
-        fetchBookmarks()
-        setOpenTabs(prev => prev.filter(t => t.url !== url))
-      } else {
-        toast.error('Nepodařilo se připnout záložku')
-      }
-    } catch {
-      toast.error('Nepodařilo se připnout záložku')
-    }
-  }
-
-  const unpinTab = async (bookmarkId: string, url: string, label: string) => {
-    try {
-      const res = await fetch('/api/accountant/bookmarks', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: bookmarkId }),
-      })
-      if (res.ok) {
-        fetchBookmarks()
-        setOpenTabs(prev => {
-          if (prev.some(t => t.url === url)) return prev
-          return [...prev, { url, label }]
-        })
-      } else {
-        toast.error('Nepodařilo se odepnout záložku')
-      }
-    } catch {
-      toast.error('Nepodařilo se odepnout záložku')
-    }
-  }
 
   const isCurrentPageBookmarked = bookmarks.some(b => b.url === pathname)
 
@@ -716,86 +629,28 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
             />
           </TooltipProvider>
 
-          {/* Tools - Průvodce, Styl menu, Tmavý režim */}
+          {/* Tools - Průvodce, Tmavý režim */}
           <div className={`relative flex-shrink-0 border-t ${sidebarTheme.border} px-3 py-3 space-y-0.5`}>
             {collapsed ? (
-              <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => startTour()}
-                      className={`w-full group flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl ${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} transition-all duration-200`}
-                    >
-                      <BookOpen className="h-[18px] w-[18px] flex-shrink-0" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="font-medium">Průvodce</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DropdownMenu open={themePickerOpen} onOpenChange={setThemePickerOpen}>
-                      <DropdownMenuTrigger asChild>
-                        <button className={`w-full group flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl ${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} transition-all duration-200`}>
-                          <Palette className="h-[18px] w-[18px] flex-shrink-0" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent side="right" align="end" className="w-48">
-                        <DropdownMenuLabel>Styl menu</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {SIDEBAR_THEME_LIST.map(t => (
-                          <DropdownMenuItem
-                            key={t.id}
-                            onClick={() => handleThemeChange(t.id)}
-                            className="gap-3 cursor-pointer"
-                          >
-                            <div className={`w-5 h-5 rounded-md ${t.preview.bg} ${t.id === sidebarThemeId ? 'ring-2 ring-primary ring-offset-1' : ''}`} />
-                            <div>
-                              <p className="font-medium text-sm">{t.name}</p>
-                              <p className="text-[10px] text-muted-foreground">{t.description}</p>
-                            </div>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="font-medium">Styl menu</TooltipContent>
-                </Tooltip>
-              </>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => startTour()}
+                    className={`w-full group flex items-center justify-center px-3 py-2 text-sm font-medium rounded-xl ${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} transition-all duration-200`}
+                  >
+                    <BookOpen className="h-[18px] w-[18px] flex-shrink-0" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="font-medium">Průvodce</TooltipContent>
+              </Tooltip>
             ) : (
-              <>
-                <button
-                  onClick={() => startTour()}
-                  className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl ${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} transition-all duration-200`}
-                >
-                  <BookOpen className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
-                  Průvodce
-                </button>
-                <DropdownMenu open={themePickerOpen} onOpenChange={setThemePickerOpen}>
-                  <DropdownMenuTrigger asChild>
-                    <button className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl ${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} transition-all duration-200`}>
-                      <Palette className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
-                      Styl menu
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent side="right" align="end" className="w-52">
-                    <DropdownMenuLabel>Styl menu</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {SIDEBAR_THEME_LIST.map(t => (
-                      <DropdownMenuItem
-                        key={t.id}
-                        onClick={() => handleThemeChange(t.id)}
-                        className="gap-3 cursor-pointer"
-                      >
-                        <div className={`w-5 h-5 rounded-md ${t.preview.bg} ${t.id === sidebarThemeId ? 'ring-2 ring-primary ring-offset-1' : ''}`} />
-                        <div>
-                          <p className="font-medium text-sm">{t.name}</p>
-                          <p className="text-[10px] text-muted-foreground">{t.description}</p>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
+              <button
+                onClick={() => startTour()}
+                className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-xl ${sidebarTheme.textMuted} ${sidebarTheme.hoverBg} transition-all duration-200`}
+              >
+                <BookOpen className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
+                Průvodce
+              </button>
             )}
             <div className={`${collapsed ? 'flex justify-center' : ''}`}>
               <ThemeToggle
@@ -1176,60 +1031,45 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           <GlobalDeadlineAlert />
         )}
 
-        {/* Raynet-style tab bar: pinned (⭐) + open tabs */}
-        {allTabs.length > 0 && (
+        {/* Bookmark tab bar: pinned bookmarks only (fixed width) */}
+        {bookmarks.length > 0 && (
           <div className="border-b border-border/60 bg-muted/20 hidden md:block">
             <div className="max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8">
               <div className="flex items-center overflow-x-auto scrollbar-none">
-                {allTabs.map(tab => {
-                  const isActive = isTabActiveForPath(tab.url, pathname)
+                {bookmarks.map(bm => {
+                  const isActive = isTabActiveForPath(bm.url, pathname)
                   return (
                     <div
-                      key={tab.url}
-                      className="flex items-center flex-shrink-0 relative"
+                      key={bm.id}
+                      className="relative w-[140px] flex-shrink-0"
                       onContextMenu={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
-                        setTabContextMenu({ x: e.clientX, y: e.clientY, url: tab.url, label: tab.label, pinned: tab.pinned, bookmarkId: tab.bookmarkId })
+                        setTabContextMenu({ x: e.clientX, y: e.clientY, url: bm.url, label: bm.label, bookmarkId: bm.id })
                       }}
                     >
                       <Link
-                        href={tab.url}
-                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all duration-150 ${
+                        href={bm.url}
+                        className={`flex items-center gap-1.5 w-full pl-3 pr-7 py-2.5 text-sm font-medium border-b-2 transition-all duration-150 ${
                           isActive
                             ? 'bg-background text-foreground border-primary'
                             : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-transparent'
                         }`}
                       >
-                        {tab.pinned && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              const bm = bookmarks.find(b => b.url === tab.url)
-                              if (bm) unpinTab(bm.id, tab.url, tab.label)
-                            }}
-                            className="flex-shrink-0"
-                            title="Odepnout záložku"
-                          >
-                            <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400 hover:text-amber-300 transition-colors" />
-                          </button>
-                        )}
-                        <span className="whitespace-nowrap">{tab.label}</span>
+                        <Star className="h-3 w-3 text-amber-400 fill-amber-400 flex-shrink-0" />
+                        <span className="truncate">{bm.label}</span>
                       </Link>
-                      {!tab.pinned && (
-                        <button
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); closeTab(tab.url) }}
-                          className="ml-[-8px] mr-1 p-1 rounded text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-all duration-150"
-                          title="Zavřít záložku"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      )}
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveBookmark(bm.id) }}
+                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all duration-150"
+                        title="Odebrat záložku"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </div>
                   )
                 })}
-                {/* Add new tab / pin current page */}
+                {/* Pin current page */}
                 <button
                   onClick={handleAddBookmark}
                   className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 border-b-2 border-transparent transition-all duration-150 flex-shrink-0"
@@ -1250,38 +1090,12 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
             style={{ left: tabContextMenu.x, top: tabContextMenu.y }}
             onClick={(e) => e.stopPropagation()}
           >
-            {tabContextMenu.pinned ? (
-              <button
-                onClick={() => { unpinTab(tabContextMenu.bookmarkId!, tabContextMenu.url, tabContextMenu.label); setTabContextMenu(null) }}
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-muted transition-colors"
-              >
-                <Star className="h-3.5 w-3.5" />
-                Odepnout
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={() => { pinTab(tabContextMenu.url, tabContextMenu.label); setTabContextMenu(null) }}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-muted transition-colors"
-                >
-                  <Star className="h-3.5 w-3.5" />
-                  Připnout
-                </button>
-                <button
-                  onClick={() => { closeTab(tabContextMenu.url); setTabContextMenu(null) }}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-muted transition-colors"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  Zavřít
-                </button>
-              </>
-            )}
-            <div className="border-t border-border my-1" />
             <button
-              onClick={() => { closeOtherTabs(tabContextMenu.url); setTabContextMenu(null) }}
+              onClick={() => { if (tabContextMenu.bookmarkId) handleRemoveBookmark(tabContextMenu.bookmarkId); setTabContextMenu(null) }}
               className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-muted transition-colors"
             >
-              Zavřít ostatní
+              <Star className="h-3.5 w-3.5" />
+              Odebrat záložku
             </button>
           </div>
         )}
