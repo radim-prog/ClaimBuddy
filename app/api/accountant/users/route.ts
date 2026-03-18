@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAllUsers, createUser } from '@/lib/user-store'
 import { hashPassword } from '@/lib/auth'
 import { getDefaultPermissions } from '@/lib/permissions'
+import { getFirmId } from '@/lib/firm-scope'
 import type { UserRole } from '@/lib/auth'
 import type { UserPermissions } from '@/lib/permissions'
 
@@ -14,7 +15,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const users = await getAllUsers()
+    const firmId = getFirmId(request)
+    const users = await getAllUsers(firmId)
     return NextResponse.json({ users })
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 })

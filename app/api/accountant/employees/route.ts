@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
+import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +14,11 @@ export async function GET(request: NextRequest) {
 
   const companyId = request.nextUrl.searchParams.get('company_id')
   if (!companyId) return NextResponse.json({ error: 'Missing company_id' }, { status: 400 })
+
+  const firmId = getFirmId(request)
+  if (!await verifyCompanyAccess(companyId, firmId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const contractType = request.nextUrl.searchParams.get('contract_type') // optional filter: dpp, dpc, hpp
 

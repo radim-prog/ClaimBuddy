@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAllCompanies, createCompany, CreateCompanyInput } from '@/lib/company-store'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { DEFAULT_ONBOARDING_STEPS } from '@/lib/types/onboarding'
+import { getFirmId } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,7 +11,8 @@ export async function GET(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const companies = await getAllCompanies()
+    const firmId = getFirmId(request)
+    const companies = await getAllCompanies(firmId)
 
     return NextResponse.json({
       companies: companies.map(c => ({

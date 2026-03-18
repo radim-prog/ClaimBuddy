@@ -35,11 +35,17 @@ export type SafeUser = Omit<StoredUser, 'password_hash'>
 // CRUD FUNCTIONS
 // ============================================
 
-export async function getAllUsers(): Promise<SafeUser[]> {
-  const { data, error } = await supabase
+export async function getAllUsers(firmId?: string | null): Promise<SafeUser[]> {
+  let query = supabase
     .from('users')
     .select('id, name, email, role, login_name, permissions, compensation_type, compensation_amount, created_at, updated_at')
     .order('created_at', { ascending: true })
+
+  if (firmId) {
+    query = query.eq('firm_id', firmId)
+  }
+
+  const { data, error } = await query
 
   if (error) throw new Error(`Failed to fetch users: ${error.message}`)
   return (data ?? []) as SafeUser[]

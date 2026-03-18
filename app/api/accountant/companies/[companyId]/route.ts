@@ -3,6 +3,7 @@ import { getCompanyById, updateCompany } from '@/lib/company-store'
 import { getClosuresByCompany } from '@/lib/closure-store-db'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
+import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +16,11 @@ export async function GET(
 
   try {
     const { companyId } = params
+
+    const firmId = getFirmId(request)
+    if (!await verifyCompanyAccess(companyId, firmId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     const company = await getCompanyById(companyId)
 
@@ -74,6 +80,12 @@ export async function PATCH(
 
   try {
     const { companyId } = params
+
+    const firmId = getFirmId(request)
+    if (!await verifyCompanyAccess(companyId, firmId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await request.json()
 
     const existing = await getCompanyById(companyId)
