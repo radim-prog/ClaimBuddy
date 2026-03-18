@@ -3,6 +3,7 @@ import { isStaffRole } from '@/lib/access-check'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getSession, updateSession, upsertFuelData, deleteFuelDataBySession } from '@/lib/travel-generation-store'
 import { detectFuelDocument } from '@/lib/fuel-extractor'
+import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +16,11 @@ export async function POST(
   const userRole = request.headers.get('x-user-role')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const firmId = getFirmId(request)
+  if (!await verifyCompanyAccess(params.companyId, firmId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   try {
     const session = await getSession(params.sessionId)

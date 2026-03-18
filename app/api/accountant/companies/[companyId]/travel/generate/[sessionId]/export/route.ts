@@ -4,6 +4,7 @@ import { getSession, updateSession } from '@/lib/travel-generation-store'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { TravelBookDocument, type TravelBookData } from '@/lib/pdf/travel-book-template'
+import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,11 @@ export async function GET(
   const userRole = request.headers.get('x-user-role')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const firmId = getFirmId(request)
+  if (!await verifyCompanyAccess(params.companyId, firmId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   try {
     const session = await getSession(params.sessionId)
