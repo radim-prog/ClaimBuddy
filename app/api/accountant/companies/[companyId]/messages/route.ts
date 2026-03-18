@@ -9,6 +9,7 @@ import {
   markAllAsReadInChat,
 } from '@/lib/message-store-db'
 import { isStaffRole } from '@/lib/access-check'
+import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +23,12 @@ export async function GET(
   }
 
   const { companyId } = await params
+
+  const firmId = getFirmId(request)
+  if (!await verifyCompanyAccess(companyId, firmId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const { searchParams } = new URL(request.url)
   const chatId = searchParams.get('chat_id')
 
@@ -54,6 +61,12 @@ export async function POST(
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { companyId } = await params
+
+  const firmIdPost = getFirmId(request)
+  if (!await verifyCompanyAccess(companyId, firmIdPost)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const body = await request.json()
 
   try {
