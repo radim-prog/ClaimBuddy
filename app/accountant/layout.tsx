@@ -45,7 +45,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { logout } from '@/app/auth/login/actions'
 import { SettingsProvider } from '@/lib/contexts/settings-context'
@@ -64,7 +63,7 @@ import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { ActiveModuleProvider, useActiveModule } from '@/lib/contexts/active-module-context'
-import { Building2, FolderOpen, ClipboardList, UserCog, X, Palette, Star, Bookmark, Plus } from 'lucide-react'
+import { Building2, FolderOpen, ClipboardList, UserCog, X, Palette, Star } from 'lucide-react'
 import { getSavedThemeId, saveThemeId, getTheme, SIDEBAR_THEME_LIST } from '@/lib/sidebar-themes'
 import type { SidebarThemeId, SidebarTheme } from '@/lib/sidebar-themes'
 
@@ -401,7 +400,6 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   // Bookmarks
   interface UserBookmark { id: string; label: string; url: string; icon: string | null; position: number }
   const [bookmarks, setBookmarks] = useState<UserBookmark[]>([])
-  // bookmarksOpen removed — bookmarks are now horizontal bar in content area
 
   const fetchBookmarks = () => {
     fetch('/api/accountant/bookmarks')
@@ -412,13 +410,109 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { fetchBookmarks() }, [])
 
+  // Open tabs (localStorage-backed, session-like)
+  type OpenTab = { url: string; label: string }
+  const [openTabs, setOpenTabs] = useState<OpenTab[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(OPEN_TABS_KEY)
+        return stored ? JSON.parse(stored) : []
+      } catch { return [] }
+    }
+    return []
+  })
+
+  // Context menu for tabs
+  const [tabContextMenu, setTabContextMenu] = useState<{ x: number; y: number; url: string; label: string; pinned: boolean; bookmarkId?: string } | null>(null)
+
+  // Persist open tabs to localStorage
+  useEffect(() => {
+    localStorage.setItem(OPEN_TABS_KEY, JSON.stringify(openTabs))
+  }, [openTabs])
+
+  // Auto-open tab for current pathname (only for nav items, not sub-pages)
+  useEffect(() => {
+    if (TAB_EXCLUDED_PREFIXES.some(p => pathname.startsWith(p))) return
+    if (bookmarks.some(b => b.url === pathname)) return
+    const allNavItems = [...dailyWorkNav, ...managementNav, ...toolsNav, ...(isClaims ? claimsDailyNav : []), ...(isClaims ? claimsManagementNav : [])]
+    const isNavItem = allNavItems.some(item => item.href === pathname)
+    if (!isNavItem) return
+    const label = getTabLabelFromPathname(pathname)
+    setOpenTabs(prev => {
+      if (prev.some(t => t.url === pathname)) return prev
+      return [...prev, { url: pathname, label }]
+    })
+  }, [pathname, bookmarks, isClaims])
+
+  // Close context menu on click/right-click outside
+  useEffect(() => {
+    if (!tabContextMenu) return
+    const handler = () => setTabContextMenu(null)
+    document.addEventListener('click', handler)
+    document.addEventListener('contextmenu', handler)
+    return () => {
+      document.removeEventListener('click', handler)
+      document.removeEventListener('contextmenu', handler)
+    }
+  }, [tabContextMenu])
+
+  // Merged tabs: pinned (from DB) + open (from localStorage)
+  const pinnedTabs = bookmarks.map(bm => ({ url: bm.url, label: bm.label, pinned: true as const, bookmarkId: bm.id }))
+  const pinnedUrls = new Set(bookmarks.map(b => b.url))
+  const sessionTabs = openTabs.filter(t => !pinnedUrls.has(t.url)).map(t => ({ ...t, pinned: false as const, bookmarkId: undefined as string | undefined }))
+  const allTabs = [...pinnedTabs, ...sessionTabs]
+
+  const closeTab = (url: string) => {
+    setOpenTabs(prev => prev.filter(t => t.url !== url))
+  }
+
+  const closeOtherTabs = (keepUrl: string) => {
+    setOpenTabs(prev => prev.filter(t => t.url === keepUrl))
+  }
+
+  const pinTab = async (url: string, label: string) => {
+    try {
+      const res = await fetch('/api/accountant/bookmarks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label, url }),
+      })
+      if (res.ok) {
+        fetchBookmarks()
+        setOpenTabs(prev => prev.filter(t => t.url !== url))
+      } else {
+        toast.error('Nepodařilo se připnout záložku')
+      }
+    } catch {
+      toast.error('Nepodařilo se připnout záložku')
+    }
+  }
+
+  const unpinTab = async (bookmarkId: string, url: string, label: string) => {
+    try {
+      const res = await fetch('/api/accountant/bookmarks', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: bookmarkId }),
+      })
+      if (res.ok) {
+        fetchBookmarks()
+        setOpenTabs(prev => {
+          if (prev.some(t => t.url === url)) return prev
+          return [...prev, { url, label }]
+        })
+      } else {
+        toast.error('Nepodařilo se odepnout záložku')
+      }
+    } catch {
+      toast.error('Nepodařilo se odepnout záložku')
+    }
+  }
+
   const isCurrentPageBookmarked = bookmarks.some(b => b.url === pathname)
 
   const handleAddBookmark = async () => {
-    // Auto-generate label from pathname
-    const segments = pathname.split('/').filter(Boolean)
-    const last = segments[segments.length - 1] || 'Stránka'
-    const label = last.charAt(0).toUpperCase() + last.slice(1).replace(/-/g, ' ')
+    const label = getTabLabelFromPathname(pathname)
 
     try {
       const res = await fetch('/api/accountant/bookmarks', {
@@ -455,8 +549,6 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
       toast.error('Nepodařilo se odebrat záložku')
     }
   }
-
-  // toggleBookmarks removed — bookmarks are now horizontal bar in content area
 
   // Fetch staff users list + check if currently impersonating (admin only)
   useEffect(() => {
@@ -1081,45 +1173,54 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           <GlobalDeadlineAlert />
         )}
 
-        {/* Horizontal bookmarks bar */}
-        {bookmarks.length > 0 && (
-          <div className="border-b border-border/50 bg-muted/30">
+        {/* Raynet-style tab bar: pinned (⭐) + open tabs */}
+        {allTabs.length > 0 && (
+          <div className="border-b border-border/60 bg-muted/20 hidden md:block">
             <div className="max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center gap-1.5 py-1.5 overflow-x-auto scrollbar-none">
-                <Bookmark className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                {bookmarks.map(bm => {
-                  const bmActive = pathname === bm.url
+              <div className="flex items-center overflow-x-auto scrollbar-none">
+                {allTabs.map(tab => {
+                  const isActive = isTabActiveForPath(tab.url, pathname)
                   return (
-                    <div key={bm.id} className="group/bm flex items-center flex-shrink-0">
+                    <div
+                      key={tab.url}
+                      className="group/tab flex items-center flex-shrink-0 relative"
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setTabContextMenu({ x: e.clientX, y: e.clientY, url: tab.url, label: tab.label, pinned: tab.pinned, bookmarkId: tab.bookmarkId })
+                      }}
+                    >
                       <Link
-                        href={bm.url}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all duration-150 ${
-                          bmActive
-                            ? 'bg-primary/10 text-primary border border-primary/20'
-                            : 'bg-background text-muted-foreground hover:text-foreground hover:bg-muted border border-border/50'
-                        }`}
+                        href={tab.url}
+                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-all duration-150 ${
+                          isActive
+                            ? 'bg-background text-foreground border-primary'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-transparent'
+                        } ${!tab.pinned ? 'pr-6' : ''}`}
                       >
-                        <Star className={`h-3 w-3 flex-shrink-0 ${bmActive ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/50'}`} />
-                        <span className="whitespace-nowrap">{bm.label}</span>
+                        {tab.pinned && <Star className="h-3 w-3 text-amber-400 fill-amber-400 flex-shrink-0" />}
+                        <span className="whitespace-nowrap">{tab.label}</span>
                       </Link>
-                      <button
-                        onClick={() => handleRemoveBookmark(bm.id)}
-                        className="opacity-0 group-hover/bm:opacity-100 -ml-0.5 p-0.5 text-muted-foreground hover:text-destructive transition-all duration-150 flex-shrink-0"
-                        title="Odebrat záložku"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                      {!tab.pinned && (
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); closeTab(tab.url) }}
+                          className="opacity-0 group-hover/tab:opacity-100 absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-150"
+                          title="Zavřít záložku"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
                     </div>
                   )
                 })}
+                {/* Pin current page button */}
                 {!isCurrentPageBookmarked && (
                   <button
                     onClick={handleAddBookmark}
-                    className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground rounded-md hover:bg-muted border border-dashed border-border/50 transition-all duration-150 flex-shrink-0"
-                    title="Přidat tuto stránku do záložek"
+                    className="flex items-center gap-1 px-2.5 py-2 text-xs text-muted-foreground/60 hover:text-muted-foreground border-b-2 border-transparent transition-all duration-150 flex-shrink-0"
+                    title="Připnout tuto stránku"
                   >
-                    <Plus className="h-3 w-3" />
-                    <span className="whitespace-nowrap hidden sm:inline">Přidat</span>
+                    <Star className="h-3 w-3" />
                   </button>
                 )}
               </div>
@@ -1127,16 +1228,45 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        {/* Add bookmark button when no bookmarks exist */}
-        {bookmarks.length === 0 && !isCurrentPageBookmarked && (
-          <div className="max-w-screen-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-2">
+        {/* Tab context menu */}
+        {tabContextMenu && (
+          <div
+            className="fixed z-[200] bg-popover border border-border rounded-lg shadow-lg py-1 min-w-[180px] animate-in fade-in-0 zoom-in-95 duration-100"
+            style={{ left: tabContextMenu.x, top: tabContextMenu.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {tabContextMenu.pinned ? (
+              <button
+                onClick={() => { unpinTab(tabContextMenu.bookmarkId!, tabContextMenu.url, tabContextMenu.label); setTabContextMenu(null) }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-muted transition-colors"
+              >
+                <Star className="h-3.5 w-3.5" />
+                Odepnout
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => { pinTab(tabContextMenu.url, tabContextMenu.label); setTabContextMenu(null) }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-muted transition-colors"
+                >
+                  <Star className="h-3.5 w-3.5" />
+                  Připnout
+                </button>
+                <button
+                  onClick={() => { closeTab(tabContextMenu.url); setTabContextMenu(null) }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-muted transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Zavřít
+                </button>
+              </>
+            )}
+            <div className="border-t border-border my-1" />
             <button
-              onClick={handleAddBookmark}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-muted-foreground/60 hover:text-muted-foreground rounded-md hover:bg-muted/50 border border-dashed border-transparent hover:border-border/50 transition-all duration-150"
-              title="Přidat tuto stránku do záložek"
+              onClick={() => { closeOtherTabs(tabContextMenu.url); setTabContextMenu(null) }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-muted transition-colors"
             >
-              <Star className="h-3 w-3" />
-              <span>Přidat záložku</span>
+              Zavřít ostatní
             </button>
           </div>
         )}
