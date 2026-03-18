@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { ConfidenceBadge } from '@/components/extraction/ConfidenceBadge'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { toast } from 'sonner'
+import { useExtractionMode } from '@/lib/contexts/extraction-mode-context'
 import {
   ChevronLeft,
   ChevronRight,
@@ -138,6 +139,7 @@ export default function VerificationPage() {
 }
 
 function VerificationPageContent() {
+  const { advanced } = useExtractionMode()
   const { userId } = useAccountantUser()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -711,18 +713,20 @@ function VerificationPageContent() {
                 <ConfidenceBadge score={Math.round(editedData.confidence_score)} />
               )}
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={handleExportPohoda}
-                title="Export Pohoda XML"
-              >
-                <Download className="h-3.5 w-3.5 mr-1" />
-                Pohoda
-              </Button>
+              {advanced && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={handleExportPohoda}
+                  title="Export Pohoda XML"
+                >
+                  <Download className="h-3.5 w-3.5 mr-1" />
+                  Pohoda
+                </Button>
+              )}
 
-              {category === 'ok' ? (
+              {advanced && (category === 'ok' ? (
                 <Button
                   variant="outline"
                   size="sm"
@@ -742,7 +746,7 @@ function VerificationPageContent() {
                   <CheckCheck className="h-3.5 w-3.5 mr-1" />
                   Vše({documents.length})
                 </Button>
-              )}
+              ))}
 
               <Button
                 variant="ghost"
@@ -810,18 +814,20 @@ function VerificationPageContent() {
             <Card className={`flex flex-col min-h-0 overflow-hidden border-l-4 ${CATEGORY_COLORS[currentCategory] || ''}`}>
               <div className="flex items-center justify-between px-3 py-1.5 border-b bg-muted/30">
                 <span className="text-xs font-medium text-muted-foreground">Dokument</span>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setZoom(z => Math.max(50, z - 25))}>
-                    <ZoomOut className="h-3 w-3" />
-                  </Button>
-                  <span className="text-[11px] w-8 text-center tabular-nums">{zoom}%</span>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setZoom(z => Math.min(200, z + 25))}>
-                    <ZoomIn className="h-3 w-3" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setZoom(100)}>
-                    <RotateCw className="h-3 w-3" />
-                  </Button>
-                </div>
+                {advanced && (
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setZoom(z => Math.max(50, z - 25))}>
+                      <ZoomOut className="h-3 w-3" />
+                    </Button>
+                    <span className="text-[11px] w-8 text-center tabular-nums">{zoom}%</span>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setZoom(z => Math.min(200, z + 25))}>
+                      <ZoomIn className="h-3 w-3" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setZoom(100)}>
+                      <RotateCw className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
               </div>
               <div ref={viewerRef} className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4">
                 {fileUrl ? (
@@ -900,15 +906,17 @@ function VerificationPageContent() {
                         <RotateCw className="h-3 w-3 mr-1" />
                         Resetovat
                       </Button>
-                      <Button
-                        size="sm"
-                        className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white"
-                        onClick={handleReextract}
-                        disabled={reextracting}
-                      >
-                        {reextracting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-                        Znovu vytěžit
-                      </Button>
+                      {advanced && (
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white"
+                          onClick={handleReextract}
+                          disabled={reextracting}
+                        >
+                          {reextracting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                          Znovu vytěžit
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -940,6 +948,7 @@ function VerificationPageContent() {
                         </button>
                       )}
                     </div>
+                    {advanced ? (
                     <div className="space-y-1">
                       {(['downloading', 'ocr', 'ai_extraction', 'ai_verification', 'saving'] as ExtractionStep[]).map((step) => {
                         const stepRecord = extractionJob.steps.find(s => s.step === step)
@@ -972,6 +981,13 @@ function VerificationPageContent() {
                         )
                       })}
                     </div>
+                    ) : (
+                      <div className="flex items-center justify-center py-2">
+                        {extractionJob.status !== 'completed' && (
+                          <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1077,7 +1093,7 @@ function VerificationPageContent() {
                               {loadingPredkontace ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <BookOpen className="h-3 w-3 mr-1" />}
                               {journalEntries.length > 0 ? 'Přegenerovat' : 'Navrhnout'}
                             </Button>
-                            {journalEntries.length > 0 && journalEntries.some(e => e.status === 'suggested') && (
+                            {advanced && journalEntries.length > 0 && journalEntries.some(e => e.status === 'suggested') && (
                               <Button
                                 size="sm"
                                 variant="outline"

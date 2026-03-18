@@ -40,6 +40,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { useExtractionMode } from '@/lib/contexts/extraction-mode-context'
 
 // Types
 type InboxItem = {
@@ -118,6 +119,7 @@ function getMimeLabel(mime: string): string {
 }
 
 export default function ExtractionInboxPage() {
+  const { advanced } = useExtractionMode()
   const [items, setItems] = useState<InboxItem[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
@@ -351,8 +353,7 @@ export default function ExtractionInboxPage() {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="imported">Zpracované</TabsTrigger>
-          <TabsTrigger value="ignored">Ignorované</TabsTrigger>
+          <TabsTrigger value="imported">{advanced ? 'Zpracované' : 'Hotovo'}</TabsTrigger>
           <TabsTrigger value="failed">
             Chybné
             {totalFailed > 0 && (
@@ -361,7 +362,8 @@ export default function ExtractionInboxPage() {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="all">Vše</TabsTrigger>
+          {advanced && <TabsTrigger value="ignored">Ignorované</TabsTrigger>}
+          {advanced && <TabsTrigger value="all">Vše</TabsTrigger>}
         </TabsList>
 
         <TabsContent value={filter} className="mt-4">
@@ -438,11 +440,13 @@ export default function ExtractionInboxPage() {
                                         <StatusIcon className="h-3 w-3 mr-1" />
                                         {statusCfg.label}
                                       </Badge>
-                                      <span className="text-xs text-muted-foreground hidden sm:inline">
-                                        {getMimeLabel(item.mime_type)} &middot; {formatFileSize(item.file_size_bytes)}
-                                      </span>
+                                      {advanced && (
+                                        <span className="text-xs text-muted-foreground hidden sm:inline">
+                                          {getMimeLabel(item.mime_type)} &middot; {formatFileSize(item.file_size_bytes)}
+                                        </span>
+                                      )}
                                     </div>
-                                    {item.subject && (
+                                    {advanced && item.subject && (
                                       <p className="text-xs text-muted-foreground truncate mt-0.5">{item.subject}</p>
                                     )}
                                     {item.error_message && (
@@ -450,7 +454,7 @@ export default function ExtractionInboxPage() {
                                     )}
                                     <span className="text-xs text-muted-foreground">
                                       {formatDate(item.received_at || item.created_at)}
-                                      {item.from_name && ` · ${item.from_name}`}
+                                      {advanced && item.from_name && ` · ${item.from_name}`}
                                     </span>
                                   </div>
 
@@ -487,58 +491,60 @@ export default function ExtractionInboxPage() {
                             })}
                           </div>
 
-                          {/* Client footer: time tracking + complete */}
-                          <div className="flex items-center gap-3 pt-3 border-t border-border/50">
-                            {/* Time tracking */}
-                            <div className="flex items-center gap-1.5">
-                              <Timer className="h-4 w-4 text-muted-foreground" />
-                              <input
-                                type="number"
-                                min="1"
-                                placeholder="min"
-                                value={timeMinutes[group.companyId] || ''}
-                                onChange={(e) => setTimeMinutes(prev => ({ ...prev, [group.companyId]: e.target.value }))}
-                                className="w-16 h-8 rounded-md border border-input bg-background px-2 text-sm text-center"
-                              />
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8"
-                                disabled={savingTime[group.companyId] || !timeMinutes[group.companyId]}
-                                onClick={() => handleSaveTime(group.companyId, group.companyName)}
+                          {/* Client footer: time tracking + complete (advanced only) */}
+                          {advanced && (
+                            <div className="flex items-center gap-3 pt-3 border-t border-border/50">
+                              {/* Time tracking */}
+                              <div className="flex items-center gap-1.5">
+                                <Timer className="h-4 w-4 text-muted-foreground" />
+                                <input
+                                  type="number"
+                                  min="1"
+                                  placeholder="min"
+                                  value={timeMinutes[group.companyId] || ''}
+                                  onChange={(e) => setTimeMinutes(prev => ({ ...prev, [group.companyId]: e.target.value }))}
+                                  className="w-16 h-8 rounded-md border border-input bg-background px-2 text-sm text-center"
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8"
+                                  disabled={savingTime[group.companyId] || !timeMinutes[group.companyId]}
+                                  onClick={() => handleSaveTime(group.companyId, group.companyName)}
+                                >
+                                  {savingTime[group.companyId] ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Zapsat čas'}
+                                </Button>
+                              </div>
+
+                              <div className="flex-1" />
+
+                              {/* Link to client profile */}
+                              <Link
+                                href={`/accountant/clients/${group.companyId}/inbox`}
+                                className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
                               >
-                                {savingTime[group.companyId] ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Zapsat čas'}
-                              </Button>
+                                Profil klienta
+                              </Link>
+
+                              {/* Complete button */}
+                              {filter === 'pending' && (
+                                <Button
+                                  variant={group.pendingCount === 0 ? 'default' : 'outline'}
+                                  size="sm"
+                                  className={group.pendingCount === 0 ? 'bg-green-600 hover:bg-green-700' : ''}
+                                  disabled={completingClient === group.companyId}
+                                  onClick={() => handleCompleteClient(group)}
+                                >
+                                  {completingClient === group.companyId ? (
+                                    <RefreshCw className="h-3.5 w-3.5 mr-1 animate-spin" />
+                                  ) : (
+                                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                                  )}
+                                  Dokončeno
+                                </Button>
+                              )}
                             </div>
-
-                            <div className="flex-1" />
-
-                            {/* Link to client profile */}
-                            <Link
-                              href={`/accountant/clients/${group.companyId}/inbox`}
-                              className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
-                            >
-                              Profil klienta
-                            </Link>
-
-                            {/* Complete button */}
-                            {filter === 'pending' && (
-                              <Button
-                                variant={group.pendingCount === 0 ? 'default' : 'outline'}
-                                size="sm"
-                                className={group.pendingCount === 0 ? 'bg-green-600 hover:bg-green-700' : ''}
-                                disabled={completingClient === group.companyId}
-                                onClick={() => handleCompleteClient(group)}
-                              >
-                                {completingClient === group.companyId ? (
-                                  <RefreshCw className="h-3.5 w-3.5 mr-1 animate-spin" />
-                                ) : (
-                                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                                )}
-                                Dokončeno
-                              </Button>
-                            )}
-                          </div>
+                          )}
                         </CardContent>
                       )}
                     </Card>
