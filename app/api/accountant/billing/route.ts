@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
+import { getFirmId } from '@/lib/firm-scope'
 import { markInvoicePaid } from '@/lib/billing-service'
 
 export const dynamic = 'force-dynamic'
@@ -13,6 +14,7 @@ export async function GET(request: NextRequest) {
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
+    const firmId = getFirmId(request)
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period') || new Date().toISOString().slice(0, 7)
     const view = searchParams.get('view') || 'overview' // overview | configs | cycles
@@ -30,11 +32,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (view === 'configs') {
-      const { data } = await supabaseAdmin
+      let configQuery = supabaseAdmin
         .from('billing_configs')
         .select('*, companies(name)')
         .eq('provider_id', provider.id)
         .order('created_at', { ascending: false })
+      if (firmId) configQuery = configQuery.eq('firm_id', firmId)
+      const { data } = await configQuery
 
       return NextResponse.json({
         configs: (data || []).map((d: any) => ({
@@ -45,12 +49,14 @@ export async function GET(request: NextRequest) {
     }
 
     if (view === 'cycles') {
-      const { data } = await supabaseAdmin
+      let cyclesQuery = supabaseAdmin
         .from('billing_invoices')
         .select('*, companies(name)')
         .eq('provider_id', provider.id)
         .eq('period', period)
         .order('status', { ascending: true })
+      if (firmId) cyclesQuery = cyclesQuery.eq('firm_id', firmId)
+      const { data } = await cyclesQuery
 
       return NextResponse.json({
         cycles: (data || []).map((d: any) => ({
@@ -61,23 +67,29 @@ export async function GET(request: NextRequest) {
     }
 
     // Default overview: stats + current period cycles + overdue
+    let overviewConfigsQ = supabaseAdmin
+      .from('billing_configs')
+      .select('monthly_fee_czk, status, companies(name)')
+      .eq('provider_id', provider.id)
+      .eq('status', 'active')
+    let overviewCyclesQ = supabaseAdmin
+      .from('billing_invoices')
+      .select('*, companies(name)')
+      .eq('provider_id', provider.id)
+      .eq('period', period)
+    let overviewOverdueQ = supabaseAdmin
+      .from('billing_invoices')
+      .select('*, companies(name)')
+      .eq('provider_id', provider.id)
+      .eq('status', 'overdue')
+      .order('due_date', { ascending: true })
+    if (firmId) {
+      overviewConfigsQ = overviewConfigsQ.eq('firm_id', firmId)
+      overviewCyclesQ = overviewCyclesQ.eq('firm_id', firmId)
+      overviewOverdueQ = overviewOverdueQ.eq('firm_id', firmId)
+    }
     const [configsRes, cyclesRes, overdueRes] = await Promise.all([
-      supabaseAdmin
-        .from('billing_configs')
-        .select('monthly_fee_czk, status, companies(name)')
-        .eq('provider_id', provider.id)
-        .eq('status', 'active'),
-      supabaseAdmin
-        .from('billing_invoices')
-        .select('*, companies(name)')
-        .eq('provider_id', provider.id)
-        .eq('period', period),
-      supabaseAdmin
-        .from('billing_invoices')
-        .select('*, companies(name)')
-        .eq('provider_id', provider.id)
-        .eq('status', 'overdue')
-        .order('due_date', { ascending: true }),
+      overviewConfigsQ, overviewCyclesQ, overviewOverdueQ,
     ])
 
     const activeConfigs = configsRes.data || []
@@ -108,6 +120,7 @@ export async function POST(request: NextRequest) {
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   try {
+    const firmId = getFirmId(request)
     const body = await request.json()
     const { company_id, monthly_fee_czk, platform_fee_pct, billing_day, billing_frequency, notes } = body
 
@@ -136,6 +149,7 @@ export async function POST(request: NextRequest) {
       .upsert({
         provider_id: provider.id,
         company_id,
+        firm_id: firmId || null,
         monthly_fee_czk,
         platform_fee_pct: platform_fee_pct ?? 5.00,
         billing_day: billing_day ?? 1,

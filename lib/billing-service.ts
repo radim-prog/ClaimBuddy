@@ -18,6 +18,7 @@ export type BillingConfig = {
   id: string
   company_id: string
   provider_id: string
+  firm_id: string | null
   monthly_fee_czk: number
   currency: string
   billing_frequency: BillingFrequency
@@ -145,13 +146,16 @@ export async function getBillingConfigById(configId: string): Promise<BillingCon
   return data as BillingConfig
 }
 
-export async function getAccountantBillingConfigs(accountantUserId: string): Promise<BillingConfig[]> {
-  const { data, error } = await supabaseAdmin
+export async function getAccountantBillingConfigs(accountantUserId: string, firmId?: string | null): Promise<BillingConfig[]> {
+  let query = supabaseAdmin
     .from('billing_configs')
     .select('*')
     .eq('provider_id', accountantUserId)
     .order('created_at', { ascending: false })
 
+  if (firmId) query = query.eq('firm_id', firmId)
+
+  const { data, error } = await query
   if (error) throw new Error(`Failed to fetch billing configs: ${error.message}`)
   return (data ?? []) as BillingConfig[]
 }
@@ -688,12 +692,14 @@ export async function markPayoutProcessing(payoutId: string): Promise<void> {
 // DASHBOARD STATS
 // ============================================
 
-export async function getBillingDashboard(accountantUserId: string) {
+export async function getBillingDashboard(accountantUserId: string, firmId?: string | null) {
   // Fetch all configs for this accountant
-  const { data: configs } = await supabaseAdmin
+  let configQuery = supabaseAdmin
     .from('billing_configs')
     .select('id, company_id, monthly_fee_czk, status')
     .eq('provider_id', accountantUserId)
+  if (firmId) configQuery = configQuery.eq('firm_id', firmId)
+  const { data: configs } = await configQuery
 
   const allConfigs = configs || []
   const activeConfigs = allConfigs.filter((c) => c.status === 'active')

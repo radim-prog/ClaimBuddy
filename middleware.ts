@@ -166,9 +166,12 @@ export async function middleware(request: NextRequest) {
       url.pathname = '/claims'
       return NextResponse.rewrite(url)
     }
-    // Client on claims hostname trying to reach accounting dashboard → redirect to claims
+    // Claims hostname: redirect standard dashboards to claims dashboards
     if (pathname === '/client/dashboard') {
       return NextResponse.redirect(new URL('/client/claims', request.url))
+    }
+    if (pathname === '/accountant/dashboard') {
+      return NextResponse.redirect(new URL('/accountant/claims/dashboard', request.url))
     }
     // /auth paths stay as-is (login/logout)
     // /api paths stay as-is

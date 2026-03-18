@@ -47,7 +47,7 @@ interface Firm {
   email: string | null
   phone: string | null
   website: string | null
-  address: string | null
+  address: string | { street?: string; city?: string; zip?: string } | null
   logo_url: string | null
   plan_tier: string
   billing_email: string | null
@@ -134,8 +134,12 @@ export function TenantManagement() {
       if (res.ok) {
         const data = await res.json()
         setFirmDetail(data)
+      } else {
+        setExpandedFirmId(null)
+        toast.error('Chyba při načítání detailu')
       }
     } catch {
+      setExpandedFirmId(null)
       toast.error('Chyba při načítání detailu')
     } finally {
       setDetailLoading(false)
@@ -447,7 +451,7 @@ function FirmDetailPanel({ firm, detail, loading, onUpdate }: {
                 {firm.email && <div><span className="text-muted-foreground">Email:</span> {firm.email}</div>}
                 {firm.phone && <div><span className="text-muted-foreground">Telefon:</span> {firm.phone}</div>}
                 {firm.website && <div><span className="text-muted-foreground">Web:</span> {firm.website}</div>}
-                {firm.address && <div><span className="text-muted-foreground">Adresa:</span> {firm.address}</div>}
+                {firm.address && <div><span className="text-muted-foreground">Adresa:</span> {typeof firm.address === 'object' ? [firm.address.street, firm.address.city, firm.address.zip].filter(Boolean).join(', ') : firm.address}</div>}
                 <div><span className="text-muted-foreground">Vytvořeno:</span> {new Date(firm.created_at).toLocaleDateString('cs-CZ')}</div>
               </div>
             </div>
