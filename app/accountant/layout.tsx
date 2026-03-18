@@ -59,7 +59,7 @@ import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { ActiveModuleProvider, useActiveModule } from '@/lib/contexts/active-module-context'
-import { Building2, FolderOpen, UserCog, X, Star, Plus } from 'lucide-react'
+import { Building2, FolderOpen, UserCog, X, Star, Plus, Network } from 'lucide-react'
 import { getSavedThemeId, getTheme } from '@/lib/sidebar-themes'
 import type { SidebarThemeId, SidebarTheme } from '@/lib/sidebar-themes'
 
@@ -74,12 +74,13 @@ const dailyWorkNav = [
   { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'], tourId: 'nav-work' },
 ]
 
-// Group 2: Management — collapsible (5 items)
+// Group 2: Management — collapsible (6 items)
 const managementNav = [
   { name: 'Kalendář', href: '/accountant/calendar', icon: CalendarCheck, activeMatch: ['/accountant/calendar', '/accountant/deadlines', '/accountant/reminders'], tourId: 'nav-deadlines' },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices', '/accountant/billing'], tourId: 'nav-invoicing', feature: 'client_invoicing' },
   { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics', '/accountant/revenue'], feature: 'analytics' },
   { name: 'Tržiště', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'] },
+  { name: 'Struktura', href: '/accountant/companies/universe', icon: Network, activeMatch: ['/accountant/companies/universe'] },
   { name: 'Můj tým', href: '/accountant/firm/team', icon: Users, activeMatch: ['/accountant/firm/team'], firmOnly: true },
 ]
 

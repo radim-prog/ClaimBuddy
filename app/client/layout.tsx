@@ -29,6 +29,7 @@ import {
   Shield,
   CreditCard,
   LifeBuoy,
+  Network,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -94,7 +95,7 @@ const dynamicNavigation: { name: string; href: string; icon: typeof LayoutDashbo
 
 function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? ''
-  const { userName, userInitials, selectedCompany, selectedCompanyId, userModules } = useClientUser()
+  const { userName, userInitials, selectedCompany, selectedCompanyId, userModules, companies } = useClientUser()
   const { isLocked, planTier } = usePlanFeatures()
   const { startTour } = useTutorialContext()
   const { activeModule } = useActiveModule()
@@ -120,6 +121,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const portalSections = selectedCompany?.portal_sections || {}
   const enabledDynamic = dynamicNavigation.filter(item => portalSections[item.portalKey])
   const baseNavigation = isClaims ? claimsNavigation : accountingNavigation
+  const hasMultipleCompanies = companies.length > 1
   const navigation = useMemo(() => {
     if (isClaims) return claimsNavigation
     // Insert dynamic items before "Zprávy" (second to last group)
@@ -127,8 +129,18 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
     const result = [...baseNavigation]
     const insertAt = messagesIdx >= 0 ? messagesIdx : result.length
     result.splice(insertAt, 0, ...enabledDynamic)
+    // "Moje firmy" — only when client has 2+ companies
+    if (hasMultipleCompanies) {
+      const dividerIdx = result.findIndex(n => 'divider' in n && n.divider)
+      const universeItem: NavItem = { name: 'Moje firmy', href: '/client/companies/universe', icon: Network }
+      if (dividerIdx >= 0) {
+        result.splice(dividerIdx, 0, universeItem)
+      } else {
+        result.push(universeItem)
+      }
+    }
     return result
-  }, [enabledDynamic.length, selectedCompany?.id, isClaims])
+  }, [enabledDynamic.length, selectedCompany?.id, isClaims, hasMultipleCompanies])
 
   useEffect(() => {
     const saved = localStorage.getItem('client-sidebar-collapsed')
