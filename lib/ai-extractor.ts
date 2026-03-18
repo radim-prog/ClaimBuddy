@@ -208,22 +208,15 @@ export class AIExtractor {
     this.config = config
     this.ocrClient = new OcrClient(config.ocrApiKey)
 
-    // All providers use OpenAI-compatible API
-    const baseUrls: Record<AIProvider, string> = {
+    // OpenAI-compatible providers only (Anthropic API is not OpenAI-compatible)
+    const baseUrls: Record<string, string> = {
       openai: 'https://api.openai.com/v1',
-      anthropic: 'https://api.anthropic.com/v1',
       google: 'https://generativelanguage.googleapis.com/v1beta/openai',
     }
 
     this.client = new OpenAI({
       apiKey: config.apiKey,
-      baseURL: baseUrls[config.provider],
-      ...(config.provider === 'anthropic' ? {
-        defaultHeaders: {
-          'anthropic-version': '2023-06-01',
-          'x-api-key': config.apiKey,
-        }
-      } : {}),
+      baseURL: baseUrls[config.provider] || baseUrls.openai,
     })
   }
 
@@ -530,6 +523,16 @@ export async function getExtractorConfig(): Promise<AIExtractorConfig> {
 
     if (data) {
       const row = data as ExtractionSettingsRow
+      let dbProvider = row.provider
+      let dbModel = row.model
+
+      // Anthropic API is not OpenAI-compatible — fallback to OpenAI
+      if (dbProvider === 'anthropic') {
+        console.warn('[AIExtractor] Anthropic provider in DB not supported, falling back to OpenAI')
+        dbProvider = 'openai'
+        dbModel = 'gpt-4o-mini'
+      }
+
       const apiKey = row.api_key && isEncrypted(row.api_key)
         ? decrypt(row.api_key)
         : row.api_key
@@ -537,9 +540,9 @@ export async function getExtractorConfig(): Promise<AIExtractorConfig> {
         ? decrypt(row.ocr_api_key)
         : row.ocr_api_key
       cachedConfig = {
-        provider: row.provider,
-        model: row.model,
-        apiKey: apiKey,
+        provider: dbProvider,
+        model: dbModel,
+        apiKey: dbProvider !== row.provider ? (process.env.OPENAI_API_KEY || apiKey) : apiKey,
         ocrApiKey: ocrKey || undefined,
       }
       configTimestamp = now
@@ -550,13 +553,19 @@ export async function getExtractorConfig(): Promise<AIExtractorConfig> {
   }
 
   // Fallback to env
-  const provider = (process.env.AI_EXTRACTION_PROVIDER || 'openai') as AIProvider
-  const model = process.env.AI_EXTRACTION_MODEL || 'gpt-4o-mini'
+  let provider = (process.env.AI_EXTRACTION_PROVIDER || 'openai') as AIProvider
+  let model = process.env.AI_EXTRACTION_MODEL || 'gpt-4o-mini'
+
+  // Anthropic API is not OpenAI-compatible — fallback to OpenAI
+  if (provider === 'anthropic') {
+    console.warn('[AIExtractor] Anthropic provider not supported (incompatible API), falling back to OpenAI')
+    provider = 'openai'
+    model = 'gpt-4o-mini'
+  }
+
   const apiKey = provider === 'openai'
     ? process.env.OPENAI_API_KEY || ''
-    : provider === 'anthropic'
-      ? process.env.ANTHROPIC_API_KEY || ''
-      : process.env.GOOGLE_CLOUD_API_KEY || ''
+    : process.env.GOOGLE_CLOUD_API_KEY || ''
 
   cachedConfig = {
     provider,

@@ -1,8 +1,10 @@
 #!/bin/bash
+set -e
 # Nightly deploy: dev-features → main → build → restart
 # Run via cron at 2:00 AM
 
 LOG="/var/log/ucetni-deploy.log"
+touch "$LOG"
 APP_DIR="/root/Projects/UcetniWebApp"
 SERVICE="ucetni-webapp"
 
@@ -41,8 +43,7 @@ fi
 # 5. Copy static assets for standalone mode
 cp -r .next/static .next/standalone/.next/static >> $LOG 2>&1
 
-# 6. Push + restart
-git push origin main >> $LOG 2>&1
+# 6. Restart + health check (push AFTER verified healthy)
 systemctl restart $SERVICE
 sleep 10
 
@@ -57,5 +58,8 @@ if [ "$HTTP_CODE" != "200" ]; then
   systemctl start $SERVICE
   exit 1
 fi
+
+# 8. Push only after health check passes
+git push origin main >> $LOG 2>&1
 
 echo "$(date) — Deploy successful: $LOCAL_MAIN → $REMOTE_DEV" >> $LOG
