@@ -161,7 +161,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <ImpersonationBanner />
-      <MissingDocsBar />
+      {!isClaims && <MissingDocsBar />}
       <NotificationModal onDismissed={() => setNotificationsDismissed(true)} />
       <NotificationBanner dismissed={notificationsDismissed} />
 
