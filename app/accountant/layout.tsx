@@ -76,7 +76,7 @@ const dailyWorkNav = [
 
 // Group 2: Management — collapsible (5 items)
 const managementNav = [
-  { name: 'Kalendář', href: '/accountant/deadlines', icon: CalendarCheck, activeMatch: ['/accountant/deadlines', '/accountant/reminders'], tourId: 'nav-deadlines' },
+  { name: 'Kalendář', href: '/accountant/calendar', icon: CalendarCheck, activeMatch: ['/accountant/calendar', '/accountant/deadlines', '/accountant/reminders'], tourId: 'nav-deadlines' },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices', '/accountant/billing'], tourId: 'nav-invoicing', feature: 'client_invoicing' },
   { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics', '/accountant/revenue'], feature: 'analytics' },
   { name: 'Tržiště', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'] },
@@ -363,6 +363,12 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setSidebarThemeId(getSavedThemeId())
+    const handler = (e: Event) => {
+      const id = (e as CustomEvent).detail
+      if (id) setSidebarThemeId(id)
+    }
+    window.addEventListener('sidebar-theme-change', handler)
+    return () => window.removeEventListener('sidebar-theme-change', handler)
   }, [])
 
   // Claims branding override: favicon + title (re-run on navigation since Next.js resets title)
