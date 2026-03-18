@@ -88,6 +88,7 @@ const managementNav = [
   { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics'], feature: 'analytics' },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices'], tourId: 'nav-invoicing', feature: 'client_invoicing' },
   { name: 'Účtování', href: '/accountant/billing', icon: CreditCard, activeMatch: ['/accountant/billing'] },
+  { name: 'Můj tým', href: '/accountant/firm/team', icon: Users, activeMatch: ['/accountant/firm/team'], firmOnly: true },
 ]
 
 // Group 3: Tools — collapsible (2 items)
@@ -99,6 +100,7 @@ const toolsNav = [
 // Group 4: Admin — bottom section, admin-only (2 items)
 const adminNav = [
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings, tourId: 'nav-settings' },
+  { name: 'Moje firma', href: '/accountant/firm', icon: Building2, activeMatch: ['/accountant/firm'] },
   { name: 'Administrace', href: '/accountant/admin', icon: Shield },
 ]
 
@@ -111,6 +113,7 @@ type NavItem = {
   feature?: string
   activeMatch?: string[]
   tourId?: string
+  firmOnly?: boolean
 }
 
 // === CLAIMS MODULE NAVIGATION ===
@@ -135,7 +138,7 @@ const claimsManagementNav: NavItem[] = [
 
 // === TAB SYSTEM ===
 const OPEN_TABS_KEY = 'accountant_open_tabs'
-const TAB_EXCLUDED_PREFIXES = ['/accountant/settings', '/accountant/admin']
+const TAB_EXCLUDED_PREFIXES = ['/accountant/settings', '/accountant/admin', '/accountant/firm']
 
 function getTabLabelFromPathname(pathname: string): string {
   const allNavItems = [...dailyWorkNav, ...managementNav, ...toolsNav, ...adminNav, ...claimsDailyNav, ...claimsManagementNav]
@@ -356,7 +359,7 @@ export default function AccountantLayout({
 function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? ''
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const { userName, userInitials, userRole, permissions, userModules } = useAccountantUser()
+  const { userName, userInitials, userRole, permissions, userModules, firmId } = useAccountantUser()
   const { startTour } = useTutorialContext()
   const inboxCount = useInboxCount()
   const { totals: attentionTotals } = useAttention()
@@ -694,7 +697,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           <TooltipProvider delayDuration={0}>
             <NavContent
               dailyWorkNav={isClaims ? claimsDailyNav : dailyWorkNav}
-              managementNav={isClaims ? claimsManagementNav : (userRole === 'admin' ? managementNav : managementNav.filter(item => item.href !== '/accountant/revenue'))}
+              managementNav={isClaims ? claimsManagementNav : (userRole === 'admin' ? managementNav.filter(item => !item.firmOnly || firmId) : managementNav.filter(item => item.href !== '/accountant/revenue' && (!item.firmOnly || firmId)))}
               toolsNav={isClaims ? [] : toolsNav}
               adminNav={adminNav}
               pathname={pathname}

@@ -33,6 +33,20 @@ export async function getFirmCompanyIds(firmId: string): Promise<string[]> {
   return (data ?? []).map(c => c.id)
 }
 
+/** Check if user is a tenant admin (admin with firm_id) */
+export function isTenantAdmin(request: NextRequest): boolean {
+  const role = request.headers.get('x-user-role')
+  const firmId = request.headers.get('x-firm-id')
+  return role === 'admin' && !!firmId
+}
+
+/** Check if user is a super admin (admin without firm_id — platform-level) */
+export function isSuperAdmin(request: NextRequest): boolean {
+  const role = request.headers.get('x-user-role')
+  const firmId = request.headers.get('x-firm-id')
+  return role === 'admin' && !firmId
+}
+
 /** Verify that a company belongs to the user's firm. Returns true if access is allowed. */
 export async function verifyCompanyAccess(companyId: string, firmId: string | null): Promise<boolean> {
   // No firm scope = unrestricted (legacy single-tenant mode)

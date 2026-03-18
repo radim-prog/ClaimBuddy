@@ -152,11 +152,60 @@ export async function assignCompanyToFirm(companyId: string, firmId: string): Pr
 export async function getFirmUsers(firmId: string) {
   const { data, error } = await supabaseAdmin
     .from('users')
-    .select('id, name, email, role, created_at')
+    .select('id, name, email, role, compensation_type, compensation_amount, created_at')
     .eq('firm_id', firmId)
     .order('created_at', { ascending: true })
 
   return data || []
+}
+
+export async function getFirmUserCount(firmId: string): Promise<number> {
+  const { count, error } = await supabaseAdmin
+    .from('users')
+    .select('id', { count: 'exact', head: true })
+    .eq('firm_id', firmId)
+
+  if (error) {
+    console.error('[TenantStore] getFirmUserCount error:', error)
+    return 0
+  }
+  return count || 0
+}
+
+export async function removeUserFromFirm(userId: string): Promise<boolean> {
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({ firm_id: null, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+
+  if (error) {
+    console.error('[TenantStore] removeUserFromFirm error:', error)
+    return false
+  }
+  return true
+}
+
+const PLAN_USER_LIMITS: Record<string, number> = {
+  free: 1,
+  starter: 3,
+  professional: 10,
+  enterprise: Infinity,
+}
+
+export async function checkFirmUserLimit(firmId: string): Promise<{ allowed: boolean; current: number; limit: number }> {
+  const [firm, currentCount] = await Promise.all([
+    getFirmById(firmId),
+    getFirmUserCount(firmId),
+  ])
+
+  const planTier = firm?.plan_tier || 'free'
+  const limit = PLAN_USER_LIMITS[planTier] ?? PLAN_USER_LIMITS.free
+
+  return {
+    allowed: currentCount < limit,
+    current: currentCount,
+    limit: limit === Infinity ? -1 : limit,
+  }
 }
 
 export async function getFirmCompanies(firmId: string) {

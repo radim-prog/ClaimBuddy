@@ -88,6 +88,7 @@ export async function createUser(userData: {
   permissions: UserPermissions
   compensation_type?: 'hourly' | 'monthly'
   compensation_amount?: number
+  firm_id?: string | null
 }): Promise<SafeUser> {
   const { data, error } = await supabase
     .from('users')
