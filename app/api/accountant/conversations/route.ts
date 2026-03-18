@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllOpenConversations } from '@/lib/message-store-db'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest) {
   const countOnly = searchParams.get('count_only') === 'true'
   const companyId = searchParams.get('company_id')
   const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
+  const module = searchParams.get('module')
 
   try {
     const result = await getAllOpenConversations(userId, {
@@ -24,6 +26,20 @@ export async function GET(request: NextRequest) {
       count_only: countOnly,
       company_id: companyId || undefined,
     })
+
+    // Claims module filter: only conversations for companies with insurance cases
+    if (module === 'claims' && !countOnly && result.conversations) {
+      const { data: claimsCompanyIds } = await supabaseAdmin
+        .from('insurance_cases')
+        .select('company_id')
+      const claimsSet = new Set((claimsCompanyIds || []).map((r: { company_id: string }) => r.company_id))
+      result.conversations = result.conversations.filter(
+        (c: { company_id: string }) => claimsSet.has(c.company_id)
+      )
+      result.total_unread = result.conversations.filter(
+        (c: { unread_count?: number }) => (c.unread_count || 0) > 0
+      ).length
+    }
 
     if (countOnly) {
       return NextResponse.json({

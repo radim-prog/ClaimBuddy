@@ -9,6 +9,8 @@ export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const module = new URL(request.url).searchParams.get('module')
+
   try {
     const [allCompanies, closures, { data: groupsData }] = await Promise.all([
       getAllCompanies(),
@@ -18,7 +20,17 @@ export async function GET(request: NextRequest) {
         .select('group_name, billing_company_id'),
     ])
 
-    const companies = allCompanies.map(c => ({
+    // Claims module filter: only companies that have insurance cases
+    let filteredCompanies = allCompanies
+    if (module === 'claims') {
+      const { data: claimsCompanyIds } = await supabaseAdmin
+        .from('insurance_cases')
+        .select('company_id')
+      const claimsSet = new Set((claimsCompanyIds || []).map((r: { company_id: string }) => r.company_id))
+      filteredCompanies = allCompanies.filter(c => claimsSet.has(c.id))
+    }
+
+    const companies = filteredCompanies.map(c => ({
       id: c.id,
       name: c.name,
       group_name: c.group_name || null,

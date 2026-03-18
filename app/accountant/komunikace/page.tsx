@@ -9,6 +9,7 @@ import { KomunikaceSwimlanes } from '@/components/komunikace/komunikace-swimlane
 import { KomunikaceListView } from '@/components/komunikace/komunikace-list-view'
 import { KomunikaceChatDetail } from '@/components/komunikace/komunikace-chat-detail'
 import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
+import { useActiveModule } from '@/lib/contexts/active-module-context'
 
 export default function KomunikacePage() {
   return (
@@ -22,6 +23,8 @@ function KomunikaceOrchestrator() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { userId } = useAccountantUser()
+  const { activeModule } = useActiveModule()
+  const isClaims = activeModule === 'claims'
 
   // URL-driven state
   const currentView = searchParams.get('view') as ViewMode | null
@@ -31,12 +34,13 @@ function KomunikaceOrchestrator() {
 
   const fetchConversations = useCallback(async () => {
     if (!userId) return { conversations: [] as ConversationWithContext[], total_unread: 0 }
-    const res = await fetch('/api/accountant/conversations?limit=200', {
+    const moduleParam = isClaims ? '&module=claims' : ''
+    const res = await fetch(`/api/accountant/conversations?limit=200${moduleParam}`, {
       headers: { 'x-user-id': userId },
     })
     if (!res.ok) throw new Error('fetch failed')
     return await res.json() as { conversations: ConversationWithContext[]; total_unread: number }
-  }, [userId])
+  }, [userId, isClaims])
 
   const { data: convData, loading, refresh: refreshConversations } = useCachedFetch(
     `komunikace-${userId}`,

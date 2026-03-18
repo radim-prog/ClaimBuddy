@@ -21,7 +21,6 @@ import {
   BarChart3,
   MessageCircle,
   ScanLine,
-  Send,
   FileSignature,
   ChevronDown,
 } from 'lucide-react'
@@ -60,8 +59,8 @@ import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { ActiveModuleProvider, useActiveModule } from '@/lib/contexts/active-module-context'
-import { Building2, FolderOpen, ClipboardList, UserCog, X, Palette, Star, Plus } from 'lucide-react'
-import { getSavedThemeId, saveThemeId, getTheme, SIDEBAR_THEME_LIST } from '@/lib/sidebar-themes'
+import { Building2, FolderOpen, UserCog, X, Star, Plus } from 'lucide-react'
+import { getSavedThemeId, getTheme } from '@/lib/sidebar-themes'
 import type { SidebarThemeId, SidebarTheme } from '@/lib/sidebar-themes'
 
 // === NAVIGATION GROUPS ===
@@ -361,7 +360,6 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const clientsAttentionCount = attentionTotals.total - attentionTotals.unread_messages
   const [sidebarThemeId, setSidebarThemeId] = useState<SidebarThemeId>('classic')
   const sidebarTheme = getTheme(sidebarThemeId)
-  const [themePickerOpen, setThemePickerOpen] = useState(false)
 
   useEffect(() => {
     setSidebarThemeId(getSavedThemeId())
@@ -374,11 +372,6 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
     const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
     if (favicon) favicon.href = '/favicon-claims.svg'
   }, [isClaims, pathname])
-
-  const handleThemeChange = (id: SidebarThemeId) => {
-    setSidebarThemeId(id)
-    saveThemeId(id)
-  }
 
   const [collapsed, setCollapsed] = useState(false)
   const [managementOpen, setManagementOpen] = useState(() => {

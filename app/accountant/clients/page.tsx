@@ -36,6 +36,7 @@ import { Bell, MessageCircle } from 'lucide-react'
 import { NewClientForm } from '@/components/new-client-form'
 import { MessagePopupDialog } from '@/components/komunikace/message-popup-dialog'
 import { useAttention } from '@/lib/contexts/attention-context'
+import { useActiveModule } from '@/lib/contexts/active-module-context'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
@@ -357,6 +358,8 @@ function ClientsPageContent() {
   const router = useRouter()
   const pathname = usePathname() ?? ''
   const { getCompanyAttention } = useAttention()
+  const { activeModule } = useActiveModule()
+  const isClaims = activeModule === 'claims'
   const [healthScores, setHealthScores] = useState<Map<string, number | null>>(() => {
     if (typeof window === 'undefined') return new Map()
     try {
@@ -433,10 +436,11 @@ function ClientsPageContent() {
   }, [pathname, router, searchParams])
 
   const matrixFetcher = useCallback(async () => {
-    const res = await fetch('/api/accountant/matrix')
+    const url = isClaims ? '/api/accountant/matrix?module=claims' : '/api/accountant/matrix'
+    const res = await fetch(url)
     if (!res.ok) throw new Error('fetch failed')
     return await res.json() as { companies: Company[]; closures: MonthlyClosure[] }
-  }, [])
+  }, [isClaims])
 
   const { data: matrixData, loading, refresh: fetchCompanies } = useCachedFetch('clients-matrix', matrixFetcher)
   const companies = matrixData?.companies ?? []
