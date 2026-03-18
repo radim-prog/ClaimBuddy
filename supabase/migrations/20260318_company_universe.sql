@@ -57,3 +57,20 @@ CREATE TABLE IF NOT EXISTS company_notes (
 
 CREATE INDEX IF NOT EXISTS idx_company_notes_company ON company_notes(company_id);
 CREATE INDEX IF NOT EXISTS idx_company_notes_author ON company_notes(author_id);
+
+-- 5. Cross-sell opportunities (cache, recalculated by cron)
+CREATE TABLE IF NOT EXISTS company_opportunities (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  opportunity_type TEXT NOT NULL, -- vat_registration, insurance, payroll, bookkeeping, etc.
+  description TEXT NOT NULL,
+  priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
+  dismissed BOOLEAN DEFAULT FALSE,
+  dismissed_by UUID,
+  dismissed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(company_id, opportunity_type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_company_opportunities_company ON company_opportunities(company_id);
+CREATE INDEX IF NOT EXISTS idx_company_opportunities_active ON company_opportunities(dismissed) WHERE dismissed = FALSE;
