@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { populateDenormalizedFields } from '@/lib/document-store'
+import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,11 @@ export async function POST(
   }
 
   const { companyId, documentId } = params
+
+  const firmId = getFirmId(request)
+  if (!await verifyCompanyAccess(companyId, firmId)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   try {
     // Get document
