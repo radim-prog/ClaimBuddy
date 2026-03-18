@@ -731,6 +731,8 @@ function DataProtectionTab() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [cancelToken, setCancelToken] = useState<string | null>(null)
+  const [tokenCopied, setTokenCopied] = useState(false)
 
   const handleExport = async () => {
     setExporting(true)
@@ -768,14 +770,24 @@ function DataProtectionTab() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Chyba')
-      toast.success('Žádost o smazání podána. Účet bude smazán za 30 dní.')
+      setCancelToken(data.cancel_token)
       setShowDeleteDialog(false)
-      // Redirect to login after short delay
-      setTimeout(() => { window.location.href = '/auth/login' }, 2000)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Chyba při mazání účtu')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  const handleCopyToken = async () => {
+    if (!cancelToken) return
+    try {
+      await navigator.clipboard.writeText(cancelToken)
+      setTokenCopied(true)
+      toast.success('Kód zkopírován')
+      setTimeout(() => setTokenCopied(false), 2000)
+    } catch {
+      toast.error('Nepodařilo se zkopírovat')
     }
   }
 
@@ -820,7 +832,32 @@ function DataProtectionTab() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!showDeleteDialog ? (
+          {cancelToken ? (
+            <div className="space-y-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                Žádost o smazání podána. Účet bude smazán za 30 dní.
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                Uložte si tento kód pro případ, že si to rozmyslíte:
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-white dark:bg-gray-900 rounded-lg px-4 py-3 font-mono text-sm select-all border">
+                  {cancelToken}
+                </code>
+                <Button variant="outline" size="icon" onClick={handleCopyToken} className="shrink-0">
+                  {tokenCopied ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Pro zrušení smazání navštivte{' '}
+                <a href="/auth/cancel-deletion" className="text-blue-600 hover:underline">/auth/cancel-deletion</a>
+                {' '}a zadejte tento kód.
+              </p>
+              <Button onClick={() => { window.location.href = '/auth/login' }} variant="outline" size="sm">
+                Odhlásit se
+              </Button>
+            </div>
+          ) : !showDeleteDialog ? (
             <Button onClick={() => setShowDeleteDialog(true)} variant="destructive" size="sm">
               <Trash2 className="mr-2 h-4 w-4" />
               Smazat účet

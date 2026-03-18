@@ -58,12 +58,30 @@ export async function GET(request: NextRequest) {
         continue
       }
 
+      // Anonymize chat messages
+      await supabaseAdmin
+        .from('chat_messages')
+        .update({ content: '[smazáno]' })
+        .eq('sender_id', user.id)
+
+      // Anonymize travel trips purpose
+      const { data: userCompanies } = await supabaseAdmin
+        .from('companies')
+        .select('id')
+        .eq('owner_id', user.id)
+      if (userCompanies?.length) {
+        await supabaseAdmin
+          .from('travel_trips')
+          .update({ purpose: null })
+          .in('company_id', userCompanies.map(c => c.id))
+      }
+
       // Audit log
       await supabaseAdmin.from('gdpr_deletion_log').insert({
         user_id: user.id,
         user_email_hash: emailHash,
         action: 'completed',
-        anonymized_tables: ['users'],
+        anonymized_tables: ['users', 'chat_messages', 'travel_trips'],
       })
 
       processed++

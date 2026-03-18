@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     // Find user with matching cancel token
     const { data: user, error: fetchErr } = await supabaseAdmin
       .from('users')
-      .select('id, status')
+      .select('id, email, status')
       .eq('deletion_cancel_token', token)
       .eq('status', 'deletion_pending')
       .single()
@@ -41,9 +42,10 @@ export async function POST(request: NextRequest) {
     if (updateErr) throw updateErr
 
     // Audit log
+    const emailHash = crypto.createHash('sha256').update(user.email).digest('hex')
     await supabaseAdmin.from('gdpr_deletion_log').insert({
       user_id: user.id,
-      user_email_hash: 'cancelled',
+      user_email_hash: emailHash,
       action: 'cancelled',
     })
 
