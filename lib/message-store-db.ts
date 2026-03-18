@@ -518,7 +518,7 @@ export async function markAllAsReadInTaskChat(
 
 export async function getAllOpenConversations(
   forUserId: string,
-  options?: { status?: 'open' | 'completed'; unread_only?: boolean; limit?: number; count_only?: boolean; company_id?: string }
+  options?: { status?: 'open' | 'completed'; unread_only?: boolean; limit?: number; count_only?: boolean; company_id?: string; firm_company_ids?: string[] }
 ): Promise<{ conversations: ConversationWithContext[]; total_unread: number; needs_response?: number }> {
   let query = supabaseAdmin
     .from('chats')
@@ -531,6 +531,10 @@ export async function getAllOpenConversations(
 
   if (options?.company_id) {
     query = query.eq('company_id', options.company_id)
+  }
+
+  if (options?.firm_company_ids) {
+    query = query.in('company_id', options.firm_company_ids)
   }
 
   if (options?.limit) {

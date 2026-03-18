@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllOpenConversations } from '@/lib/message-store-db'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getFirmId, getFirmCompanyIds } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,9 @@ export async function GET(request: NextRequest) {
   const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined
   const module = searchParams.get('module')
 
+  const firmId = getFirmId(request)
+  const firmCompanyIds = firmId ? await getFirmCompanyIds(firmId) : undefined
+
   try {
     const result = await getAllOpenConversations(userId, {
       status: status || undefined,
@@ -25,6 +29,7 @@ export async function GET(request: NextRequest) {
       limit: limit || 100,
       count_only: countOnly,
       company_id: companyId || undefined,
+      firm_company_ids: firmCompanyIds,
     })
 
     // Claims module filter: only conversations for companies with insurance cases

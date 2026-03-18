@@ -248,18 +248,15 @@ export async function getCompanyGraphData(
   firmId?: string | null
 ): Promise<CompanyGraphData> {
   // Fetch companies, ownership, and layout in parallel
-  const companiesQuery = firmId
-    ? supabaseAdmin
-        .from('companies')
-        .select('id, name, ico, dic, company_type, vat_payer, status, group_name, managing_director, address, has_employees, total_revenue, reliability_score, founded_date, holding_notes')
-        .eq('firm_id', firmId)
-        .is('deleted_at', null)
-        .order('name')
-    : supabaseAdmin
-        .from('companies')
-        .select('id, name, ico, dic, company_type, vat_payer, status, group_name, managing_director, address, has_employees, total_revenue, reliability_score, founded_date, holding_notes')
-        .is('deleted_at', null)
-        .order('name')
+  let companiesQuery = supabaseAdmin
+    .from('companies')
+    .select('id, name, ico, dic, company_type, vat_payer, status, group_name, managing_director, address, has_employees, total_revenue, reliability_score, founded_date, holding_notes')
+    .is('deleted_at', null)
+    .order('name')
+
+  if (firmId) {
+    companiesQuery = companiesQuery.eq('firm_id', firmId)
+  }
 
   const [companiesRes, ownershipRes, layoutRes] = await Promise.all([
     companiesQuery,

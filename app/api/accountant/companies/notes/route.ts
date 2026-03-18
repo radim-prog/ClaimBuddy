@@ -4,6 +4,7 @@ import {
   createCompanyNote,
   deleteCompanyNote,
 } from '@/lib/company-graph-store'
+import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,11 @@ export async function GET(request: NextRequest) {
   const companyId = request.nextUrl.searchParams.get('company_id')
   if (!companyId) {
     return NextResponse.json({ error: 'company_id is required' }, { status: 400 })
+  }
+
+  const firmId = getFirmId(request)
+  if (!(await verifyCompanyAccess(companyId, firmId))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   try {
@@ -47,6 +53,11 @@ export async function POST(request: NextRequest) {
     }
     if (!content || !content.trim()) {
       return NextResponse.json({ error: 'content is required' }, { status: 400 })
+    }
+
+    const firmId = getFirmId(request)
+    if (!(await verifyCompanyAccess(company_id, firmId))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const note = await createCompanyNote({
