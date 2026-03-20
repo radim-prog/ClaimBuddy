@@ -73,7 +73,13 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
         fetch('/api/client/companies'),
         fetch('/api/auth/me'),
       ])
-      if (!response.ok) throw new Error('Failed to fetch companies')
+      if (!response.ok) {
+        if (response.status === 401) {
+          window.location.href = '/auth/login?reason=session_expired'
+          return
+        }
+        throw new Error('Failed to fetch companies')
+      }
       const data = await response.json()
 
       // Load user modules from /api/auth/me
@@ -114,6 +120,20 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchData()
+  }, [])
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetch('/api/auth/me').then(res => {
+          if (res.status === 401) {
+            window.location.href = '/auth/login?reason=session_expired'
+          }
+        }).catch(() => {})
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
   const selectedCompany = useMemo(

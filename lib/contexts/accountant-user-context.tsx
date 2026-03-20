@@ -33,7 +33,13 @@ export function AccountantUserProvider({ children }: { children: ReactNode }) {
     const fetchUser = async () => {
       try {
         const res = await fetch('/api/auth/me')
-        if (!res.ok) return
+        if (!res.ok) {
+          if (res.status === 401) {
+            window.location.href = '/auth/login?reason=session_expired'
+            return
+          }
+          return
+        }
         const data = await res.json()
 
         setUserId(data.id)
@@ -59,6 +65,20 @@ export function AccountantUserProvider({ children }: { children: ReactNode }) {
     }
 
     fetchUser()
+  }, [])
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetch('/api/auth/me').then(res => {
+          if (res.status === 401) {
+            window.location.href = '/auth/login?reason=session_expired'
+          }
+        }).catch(() => {})
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
   const value = useMemo(() => ({

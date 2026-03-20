@@ -37,7 +37,8 @@ export default function AnalyticsLayout({ children }: { children: React.ReactNod
     )
   }
 
-  if (userRole !== 'admin') {
+  const hasAnalyticsAccess = ['admin', 'manager', 'senior'].includes(userRole)
+  if (!hasAnalyticsAccess) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
