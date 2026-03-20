@@ -52,6 +52,24 @@ interface OcrApiResponse {
   request_id?: string
 }
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await fn()
+    } catch (error: any) {
+      const is429 = error.message?.includes('429') || error.message?.includes('Rate limit')
+      if (is429 && attempt < retries) {
+        const delay = Math.pow(2, attempt) * 1000 // 2s, 4s, 8s
+        console.log(`[OCR] Rate limited, retry ${attempt}/${retries} after ${delay}ms`)
+        await new Promise(r => setTimeout(r, delay))
+        continue
+      }
+      throw error
+    }
+  }
+  throw new Error('Unreachable')
+}
+
 export class OcrClient {
   private apiKey: string
   private baseUrl = 'https://api.z.ai/api/paas/v4/layout_parsing'
@@ -90,30 +108,32 @@ export class OcrClient {
     if (options?.startPage) body.start_page_id = options.startPage
     if (options?.endPage) body.end_page_id = options.endPage
 
-    const response = await fetch(this.baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify(body),
+    return withRetry(async () => {
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify(body),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error')
+        throw new Error(`OCR API error ${response.status}: ${errorText}`)
+      }
+
+      const data: OcrApiResponse = await response.json()
+
+      return {
+        text: data.md_results || '',
+        layout_details: data.layout_details || [],
+        pages: data.data_info?.pages || [],
+        num_pages: data.data_info?.num_pages || 1,
+        usage: data.usage,
+        request_id: data.request_id,
+      }
     })
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error')
-      throw new Error(`OCR API error ${response.status}: ${errorText}`)
-    }
-
-    const data: OcrApiResponse = await response.json()
-
-    return {
-      text: data.md_results || '',
-      layout_details: data.layout_details || [],
-      pages: data.data_info?.pages || [],
-      num_pages: data.data_info?.num_pages || 1,
-      usage: data.usage,
-      request_id: data.request_id,
-    }
   }
 
   /**
@@ -135,29 +155,31 @@ export class OcrClient {
     if (options?.startPage) body.start_page_id = options.startPage
     if (options?.endPage) body.end_page_id = options.endPage
 
-    const response = await fetch(this.baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify(body),
+    return withRetry(async () => {
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify(body),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error')
+        throw new Error(`OCR API error ${response.status}: ${errorText}`)
+      }
+
+      const data: OcrApiResponse = await response.json()
+
+      return {
+        text: data.md_results || '',
+        layout_details: data.layout_details || [],
+        pages: data.data_info?.pages || [],
+        num_pages: data.data_info?.num_pages || 1,
+        usage: data.usage,
+        request_id: data.request_id,
+      }
     })
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error')
-      throw new Error(`OCR API error ${response.status}: ${errorText}`)
-    }
-
-    const data: OcrApiResponse = await response.json()
-
-    return {
-      text: data.md_results || '',
-      layout_details: data.layout_details || [],
-      pages: data.data_info?.pages || [],
-      num_pages: data.data_info?.num_pages || 1,
-      usage: data.usage,
-      request_id: data.request_id,
-    }
   }
 }
