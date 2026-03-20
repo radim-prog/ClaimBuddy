@@ -43,7 +43,8 @@ type JobResolver = {
   reject: (error: Error) => void
 }
 
-const MAX_CONCURRENT = 5
+const MAX_CONCURRENT = 2 // Sníženo z 5 kvůli Z.AI rate limitu
+const OCR_DELAY_MS = 1500 // 1.5s mezi OCR requesty
 const JOB_TIMEOUT = 60_000 // 60 seconds
 const CLEANUP_INTERVAL = 300_000 // 5 minutes
 
@@ -197,6 +198,9 @@ class ExtractionQueueManager {
       const job = this.queue.shift()!
       this.active.set(job.id, job)
       this.processJob(job)
+      if (this.queue.length > 0) {
+        await new Promise(r => setTimeout(r, OCR_DELAY_MS))
+      }
     }
   }
 
