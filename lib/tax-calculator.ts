@@ -262,10 +262,10 @@ export function calculateIncomeTax(
   const socialBase = Math.min(profit * rates.social_base_percentage, rates.social_max_assessment_base)
   const socialFromRate = Math.round(socialBase * rates.social_insurance_rate)
 
-  const socialMinMonthly = config.is_secondary_activity
-    ? rates.social_minimum_advance_secondary
-    : rates.social_minimum_advance
-  const socialMinimumAnnual = socialMinMonthly * 12
+  // Roční minimum SP: z ročního VZ (ne monthly × 12, kvůli zaokrouhlení)
+  // Hlavní: 35% průměrné mzdy × 12 = 195 540 (2025) × 29.2% = 57 098
+  const socialMinAnnualBase = config.is_secondary_activity ? 0 : 195540
+  const socialMinimumAnnual = config.is_secondary_activity ? 0 : Math.round(socialMinAnnualBase * rates.social_insurance_rate)
   const socialMinimumApplied = socialFromRate < socialMinimumAnnual && !config.is_secondary_activity
   const socialCalculated = config.is_secondary_activity
     ? socialFromRate  // secondary: no minimum enforcement
@@ -279,10 +279,9 @@ export function calculateIncomeTax(
   const healthBase = Math.max(healthBaseRaw, healthMinBase)
   const healthFromRate = Math.round(healthBase * rates.health_insurance_rate)
 
-  const healthMinMonthly = config.is_secondary_activity
-    ? rates.health_minimum_advance_secondary
-    : rates.health_minimum_advance
-  const healthMinimumAnnual = healthMinMonthly * 12
+  // Roční minimum ZP: z ročního min VZ (ne monthly × 12, kvůli zaokrouhlení)
+  // 279 342 × 13.5% = 37 712 (shodné s VZP formulářem)
+  const healthMinimumAnnual = config.is_secondary_activity ? 0 : Math.round((rates.health_min_assessment_base || 0) * rates.health_insurance_rate)
   const healthMinimumApplied = healthBase > healthBaseRaw
   const healthCalculated = Math.max(healthFromRate, healthMinimumAnnual)
   const healthDue = healthCalculated - config.health_advances_paid
