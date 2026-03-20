@@ -267,8 +267,10 @@ export function calculateIncomeTax(
   // Roční minimum SP: z ročního min VZ (ne monthly × 12, kvůli zaokrouhlení)
   // Min roční VZ = 35% průměrné mzdy × 12 = 195 540 (2025)
   // Math.ceil(195540 × 0.292) = Math.ceil(57097.68) = 57098 ✓
-  const socialMinAnnualVZ = config.is_secondary_activity ? 0 : (rates.social_minimum_annual_base || Math.round(rates.social_minimum_advance * 12 / rates.social_insurance_rate * rates.social_insurance_rate))
-  const socialMinimumAnnual = config.is_secondary_activity ? 0 : Math.ceil(socialMinAnnualVZ * rates.social_insurance_rate)
+  const socialMinimumAnnual = config.is_secondary_activity ? 0 :
+    rates.social_minimum_annual_base
+      ? Math.ceil(rates.social_minimum_annual_base * rates.social_insurance_rate)
+      : rates.social_minimum_advance * 12  // fallback: monthly × 12 pro roky bez konstanty
   const socialMinimumApplied = socialFromRate < socialMinimumAnnual && !config.is_secondary_activity
   const socialCalculated = config.is_secondary_activity
     ? socialFromRate  // secondary: no minimum enforcement
