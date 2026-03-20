@@ -36,10 +36,13 @@ export type TaxRates = {
   flat_tax_bands?: Record<number, FlatTaxBand>
 }
 
+// Fallback sazby pro rok 2025
+// Zdroj: ČSSZ (cssz.cz), VZP (vzp.cz)
+// Průměrná mzda 2025: 46 557 Kč/měs
 export const DEFAULT_TAX_RATES: TaxRates = {
   income_tax_rate_1: 0.15,
   income_tax_rate_2: 0.23,
-  income_tax_threshold: 1935552,
+  income_tax_threshold: 2234736,
   taxpayer_discount: 30840,
   child_discount_1: 15204,
   child_discount_2: 22320,
@@ -49,11 +52,11 @@ export const DEFAULT_TAX_RATES: TaxRates = {
   health_insurance_rate: 0.135,
   social_base_percentage: 0.55,
   health_base_percentage: 0.50,
-  social_minimum_advance: 5720,
-  health_minimum_advance: 3306,
-  social_minimum_advance_secondary: 1574,
+  social_minimum_advance: 4759,
+  health_minimum_advance: 3143,
+  social_minimum_advance_secondary: 1496,
   health_minimum_advance_secondary: 0,
-  social_max_assessment_base: 2110416,
+  social_max_assessment_base: 2234736,
   health_min_assessment_base: 279342, // 0.5 × 46557 × 12 (2025 average wage 46557)
   disability_credit_1: 2520,
   disability_credit_2: 5040,
@@ -63,7 +66,7 @@ export const DEFAULT_TAX_RATES: TaxRates = {
   deduction_limit_savings: 48000,
   deduction_limit_mortgage: 150000,
   flat_tax_bands: {
-    1: { revenue_limit: 1000000, monthly_tax: 100, monthly_social: 6578, monthly_health: 3306 },
+    1: { revenue_limit: 1000000, monthly_tax: 100, monthly_social: 6578, monthly_health: 3143 },
     2: { revenue_limit: 1500000, monthly_tax: 4963, monthly_social: 8191, monthly_health: 3591 },
     3: { revenue_limit: 2000000, monthly_tax: 9320, monthly_social: 12527, monthly_health: 5292 },
   },
