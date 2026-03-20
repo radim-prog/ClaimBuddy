@@ -66,7 +66,7 @@ export const DEFAULT_TAX_RATES: TaxRates = {
   deduction_limit_savings: 48000,
   deduction_limit_mortgage: 150000,
   flat_tax_bands: {
-    1: { revenue_limit: 1000000, monthly_tax: 100, monthly_social: 6578, monthly_health: 3143 },
+    1: { revenue_limit: 1000000, monthly_tax: 100, monthly_social: 5473, monthly_health: 3143},
     2: { revenue_limit: 1500000, monthly_tax: 4963, monthly_social: 8191, monthly_health: 3591 },
     3: { revenue_limit: 2000000, monthly_tax: 9320, monthly_social: 12527, monthly_health: 5292 },
   },
