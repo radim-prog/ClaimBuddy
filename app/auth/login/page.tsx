@@ -72,6 +72,9 @@ function LoginForm() {
         description: 'Ověřovací odkaz je neplatný nebo vypršel.',
       })
     }
+    if (searchParams.get('reason') === 'session_expired') {
+      toast.info('Vaše session vypršela, přihlaste se znovu.')
+    }
   }, [searchParams])
 
   const isAccountant = portal === 'accountant'

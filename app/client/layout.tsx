@@ -70,7 +70,7 @@ const accountingNavigation: NavItem[] = [
   { name: 'Faktury', href: '/client/invoices', icon: Receipt, tourId: 'client-invoicing' },
   { name: 'Kniha jízd', href: '/client/travel', icon: Car, tourId: 'client-travel' },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare, tourId: 'client-messages' },
-  { name: 'Platby', href: '/client/billing', icon: CreditCard },
+  { name: 'Platby', href: '/client/billing', icon: CreditCard, tourId: 'client-billing' },
   // ── Doplňkové ──
   { name: 'Požadavky', href: '/client/requests', icon: LifeBuoy, divider: true },
   { name: 'Pojistné události', href: '/client/claims', icon: ShieldCheck },
@@ -149,6 +149,21 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
     const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
     if (favicon) favicon.href = '/favicon-claims.svg'
   }, [isClaims, pathname])
+
+  // Auto-start tutorial for first-time users
+  useEffect(() => {
+    if (isClaims) return
+    const dismissed = localStorage.getItem('client-tutorial-dismissed')
+    if (dismissed) return
+    fetch('/api/client/tutorial')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && data.completed_steps?.length === 0) {
+          startTour()
+        }
+      })
+      .catch(() => {})
+  }, [isClaims]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const saved = localStorage.getItem('client-sidebar-collapsed')
