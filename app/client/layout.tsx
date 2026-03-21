@@ -68,9 +68,9 @@ const accountingNavigation: NavItem[] = [
   { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard, tourId: 'client-dashboard' },
   { name: 'Doklady', href: '/client/documents', icon: FileText, tourId: 'client-documents' },
   { name: 'Faktury', href: '/client/invoices', icon: Receipt, tourId: 'client-invoicing' },
-  { name: 'Cesťák', href: '/client/travel', icon: Car, tourId: 'client-travel' },
+  { name: 'Kniha jízd', href: '/client/travel', icon: Car, tourId: 'client-travel' },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare, tourId: 'client-messages' },
-  { name: 'Platby', href: '/client/billing', icon: CreditCard },
+  { name: 'Platby', href: '/client/billing', icon: CreditCard, tourId: 'client-billing' },
   // ── Doplňkové ──
   { name: 'Požadavky', href: '/client/requests', icon: LifeBuoy, divider: true },
   { name: 'Pojistné události', href: '/client/claims', icon: ShieldCheck },
@@ -80,7 +80,7 @@ const accountingNavigation: NavItem[] = [
 
 // Claims context navigation
 const claimsNavigation: NavItem[] = [
-  { name: 'Moje spisy', href: '/client/claims', icon: FolderOpen },
+  { name: 'Moje případy', href: '/client/claims', icon: FolderOpen },
   { name: 'Soubory', href: '/client/documents', icon: FileText },
   { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
   { name: 'Nahlásit událost', href: '/claims/new', icon: FilePlus, divider: true },
@@ -141,6 +141,29 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
     }
     return result
   }, [enabledDynamic.length, selectedCompany?.id, isClaims, hasMultipleCompanies])
+
+  // Claims branding: override favicon + title on claims.zajcon.cz
+  useEffect(() => {
+    if (!isClaims) return
+    document.title = document.title.replace('Účetní OS', 'Pojistná Pomoc')
+    const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+    if (favicon) favicon.href = '/favicon-claims.svg'
+  }, [isClaims, pathname])
+
+  // Auto-start tutorial for first-time users
+  useEffect(() => {
+    if (isClaims) return
+    const dismissed = localStorage.getItem('client-tutorial-dismissed')
+    if (dismissed) return
+    fetch('/api/client/tutorial')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && data.completed_steps?.length === 0) {
+          startTour()
+        }
+      })
+      .catch(() => {})
+  }, [isClaims]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const saved = localStorage.getItem('client-sidebar-collapsed')

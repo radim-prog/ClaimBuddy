@@ -78,6 +78,19 @@ export async function GET(request: NextRequest) {
       companyIds.has(c.company_id) && c.period.startsWith(String(currentYear))
     )
 
+    // Lookup accountant names for companies that have one assigned
+    const accountantIds = [...new Set(companies.map(c => c.assigned_accountant_id).filter(Boolean))]
+    const accountantNames: Record<string, string> = {}
+    if (accountantIds.length > 0) {
+      const { data: users } = await supabaseAdmin
+        .from('users')
+        .select('id, name')
+        .in('id', accountantIds)
+      for (const u of users || []) {
+        accountantNames[u.id] = u.name
+      }
+    }
+
     const enrichedCompanies = companies.map(company => {
       const closure = currentClosures.find(c => c.company_id === company.id)
 
@@ -101,6 +114,7 @@ export async function GET(request: NextRequest) {
         managing_director: company.managing_director || null,
         portal_sections: company.portal_sections || {},
         has_accountant: !!company.assigned_accountant_id,
+        accountant_name: company.assigned_accountant_id ? (accountantNames[company.assigned_accountant_id] || null) : null,
         currentMonthStatus: {
           period: currentPeriod,
           missing_count: missingDocs.length,

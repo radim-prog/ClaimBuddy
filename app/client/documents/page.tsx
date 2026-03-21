@@ -235,9 +235,14 @@ function DocumentListTab() {
 
       {!loading && documents.length === 0 && (
         <Card className="rounded-2xl">
-          <CardContent className="py-12 text-center">
-            <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
-            <p className="text-muted-foreground">Zatím nemáte žádné dokumenty</p>
+          <CardContent className="py-16 text-center">
+            <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
+            <p className="font-semibold text-gray-900 dark:text-white mb-1">Zatím nemáte žádné dokumenty</p>
+            <p className="text-sm text-muted-foreground mb-5">Nahrajte svůj první doklad — fotkou, scanem nebo PDF.</p>
+            <Button onClick={() => setShowScanOverlay(true)} size="sm">
+              <Camera className="mr-1.5 h-4 w-4" />
+              Nahrát první doklad
+            </Button>
           </CardContent>
         </Card>
       )}

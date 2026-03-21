@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { MessageCircle } from 'lucide-react'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { MessagesSection } from '@/components/client/messages-section'
@@ -19,9 +20,16 @@ export default function MessagesPage() {
 
   if (companies.length === 0) {
     return (
-      <div className="text-center py-12">
-        <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-        <p className="text-gray-500 dark:text-gray-400">Nemáte žádné firmy.</p>
+      <div className="text-center py-16">
+        <MessageCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
+        <p className="font-semibold text-gray-900 dark:text-white mb-1">Zatím žádné zprávy</p>
+        <p className="text-sm text-muted-foreground mb-5">Přidejte firmu pro komunikaci s účetním.</p>
+        <Link
+          href="/client/account"
+          className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-4 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+        >
+          Přidat firmu
+        </Link>
       </div>
     )
   }

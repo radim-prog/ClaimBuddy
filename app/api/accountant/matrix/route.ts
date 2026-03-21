@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAllCompanies } from '@/lib/company-store'
 import { getClosures } from '@/lib/closure-store-db'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getFirmId, getFirmCompanyIds } from '@/lib/firm-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,15 +11,24 @@ export async function GET(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const module = new URL(request.url).searchParams.get('module')
+  const firmId = getFirmId(request)
+  const firmCompanyIds = firmId ? new Set(await getFirmCompanyIds(firmId)) : null
 
   try {
-    const [allCompanies, closures, { data: groupsData }] = await Promise.all([
-      getAllCompanies(),
+    const [allCompaniesRaw, closuresRaw, { data: groupsData }] = await Promise.all([
+      getAllCompanies(firmId || undefined),
       getClosures(),
       supabaseAdmin
         .from('company_groups')
         .select('group_name, billing_company_id'),
     ])
+
+    const allCompanies = firmCompanyIds
+      ? allCompaniesRaw.filter(c => firmCompanyIds.has(c.id))
+      : allCompaniesRaw
+    const closures = firmCompanyIds
+      ? closuresRaw.filter(c => firmCompanyIds.has(c.company_id))
+      : closuresRaw
 
     // Claims module filter: only companies that have insurance cases
     let filteredCompanies = allCompanies
@@ -98,12 +108,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Get tasks from Supabase
-    const { data: tasksData } = await supabaseAdmin
+    let tasksQuery = supabaseAdmin
       .from('tasks')
       .select('id, title, status, due_date, company_id, company_name')
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(200)
+
+    if (firmCompanyIds && firmCompanyIds.size > 0) {
+      tasksQuery = tasksQuery.in('company_id', [...firmCompanyIds])
+    }
+
+    const { data: tasksData } = await tasksQuery
 
     const tasks = (tasksData ?? []).map(t => ({
       id: t.id,

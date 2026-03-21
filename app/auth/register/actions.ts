@@ -9,6 +9,11 @@ import { triggerOnboardingSequence } from '@/lib/marketing-service'
 import { registerSchema, formatZodErrors } from '@/lib/validations'
 
 export async function register(formData: FormData) {
+  const gdprConsent = formData.get('gdprConsent')
+  if (gdprConsent !== 'on') {
+    return { error: 'Musíte souhlasit se zpracováním osobních údajů' }
+  }
+
   const raw = {
     name: (formData.get('name') as string)?.trim() ?? '',
     email: (formData.get('email') as string)?.trim().toLowerCase() ?? '',
@@ -56,6 +61,8 @@ export async function register(formData: FormData) {
         status: 'pending_verification',
         verification_token: verificationToken,
         verification_token_expires: verificationTokenExpires,
+        gdpr_consent_at: new Date().toISOString(),
+        gdpr_consent_version: '1.0',
       })
 
     if (insertError) {

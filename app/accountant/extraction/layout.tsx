@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Inbox, Users, CheckSquare, ScanLine, FileText, CheckCircle2, Clock, AlertCircle, ShieldCheck, AlertTriangle, XCircle } from 'lucide-react'
+import { Inbox, Users, CheckSquare, ScanLine, FileText, CheckCircle2, Clock, AlertCircle, ShieldCheck, AlertTriangle, XCircle, Settings2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { useExtractionPresence } from '@/lib/hooks/use-extraction-presence'
 import { PresenceBar } from '@/components/extraction/presence-bar'
+import { ExtractionModeProvider, useExtractionMode } from '@/lib/contexts/extraction-mode-context'
 
 const tabs = [
   { name: 'Inbox', href: '/accountant/extraction', icon: Inbox, exact: true },
@@ -31,6 +32,15 @@ type ByConfidence = {
 }
 
 export default function ExtractionLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ExtractionModeProvider>
+      <ExtractionLayoutInner>{children}</ExtractionLayoutInner>
+    </ExtractionModeProvider>
+  )
+}
+
+function ExtractionLayoutInner({ children }: { children: React.ReactNode }) {
+  const { advanced, toggle } = useExtractionMode()
   const pathname = usePathname() ?? ''
   const { userId } = useAccountantUser()
   const [stats, setStats] = useState<Stats | null>(null)
@@ -127,8 +137,8 @@ export default function ExtractionLayout({ children }: { children: React.ReactNo
             })}
           </nav>
 
-          {/* Confidence badges inline */}
-          {hasConfidence && (
+          {/* Confidence badges inline (advanced only) */}
+          {advanced && hasConfidence && (
             <>
               <div className="w-px h-5 bg-border flex-shrink-0" />
               <div className="flex items-center gap-1.5">
@@ -152,12 +162,25 @@ export default function ExtractionLayout({ children }: { children: React.ReactNo
           )}
         </div>
 
-        {/* Right: presence + KPI strip */}
+        {/* Right: toggle + presence + KPI strip */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <PresenceBar users={otherUsers} />
-          {otherUsers.length > 0 && stats && <div className="w-px h-4 bg-border" />}
+          <button
+            onClick={toggle}
+            className={cn(
+              'flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors',
+              advanced
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            )}
+            title={advanced ? 'Přepnout na základní režim' : 'Přepnout na pokročilý režim'}
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{advanced ? 'Pokročilý' : 'Základní'}</span>
+          </button>
+          {advanced && <PresenceBar users={otherUsers} />}
+          {advanced && otherUsers.length > 0 && stats && <div className="w-px h-4 bg-border" />}
         </div>
-        {stats && (
+        {stats && advanced && (
           <div className="hidden md:flex items-center gap-1 flex-shrink-0">
             {kpiItems.map((kpi, i) => {
               const Icon = kpi.icon
@@ -170,6 +193,12 @@ export default function ExtractionLayout({ children }: { children: React.ReactNo
                 </div>
               )
             })}
+          </div>
+        )}
+        {stats && !advanced && (stats.pending ?? 0) > 0 && (
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 text-xs font-medium flex-shrink-0">
+            <Clock className="h-3 w-3" />
+            <span>{stats.pending} čeká</span>
           </div>
         )}
       </div>

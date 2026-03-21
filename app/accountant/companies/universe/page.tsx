@@ -68,8 +68,8 @@ export default function CompanyUniversePage() {
 
   const handlePositionsChange = useCallback(async (positions: Record<string, { x: number; y: number }>) => {
     try {
-      await fetch('/api/accountant/companies/graph/layout', {
-        method: 'POST',
+      await fetch('/api/accountant/companies/layout', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ layout_type: 'galaxy', positions }),
       })

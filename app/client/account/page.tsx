@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Lock, Save, Building2, Bell, MessageCircle, Mail, Loader2, Clock, Inbox, FileText, FileSpreadsheet, Receipt, File, Copy, CheckCircle2, AlertCircle, Smartphone } from 'lucide-react'
+import { User, Lock, Save, Building2, Bell, MessageCircle, Mail, Loader2, Clock, Inbox, FileText, FileSpreadsheet, Receipt, File, Copy, CheckCircle2, AlertCircle, Smartphone, Shield, Download, Trash2 } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { useClientUser } from '@/lib/contexts/client-user-context'
@@ -23,6 +23,7 @@ export default function AccountPage() {
       <CompanyTab />
       <DocumentInboxTab />
       <NotificationsTab />
+      <DataProtectionTab />
     </div>
   )
 }
@@ -721,6 +722,174 @@ function NotificationsTab() {
         <Save className="mr-2 h-4 w-4" />
         {saving ? 'Ukládám...' : 'Uložit nastavení'}
       </Button>
+    </div>
+  )
+}
+
+function DataProtectionTab() {
+  const [exporting, setExporting] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [cancelToken, setCancelToken] = useState<string | null>(null)
+  const [tokenCopied, setTokenCopied] = useState(false)
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const res = await fetch('/api/client/data-export')
+      if (!res.ok) throw new Error('Export selhal')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `moje-data-${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Data exportována')
+    } catch {
+      toast.error('Export se nezdařil')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deletePassword) {
+      toast.error('Zadejte heslo')
+      return
+    }
+    setDeleting(true)
+    try {
+      const res = await fetch('/api/client/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Chyba')
+      setCancelToken(data.cancel_token)
+      setShowDeleteDialog(false)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Chyba při mazání účtu')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleCopyToken = async () => {
+    if (!cancelToken) return
+    try {
+      await navigator.clipboard.writeText(cancelToken)
+      setTokenCopied(true)
+      toast.success('Kód zkopírován')
+      setTimeout(() => setTokenCopied(false), 2000)
+    } catch {
+      toast.error('Nepodařilo se zkopírovat')
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-lg font-semibold font-display flex items-center gap-2">
+        <Shield className="h-5 w-5" />
+        Ochrana údajů
+      </h2>
+
+      {/* Data export */}
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg font-display">
+            <Download className="h-5 w-5" />
+            Export osobních údajů
+          </CardTitle>
+          <CardDescription>
+            Stáhněte si kopii všech vašich osobních údajů (čl. 20 GDPR — právo na přenositelnost údajů)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={handleExport} disabled={exporting} variant="outline">
+            <Download className="mr-2 h-4 w-4" />
+            {exporting ? 'Exportuji...' : 'Exportovat moje data'}
+          </Button>
+          <p className="text-xs text-muted-foreground mt-2">
+            Export obsahuje: profil, firmy, doklady, faktury, zprávy a cestovní záznamy.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Account deletion */}
+      <Card className="rounded-2xl border-red-200 dark:border-red-800/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg font-display text-red-600 dark:text-red-400">
+            <Trash2 className="h-5 w-5" />
+            Smazání účtu
+          </CardTitle>
+          <CardDescription>
+            Po podání žádosti máte 30 dní na rozmyšlenou. Účetní doklady zůstanou zachovány dle zákona.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {cancelToken ? (
+            <div className="space-y-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                Žádost o smazání podána. Účet bude smazán za 30 dní.
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                Uložte si tento kód pro případ, že si to rozmyslíte:
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-white dark:bg-gray-900 rounded-lg px-4 py-3 font-mono text-sm select-all border">
+                  {cancelToken}
+                </code>
+                <Button variant="outline" size="icon" onClick={handleCopyToken} className="shrink-0">
+                  {tokenCopied ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Pro zrušení smazání navštivte{' '}
+                <a href="/auth/cancel-deletion" className="text-blue-600 hover:underline">/auth/cancel-deletion</a>
+                {' '}a zadejte tento kód.
+              </p>
+              <Button onClick={() => { window.location.href = '/auth/login' }} variant="outline" size="sm">
+                Odhlásit se
+              </Button>
+            </div>
+          ) : !showDeleteDialog ? (
+            <Button onClick={() => setShowDeleteDialog(true)} variant="destructive" size="sm">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Smazat účet
+            </Button>
+          ) : (
+            <div className="space-y-4 p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+              <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                Opravdu chcete smazat účet? Zadejte heslo pro potvrzení.
+              </p>
+              <div>
+                <Label htmlFor="deletePassword" className="text-sm">Heslo</Label>
+                <Input
+                  id="deletePassword"
+                  type="password"
+                  value={deletePassword}
+                  onChange={e => setDeletePassword(e.target.value)}
+                  placeholder="Vaše heslo"
+                  className="h-11 mt-1"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleDelete} disabled={deleting || !deletePassword} variant="destructive" size="sm">
+                  {deleting ? 'Mažu...' : 'Potvrdit smazání'}
+                </Button>
+                <Button onClick={() => { setShowDeleteDialog(false); setDeletePassword('') }} variant="outline" size="sm">
+                  Zrušit
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

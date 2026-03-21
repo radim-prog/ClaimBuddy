@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { GalaxyView, CompanyNode, OwnershipLink } from '@/components/company-universe/galaxy-view'
-import { useClientUser } from '@/lib/contexts/client-user-context'
 import { Network, Building2, MapPin, FileText, X } from 'lucide-react'
 
 type GraphCompany = {
@@ -25,7 +24,6 @@ type GraphResponse = {
 const POSITIONS_KEY = 'client-universe-positions'
 
 export default function CompanyUniversePage() {
-  const { companies: userCompanies } = useClientUser()
   const [graphData, setGraphData] = useState<GraphResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

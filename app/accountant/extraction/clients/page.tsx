@@ -8,6 +8,13 @@ import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { toast } from 'sonner'
+import { useExtractionMode } from '@/lib/contexts/extraction-mode-context'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Building2,
   Search,
@@ -45,6 +52,7 @@ const filterOptions: { value: FilterType; label: string }[] = [
 ]
 
 export default function ExtractionClientsPage() {
+  const { advanced } = useExtractionMode()
   const { userId } = useAccountantUser()
   const [clients, setClients] = useState<ClientInfo[]>([])
   const [loading, setLoading] = useState(true)
@@ -203,7 +211,7 @@ export default function ExtractionClientsPage() {
             />
           </div>
           <div className="flex gap-1">
-            {filterOptions.map(f => (
+            {(advanced ? filterOptions : filterOptions.slice(0, 2)).map(f => (
               <Button
                 key={f.value}
                 variant={filter === f.value ? 'default' : 'outline'}
@@ -214,10 +222,26 @@ export default function ExtractionClientsPage() {
                 {f.label}
               </Button>
             ))}
+            {!advanced && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs hidden sm:flex">
+                    <Filter className="h-3 w-3 mr-1" /> Více
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {filterOptions.slice(2).map(f => (
+                    <DropdownMenuItem key={f.value} onClick={() => setFilter(f.value)}>
+                      {f.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 
-        {selectedIds.size > 0 && (
+        {advanced && selectedIds.size > 0 && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">{selectedIds.size} vybráno</span>
             <Button
@@ -271,26 +295,30 @@ export default function ExtractionClientsPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {/* Select all */}
-          <div className="flex items-center gap-2 px-2">
-            <input
-              type="checkbox"
-              checked={selectedIds.size === filteredClients.length && filteredClients.length > 0}
-              onChange={selectAll}
-              className="h-4 w-4 rounded border-gray-300"
-            />
-            <span className="text-xs text-muted-foreground">Vybrat vše ({filteredClients.length})</span>
-          </div>
+          {/* Select all (advanced only) */}
+          {advanced && (
+            <div className="flex items-center gap-2 px-2">
+              <input
+                type="checkbox"
+                checked={selectedIds.size === filteredClients.length && filteredClients.length > 0}
+                onChange={selectAll}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <span className="text-xs text-muted-foreground">Vybrat vše ({filteredClients.length})</span>
+            </div>
+          )}
 
           {filteredClients.map((client) => (
             <Card key={client.id} className="overflow-hidden">
               <div className="flex items-center gap-3 p-3 hover:bg-muted/30 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.has(client.id)}
-                  onChange={() => toggleSelect(client.id)}
-                  className="h-4 w-4 rounded border-gray-300 flex-shrink-0"
-                />
+                {advanced && (
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(client.id)}
+                    onChange={() => toggleSelect(client.id)}
+                    className="h-4 w-4 rounded border-gray-300 flex-shrink-0"
+                  />
+                )}
 
                 <a
                   href={`/accountant/extraction/clients/${client.id}`}
@@ -353,7 +381,7 @@ export default function ExtractionClientsPage() {
               </div>
 
               {/* Expanded: document list would go here */}
-              {expandedId === client.id && (
+              {advanced && expandedId === client.id && (
                 <div className="px-4 pb-4 border-t bg-muted/20">
                   <div className="pt-3 space-y-2">
                     <div className="flex items-center justify-between">
