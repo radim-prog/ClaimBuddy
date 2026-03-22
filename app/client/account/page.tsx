@@ -5,26 +5,45 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Lock, Save, Building2, Bell, MessageCircle, Mail, Loader2, Clock, Inbox, FileText, FileSpreadsheet, Receipt, File, Copy, CheckCircle2, AlertCircle, Smartphone, Shield, Download, Trash2 } from 'lucide-react'
+import { User, Lock, Save, Building2, Bell, MessageCircle, Mail, Loader2, Clock, Inbox, FileText, FileSpreadsheet, Receipt, File, Copy, CheckCircle2, AlertCircle, Smartphone, Shield, Download, Trash2, Pencil } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { AddCompanyDialog } from '@/components/client/add-company-dialog'
+import { CompanyEditDialog } from '@/components/client/company-edit-dialog'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 
 export default function AccountPage() {
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold font-display">Můj účet</h1>
+        <h1 className="text-2xl font-bold font-display">Nastavení</h1>
         <p className="text-muted-foreground">Spravujte svůj profil a nastavení</p>
       </div>
-      <ProfileTab />
-      <DefaultCompanySection />
-      <CompanyTab />
-      <DocumentInboxTab />
-      <NotificationsTab />
-      <DataProtectionTab />
+      <Tabs defaultValue="account">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="account">Můj účet</TabsTrigger>
+          <TabsTrigger value="companies">Moje firmy</TabsTrigger>
+          <TabsTrigger value="notifications">Upozornění</TabsTrigger>
+          <TabsTrigger value="privacy">Ochrana údajů</TabsTrigger>
+        </TabsList>
+        <TabsContent value="account" className="space-y-6 mt-6">
+          <ProfileTab />
+          <DefaultCompanySection />
+        </TabsContent>
+        <TabsContent value="companies" className="mt-6">
+          <CompanyTab />
+        </TabsContent>
+        <TabsContent value="notifications" className="space-y-6 mt-6">
+          <DocumentInboxTab />
+          <NotificationsTab />
+        </TabsContent>
+        <TabsContent value="privacy" className="mt-6">
+          <DataProtectionTab />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
@@ -213,7 +232,8 @@ function DefaultCompanySection() {
 }
 
 function CompanyTab() {
-  const { companies, loading, refetch } = useClientUser()
+  const { companies, loading, refetch, hiddenCompanyIds, toggleCompanyVisibility } = useClientUser()
+  const [editCompany, setEditCompany] = useState<typeof companies[0] | null>(null)
 
   if (loading) {
     return (
@@ -221,15 +241,6 @@ function CompanyTab() {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
       </div>
     )
-  }
-
-  const statusLabel = (status: string) => {
-    switch (status) {
-      case 'active': return { text: 'Aktivní', cls: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' }
-      case 'pending_review': return { text: 'Čeká na schválení', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' }
-      case 'onboarding': return { text: 'Onboarding', cls: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' }
-      default: return { text: 'Neaktivní', cls: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400' }
-    }
   }
 
   return (
@@ -253,63 +264,34 @@ function CompanyTab() {
           </CardContent>
         </Card>
       ) : (
-        companies.map((company) => {
-          const status = statusLabel(company.status)
-          return (
-            <Card key={company.id} className={`rounded-2xl ${company.status === 'pending_review' ? 'border-amber-200 dark:border-amber-800' : ''}`}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-display">
-                  <Building2 className="h-5 w-5 text-blue-600" />
-                  {company.name}
-                  {company.status === 'pending_review' && (
-                    <Clock className="h-4 w-4 text-amber-500" />
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <dt className="text-muted-foreground">IČO</dt>
-                    <dd className="font-medium">{company.ico}</dd>
-                  </div>
-                  {company.dic && (
-                    <div>
-                      <dt className="text-muted-foreground">DIČ</dt>
-                      <dd className="font-medium">{company.dic}</dd>
-                    </div>
-                  )}
-                  {company.managing_director && (
-                    <div>
-                      <dt className="text-muted-foreground">Jednatel</dt>
-                      <dd className="font-medium">{company.managing_director}</dd>
-                    </div>
-                  )}
-                  <div>
-                    <dt className="text-muted-foreground">Právní forma</dt>
-                    <dd className="font-medium">{company.legal_form}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Plátce DPH</dt>
-                    <dd className="font-medium">{company.vat_payer ? 'Ano' : 'Ne'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Zaměstnanci</dt>
-                    <dd className="font-medium">{company.has_employees ? 'Ano' : 'Ne'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Status</dt>
-                    <dd>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${status.cls}`}>
-                        {status.text}
-                      </span>
-                    </dd>
-                  </div>
-                </dl>
-              </CardContent>
-            </Card>
-          )
-        })
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {companies.map(company => (
+            <div key={company.id} className="relative p-4 rounded-xl border hover:shadow-sm">
+              <button onClick={() => setEditCompany(company)} className="absolute top-3 right-3">
+                <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+              </button>
+              <div className="flex items-center gap-3">
+                <Building2 className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="font-medium text-sm">{company.name}</p>
+                  <p className="text-xs text-muted-foreground">IČO: {company.ico}</p>
+                </div>
+              </div>
+              {hiddenCompanyIds.has(company.id) && (
+                <Badge variant="secondary" className="mt-2">Skrytá</Badge>
+              )}
+            </div>
+          ))}
+        </div>
       )}
+
+      <CompanyEditDialog
+        company={editCompany}
+        hidden={editCompany ? hiddenCompanyIds.has(editCompany.id) : false}
+        onToggleHidden={toggleCompanyVisibility}
+        open={!!editCompany}
+        onOpenChange={(open) => { if (!open) setEditCompany(null) }}
+      />
     </div>
   )
 }
