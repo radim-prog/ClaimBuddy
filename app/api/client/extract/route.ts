@@ -52,9 +52,21 @@ export async function POST(request: NextRequest) {
     // Map to frontend ExtractedData format
     const extractedData = mapKimiToExtractedData(invoice)
 
+    // Map AI document_type to frontend ExtractionDocumentType
+    const typeMap: Record<string, string> = {
+      receivedInvoice: 'invoice',
+      receipt: 'receipt',
+      advanceInvoice: 'advance_invoice',
+      creditNote: 'credit_note',
+      bankStatement: 'bank_statement',
+      contract: 'contract',
+    }
+    const detectedDocumentType = typeMap[invoice.document_type] || 'invoice'
+
     return NextResponse.json({
       extractionAvailable: true,
       extractedData,
+      detectedDocumentType,
       confidenceScore: invoice.confidence_score,
       corrections: invoice.corrections || [],
       roundResults: (invoice as any).roundResults || [],

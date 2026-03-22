@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -40,6 +40,7 @@ function DocumentsPageInner() {
   const [showScanOverlay, setShowScanOverlay] = useState(false)
   const [showInvoiceOverlay, setShowInvoiceOverlay] = useState(false)
   const [nativeCameraFile, setNativeCameraFile] = useState<File | null>(null)
+  const quickFileInputRef = useRef<HTMLInputElement>(null)
 
   const { filters, setFilter } = useUrlFilters({ tab: 'documents', action: '' })
   const activeTab = (filters.tab || 'documents') as TabValue
@@ -95,12 +96,23 @@ function DocumentsPageInner() {
           </button>
         )}
         <button
-          onClick={() => { handleTabChange('documents'); openScan() }}
+          onClick={() => { handleTabChange('documents'); quickFileInputRef.current?.click() }}
           className="action-btn h-12 flex items-center justify-center gap-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm"
         >
           <Upload className="h-4 w-4 flex-shrink-0" />
           Nahrát doklad
         </button>
+        <input
+          ref={quickFileInputRef}
+          type="file"
+          accept="image/*,.pdf"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) openScan(file)
+            e.target.value = ''
+          }}
+        />
         <button
           onClick={() => { handleTabChange('invoices'); setShowInvoiceOverlay(true) }}
           className="action-btn h-12 flex items-center justify-center gap-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm"
