@@ -9,6 +9,7 @@
  */
 
 import Papa from 'papaparse'
+import iconv from 'iconv-lite'
 
 export type ParsedTransaction = {
   date: string
@@ -375,8 +376,14 @@ export async function parseBankStatement(
 
   switch (format) {
     case 'csv': {
-      const text = buffer.toString('utf-8')
-      return parseCSV(text)
+      // Try UTF-8 first, fall back to Win-1250 (common Czech bank encoding)
+      let text = buffer.toString('utf-8')
+      let result = parseCSV(text)
+      if (result.transactions.length === 0) {
+        text = iconv.decode(buffer, 'win1250')
+        result = parseCSV(text)
+      }
+      return result
     }
     case 'mt940': {
       return parseMT940(buffer)

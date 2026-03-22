@@ -142,6 +142,7 @@ export async function POST(request: NextRequest) {
           matched_document_id: match.document_id || null,
           matched_invoice_id: match.invoice_id || null,
           matched_dohoda_mesic_id: match.dohoda_mesic_id || null,
+          match_group_id: (match as MatchResultV2).match_group_id || null,
           match_confidence: match.confidence,
           match_method: match.method,
           tax_impact: 0,
@@ -219,13 +220,19 @@ export async function POST(request: NextRequest) {
       const newPatterns = detectPeriodicPatterns(allTxInputs, company_id)
       for (const pattern of newPatterns) {
         // Upsert: skip if pattern with same counterparty already exists
-        const { data: existing } = await supabaseAdmin
+        let query = supabaseAdmin
           .from('periodic_patterns')
           .select('id')
           .eq('company_id', company_id)
-          .eq('counterparty_account', pattern.counterparty_account || '')
           .eq('is_active', true)
-          .limit(1)
+
+        if (pattern.counterparty_account) {
+          query = query.eq('counterparty_account', pattern.counterparty_account)
+        } else {
+          query = query.is('counterparty_account', null)
+        }
+
+        const { data: existing } = await query.limit(1)
 
         if (!existing || existing.length === 0) {
           await supabaseAdmin.from('periodic_patterns').insert(pattern)
