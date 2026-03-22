@@ -1,17 +1,29 @@
-import { Capacitor } from '@capacitor/core'
+let _Capacitor: { isNativePlatform(): boolean; getPlatform(): string } | null = null
+
+function getCapacitor() {
+  if (_Capacitor) return _Capacitor
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('@capacitor/core')
+    _Capacitor = mod.Capacitor
+    return _Capacitor
+  } catch {
+    return null
+  }
+}
 
 export function isNativePlatform(): boolean {
-  return Capacitor.isNativePlatform()
+  return getCapacitor()?.isNativePlatform() ?? false
 }
 
 export function isAndroid(): boolean {
-  return Capacitor.getPlatform() === 'android'
+  return getCapacitor()?.getPlatform() === 'android'
 }
 
 export function isIOS(): boolean {
-  return Capacitor.getPlatform() === 'ios'
+  return getCapacitor()?.getPlatform() === 'ios'
 }
 
 export function isWeb(): boolean {
-  return Capacitor.getPlatform() === 'web'
+  return getCapacitor()?.getPlatform() === 'web'
 }
