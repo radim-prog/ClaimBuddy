@@ -111,7 +111,12 @@ async function verifyToken(token: string): Promise<TokenPayload | null> {
     if (diff !== 0) return null
 
     // Decode payload
-    const decoded = atob(json.replace(/-/g, '+').replace(/_/g, '/'))
+    const binaryStr = atob(json.replace(/-/g, '+').replace(/_/g, '/'))
+    const bytes = new Uint8Array(binaryStr.length)
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i)
+    }
+    const decoded = new TextDecoder().decode(bytes)
     const payload: TokenPayload = JSON.parse(decoded)
 
     // Check expiry
