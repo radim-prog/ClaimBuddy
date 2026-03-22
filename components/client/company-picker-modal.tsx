@@ -17,6 +17,7 @@ interface CompanyPickerModalProps {
   companies: Company[]
   onSelect: (companyId: string) => void
   onSetDefault: (companyId: string) => void
+  onClose?: () => void
 }
 
 const statusDot: Record<string, string> = {
@@ -25,7 +26,7 @@ const statusDot: Record<string, string> = {
   onboarding: 'bg-blue-500',
 }
 
-export function CompanyPickerModal({ open, companies, onSelect, onSetDefault }: CompanyPickerModalProps) {
+export function CompanyPickerModal({ open, companies, onSelect, onSetDefault, onClose }: CompanyPickerModalProps) {
   const [search, setSearch] = useState('')
   const [setAsDefault, setSetAsDefault] = useState(false)
   const useCompactList = companies.length >= 6
@@ -45,8 +46,8 @@ export function CompanyPickerModal({ open, companies, onSelect, onSetDefault }: 
   }
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-[480px]" onPointerDownOutside={e => e.preventDefault()}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose?.() }}>
+      <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle className="font-display">Vyberte firmu</DialogTitle>
         </DialogHeader>
