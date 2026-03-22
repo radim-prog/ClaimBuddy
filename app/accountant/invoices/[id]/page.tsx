@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -36,8 +36,9 @@ const statusConfig: Record<InvoiceStatus, { label: string; color: string; icon: 
 }
 
 
-export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function InvoiceDetailPage() {
+  const params = useParams()
+  const id = params.id as string
   const router = useRouter()
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [supplier, setSupplier] = useState<SupplierInfo | null>(null)
