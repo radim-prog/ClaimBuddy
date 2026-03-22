@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const userName = request.headers.get('x-user-name') || 'Klient'
+  const userName = decodeURIComponent(request.headers.get('x-user-name') || '') || 'Klient'
   const impersonateCompany = request.headers.get('x-impersonate-company')
 
   const userRole = request.headers.get('x-user-role')
