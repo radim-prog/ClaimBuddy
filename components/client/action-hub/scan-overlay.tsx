@@ -22,6 +22,7 @@ interface ScanOverlayProps {
   companyId: string
   companies: Array<{ id: string; name: string }>
   onClose: () => void
+  initialFile?: File | null
 }
 
 interface ScanJob {
@@ -36,7 +37,7 @@ interface ScanJob {
   draftId?: string
 }
 
-export function ScanOverlay({ open, companyId: initialCompanyId, companies, onClose }: ScanOverlayProps) {
+export function ScanOverlay({ open, companyId: initialCompanyId, companies, onClose, initialFile }: ScanOverlayProps) {
   const [companyId, setCompanyId] = useState(initialCompanyId)
   const [documentType, setDocumentType] = useState<ExtractionDocumentType>('receipt')
   const [typeSelected, setTypeSelected] = useState(false)
@@ -51,6 +52,15 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
   useEffect(() => {
     setCompanyId(initialCompanyId)
   }, [initialCompanyId])
+
+  // Auto-process initialFile (from native camera)
+  useEffect(() => {
+    if (open && initialFile && !job) {
+      const dt = new DataTransfer()
+      dt.items.add(initialFile)
+      handleFileSelect(dt.files)
+    }
+  }, [open, initialFile])
 
   // Reset state when closing
   useEffect(() => {

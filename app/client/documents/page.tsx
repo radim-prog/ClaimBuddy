@@ -28,6 +28,8 @@ import { CollapsibleSection } from '@/components/collapsible-section'
 import { BankReviewSheet } from '@/components/client/bank-review-sheet'
 import { TransactionQuickUpload } from '@/components/client/transaction-quick-upload'
 import { UpsellBanner } from '@/components/client/upsell-banner'
+import { isNativePlatform } from '@/lib/platform'
+import { takePhoto } from '@/lib/native-camera'
 import { toast } from 'sonner'
 import { Suspense } from 'react'
 import { useUrlFilters } from '@/lib/hooks/use-url-filters'
@@ -42,6 +44,7 @@ export default function DocumentsPage() {
 
 function DocumentsPageInner() {
   const [showScanOverlay, setShowScanOverlay] = useState(false)
+  const [nativeCameraFile, setNativeCameraFile] = useState<File | null>(null)
   const [bankExpanded, setBankExpanded] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('documents-bank-expanded') === 'true'
@@ -70,9 +73,27 @@ function DocumentsPageInner() {
       <UpsellBanner message="Nahráváte doklady sami? S profesionální účetní ušetříte čas a vyhnete se chybám." />
 
       {/* Action buttons */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className={cn('grid gap-3', isNativePlatform() ? 'grid-cols-3' : 'grid-cols-2')}>
+        {isNativePlatform() && (
+          <button
+            onClick={async () => {
+              const photoUri = await takePhoto()
+              if (photoUri) {
+                const response = await fetch(photoUri)
+                const blob = await response.blob()
+                const file = new File([blob], `doklad-${Date.now()}.jpg`, { type: 'image/jpeg' })
+                setNativeCameraFile(file)
+                setShowScanOverlay(true)
+              }
+            }}
+            className="action-btn h-14 flex items-center justify-center gap-3 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-base"
+          >
+            <Camera className="h-5 w-5 flex-shrink-0" />
+            Vyfotit doklad
+          </button>
+        )}
         <button
-          onClick={() => setShowScanOverlay(true)}
+          onClick={() => { setNativeCameraFile(null); setShowScanOverlay(true) }}
           className="action-btn h-14 flex items-center justify-center gap-3 px-5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-base"
         >
           <Camera className="h-5 w-5 flex-shrink-0" />
@@ -121,7 +142,8 @@ function DocumentsPageInner() {
         open={showScanOverlay}
         companyId={companyId}
         companies={visibleCompanies}
-        onClose={() => setShowScanOverlay(false)}
+        onClose={() => { setShowScanOverlay(false); setNativeCameraFile(null) }}
+        initialFile={nativeCameraFile}
       />
     </div>
   )
