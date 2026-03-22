@@ -53,6 +53,7 @@ import { CompanySwitcher } from '@/components/client/company-switcher'
 import { CompanyPickerModal } from '@/components/client/company-picker-modal'
 import { ClientModuleSwitcher } from '@/components/client/client-module-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
+import { initNativeFeatures } from '@/lib/native-init'
 import { useClientUnreadMessages } from '@/hooks/use-client-unread-messages'
 import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-context'
 import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
@@ -96,6 +97,11 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const [notificationsDismissed, setNotificationsDismissed] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [questionnaireNew, setQuestionnaireNew] = useState(false)
+
+  // Initialize native features (push notifications, status bar, splash)
+  useEffect(() => {
+    initNativeFeatures()
+  }, [])
 
   // Check if there's a questionnaire with status='sent' (new for client)
   useEffect(() => {
