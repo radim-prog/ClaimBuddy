@@ -30,6 +30,7 @@ import { InvoiceOverlay } from '@/components/client/action-hub/invoice-overlay'
 import { BankUploadOverlay } from '@/components/client/action-hub/bank-upload-overlay'
 import { QuickActionOverlay } from '@/components/client/action-hub/quick-action-overlay'
 import { DashboardCharts } from '@/components/client/dashboard-charts'
+import { CompanyTilesWidget } from '@/components/client/company-tiles-widget'
 
 const monthNames = [
   'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
@@ -51,7 +52,7 @@ function getMonthDotColor(closure: { bank_statement_status: ClosureStatus; expen
 
 export default function ClientDashboard() {
   const router = useRouter()
-  const { userName, companies, closures, loading, error, selectedCompany } = useClientUser()
+  const { userName, companies, closures, loading, error, selectedCompany, setSelectedCompanyId } = useClientUser()
   const [draftCount, setDraftCount] = useState(0)
   const [casesCount, setCasesCount] = useState(0)
   const [lastCaseActivity, setLastCaseActivity] = useState<string | null>(null)
@@ -300,6 +301,15 @@ export default function ClientDashboard() {
               </Link>
             </CardContent>
           </Card>
+        )}
+
+        {/* Company Tiles */}
+        {companies.length > 1 && (
+          <CompanyTilesWidget
+            companies={companies}
+            selectedCompanyId={selectedCompany?.id || ''}
+            onSelectCompany={setSelectedCompanyId}
+          />
         )}
 
         {/* Year Matrix */}
