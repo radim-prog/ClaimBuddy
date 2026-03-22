@@ -20,6 +20,7 @@ test.describe('Client auth flow', () => {
     expect(page.url()).toContain('/accountant/')
 
     // Username should be visible somewhere
+    await page.waitForLoadState('networkidle')
     const body = await page.textContent('body')
     expect(body).toContain('Radim')
 

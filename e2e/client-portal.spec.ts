@@ -4,7 +4,7 @@ test.describe('Client portal', () => {
   test('dashboard loads with company data', async ({ page }) => {
     await page.goto('/client/dashboard')
     // Should see greeting
-    await expect(page.locator('h1').first()).toContainText('Dobrý den')
+    await expect(page.locator('main h1').first()).toContainText('Dobrý den')
     // Should see year overview
     await expect(page.locator('text=Přehled roku')).toBeVisible()
   })
