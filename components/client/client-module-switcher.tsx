@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calculator, Shield, Lock, ChevronDown, X, ArrowRight } from 'lucide-react'
+import { Calculator, Shield, Lock, ChevronDown, ArrowRight } from 'lucide-react'
 import { useActiveModule } from '@/lib/contexts/active-module-context'
 import {
   DropdownMenu,
@@ -10,6 +10,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 type ModuleDef = {
   id: 'accounting' | 'claims'
@@ -80,41 +92,14 @@ export function ClientModuleSwitcher({
 
   const CurrentIcon = currentModule.icon
 
-  // Cross-sell banner
-  if (crossSellOpen) {
-    const lockedMod = CLIENT_MODULES.find(m => m.id === crossSellOpen)!
-    return (
-      <div className="relative mx-3 my-2 rounded-xl bg-white/[0.08] border border-white/[0.08] p-3">
-        <button
-          onClick={() => setCrossSellOpen(null)}
-          className="absolute top-2 right-2 text-white/40 hover:text-white/70 transition-colors"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-        <div className="flex items-center gap-2 mb-2">
-          <lockedMod.icon className={`h-4 w-4 ${lockedMod.color}`} />
-          <span className="text-sm font-semibold text-white/90">{lockedMod.crossSellTitle}</span>
-        </div>
-        <p className="text-xs text-white/50 leading-relaxed mb-3">
-          {lockedMod.crossSellMessage}
-        </p>
-        <a
-          href={lockedMod.crossSellHref}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r ${lockedMod.bgGradient} text-white text-xs font-medium hover:opacity-90 transition-opacity`}
-        >
-          {lockedMod.crossSellCta}
-          <ArrowRight className="h-3 w-3" />
-        </a>
-      </div>
-    )
-  }
+  const crossSellMod = crossSellOpen ? CLIENT_MODULES.find(m => m.id === crossSellOpen)! : null
 
   // Both modules available — active dropdown switcher
   if (hasBothModules) {
     if (collapsed) return null
 
     return (
-      <div className="relative px-3 py-2 border-b border-white/[0.06]">
+      <div className="relative px-3 py-1.5">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg hover:bg-white/[0.08] transition-all duration-200 text-white/70 hover:text-white/90">
@@ -155,24 +140,77 @@ export function ClientModuleSwitcher({
   const lockedMod = CLIENT_MODULES.find(m => m.id === lockedModuleId)!
   const LockedIcon = lockedMod.icon
 
-  if (collapsed) return null
+  if (collapsed) {
+    return (
+      <TooltipProvider delayDuration={0}>
+        <div className="px-3 py-1.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setCrossSellOpen(lockedModuleId)}
+                className="w-full flex items-center justify-center px-2 py-1.5 rounded-lg text-white/25 hover:bg-white/[0.04] hover:text-white/40 transition-all duration-200"
+              >
+                <LockedIcon className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="font-medium">{lockedMod.name}</TooltipContent>
+          </Tooltip>
+        </div>
+        {crossSellMod && (
+          <Dialog open={!!crossSellOpen} onOpenChange={() => setCrossSellOpen(null)}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{crossSellMod.crossSellTitle}</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">{crossSellMod.crossSellMessage}</p>
+              <a
+                href={crossSellMod.crossSellHref}
+                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r ${crossSellMod.bgGradient} text-white text-sm font-medium hover:opacity-90 transition-opacity w-fit`}
+              >
+                {crossSellMod.crossSellCta}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </a>
+            </DialogContent>
+          </Dialog>
+        )}
+      </TooltipProvider>
+    )
+  }
 
   return (
-    <div className="relative px-3 py-2 border-b border-white/[0.06]">
-      {/* Current active module label */}
-      <div className="flex items-center gap-2 px-2 py-1.5 text-white/70">
-        <CurrentIcon className={`h-4 w-4 ${currentModule.color}`} />
-        <span className="text-xs font-medium flex-1">{currentModule.name}</span>
+    <TooltipProvider delayDuration={0}>
+      <div className="px-3 py-1.5">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => setCrossSellOpen(lockedModuleId)}
+              className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-white/25 hover:bg-white/[0.04] hover:text-white/40 transition-all duration-200"
+            >
+              <LockedIcon className="h-3.5 w-3.5" />
+              <span className="text-[10px] font-medium flex-1 text-left">{lockedMod.name}</span>
+              <Lock className="h-3 w-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="font-medium">{lockedMod.crossSellTitle}</TooltipContent>
+        </Tooltip>
       </div>
-      {/* Locked module — clickable for cross-sell */}
-      <button
-        onClick={() => setCrossSellOpen(lockedModuleId)}
-        className="flex items-center gap-2 w-full px-2 py-1.5 mt-0.5 rounded-lg text-white/25 hover:bg-white/[0.04] hover:text-white/40 transition-all duration-200"
-      >
-        <LockedIcon className="h-4 w-4" />
-        <span className="text-xs font-medium flex-1 text-left">{lockedMod.name}</span>
-        <Lock className="h-3 w-3" />
-      </button>
-    </div>
+      {crossSellMod && (
+        <Dialog open={!!crossSellOpen} onOpenChange={() => setCrossSellOpen(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{crossSellMod.crossSellTitle}</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">{crossSellMod.crossSellMessage}</p>
+            <a
+              href={crossSellMod.crossSellHref}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r ${crossSellMod.bgGradient} text-white text-sm font-medium hover:opacity-90 transition-opacity w-fit`}
+            >
+              {crossSellMod.crossSellCta}
+              <ArrowRight className="h-3.5 w-3.5" />
+            </a>
+          </DialogContent>
+        </Dialog>
+      )}
+    </TooltipProvider>
   )
 }

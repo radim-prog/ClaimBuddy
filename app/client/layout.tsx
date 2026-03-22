@@ -215,9 +215,6 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Company Switcher */}
           <CompanySwitcher collapsed={collapsed} />
 
-          {/* Module Switcher */}
-          <ClientModuleSwitcher userModules={userModules} collapsed={collapsed} />
-
           {/* Navigation */}
           <TooltipProvider delayDuration={0}>
             <nav className="relative flex-1 px-3 py-4 space-y-0.5">
@@ -288,6 +285,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               </Link>
             </div>
           )}
+
+          {/* Module Switcher — bottom position */}
+          <ClientModuleSwitcher userModules={userModules} collapsed={collapsed} />
 
           {/* Tools - Průvodce & Tmavý režim */}
           <div className="relative flex-shrink-0 border-t border-white/[0.06] px-3 py-3 space-y-0.5">
