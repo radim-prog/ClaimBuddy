@@ -15,8 +15,8 @@ import { toast } from 'sonner'
 import type { InvoicePartner } from '@/lib/types/invoice-partners'
 
 export default function PartnersPage() {
-  const { companies, loading: companiesLoading, selectedCompanyId } = useClientUser()
-  const companyId = selectedCompanyId || companies[0]?.id || ''
+  const { visibleCompanies, loading: companiesLoading, selectedCompanyId } = useClientUser()
+  const companyId = selectedCompanyId || visibleCompanies[0]?.id || ''
 
   const [partners, setPartners] = useState<InvoicePartner[]>([])
   const [loading, setLoading] = useState(true)

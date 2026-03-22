@@ -12,7 +12,7 @@ const monthNames = [
 
 export function MissingDocsBar() {
   const router = useRouter()
-  const { companies, closures, loading } = useClientUser()
+  const { visibleCompanies, closures, loading } = useClientUser()
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
@@ -29,9 +29,9 @@ export function MissingDocsBar() {
   const previousPeriod = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`
 
   const hasMissing = useMemo(() => {
-    if (loading || companies.length === 0) return false
+    if (loading || visibleCompanies.length === 0) return false
 
-    for (const company of companies) {
+    for (const company of visibleCompanies) {
       const closure = closures.find(
         (c) => c.company_id === company.id && c.period === previousPeriod,
       )
@@ -45,7 +45,7 @@ export function MissingDocsBar() {
       }
     }
     return false
-  }, [companies, closures, loading, previousPeriod])
+  }, [visibleCompanies, closures, loading, previousPeriod])
 
   if (loading || !hasMissing || dismissed) return null
 
