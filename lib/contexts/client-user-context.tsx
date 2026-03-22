@@ -45,6 +45,9 @@ type ClientUserContextType = {
   showCompanyPicker: boolean
   setShowCompanyPicker: (show: boolean) => void
   setDefaultCompany: (id: string) => void
+  visibleCompanies: Company[]
+  hiddenCompanyIds: Set<string>
+  toggleCompanyVisibility: (companyId: string, hidden: boolean) => Promise<void>
 }
 
 const ClientUserContext = createContext<ClientUserContextType | undefined>(undefined)
@@ -63,6 +66,7 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
   const [selectedCompanyId, setSelectedCompanyIdState] = useState('')
   const [userModules, setUserModules] = useState<string[]>(['accounting'])
   const [showCompanyPicker, setShowCompanyPicker] = useState(false)
+  const [hiddenCompanyIds, setHiddenCompanyIds] = useState<Set<string>>(new Set())
 
   const setSelectedCompanyId = useCallback((id: string) => {
     setSelectedCompanyIdState(id)
@@ -114,6 +118,15 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
         setUserInitials(initials)
       }
 
+      // Fetch hidden company IDs
+      try {
+        const visRes = await fetch('/api/client/company-visibility')
+        if (visRes.ok) {
+          const visData = await visRes.json()
+          setHiddenCompanyIds(new Set(visData.hidden_company_ids || []))
+        }
+      } catch {}
+
       // Initialize selected company
       if (companiesList.length <= 1) {
         setSelectedCompanyIdState(companiesList[0]?.id || '')
@@ -154,6 +167,27 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
+  const visibleCompanies = useMemo(
+    () => companies.filter(c => !hiddenCompanyIds.has(c.id)),
+    [companies, hiddenCompanyIds]
+  )
+
+  const toggleCompanyVisibility = useCallback(async (companyId: string, hidden: boolean) => {
+    try {
+      await fetch('/api/client/company-visibility', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: companyId, hidden }),
+      })
+      setHiddenCompanyIds(prev => {
+        const next = new Set(prev)
+        if (hidden) next.add(companyId)
+        else next.delete(companyId)
+        return next
+      })
+    } catch {}
+  }, [])
+
   const selectedCompany = useMemo(
     () => companies.find(c => c.id === selectedCompanyId),
     [companies, selectedCompanyId]
@@ -175,7 +209,10 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
     showCompanyPicker,
     setShowCompanyPicker,
     setDefaultCompany,
-  }), [userId, userName, userInitials, companies, closures, loading, error, selectedCompanyId, setSelectedCompanyId, selectedCompany, userModules, showCompanyPicker, setDefaultCompany])
+    visibleCompanies,
+    hiddenCompanyIds,
+    toggleCompanyVisibility,
+  }), [userId, userName, userInitials, companies, closures, loading, error, selectedCompanyId, setSelectedCompanyId, selectedCompany, userModules, showCompanyPicker, setDefaultCompany, visibleCompanies, hiddenCompanyIds, toggleCompanyVisibility])
 
   return (
     <ClientUserContext.Provider value={value}>
