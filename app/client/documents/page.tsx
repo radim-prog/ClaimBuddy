@@ -77,13 +77,17 @@ function DocumentsPageInner() {
         {isNativePlatform() && (
           <button
             onClick={async () => {
-              const photoUri = await takePhoto()
-              if (photoUri) {
-                const response = await fetch(photoUri)
-                const blob = await response.blob()
-                const file = new File([blob], `doklad-${Date.now()}.jpg`, { type: 'image/jpeg' })
-                setNativeCameraFile(file)
-                setShowScanOverlay(true)
+              try {
+                const photoUri = await takePhoto()
+                if (photoUri) {
+                  const response = await fetch(photoUri)
+                  const blob = await response.blob()
+                  const file = new File([blob], `doklad-${Date.now()}.jpg`, { type: 'image/jpeg' })
+                  setNativeCameraFile(file)
+                  setShowScanOverlay(true)
+                }
+              } catch {
+                toast.error('Nepodařilo se otevřít kameru')
               }
             }}
             className="action-btn h-14 flex items-center justify-center gap-3 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-base"

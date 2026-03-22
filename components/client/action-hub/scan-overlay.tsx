@@ -60,7 +60,7 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
       dt.items.add(initialFile)
       handleFileSelect(dt.files)
     }
-  }, [open, initialFile])
+  }, [open, initialFile, handleFileSelect])
 
   // Reset state when closing
   useEffect(() => {

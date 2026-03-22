@@ -380,7 +380,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Mobile header */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between sidebar-blue px-4 py-3">
+        <div className="flex items-center justify-between sidebar-blue px-4 py-3" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
           <Link href={isClaims ? '/client/claims' : '/client/dashboard'} className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center">
               <span className="text-xs font-bold text-white font-display">U</span>
@@ -431,8 +431,8 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Mobile bottom tab bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-950/90 backdrop-blur-2xl border-t border-gray-200/60 dark:border-gray-800/60 z-50 safe-area-bottom">
-        <nav className="flex justify-around px-1 pt-1 pb-1">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-950/90 backdrop-blur-2xl border-t border-gray-200/60 dark:border-gray-800/60 z-50">
+        <nav className="flex justify-around px-1 pt-1" style={{ paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom))' }}>
           {navigation.filter(n => isClaims
             ? ['Moje případy', 'Soubory', 'Zprávy', 'Nahlásit událost'].includes(n.name)
             : ['Přehled', 'Doklady & Faktury', 'Zprávy', 'Kniha jízd'].includes(n.name)
