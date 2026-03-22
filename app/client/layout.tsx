@@ -395,7 +395,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               <DropdownMenuItem asChild>
                 <Link href="/client/account" className="cursor-pointer">
                   <UserCircle className="mr-2 h-4 w-4" />
-                  Nastavení účtu
+                  Nastavení
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
