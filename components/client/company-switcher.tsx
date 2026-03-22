@@ -5,7 +5,7 @@ import { Building2, ChevronDown, Plus, Clock } from 'lucide-react'
 import { AddCompanyDialog } from '@/components/client/add-company-dialog'
 
 export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
-  const { companies, selectedCompanyId, setSelectedCompanyId, selectedCompany, refetch } = useClientUser()
+  const { companies, selectedCompanyId, setSelectedCompanyId, selectedCompany, refetch, setShowCompanyPicker } = useClientUser()
 
   if (companies.length === 0) {
     // No companies — show add button
@@ -103,15 +103,24 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
           Čeká na schválení účetním
         </div>
       )}
-      <AddCompanyDialog
-        onCompanyAdded={refetch}
-        trigger={
-          <button className="flex items-center gap-1.5 px-1 text-xs text-white/40 hover:text-white/70 transition-colors">
-            <Plus className="h-3.5 w-3.5" />
-            Přidat firmu
-          </button>
-        }
-      />
+      <div className="flex items-center gap-3">
+        <AddCompanyDialog
+          onCompanyAdded={refetch}
+          trigger={
+            <button className="flex items-center gap-1.5 px-1 text-xs text-white/40 hover:text-white/70 transition-colors">
+              <Plus className="h-3.5 w-3.5" />
+              Přidat firmu
+            </button>
+          }
+        />
+        <button
+          onClick={() => setShowCompanyPicker(true)}
+          className="flex items-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors"
+        >
+          <Building2 className="h-3 w-3" />
+          Všechny firmy
+        </button>
+      </div>
     </div>
   )
 }

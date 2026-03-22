@@ -51,6 +51,7 @@ import { NotificationBanner } from '@/components/client/notification-banner'
 import { ImpersonationBanner } from '@/components/client/impersonation-banner'
 import { MissingDocsBar } from '@/components/client/missing-docs-bar'
 import { CompanySwitcher } from '@/components/client/company-switcher'
+import { CompanyPickerModal } from '@/components/client/company-picker-modal'
 import { ClientModuleSwitcher } from '@/components/client/client-module-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-context'
@@ -88,7 +89,7 @@ const dynamicNavigation: { name: string; href: string; icon: typeof LayoutDashbo
 
 function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? ''
-  const { userName, userInitials, selectedCompany, selectedCompanyId, userModules, companies } = useClientUser()
+  const { userName, userInitials, selectedCompany, selectedCompanyId, setSelectedCompanyId, userModules, companies, showCompanyPicker, setShowCompanyPicker, setDefaultCompany } = useClientUser()
   const { isLocked, planTier } = usePlanFeatures()
   const { startTour } = useTutorialContext()
   const { activeModule } = useActiveModule()
@@ -169,6 +170,12 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       {!isClaims && <MissingDocsBar />}
       <NotificationModal onDismissed={() => setNotificationsDismissed(true)} />
       <NotificationBanner dismissed={notificationsDismissed} />
+      <CompanyPickerModal
+        open={showCompanyPicker}
+        companies={companies}
+        onSelect={(id) => { setSelectedCompanyId(id); setShowCompanyPicker(false) }}
+        onSetDefault={setDefaultCompany}
+      />
 
       {/* Sidebar - Desktop */}
       <aside className={`hidden md:fixed md:inset-y-0 md:flex md:flex-col z-30 transition-all duration-300 ease-in-out ${collapsed ? 'md:w-[72px]' : 'md:w-64'}`}>

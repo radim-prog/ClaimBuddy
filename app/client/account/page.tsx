@@ -20,6 +20,7 @@ export default function AccountPage() {
         <p className="text-muted-foreground">Spravujte svůj profil a nastavení</p>
       </div>
       <ProfileTab />
+      <DefaultCompanySection />
       <CompanyTab />
       <DocumentInboxTab />
       <NotificationsTab />
@@ -163,6 +164,51 @@ function ProfileTab() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+function DefaultCompanySection() {
+  const { companies, setDefaultCompany } = useClientUser()
+  const [defaultId, setDefaultId] = useState<string>('')
+
+  useEffect(() => {
+    const saved = localStorage.getItem('default_company_id')
+    setDefaultId(saved || '')
+  }, [])
+
+  if (companies.length <= 1) return null
+
+  const handleChange = (value: string) => {
+    setDefaultId(value)
+    if (value) {
+      setDefaultCompany(value)
+    } else {
+      localStorage.removeItem('default_company_id')
+    }
+  }
+
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg font-display">
+          <Building2 className="h-5 w-5" />
+          Výchozí firma
+        </CardTitle>
+        <CardDescription>Firma, která se automaticky vybere po přihlášení</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <select
+          value={defaultId}
+          onChange={e => handleChange(e.target.value)}
+          className="w-full h-11 px-3 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <option value="">Žádná — vždy zobrazit výběr</option>
+          {companies.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </CardContent>
+    </Card>
   )
 }
 

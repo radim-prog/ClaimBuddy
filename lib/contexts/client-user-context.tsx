@@ -42,11 +42,15 @@ type ClientUserContextType = {
   setSelectedCompanyId: (id: string) => void
   selectedCompany: Company | undefined
   userModules: string[]
+  showCompanyPicker: boolean
+  setShowCompanyPicker: (show: boolean) => void
+  setDefaultCompany: (id: string) => void
 }
 
 const ClientUserContext = createContext<ClientUserContextType | undefined>(undefined)
 
 const STORAGE_KEY = 'selected_company_id'
+const DEFAULT_KEY = 'default_company_id'
 
 export function ClientUserProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState('')
@@ -58,12 +62,17 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [selectedCompanyId, setSelectedCompanyIdState] = useState('')
   const [userModules, setUserModules] = useState<string[]>(['accounting'])
+  const [showCompanyPicker, setShowCompanyPicker] = useState(false)
 
   const setSelectedCompanyId = useCallback((id: string) => {
     setSelectedCompanyIdState(id)
     try {
       localStorage.setItem(STORAGE_KEY, id)
     } catch {}
+  }, [])
+
+  const setDefaultCompany = useCallback((id: string) => {
+    localStorage.setItem(DEFAULT_KEY, id)
   }, [])
 
   const fetchData = async () => {
@@ -105,12 +114,20 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
         setUserInitials(initials)
       }
 
-      // Initialize selected company from localStorage or default to first
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved && companiesList.some(c => c.id === saved)) {
-        setSelectedCompanyIdState(saved)
-      } else if (companiesList.length > 0) {
-        setSelectedCompanyIdState(companiesList[0].id)
+      // Initialize selected company
+      if (companiesList.length <= 1) {
+        setSelectedCompanyIdState(companiesList[0]?.id || '')
+      } else {
+        const defaultId = localStorage.getItem(DEFAULT_KEY)
+        const saved = localStorage.getItem(STORAGE_KEY)
+        if (defaultId && companiesList.some(c => c.id === defaultId)) {
+          setSelectedCompanyIdState(defaultId)
+        } else if (saved && companiesList.some(c => c.id === saved)) {
+          setSelectedCompanyIdState(saved)
+        } else {
+          setSelectedCompanyIdState(companiesList[0].id)
+          setShowCompanyPicker(true)
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -155,7 +172,10 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
     setSelectedCompanyId,
     selectedCompany,
     userModules,
-  }), [userId, userName, userInitials, companies, closures, loading, error, selectedCompanyId, setSelectedCompanyId, selectedCompany, userModules])
+    showCompanyPicker,
+    setShowCompanyPicker,
+    setDefaultCompany,
+  }), [userId, userName, userInitials, companies, closures, loading, error, selectedCompanyId, setSelectedCompanyId, selectedCompany, userModules, showCompanyPicker, setDefaultCompany])
 
   return (
     <ClientUserContext.Provider value={value}>
