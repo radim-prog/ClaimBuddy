@@ -202,7 +202,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col flex-grow sidebar-blue shadow-sidebar overflow-y-auto custom-scrollbar">
           {/* Logo */}
           <div className={`relative flex items-center h-16 flex-shrink-0 border-b border-white/[0.06] transition-all duration-300 ${collapsed ? 'justify-center px-3' : 'px-5'}`}>
-            <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
+            <Link href={isClaims ? '/client/claims' : '/client/dashboard'} className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-soft-sm flex-shrink-0 ${isClaims ? 'bg-gradient-to-br from-blue-400 to-blue-500' : 'bg-gradient-to-br from-blue-400 to-indigo-500'}`}>
                 {isClaims ? (
                   <Shield className="h-4 w-4 text-white" />
@@ -220,7 +220,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                   </p>
                 </div>
               )}
-            </div>
+            </Link>
           </div>
 
           {/* Company Switcher */}
@@ -379,12 +379,12 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile header */}
       <div className="md:hidden">
         <div className="flex items-center justify-between sidebar-blue px-4 py-3">
-          <div className="flex items-center gap-2.5">
+          <Link href={isClaims ? '/client/claims' : '/client/dashboard'} className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center">
               <span className="text-xs font-bold text-white font-display">U</span>
             </div>
             <span className="text-sm font-semibold text-white/90 font-display">Účetní OS</span>
-          </div>
+          </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 text-white/90 hover:text-white">
