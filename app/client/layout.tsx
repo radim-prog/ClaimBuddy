@@ -101,8 +101,13 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const [questionnaireNew, setQuestionnaireNew] = useState(false)
 
   // Initialize native features (push notifications, status bar, splash)
+  // Must NEVER crash — Capacitor is only available in native app
   useEffect(() => {
-    initNativeFeatures()
+    try {
+      initNativeFeatures().catch(() => {})
+    } catch {
+      // Capacitor not available — OK, we're on web
+    }
   }, [])
 
   // Check if there's a questionnaire with status='sent' (new for client)
