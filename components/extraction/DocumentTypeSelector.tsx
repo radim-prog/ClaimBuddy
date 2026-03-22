@@ -31,7 +31,7 @@ const allDocumentTypes: {
   { value: 'invoice', label: 'Faktura' },
   { value: 'advance_invoice', label: 'Zálohová faktura' },
   { value: 'credit_note', label: 'Dobropis' },
-  { value: 'bank_statement', label: 'Výpis z účtu' },
+  { value: 'bank_statement', label: 'Bankovní výpis' },
   { value: 'contract', label: 'Smlouva' },
   { value: 'other', label: 'Ostatní' },
 ]

@@ -359,7 +359,7 @@ export async function processDueDeliveries(): Promise<{ delivered: number; faile
 // ============================================
 
 const REMINDER_TITLE_MAP: Record<ReminderType, string> = {
-  deadline: 'Termín podkladů',
+  deadline: 'Termín uzávěrky',
   missing_docs: 'Chybějící doklady',
   unpaid_invoice: 'Neuhrazená faktura',
   custom: 'Upozornění',

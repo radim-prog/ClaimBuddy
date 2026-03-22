@@ -10,10 +10,10 @@ import {
 export const metadata: Metadata = {
   title: 'Marketplace účetních — Najděte ideálního účetního',
   description:
-    'Spojujeme podnikatele s ověřenými účetními. Inteligentní matching, hodnocení, přímá komunikace v aplikaci.',
+    'Spojujeme podnikatele s ověřenými účetními. Inteligentní párování, hodnocení, přímá komunikace v aplikaci.',
   openGraph: {
     title: 'Marketplace účetních',
-    description: 'Najděte ideálního účetního pro vaši firmu. Ověřené profily, hodnocení, AI matching.',
+    description: 'Najděte ideálního účetního pro vaši firmu. Ověřené profily, hodnocení, AI párování.',
     type: 'website',
   },
 }
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 const BENEFITS = [
   { icon: Shield, title: 'Ověřené profily', desc: 'Každý účetní projde verifikací. Vidíte certifikace, zkušenosti a specializaci na konkrétní obory.' },
   { icon: Star, title: 'Hodnocení a recenze', desc: 'Transparentní hodnocení od skutečných klientů. Vyberte účetního s nejlepšími referencemi.' },
-  { icon: Brain, title: 'Inteligentní matching', desc: 'AI analyzuje vaše požadavky a navrhne účetní, kteří nejlépe odpovídají vaší firmě a oboru.' },
+  { icon: Brain, title: 'Inteligentní párování', desc: 'AI analyzuje vaše požadavky a navrhne účetní, kteří nejlépe odpovídají vaší firmě a oboru.' },
   { icon: MessageCircle, title: 'Přímá komunikace', desc: 'Komunikujte s účetním přímo v aplikaci. Žádné emaily, žádné telefony — vše na jednom místě.' },
 ]
 

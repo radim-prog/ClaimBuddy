@@ -78,8 +78,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 
 const DOCUMENT_TYPES = [
   { value: 'bank_statement', label: 'Bankovní výpis' },
-  { value: 'expense_invoice', label: 'Výdajová faktura' },
-  { value: 'income_invoice', label: 'Příjmová faktura' },
+  { value: 'expense_invoice', label: 'Přijatá faktura' },
+  { value: 'income_invoice', label: 'Vydaná faktura' },
   { value: 'receipt', label: 'Účtenka' },
   { value: 'other', label: 'Ostatní' },
 ]

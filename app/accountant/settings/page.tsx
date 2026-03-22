@@ -125,12 +125,12 @@ export default function AccountantSettingsPage() {
         <CardHeader className="pb-2 pt-4 px-4">
           <CardTitle className="text-sm font-display flex items-center gap-2">
             <Calendar className="h-3.5 w-3.5" />
-            Deadline a sazby
+            Termíny a sazby
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4 space-y-3">
           <div className="flex items-center gap-3 flex-wrap">
-            <InlineField label="Deadline podkladů" id="deadlineDay">
+            <InlineField label="Termín podání dokladů" id="deadlineDay">
               <CompactInput id="deadlineDay" value={deadlineDay} onChange={(v) => setDeadlineDay(Math.min(28, Math.max(1, v)))} min={1} max={28} unit="den v měsíci" />
             </InlineField>
             <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleDeadlineDaySave} disabled={deadlineSaving}>
@@ -191,7 +191,7 @@ export default function AccountantSettingsPage() {
             <InlineField label="Urgentní" id="documentUrgentDays">
               <CompactInput id="documentUrgentDays" value={localSettings.documentUrgentDays} onChange={(v) => handleChange('documentUrgentDays', v)} min={0} max={30} unit="dní" />
             </InlineField>
-            <InlineField label="Deadline uzávěrky" id="closureDeadlineDay">
+            <InlineField label="Termín uzávěrky" id="closureDeadlineDay">
               <CompactInput id="closureDeadlineDay" value={localSettings.closureDeadlineDay} onChange={(v) => handleChange('closureDeadlineDay', v)} min={1} max={28} unit="den" />
             </InlineField>
           </div>

@@ -113,9 +113,9 @@ function generateDeadlines(
 
       if (closure.bank_statement_status === 'missing') {
         missingDocs.push('výpis')
-        checklist.push({ id: `${closure.id}-bank`, label: 'Výpis z banky', completed: false })
+        checklist.push({ id: `${closure.id}-bank`, label: 'Bankovní výpis', completed: false })
       } else {
-        checklist.push({ id: `${closure.id}-bank`, label: 'Výpis z banky', completed: true })
+        checklist.push({ id: `${closure.id}-bank`, label: 'Bankovní výpis', completed: true })
       }
 
       if (closure.expense_documents_status === 'missing') {
@@ -146,7 +146,7 @@ function generateDeadlines(
         caseId: closure.id,
         companyId: company.id,
         companyName: displayName,
-        description: `Měsíční uzávěrka za ${months[month - 1]} ${year} pro firmu ${displayName}. Klient musí dodat chybějící dokumenty do ${deadline.toLocaleDateString('cs-CZ')}.`,
+        description: `Měsíční uzávěrka za ${months[month - 1]} ${year} pro firmu ${displayName}. Klient musí dodat chybějící doklady do ${deadline.toLocaleDateString('cs-CZ')}.`,
         checklist,
         assignedTo: accountantName || 'Účetní'
       })
@@ -159,7 +159,7 @@ function generateDeadlines(
 
       checklist.push({
         id: `${closure.id}-bank`,
-        label: 'Výpis z banky',
+        label: 'Bankovní výpis',
         completed: closure.bank_statement_status === 'approved'
       })
       checklist.push({
@@ -197,7 +197,7 @@ function generateDeadlines(
         caseId: closure.id,
         companyId: company.id,
         companyName: displayName,
-        description: `Klient ${displayName} nahrál všechny dokumenty pro uzávěrku za ${months[month - 1]} ${year}. Je třeba zkontrolovat a schválit.`,
+        description: `Klient ${displayName} nahrál všechny doklady pro uzávěrku za ${months[month - 1]} ${year}. Je třeba zkontrolovat a schválit.`,
         checklist,
         assignedTo: accountantName || 'Účetní',
         attachments

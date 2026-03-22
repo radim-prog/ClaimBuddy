@@ -55,7 +55,7 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
   { key: 'matrix_edit', label: 'Matice - editace', description: 'Změna stavů v matici uzávěrek', group: 'Editace' },
   { key: 'clients_edit', label: 'Klienti - editace', description: 'Úpravy klientských údajů', group: 'Editace' },
   { key: 'messages', label: 'Zprávy', description: 'Odesílání zpráv klientům', group: 'Editace' },
-  { key: 'documents_approve', label: 'Dokumenty - schvalování', description: 'Schvalování nahraných dokumentů', group: 'Editace' },
+  { key: 'documents_approve', label: 'Doklady - schvalování', description: 'Schvalování nahraných dokladů', group: 'Editace' },
   { key: 'reports', label: 'Reporty', description: 'Generování a export reportů', group: 'Editace' },
   // Administrace
   { key: 'admin_access', label: 'Admin sekce', description: 'Přístup do administrace', group: 'Administrace' },

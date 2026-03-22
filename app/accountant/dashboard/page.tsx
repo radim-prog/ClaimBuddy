@@ -305,7 +305,7 @@ const StatusCell = React.memo(function StatusCell({
               <div className="space-y-1 text-left">
                 <div className="flex items-center gap-2">
                   <span className={getStatusColor(closure.bank_statement_status)}>{getStatusIcon(closure.bank_statement_status)}</span>
-                  <span>Výpis z banky</span>
+                  <span>Bankovní výpis</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={getStatusColor(closure.expense_documents_status)}>{getStatusIcon(closure.expense_documents_status)}</span>
@@ -515,7 +515,7 @@ export default function AccountantDashboard() {
                       <span className="text-sm text-white font-bold">{stats.missing}</span>
                     </div>
                     <div className="text-left hidden sm:block">
-                      <div className="text-xs text-gray-500 dark:text-gray-400">Chybí podklady</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Chybí doklady</div>
                       <div className="text-lg font-bold text-red-700 dark:text-red-400">{stats.missing}</div>
                     </div>
                   </button>

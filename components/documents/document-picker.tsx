@@ -52,7 +52,7 @@ type DocumentPickerProps = {
 }
 
 const DOC_TYPE_LABELS: Record<string, string> = {
-  bank_statement: 'Výpis',
+  bank_statement: 'Bankovní výpis',
   expense_invoice: 'Náklad',
   income_invoice: 'Příjem',
   receipt: 'Pokladní',
@@ -71,7 +71,7 @@ export function DocumentPicker({
   onOpenChange,
   onSelect,
   excludeIds = [],
-  title = 'Vybrat dokumenty',
+  title = 'Vybrat doklady',
 }: DocumentPickerProps) {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(false)
@@ -137,7 +137,7 @@ export function DocumentPicker({
             {title}
           </DialogTitle>
           <DialogDescription>
-            Vyberte dokumenty k pripojeni. Vybrano: {selected.size}
+            Vyberte doklady k připojení. Vybráno: {selected.size}
           </DialogDescription>
         </DialogHeader>
 
@@ -185,7 +185,7 @@ export function DocumentPicker({
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground text-sm">
-              Zadne dokumenty
+              Žádné doklady
             </div>
           ) : (
             filtered.map(doc => (

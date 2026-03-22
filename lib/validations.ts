@@ -38,7 +38,7 @@ const signerSchema = z.object({
 
 export const signingCreateSchema = z.object({
   companyId: z.string().uuid('Neplatné companyId'),
-  documentName: z.string().min(1, 'Název dokumentu je povinný').max(500),
+  documentName: z.string().min(1, 'Název dokladu je povinný').max(500),
   documentType: z.string().max(50).optional(),
   signatureType: z.enum(['simple', 'advanced', 'qualified']).optional(),
   templateId: z.string().uuid().optional().nullable(),
@@ -128,7 +128,7 @@ export const updateCaseSchema = z.object({
 // ============================================
 
 export const addCaseDocumentSchema = z.object({
-  name: z.string().min(1, 'Název dokumentu je povinný').max(500),
+  name: z.string().min(1, 'Název dokladu je povinný').max(500),
   file_path: z.string().min(1, 'Cesta k souboru je povinná'),
   file_size: z.number().int().min(0).optional(),
   mime_type: z.string().max(100).optional(),
