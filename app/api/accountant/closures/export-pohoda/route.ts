@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       ? { accountNo: company.bank_account, bankCode: company.bank_code }
       : null
 
-    const xmlParts: string[] = []
+    const xmlParts: Array<{ type: string; xml: string }> = []
 
     // Bank documents export
     if (exportType === 'bank' || exportType === 'all') {
@@ -105,10 +105,10 @@ export async function GET(request: NextRequest) {
       }
 
       if (plainBankDocs.length > 0) {
-        xmlParts.push(generateBankDocumentXml(plainBankDocs, ico, bankAccount))
+        xmlParts.push({ type: 'bank', xml: generateBankDocumentXml(plainBankDocs, ico, bankAccount) })
       }
       if (liquidationPairs.length > 0) {
-        xmlParts.push(generateBankLiquidationXml(liquidationPairs, ico, bankAccount))
+        xmlParts.push({ type: 'liquidation', xml: generateBankLiquidationXml(liquidationPairs, ico, bankAccount) })
       }
     }
 
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     if (exportType === 'cash' || exportType === 'all') {
       const { data: cashTxs } = await supabaseAdmin
         .from('cash_transactions')
-        .select('id, doc_type, doc_number, transaction_date, amount, description, counterparty_name, counterparty_ico, vat_rate')
+        .select('id, doc_type, doc_number, transaction_date, amount, description, counterparty_name')
         .eq('company_id', companyId)
         .eq('period', period)
         .order('doc_number')
@@ -129,12 +129,12 @@ export async function GET(request: NextRequest) {
         amount: Math.abs(tx.amount),
         description: tx.description,
         counterparty_name: tx.counterparty_name,
-        counterparty_ico: tx.counterparty_ico,
-        vat_rate: tx.vat_rate,
+        counterparty_ico: null,
+        vat_rate: 21,
       }))
 
       if (vouchers.length > 0) {
-        xmlParts.push(generateVoucherXml(vouchers, ico))
+        xmlParts.push({ type: 'cash', xml: generateVoucherXml(vouchers, ico) })
       }
     }
 
@@ -144,22 +144,22 @@ export async function GET(request: NextRequest) {
 
     // If single XML, return directly; if multiple, return as array
     if (xmlParts.length === 1) {
-      return new NextResponse(xmlParts[0], {
+      return new NextResponse(xmlParts[0].xml, {
         headers: {
           'Content-Type': 'application/xml; charset=utf-8',
-          'Content-Disposition': `attachment; filename="pohoda-${companyId}-${period}.xml"`,
+          'Content-Disposition': `attachment; filename="pohoda-${companyId}-${period}-${xmlParts[0].type}.xml"`,
         },
       })
     }
 
-    // Multiple XMLs — return as JSON with xml strings
+    // Multiple XMLs — return as JSON with typed xml strings
     return NextResponse.json({
       company_id: companyId,
       period,
-      exports: xmlParts.map((xml, i) => ({
+      exports: xmlParts.map((part, i) => ({
         index: i,
-        type: i === 0 ? 'bank' : i === 1 ? 'liquidation' : 'cash',
-        xml,
+        type: part.type,
+        xml: part.xml,
       })),
     })
   } catch (error) {

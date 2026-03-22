@@ -40,12 +40,28 @@ export async function GET(request: NextRequest) {
       .lte('period', `${year}-12`)
 
     // Fetch transaction counts per company×period for progress calc
-    const { data: transactions } = await supabaseAdmin
-      .from('bank_transactions')
-      .select('company_id, period, matched_document_id, matched_invoice_id, matched_dohoda_mesic_id, category')
-      .in('company_id', companyIds)
-      .gte('period', `${year}-01`)
-      .lte('period', `${year}-12`)
+    // Try server-side aggregation via RPC, fallback to raw fetch with high limit
+    let txAggRaw: any[] | null = null
+    try {
+      const { data } = await supabaseAdmin.rpc('aggregate_tx_matrix', {
+        p_company_ids: companyIds,
+        p_year: year,
+      })
+      txAggRaw = data
+    } catch { /* RPC may not exist, use fallback */ }
+
+    // Fallback: if RPC not available, fetch rows with high limit
+    let transactions: any[] | null = null
+    if (!txAggRaw) {
+      const { data } = await supabaseAdmin
+        .from('bank_transactions')
+        .select('company_id, period, matched_document_id, matched_invoice_id, matched_dohoda_mesic_id, category')
+        .in('company_id', companyIds)
+        .gte('period', `${year}-01`)
+        .lte('period', `${year}-12`)
+        .limit(200000)
+      transactions = data
+    }
 
     // Index closures by company_id+period
     const closureMap = new Map<string, any>()
@@ -55,15 +71,27 @@ export async function GET(request: NextRequest) {
 
     // Index transactions by company_id+period
     const txMap = new Map<string, { total: number; matched: number; private: number }>()
-    for (const tx of transactions || []) {
-      const key = `${tx.company_id}:${tx.period}`
-      if (!txMap.has(key)) txMap.set(key, { total: 0, matched: 0, private: 0 })
-      const entry = txMap.get(key)!
-      entry.total++
-      const isMatched = !!(tx.matched_document_id || tx.matched_invoice_id || tx.matched_dohoda_mesic_id)
-      const isPrivate = NON_TAXABLE_CATEGORIES.includes(tx.category as any)
-      if (isMatched) entry.matched++
-      else if (isPrivate) entry.private++
+
+    if (txAggRaw && Array.isArray(txAggRaw)) {
+      // Use pre-aggregated data from RPC
+      for (const row of txAggRaw) {
+        txMap.set(`${row.company_id}:${row.period}`, {
+          total: Number(row.total) || 0,
+          matched: Number(row.matched) || 0,
+          private: Number(row.private_count) || 0,
+        })
+      }
+    } else if (transactions) {
+      for (const tx of transactions) {
+        const key = `${tx.company_id}:${tx.period}`
+        if (!txMap.has(key)) txMap.set(key, { total: 0, matched: 0, private: 0 })
+        const entry = txMap.get(key)!
+        entry.total++
+        const isMatched = !!(tx.matched_document_id || tx.matched_invoice_id || tx.matched_dohoda_mesic_id)
+        const isPrivate = NON_TAXABLE_CATEGORIES.includes(tx.category as any)
+        if (isMatched) entry.matched++
+        else if (isPrivate) entry.private++
+      }
     }
 
     // Build matrix
