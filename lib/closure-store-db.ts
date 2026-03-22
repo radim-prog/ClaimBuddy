@@ -16,6 +16,9 @@ export interface ClosureRecord {
   bank_statement_status: string
   expense_documents_status: string  // mapped from expense_invoices_status
   income_invoices_status: string
+  cash_documents_status: string
+  cash_income: number
+  cash_expense: number
   vat_payable: number | null
   income_tax_accrued: number | null
   social_insurance: number | null
@@ -40,6 +43,9 @@ function mapRow(row: any): ClosureRecord {
     bank_statement_status: row.bank_statement_status || 'missing',
     expense_documents_status: row.expense_invoices_status || 'missing',
     income_invoices_status: row.income_invoices_status || 'missing',
+    cash_documents_status: row.cash_documents_status || 'not_applicable',
+    cash_income: row.cash_income ?? 0,
+    cash_expense: row.cash_expense ?? 0,
     vat_payable: row.vat_payable,
     income_tax_accrued: row.income_tax_accrued,
     social_insurance: row.social_insurance ?? row.social_insurance_estimate,
@@ -89,8 +95,8 @@ export async function getClosuresByCompany(companyId: string): Promise<ClosureRe
   return getClosures({ companyId })
 }
 
-export type StatusField = 'bank_statement_status' | 'expense_documents_status' | 'income_invoices_status'
-export type StatusValue = 'missing' | 'uploaded' | 'approved' | 'reviewed' | 'skipped'
+export type StatusField = 'bank_statement_status' | 'expense_documents_status' | 'income_invoices_status' | 'cash_documents_status'
+export type StatusValue = 'missing' | 'uploaded' | 'approved' | 'reviewed' | 'skipped' | 'not_applicable'
 
 // Map old field names to DB column names
 function mapFieldToColumn(field: StatusField): string {
@@ -103,6 +109,62 @@ function computeOverallStatus(bank: string, expense: string, income: string): st
   const allDone = vals.every(v => v === 'approved' || v === 'reviewed' || v === 'skipped')
   const anyMissing = vals.some(v => v === 'missing')
   return allDone ? 'closed' : anyMissing ? 'open' : 'in_progress'
+}
+
+/**
+ * V2: compute overall status including cash_documents_status.
+ * 'not_applicable' is treated as done (company doesn't use cash).
+ */
+function computeOverallStatusV2(bank: string, expense: string, income: string, cash: string): string {
+  const vals = [bank, expense, income]
+  // Include cash only if it's actively tracked (not 'not_applicable')
+  if (cash && cash !== 'not_applicable') vals.push(cash)
+
+  const allDone = vals.every(v => v === 'approved' || v === 'reviewed' || v === 'skipped')
+  const anyMissing = vals.some(v => v === 'missing')
+  return allDone ? 'closed' : anyMissing ? 'open' : 'in_progress'
+}
+
+/**
+ * Get cash transaction totals for a company+period.
+ */
+export async function getCashTotals(companyId: string, period: string): Promise<{
+  income: number
+  expense: number
+  count: number
+}> {
+  const { data } = await supabaseAdmin
+    .from('cash_transactions')
+    .select('doc_type, amount')
+    .eq('company_id', companyId)
+    .eq('period', period)
+
+  if (!data || data.length === 0) return { income: 0, expense: 0, count: 0 }
+
+  let income = 0
+  let expense = 0
+  for (const row of data) {
+    if (row.doc_type === 'PPD') income += Number(row.amount) || 0
+    else expense += Number(row.amount) || 0
+  }
+
+  return { income, expense, count: data.length }
+}
+
+/**
+ * Get closure detail with cash data included.
+ */
+export async function getClosureDetail(companyId: string, period: string): Promise<
+  (ClosureRecord & { cash_totals: { income: number; expense: number; count: number } }) | null
+> {
+  const [closure, cashTotals] = await Promise.all([
+    getClosure(companyId, period),
+    getCashTotals(companyId, period),
+  ])
+
+  if (!closure) return null
+
+  return { ...closure, cash_totals: cashTotals }
 }
 
 export async function updateClosureStatus(
@@ -123,11 +185,12 @@ export async function updateClosureStatus(
     updated_at: new Date().toISOString(),
   }
 
-  // Compute new overall status
+  // Compute new overall status (V2 with cash)
   const newBank = field === 'bank_statement_status' ? value : current.bank_statement_status
   const newExpense = field === 'expense_documents_status' ? value : current.expense_documents_status
   const newIncome = field === 'income_invoices_status' ? value : current.income_invoices_status
-  updates.status = computeOverallStatus(newBank, newExpense, newIncome)
+  const newCash = field === 'cash_documents_status' ? value : current.cash_documents_status
+  updates.status = computeOverallStatusV2(newBank, newExpense, newIncome, newCash)
 
   const { data, error } = await supabaseAdmin
     .from('monthly_closures')
@@ -176,7 +239,8 @@ export async function updateClosureFull(
   const newBank = dbUpdates.bank_statement_status || current.bank_statement_status || 'missing'
   const newExpense = dbUpdates.expense_invoices_status || current.expense_invoices_status || 'missing'
   const newIncome = dbUpdates.income_invoices_status || current.income_invoices_status || 'missing'
-  dbUpdates.status = computeOverallStatus(newBank, newExpense, newIncome)
+  const newCash = current.cash_documents_status || 'not_applicable'
+  dbUpdates.status = computeOverallStatusV2(newBank, newExpense, newIncome, newCash)
 
   const { data, error } = await supabaseAdmin
     .from('monthly_closures')
