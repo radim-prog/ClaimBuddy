@@ -25,6 +25,7 @@ import {
   FolderOpen,
   FilePlus,
   Shield,
+  Wallet,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -84,6 +85,7 @@ const dynamicNavigation: { name: string; href: string; icon: typeof LayoutDashbo
   { name: 'Zaměstnanci', href: '/client/employees', icon: UserCheck, portalKey: 'employees' },
   { name: 'Adresář', href: '/client/partners', icon: Users, portalKey: 'address_book' },
   { name: 'Dotazník', href: '/client/tax-questionnaire', icon: ClipboardList, portalKey: 'tax_questionnaire' },
+  { name: 'Pokladna', href: '/client/cash-book', icon: Wallet, portalKey: 'cash_book' },
 ]
 
 function ClientLayoutInner({ children }: { children: React.ReactNode }) {
