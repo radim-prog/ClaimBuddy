@@ -5,6 +5,7 @@ import {
   deleteCompanyNote,
 } from '@/lib/company-graph-store'
 import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -91,6 +92,21 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
+    const { data: note } = await supabaseAdmin
+      .from('company_notes')
+      .select('company_id')
+      .eq('id', noteId)
+      .single()
+
+    if (!note) {
+      return NextResponse.json({ error: 'Note not found' }, { status: 404 })
+    }
+
+    const firmId = getFirmId(request)
+    if (!(await verifyCompanyAccess(note.company_id, firmId))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     await deleteCompanyNote(noteId, userId)
     return NextResponse.json({ success: true })
   } catch (error) {
