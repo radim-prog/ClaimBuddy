@@ -187,7 +187,7 @@ function ProfileTab() {
 }
 
 function DefaultCompanySection() {
-  const { companies, setDefaultCompany } = useClientUser()
+  const { visibleCompanies, setDefaultCompany } = useClientUser()
   const [defaultId, setDefaultId] = useState<string>('')
 
   useEffect(() => {
@@ -195,7 +195,7 @@ function DefaultCompanySection() {
     setDefaultId(saved || '')
   }, [])
 
-  if (companies.length <= 1) return null
+  if (visibleCompanies.length <= 1) return null
 
   const handleChange = (value: string) => {
     setDefaultId(value)
@@ -222,7 +222,7 @@ function DefaultCompanySection() {
           className="w-full h-11 px-3 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <option value="">Žádná — vždy zobrazit výběr</option>
-          {companies.map(c => (
+          {visibleCompanies.map(c => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>

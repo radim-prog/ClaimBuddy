@@ -53,7 +53,7 @@ function getMonthDotColor(closure: { bank_statement_status: ClosureStatus; expen
 
 export default function ClientDashboard() {
   const router = useRouter()
-  const { userName, companies, closures, loading, error, selectedCompany, setSelectedCompanyId } = useClientUser()
+  const { userName, companies, visibleCompanies, closures, loading, error, selectedCompany, setSelectedCompanyId } = useClientUser()
   const [draftCount, setDraftCount] = useState(0)
   const [casesCount, setCasesCount] = useState(0)
   const [lastCaseActivity, setLastCaseActivity] = useState<string | null>(null)
@@ -305,9 +305,9 @@ export default function ClientDashboard() {
         )}
 
         {/* Company Tiles */}
-        {companies.length > 1 && (
+        {visibleCompanies.length > 1 && (
           <CompanyTilesWidget
-            companies={companies}
+            companies={visibleCompanies}
             selectedCompanyId={selectedCompany?.id || ''}
             onSelectCompany={setSelectedCompanyId}
           />

@@ -57,8 +57,8 @@ function DocumentsPageInner() {
     })
   }, [])
 
-  const { companies, selectedCompanyId } = useClientUser()
-  const companyId = selectedCompanyId || companies[0]?.id || ''
+  const { visibleCompanies, selectedCompanyId } = useClientUser()
+  const companyId = selectedCompanyId || visibleCompanies[0]?.id || ''
 
   return (
     <div className="space-y-6">
@@ -120,7 +120,7 @@ function DocumentsPageInner() {
       <ScanOverlay
         open={showScanOverlay}
         companyId={companyId}
-        companies={companies}
+        companies={visibleCompanies}
         onClose={() => setShowScanOverlay(false)}
       />
     </div>
@@ -336,7 +336,7 @@ function DocumentListTab() {
 // ===== BANK TAB =====
 
 function BankTab() {
-  const { companies, loading: companiesLoading } = useClientUser()
+  const { visibleCompanies: companies, loading: companiesLoading } = useClientUser()
   const [selectedCompany, setSelectedCompany] = useState<string>('')
   const [transactions, setTransactions] = useState<BankTransaction[]>([])
   const [loading, setLoading] = useState(false)
