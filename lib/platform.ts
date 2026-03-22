@@ -1,29 +1,49 @@
-let _Capacitor: { isNativePlatform(): boolean; getPlatform(): string } | null = null
+/**
+ * Platform detection for Capacitor native apps.
+ * MUST NEVER crash on web — all functions return safe defaults.
+ * Uses window.Capacitor (injected by Capacitor runtime) instead of
+ * importing @capacitor/core to avoid webpack bundling issues.
+ */
 
-function getCapacitor() {
-  if (_Capacitor) return _Capacitor
+function getCapacitor(): { isNativePlatform(): boolean; getPlatform(): string } | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require('@capacitor/core')
-    _Capacitor = mod.Capacitor
-    return _Capacitor
+    if (typeof window !== 'undefined' && (window as any).Capacitor) {
+      return (window as any).Capacitor
+    }
   } catch {
-    return null
+    // ignore
   }
+  return null
 }
 
 export function isNativePlatform(): boolean {
-  return getCapacitor()?.isNativePlatform() ?? false
+  try {
+    return getCapacitor()?.isNativePlatform() ?? false
+  } catch {
+    return false
+  }
 }
 
 export function isAndroid(): boolean {
-  return getCapacitor()?.getPlatform() === 'android'
+  try {
+    return getCapacitor()?.getPlatform() === 'android'
+  } catch {
+    return false
+  }
 }
 
 export function isIOS(): boolean {
-  return getCapacitor()?.getPlatform() === 'ios'
+  try {
+    return getCapacitor()?.getPlatform() === 'ios'
+  } catch {
+    return false
+  }
 }
 
 export function isWeb(): boolean {
-  return getCapacitor()?.getPlatform() === 'web'
+  try {
+    return getCapacitor()?.getPlatform() === 'web'
+  } catch {
+    return true
+  }
 }
