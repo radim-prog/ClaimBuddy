@@ -1,10 +1,10 @@
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { isNativePlatform } from './platform'
 
 export async function takePhoto(): Promise<string | null> {
   if (!isNativePlatform()) return null
 
   try {
+    const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera')
     const photo = await Camera.getPhoto({
       quality: 90,
       resultType: CameraResultType.Uri,
@@ -21,6 +21,7 @@ export async function pickFromGallery(): Promise<string | null> {
   if (!isNativePlatform()) return null
 
   try {
+    const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera')
     const photo = await Camera.getPhoto({
       quality: 90,
       resultType: CameraResultType.Uri,
