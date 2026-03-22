@@ -69,6 +69,21 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
     setCompanyId(initialCompanyId)
   }, [initialCompanyId])
 
+  const handleFileSelect = useCallback((files: FileList | null) => {
+    if (!files || files.length === 0) return
+    const file = files[0]
+
+    const newJob: ScanJob = {
+      file,
+      previewUrl: URL.createObjectURL(file),
+      documentType,
+      status: 'uploaded',
+      corrections: [],
+    }
+    setJob(newJob)
+    processExtraction(newJob)
+  }, [documentType, companyId])
+
   // Auto-process initialFile (from native camera)
   useEffect(() => {
     if (open && initialFile && !job) {
@@ -76,7 +91,7 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
       dt.items.add(initialFile)
       handleFileSelect(dt.files)
     }
-  }, [open, initialFile, handleFileSelect])
+  }, [open, initialFile, handleFileSelect]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset state when closing
   useEffect(() => {
@@ -105,21 +120,6 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
       setCorrVat(d.total_vat != null ? String(d.total_vat) : '')
     }
   }, [job?.extractedData, job?.status])
-
-  const handleFileSelect = useCallback((files: FileList | null) => {
-    if (!files || files.length === 0) return
-    const file = files[0]
-
-    const newJob: ScanJob = {
-      file,
-      previewUrl: URL.createObjectURL(file),
-      documentType,
-      status: 'uploaded',
-      corrections: [],
-    }
-    setJob(newJob)
-    processExtraction(newJob)
-  }, [documentType, companyId])
 
   const processExtraction = async (scanJob: ScanJob) => {
     setJob(prev => prev ? { ...prev, status: 'extracting' } : prev)
