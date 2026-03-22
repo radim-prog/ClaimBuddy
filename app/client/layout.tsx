@@ -172,6 +172,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         companies={companies}
         onSelect={(id) => { setSelectedCompanyId(id); setShowCompanyPicker(false) }}
         onSetDefault={setDefaultCompany}
+        onClose={() => setShowCompanyPicker(false)}
       />
 
       {/* Sidebar - Desktop */}
