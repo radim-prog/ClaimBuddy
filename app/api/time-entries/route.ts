@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
+import { getUserName } from '@/lib/request-utils'
 
 /**
  * GET /api/time-entries - List time entries
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
-  const userName = request.headers.get('x-user-name') || 'Účetní'
+  const userName = getUserName(request)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const userRole = request.headers.get('x-user-role')

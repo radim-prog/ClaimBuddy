@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createDocumentLink, deleteDocumentLink } from '@/lib/document-link-store'
+import { getUserName } from '@/lib/request-utils'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
-  const userName = request.headers.get('x-user-name') || 'Účetní'
+  const userName = getUserName(request)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const userRole = request.headers.get('x-user-role')

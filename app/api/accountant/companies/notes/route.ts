@@ -5,6 +5,8 @@ import {
   deleteCompanyNote,
 } from '@/lib/company-graph-store'
 import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getUserName } from '@/lib/request-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,7 +43,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
-  const userName = request.headers.get('x-user-name')
+  const userName = getUserName(request, '')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -91,6 +93,21 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
+    const { data: note } = await supabaseAdmin
+      .from('company_notes')
+      .select('company_id')
+      .eq('id', noteId)
+      .single()
+
+    if (!note) {
+      return NextResponse.json({ error: 'Note not found' }, { status: 404 })
+    }
+
+    const firmId = getFirmId(request)
+    if (!(await verifyCompanyAccess(note.company_id, firmId))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     await deleteCompanyNote(noteId, userId)
     return NextResponse.json({ success: true })
   } catch (error) {

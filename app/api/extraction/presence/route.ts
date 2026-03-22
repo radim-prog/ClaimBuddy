@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole, canAccessCompany } from '@/lib/access-check'
+import { getUserName } from '@/lib/request-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +12,7 @@ const LOCK_THRESHOLD_MS = 15_000  // 15s = stale lock
 export async function POST(request: Request) {
   const userId = request.headers.get('x-user-id')
   const userRole = request.headers.get('x-user-role')
-  const userName = request.headers.get('x-user-name') || 'Unknown'
+  const userName = getUserName(request, 'Unknown')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 

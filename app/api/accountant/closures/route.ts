@@ -4,6 +4,7 @@ import type { StatusField, StatusValue } from '@/lib/closure-store-db'
 import { addActivity } from '@/lib/activity-store-db'
 import { isStaffRole } from '@/lib/access-check'
 import { triggerMissingDocsReminder } from '@/lib/missing-docs-reminder'
+import { getUserName } from '@/lib/request-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +44,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'closure_id is required' }, { status: 400 })
     }
 
-    const userName = request.headers.get('x-user-name') || 'Účetní'
+    const userName = getUserName(request)
 
     const updated = await updateClosureFull(closure_id, {
       bank_statement_status,
@@ -143,7 +144,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Max 50 closures per request' }, { status: 400 })
     }
 
-    const userName = request.headers.get('x-user-name') || 'Účetní'
+    const userName = getUserName(request)
     const validFields: StatusField[] = ['bank_statement_status', 'expense_documents_status', 'income_invoices_status']
     const results: Array<{ company_id: string; period: string; status: string }> = []
     const errors: Array<{ company_id: string; period: string; error: string }> = []

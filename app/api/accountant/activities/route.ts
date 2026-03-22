@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getActivities, getReminders, addReminder } from '@/lib/activity-store-db'
+import { getUserName } from '@/lib/request-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
       period,
       type: type || 'missing_docs',
       channel: channel || 'email',
-      sent_by: sent_by || request.headers.get('x-user-name') || 'Účetní',
+      sent_by: sent_by || getUserName(request),
       notes,
     })
 

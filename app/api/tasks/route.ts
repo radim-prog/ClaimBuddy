@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { CreateTaskInput, TaskFilter } from '@/lib/types/tasks'
 import { isStaffRole } from '@/lib/access-check'
+import { getUserName } from '@/lib/request-utils'
 
 /**
  * GET /api/tasks - List tasks with filters
@@ -241,7 +242,7 @@ export async function POST(request: NextRequest) {
 
     const taskData: Record<string, any> = {
       created_by: userId,
-      created_by_name: body.created_by_name || request.headers.get('x-user-name') || '',
+      created_by_name: body.created_by_name || getUserName(request, ''),
       status: body.status || 'pending',
       is_project: body.is_project || false,
       is_billable: body.is_billable || false,
