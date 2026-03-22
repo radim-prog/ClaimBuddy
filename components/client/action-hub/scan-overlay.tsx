@@ -2,10 +2,12 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   X, Camera, Upload, Loader2, CheckCircle2, AlertCircle, RotateCcw, Send, ArrowLeft,
+  ShieldCheck, Pencil, Plus, Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -14,6 +16,7 @@ import {
   ExtractionDocumentType,
   ExtractedData,
   ExtractionStatus,
+  ConfidenceBadge,
 } from '@/components/extraction'
 import { toast } from 'sonner'
 
@@ -22,6 +25,7 @@ interface ScanOverlayProps {
   companyId: string
   companies: Array<{ id: string; name: string }>
   onClose: () => void
+  initialFile?: File | null
 }
 
 interface ScanJob {
@@ -34,14 +38,27 @@ interface ScanJob {
   corrections: Array<{ field: string; original: unknown; corrected: unknown }>
   notes?: string
   draftId?: string
+  documentId?: string
 }
 
-export function ScanOverlay({ open, companyId: initialCompanyId, companies, onClose }: ScanOverlayProps) {
+type VerifyStep = 'upload' | 'extracting' | 'verify'
+
+export function ScanOverlay({ open, companyId: initialCompanyId, companies, onClose, initialFile }: ScanOverlayProps) {
   const [companyId, setCompanyId] = useState(initialCompanyId)
   const [documentType, setDocumentType] = useState<ExtractionDocumentType>('receipt')
   const [typeSelected, setTypeSelected] = useState(false)
   const [job, setJob] = useState<ScanJob | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [verifyEditing, setVerifyEditing] = useState(false)
+  const [verifySubmitting, setVerifySubmitting] = useState(false)
+
+  // Inline correction fields
+  const [corrSupplier, setCorrSupplier] = useState('')
+  const [corrIco, setCorrIco] = useState('')
+  const [corrAmount, setCorrAmount] = useState('')
+  const [corrDate, setCorrDate] = useState('')
+  const [corrVs, setCorrVs] = useState('')
+  const [corrVat, setCorrVat] = useState('')
 
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -52,6 +69,15 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
     setCompanyId(initialCompanyId)
   }, [initialCompanyId])
 
+  // Auto-process initialFile (from native camera)
+  useEffect(() => {
+    if (open && initialFile && !job) {
+      const dt = new DataTransfer()
+      dt.items.add(initialFile)
+      handleFileSelect(dt.files)
+    }
+  }, [open, initialFile, handleFileSelect])
+
   // Reset state when closing
   useEffect(() => {
     if (!open) {
@@ -60,10 +86,25 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
         setShowSuccess(false)
         setDocumentType('receipt')
         setTypeSelected(false)
+        setVerifyEditing(false)
+        setVerifySubmitting(false)
       }, 350)
       return () => clearTimeout(timer)
     }
   }, [open])
+
+  // Populate correction fields when extracted data arrives
+  useEffect(() => {
+    if (job?.extractedData && (job.status === 'extracted' || job.status === 'corrected' || job.status === 'validated')) {
+      const d = job.extractedData as Record<string, unknown>
+      setCorrSupplier((d.supplier_name as string) || '')
+      setCorrIco((d.supplier_ico as string) || '')
+      setCorrAmount(d.total_amount != null ? String(d.total_amount) : '')
+      setCorrDate((d.date_issued as string) || '')
+      setCorrVs((d.variable_symbol as string) || '')
+      setCorrVat(d.total_vat != null ? String(d.total_vat) : '')
+    }
+  }, [job?.extractedData, job?.status])
 
   const handleFileSelect = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return
@@ -107,6 +148,7 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
         status: 'extracted',
         extractedData: data.extractedData,
         confidenceScore: data.confidenceScore,
+        documentId: data.documentId || undefined,
         corrections: (data.corrections || []).map((c: any) => ({
           field: c.field,
           original: c.originalValue,
@@ -128,7 +170,6 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
   }
 
   const saveFileWithoutExtraction = async (scanJob: ScanJob) => {
-    // Upload file to storage via documents/upload API
     const now = new Date()
     const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
@@ -146,10 +187,9 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
 
       if (uploadRes.ok) {
         const uploadData = await uploadRes.json()
-        setJob(prev => prev ? { ...prev, status: 'uploaded_only', draftId: uploadData.document?.id } : prev)
+        setJob(prev => prev ? { ...prev, status: 'uploaded_only', draftId: uploadData.document?.id, documentId: uploadData.document?.id } : prev)
         toast.success('Doklad nahrán, čeká na zpracování')
       } else {
-        // Fallback: save as draft without file storage
         const res = await fetch('/api/client/drafts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -230,6 +270,57 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
     }
   }
 
+  // Verify: confirm extraction data is correct (calls /api/client/documents/[id]/verify)
+  const handleVerifyConfirm = async () => {
+    if (!job) return
+    setVerifySubmitting(true)
+
+    try {
+      // Build corrections from edited fields
+      const corrections: Record<string, unknown> = {}
+      const data = job.extractedData as Record<string, unknown>
+      if (corrSupplier !== (data?.supplier_name || '')) corrections.supplier_name = corrSupplier
+      if (corrIco !== (data?.supplier_ico || '')) corrections.supplier_ico = corrIco
+      if (corrAmount !== String(data?.total_amount || '')) corrections.total_amount = parseFloat(corrAmount) || undefined
+      if (corrDate !== (data?.date_issued || '')) corrections.date_issued = corrDate
+      if (corrVs !== (data?.variable_symbol || '')) corrections.variable_symbol = corrVs
+      if (corrVat !== String(data?.total_vat || '')) corrections.total_vat = parseFloat(corrVat) || undefined
+
+      const docId = job.documentId || job.draftId
+      if (docId) {
+        await fetch(`/api/client/documents/${docId}/verify`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            verified: true,
+            corrections: Object.keys(corrections).length > 0 ? corrections : undefined,
+          }),
+        })
+      }
+
+      // Also submit the draft
+      if (job.draftId) {
+        await fetch(`/api/client/drafts/${job.draftId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'submitted',
+            extracted_data: job.extractedData,
+            notes: job.notes,
+          }),
+        })
+      }
+
+      setShowSuccess(true)
+      toast.success('Doklad ověřen a odeslán')
+      setTimeout(() => onClose(), 1500)
+    } catch {
+      toast.error('Odeslání selhalo')
+    } finally {
+      setVerifySubmitting(false)
+    }
+  }
+
   const handleSubmit = async () => {
     if (!job) return
 
@@ -278,7 +369,18 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
     setTypeSelected(true)
   }
 
+  const handleScanAnother = () => {
+    setJob(null)
+    setShowSuccess(false)
+    setVerifyEditing(false)
+    setVerifySubmitting(false)
+    setTypeSelected(false)
+  }
+
   const isDataReady = job && (job.status === 'extracted' || job.status === 'corrected' || job.status === 'validated')
+
+  // Current step for progress indicator
+  const currentStep: VerifyStep = !job ? 'upload' : job.status === 'extracting' ? 'extracting' : isDataReady ? 'verify' : 'upload'
 
   return (
     <div
@@ -299,6 +401,17 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
           <X className="h-5 w-5" />
         </Button>
       </div>
+
+      {/* 3-step progress indicator */}
+      {!showSuccess && job && (
+        <div className="flex items-center px-4 py-2 border-b bg-muted/30 shrink-0">
+          <StepIndicator step={1} label="Nahrávání" active={currentStep === 'upload'} done={currentStep !== 'upload'} />
+          <div className="flex-1 h-px bg-border mx-2" />
+          <StepIndicator step={2} label="Vytěžování" active={currentStep === 'extracting'} done={currentStep === 'verify'} />
+          <div className="flex-1 h-px bg-border mx-2" />
+          <StepIndicator step={3} label="Ověření" active={currentStep === 'verify'} done={false} />
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
@@ -343,7 +456,11 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
               <CheckCircle2 className="w-8 h-8 text-green-600" />
             </div>
             <h3 className="text-xl font-semibold font-display mb-2">Doklad odeslán!</h3>
-            <p className="text-muted-foreground">Byl úspěšně odeslán k účetnímu zpracování.</p>
+            <p className="text-muted-foreground mb-6">Byl úspěšně odeslán k účetnímu zpracování.</p>
+            <Button variant="outline" onClick={handleScanAnother}>
+              <Plus className="w-4 h-4 mr-1.5" />
+              Nahrát další
+            </Button>
           </div>
         )}
 
@@ -389,11 +506,20 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
           </div>
         )}
 
-        {/* Extracting */}
+        {/* Extracting — Step 2 progress */}
         {job?.status === 'extracting' && (
           <div className="text-center py-12">
-            <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
-            <p className="text-muted-foreground">Vytěžuji data z dokladu...</p>
+            <div className="relative mx-auto w-16 h-16 mb-4">
+              <Loader2 className="w-16 h-16 animate-spin text-blue-600" />
+              <Sparkles className="w-6 h-6 text-blue-500 absolute top-0 right-0 animate-pulse" />
+            </div>
+            <p className="font-medium text-lg mb-1">Vytěžuji data z dokladu...</p>
+            <p className="text-sm text-muted-foreground">Rozpoznávám text, datum, částku a dodavatele</p>
+            <div className="mt-4 w-48 mx-auto">
+              <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: '60%' }} />
+              </div>
+            </div>
           </div>
         )}
 
@@ -409,7 +535,8 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
               <Button onClick={onClose}>
                 Zavřít
               </Button>
-              <Button variant="outline" onClick={() => { setJob(null) }}>
+              <Button variant="outline" onClick={handleScanAnother}>
+                <Plus className="w-4 h-4 mr-1" />
                 Nahrát další
               </Button>
             </div>
@@ -429,19 +556,19 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
                 <RotateCcw className="w-4 h-4 mr-1" />
                 Zkusit znovu
               </Button>
-              <Button variant="outline" onClick={() => { setJob(null) }}>
+              <Button variant="outline" onClick={handleScanAnother}>
                 Jiný soubor
               </Button>
             </div>
           </div>
         )}
 
-        {/* Extracted data — verify */}
+        {/* Step 3: Verify extracted data */}
         {isDataReady && !showSuccess && (
           <>
             {/* Preview thumbnail */}
             {job.file.type.startsWith('image/') && (
-              <div className="aspect-video bg-muted rounded-lg overflow-hidden max-h-48">
+              <div className="aspect-video bg-muted rounded-lg overflow-hidden max-h-40">
                 <img
                   src={job.previewUrl}
                   alt="Náhled"
@@ -450,22 +577,95 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
               </div>
             )}
 
-            {job.draftId && (
-              <div className="flex items-center gap-2 text-green-600 text-sm">
-                <CheckCircle2 className="w-4 h-4" />
-                Automaticky uloženo
+            {/* Confidence badge */}
+            {job.confidenceScore != null && (
+              <div className="flex items-center gap-2">
+                <ConfidenceBadge score={job.confidenceScore} size="md" />
+                {job.draftId && (
+                  <span className="flex items-center gap-1 text-green-600 text-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Uloženo
+                  </span>
+                )}
               </div>
             )}
 
-            <ExtractedDataDisplay
-              data={job.extractedData!}
-              documentType={job.documentType}
-              confidenceScore={job.confidenceScore}
-              editable={true}
-              onFieldChange={handleFieldCorrection}
-              corrections={job.corrections}
-            />
+            {/* Verification form — compact inline fields */}
+            <div className="space-y-3 bg-muted/30 rounded-xl p-4 border">
+              <div className="flex items-center justify-between mb-1">
+                <h4 className="font-semibold text-sm">Vytěžená data</h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setVerifyEditing(!verifyEditing)}
+                  className="h-7 text-xs"
+                >
+                  <Pencil className="w-3 h-3 mr-1" />
+                  {verifyEditing ? 'Hotovo' : 'Opravit'}
+                </Button>
+              </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <VerifyField
+                  label="Dodavatel"
+                  value={corrSupplier}
+                  editing={verifyEditing}
+                  onChange={setCorrSupplier}
+                />
+                <VerifyField
+                  label="IČO"
+                  value={corrIco}
+                  editing={verifyEditing}
+                  onChange={setCorrIco}
+                />
+                <VerifyField
+                  label="Částka celkem"
+                  value={corrAmount}
+                  editing={verifyEditing}
+                  onChange={setCorrAmount}
+                  suffix="Kč"
+                />
+                <VerifyField
+                  label="DPH"
+                  value={corrVat}
+                  editing={verifyEditing}
+                  onChange={setCorrVat}
+                  suffix="Kč"
+                />
+                <VerifyField
+                  label="Datum vystavení"
+                  value={corrDate}
+                  editing={verifyEditing}
+                  onChange={setCorrDate}
+                  type="date"
+                />
+                <VerifyField
+                  label="Variabilní symbol"
+                  value={corrVs}
+                  editing={verifyEditing}
+                  onChange={setCorrVs}
+                />
+              </div>
+
+              {/* Full extraction display (expandable) */}
+              <details className="mt-2">
+                <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                  Zobrazit všechna pole
+                </summary>
+                <div className="mt-2">
+                  <ExtractedDataDisplay
+                    data={job.extractedData!}
+                    documentType={job.documentType}
+                    confidenceScore={job.confidenceScore}
+                    editable={verifyEditing}
+                    onFieldChange={handleFieldCorrection}
+                    corrections={job.corrections}
+                  />
+                </div>
+              </details>
+            </div>
+
+            {/* Notes */}
             <div>
               <Label className="text-sm">Poznámka pro účetní</Label>
               <Textarea
@@ -479,18 +679,113 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
                   }
                 }}
                 className="mt-1"
+                rows={2}
               />
             </div>
 
-            <Button className="w-full h-12 text-lg" onClick={handleSubmit}>
-              <Send className="w-5 h-5 mr-2" />
-              Potvrdit a odeslat
-            </Button>
+            {/* Action buttons */}
+            <div className="space-y-2">
+              <Button
+                className="w-full h-12 text-base gap-2"
+                onClick={handleVerifyConfirm}
+                disabled={verifySubmitting}
+              >
+                {verifySubmitting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <ShieldCheck className="w-5 h-5" />
+                )}
+                Potvrdit správnost
+              </Button>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={handleSubmit}
+                >
+                  <Send className="w-4 h-4 mr-1.5" />
+                  Odeslat bez ověření
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleScanAnother}
+                >
+                  <Plus className="w-4 h-4 mr-1.5" />
+                  Další
+                </Button>
+              </div>
+            </div>
           </>
         )}
         </div>
       </div>
       </div>
+    </div>
+  )
+}
+
+
+// ===== Step indicator =====
+
+function StepIndicator({ step, label, active, done }: { step: number; label: string; active: boolean; done: boolean }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className={cn(
+        'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
+        done ? 'bg-green-500 text-white' :
+        active ? 'bg-blue-600 text-white' :
+        'bg-gray-200 dark:bg-gray-700 text-gray-500'
+      )}>
+        {done ? <CheckCircle2 className="w-4 h-4" /> : step}
+      </div>
+      <span className={cn(
+        'text-xs font-medium',
+        active ? 'text-blue-600' : done ? 'text-green-600' : 'text-muted-foreground'
+      )}>
+        {label}
+      </span>
+    </div>
+  )
+}
+
+
+// ===== Verify field =====
+
+function VerifyField({
+  label,
+  value,
+  editing,
+  onChange,
+  suffix,
+  type = 'text',
+}: {
+  label: string
+  value: string
+  editing: boolean
+  onChange: (v: string) => void
+  suffix?: string
+  type?: string
+}) {
+  return (
+    <div>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      {editing ? (
+        <div className="flex items-center gap-1">
+          <Input
+            type={type}
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            className="h-8 text-sm"
+          />
+          {suffix && <span className="text-xs text-muted-foreground shrink-0">{suffix}</span>}
+        </div>
+      ) : (
+        <p className="text-sm font-medium">
+          {value || <span className="text-muted-foreground italic">—</span>}
+          {suffix && value ? ` ${suffix}` : ''}
+        </p>
+      )}
     </div>
   )
 }
