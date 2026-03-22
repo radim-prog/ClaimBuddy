@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useMemo, Suspense, useCallback } from 'react'
+import Link from 'next/link'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Receipt, Loader2, Download, Plus, HelpCircle } from 'lucide-react'
+import { Receipt, Loader2, Download, Plus, HelpCircle, ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -108,6 +109,9 @@ function InvoicesPageInner() {
 
   return (
     <div className="space-y-6">
+      <Link href="/client/documents" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4">
+        <ChevronLeft className="h-3.5 w-3.5" /> Zpět na Doklady
+      </Link>
       <div>
         <h1 className="text-2xl font-bold font-display">Faktury</h1>
         <p className="text-muted-foreground">Vystavujte a spravujte své faktury</p>

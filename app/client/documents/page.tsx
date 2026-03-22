@@ -83,7 +83,7 @@ function DocumentsPageInner() {
           className="action-btn h-14 flex items-center justify-center gap-3 px-5 border-2 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium text-base rounded-xl transition-colors"
         >
           <Receipt className="h-5 w-5 flex-shrink-0" />
-          Přejít na faktury
+          Vystavit fakturu
           <ChevronRight className="h-4 w-4 flex-shrink-0" />
         </a>
       </div>
