@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { canAccessCompany } from '@/lib/access-check'
 import { upsertClosureField } from '@/lib/closure-store-db'
+import { calculateDetailedTaxImpact } from '@/lib/tax-impact'
 
 export const dynamic = 'force-dynamic'
 
@@ -76,6 +77,28 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', transaction_id)
 
+      // Recalculate tax impact for rejected expense
+      if (tx.amount < 0) {
+        const { data: company } = await supabaseAdmin
+          .from('companies')
+          .select('legal_form, vat_payer')
+          .eq('id', tx.company_id)
+          .single()
+        if (company) {
+          const impact = calculateDetailedTaxImpact(tx.amount, company.legal_form, company.vat_payer)
+          await supabaseAdmin
+            .from('bank_transactions')
+            .update({
+              tax_impact: impact.income_tax,
+              vat_impact: impact.vat,
+              social_impact: impact.social_insurance,
+              health_impact: impact.health_insurance,
+              total_impact: impact.total,
+            })
+            .eq('id', transaction_id)
+        }
+      }
+
     } else if (action === 'manual') {
       // Manual match — requires at least one target ID
       if (!document_id && !invoice_id && !dohoda_mesic_id) {
@@ -83,6 +106,38 @@ export async function POST(request: NextRequest) {
           { error: 'Manual match requires document_id, invoice_id, or dohoda_mesic_id' },
           { status: 400 }
         )
+      }
+
+      // Cross-company ownership validation
+      if (document_id) {
+        const { data: doc } = await supabaseAdmin
+          .from('documents')
+          .select('company_id')
+          .eq('id', document_id)
+          .single()
+        if (!doc || doc.company_id !== tx.company_id) {
+          return NextResponse.json({ error: 'Document not found or belongs to different company' }, { status: 400 })
+        }
+      }
+      if (invoice_id) {
+        const { data: inv } = await supabaseAdmin
+          .from('invoices')
+          .select('company_id')
+          .eq('id', invoice_id)
+          .single()
+        if (!inv || inv.company_id !== tx.company_id) {
+          return NextResponse.json({ error: 'Invoice not found or belongs to different company' }, { status: 400 })
+        }
+      }
+      if (dohoda_mesic_id) {
+        const { data: doh } = await supabaseAdmin
+          .from('dohoda_mesice')
+          .select('company_id')
+          .eq('id', dohoda_mesic_id)
+          .single()
+        if (!doh || doh.company_id !== tx.company_id) {
+          return NextResponse.json({ error: 'Dohoda vykaz not found or belongs to different company' }, { status: 400 })
+        }
       }
 
       const updateData: Record<string, any> = {
