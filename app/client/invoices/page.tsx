@@ -59,7 +59,7 @@ export default function InvoicesPage() {
 }
 
 function InvoicesPageInner() {
-  const { companies, loading: companiesLoading, selectedCompanyId } = useClientUser()
+  const { visibleCompanies, loading: companiesLoading, selectedCompanyId } = useClientUser()
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
@@ -105,7 +105,7 @@ function InvoicesPageInner() {
     )
   }
 
-  const companyId = selectedCompany || companies[0]?.id || ''
+  const companyId = selectedCompany || visibleCompanies[0]?.id || ''
 
   return (
     <div className="space-y-6">

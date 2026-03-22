@@ -6,9 +6,11 @@ import { MessageCircle } from 'lucide-react'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { MessagesSection } from '@/components/client/messages-section'
 import { ServiceRequestButton } from '@/components/client/service-request-button'
+import { useClientUnreadMessages } from '@/hooks/use-client-unread-messages'
 
 export default function MessagesPage() {
-  const { userName, companies, loading } = useClientUser()
+  const { userName, visibleCompanies, loading } = useClientUser()
+  const { perCompany } = useClientUnreadMessages()
   const [selectedCompanyIndex, setSelectedCompanyIndex] = useState(0)
 
   if (loading) {
@@ -19,7 +21,7 @@ export default function MessagesPage() {
     )
   }
 
-  if (companies.length === 0) {
+  if (visibleCompanies.length === 0) {
     return (
       <div className="text-center py-16">
         <MessageCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
@@ -35,7 +37,7 @@ export default function MessagesPage() {
     )
   }
 
-  const selectedCompany = companies[selectedCompanyIndex]
+  const selectedCompany = visibleCompanies[selectedCompanyIndex]
 
   return (
     <div className="flex flex-col h-[calc(100vh-11rem)] md:h-[calc(100vh-6rem)]">
@@ -49,14 +51,14 @@ export default function MessagesPage() {
       </div>
 
       {/* Multi-company tabs */}
-      {companies.length > 1 && (
+      {visibleCompanies.length > 1 && (
         <div className="flex gap-2 px-4 pb-2 overflow-x-auto">
-          {companies.map((company, index) => (
+          {visibleCompanies.map((company, index) => (
             <button
               key={company.id}
               onClick={() => setSelectedCompanyIndex(index)}
               className={`
-                filter-pill whitespace-nowrap
+                filter-pill whitespace-nowrap relative
                 ${index === selectedCompanyIndex
                   ? 'filter-pill-active'
                   : 'filter-pill-inactive'
@@ -64,6 +66,11 @@ export default function MessagesPage() {
               `}
             >
               {company.name}
+              {(perCompany[company.id] || 0) > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] px-1 leading-none font-semibold">
+                  {perCompany[company.id]}
+                </span>
+              )}
             </button>
           ))}
         </div>

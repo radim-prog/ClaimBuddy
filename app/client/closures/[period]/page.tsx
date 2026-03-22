@@ -46,8 +46,8 @@ export default function ClosureDetailPage() {
   const params = useParams()
   const router = useRouter()
   const period = params.period as string
-  const { companies, selectedCompanyId } = useClientUser()
-  const companyId = selectedCompanyId || companies[0]?.id || ''
+  const { visibleCompanies, selectedCompanyId } = useClientUser()
+  const companyId = selectedCompanyId || visibleCompanies[0]?.id || ''
 
   const [data, setData] = useState<ClosureDetail | null>(null)
   const [loading, setLoading] = useState(true)

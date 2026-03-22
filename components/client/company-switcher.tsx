@@ -5,7 +5,7 @@ import { Building2, ChevronDown, Plus, Clock } from 'lucide-react'
 import { AddCompanyDialog } from '@/components/client/add-company-dialog'
 
 export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
-  const { companies, selectedCompanyId, setSelectedCompanyId, selectedCompany, refetch, setShowCompanyPicker } = useClientUser()
+  const { visibleCompanies: companies, selectedCompanyId, setSelectedCompanyId, selectedCompany, refetch, setShowCompanyPicker } = useClientUser()
 
   if (companies.length === 0) {
     // No companies — show add button

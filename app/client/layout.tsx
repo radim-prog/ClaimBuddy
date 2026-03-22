@@ -53,6 +53,7 @@ import { CompanySwitcher } from '@/components/client/company-switcher'
 import { CompanyPickerModal } from '@/components/client/company-picker-modal'
 import { ClientModuleSwitcher } from '@/components/client/client-module-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
+import { useClientUnreadMessages } from '@/hooks/use-client-unread-messages'
 import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-context'
 import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
 import { CLIENT_TUTORIAL_STEPS } from '@/lib/client-tutorial-steps'
@@ -86,8 +87,9 @@ const dynamicNavigation: { name: string; href: string; icon: typeof LayoutDashbo
 
 function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? ''
-  const { userName, userInitials, selectedCompany, selectedCompanyId, setSelectedCompanyId, userModules, companies, showCompanyPicker, setShowCompanyPicker, setDefaultCompany } = useClientUser()
+  const { userName, userInitials, selectedCompany, selectedCompanyId, setSelectedCompanyId, userModules, companies, visibleCompanies, showCompanyPicker, setShowCompanyPicker, setDefaultCompany } = useClientUser()
   const { isLocked, planTier } = usePlanFeatures()
+  const { totalUnread } = useClientUnreadMessages()
   const { startTour } = useTutorialContext()
   const { activeModule } = useActiveModule()
   const isClaims = activeModule === 'claims'
@@ -169,7 +171,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       <NotificationBanner dismissed={notificationsDismissed} />
       <CompanyPickerModal
         open={showCompanyPicker}
-        companies={companies}
+        companies={visibleCompanies}
         onSelect={(id) => { setSelectedCompanyId(id); setShowCompanyPicker(false) }}
         onSetDefault={setDefaultCompany}
         onClose={() => setShowCompanyPicker(false)}
@@ -241,6 +243,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                       <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${locked ? 'text-white/15' : isActive ? 'text-blue-300' : 'text-white/35 group-hover:text-white/70'}`} />
                       {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
                       {!collapsed && locked && <Lock className="ml-1.5 h-3 w-3 text-white/20" />}
+                      {!collapsed && item.href === '/client/messages' && totalUnread > 0 && (
+                        <span className="ml-auto bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 leading-none font-semibold">{totalUnread}</span>
+                      )}
                       {!collapsed && item.href === '/client/tax-questionnaire' && questionnaireNew && (
                         <span className="ml-2 px-1.5 py-0.5 text-[10px] font-semibold rounded-md bg-blue-500 text-white leading-none animate-pulse">Nový</span>
                       )}
@@ -337,12 +342,12 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Můj účet</DropdownMenuLabel>
+                <DropdownMenuLabel>Nastavení</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/client/account" className="cursor-pointer">
                     <UserCircle className="mr-2 h-4 w-4" />
-                    Nastavení účtu
+                    Nastavení
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -390,7 +395,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               <DropdownMenuItem asChild>
                 <Link href="/client/account" className="cursor-pointer">
                   <UserCircle className="mr-2 h-4 w-4" />
-                  Nastavení účtu
+                  Nastavení
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
