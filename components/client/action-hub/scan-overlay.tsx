@@ -6,12 +6,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
-  X, Camera, Upload, Loader2, CheckCircle2, AlertCircle, RotateCcw, Send, ArrowLeft,
+  X, Camera, Upload, Loader2, CheckCircle2, AlertCircle, RotateCcw, Send,
   ShieldCheck, Pencil, Plus, Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
-  DocumentTypeSelector,
   ExtractedDataDisplay,
   ExtractionDocumentType,
   ExtractedData,
@@ -45,8 +44,7 @@ type VerifyStep = 'upload' | 'extracting' | 'verify'
 
 export function ScanOverlay({ open, companyId: initialCompanyId, companies, onClose, initialFile }: ScanOverlayProps) {
   const [companyId, setCompanyId] = useState(initialCompanyId)
-  const [documentType, setDocumentType] = useState<ExtractionDocumentType>('receipt')
-  const [typeSelected, setTypeSelected] = useState(false)
+  const [documentType, setDocumentType] = useState<ExtractionDocumentType>('invoice')
   const [job, setJob] = useState<ScanJob | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
   const [verifyEditing, setVerifyEditing] = useState(false)
@@ -99,8 +97,7 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
       const timer = setTimeout(() => {
         setJob(null)
         setShowSuccess(false)
-        setDocumentType('receipt')
-        setTypeSelected(false)
+        setDocumentType('invoice')
         setVerifyEditing(false)
         setVerifySubmitting(false)
       }, 350)
@@ -143,8 +140,13 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
         return
       }
 
+      // Update document type from AI detection
+      const detectedType = data.detectedDocumentType as ExtractionDocumentType | undefined
+      if (detectedType) setDocumentType(detectedType)
+
       const updatedJob: ScanJob = {
         ...scanJob,
+        documentType: detectedType || scanJob.documentType,
         status: 'extracted',
         extractedData: data.extractedData,
         confidenceScore: data.confidenceScore,
@@ -364,17 +366,11 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
     if (job) processExtraction(job)
   }
 
-  const handleTypeSelect = (type: ExtractionDocumentType) => {
-    setDocumentType(type)
-    setTypeSelected(true)
-  }
-
   const handleScanAnother = () => {
     setJob(null)
     setShowSuccess(false)
     setVerifyEditing(false)
     setVerifySubmitting(false)
-    setTypeSelected(false)
   }
 
   const isDataReady = job && (job.status === 'extracted' || job.status === 'corrected' || job.status === 'validated')
@@ -464,28 +460,12 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
           </div>
         )}
 
-        {/* Step 1: Choose document type */}
-        {!job && !showSuccess && !typeSelected && (
-          <div className="space-y-4 pt-4">
-            <h3 className="text-base font-semibold text-center">Co nahráváte?</h3>
-            <DocumentTypeSelector
-              value={documentType}
-              onChange={handleTypeSelect}
-              tileMode
-            />
-          </div>
-        )}
-
-        {/* Step 2: Capture buttons (after type selected) */}
-        {!job && !showSuccess && typeSelected && (
+        {/* Capture buttons — straight to upload, AI auto-detects type */}
+        {!job && !showSuccess && (
           <div className="space-y-3 pt-4">
-            <button
-              onClick={() => { setTypeSelected(false) }}
-              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Změnit typ dokladu
-            </button>
+            <p className="text-sm text-muted-foreground text-center">
+              Nahrajte doklad — typ rozpoznáme automaticky
+            </p>
 
             <Button
               className="w-full h-16 text-lg gap-3"

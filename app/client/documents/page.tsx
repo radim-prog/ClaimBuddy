@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -20,6 +19,7 @@ import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
 import { BankTab } from '@/components/client/documents/bank-tab'
 import { InvoicesList } from '@/components/client/documents/invoices-list'
 import { DocumentRow, type DocumentRowData } from '@/components/client/documents/document-row'
+import { DropZone } from '@/components/client/documents/drop-zone'
 import { InvoiceOverlay } from '@/components/client/action-hub/invoice-overlay'
 import { isNativePlatform } from '@/lib/platform'
 import { takePhoto } from '@/lib/native-camera'
@@ -40,6 +40,7 @@ function DocumentsPageInner() {
   const [showScanOverlay, setShowScanOverlay] = useState(false)
   const [showInvoiceOverlay, setShowInvoiceOverlay] = useState(false)
   const [nativeCameraFile, setNativeCameraFile] = useState<File | null>(null)
+  const quickFileInputRef = useRef<HTMLInputElement>(null)
 
   const { filters, setFilter } = useUrlFilters({ tab: 'documents', action: '' })
   const activeTab = (filters.tab || 'documents') as TabValue
@@ -95,12 +96,23 @@ function DocumentsPageInner() {
           </button>
         )}
         <button
-          onClick={() => { handleTabChange('documents'); openScan() }}
+          onClick={() => { handleTabChange('documents'); quickFileInputRef.current?.click() }}
           className="action-btn h-12 flex items-center justify-center gap-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm"
         >
           <Upload className="h-4 w-4 flex-shrink-0" />
           Nahrát doklad
         </button>
+        <input
+          ref={quickFileInputRef}
+          type="file"
+          accept="image/*,.pdf"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) openScan(file)
+            e.target.value = ''
+          }}
+        />
         <button
           onClick={() => { handleTabChange('invoices'); setShowInvoiceOverlay(true) }}
           className="action-btn h-12 flex items-center justify-center gap-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm"
@@ -135,7 +147,7 @@ function DocumentsPageInner() {
         </TabsList>
 
         <TabsContent value="documents" className="mt-4">
-          <DocumentsTab onScan={() => openScan()} />
+          <DocumentsTab onScan={() => openScan()} onFileDrop={(file) => openScan(file)} />
         </TabsContent>
 
         <TabsContent value="invoices" className="mt-4">
@@ -173,7 +185,7 @@ function DocumentsPageInner() {
 
 type ListFilter = 'all' | 'draft' | 'extracted' | 'client_verified' | 'approved'
 
-function DocumentsTab({ onScan }: { onScan: () => void }) {
+function DocumentsTab({ onScan, onFileDrop }: { onScan: () => void; onFileDrop: (file: File) => void }) {
   const [documents, setDocuments] = useState<DocumentRowData[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null)
@@ -238,17 +250,17 @@ function DocumentsTab({ onScan }: { onScan: () => void }) {
       )}
 
       {!loading && documents.length === 0 && (
-        <Card className="rounded-2xl">
-          <CardContent className="py-16 text-center">
+        <DropZone onFile={onFileDrop}>
+          <div className="py-16 text-center">
             <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
             <p className="font-semibold text-gray-900 dark:text-white mb-1">Zatím nemáte žádné dokumenty</p>
-            <p className="text-sm text-muted-foreground mb-5">Nahrajte svůj první doklad — fotkou, scanem nebo PDF.</p>
+            <p className="text-sm text-muted-foreground mb-5">Nahrajte svůj první doklad — fotkou, scanem nebo přetáhněte PDF.</p>
             <Button onClick={onScan} size="sm">
               <Camera className="mr-1.5 h-4 w-4" />
               Nahrát první doklad
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </DropZone>
       )}
 
       {filtered.length > 0 && (
@@ -308,6 +320,11 @@ function DocumentsTab({ onScan }: { onScan: () => void }) {
         <div className="text-center py-8 text-sm text-muted-foreground">
           Žádné doklady neodpovídají filtru
         </div>
+      )}
+
+      {/* Drop zone at bottom when documents exist */}
+      {documents.length > 0 && (
+        <DropZone onFile={onFileDrop} className="mt-2" />
       )}
     </div>
   )
