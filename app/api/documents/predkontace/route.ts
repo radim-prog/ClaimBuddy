@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getUserName } from '@/lib/request-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -358,7 +359,7 @@ export async function GET(request: NextRequest) {
 // PATCH - update journal entry status (approve/reject/modify)
 export async function PATCH(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
-  const userName = request.headers.get('x-user-name')
+  const userName = getUserName(request, '')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {

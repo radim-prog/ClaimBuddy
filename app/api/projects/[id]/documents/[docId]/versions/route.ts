@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getUserName } from '@/lib/request-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,7 +90,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string; docId: string }> }
 ) {
   const userId = request.headers.get('x-user-id')
-  const userName = request.headers.get('x-user-name')
+  const userName = getUserName(request, '')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {

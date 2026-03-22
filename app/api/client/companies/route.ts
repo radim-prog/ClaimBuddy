@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getClosures } from '@/lib/closure-store-db'
 import { createCompany, getCompanyByIco } from '@/lib/company-store'
 import { validateIco, lookupByIco } from '@/lib/ares'
+import { getUserName } from '@/lib/request-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const userName = decodeURIComponent(request.headers.get('x-user-name') || '') || 'Klient'
+  const userName = getUserName(request, 'Klient')
   const impersonateCompany = request.headers.get('x-impersonate-company')
 
   const userRole = request.headers.get('x-user-role')

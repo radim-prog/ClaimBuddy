@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createDocumentLink, deleteDocumentLink, getLinksForDocument } from '@/lib/document-link-store'
 import { getFirmId, verifyCompanyAccess } from '@/lib/firm-scope'
+import { getUserName } from '@/lib/request-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,7 +33,7 @@ export async function POST(
   { params }: { params: { companyId: string; documentId: string } }
 ) {
   const userId = request.headers.get('x-user-id')
-  const userName = request.headers.get('x-user-name') || 'Účetní'
+  const userName = getUserName(request)
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

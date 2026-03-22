@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { addComment, getComments } from '@/lib/document-link-store'
+import { getUserName } from '@/lib/request-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +28,7 @@ export async function POST(
   { params }: { params: { documentId: string } }
 ) {
   const userId = request.headers.get('x-user-id')
-  const userName = request.headers.get('x-user-name') || 'Klient'
+  const userName = getUserName(request, 'Klient')
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
