@@ -113,7 +113,7 @@ function DocumentsPageInner() {
           className="action-btn h-12 flex items-center justify-center gap-2 px-4 border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium text-sm rounded-xl transition-colors"
         >
           <Landmark className="h-4 w-4 flex-shrink-0" />
-          Bankovní výpisy
+          Nahrát výpis
         </button>
       </div>
 
