@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Building2 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 type Company = {
   id: string
@@ -30,6 +30,7 @@ interface Props {
 export function CompanyEditDialog({ company, hidden, onToggleHidden, open, onOpenChange }: Props) {
   const [saving, setSaving] = useState(false)
   const [localHidden, setLocalHidden] = useState(hidden)
+  useEffect(() => { setLocalHidden(hidden) }, [hidden])
 
   const handleSave = async () => {
     if (!company || localHidden === hidden) {
