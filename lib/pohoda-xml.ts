@@ -1,4 +1,4 @@
-// Pohoda XML export generator for invoices
+// Pohoda XML export generator for invoices, bank documents, and vouchers
 // Format: Stormware Pohoda XML dataPack v2.0
 // Encoding: windows-1250 (required by Pohoda)
 
@@ -8,6 +8,8 @@ import type { Company } from './company-store'
 const NS_DAT = 'http://www.stormware.cz/schema/version_2/data.xsd'
 const NS_INV = 'http://www.stormware.cz/schema/version_2/invoice.xsd'
 const NS_TYP = 'http://www.stormware.cz/schema/version_2/type.xsd'
+const NS_BNK = 'http://www.stormware.cz/schema/version_2/bank.xsd'
+const NS_INT = 'http://www.stormware.cz/schema/version_2/intDoc.xsd'
 
 function escapeXml(str: string): string {
   return str
@@ -393,6 +395,299 @@ export function generatePohodaXmlFromDocuments(
   application="UcetniOS"
   version="2.0"
   note="Export přijatých faktur z Účetní OS">
+${dataPackItems}
+</dat:dataPack>`
+}
+
+// ============================================================
+// BANK DOCUMENTS (bankovní doklady)
+// ============================================================
+
+export type BankDocumentForExport = {
+  id: string
+  transaction_date: string
+  amount: number
+  variable_symbol?: string | null
+  constant_symbol?: string | null
+  specific_symbol?: string | null
+  counterparty_name?: string | null
+  counterparty_account?: string | null
+  counterparty_bank_code?: string | null
+  description?: string | null
+  period?: string | null
+}
+
+export type BankDocumentInvoiceLink = {
+  invoice_number: string
+  variable_symbol?: string | null
+  amount: number
+}
+
+/**
+ * Generate Pohoda XML for a bank income/expense document.
+ * Maps to bnk:bank element in Pohoda schema.
+ */
+function generateBankDocumentItem(
+  tx: BankDocumentForExport,
+  bankAccount?: { accountNo: string; bankCode: string } | null
+): string {
+  const itemId = `BNK_${tx.id.slice(0, 8)}`
+  const isIncome = tx.amount > 0
+  const absAmount = Math.abs(tx.amount)
+  const docType = isIncome ? 'receipt' : 'expense'
+
+  const accountElement = bankAccount
+    ? `      <bnk:bankAccount>
+        <typ:accountNo>${escapeXml(bankAccount.accountNo)}</typ:accountNo>
+        <typ:bankCode>${escapeXml(bankAccount.bankCode)}</typ:bankCode>
+      </bnk:bankAccount>`
+    : ''
+
+  const partnerAccountElement = tx.counterparty_account
+    ? `      <bnk:partnerIdentity>
+        <typ:address>
+          <typ:company>${escapeXml(tx.counterparty_name || '')}</typ:company>
+        </typ:address>
+      </bnk:partnerIdentity>
+      <bnk:account>
+        <typ:accountNo>${escapeXml(tx.counterparty_account)}</typ:accountNo>${tx.counterparty_bank_code ? `
+        <typ:bankCode>${escapeXml(tx.counterparty_bank_code)}</typ:bankCode>` : ''}
+      </bnk:account>`
+    : ''
+
+  return `  <dat:dataPackItem id="${escapeXml(itemId)}" version="2.0">
+    <bnk:bank version="2.0">
+      <bnk:bankHeader>
+        <bnk:bankType>${docType}</bnk:bankType>
+${accountElement}
+        <bnk:dateStatement>${tx.transaction_date}</bnk:dateStatement>
+        <bnk:datePayment>${tx.transaction_date}</bnk:datePayment>${tx.variable_symbol ? `
+        <bnk:symVar>${escapeXml(tx.variable_symbol)}</bnk:symVar>` : ''}${tx.constant_symbol ? `
+        <bnk:symConst>${escapeXml(tx.constant_symbol)}</bnk:symConst>` : ''}${tx.specific_symbol ? `
+        <bnk:symSpec>${escapeXml(tx.specific_symbol)}</bnk:symSpec>` : ''}
+${partnerAccountElement}
+        <bnk:text>${escapeXml(tx.description || (isIncome ? 'Příjem' : 'Výdaj'))}</bnk:text>
+      </bnk:bankHeader>
+      <bnk:bankDetail>
+        <bnk:bankItem>
+          <bnk:text>${escapeXml(tx.description || '')}</bnk:text>
+          <bnk:homeCurrency>
+            <typ:unitPrice>${absAmount.toFixed(2)}</typ:unitPrice>
+          </bnk:homeCurrency>
+        </bnk:bankItem>
+      </bnk:bankDetail>
+      <bnk:bankSummary>
+        <bnk:homeCurrency>
+          <typ:priceNone>${absAmount.toFixed(2)}</typ:priceNone>
+        </bnk:homeCurrency>
+      </bnk:bankSummary>
+    </bnk:bank>
+  </dat:dataPackItem>`
+}
+
+/**
+ * Generate Pohoda XML for bank document liquidation (párování s fakturou).
+ * Links a bank transaction to an existing invoice.
+ */
+function generateBankLiquidationItem(
+  tx: BankDocumentForExport,
+  invoice: BankDocumentInvoiceLink,
+  bankAccount?: { accountNo: string; bankCode: string } | null
+): string {
+  const itemId = `BNK_LIQ_${tx.id.slice(0, 8)}`
+  const isIncome = tx.amount > 0
+  const absAmount = Math.abs(tx.amount)
+
+  const accountElement = bankAccount
+    ? `      <bnk:bankAccount>
+        <typ:accountNo>${escapeXml(bankAccount.accountNo)}</typ:accountNo>
+        <typ:bankCode>${escapeXml(bankAccount.bankCode)}</typ:bankCode>
+      </bnk:bankAccount>`
+    : ''
+
+  return `  <dat:dataPackItem id="${escapeXml(itemId)}" version="2.0">
+    <bnk:bank version="2.0">
+      <bnk:bankHeader>
+        <bnk:bankType>${isIncome ? 'receipt' : 'expense'}</bnk:bankType>
+${accountElement}
+        <bnk:dateStatement>${tx.transaction_date}</bnk:dateStatement>
+        <bnk:datePayment>${tx.transaction_date}</bnk:datePayment>
+        <bnk:symVar>${escapeXml(invoice.variable_symbol || invoice.invoice_number)}</bnk:symVar>
+        <bnk:text>Likvidace faktury ${escapeXml(invoice.invoice_number)}</bnk:text>
+      </bnk:bankHeader>
+      <bnk:bankDetail>
+        <bnk:bankItem>
+          <bnk:text>Úhrada faktury ${escapeXml(invoice.invoice_number)}</bnk:text>
+          <bnk:homeCurrency>
+            <typ:unitPrice>${absAmount.toFixed(2)}</typ:unitPrice>
+          </bnk:homeCurrency>
+        </bnk:bankItem>
+      </bnk:bankDetail>
+      <bnk:bankSummary>
+        <bnk:homeCurrency>
+          <typ:priceNone>${absAmount.toFixed(2)}</typ:priceNone>
+        </bnk:homeCurrency>
+      </bnk:bankSummary>
+    </bnk:bank>
+  </dat:dataPackItem>`
+}
+
+/**
+ * Generate Pohoda XML export for bank documents (příjmy/výdaje).
+ */
+export function generateBankDocumentXml(
+  transactions: BankDocumentForExport[],
+  ico: string,
+  bankAccount?: { accountNo: string; bankCode: string } | null
+): string {
+  const dataPackItems = transactions
+    .map(tx => generateBankDocumentItem(tx, bankAccount))
+    .join('\n')
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<dat:dataPack
+  xmlns:dat="${NS_DAT}"
+  xmlns:bnk="${NS_BNK}"
+  xmlns:typ="${NS_TYP}"
+  id="EXPORT_BNK_${new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)}"
+  ico="${escapeXml(ico)}"
+  application="UcetniOS"
+  version="2.0"
+  note="Export bankovních dokladů z Účetní OS">
+${dataPackItems}
+</dat:dataPack>`
+}
+
+/**
+ * Generate Pohoda XML export for bank liquidation (párování transakcí s fakturami).
+ */
+export function generateBankLiquidationXml(
+  pairs: Array<{ transaction: BankDocumentForExport; invoice: BankDocumentInvoiceLink }>,
+  ico: string,
+  bankAccount?: { accountNo: string; bankCode: string } | null
+): string {
+  const dataPackItems = pairs
+    .map(({ transaction, invoice }) => generateBankLiquidationItem(transaction, invoice, bankAccount))
+    .join('\n')
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<dat:dataPack
+  xmlns:dat="${NS_DAT}"
+  xmlns:bnk="${NS_BNK}"
+  xmlns:typ="${NS_TYP}"
+  id="EXPORT_LIQ_${new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)}"
+  ico="${escapeXml(ico)}"
+  application="UcetniOS"
+  version="2.0"
+  note="Export likvidace banky z Účetní OS">
+${dataPackItems}
+</dat:dataPack>`
+}
+
+// ============================================================
+// CASH VOUCHERS (PPD/VPD pokladní doklady)
+// ============================================================
+
+export type CashVoucherForExport = {
+  id: string
+  doc_type: 'PPD' | 'VPD'
+  doc_number: string
+  transaction_date: string
+  amount: number
+  description?: string | null
+  counterparty_name?: string | null
+  counterparty_ico?: string | null
+  vat_rate?: number
+}
+
+/**
+ * Generate Pohoda XML for a single PPD/VPD cash voucher.
+ * Uses intDoc:intDoc (interní doklad) element — Pohoda's standard for cash documents.
+ */
+function generateVoucherItem(cashTx: CashVoucherForExport): string {
+  const itemId = `${cashTx.doc_type}_${cashTx.doc_number.replace(/[^a-zA-Z0-9]/g, '_')}`
+  const isPPD = cashTx.doc_type === 'PPD'
+
+  const vatRate = cashTx.vat_rate ?? 0
+  const vatTag = vatRateTag(vatRate)
+  const priceEl = vatPriceElement(vatRate)
+
+  let base: number, vat: number
+  if (vatRate > 0) {
+    base = Math.round((cashTx.amount / (1 + vatRate / 100)) * 100) / 100
+    vat = Math.round((cashTx.amount - base) * 100) / 100
+  } else {
+    base = cashTx.amount
+    vat = 0
+  }
+
+  const partnerBlock = cashTx.counterparty_name
+    ? `      <int:partnerIdentity>
+        <typ:address>
+          <typ:company>${escapeXml(cashTx.counterparty_name)}</typ:company>${cashTx.counterparty_ico ? `
+          <typ:ico>${escapeXml(cashTx.counterparty_ico)}</typ:ico>` : ''}
+        </typ:address>
+      </int:partnerIdentity>`
+    : ''
+
+  return `  <dat:dataPackItem id="${escapeXml(itemId)}" version="2.0">
+    <int:intDoc version="2.0">
+      <int:intDocHeader>
+        <int:intDocType>${isPPD ? 'receipt' : 'expense'}</int:intDocType>
+        <int:number>
+          <typ:numberRequested>${escapeXml(cashTx.doc_number)}</typ:numberRequested>
+        </int:number>
+        <int:date>${cashTx.transaction_date}</int:date>
+        <int:dateTax>${cashTx.transaction_date}</int:dateTax>
+        <int:text>${escapeXml(cashTx.description || (isPPD ? 'Příjmový pokladní doklad' : 'Výdajový pokladní doklad'))}</int:text>
+${partnerBlock}
+        <int:classificationVAT>inland</int:classificationVAT>
+      </int:intDocHeader>
+      <int:intDocDetail>
+        <int:intDocItem>
+          <int:text>${escapeXml(cashTx.description || cashTx.doc_number)}</int:text>
+          <int:quantity>1</int:quantity>
+          <int:${priceEl}>
+            <typ:unitPrice>${base.toFixed(2)}</typ:unitPrice>
+            <typ:price>${base.toFixed(2)}</typ:price>
+            <typ:priceSum>${cashTx.amount.toFixed(2)}</typ:priceSum>
+            <typ:priceVAT>${vat.toFixed(2)}</typ:priceVAT>
+          </int:${priceEl}>
+          <int:vatRate>${vatTag}</int:vatRate>
+        </int:intDocItem>
+      </int:intDocDetail>
+      <int:intDocSummary>
+        <int:homeCurrency>
+          <int:${priceEl}>
+            <typ:price>${base.toFixed(2)}</typ:price>
+            <typ:priceSum>${cashTx.amount.toFixed(2)}</typ:priceSum>
+            <typ:priceVAT>${vat.toFixed(2)}</typ:priceVAT>
+          </int:${priceEl}>
+        </int:homeCurrency>
+      </int:intDocSummary>
+    </int:intDoc>
+  </dat:dataPackItem>`
+}
+
+/**
+ * Generate Pohoda XML export for PPD/VPD cash vouchers.
+ */
+export function generateVoucherXml(
+  vouchers: CashVoucherForExport[],
+  ico: string
+): string {
+  const dataPackItems = vouchers.map(generateVoucherItem).join('\n')
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<dat:dataPack
+  xmlns:dat="${NS_DAT}"
+  xmlns:int="${NS_INT}"
+  xmlns:typ="${NS_TYP}"
+  id="EXPORT_PPD_${new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)}"
+  ico="${escapeXml(ico)}"
+  application="UcetniOS"
+  version="2.0"
+  note="Export pokladních dokladů z Účetní OS">
 ${dataPackItems}
 </dat:dataPack>`
 }

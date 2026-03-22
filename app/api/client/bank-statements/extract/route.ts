@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { extractBankStatement } from '@/lib/kimi-ai'
 import { autoMatchTransaction, calculateTaxImpact } from '@/lib/bank-matching'
+import { parseBankStatement } from '@/lib/bank-statement-parser'
 import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
@@ -21,11 +22,15 @@ export async function POST(request: NextRequest) {
 
     const ALLOWED_MIME_TYPES = [
       'application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'text/csv',
+      'text/csv', 'text/plain', // CSV + MT940 (.sta)
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
       'application/vnd.ms-excel', // xls
+      'application/octet-stream', // generic binary (MT940)
     ]
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    // Allow known extensions even if MIME is wrong
+    const ext = file.name.toLowerCase().split('.').pop() || ''
+    const allowedExts = ['csv', 'sta', 'mt940', 'pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'xlsx', 'xls']
+    if (!ALLOWED_MIME_TYPES.includes(file.type) && !allowedExts.includes(ext)) {
       return NextResponse.json({ error: 'Nepodporovaný typ souboru' }, { status: 400 })
     }
 
@@ -46,9 +51,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 })
     }
 
-    // Extract bank statement via Kimi AI
     const buffer = Buffer.from(await file.arrayBuffer())
-    const result = await extractBankStatement(buffer, file.name, file.type)
+
+    // Try structured parser first (CSV, MT940), fall back to OCR for PDF/images
+    let result: {
+      account_number?: string | null
+      period_from?: string | null
+      period_to?: string | null
+      transactions: Array<{
+        date: string; amount: number; currency: string
+        variable_symbol?: string | null; constant_symbol?: string | null
+        counterparty_account?: string | null; counterparty_name?: string | null
+        description?: string | null
+      }>
+    }
+
+    const parsed = await parseBankStatement(buffer, file.name, file.type)
+    if (parsed && parsed.transactions.length > 0) {
+      // Structured parse succeeded
+      result = parsed
+    } else {
+      // OCR fallback for PDF/images/unknown formats
+      result = await extractBankStatement(buffer, file.name, file.type)
+    }
 
     const period = result.period_from?.substring(0, 7) || new Date().toISOString().substring(0, 7)
 

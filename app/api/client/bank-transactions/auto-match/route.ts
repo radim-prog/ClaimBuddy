@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { autoMatchTransaction } from '@/lib/bank-matching'
+import { autoMatchTransaction, autoMatchTransactionV2, detectPeriodicPatterns } from '@/lib/bank-matching'
+import type { MatchResultV2 } from '@/lib/types/bank-matching'
 import { calculateDetailedTaxImpact } from '@/lib/tax-impact'
 import { upsertClosureField } from '@/lib/closure-store-db'
 import { triggerMissingDocsReminder } from '@/lib/missing-docs-reminder'
@@ -14,6 +15,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { company_id } = body
+
+    // V2 matching via query param or body
+    const url = new URL(request.url)
+    const useV2 = url.searchParams.get('version') === '2' || body.version === 2
 
     if (!company_id) {
       return NextResponse.json({ error: 'Missing company_id' }, { status: 400 })
@@ -95,37 +100,64 @@ export async function POST(request: NextRequest) {
         : undefined,
     }))
 
+    // V2: load periodic patterns for pattern matching
+    let patterns: any[] = []
+    if (useV2) {
+      const { data: patternData } = await supabaseAdmin
+        .from('periodic_patterns')
+        .select('*')
+        .eq('company_id', company_id)
+        .eq('is_active', true)
+        .limit(200)
+      patterns = patternData || []
+    }
+
     let matched = 0
+    const matchedTxIds: string[] = []
 
     for (const tx of transactions) {
-      const match = autoMatchTransaction(
-        {
-          id: tx.id,
-          amount: tx.amount,
-          variable_symbol: tx.variable_symbol,
-          counterparty_name: tx.counterparty_name,
-          counterparty_account: tx.counterparty_account,
-          transaction_date: tx.transaction_date,
-          description: tx.description,
-        },
-        matchableDocs,
-        matchableInvs,
-        matchableDohodaVykazy
-      )
+      const txInput = {
+        id: tx.id,
+        amount: tx.amount,
+        variable_symbol: tx.variable_symbol,
+        counterparty_name: tx.counterparty_name,
+        counterparty_account: tx.counterparty_account,
+        transaction_date: tx.transaction_date,
+        description: tx.description,
+        category: tx.category,
+        is_recurring: tx.is_recurring,
+        periodic_pattern_id: tx.periodic_pattern_id,
+      }
 
-      if (match) {
+      // Use V2 or V1 matching engine
+      const match: MatchResultV2 | null = useV2
+        ? autoMatchTransactionV2(txInput, matchableDocs, matchableInvs, {
+            dohodaVykazy: matchableDohodaVykazy,
+            patterns,
+          })
+        : autoMatchTransaction(txInput, matchableDocs, matchableInvs, matchableDohodaVykazy)
+
+      if (match && (match.document_id || match.invoice_id || match.dohoda_mesic_id)) {
+        const updateData: Record<string, any> = {
+          matched_document_id: match.document_id || null,
+          matched_invoice_id: match.invoice_id || null,
+          matched_dohoda_mesic_id: match.dohoda_mesic_id || null,
+          match_group_id: (match as MatchResultV2).match_group_id || null,
+          match_confidence: match.confidence,
+          match_method: match.method,
+          tax_impact: 0,
+          vat_impact: 0,
+          updated_at: new Date().toISOString(),
+        }
+
+        // V2: apply suggested category if present
+        if (useV2 && (match as MatchResultV2).suggested_category) {
+          updateData.category = (match as MatchResultV2).suggested_category
+        }
+
         await supabaseAdmin
           .from('bank_transactions')
-          .update({
-            matched_document_id: match.document_id || null,
-            matched_invoice_id: match.invoice_id || null,
-            matched_dohoda_mesic_id: match.dohoda_mesic_id || null,
-            match_confidence: match.confidence,
-            match_method: match.method,
-            tax_impact: 0,
-            vat_impact: 0,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq('id', tx.id)
 
         // If matched to dohoda vykaz, also update payment status
@@ -142,20 +174,69 @@ export async function POST(request: NextRequest) {
         }
 
         matched++
-      } else if (tx.amount < 0) {
-        // Recalculate detailed tax impact for still-unmatched expenses
-        const impact = calculateDetailedTaxImpact(tx.amount, company.legal_form, company.vat_payer)
-        await supabaseAdmin
-          .from('bank_transactions')
-          .update({
-            tax_impact: impact.income_tax,
-            vat_impact: impact.vat,
-            social_impact: impact.social_insurance,
-            health_impact: impact.health_insurance,
-            total_impact: impact.total,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', tx.id)
+        matchedTxIds.push(tx.id)
+      } else {
+        // V2: apply auto-category even for unmatched
+        if (useV2 && match && (match as MatchResultV2).suggested_category) {
+          await supabaseAdmin
+            .from('bank_transactions')
+            .update({
+              category: (match as MatchResultV2).suggested_category,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', tx.id)
+        }
+
+        if (tx.amount < 0) {
+          // Recalculate detailed tax impact for still-unmatched expenses
+          const impact = calculateDetailedTaxImpact(tx.amount, company.legal_form, company.vat_payer)
+          await supabaseAdmin
+            .from('bank_transactions')
+            .update({
+              tax_impact: impact.income_tax,
+              vat_impact: impact.vat,
+              social_impact: impact.social_insurance,
+              health_impact: impact.health_insurance,
+              total_impact: impact.total,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', tx.id)
+        }
+      }
+    }
+
+    // V2: detect and save periodic patterns after matching
+    if (useV2 && transactions.length >= 3) {
+      const allTxInputs = transactions.map(tx => ({
+        id: tx.id,
+        amount: tx.amount,
+        variable_symbol: tx.variable_symbol,
+        counterparty_name: tx.counterparty_name,
+        counterparty_account: tx.counterparty_account,
+        transaction_date: tx.transaction_date,
+        description: tx.description,
+      }))
+
+      const newPatterns = detectPeriodicPatterns(allTxInputs, company_id)
+      for (const pattern of newPatterns) {
+        // Upsert: skip if pattern with same counterparty already exists
+        let query = supabaseAdmin
+          .from('periodic_patterns')
+          .select('id')
+          .eq('company_id', company_id)
+          .eq('is_active', true)
+
+        if (pattern.counterparty_account) {
+          query = query.eq('counterparty_account', pattern.counterparty_account)
+        } else {
+          query = query.is('counterparty_account', null)
+        }
+
+        const { data: existing } = await query.limit(1)
+
+        if (!existing || existing.length === 0) {
+          await supabaseAdmin.from('periodic_patterns').insert(pattern)
+        }
       }
     }
 
@@ -207,6 +288,7 @@ export async function POST(request: NextRequest) {
       total: transactions.length,
       matched,
       unmatched: transactions.length - matched,
+      engine: useV2 ? 'v2' : 'v1',
     })
   } catch (error) {
     console.error('[AutoMatch] Error:', error)
