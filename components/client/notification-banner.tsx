@@ -25,7 +25,7 @@ const typeIcons: Record<string, typeof Clock> = {
 const typeLabels: Record<string, string> = {
   deadline_reminder: 'Termín',
   unpaid_invoice: 'Faktura',
-  missing_documents: 'Dokumenty',
+  missing_documents: 'Doklady',
   custom: 'Oznámení',
 }
 

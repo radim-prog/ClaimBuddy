@@ -139,7 +139,7 @@ export default function DocumentsOverviewPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-display text-gray-900 dark:text-white">Přehled dokladů</h1>
-          <p className="text-gray-600 dark:text-gray-300">Stav podkladů od klientů</p>
+          <p className="text-gray-600 dark:text-gray-300">Stav dokladů od klientů</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={prevMonth}>

@@ -14,7 +14,7 @@ export const CLIENT_TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'client-dashboard',
     title: 'Přehled',
-    description: 'Váš hlavní přehled — zde vidíte stav dokumentů, zpráv a důležitých termínů.',
+    description: 'Váš hlavní přehled — zde vidíte stav dokladů, zpráv a důležitých termínů.',
     targetSelector: '[data-tour="client-dashboard"]',
     page: '/client/dashboard',
     placement: 'right',

@@ -901,7 +901,7 @@ export default function ClientRequestsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="document">Dokument</SelectItem>
+                  <SelectItem value="document">Doklad</SelectItem>
                   <SelectItem value="question">Dotaz</SelectItem>
                   <SelectItem value="task">Úkol</SelectItem>
                   <SelectItem value="other">Jiné</SelectItem>

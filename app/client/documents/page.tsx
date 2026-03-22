@@ -142,7 +142,7 @@ interface Document {
 }
 
 const typeLabels: Record<string, { label: string; icon: typeof FileText }> = {
-  bank_statement: { label: 'Výpis z banky', icon: Landmark },
+  bank_statement: { label: 'Bankovní výpis', icon: Landmark },
   expense_invoice: { label: 'Nákladový doklad', icon: Receipt },
   income_invoice: { label: 'Příjmová faktura', icon: FileText },
   invoice: { label: 'Faktura', icon: Receipt },

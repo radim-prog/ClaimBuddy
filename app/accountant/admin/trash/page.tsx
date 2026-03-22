@@ -30,7 +30,7 @@ interface TrashItem {
 
 const typeFilters: { value: ResourceType | 'all'; label: string; icon: typeof FileText }[] = [
   { value: 'all', label: 'Vše', icon: Trash2 },
-  { value: 'documents', label: 'Dokumenty', icon: FileText },
+  { value: 'documents', label: 'Doklady', icon: FileText },
   { value: 'invoices', label: 'Faktury', icon: Receipt },
   { value: 'tasks', label: 'Úkoly', icon: ListTodo },
   { value: 'projects', label: 'Projekty', icon: FolderOpen },

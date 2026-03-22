@@ -32,7 +32,7 @@ interface UploadDialogProps {
 }
 
 const DOC_TYPES = [
-  { value: 'bank_statement', label: 'Výpis z banky' },
+  { value: 'bank_statement', label: 'Bankovní výpis' },
   { value: 'expense_invoice', label: 'Nákladová faktura' },
   { value: 'income_invoice', label: 'Příjmová faktura' },
   { value: 'receipt', label: 'Účtenka' },

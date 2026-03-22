@@ -32,8 +32,8 @@ const STATUS_LABELS: Record<string, { label: string; color: string; icon: typeof
 
 const DOC_TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
   { value: 'bank_statement', label: 'Bankovní výpis' },
-  { value: 'expense_invoice', label: 'Přijatá faktura (výdaj)' },
-  { value: 'income_invoice', label: 'Vydaná faktura (příjem)' },
+  { value: 'expense_invoice', label: 'Přijatá faktura' },
+  { value: 'income_invoice', label: 'Vydaná faktura' },
   { value: 'receipt', label: 'Pokladní doklad' },
   { value: 'other', label: 'Ostatní' },
 ]
@@ -155,7 +155,7 @@ export default function ClientInboxPage() {
           </div>
           <div>
             <h2 className="text-lg font-semibold font-display text-gray-900 dark:text-white">
-              Inbox podkladů
+              Inbox dokladů
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Doklady přijaté emailem pro {company.name}

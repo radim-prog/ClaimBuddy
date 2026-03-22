@@ -44,7 +44,7 @@ type ExportHistoryEntry = {
 const dataTypes = [
   { id: 'company', label: 'Základní údaje firmy', description: 'Název, IČO, DIČ, adresa, kontakty', icon: Building2, sensitive: false },
   { id: 'closures', label: 'Měsíční uzávěrky', description: 'Všechny uzávěrky včetně poznámek a schválení', icon: FileText, sensitive: true },
-  { id: 'documents', label: 'Dokumenty', description: 'Nahraté soubory a jejich metadata', icon: FileSpreadsheet, sensitive: true },
+  { id: 'documents', label: 'Doklady', description: 'Nahraté soubory a jejich metadata', icon: FileSpreadsheet, sensitive: true },
   { id: 'messages', label: 'Zprávy a komunikace', description: 'Historie komunikace s klientem', icon: FileText, sensitive: true },
   { id: 'tasks', label: 'Úkoly', description: 'Úkoly spojené s klientem', icon: CheckCircle2, sensitive: false },
 ]

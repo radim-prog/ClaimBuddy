@@ -813,7 +813,7 @@ function VerificationPageContent() {
             {/* LEFT: Document viewer */}
             <Card className={`flex flex-col min-h-0 overflow-hidden border-l-4 ${CATEGORY_COLORS[currentCategory] || ''}`}>
               <div className="flex items-center justify-between px-3 py-1.5 border-b bg-muted/30">
-                <span className="text-xs font-medium text-muted-foreground">Dokument</span>
+                <span className="text-xs font-medium text-muted-foreground">Doklad</span>
                 {advanced && (
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setZoom(z => Math.max(50, z - 25))}>

@@ -190,9 +190,9 @@ export const NOTIFICATION_EVENTS: NotificationEvent[] = [
   { id: '8', code: 'task.deadline_reminder', name: 'Připomínka deadlinu', description: 'Automatická připomínka před deadlinem', category: 'task', is_system: true, is_active: true },
 
   // Document events
-  { id: '9', code: 'document.uploaded', name: 'Dokument nahrán', description: 'Když klient nahraje nový dokument', category: 'document', is_system: true, is_active: true },
-  { id: '10', code: 'document.approved', name: 'Dokument schválen', description: 'Když je dokument schválen', category: 'document', is_system: true, is_active: true },
-  { id: '11', code: 'document.rejected', name: 'Dokument zamítnut', description: 'Když je dokument zamítnut', category: 'document', is_system: true, is_active: true },
+  { id: '9', code: 'document.uploaded', name: 'Doklad nahrán', description: 'Když klient nahraje nový doklad', category: 'document', is_system: true, is_active: true },
+  { id: '10', code: 'document.approved', name: 'Doklad schválen', description: 'Když je doklad schválen', category: 'document', is_system: true, is_active: true },
+  { id: '11', code: 'document.rejected', name: 'Doklad zamítnut', description: 'Když je doklad zamítnut', category: 'document', is_system: true, is_active: true },
 
   // Onboarding events
   { id: '12', code: 'onboarding.started', name: 'Onboarding zahájen', description: 'Když je vytvořen nový klient v onboardingu', category: 'onboarding', is_system: true, is_active: true },

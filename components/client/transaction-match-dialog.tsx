@@ -131,7 +131,7 @@ export function TransactionMatchDialog({
             </div>
           ) : filtered.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground py-8">
-              Žádné dokumenty k přiřazení
+              Žádné doklady k přiřazení
             </p>
           ) : (
             filtered.map(option => (

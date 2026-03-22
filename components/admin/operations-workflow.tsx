@@ -125,7 +125,7 @@ export function OperationsWorkflow() {
   }, [clientRules, searchTerm])
 
   const getDocumentTypeName = (id?: string) => {
-    if (!id) return 'Všechny dokumenty'
+    if (!id) return 'Všechny doklady'
     return documentTypes.find((t) => t.id === id)?.name || id
   }
 
@@ -270,7 +270,7 @@ export function OperationsWorkflow() {
           <DialogHeader>
             <DialogTitle>Přidat pravidlo workflow</DialogTitle>
             <DialogDescription>
-              Definujte jak se budou zpracovávat dokumenty pro konkrétního klienta
+              Definujte jak se budou zpracovávat doklady pro konkrétního klienta
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -304,10 +304,10 @@ export function OperationsWorkflow() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Všechny dokumenty" />
+                  <SelectValue placeholder="Všechny doklady" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Všechny dokumenty</SelectItem>
+                  <SelectItem value="">Všechny doklady</SelectItem>
                   {documentTypes.map((type) => (
                     <SelectItem key={type.id} value={type.id}>
                       {type.name}
@@ -448,10 +448,10 @@ export function OperationsWorkflow() {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Všechny dokumenty" />
+                    <SelectValue placeholder="Všechny doklady" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Všechny dokumenty</SelectItem>
+                    <SelectItem value="">Všechny doklady</SelectItem>
                     {documentTypes.map((type) => (
                       <SelectItem key={type.id} value={type.id}>
                         {type.name}
