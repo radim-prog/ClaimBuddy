@@ -330,7 +330,7 @@ export async function middleware(request: NextRequest) {
   // Add user info to headers
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-user-id', impersonateUserId || user.id)
-  requestHeaders.set('x-user-name', user.name)
+  requestHeaders.set('x-user-name', encodeURIComponent(user.name))
   requestHeaders.set('x-user-role', user.role)
   requestHeaders.set('x-user-plan', user.plan || 'free')
   requestHeaders.set('x-user-modules', JSON.stringify(user.modules || ['accounting']))
