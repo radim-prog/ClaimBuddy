@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { TEST_USER } from './test-config'
 
 test.describe('Client auth flow', () => {
   test('login → redirect → username visible → logout', async ({ browser }) => {
@@ -10,8 +11,8 @@ test.describe('Client auth flow', () => {
     await expect(page.locator('input[name="username"]')).toBeVisible()
 
     // Login
-    await page.fill('input[name="username"]', 'radim')
-    await page.fill('input[name="password"]', 'admin123')
+    await page.fill('input[name="username"]', TEST_USER.username)
+    await page.fill('input[name="password"]', TEST_USER.password)
     await page.click('button[type="submit"]')
 
     // Should redirect to accountant dashboard

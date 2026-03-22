@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test'
+import { TEST_USER } from './test-config'
 
 test.describe('Encoding', () => {
   test('x-user-name header handles diacritics', async ({ request }) => {
     // Login first to get auth cookie
     const loginRes = await request.post('/api/auth/login', {
-      data: { username: 'radim', password: 'admin123' },
+      data: { username: TEST_USER.username, password: TEST_USER.password },
     })
     expect(loginRes.ok()).toBeTruthy()
 
@@ -23,7 +24,7 @@ test.describe('Encoding', () => {
   test('middleware does not crash on non-ASCII names', async ({ request }) => {
     // Login should work fine even though the name contains Czech chars
     const loginRes = await request.post('/api/auth/login', {
-      data: { username: 'radim', password: 'admin123' },
+      data: { username: TEST_USER.username, password: TEST_USER.password },
     })
     expect(loginRes.ok()).toBeTruthy()
     expect(loginRes.status()).toBe(200)
