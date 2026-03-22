@@ -25,7 +25,6 @@ import {
   FolderOpen,
   FilePlus,
   Shield,
-  CreditCard,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -66,8 +65,6 @@ const accountingNavigation: NavItem[] = [
   { name: 'Doklady & Faktury', href: '/client/documents',   icon: FileText,        tourId: 'client-documents', matchPaths: ['/client/documents', '/client/invoices'] },
   { name: 'Kniha jízd',        href: '/client/travel',      icon: Car,             tourId: 'client-travel' },
   { name: 'Zprávy',            href: '/client/messages',    icon: MessageSquare,   tourId: 'client-messages' },
-  { name: 'Platby',            href: '/client/billing',     icon: CreditCard,      tourId: 'client-billing' },
-  { name: 'Nastavení',         href: '/client/account',     icon: UserCircle,      divider: true },
 ]
 
 // Claims context navigation
@@ -424,7 +421,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         <nav className="flex justify-around px-1 pt-1 pb-1">
           {navigation.filter(n => isClaims
             ? ['Moje případy', 'Soubory', 'Zprávy', 'Nahlásit událost'].includes(n.name)
-            : ['Přehled', 'Doklady & Faktury', 'Zprávy', 'Platby', 'Kniha jízd'].includes(n.name)
+            : ['Přehled', 'Doklady & Faktury', 'Zprávy', 'Kniha jízd'].includes(n.name)
           ).map((item) => {
             const isActive = item.matchPaths
               ? item.matchPaths.some(p => pathname === p || pathname.startsWith(p + '/'))
