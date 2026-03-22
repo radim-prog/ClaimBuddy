@@ -329,6 +329,7 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-user-role', user.role)
   requestHeaders.set('x-user-plan', user.plan || 'free')
   requestHeaders.set('x-user-modules', JSON.stringify(user.modules || ['accounting']))
+  requestHeaders.set('x-token-exp', String(user.exp))
   if (user.firm_id) {
     requestHeaders.set('x-firm-id', user.firm_id)
   }

@@ -68,7 +68,7 @@ export interface TokenPayload {
   exp: number
 }
 
-function createToken(payload: Omit<TokenPayload, 'exp'>): string {
+export function createToken(payload: Omit<TokenPayload, 'exp'>): string {
   const data: TokenPayload = {
     ...payload,
     exp: Math.floor(Date.now() / 1000) + TOKEN_MAX_AGE,
