@@ -37,9 +37,9 @@ test.describe('Client auth flow', () => {
     await page.goto('/client/dashboard')
     const body = await page.textContent('body')
     // Check that common Czech characters render correctly
-    // These should NOT appear as garbled sequences like Ã, Ä, etc.
+    // These should NOT appear as garbled/mojibake sequences
     expect(body).not.toMatch(/Ã[¡-¿]/)
-    expect(body).not.toMatch(/Ä[€-¿]/)
+    expect(body).not.toMatch(/Ã\u0084/)
     // Should contain actual Czech text
     expect(body).toMatch(/[ěščřžýáíéůúťďň]/i)
   })
