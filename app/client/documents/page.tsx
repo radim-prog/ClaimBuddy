@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Camera,
   FileText,
@@ -11,21 +11,19 @@ import {
   Receipt,
   Loader2,
   RefreshCw,
-  Download,
-  Eye,
-  ChevronRight,
+  Upload,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { DocumentComments } from '@/components/documents/document-comments'
 import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
-import { CollapsibleSection } from '@/components/collapsible-section'
 import { BankTab } from '@/components/client/documents/bank-tab'
-import { UpsellBanner } from '@/components/client/upsell-banner'
+import { InvoicesList } from '@/components/client/documents/invoices-list'
+import { DocumentRow, type DocumentRowData } from '@/components/client/documents/document-row'
+import { InvoiceOverlay } from '@/components/client/action-hub/invoice-overlay'
 import { isNativePlatform } from '@/lib/platform'
 import { takePhoto } from '@/lib/native-camera'
 import { toast } from 'sonner'
-import { Suspense } from 'react'
 import { useUrlFilters } from '@/lib/hooks/use-url-filters'
 
 export default function DocumentsPage() {
@@ -36,38 +34,45 @@ export default function DocumentsPage() {
   )
 }
 
+type TabValue = 'documents' | 'invoices' | 'bank'
+
 function DocumentsPageInner() {
   const [showScanOverlay, setShowScanOverlay] = useState(false)
+  const [showInvoiceOverlay, setShowInvoiceOverlay] = useState(false)
   const [nativeCameraFile, setNativeCameraFile] = useState<File | null>(null)
-  const [bankExpanded, setBankExpanded] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('documents-bank-expanded') === 'true'
-    }
-    return false
-  })
 
-  const toggleBank = useCallback(() => {
-    setBankExpanded(prev => {
-      const next = !prev
-      localStorage.setItem('documents-bank-expanded', String(next))
-      return next
-    })
-  }, [])
+  const { filters, setFilter } = useUrlFilters({ tab: 'documents', action: '' })
+  const activeTab = (filters.tab || 'documents') as TabValue
 
   const { visibleCompanies, selectedCompanyId } = useClientUser()
   const companyId = selectedCompanyId || visibleCompanies[0]?.id || ''
 
+  // Handle ?action=new query param for invoices tab
+  useEffect(() => {
+    if (filters.action === 'new' && activeTab === 'invoices') {
+      setShowInvoiceOverlay(true)
+      setFilter('action', '')
+    }
+  }, [filters.action, activeTab, setFilter])
+
+  const handleTabChange = (value: string) => {
+    setFilter('tab', value)
+  }
+
+  const openScan = (file?: File | null) => {
+    setNativeCameraFile(file || null)
+    setShowScanOverlay(true)
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold font-display">Doklady</h1>
-        <p className="text-muted-foreground">Nahrajte doklady a spravujte bankovní výpisy</p>
+        <h1 className="text-2xl font-bold font-display">Doklady & Faktury</h1>
+        <p className="text-muted-foreground">Nahrajte doklady, faktury a bankovní výpisy</p>
       </div>
 
-      <UpsellBanner message="Nahráváte doklady sami? S profesionální účetní ušetříte čas a vyhnete se chybám." />
-
-      {/* Action buttons */}
-      <div className={cn('grid gap-3', isNativePlatform() ? 'grid-cols-3' : 'grid-cols-2')}>
+      {/* 3 CTA buttons */}
+      <div className={cn('grid gap-2', isNativePlatform() ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3')}>
         {isNativePlatform() && (
           <button
             onClick={async () => {
@@ -77,63 +82,73 @@ function DocumentsPageInner() {
                   const response = await fetch(photoUri)
                   const blob = await response.blob()
                   const file = new File([blob], `doklad-${Date.now()}.jpg`, { type: 'image/jpeg' })
-                  setNativeCameraFile(file)
-                  setShowScanOverlay(true)
+                  openScan(file)
                 }
               } catch {
                 toast.error('Nepodařilo se otevřít kameru')
               }
             }}
-            className="action-btn h-14 flex items-center justify-center gap-3 px-5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-base"
+            className="action-btn h-12 flex items-center justify-center gap-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm"
           >
-            <Camera className="h-5 w-5 flex-shrink-0" />
-            Vyfotit doklad
+            <Camera className="h-4 w-4 flex-shrink-0" />
+            Vyfotit
           </button>
         )}
         <button
-          onClick={() => { setNativeCameraFile(null); setShowScanOverlay(true) }}
-          className="action-btn h-14 flex items-center justify-center gap-3 px-5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-base"
+          onClick={() => { handleTabChange('documents'); openScan() }}
+          className="action-btn h-12 flex items-center justify-center gap-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm"
         >
-          <Camera className="h-5 w-5 flex-shrink-0" />
+          <Upload className="h-4 w-4 flex-shrink-0" />
           Nahrát doklad
         </button>
-        <a
-          href="/client/invoices"
-          className="action-btn h-14 flex items-center justify-center gap-3 px-5 border-2 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium text-base rounded-xl transition-colors"
+        <button
+          onClick={() => { handleTabChange('invoices'); setShowInvoiceOverlay(true) }}
+          className="action-btn h-12 flex items-center justify-center gap-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm"
         >
-          <Receipt className="h-5 w-5 flex-shrink-0" />
+          <Receipt className="h-4 w-4 flex-shrink-0" />
           Vystavit fakturu
-          <ChevronRight className="h-4 w-4 flex-shrink-0" />
-        </a>
+        </button>
+        <button
+          onClick={() => handleTabChange('bank')}
+          className="action-btn h-12 flex items-center justify-center gap-2 px-4 border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium text-sm rounded-xl transition-colors"
+        >
+          <Landmark className="h-4 w-4 flex-shrink-0" />
+          Bankovní výpisy
+        </button>
       </div>
 
-      {/* Document list - always visible */}
-      <DocumentListTab />
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <TabsList className="w-full grid grid-cols-3">
+          <TabsTrigger value="documents" className="gap-1.5">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Nahrané</span> doklady
+          </TabsTrigger>
+          <TabsTrigger value="invoices" className="gap-1.5">
+            <Receipt className="h-4 w-4" />
+            <span className="hidden sm:inline">Vystavené</span> faktury
+          </TabsTrigger>
+          <TabsTrigger value="bank" className="gap-1.5">
+            <Landmark className="h-4 w-4" />
+            <span className="hidden sm:inline">Bankovní</span> výpisy
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Bank section - prominent with callout */}
-      {!bankExpanded && (
-        <button
-          onClick={toggleBank}
-          className="w-full flex items-center gap-3 p-3 rounded-xl border-2 border-dashed border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors text-left"
-        >
-          <Landmark className="h-5 w-5 text-blue-600 shrink-0" />
-          <div className="flex-1">
-            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Bankovní výpisy</span>
-            <span className="text-xs text-blue-600/70 dark:text-blue-400/70 ml-2">Nahrávejte výpisy a párujte transakce</span>
-          </div>
-          <ChevronRight className="h-4 w-4 text-blue-400" />
-        </button>
-      )}
-      <CollapsibleSection
-        id="documents-bank"
-        label="Bankovní výpisy"
-        icon={Landmark}
-        expanded={bankExpanded}
-        onToggle={toggleBank}
-        variant="bordered"
-      >
-        <BankTab />
-      </CollapsibleSection>
+        <TabsContent value="documents" className="mt-4">
+          <DocumentsTab onScan={() => openScan()} />
+        </TabsContent>
+
+        <TabsContent value="invoices" className="mt-4">
+          <InvoicesList
+            companyId={companyId}
+            onNew={() => setShowInvoiceOverlay(true)}
+          />
+        </TabsContent>
+
+        <TabsContent value="bank" className="mt-4">
+          <BankTab />
+        </TabsContent>
+      </Tabs>
 
       {/* Overlays */}
       <ScanOverlay
@@ -143,67 +158,29 @@ function DocumentsPageInner() {
         onClose={() => { setShowScanOverlay(false); setNativeCameraFile(null) }}
         initialFile={nativeCameraFile}
       />
+
+      <InvoiceOverlay
+        open={showInvoiceOverlay}
+        companyId={companyId}
+        onClose={() => setShowInvoiceOverlay(false)}
+      />
     </div>
   )
 }
 
 
-interface Document {
-  id: string
-  company_id: string
-  period: string
-  type: string
-  file_name: string
-  file_size_bytes: number
-  status: string
-  ocr_status?: string
-  uploaded_at: string
-  storage_path: string | null
-}
+// ===== DOCUMENTS TAB =====
 
-const typeLabels: Record<string, { label: string; icon: typeof FileText }> = {
-  bank_statement: { label: 'Bankovní výpis', icon: Landmark },
-  expense_invoice: { label: 'Nákladový doklad', icon: Receipt },
-  income_invoice: { label: 'Příjmová faktura', icon: FileText },
-  invoice: { label: 'Faktura', icon: Receipt },
-  receipt: { label: 'Účtenka', icon: Receipt },
-}
+type ListFilter = 'all' | 'draft' | 'extracted' | 'client_verified' | 'approved'
 
-const statusColors: Record<string, string> = {
-  uploaded: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-  approved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  draft: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  submitted: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-}
-
-const statusLabels: Record<string, string> = {
-  uploaded: 'Nahráno',
-  uploaded_only: 'Čeká na zpracování',
-  approved: 'Schváleno',
-  rejected: 'Zamítnuto',
-  pending: 'Čeká',
-  draft: 'Nepotvrzeno',
-  submitted: 'Odesláno',
-}
-
-function formatSize(bytes: number): string {
-  if (!bytes) return ''
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-type ListFilter = 'all' | 'draft' | 'submitted' | 'approved'
-
-function DocumentListTab() {
-  const [documents, setDocuments] = useState<Document[]>([])
+function DocumentsTab({ onScan }: { onScan: () => void }) {
+  const [documents, setDocuments] = useState<DocumentRowData[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
-  const { filters: urlFilters, setFilter: setUrlParam } = useUrlFilters({ filter: 'all' })
-  const filter = urlFilters.filter as ListFilter
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null)
+  const { filters: urlFilters, setFilter: setUrlParam } = useUrlFilters({ docFilter: 'all' })
+  const filter = urlFilters.docFilter as ListFilter
 
-  const fetchDocs = async () => {
+  const fetchDocs = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch('/api/client/documents')
@@ -214,9 +191,9 @@ function DocumentListTab() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  useEffect(() => { fetchDocs() }, [])
+  useEffect(() => { fetchDocs() }, [fetchDocs])
 
   const filtered = documents.filter(doc => {
     if (filter === 'all') return true
@@ -225,21 +202,28 @@ function DocumentListTab() {
   })
 
   const draftCount = documents.filter(d => (d.ocr_status || d.status) === 'draft').length
+  const extractedCount = documents.filter(d => (d.ocr_status || d.status) === 'extracted').length
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap">
-        {(['all', 'draft', 'submitted', 'approved'] as const).map(f => (
+        {([
+          { key: 'all', label: 'Vše' },
+          { key: 'draft', label: `Nepotvrzeno${draftCount > 0 ? ` (${draftCount})` : ''}` },
+          { key: 'extracted', label: `Vytěženo${extractedCount > 0 ? ` (${extractedCount})` : ''}` },
+          { key: 'client_verified', label: 'Ověřeno' },
+          { key: 'approved', label: 'Schváleno' },
+        ] as const).map(f => (
           <button
-            key={f}
-            onClick={() => setUrlParam('filter', f)}
+            key={f.key}
+            onClick={() => setUrlParam('docFilter', f.key)}
             className={cn(
               'filter-pill',
-              filter === f ? 'filter-pill-active' : 'filter-pill-inactive'
+              filter === f.key ? 'filter-pill-active' : 'filter-pill-inactive'
             )}
           >
-            {f === 'all' ? 'Vše' : f === 'draft' ? `Nepotvrzeno (${draftCount})` : f === 'submitted' ? 'Odesláno' : 'Schváleno'}
+            {f.label}
           </button>
         ))}
         <Button variant="outline" size="sm" onClick={fetchDocs} className="ml-auto">
@@ -259,7 +243,7 @@ function DocumentListTab() {
             <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
             <p className="font-semibold text-gray-900 dark:text-white mb-1">Zatím nemáte žádné dokumenty</p>
             <p className="text-sm text-muted-foreground mb-5">Nahrajte svůj první doklad — fotkou, scanem nebo PDF.</p>
-            <Button onClick={() => setShowScanOverlay(true)} size="sm">
+            <Button onClick={onScan} size="sm">
               <Camera className="mr-1.5 h-4 w-4" />
               Nahrát první doklad
             </Button>
@@ -268,88 +252,63 @@ function DocumentListTab() {
       )}
 
       {filtered.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {filtered.map(doc => {
-            const typeInfo = typeLabels[doc.type] || { label: doc.type, icon: FileText }
-            const Icon = typeInfo.icon
-            const isSelected = selectedDoc?.id === doc.id
-            const docStatus = doc.ocr_status || doc.status
+            const isSelected = selectedDocId === doc.id
 
             return (
-              <Card
+              <DocumentRow
                 key={doc.id}
-                className={cn(
-                  'rounded-2xl cursor-pointer transition-colors',
-                  isSelected ? 'ring-2 ring-blue-500' : 'hover:bg-muted/50',
-                  docStatus === 'draft' && 'border-amber-300 dark:border-amber-700'
-                )}
-                onClick={() => setSelectedDoc(isSelected ? null : doc)}
+                doc={doc}
+                selected={isSelected}
+                expanded={isSelected}
+                onClick={() => setSelectedDocId(isSelected ? null : doc.id)}
               >
-                <CardContent className="py-3 px-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-muted rounded-lg shrink-0">
-                      <Icon className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{doc.file_name}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{typeInfo.label}</span>
-                        {doc.period && <><span>·</span><span>{doc.period}</span></>}
-                        {doc.file_size_bytes > 0 && <><span>·</span><span>{formatSize(doc.file_size_bytes)}</span></>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      {doc.storage_path && (
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => window.open(`/api/documents/${doc.id}/download?inline=true`, '_blank')}
-                            className="p-1 text-muted-foreground hover:text-blue-600 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                            title="Náhled"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={async () => {
-                              const res = await fetch(`/api/documents/${doc.id}/download`)
-                              if (res.ok) {
-                                const data = await res.json()
-                                const a = document.createElement('a')
-                                a.href = data.url
-                                a.download = data.file_name || doc.file_name
-                                a.click()
-                              }
-                            }}
-                            className="p-1 text-muted-foreground hover:text-blue-600 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                            title="Stáhnout"
-                          >
-                            <Download className="h-4 w-4" />
-                          </button>
+                {/* Expanded: show extraction data + comments */}
+                <div className="space-y-3">
+                  {/* Extraction metadata */}
+                  {(doc.supplier_name || doc.total_with_vat || doc.variable_symbol) && (
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      {doc.supplier_name && (
+                        <div>
+                          <span className="text-xs text-muted-foreground">Dodavatel</span>
+                          <p className="font-medium">{doc.supplier_name}</p>
                         </div>
                       )}
-                      <Badge className={cn('rounded-md', statusColors[docStatus] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300')}>
-                        {statusLabels[docStatus] || docStatus}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground hidden sm:inline">
-                        {new Date(doc.uploaded_at).toLocaleDateString('cs-CZ')}
-                      </span>
-                      <ChevronRight className={cn('h-4 w-4 text-muted-foreground transition-transform', isSelected && 'rotate-90')} />
+                      {doc.total_with_vat != null && doc.total_with_vat > 0 && (
+                        <div>
+                          <span className="text-xs text-muted-foreground">Částka</span>
+                          <p className="font-medium">{doc.total_with_vat.toLocaleString('cs-CZ')} Kč</p>
+                        </div>
+                      )}
+                      {doc.variable_symbol && (
+                        <div>
+                          <span className="text-xs text-muted-foreground">VS</span>
+                          <p className="font-medium font-mono">{doc.variable_symbol}</p>
+                        </div>
+                      )}
+                      {doc.date_issued && (
+                        <div>
+                          <span className="text-xs text-muted-foreground">Datum vystavení</span>
+                          <p className="font-medium">{new Date(doc.date_issued).toLocaleDateString('cs-CZ')}</p>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </CardContent>
+                  )}
 
-                {isSelected && (
-                  <div className="px-4 pb-4 border-t border-border/50" onClick={(e) => e.stopPropagation()}>
-                    <div className="pt-4">
-                      <DocumentComments documentId={doc.id} userRole="client" />
-                    </div>
-                  </div>
-                )}
-              </Card>
+                  <DocumentComments documentId={doc.id} userRole="client" />
+                </div>
+              </DocumentRow>
             )
           })}
+        </div>
+      )}
+
+      {filtered.length === 0 && documents.length > 0 && (
+        <div className="text-center py-8 text-sm text-muted-foreground">
+          Žádné doklady neodpovídají filtru
         </div>
       )}
     </div>
   )
 }
-
