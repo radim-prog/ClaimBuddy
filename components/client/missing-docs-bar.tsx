@@ -24,14 +24,16 @@ export function MissingDocsBar() {
   const now = new Date()
   const currentMonth = now.getMonth()
   const currentYear = now.getFullYear()
-  const currentPeriod = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
+  // Check previous month — current month is still in progress (yellow, not red)
+  const prevDate = new Date(currentYear, currentMonth - 1, 1)
+  const previousPeriod = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`
 
   const hasMissing = useMemo(() => {
     if (loading || companies.length === 0) return false
 
     for (const company of companies) {
       const closure = closures.find(
-        (c) => c.company_id === company.id && c.period === currentPeriod,
+        (c) => c.company_id === company.id && c.period === previousPeriod,
       )
       if (!closure) return true
       if (
@@ -43,7 +45,7 @@ export function MissingDocsBar() {
       }
     }
     return false
-  }, [companies, closures, loading, currentPeriod])
+  }, [companies, closures, loading, previousPeriod])
 
   if (loading || !hasMissing || dismissed) return null
 
@@ -61,7 +63,7 @@ export function MissingDocsBar() {
         >
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           <span>
-            Chybí doklady za {monthNames[currentMonth]} {currentYear}
+            Chybí doklady za {monthNames[prevDate.getMonth()]} {prevDate.getFullYear()}
           </span>
         </button>
         <button

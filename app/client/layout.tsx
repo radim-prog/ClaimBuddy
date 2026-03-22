@@ -12,7 +12,6 @@ import {
   UserCircle,
   FileText,
   Car,
-  Receipt,
   Users,
   ChevronRight,
   ChevronLeft,
@@ -22,14 +21,11 @@ import {
   Landmark,
   Package,
   UserCheck,
-  ShieldCheck,
   BookOpen,
   FolderOpen,
   FilePlus,
   Shield,
   CreditCard,
-  LifeBuoy,
-  Network,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -55,27 +51,23 @@ import { NotificationBanner } from '@/components/client/notification-banner'
 import { ImpersonationBanner } from '@/components/client/impersonation-banner'
 import { MissingDocsBar } from '@/components/client/missing-docs-bar'
 import { CompanySwitcher } from '@/components/client/company-switcher'
+import { CompanyPickerModal } from '@/components/client/company-picker-modal'
 import { ClientModuleSwitcher } from '@/components/client/client-module-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-context'
 import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
 import { CLIENT_TUTORIAL_STEPS } from '@/lib/client-tutorial-steps'
 
-type NavItem = { name: string; href: string; icon: typeof LayoutDashboard; feature?: string; tourId?: string; divider?: boolean }
+type NavItem = { name: string; href: string; icon: typeof LayoutDashboard; feature?: string; tourId?: string; divider?: boolean; matchPaths?: string[] }
 
 // Accounting context navigation
 const accountingNavigation: NavItem[] = [
-  { name: 'Přehled', href: '/client/dashboard', icon: LayoutDashboard, tourId: 'client-dashboard' },
-  { name: 'Doklady', href: '/client/documents', icon: FileText, tourId: 'client-documents' },
-  { name: 'Faktury', href: '/client/invoices', icon: Receipt, tourId: 'client-invoicing' },
-  { name: 'Kniha jízd', href: '/client/travel', icon: Car, tourId: 'client-travel' },
-  { name: 'Zprávy', href: '/client/messages', icon: MessageSquare, tourId: 'client-messages' },
-  { name: 'Platby', href: '/client/billing', icon: CreditCard, tourId: 'client-billing' },
-  // ── Doplňkové ──
-  { name: 'Požadavky', href: '/client/requests', icon: LifeBuoy, divider: true },
-  { name: 'Pojistné události', href: '/client/claims', icon: ShieldCheck },
-  { name: 'Adresář', href: '/client/partners', icon: Users, feature: 'address_book' },
-  { name: 'Dotazník', href: '/client/tax-questionnaire', icon: ClipboardList },
+  { name: 'Přehled',           href: '/client/dashboard',   icon: LayoutDashboard, tourId: 'client-dashboard' },
+  { name: 'Doklady & Faktury', href: '/client/documents',   icon: FileText,        tourId: 'client-documents', matchPaths: ['/client/documents', '/client/invoices'] },
+  { name: 'Kniha jízd',        href: '/client/travel',      icon: Car,             tourId: 'client-travel' },
+  { name: 'Zprávy',            href: '/client/messages',    icon: MessageSquare,   tourId: 'client-messages' },
+  { name: 'Platby',            href: '/client/billing',     icon: CreditCard,      tourId: 'client-billing' },
+  { name: 'Nastavení',         href: '/client/account',     icon: UserCircle,      divider: true },
 ]
 
 // Claims context navigation
@@ -91,11 +83,13 @@ const dynamicNavigation: { name: string; href: string; icon: typeof LayoutDashbo
   { name: 'Daně', href: '/client/taxes', icon: Landmark, portalKey: 'tax_overview', tourId: 'client-taxes' },
   { name: 'Majetek', href: '/client/assets', icon: Package, portalKey: 'assets' },
   { name: 'Zaměstnanci', href: '/client/employees', icon: UserCheck, portalKey: 'employees' },
+  { name: 'Adresář', href: '/client/partners', icon: Users, portalKey: 'address_book' },
+  { name: 'Dotazník', href: '/client/tax-questionnaire', icon: ClipboardList, portalKey: 'tax_questionnaire' },
 ]
 
 function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? ''
-  const { userName, userInitials, selectedCompany, selectedCompanyId, userModules, companies } = useClientUser()
+  const { userName, userInitials, selectedCompany, selectedCompanyId, setSelectedCompanyId, userModules, companies, showCompanyPicker, setShowCompanyPicker, setDefaultCompany } = useClientUser()
   const { isLocked, planTier } = usePlanFeatures()
   const { startTour } = useTutorialContext()
   const { activeModule } = useActiveModule()
@@ -121,26 +115,15 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   const portalSections = selectedCompany?.portal_sections || {}
   const enabledDynamic = dynamicNavigation.filter(item => portalSections[item.portalKey])
   const baseNavigation = isClaims ? claimsNavigation : accountingNavigation
-  const hasMultipleCompanies = companies.length > 1
   const navigation = useMemo(() => {
     if (isClaims) return claimsNavigation
-    // Insert dynamic items before "Zprávy" (second to last group)
-    const messagesIdx = baseNavigation.findIndex(n => n.name === 'Zprávy')
     const result = [...baseNavigation]
-    const insertAt = messagesIdx >= 0 ? messagesIdx : result.length
+    // Insert dynamic items before divider
+    const dividerIdx = result.findIndex(n => 'divider' in n && n.divider)
+    const insertAt = dividerIdx >= 0 ? dividerIdx : result.length
     result.splice(insertAt, 0, ...enabledDynamic)
-    // "Moje firmy" — only when client has 2+ companies
-    if (hasMultipleCompanies) {
-      const dividerIdx = result.findIndex(n => 'divider' in n && n.divider)
-      const universeItem: NavItem = { name: 'Moje firmy', href: '/client/companies/universe', icon: Network }
-      if (dividerIdx >= 0) {
-        result.splice(dividerIdx, 0, universeItem)
-      } else {
-        result.push(universeItem)
-      }
-    }
     return result
-  }, [enabledDynamic.length, selectedCompany?.id, isClaims, hasMultipleCompanies])
+  }, [enabledDynamic.length, selectedCompany?.id, isClaims])
 
   // Claims branding: override favicon + title on claims.zajcon.cz
   useEffect(() => {
@@ -187,6 +170,12 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       {!isClaims && <MissingDocsBar />}
       <NotificationModal onDismissed={() => setNotificationsDismissed(true)} />
       <NotificationBanner dismissed={notificationsDismissed} />
+      <CompanyPickerModal
+        open={showCompanyPicker}
+        companies={companies}
+        onSelect={(id) => { setSelectedCompanyId(id); setShowCompanyPicker(false) }}
+        onSetDefault={setDefaultCompany}
+      />
 
       {/* Sidebar - Desktop */}
       <aside className={`hidden md:fixed md:inset-y-0 md:flex md:flex-col z-30 transition-all duration-300 ease-in-out ${collapsed ? 'md:w-[72px]' : 'md:w-64'}`}>
@@ -202,7 +191,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col flex-grow sidebar-blue shadow-sidebar overflow-y-auto custom-scrollbar">
           {/* Logo */}
           <div className={`relative flex items-center h-16 flex-shrink-0 border-b border-white/[0.06] transition-all duration-300 ${collapsed ? 'justify-center px-3' : 'px-5'}`}>
-            <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
+            <Link href={isClaims ? '/client/claims' : '/client/dashboard'} className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-soft-sm flex-shrink-0 ${isClaims ? 'bg-gradient-to-br from-blue-400 to-blue-500' : 'bg-gradient-to-br from-blue-400 to-indigo-500'}`}>
                 {isClaims ? (
                   <Shield className="h-4 w-4 text-white" />
@@ -220,20 +209,19 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                   </p>
                 </div>
               )}
-            </div>
+            </Link>
           </div>
 
           {/* Company Switcher */}
           <CompanySwitcher collapsed={collapsed} />
 
-          {/* Module Switcher */}
-          <ClientModuleSwitcher userModules={userModules} collapsed={collapsed} />
-
           {/* Navigation */}
           <TooltipProvider delayDuration={0}>
             <nav className="relative flex-1 px-3 py-4 space-y-0.5">
               {navigation.map((item) => {
-                const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                const isActive = item.matchPaths
+                  ? item.matchPaths.some(p => pathname === p || pathname.startsWith(p + '/'))
+                  : (pathname === item.href || pathname.startsWith(item.href + '/'))
                 const Icon = item.icon
                 const locked = item.feature ? isLocked(item.feature) : false
                 const showDivider = 'divider' in item && item.divider
@@ -297,6 +285,9 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               </Link>
             </div>
           )}
+
+          {/* Module Switcher — bottom position */}
+          <ClientModuleSwitcher userModules={userModules} collapsed={collapsed} />
 
           {/* Tools - Průvodce & Tmavý režim */}
           <div className="relative flex-shrink-0 border-t border-white/[0.06] px-3 py-3 space-y-0.5">
@@ -379,12 +370,12 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile header */}
       <div className="md:hidden">
         <div className="flex items-center justify-between sidebar-blue px-4 py-3">
-          <div className="flex items-center gap-2.5">
+          <Link href={isClaims ? '/client/claims' : '/client/dashboard'} className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center">
               <span className="text-xs font-bold text-white font-display">U</span>
             </div>
             <span className="text-sm font-semibold text-white/90 font-display">Účetní OS</span>
-          </div>
+          </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 text-white/90 hover:text-white">
@@ -432,10 +423,12 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-950/90 backdrop-blur-2xl border-t border-gray-200/60 dark:border-gray-800/60 z-50 safe-area-bottom">
         <nav className="flex justify-around px-1 pt-1 pb-1">
           {navigation.filter(n => isClaims
-            ? ['Moje spisy', 'Soubory', 'Zprávy', 'Nahlásit událost'].includes(n.name)
-            : ['Přehled', 'Doklady', 'Faktury', 'Adresář', 'Zprávy'].includes(n.name)
+            ? ['Moje případy', 'Soubory', 'Zprávy', 'Nahlásit událost'].includes(n.name)
+            : ['Přehled', 'Doklady & Faktury', 'Zprávy', 'Platby', 'Kniha jízd'].includes(n.name)
           ).map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            const isActive = item.matchPaths
+              ? item.matchPaths.some(p => pathname === p || pathname.startsWith(p + '/'))
+              : (pathname === item.href || pathname.startsWith(item.href + '/'))
             const Icon = item.icon
             return (
               <Link

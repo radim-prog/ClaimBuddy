@@ -18,18 +18,20 @@ import {
   CheckCircle2,
   Circle,
   X,
+  AlertTriangle,
+  BarChart3,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { generateDeadlinesForCompany } from '@/lib/statutory-deadlines'
-import { TaxOverviewWidget } from '@/components/client/tax-overview-widget'
 import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
 import { TripOverlay } from '@/components/client/action-hub/trip-overlay'
 import { InvoiceOverlay } from '@/components/client/action-hub/invoice-overlay'
 import { BankUploadOverlay } from '@/components/client/action-hub/bank-upload-overlay'
 import { QuickActionOverlay } from '@/components/client/action-hub/quick-action-overlay'
 import { DashboardCharts } from '@/components/client/dashboard-charts'
+import { CompanyTilesWidget } from '@/components/client/company-tiles-widget'
 
 const monthNames = [
   'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
@@ -39,10 +41,11 @@ const monthNames = [
 type ClosureStatus = 'missing' | 'uploaded' | 'approved' | 'reviewed' | 'skipped'
 type OverlayType = 'scan' | 'invoice' | 'trip' | 'bank_upload' | null
 
-function getMonthDotColor(closure: { bank_statement_status: ClosureStatus; expense_documents_status: ClosureStatus; income_invoices_status: ClosureStatus } | undefined, isFuture: boolean): string {
-  if (isFuture || !closure) return 'bg-gray-300 dark:bg-gray-600'
+function getMonthDotColor(closure: { bank_statement_status: ClosureStatus; expense_documents_status: ClosureStatus; income_invoices_status: ClosureStatus } | undefined, isFuture: boolean, isCurrent: boolean = false): string {
+  if (isFuture) return 'bg-gray-300 dark:bg-gray-600'
+  if (!closure) return isCurrent ? 'bg-orange-400' : 'bg-gray-300 dark:bg-gray-600'
   const statuses = [closure.bank_statement_status, closure.expense_documents_status, closure.income_invoices_status]
-  if (statuses.some(s => s === 'missing')) return 'bg-red-500'
+  if (statuses.some(s => s === 'missing')) return isCurrent ? 'bg-orange-400' : 'bg-red-500'
   if (statuses.some(s => s === 'uploaded')) return 'bg-yellow-500'
   if (statuses.every(s => s === 'approved' || s === 'reviewed' || s === 'skipped')) return 'bg-green-500'
   return 'bg-green-500'
@@ -50,7 +53,7 @@ function getMonthDotColor(closure: { bank_statement_status: ClosureStatus; expen
 
 export default function ClientDashboard() {
   const router = useRouter()
-  const { userName, companies, closures, loading, error, selectedCompany } = useClientUser()
+  const { userName, companies, closures, loading, error, selectedCompany, setSelectedCompanyId } = useClientUser()
   const [draftCount, setDraftCount] = useState(0)
   const [casesCount, setCasesCount] = useState(0)
   const [lastCaseActivity, setLastCaseActivity] = useState<string | null>(null)
@@ -138,7 +141,8 @@ export default function ClientDashboard() {
       const period = `${currentYear}-${String(month).padStart(2, '0')}`
       const closure = companyClosures.find(c => c.period === period)
       const isFuture = month > currentMonth + 1
-      return { month, period, closure, isFuture, name: monthNames[i] }
+      const isCurrent = month === currentMonth + 1
+      return { month, period, closure, isFuture, isCurrent, name: monthNames[i] }
     })
   }, [companyClosures, currentYear, currentMonth])
 
@@ -300,14 +304,23 @@ export default function ClientDashboard() {
           </Card>
         )}
 
-        {/* Year Matrix */}
+        {/* Company Tiles */}
+        {companies.length > 1 && (
+          <CompanyTilesWidget
+            companies={companies}
+            selectedCompanyId={selectedCompany?.id || ''}
+            onSelectCompany={setSelectedCompanyId}
+          />
+        )}
+
+        {/* Year Matrix + TaxImpact (merged) */}
         <Card className="rounded-2xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-display">Přehled roku {currentYear}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-2">
-              {yearMatrix.map(({ month, period, closure, isFuture, name }) => (
+              {yearMatrix.map(({ month, period, closure, isFuture, isCurrent, name }) => (
                 <button
                   key={month}
                   disabled={isFuture}
@@ -328,49 +341,57 @@ export default function ClientDashboard() {
                   </div>
                   <div className={`
                     w-2.5 h-2.5 rounded-full mx-auto
-                    ${getMonthDotColor(closure as any, isFuture)}
+                    ${getMonthDotColor(closure as any, isFuture, isCurrent)}
                   `} />
                 </button>
               ))}
             </div>
-            <div className="flex flex-wrap items-start gap-x-5 gap-y-2 mt-3 text-xs text-gray-500 dark:text-gray-400">
-              <div className="flex items-start gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-red-500 mt-0.5 shrink-0" />
-                <div>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">Chybějící doklady</span>
-                  <p className="text-[10px] leading-tight">Doklady nebyly nahrány</p>
+            {selectedCompany && <TaxImpactInline companyId={selectedCompany.id} />}
+            <details className="mt-3">
+              <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground select-none">Legenda barev</summary>
+              <div className="flex flex-wrap items-start gap-x-5 gap-y-2 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-start gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500 mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Chybějící doklady</span>
+                    <p className="text-[10px] leading-tight">Doklady nebyly nahrány</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-orange-400 mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Čeká na podklady</span>
+                    <p className="text-[10px] leading-tight">Aktuální měsíc, ještě probíhá</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-yellow-500 mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Nahráno dokladů</span>
+                    <p className="text-[10px] leading-tight">Čeká na schválení účetním</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-green-500 mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Schválené doklady</span>
+                    <p className="text-[10px] leading-tight">Zkontrolováno a zpracováno</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Budoucí měsíce</span>
+                    <p className="text-[10px] leading-tight">Ještě nenastaly</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-start gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-yellow-500 mt-0.5 shrink-0" />
-                <div>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">Nahráno dokladů</span>
-                  <p className="text-[10px] leading-tight">Čeká na schválení účetním</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-green-500 mt-0.5 shrink-0" />
-                <div>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">Schválené doklady</span>
-                  <p className="text-[10px] leading-tight">Zkontrolováno a zpracováno</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 mt-0.5 shrink-0" />
-                <div>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">Budoucí měsíce</span>
-                  <p className="text-[10px] leading-tight">Ještě nenastaly</p>
-                </div>
-              </div>
-            </div>
+            </details>
           </CardContent>
         </Card>
 
-        {/* Tax Overview Widget */}
-        {selectedCompany && <TaxOverviewWidget companyId={selectedCompany.id} closures={companyClosures} />}
-
-        {/* Dashboard Charts */}
-        {selectedCompany && <DashboardCharts companyId={selectedCompany.id} />}
+        {/* Active Requests Widget */}
+        <ActiveRequestsWidget />
 
         {/* Cases Widget */}
         {casesCount > 0 && (
@@ -503,6 +524,20 @@ export default function ClientDashboard() {
           </Card>
         </div>
 
+        {/* Dashboard Charts (collapsible) */}
+        {selectedCompany && (
+          <details className="group">
+            <summary className="flex items-center gap-2 cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground py-2">
+              <BarChart3 className="h-4 w-4" />
+              Finanční přehled
+              <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+            </summary>
+            <div className="mt-2">
+              <DashboardCharts companyId={selectedCompany.id} />
+            </div>
+          </details>
+        )}
+
         {/* Contact Card */}
         <Card className="rounded-2xl">
           <CardContent className="py-5 px-5">
@@ -595,6 +630,63 @@ function RemindersWidget() {
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
         </Link>
+      </CardContent>
+    </Card>
+  )
+}
+
+function TaxImpactInline({ companyId }: { companyId: string }) {
+  const [data, setData] = useState<{ unmatched_count: number; total: number } | null>(null)
+  useEffect(() => {
+    fetch(`/api/client/bank-transactions/tax-impact-detail?company_id=${companyId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setData({ unmatched_count: d.unmatched_count || 0, total: d.total?.total || 0 }) })
+      .catch(() => {})
+  }, [companyId])
+  if (!data || data.unmatched_count === 0) return null
+  return (
+    <Link href="/client/documents" className="flex items-center gap-2 text-xs text-amber-600 hover:text-amber-700 mt-2">
+      <AlertTriangle className="h-3.5 w-3.5" />
+      {data.unmatched_count} nedoložených výdajů → +{data.total.toLocaleString('cs-CZ')} Kč na dani
+    </Link>
+  )
+}
+
+function ActiveRequestsWidget() {
+  const [requests, setRequests] = useState<any[]>([])
+  useEffect(() => {
+    fetch('/api/client/requests')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const active = (d?.requests || []).filter((r: any) => r.status !== 'resolved' && r.status !== 'closed')
+        setRequests(active.slice(0, 3))
+      })
+      .catch(() => {})
+  }, [])
+  if (requests.length === 0) return null
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-display flex items-center gap-2">
+            Aktivní požadavky
+          </CardTitle>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/client/messages">Zobrazit vše</Link>
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {requests.map((req: any) => (
+            <div key={req.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{req.subject}</p>
+                <p className="text-xs text-muted-foreground">{new Date(req.created_at).toLocaleDateString('cs-CZ')}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   )

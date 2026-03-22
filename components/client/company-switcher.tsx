@@ -5,7 +5,7 @@ import { Building2, ChevronDown, Plus, Clock } from 'lucide-react'
 import { AddCompanyDialog } from '@/components/client/add-company-dialog'
 
 export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
-  const { companies, selectedCompanyId, setSelectedCompanyId, selectedCompany, refetch } = useClientUser()
+  const { companies, selectedCompanyId, setSelectedCompanyId, selectedCompany, refetch, setShowCompanyPicker } = useClientUser()
 
   if (companies.length === 0) {
     // No companies — show add button
@@ -15,8 +15,8 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
         <AddCompanyDialog
           onCompanyAdded={refetch}
           trigger={
-            <button className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-white/50 hover:text-white/80 hover:bg-white/[0.06] rounded-lg transition-colors">
-              <Plus className="h-3.5 w-3.5" />
+            <button className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-white/60 hover:text-white/90 hover:bg-white/[0.08] rounded-lg transition-colors border border-dashed border-white/15 hover:border-white/30">
+              <Plus className="h-4 w-4" />
               Přidat firmu
             </button>
           }
@@ -50,9 +50,9 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
         <AddCompanyDialog
           onCompanyAdded={refetch}
           trigger={
-            <button className="mt-1 flex items-center gap-1 text-[10px] text-white/30 hover:text-white/60 transition-colors">
-              <Plus className="h-3 w-3" />
-              Přidat další
+            <button className="mt-1.5 flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors">
+              <Plus className="h-3.5 w-3.5" />
+              Přidat další firmu
             </button>
           }
         />
@@ -103,15 +103,24 @@ export function CompanySwitcher({ collapsed }: { collapsed?: boolean }) {
           Čeká na schválení účetním
         </div>
       )}
-      <AddCompanyDialog
-        onCompanyAdded={refetch}
-        trigger={
-          <button className="flex items-center gap-1 px-1 text-[10px] text-white/30 hover:text-white/60 transition-colors">
-            <Plus className="h-3 w-3" />
-            Přidat firmu
-          </button>
-        }
-      />
+      <div className="flex items-center gap-3">
+        <AddCompanyDialog
+          onCompanyAdded={refetch}
+          trigger={
+            <button className="flex items-center gap-1.5 px-1 text-xs text-white/40 hover:text-white/70 transition-colors">
+              <Plus className="h-3.5 w-3.5" />
+              Přidat firmu
+            </button>
+          }
+        />
+        <button
+          onClick={() => setShowCompanyPicker(true)}
+          className="flex items-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors"
+        >
+          <Building2 className="h-3 w-3" />
+          Všechny firmy
+        </button>
+      </div>
     </div>
   )
 }

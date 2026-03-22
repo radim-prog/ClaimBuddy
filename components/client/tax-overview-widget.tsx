@@ -60,10 +60,11 @@ function formatCZK(amount: number): string {
 
 type ClosureIcon = '\u2705' | '\u26A0\uFE0F' | '\u274C' | '\u2014'
 
-function getClosureIcon(closure: TaxOverviewWidgetProps['closures'][0] | undefined, isFuture: boolean): ClosureIcon {
-  if (isFuture || !closure) return '\u2014'
+function getClosureIcon(closure: TaxOverviewWidgetProps['closures'][0] | undefined, isFuture: boolean, isCurrent: boolean = false): ClosureIcon {
+  if (isFuture) return '\u2014'
+  if (!closure) return isCurrent ? '\u26A0\uFE0F' : '\u2014'
   const statuses = [closure.bank_statement_status, closure.expense_documents_status, closure.income_invoices_status]
-  if (statuses.some(s => s === 'missing')) return '\u274C'
+  if (statuses.some(s => s === 'missing')) return isCurrent ? '\u26A0\uFE0F' : '\u274C'
   if (statuses.some(s => s === 'uploaded')) return '\u26A0\uFE0F'
   return '\u2705'
 }
@@ -108,7 +109,8 @@ export function TaxOverviewWidget({ companyId, closures }: TaxOverviewWidgetProp
     const period = `${currentYear}-${String(month).padStart(2, '0')}`
     const closure = closures.find(c => c.period === period)
     const isFuture = month > currentMonth + 1
-    return { month, period, icon: getClosureIcon(closure, isFuture), isFuture }
+    const isCurrent = month === currentMonth
+    return { month, period, icon: getClosureIcon(closure, isFuture, isCurrent), isFuture }
   })
 
   // Green — all matched

@@ -112,19 +112,21 @@ export function WorkOverviewSection({ companyId, vatPayer = true, vatPeriod = 'm
   const getStatus = (m: MonthSummary | undefined, i: number): string => {
     if (selectedYear > currentYear || (selectedYear === currentYear && i > currentMonth)) return 'future'
     if (isBeforeStart(selectedYear, i)) return 'irrelevant'
-    if (!m) return 'missing'
+    const isCurrent = selectedYear === currentYear && i === currentMonth
+    if (!m) return isCurrent ? 'current' : 'missing'
     const statuses = [m.bank_statement.status, m.expense_documents.status, m.income_invoices.status]
     if (statuses.every(s => s === 'approved' || s === 'skipped')) return 'complete'
     if (statuses.some(s => s === 'uploaded')) return 'uploaded'
     if (statuses.every(s => s === 'skipped' || s === 'missing')) {
       if (statuses.some(s => s === 'skipped')) return 'partial'
     }
-    return 'missing'
+    return isCurrent ? 'current' : 'missing'
   }
 
   const pillColor: Record<string, string> = {
     complete: 'bg-green-500 text-white',
     uploaded: 'bg-yellow-400 text-yellow-900',
+    current: 'bg-orange-300 dark:bg-orange-700 text-orange-900 dark:text-orange-100',
     missing: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
     partial: 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300',
     future: 'bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600',
