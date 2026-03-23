@@ -144,8 +144,9 @@ export function ClientDetailAlertBar({ companyId, companies, closures, deadlines
       .filter(c => {
         if (c.company_id !== companyId) return false
         const [year, month] = c.period.split('-').map(Number)
+        // Exclude current month — it's still in progress, not "missing"
         if (year < currentYear) return true
-        if (year === currentYear && month <= currentMonth) return true
+        if (year === currentYear && month < currentMonth) return true
         return false
       })
       .sort((a, b) => b.period.localeCompare(a.period))
