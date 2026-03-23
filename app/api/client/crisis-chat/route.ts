@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
       const errText = await aiResponse.text()
       console.error('[Crisis Chat] Anthropic API error:', aiResponse.status, errText.slice(0, 300))
       return NextResponse.json(
-        { error: `AI API selhala (${aiResponse.status}). Zkuste to prosím znovu.` },
+        { error: `AI API se nezdařila (${aiResponse.status}). Zkuste to prosím znovu.` },
         { status: 502 }
       )
     }

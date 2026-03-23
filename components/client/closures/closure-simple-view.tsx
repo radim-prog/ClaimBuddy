@@ -65,7 +65,7 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period
         <div className="rounded-xl border border-dashed border-muted-foreground/25 bg-muted/30 p-6 text-center">
           <Inbox className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />
           <p className="text-muted-foreground font-medium">Zatím žádné transakce za {monthName}</p>
-          <p className="text-sm text-muted-foreground/60 mt-1">Nahrajte bankovní výpis pro zahájení uzávěrky</p>
+          <p className="text-sm text-muted-foreground/60 mt-1">Stačí nahrát bankovní výpis pro zahájení uzávěrky</p>
           <Button size="sm" className="mt-3" onClick={onUpload}>
             <Upload className="h-4 w-4 mr-1.5" />
             Nahrát výpis
@@ -99,7 +99,7 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period
               'text-lg font-semibold',
               totalTaxImpact > 0 ? 'text-red-800 dark:text-red-300' : 'text-amber-800 dark:text-amber-300'
             )}>
-              Chybí vám {missingCount} {missingCount === 1 ? 'doklad' : missingCount < 5 ? 'doklady' : 'dokladů'}
+              Zbývá nahrát {missingCount} {missingCount === 1 ? 'doklad' : missingCount < 5 ? 'doklady' : 'dokladů'}
             </p>
             <p className={cn('text-xs mt-1', totalTaxImpact > 0 ? 'text-red-600/70 dark:text-red-400/70' : 'text-amber-700/70 dark:text-amber-400/70')}>
               Ke každému výdaji na účtu potřebujeme doklad. Bez něj nelze výdaj uplatnit jako náklad.
@@ -107,7 +107,7 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period
             {totalTaxImpact > 0 && (
               <p className="text-sm text-red-600 dark:text-red-400 mt-1.5">
                 Daňový dopad: <span className="font-semibold">{fmtCZK(totalTaxImpact)} Kč</span>
-                <span className="text-xs font-normal ml-1 opacity-70">— tolik zaplatíte navíc na dani, pokud doklady nenahrajete</span>
+                <span className="text-xs font-normal ml-1 opacity-70">— tolik můžete ušetřit nahráním dokladů</span>
               </p>
             )}
           </div>
@@ -122,9 +122,9 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period
       {!noData && missingCount > 0 && (
         <div className="rounded-lg border bg-card">
           <div className="px-4 py-3 border-b">
-            <h3 className="text-sm font-semibold">Chybějící doklady</h3>
+            <h3 className="text-sm font-semibold">Doklady k doplnění</h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Tyto výdaje z vašeho bankovního výpisu nemají přiřazený doklad. Nahrajte doklad (účtenku, fakturu) ke každému výdaji.
+              Tyto výdaje z vašeho bankovního výpisu nemají přiřazený doklad. Stačí nahrát doklad (účtenku, fakturu) ke každému výdaji.
             </p>
           </div>
           <div className="divide-y">
@@ -144,7 +144,7 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period
                 {tx.total_impact > 0 && (
                   <TaxImpactInline total={tx.total_impact} showIcon={false} />
                 )}
-                <Button variant="outline" size="sm" className="shrink-0" onClick={onUpload} title="Nahrajte účtenku nebo fakturu k tomuto výdaji">
+                <Button variant="outline" size="sm" className="shrink-0" onClick={onUpload} title="Stačí nahrát účtenku nebo fakturu k tomuto výdaji">
                   Nahrát
                 </Button>
               </div>

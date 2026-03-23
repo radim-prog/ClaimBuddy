@@ -89,7 +89,7 @@ export function TravelRandomizer({
       const data = await res.json()
 
       if (!res.ok) {
-        toast.error(data.error || 'Generování selhalo')
+        toast.error(data.error || 'Generování se nezdařilo')
         return
       }
 
@@ -125,7 +125,7 @@ export function TravelRandomizer({
 
       const data = await res.json()
       if (!res.ok) {
-        toast.error(data.error || 'Ukládání selhalo')
+        toast.error(data.error || 'Ukládání se nezdařilo')
         return
       }
 

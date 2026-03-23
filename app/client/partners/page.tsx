@@ -118,7 +118,7 @@ export default function PartnersPage() {
       resetForm()
       fetchPartners()
     } catch {
-      toast.error('Uložení selhalo')
+      toast.error('Uložení se nezdařilo')
     } finally {
       setSaving(false)
     }
@@ -132,10 +132,10 @@ export default function PartnersPage() {
         toast.success('Partner smazán')
         fetchPartners()
       } else {
-        toast.error('Smazání selhalo')
+        toast.error('Smazání se nezdařilo')
       }
     } catch {
-      toast.error('Smazani selhalo')
+      toast.error('Smazání se nezdařilo')
     }
   }
 

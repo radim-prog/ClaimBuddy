@@ -725,7 +725,7 @@ export default function ClientRequestsPage() {
               </CardContent>
             ) : myRequests.length === 0 ? (
               <CardContent className="text-center text-muted-foreground py-8">
-                Nemáte žádné přiřazené požadavky
+                Zatím žádné přiřazené požadavky
               </CardContent>
             ) : (
               <Table>

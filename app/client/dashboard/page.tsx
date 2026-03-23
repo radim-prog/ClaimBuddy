@@ -400,7 +400,7 @@ export default function ClientDashboard() {
                 <div className="flex items-start gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-red-500 mt-0.5 shrink-0" />
                   <div>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Chybějící doklady</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Doklady k doplnění</span>
                     <p className="text-[10px] leading-tight">Doklady nebyly nahrány</p>
                   </div>
                 </div>

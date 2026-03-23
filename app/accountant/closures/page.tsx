@@ -97,7 +97,7 @@ export default function AccountantClosuresPage() {
 
       {batchResult && (
         <div className="text-sm text-muted-foreground">
-          Odesláno: {batchResult.sent}, Selhalo: {batchResult.failed}
+          Odesláno: {batchResult.sent}, Se nezdařilo: {batchResult.failed}
         </div>
       )}
 

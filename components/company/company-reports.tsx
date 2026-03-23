@@ -589,7 +589,7 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-orange-500" />
-                Chybějící doklady
+                Doklady k doplnění
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -621,7 +621,7 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
                     Všechny doklady jsou v pořádku! 🎉
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
-                    Nemáte žádné chybějící doklady pro toto období.
+                    Zatím žádné doklady k doplnění pro toto období.
                   </p>
                 </div>
               )}

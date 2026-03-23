@@ -59,7 +59,7 @@ const ESCALATION_TEMPLATES: Record<ReminderType, string[]> = {
   missing_docs: [
     'V systému chybí některé doklady za {period}. Prosím doplňte je při příležitosti.',
     'Stále evidujeme chybějící doklady za {period}. Prosím nahrajte je do systému.',
-    'Chybějící doklady za {period} brzdí zpracování účetnictví. Prosíme o doplnění.',
+    'Doklady k doplnění za {period} brzdí zpracování účetnictví. Prosíme o doplnění.',
     'DŮLEŽITÉ: Bez chybějících dokladů za {period} nelze uzavřít měsíc. Prosím doplňte urgentně.',
     'KRITICKÉ: Doklady za {period} stále chybí. Účetní uzávěrka je blokována. Kontaktujte nás.',
   ],
@@ -360,7 +360,7 @@ export async function processDueDeliveries(): Promise<{ delivered: number; faile
 
 const REMINDER_TITLE_MAP: Record<ReminderType, string> = {
   deadline: 'Termín uzávěrky',
-  missing_docs: 'Chybějící doklady',
+  missing_docs: 'Doklady k doplnění',
   unpaid_invoice: 'Neuhrazená faktura',
   custom: 'Upozornění',
 }

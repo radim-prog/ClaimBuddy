@@ -62,7 +62,7 @@ export default function TaxQuestionnairePage() {
     try {
       const res = await fetch(`/api/client/tax-questionnaire?company_id=${selectedCompanyId}&year=${year}`)
       if (!res.ok) {
-        throw new Error(`Načtení dotazníku selhalo (${res.status})`)
+        throw new Error(`Načtení dotazníku se nezdařilo (${res.status})`)
       }
       const data = await res.json()
       if (data.questionnaire) {
@@ -92,7 +92,7 @@ export default function TaxQuestionnairePage() {
       })
       if (!res.ok) {
         const errText = await res.text().catch(() => '')
-        throw new Error(errText || `Ukládání selhalo (${res.status})`)
+        throw new Error(errText || `Ukládání se nezdařilo (${res.status})`)
       }
       const data = await res.json()
       setQuestionnaire(data.questionnaire)

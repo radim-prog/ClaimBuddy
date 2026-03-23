@@ -37,7 +37,7 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
   paid: { label: 'Zaplaceno', variant: 'default', icon: CheckCircle2 },
   pending: { label: 'Nezaplaceno', variant: 'secondary', icon: Clock },
   overdue: { label: 'Po splatnosti', variant: 'destructive', icon: AlertTriangle },
-  failed: { label: 'Platba selhala', variant: 'destructive', icon: AlertTriangle },
+  failed: { label: 'Platba se nezdařila', variant: 'destructive', icon: AlertTriangle },
   waived: { label: 'Odpuštěno', variant: 'outline', icon: CheckCircle2 },
   refunded: { label: 'Vráceno', variant: 'outline', icon: CheckCircle2 },
 }

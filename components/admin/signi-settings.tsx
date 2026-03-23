@@ -49,7 +49,7 @@ export function SigniSettings() {
         toast.success('Připojení k Signi.com úspěšné')
       } else {
         setStatus('failed')
-        toast.error('Připojení selhalo — zkontrolujte API klíč')
+        toast.error('Připojení se nezdařilo — zkontrolujte API klíč')
       }
     } catch (err: unknown) {
       console.error('Chyba při testování připojení:', err)

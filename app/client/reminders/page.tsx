@@ -34,7 +34,7 @@ interface Reminder {
 }
 
 const typeConfig: Record<string, { label: string; icon: typeof Bell; color: string }> = {
-  missing_docs: { label: 'Chybějící doklady', icon: Receipt, color: 'text-red-600' },
+  missing_docs: { label: 'Doklady k doplnění', icon: Receipt, color: 'text-red-600' },
   deadline: { label: 'Termín', icon: Clock, color: 'text-amber-600' },
   unpaid_invoice: { label: 'Nezaplacená faktura', icon: FileText, color: 'text-orange-600' },
   custom: { label: 'Připomínka', icon: Bell, color: 'text-blue-600' },

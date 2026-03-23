@@ -1,0 +1,271 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - generic [ref=e5]:
+          - link "ÚčetníOS" [ref=e6] [cursor=pointer]:
+            - /url: /
+          - generic [ref=e7]:
+            - link "Funkce" [ref=e8] [cursor=pointer]:
+              - /url: "#features"
+            - link "Pro podnikatele" [ref=e9] [cursor=pointer]:
+              - /url: /pro-podnikatele
+            - link "Pro účetní" [ref=e10] [cursor=pointer]:
+              - /url: /pro-ucetni
+            - link "Ceník" [ref=e11] [cursor=pointer]:
+              - /url: "#pricing"
+          - generic [ref=e12]:
+            - link "Přihlásit se" [ref=e13] [cursor=pointer]:
+              - /url: /auth/login
+            - link "Začít zdarma" [ref=e14] [cursor=pointer]:
+              - /url: /auth/register
+      - generic [ref=e16]:
+        - paragraph [ref=e18]: Účetní platforma nové generace
+        - heading "Účetnictví, bez kompromisů." [level=1] [ref=e20]:
+          - text: Účetnictví,
+          - text: bez kompromisů.
+        - paragraph [ref=e22]: Správa účetnictví pro účetní firmy a jejich klienty. Doklady, uzávěrky, komunikace a AI — vše na jednom místě.
+        - generic [ref=e24]:
+          - link "Vyzkoušet zdarma" [ref=e25] [cursor=pointer]:
+            - /url: /auth/register
+            - text: Vyzkoušet zdarma
+            - img [ref=e26]
+          - paragraph [ref=e28]: 30 dní plný přístup. Bez platební karty.
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - paragraph [ref=e34]: Funkce
+          - heading "Vše, co potřebujete. Nic navíc." [level=2] [ref=e35]:
+            - text: Vše, co potřebujete.
+            - text: Nic navíc.
+        - generic [ref=e36]:
+          - generic [ref=e38]:
+            - generic [ref=e39]: "01"
+            - heading "AI vytěžování dokladů" [level=3] [ref=e41]
+            - paragraph [ref=e43]: Nahrajte fakturu — AI přečte údaje za 5 sekund. Rozpozná dodavatele, částky, DPH a navrhne předkontaci podle českých standardů.
+          - generic [ref=e45]:
+            - generic [ref=e46]: "02"
+            - heading "Měsíční uzávěrky" [level=3] [ref=e48]
+            - paragraph [ref=e50]: Master matice zobrazí stav všech klientů najednou. Průběžná kontrola DPH, dokladů a termínů — žádný deadline vám neuteče.
+          - generic [ref=e52]:
+            - generic [ref=e53]: "03"
+            - heading "Komunikace v kontextu" [level=3] [ref=e55]
+            - paragraph [ref=e57]: Tematické konverzace místo chaosu v emailu. Klient vidí jen svou firmu, účetní má přehled přes všechny klienty.
+          - generic [ref=e59]:
+            - generic [ref=e60]: "04"
+            - heading "Fakturace s QR platbami" [level=3] [ref=e62]
+            - paragraph [ref=e64]: Vystavujte faktury, proformy i dobropisy. QR kód přímo na faktuře — klient zaplatí jedním klikem z mobilní banky.
+          - generic [ref=e66]:
+            - generic [ref=e67]: "05"
+            - heading "Cestovní deník s AI" [level=3] [ref=e69]
+            - paragraph [ref=e71]: Chytrý randomizér sestaví knihu jízd z tankování a tras. Výpočet PHM, právně bezpečné záznamy pro finanční úřad.
+          - generic [ref=e73]:
+            - generic [ref=e74]: "06"
+            - heading "Marketplace účetních" [level=3] [ref=e76]
+            - paragraph [ref=e78]: Podnikatel hledá účetní? Párujeme podle oboru, lokality a kapacity. Transparentní profily s hodnocením.
+      - generic [ref=e82]:
+        - generic [ref=e83]:
+          - generic [ref=e84]: 40+
+          - generic [ref=e85]: modulů
+        - generic [ref=e86]:
+          - generic [ref=e87]: 120+
+          - generic [ref=e88]: firem pod správou
+        - generic [ref=e89]:
+          - generic [ref=e90]: "36"
+          - generic [ref=e91]: zákonných termínů
+        - generic [ref=e92]:
+          - generic [ref=e93]: 0 Kč
+          - generic [ref=e94]: na prvních 30 dní
+      - generic [ref=e96]:
+        - generic [ref=e98]:
+          - paragraph [ref=e99]: Ceník
+          - heading "Jednoduchý a férový." [level=2] [ref=e100]
+          - paragraph [ref=e101]: Začněte zdarma. Upgradujte, až budete připraveni.
+        - generic [ref=e102]:
+          - generic [ref=e104]:
+            - generic [ref=e105]:
+              - heading "Základ" [level=3] [ref=e106]
+              - paragraph [ref=e107]: Pro začátek. Fakturace, doklady, komunikace.
+            - generic [ref=e108]: Zdarma
+            - list [ref=e109]:
+              - listitem [ref=e110]:
+                - img [ref=e111]
+                - generic [ref=e113]: 10 firem
+              - listitem [ref=e114]:
+                - img [ref=e115]
+                - generic [ref=e117]: 1 uživatel
+              - listitem [ref=e118]:
+                - img [ref=e119]
+                - generic [ref=e121]: Fakturace + QR
+              - listitem [ref=e122]:
+                - img [ref=e123]
+                - generic [ref=e125]: Komunikace
+              - listitem [ref=e126]:
+                - img [ref=e127]
+                - generic [ref=e129]: Základní přehledy
+            - link "Začít zdarma" [ref=e130] [cursor=pointer]:
+              - /url: /auth/register
+          - generic [ref=e132]:
+            - generic [ref=e134]: Nejoblíbenější
+            - generic [ref=e135]:
+              - heading "Professional" [level=3] [ref=e136]
+              - paragraph [ref=e137]: Pro účetní firmy. Vše bez omezení.
+            - generic [ref=e138]:
+              - text: 1 290
+              - generic [ref=e139]: Kč / měs
+            - list [ref=e140]:
+              - listitem [ref=e141]:
+                - img [ref=e142]
+                - generic [ref=e144]: 100 firem
+              - listitem [ref=e145]:
+                - img [ref=e146]
+                - generic [ref=e148]: 10 uživatelů
+              - listitem [ref=e149]:
+                - img [ref=e150]
+                - generic [ref=e152]: AI vytěžování (50/měs)
+              - listitem [ref=e153]:
+                - img [ref=e154]
+                - generic [ref=e156]: Uzávěrky + DPH matice
+              - listitem [ref=e157]:
+                - img [ref=e158]
+                - generic [ref=e160]: Cestovní deník
+              - listitem [ref=e161]:
+                - img [ref=e162]
+                - generic [ref=e164]: Prioritní podpora
+            - link "Začít zdarma" [ref=e165] [cursor=pointer]:
+              - /url: /auth/register
+          - generic [ref=e167]:
+            - generic [ref=e168]:
+              - heading "Enterprise" [level=3] [ref=e169]
+              - paragraph [ref=e170]: Pro velké kanceláře. Neomezeno.
+            - generic [ref=e171]:
+              - text: 2 990
+              - generic [ref=e172]: Kč / měs
+            - list [ref=e173]:
+              - listitem [ref=e174]:
+                - img [ref=e175]
+                - generic [ref=e177]: Neomezené firmy
+              - listitem [ref=e178]:
+                - img [ref=e179]
+                - generic [ref=e181]: Neomezení uživatelé
+              - listitem [ref=e182]:
+                - img [ref=e183]
+                - generic [ref=e185]: AI vytěžování (200/měs)
+              - listitem [ref=e186]:
+                - img [ref=e187]
+                - generic [ref=e189]: Vše z Professional
+              - listitem [ref=e190]:
+                - img [ref=e191]
+                - generic [ref=e193]: API přístup
+              - listitem [ref=e194]:
+                - img [ref=e195]
+                - generic [ref=e197]: Dedikovaný support
+            - link "Začít zdarma" [ref=e198] [cursor=pointer]:
+              - /url: /auth/register
+      - generic [ref=e201]:
+        - heading "Přestaňte řešit papíry. Začněte řídit účetnictví." [level=2] [ref=e202]:
+          - text: Přestaňte řešit papíry.
+          - text: Začněte řídit účetnictví.
+        - paragraph [ref=e203]: 30 dní plný přístup zdarma. Žádná platební karta. Žádné závazky.
+        - link "Vyzkoušet zdarma" [ref=e205] [cursor=pointer]:
+          - /url: /auth/register
+          - text: Vyzkoušet zdarma
+          - img [ref=e206]
+      - contentinfo [ref=e208]:
+        - generic [ref=e209]:
+          - generic [ref=e210]:
+            - generic [ref=e211]:
+              - generic [ref=e212]:
+                - img [ref=e213]:
+                  - generic [ref=e215]: UO
+                - generic [ref=e216]: Účetní OS
+              - paragraph [ref=e217]: Moderní platforma pro spolupráci účetních a jejich klientů. Bezpečně, přehledně, bez papírování.
+              - link "info@zajcon.cz" [ref=e219] [cursor=pointer]:
+                - /url: mailto:info@zajcon.cz
+            - generic [ref=e220]:
+              - heading "Produkt" [level=4] [ref=e221]
+              - list [ref=e222]:
+                - listitem [ref=e223]:
+                  - link "Funkce" [ref=e224] [cursor=pointer]:
+                    - /url: "#features"
+                - listitem [ref=e225]:
+                  - link "Ceník" [ref=e226] [cursor=pointer]:
+                    - /url: /pricing
+                - listitem [ref=e227]:
+                  - link "Marketplace" [ref=e228] [cursor=pointer]:
+                    - /url: /accountant/marketplace
+                - listitem [ref=e229]:
+                  - link "FAQ" [ref=e230] [cursor=pointer]:
+                    - /url: "#faq"
+                - listitem [ref=e231]:
+                  - link "Začít zdarma" [ref=e232] [cursor=pointer]:
+                    - /url: /auth/register
+            - generic [ref=e233]:
+              - heading "Řešení" [level=4] [ref=e234]
+              - list [ref=e235]:
+                - listitem [ref=e236]:
+                  - link "Pro účetní firmy" [ref=e237] [cursor=pointer]:
+                    - /url: /pro-ucetni
+                - listitem [ref=e238]:
+                  - link "Pro podnikatele" [ref=e239] [cursor=pointer]:
+                    - /url: /pro-podnikatele
+                - listitem [ref=e240]:
+                  - link "Pojistné události" [ref=e241] [cursor=pointer]:
+                    - /url: /claims
+                - listitem [ref=e242]:
+                  - link "Tarify a limity" [ref=e243] [cursor=pointer]:
+                    - /url: /pricing
+            - generic [ref=e244]:
+              - heading "Podpora" [level=4] [ref=e245]
+              - list [ref=e246]:
+                - listitem [ref=e247]:
+                  - link "Přihlásit se" [ref=e248] [cursor=pointer]:
+                    - /url: /auth/login
+                - listitem [ref=e249]:
+                  - link "Registrace" [ref=e250] [cursor=pointer]:
+                    - /url: /auth/register
+                - listitem [ref=e251]:
+                  - link "Kontakt" [ref=e252] [cursor=pointer]:
+                    - /url: mailto:podpora@zajcon.cz
+                - listitem [ref=e253]:
+                  - link "Fakturace" [ref=e254] [cursor=pointer]:
+                    - /url: mailto:fakturace@zajcon.cz
+            - generic [ref=e255]:
+              - heading "Společnost" [level=4] [ref=e256]
+              - list [ref=e257]:
+                - listitem [ref=e258]:
+                  - link "Aplikace" [ref=e259] [cursor=pointer]:
+                    - /url: https://app.zajcon.cz
+                - listitem [ref=e260]:
+                  - link "Obchodní podmínky" [ref=e261] [cursor=pointer]:
+                    - /url: /legal/terms
+                - listitem [ref=e262]:
+                  - link "Ochrana osobních údajů" [ref=e263] [cursor=pointer]:
+                    - /url: /legal/privacy
+                - listitem [ref=e264]:
+                  - link "Cookies" [ref=e265] [cursor=pointer]:
+                    - /url: /legal/cookies
+          - generic [ref=e266]:
+            - paragraph [ref=e267]: © 2026 Účetní OS s.r.o. Všechna práva vyhrazena.
+            - generic [ref=e268]:
+              - link "Podmínky" [ref=e269] [cursor=pointer]:
+                - /url: /legal/terms
+              - link "Soukromí" [ref=e270] [cursor=pointer]:
+                - /url: /legal/privacy
+              - link "Cookies" [ref=e271] [cursor=pointer]:
+                - /url: /legal/cookies
+    - region "Notifications alt+T"
+    - generic [ref=e272]:
+      - generic [ref=e274]:
+        - text: Používáme cookies pro fungování webu.
+        - link "Více info" [ref=e275] [cursor=pointer]:
+          - /url: /legal/cookies
+        - text: ·
+        - button "Nastavení" [ref=e276] [cursor=pointer]
+      - generic [ref=e277]:
+        - button "Decline cookies" [ref=e278] [cursor=pointer]: Odmítnout
+        - button "Accept cookies" [ref=e279] [cursor=pointer]: OK
+  - alert [ref=e280]
+```

@@ -164,7 +164,7 @@ export function SnapshotManagement({ firmId, companies }: {
         if (data.failed === 0) {
           toast.success(`Záloha provedena (${data.succeeded} úspěšných)`)
         } else {
-          toast.error(`Záloha skončila s chybami (${data.failed} selhalo)`)
+          toast.error(`Záloha skončila s chybami (${data.failed} se nezdařilo)`)
         }
         fetchJobs()
       } else {

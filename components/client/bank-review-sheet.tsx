@@ -96,7 +96,7 @@ export function BankReviewSheet({
       })
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Potvrzení selhalo')
+        throw new Error(data.error || 'Potvrzení se nezdařilo')
       }
       toast.success('Výpis potvrzen a uzávěrka aktualizována')
       onConfirmed()

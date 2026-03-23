@@ -325,7 +325,7 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
         setJournalEntries(prev => prev.map(e =>
           e.id === entryId ? { ...e, status: action } : e
         ))
-        toast.success(action === 'approved' ? 'Schváleno' : 'Zamítnuto')
+        toast.success(action === 'approved' ? 'Schváleno' : 'Vráceno k úpravě')
       }
     } catch {
       toast.error('Chyba')
@@ -676,7 +676,7 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
                       suggested: { label: 'Navrženo', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
                       approved: { label: 'Schváleno', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
                       modified: { label: 'Upraveno', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' },
-                      rejected: { label: 'Zamítnuto', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+                      rejected: { label: 'Vráceno k úpravě', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
                     }[entry.status] || { label: entry.status, color: 'bg-gray-100 text-gray-700' }
 
                     const isEditing = editingEntryId === entry.id

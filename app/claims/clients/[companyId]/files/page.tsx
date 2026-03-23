@@ -121,7 +121,7 @@ export default function CompanyFilesPage() {
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        throw new Error(body?.error ?? 'Nahrávání selhalo')
+        throw new Error(body?.error ?? 'Nahrávání se nezdařilo')
       }
       toast.success('Soubor byl úspěšně nahrán')
       await fetchFiles()
@@ -140,7 +140,7 @@ export default function CompanyFilesPage() {
       const res = await fetch(`/api/claims/files/${file.id}`, { method: 'DELETE' })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        throw new Error(body?.error ?? 'Smazání selhalo')
+        throw new Error(body?.error ?? 'Smazání se nezdařilo')
       }
       toast.success('Soubor byl smazán')
       setFiles(prev => prev.filter(f => f.id !== file.id))

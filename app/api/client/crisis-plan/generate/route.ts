@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       const errText = await aiResponse.text()
       console.error('[Crisis Generate] Anthropic API error:', aiResponse.status, errText.slice(0, 300))
       return NextResponse.json(
-        { error: `AI API selhala (${aiResponse.status}). Zkuste to prosím znovu.` },
+        { error: `AI API se nezdařila (${aiResponse.status}). Zkuste to prosím znovu.` },
         { status: 502 }
       )
     }
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('[Crisis Generate] Error:', error)
-    const message = error instanceof Error ? error.message : 'Generování selhalo'
+    const message = error instanceof Error ? error.message : 'Generování se nezdařilo'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

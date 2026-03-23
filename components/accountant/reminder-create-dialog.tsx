@@ -33,7 +33,7 @@ interface ReminderCreateDialogProps {
 
 const typeOptions: { value: ReminderType; label: string; icon: typeof Bell }[] = [
   { value: 'deadline', label: 'Termín', icon: Clock },
-  { value: 'missing_docs', label: 'Chybějící doklady', icon: FileText },
+  { value: 'missing_docs', label: 'Doklady k doplnění', icon: FileText },
   { value: 'unpaid_invoice', label: 'Nezaplacená faktura', icon: Banknote },
   { value: 'custom', label: 'Vlastní', icon: Bell },
 ]

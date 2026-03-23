@@ -93,7 +93,7 @@ export default function ClosuresYearlyPage() {
             <p className="text-sm text-muted-foreground mt-0.5">
               {data.totals.overall_progress}% kompletní
               {data.tax_impact.total > 0 && (
-                <span className="text-red-600 dark:text-red-400"> · chybějící doklady vás stojí {fmtCZK(data.tax_impact.total)} Kč</span>
+                <span className="text-red-600 dark:text-red-400"> · nahráním dokladů ušetříte {fmtCZK(data.tax_impact.total)} Kč</span>
               )}
             </p>
           )}
@@ -145,7 +145,7 @@ export default function ClosuresYearlyPage() {
                   <span className="text-sm text-green-600 dark:text-green-400 font-medium">Vše v pořádku</span>
                 ) : hasData && missingCount > 0 ? (
                   <span className="text-sm text-red-600 dark:text-red-400">
-                    Chybí {missingCount} {missingCount === 1 ? 'doklad' : missingCount < 5 ? 'doklady' : 'dokladů'}
+                    Zbývá {missingCount} {missingCount === 1 ? 'doklad' : missingCount < 5 ? 'doklady' : 'dokladů'}
                   </span>
                 ) : hasData ? (
                   <span className="text-sm text-muted-foreground">{month.matching.matched}/{month.matching.total} spárováno</span>

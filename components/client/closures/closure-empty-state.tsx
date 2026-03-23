@@ -25,7 +25,7 @@ const variants: Record<EmptyStateVariant, {
     icon: FileX,
     iconColor: 'text-gray-400',
     title: 'Chybí bankovní výpis',
-    description: 'Nahrajte bankovní výpis pro tento měsíc, abychom mohli spárovat transakce s doklady.',
+    description: 'Stačí nahrát bankovní výpis pro tento měsíc, abychom mohli spárovat transakce s doklady.',
     actionLabel: 'Nahrát výpis',
   },
   matching_in_progress: {
