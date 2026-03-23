@@ -44,6 +44,7 @@ export type TaxAnnualConfigRow = {
   is_flat_tax: boolean
   flat_tax_band: number | null
   is_secondary_activity: boolean
+  months_active: number
   use_profile_data: boolean
   annual_revenue: number | null
   annual_expenses: number | null

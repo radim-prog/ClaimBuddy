@@ -35,7 +35,8 @@ export function SroTaxWorkspace({ companyId, company, year, config, yearTotals, 
   const revenue = localConfig.annual_revenue ?? yearTotals.revenue
   const expenses = localConfig.annual_expenses ?? yearTotals.expenses
   const taxBase = revenue - expenses
-  const dppoTax = Math.round(Math.max(0, taxBase) * dppoRate)
+  const roundedTaxBase = Math.floor(Math.max(0, taxBase) / 1000) * 1000
+  const dppoTax = Math.round(roundedTaxBase * dppoRate)
 
   // Load employee tax returns
   useEffect(() => {
@@ -150,8 +151,13 @@ export function SroTaxWorkspace({ companyId, company, year, config, yearTotals, 
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Základ (sazba {(dppoRate * 100).toFixed(0)}%)</label>
-            <div className="h-9 flex items-center text-sm font-semibold">{CZK(taxBase)}</div>
+            <label className="text-xs text-gray-500 block mb-1">Základ (zaokr. na 1000 ↓)</label>
+            <div className="h-9 flex items-center gap-1.5 text-sm">
+              <span className="font-semibold">{CZK(roundedTaxBase)}</span>
+              {roundedTaxBase !== taxBase && taxBase > 0 && (
+                <span className="text-[10px] text-gray-400">z {CZK(taxBase)}</span>
+              )}
+            </div>
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">Daň</label>
