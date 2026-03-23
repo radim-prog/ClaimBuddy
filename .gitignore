@@ -49,3 +49,7 @@ CREDENTIALS.md
 
 # Playwright auth state
 e2e/.auth/
+
+# Android (Capacitor)
+android/app/build/
+android/.gradle/

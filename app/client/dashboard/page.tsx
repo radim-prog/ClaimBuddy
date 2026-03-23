@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -20,6 +20,7 @@ import {
   X,
   AlertTriangle,
   BarChart3,
+  Loader2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -160,6 +161,47 @@ export default function ClientDashboard() {
     setActiveOverlay(action)
   }
 
+  // Pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false)
+  const touchStartY = useRef(0)
+  const pullRef = useRef<HTMLDivElement>(null)
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true)
+    Promise.all([
+      fetch('/api/client/drafts').then(r => r.json()).then(data => setDraftCount(data.count || 0)).catch(() => {}),
+      fetch('/api/client/cases').then(r => r.json()).then(data => {
+        const cases = data.cases || []
+        const activeCases = cases.filter((c: { status: string }) => c.status !== 'completed' && c.status !== 'cancelled')
+        setCasesCount(activeCases.length)
+      }).catch(() => {}),
+      selectedCompany
+        ? fetch(`/api/client/messages?company_id=${selectedCompany.id}`).then(r => r.json()).then(data => setRecentMessages((data.conversations || []).slice(0, 3))).catch(() => {})
+        : Promise.resolve(),
+    ]).finally(() => setTimeout(() => setRefreshing(false), 500))
+  }, [selectedCompany])
+
+  useEffect(() => {
+    const el = pullRef.current
+    if (!el) return
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (el.scrollTop === 0) touchStartY.current = e.touches[0].clientY
+    }
+    const onTouchEnd = (e: TouchEvent) => {
+      const diff = e.changedTouches[0].clientY - touchStartY.current
+      if (diff > 80 && el.scrollTop === 0 && !refreshing) handleRefresh()
+      touchStartY.current = 0
+    }
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchend', onTouchEnd, { passive: true })
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [refreshing, handleRefresh])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -180,7 +222,12 @@ export default function ClientDashboard() {
 
   return (
     <>
-      <div className="space-y-5">
+      <div ref={pullRef} className="space-y-5">
+        {refreshing && (
+          <div className="flex justify-center py-2">
+            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
