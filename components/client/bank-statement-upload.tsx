@@ -59,7 +59,7 @@ export function BankStatementUpload({ companyId, onUploadComplete, onExtracted }
       onExtracted?.(period)
       toast.success(`Zpracováno ${data.inserted} transakcí`)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Zpracování selhalo')
+      toast.error(error instanceof Error ? error.message : 'Zpracování se nezdařilo')
     } finally {
       setUploading(false)
     }

@@ -316,7 +316,7 @@ export default function SigningPage() {
       if (data.connected) {
         setSettingsMessage({ type: 'success', text: `Připojení funguje. Workspace: ${data.workspace_name || 'OK'}` })
       } else {
-        setSettingsMessage({ type: 'error', text: 'Připojení selhalo. Zkontrolujte API klíč.' })
+        setSettingsMessage({ type: 'error', text: 'Připojení se nezdařilo. Zkontrolujte API klíč.' })
       }
     } catch (err: unknown) {
       console.error('Error testing connection:', err)

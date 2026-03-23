@@ -152,7 +152,7 @@ export function BankTab() {
         fetchTransactions()
       }
     } catch {
-      toast.error('Přiřazení selhalo')
+      toast.error('Přiřazení se nezdařilo')
     }
     setMatchingTx(null)
   }
@@ -166,7 +166,7 @@ export function BankTab() {
       })
       setTransactions(prev => prev.map(t => t.id === transactionId ? { ...t, category } : t))
     } catch {
-      toast.error('Změna kategorie selhala')
+      toast.error('Změna kategorie se nezdařila')
     }
   }
 
@@ -200,7 +200,7 @@ export function BankTab() {
         fetchTransactions()
       }
     } catch {
-      toast.error('Auto-párování selhalo')
+      toast.error('Auto-párování se nezdařilo')
     } finally {
       setAutoMatching(false)
     }

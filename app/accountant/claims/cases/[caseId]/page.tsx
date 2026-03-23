@@ -303,7 +303,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ caseId: s
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        throw new Error(body.error || 'Generování selhalo')
+        throw new Error(body.error || 'Generování se nezdařilo')
       }
       toast.success(type === 'contract' ? 'Příkazní smlouva vygenerována' : 'Plná moc vygenerována')
       fetchContracts()

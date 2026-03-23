@@ -50,7 +50,7 @@ export function formatTaxImpactNotification(
 ): string {
   const total = taxImpact + vatImpact
   return [
-    `<b>Chybějící doklady — ${companyName}</b>`,
+    `<b>Doklady k doplnění — ${companyName}</b>`,
     '',
     `Máte <b>${unmatchedCount}</b> nespárovaných výdajů.`,
     '',
@@ -58,7 +58,7 @@ export function formatTaxImpactNotification(
     vatImpact > 0 ? `Ztráta odpočtu DPH: <b>${vatImpact.toLocaleString('cs-CZ')} Kč</b>` : null,
     `<b>Celkový dopad: ${total.toLocaleString('cs-CZ')} Kč</b>`,
     '',
-    'Nahrajte chybějící doklady v aplikaci.',
+    'Stačí nahrát chybějící doklady v aplikaci.',
   ].filter(Boolean).join('\n')
 }
 

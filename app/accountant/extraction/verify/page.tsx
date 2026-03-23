@@ -388,7 +388,7 @@ function VerificationPageContent() {
             if (job.status === 'completed') {
               handleCompletion(job.documentId)
             } else {
-              toast.error('Vytěžování selhalo')
+              toast.error('Vytěžování se nezdařilo')
               setTimeout(() => setExtractionJob(null), 3000)
             }
           }
@@ -446,7 +446,7 @@ function VerificationPageContent() {
         setJournalEntries(prev => prev.map(e =>
           e.id === entryId ? { ...e, status: action } : e
         ))
-        toast.success(action === 'approved' ? 'Schváleno' : 'Zamítnuto')
+        toast.success(action === 'approved' ? 'Schváleno' : 'Vráceno k úpravě')
       }
     } catch {
       toast.error('Chyba')

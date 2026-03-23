@@ -229,12 +229,12 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 }
 
 export const DOCUMENT_STATUS_LABELS: Record<DocumentStatus, string> = {
-  missing: 'Chybí',
+  missing: 'K doplnění',
   uploaded: 'Nahráno',
   extracting: 'Vytěžování...',
   extracted: 'Vytěženo',
   approved: 'Schváleno',
-  rejected: 'Zamítnuto',
+  rejected: 'Vráceno k úpravě',
   booked: 'Zaúčtováno',
 }
 

@@ -145,7 +145,7 @@ export function PartnerSelector({ companyId, value, onChange, hasError }: Partne
         toast.success('Partner uložen do adresáře')
       }
     } catch {
-      toast.error('Uložení selhalo')
+      toast.error('Uložení se nezdařilo')
     }
   }
 

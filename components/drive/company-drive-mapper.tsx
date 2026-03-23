@@ -202,13 +202,13 @@ export function CompanyDriveMapper() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || 'Synchronizace selhala')
+        throw new Error(data.error || 'Synchronizace se nezdařila')
       }
 
       toast.success(`Synchronizace firmy "${row.company_name}" dokončena`)
       fetchMappings()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Synchronizace selhala')
+      toast.error(err instanceof Error ? err.message : 'Synchronizace se nezdařila')
       // Revert syncing state
       setMappings((prev) =>
         prev.map((m) =>

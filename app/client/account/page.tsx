@@ -572,7 +572,7 @@ function NotificationsTab() {
         throw new Error()
       }
     } catch {
-      toast.error('Uložení selhalo')
+      toast.error('Uložení se nezdařilo')
     } finally {
       setSaving(false)
     }
@@ -685,9 +685,9 @@ function NotificationsTab() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-sm">Chybějící doklady + daňový dopad</p>
+              <p className="font-medium text-sm">Doklady k doplnění + daňový dopad</p>
               <p className="text-xs text-muted-foreground">
-                Upozornění na nespárované výdaje a kolik vás stojí na dani
+                Upozornění na nespárované výdaje a kolik můžete ušetřit na dani
               </p>
             </div>
             <Switch

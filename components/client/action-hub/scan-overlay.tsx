@@ -317,7 +317,7 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
       toast.success('Doklad ověřen a odeslán')
       setTimeout(() => onClose(), 1500)
     } catch {
-      toast.error('Odeslání selhalo')
+      toast.error('Odeslání se nezdařilo')
     } finally {
       setVerifySubmitting(false)
     }
@@ -358,7 +358,7 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
       toast.success('Doklad odeslán')
       setTimeout(() => onClose(), 1500)
     } catch {
-      toast.error('Odeslání selhalo')
+      toast.error('Odeslání se nezdařilo')
     }
   }
 
@@ -529,7 +529,7 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="w-8 h-8 text-red-600" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Nahrání selhalo</h3>
+            <h3 className="text-lg font-semibold mb-2">Nahrání se nezdařilo</h3>
             <p className="text-muted-foreground mb-4">Zkuste to prosím znovu.</p>
             <div className="flex gap-2 justify-center mt-4">
               <Button variant="outline" onClick={handleRetry}>

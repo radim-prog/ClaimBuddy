@@ -92,10 +92,10 @@ export function InvoicesList({
         fetchInvoices()
         onRefresh?.()
       } else {
-        toast.error('Smazání selhalo')
+        toast.error('Smazání se nezdařilo')
       }
     } catch {
-      toast.error('Smazání selhalo')
+      toast.error('Smazání se nezdařilo')
     }
   }
 
@@ -108,14 +108,14 @@ export function InvoicesList({
       })
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Konverze selhala')
+        throw new Error(data.error || 'Konverze se nezdařila')
       }
       toast.success(targetType === 'credit_note' ? 'Dobropis vytvořen' : 'Faktura vytvořena ze zálohové faktury')
       setFilter('detail', '')
       fetchInvoices()
       onRefresh?.()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Konverze selhala')
+      toast.error(err instanceof Error ? err.message : 'Konverze se nezdařila')
     }
   }
 

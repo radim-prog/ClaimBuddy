@@ -18,7 +18,7 @@ export async function login(formData: FormData) {
     result = await authenticate(username, password)
   } catch (err) {
     // authenticate() throws for status issues (pending_verification, inactive)
-    return { error: err instanceof Error ? err.message : 'Přihlášení selhalo' }
+    return { error: err instanceof Error ? err.message : 'Přihlášení se nezdařilo' }
   }
 
   if (!result) {

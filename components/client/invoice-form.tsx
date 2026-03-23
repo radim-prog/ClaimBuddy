@@ -374,7 +374,7 @@ export function ClientInvoiceForm({ companyId, onClose, onCreated, editInvoice, 
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || `${isEdit ? 'Úprava' : 'Vytvoření'} faktury selhalo`)
+        throw new Error(data.error || `${isEdit ? 'Úprava' : 'Vytvoření'} faktury se nezdařilo`)
       }
 
       // Auto-save favorites (only for new invoices)

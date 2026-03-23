@@ -61,7 +61,7 @@ const statusLabels: Record<string, string> = {
   extracted: 'Vytěženo',
   client_verified: 'Ověřeno',
   approved: 'Schváleno',
-  rejected: 'Zamítnuto',
+  rejected: 'Vráceno k úpravě',
   draft: 'Nepotvrzeno',
   submitted: 'Odesláno',
   booked: 'Zaúčtováno',

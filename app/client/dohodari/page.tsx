@@ -133,7 +133,7 @@ export default function ClientDohodariPage() {
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             <FileSignature className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-            <p>Nemáte žádné aktivní dohody</p>
+            <p>Zatím žádné aktivní dohody</p>
             <p className="text-sm mt-1">Dohody vám vytvoří váš účetní</p>
           </CardContent>
         </Card>

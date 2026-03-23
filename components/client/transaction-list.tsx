@@ -115,7 +115,7 @@ export function TransactionList({
       <Card>
         <CardContent className="py-12 text-center">
           <p className="text-muted-foreground">Zatím žádné transakce</p>
-          <p className="text-sm text-muted-foreground mt-1">Nahrajte bankovní výpis</p>
+          <p className="text-sm text-muted-foreground mt-1">Stačí nahrát bankovní výpis</p>
         </CardContent>
       </Card>
     )

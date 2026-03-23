@@ -83,7 +83,7 @@ export function QuestionUpload({
             method: 'POST',
             body: formData,
           })
-          if (!res.ok) throw new Error('Nahrávání selhalo')
+          if (!res.ok) throw new Error('Nahrávání se nezdařilo')
           const data = await res.json()
           setAttachments(prev => [...prev, data.attachment])
         } catch (err) {
@@ -103,7 +103,7 @@ export function QuestionUpload({
         `/api/client/tax-questionnaire/upload?id=${att.id}&company_id=${companyId}`,
         { method: 'DELETE' }
       )
-      if (!res.ok) throw new Error('Smazání selhalo')
+      if (!res.ok) throw new Error('Smazání se nezdařilo')
       setAttachments(prev => prev.filter(a => a.id !== att.id))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Chyba')

@@ -321,7 +321,7 @@ export default function RemindersPage() {
                       <div>
                         <span className="text-muted-foreground">Doručeno:</span>
                         <span className="ml-1 font-medium">{r.delivery_stats.delivered}</span>
-                        {r.delivery_stats.failed > 0 && <span className="text-red-500 ml-1">({r.delivery_stats.failed} selhalo)</span>}
+                        {r.delivery_stats.failed > 0 && <span className="text-red-500 ml-1">({r.delivery_stats.failed} se nezdařilo)</span>}
                       </div>
                       <div>
                         <span className="text-muted-foreground">Čeká:</span>

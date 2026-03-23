@@ -108,7 +108,7 @@ export function QuestionnaireUpload({
           setAttachments(prev => [...prev, data.attachment])
           toast.success(`${file.name} nahráno`)
         } catch (err) {
-          toast.error(err instanceof Error ? err.message : 'Nahrávání selhalo')
+          toast.error(err instanceof Error ? err.message : 'Nahrávání se nezdařilo')
         } finally {
           setUploading(false)
         }
@@ -126,12 +126,12 @@ export function QuestionnaireUpload({
       )
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || 'Smazání selhalo')
+        throw new Error(err.error || 'Smazání se nezdařilo')
       }
       setAttachments(prev => prev.filter(a => a.id !== attachment.id))
       toast.success('Soubor odstraněn')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Smazání selhalo')
+      toast.error(err instanceof Error ? err.message : 'Smazání se nezdařilo')
     } finally {
       setLoadingDelete(null)
     }

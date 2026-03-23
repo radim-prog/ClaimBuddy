@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   const stripeCustomerId = await getStripeCustomerId(userId)
   if (!stripeCustomerId) {
     return NextResponse.json(
-      { error: 'Nemáte žádné aktivní předplatné.' },
+      { error: 'Zatím žádné aktivní předplatné.' },
       { status: 400 }
     )
   }

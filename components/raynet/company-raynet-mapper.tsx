@@ -356,12 +356,12 @@ export function CompanyRaynetMapper() {
         body: JSON.stringify({ year: new Date().getFullYear() }),
       })
 
-      if (!res.ok) throw new Error('Synchronizace selhala')
+      if (!res.ok) throw new Error('Synchronizace se nezdařila')
       const result = await res.json()
       toast.success(`Sync dokončen: ${result.synced} zpracováno, ${result.updated} aktualizováno`)
       fetchMappings()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Synchronizace selhala')
+      toast.error(err instanceof Error ? err.message : 'Synchronizace se nezdařila')
     } finally {
       setSyncing(false)
     }

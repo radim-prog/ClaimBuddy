@@ -371,7 +371,7 @@ function MissingDocsTab({
       <Card className="rounded-xl">
         <CardContent className="py-12 text-center">
           <div className="text-green-600 font-medium text-lg mb-1">Všechny výdaje jsou spárované</div>
-          <p className="text-sm text-muted-foreground">Nemáte žádné nedoložené výdaje za rok {year}.</p>
+          <p className="text-sm text-muted-foreground">Zatím žádné nedoložené výdaje za rok {year}.</p>
         </CardContent>
       </Card>
     )
@@ -416,7 +416,7 @@ function MissingDocsTab({
         </Card>
         <Card className="rounded-xl">
           <CardContent className="pt-4 pb-3">
-            <div className="text-xs text-muted-foreground">Nedoložených výdajů</div>
+            <div className="text-xs text-muted-foreground">Výdajů k doplnění</div>
             <div className="text-xl font-bold text-amber-600">{detail.unmatched_count}</div>
             <div className="text-[10px] text-muted-foreground">{formatCZK(detail.unmatched_total)}</div>
           </CardContent>
@@ -513,7 +513,7 @@ function MissingDocsTab({
                   {isExpanded && txs.length > 0 && (
                     <div className="ml-6 mr-2 mb-2 border rounded-lg overflow-hidden">
                       <div className="bg-muted/30 px-3 py-1.5 text-xs font-medium text-muted-foreground border-b">
-                        Nedoložené transakce — {monthNamesFull[monthIdx]}
+                        Transakce k doplnění — {monthNamesFull[monthIdx]}
                       </div>
                       {txs.map(tx => (
                         <div key={tx.id} className="flex items-center justify-between px-3 py-1.5 text-xs border-b last:border-0 hover:bg-muted/20">

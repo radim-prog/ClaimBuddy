@@ -42,7 +42,7 @@ export function CumulativeImpactCard({
             <>
               <AlertTriangle className="h-4 w-4 text-red-500" />
               <span className="text-red-600 dark:text-red-400">
-                Chybějící doklady vás stojí {fmtCZK(total)} Kč
+                Nahráním dokladů ušetříte {fmtCZK(total)} Kč
               </span>
             </>
           ) : allMatched ? (

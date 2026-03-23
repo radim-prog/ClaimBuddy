@@ -23,7 +23,7 @@ interface NotificationSettingsProps {
 const typeConfig: { key: keyof NotificationPreferences['types']; label: string; icon: typeof Clock }[] = [
   { key: 'deadline_reminder', label: 'Připomenutí termínu', icon: Clock },
   { key: 'unpaid_invoice', label: 'Nezaplacená faktura', icon: Banknote },
-  { key: 'missing_documents', label: 'Chybějící dokumenty', icon: FileText },
+  { key: 'missing_documents', label: 'Dokumenty k doplnění', icon: FileText },
 ]
 
 const channelConfig: { key: keyof NotificationPreferences['channels']; label: string; icon: typeof Bell; note?: string }[] = [

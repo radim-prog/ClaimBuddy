@@ -52,10 +52,10 @@ export function DocumentDetailSheet({ doc, open, onClose, onVerified, onDeleted 
         onVerified?.()
         onClose()
       } else {
-        toast.error('Ověření selhalo')
+        toast.error('Ověření se nezdařilo')
       }
     } catch {
-      toast.error('Ověření selhalo')
+      toast.error('Ověření se nezdařilo')
     } finally {
       setVerifying(false)
     }
@@ -71,10 +71,10 @@ export function DocumentDetailSheet({ doc, open, onClose, onVerified, onDeleted 
         onDeleted?.()
         onClose()
       } else {
-        toast.error('Smazání selhalo')
+        toast.error('Smazání se nezdařilo')
       }
     } catch {
-      toast.error('Smazání selhalo')
+      toast.error('Smazání se nezdařilo')
     } finally {
       setDeleting(false)
     }

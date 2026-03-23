@@ -48,7 +48,7 @@ export async function GET(
       generated: { step: 'done', pct: 100, message: `Hotovo — ${session.total_trips} cest, ${session.total_km} km` },
       reviewed: { step: 'done', pct: 100, message: 'Zkontrolovano' },
       exported: { step: 'done', pct: 100, message: 'Exportovano' },
-      failed: { step: 'failed', pct: 0, message: 'Generovani selhalo' },
+      failed: { step: 'failed', pct: 0, message: 'Generování se nezdařilo' },
     }
 
     const derived = statusMap[session.status] || { step: 'unknown', pct: 0, message: session.status }

@@ -135,7 +135,7 @@ export function DocumentsTab({ onScan, onDocumentClick }: DocumentsTabProps) {
           <CardContent className="py-16 text-center">
             <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
             <p className="font-semibold text-gray-900 dark:text-white mb-1">Zatím nemáte žádné dokumenty</p>
-            <p className="text-sm text-muted-foreground mb-5">Nahrajte svůj první doklad — fotkou, scanem nebo PDF.</p>
+            <p className="text-sm text-muted-foreground mb-5">Můžete nahrát svůj první doklad — fotkou, scanem nebo PDF.</p>
             <Button onClick={onScan} size="sm">
               <Camera className="mr-1.5 h-4 w-4" />
               Nahrát první doklad

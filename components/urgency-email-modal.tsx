@@ -90,7 +90,7 @@ export function UrgencyEmailModal({
   const missingDocsText = missingDocuments.map(d => DOCUMENT_LABELS[d]).join(', ')
 
   // Výchozí hodnoty
-  const defaultSubject = `Chybějící doklady za ${formattedPeriod}`
+  const defaultSubject = `Doklady k doplnění za ${formattedPeriod}`
   const defaultBody = `Dobrý den,
 
 dovoluji si Vás upozornit, že pro účetní období ${formattedPeriod} nám stále chybí následující doklady:
@@ -266,7 +266,7 @@ Vaše účetní`
             <div className="flex items-start gap-2">
               <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5" />
               <div className="text-sm">
-                <div className="font-medium text-orange-800">Chybějící doklady za {formattedPeriod}:</div>
+                <div className="font-medium text-orange-800">Doklady k doplnění za {formattedPeriod}:</div>
                 <div className="text-orange-700 mt-1">{missingDocsText}</div>
               </div>
             </div>

@@ -55,7 +55,7 @@ const statusConfig: Record<ExtractionStatusType, {
     icon: <CheckCircle2 className="w-3 h-3" />,
   },
   rejected: {
-    label: 'Zamítnuto',
+    label: 'Vráceno k úpravě',
     bg: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
     icon: <AlertCircle className="w-3 h-3" />,
   },
