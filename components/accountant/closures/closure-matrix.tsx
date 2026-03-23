@@ -9,7 +9,7 @@ const monthLabels = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čvn', 'Čvc', 'Srp'
 interface MonthCell {
   status: string | null
   progress: number
-  color: 'green' | 'yellow' | 'red' | 'gray'
+  color: 'green' | 'yellow' | 'red' | 'orange' | 'gray'
   transaction_count: number
 }
 
@@ -30,6 +30,7 @@ interface ClosureMatrixProps {
 const colorClasses: Record<string, string> = {
   green: 'bg-green-500 hover:bg-green-600 text-white',
   yellow: 'bg-yellow-400 hover:bg-yellow-500 text-yellow-900',
+  orange: 'bg-orange-400 hover:bg-orange-500 text-orange-900',
   red: 'bg-red-500 hover:bg-red-600 text-white',
   gray: 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500',
 }
@@ -119,7 +120,10 @@ export function ClosureMatrix({ year, companies, selectedCompanyId, onSelectComp
             <div className="w-3 h-3 rounded bg-yellow-400" /> 100% spárováno
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-red-500" /> Rozpracováno
+            <div className="w-3 h-3 rounded bg-orange-400" /> Probíhá
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-red-500" /> Chybí podklady
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded bg-gray-200 dark:bg-gray-700" /> Bez dat
