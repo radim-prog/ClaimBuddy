@@ -11,6 +11,7 @@ import {
   LogOut,
   UserCircle,
   FileText,
+  CalendarCheck,
   Car,
   Users,
   ChevronRight,
@@ -65,6 +66,7 @@ type NavItem = { name: string; href: string; icon: typeof LayoutDashboard; featu
 // Accounting context navigation
 const accountingNavigation: NavItem[] = [
   { name: 'Přehled',           href: '/client/dashboard',   icon: LayoutDashboard, tourId: 'client-dashboard' },
+  { name: 'Měsíční přehled',  href: '/client/closures',    icon: CalendarCheck,   tourId: 'client-closures', matchPaths: ['/client/closures'] },
   { name: 'Doklady & Faktury', href: '/client/documents',   icon: FileText,        tourId: 'client-documents', matchPaths: ['/client/documents', '/client/invoices'] },
   { name: 'Kniha jízd',        href: '/client/travel',      icon: Car,             tourId: 'client-travel' },
   { name: 'Zprávy',            href: '/client/messages',    icon: MessageSquare,   tourId: 'client-messages' },
