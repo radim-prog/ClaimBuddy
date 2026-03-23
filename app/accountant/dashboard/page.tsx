@@ -253,7 +253,7 @@ const StatusCell = React.memo(function StatusCell({
     return 'bg-red-300'
   }
 
-  const getStatusIcon = (s: string) => s === 'approved' ? '✓' : s === 'uploaded' ? '⏳' : s === 'current' ? '…' : '✗'
+  const getStatusIcon = (s: string) => s === 'approved' ? '✓' : s === 'uploaded' ? '⏳' : s === 'current' ? '⏳' : '✗'
   const getStatusColor = (s: string) => s === 'approved' ? 'text-green-400' : s === 'uploaded' ? 'text-yellow-400' : s === 'current' ? 'text-orange-400' : 'text-red-400'
 
   return (
@@ -289,7 +289,7 @@ const StatusCell = React.memo(function StatusCell({
           `}
         >
           <span className={`text-sm sm:text-lg font-bold ${colors.text}`}>
-            {status === 'approved' ? '✓' : status === 'uploaded' ? '⏳' : '!'}
+            {status === 'approved' ? '✓' : status === 'uploaded' ? '⏳' : status === 'current' ? '⏳' : '!'}
           </span>
           <div className="flex gap-0.5">
             <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${getIndicatorColor(bankStatus)} border border-white/50`} title="Výpis"></div>

@@ -300,13 +300,16 @@ export function WorkOverviewSection({ companyId, vatPayer = true, vatPeriod = 'm
               const status = data?.status || 'missing'
               const count = data?.count || 0
 
+              const isCurrentMonth = selectedYear === currentYear && selectedMonth === currentMonth
               const bg = status === 'approved'
                 ? 'bg-green-50 dark:bg-green-950/30'
                 : status === 'uploaded'
                   ? 'bg-yellow-50 dark:bg-yellow-950/30'
                   : status === 'skipped'
                     ? 'bg-gray-50 dark:bg-gray-800/50'
-                    : 'bg-red-50 dark:bg-red-950/30'
+                    : isCurrentMonth
+                      ? 'bg-orange-50 dark:bg-orange-950/30'
+                      : 'bg-red-50 dark:bg-red-950/30'
 
               const canToggleSkipped = status === 'missing' || status === 'skipped'
 
@@ -333,10 +336,10 @@ export function WorkOverviewSection({ companyId, vatPayer = true, vatPeriod = 'm
                       {status === 'missing' && (
                         <button
                           onClick={() => handleDocToggleSkipped(field, status)}
-                          className="text-red-500 dark:text-red-400 hover:text-gray-500 transition-colors"
+                          className={`${isCurrentMonth ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'} hover:text-gray-500 transition-colors`}
                           title="Klikněte pro označení jako N/A"
                         >
-                          Chybí
+                          {isCurrentMonth ? 'Probíhá' : 'Chybí'}
                         </button>
                       )}
                     </div>
