@@ -8,6 +8,7 @@ import { ClosureBankTab } from '@/components/client/closures/closure-bank-tab'
 import { ClosureDocumentsTab } from '@/components/client/closures/closure-documents-tab'
 import { ClosureInvoicesTab } from '@/components/client/closures/closure-invoices-tab'
 import { cn } from '@/lib/utils'
+import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
 import { Upload, CheckCircle2, ChevronDown, Inbox } from 'lucide-react'
 import { useState } from 'react'
 
@@ -41,15 +42,16 @@ interface ClosureSimpleViewProps {
   tiers: TiersData | null
   unmatched: UnmatchedData | null
   companyId: string
+  companies: Array<{ id: string; name: string }>
   period: string
   monthName: string
   year: number
   onRefresh: () => void
-  onUpload: () => void
 }
 
-export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period, monthName, year, onRefresh, onUpload }: ClosureSimpleViewProps) {
+export function ClosureSimpleView({ summary, tiers, unmatched, companyId, companies, period, monthName, year, onRefresh }: ClosureSimpleViewProps) {
   const [detailOpen, setDetailOpen] = useState(false)
+  const [showScan, setShowScan] = useState(false)
   const missingExpenses = unmatched?.expenses.transactions || []
   const missingCount = missingExpenses.length
   const totalTaxImpact = unmatched?.tax_impact.total || 0
@@ -65,7 +67,7 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period
           <Inbox className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />
           <p className="text-muted-foreground font-medium">Zatím žádné transakce za {monthName}</p>
           <p className="text-sm text-muted-foreground/60 mt-1">Stačí nahrát bankovní výpis pro zahájení uzávěrky</p>
-          <Button size="sm" className="mt-3" onClick={onUpload}>
+          <Button size="sm" className="mt-3" onClick={() => setShowScan(true)}>
             <Upload className="h-4 w-4 mr-1.5" />
             Nahrát výpis
           </Button>
@@ -110,7 +112,7 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period
               </p>
             )}
           </div>
-          <Button size="sm" onClick={onUpload}>
+          <Button size="sm" onClick={() => setShowScan(true)}>
             <Upload className="h-4 w-4 mr-1.5" />
             Nahrát doklad
           </Button>
@@ -143,7 +145,7 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period
                 <span className="text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded-full shrink-0">
                   → {fmtCZK(tx.total_impact || Math.round(Math.abs(tx.amount) * 0.21))} Kč na dani
                 </span>
-                <Button variant="outline" size="sm" className="shrink-0" onClick={onUpload} title="Stačí nahrát účtenku nebo fakturu k tomuto výdaji">
+                <Button variant="outline" size="sm" className="shrink-0" onClick={() => setShowScan(true)} title="Stačí nahrát účtenku nebo fakturu k tomuto výdaji">
                   Nahrát
                 </Button>
               </div>
@@ -190,7 +192,7 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period
                     documents={summary.documents}
                     unmatchedExpenses={missingExpenses}
                     totalTaxImpact={totalTaxImpact}
-                    onUpload={onUpload}
+                    onUpload={() => setShowScan(true)}
                   />
                 </ClosureTabContent>
                 <ClosureTabContent value="invoices">
@@ -205,6 +207,12 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period
           )}
         </div>
       )}
+      <ScanOverlay
+        open={showScan}
+        companyId={companyId}
+        companies={companies}
+        onClose={() => { setShowScan(false); onRefresh() }}
+      />
     </div>
   )
 }

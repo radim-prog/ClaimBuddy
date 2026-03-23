@@ -69,11 +69,11 @@ export default function ClosureDetailPage() {
           tiers={tiers}
           unmatched={unmatched}
           companyId={companyId}
+          companies={visibleCompanies}
           period={period}
           monthName={monthName.toLowerCase()}
           year={year}
           onRefresh={fetchData}
-          onUpload={() => router.push('/client/documents')}
         />
       )}
     </div>
