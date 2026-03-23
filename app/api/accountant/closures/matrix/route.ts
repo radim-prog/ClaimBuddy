@@ -108,12 +108,21 @@ export async function GET(request: NextRequest) {
           ? Math.round((txData!.matched / totalActionable) * 100)
           : (txData && txData.total > 0 ? 100 : 0)
 
-        // Color logic: green=approved, yellow=in_progress, red=open+has_data, gray=no_data
-        let color: 'green' | 'yellow' | 'red' | 'gray' = 'gray'
-        if (closure) {
+        // Color logic: green=approved, yellow=in_progress, orange=current_month, red=past+incomplete, gray=future/no_data
+        const now = new Date()
+        const isFuture = year > now.getFullYear() || (year === now.getFullYear() && m > now.getMonth() + 1)
+        const isCurrent = year === now.getFullYear() && m === now.getMonth() + 1
+
+        let color: 'green' | 'yellow' | 'red' | 'orange' | 'gray' = 'gray'
+        if (isFuture) {
+          color = 'gray'
+        } else if (closure) {
           if (closure.status === 'approved' || closure.status === 'closed') color = 'green'
           else if (progress >= 100) color = 'yellow'
+          else if (isCurrent) color = 'orange'
           else if (txData && txData.total > 0) color = 'red'
+        } else if (isCurrent) {
+          color = 'orange'
         } else if (txData && txData.total > 0) {
           color = 'red'
         }

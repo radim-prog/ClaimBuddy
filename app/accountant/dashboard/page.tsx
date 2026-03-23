@@ -21,7 +21,7 @@ function getSurnameKey(name: string): string {
   return name.toLowerCase()
 }
 
-type StatusType = 'missing' | 'uploaded' | 'approved' | 'future'
+type StatusType = 'missing' | 'uploaded' | 'approved' | 'future' | 'current'
 
 type Company = {
   id: string
@@ -123,6 +123,11 @@ const statusColors: Record<StatusType, { bg: string; text: string; border: strin
     text: 'text-yellow-900',
     border: 'border-yellow-500'
   },
+  current: {
+    bg: 'bg-orange-400',
+    text: 'text-orange-900',
+    border: 'border-orange-500'
+  },
   approved: {
     bg: 'bg-green-500',
     text: 'text-white',
@@ -141,17 +146,21 @@ function getMonthStatus(closureMap: Map<string, MonthlyClosure>, companyId: stri
     return 'future'
   }
 
+  const isCurrent = year === currentYear && monthIndex === currentMonth
+
   const period = `${year}-${String(monthIndex + 1).padStart(2, '0')}`
   const closure = closureMap.get(`${companyId}:${period}`)
 
-  if (!closure) return 'missing'
+  if (!closure) return isCurrent ? 'current' : 'missing'
 
-  // PRIORITA: Pokud COKOLIV chybí → červená (missing)
+  // PRIORITA: Pokud COKOLIV chybí
   const anyMissing =
     closure.bank_statement_status === 'missing' ||
     closure.expense_documents_status === 'missing' ||
     closure.income_invoices_status === 'missing'
 
+  // Aktuální měsíc: oranžová "probíhá" (ne červená)
+  if (anyMissing && isCurrent) return 'current'
   if (anyMissing) return 'missing'
 
   // Všechny 3 kategorie musí být approved pro celkový status approved
@@ -202,8 +211,8 @@ const StatusCell = React.memo(function StatusCell({
   const idsToCheck = aggregateCompanyIds && aggregateCompanyIds.length > 0 ? aggregateCompanyIds : [companyId]
 
   const aggResult = useMemo(() => {
-    // Priority order: missing > uploaded > approved > future
-    const priorityMap: Record<StatusType, number> = { missing: 3, uploaded: 2, approved: 1, future: 0 }
+    // Priority order: missing > current > uploaded > approved > future
+    const priorityMap: Record<StatusType, number> = { missing: 4, current: 3, uploaded: 2, approved: 1, future: 0 }
     let worstBank: StatusType = 'future'
     let worstExpense: StatusType = 'future'
     let worstIncome: StatusType = 'future'
@@ -214,9 +223,10 @@ const StatusCell = React.memo(function StatusCell({
       if (priorityMap[st] > priorityMap[worstOverall]) worstOverall = st
 
       const cl = closureMap.get(`${cId}:${period}`)
-      const bk = (cl?.bank_statement_status || (st === 'future' ? 'future' : 'missing')) as StatusType
-      const ex = (cl?.expense_documents_status || (st === 'future' ? 'future' : 'missing')) as StatusType
-      const inc = (cl?.income_invoices_status || (st === 'future' ? 'future' : 'missing')) as StatusType
+      const fallback: StatusType = st === 'future' ? 'future' : st === 'current' ? 'current' : 'missing'
+      const bk = (cl?.bank_statement_status || fallback) as StatusType
+      const ex = (cl?.expense_documents_status || fallback) as StatusType
+      const inc = (cl?.income_invoices_status || fallback) as StatusType
 
       if (priorityMap[bk] > priorityMap[worstBank]) worstBank = bk
       if (priorityMap[ex] > priorityMap[worstExpense]) worstExpense = ex
@@ -239,11 +249,12 @@ const StatusCell = React.memo(function StatusCell({
   const getIndicatorColor = (s: StatusType) => {
     if (s === 'approved') return 'bg-green-400'
     if (s === 'uploaded') return 'bg-yellow-300'
+    if (s === 'current') return 'bg-orange-300'
     return 'bg-red-300'
   }
 
-  const getStatusIcon = (s: string) => s === 'approved' ? '✓' : s === 'uploaded' ? '⏳' : '✗'
-  const getStatusColor = (s: string) => s === 'approved' ? 'text-green-400' : s === 'uploaded' ? 'text-yellow-400' : 'text-red-400'
+  const getStatusIcon = (s: string) => s === 'approved' ? '✓' : s === 'uploaded' ? '⏳' : s === 'current' ? '…' : '✗'
+  const getStatusColor = (s: string) => s === 'approved' ? 'text-green-400' : s === 'uploaded' ? 'text-yellow-400' : s === 'current' ? 'text-orange-400' : 'text-red-400'
 
   return (
     <td

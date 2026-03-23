@@ -156,7 +156,7 @@ function computeStats(companies: MatrixCompany[], year: number) {
       const cell = company.months[period]
       if (!cell) continue
       if (cell.color === 'green') approved++
-      else if (cell.color === 'yellow') inProgress++
+      else if (cell.color === 'yellow' || cell.color === 'orange') inProgress++
       else if (cell.color === 'red') incomplete++
     }
   }
