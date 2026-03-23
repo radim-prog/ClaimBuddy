@@ -107,7 +107,7 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period
             {totalTaxImpact > 0 && (
               <p className="text-sm text-red-600 dark:text-red-400 mt-1.5">
                 Daňový dopad: <span className="font-semibold">{fmtCZK(totalTaxImpact)} Kč</span>
-                <span className="text-xs font-normal ml-1 opacity-70">— tolik zaplatíte navíc na dani, pokud doklady nedodáte</span>
+                <span className="text-xs font-normal ml-1 opacity-70">— tolik zaplatíte navíc na dani, pokud doklady nenahrajete</span>
               </p>
             )}
           </div>
