@@ -59,18 +59,19 @@ interface DocumentRegisterTabProps {
 const MONTH_NAMES_SHORT = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čvn', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro']
 const MONTH_NAMES_LONG = ['Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen', 'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec']
 
-function getMonthStatus(month: MonthSummary | undefined, year: number, monthIndex: number): 'complete' | 'pending' | 'issues' | 'empty' | 'future' {
+function getMonthStatus(month: MonthSummary | undefined, year: number, monthIndex: number): 'complete' | 'pending' | 'issues' | 'current' | 'empty' | 'future' {
   const now = new Date()
-  const isCurrentOrPast = year < now.getFullYear() || (year === now.getFullYear() && monthIndex <= now.getMonth())
+  const isFuture = year > now.getFullYear() || (year === now.getFullYear() && monthIndex > now.getMonth())
+  const isCurrent = year === now.getFullYear() && monthIndex === now.getMonth()
 
   if (!month || month.count === 0) {
-    return isCurrentOrPast ? 'empty' : 'future'
+    return isFuture ? 'future' : isCurrent ? 'current' : 'empty'
   }
 
   const { by_status } = month
   const hasRejected = (by_status['rejected'] || 0) > 0
   const hasMissing = (by_status['missing'] || 0) > 0
-  if (hasRejected || hasMissing) return 'issues'
+  if (hasRejected || hasMissing) return isCurrent ? 'current' : 'issues'
 
   const totalProcessed = (by_status['approved'] || 0) + (by_status['booked'] || 0)
   if (totalProcessed === month.count) return 'complete'
@@ -81,6 +82,7 @@ function getMonthStatus(month: MonthSummary | undefined, year: number, monthInde
 const statusColors: Record<string, string> = {
   complete: 'bg-green-500',
   pending: 'bg-yellow-500',
+  current: 'bg-orange-400',
   issues: 'bg-red-500',
   empty: 'bg-gray-300 dark:bg-gray-600',
   future: 'bg-gray-200 dark:bg-gray-700',
@@ -89,6 +91,7 @@ const statusColors: Record<string, string> = {
 const statusRingColors: Record<string, string> = {
   complete: 'ring-green-300',
   pending: 'ring-yellow-300',
+  current: 'ring-orange-300',
   issues: 'ring-red-300',
   empty: '',
   future: '',
