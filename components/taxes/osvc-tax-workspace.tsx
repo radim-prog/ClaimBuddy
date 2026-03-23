@@ -44,6 +44,7 @@ export function OsvcTaxWorkspace({ companyId, year, config, yearTotals, rates: r
     is_flat_tax: localConfig.is_flat_tax ?? false,
     flat_tax_band: localConfig.flat_tax_band ?? null,
     is_secondary_activity: localConfig.is_secondary_activity ?? false,
+    months_active: localConfig.months_active ?? 12,
   }
 
   const calc = useMemo(() => {
@@ -187,6 +188,17 @@ export function OsvcTaxWorkspace({ companyId, year, config, yearTotals, rates: r
             />
             Vedlejší činnost
           </label>
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs text-gray-500">Měsíců podnikání</label>
+            <input
+              type="number"
+              min={1}
+              max={12}
+              value={localConfig.months_active ?? 12}
+              onChange={e => updateField('months_active', Math.min(12, Math.max(1, parseInt(e.target.value) || 12)))}
+              className="h-8 w-16 px-2 text-sm text-center rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+            />
+          </div>
         </div>
         {revenueExceedsBand && flatTaxCalc && (
           <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg">

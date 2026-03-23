@@ -89,6 +89,7 @@ export type TaxAnnualConfig = {
   is_flat_tax: boolean
   flat_tax_band: number | null
   is_secondary_activity: boolean
+  months_active?: number
 }
 
 export type FlatTaxCalculation = {
@@ -259,6 +260,10 @@ export function calculateIncomeTax(
   const totalCredits = nonRefundableCredits + childrenCredit
   const netTax = taxAfterNonRefundable - childrenCredit
 
+  // Partial year ratio (for SP/ZP minimums)
+  const monthsActive = Math.min(12, Math.max(1, config.months_active ?? 12))
+  const monthRatio = monthsActive / 12
+
   // Social insurance: profit × base_percentage × rate, enforce minimum
   const profit = Math.max(0, effectiveBase)
   const socialBase = Math.min(profit * rates.social_base_percentage, rates.social_max_assessment_base)
@@ -267,10 +272,11 @@ export function calculateIncomeTax(
   // Roční minimum SP: z ročního min VZ (ne monthly × 12, kvůli zaokrouhlení)
   // Min roční VZ = 35% průměrné mzdy × 12 = 195 540 (2025)
   // Math.ceil(195540 × 0.292) = Math.ceil(57097.68) = 57098 ✓
-  const socialMinimumAnnual = config.is_secondary_activity ? 0 :
+  const socialMinimumAnnualFull = config.is_secondary_activity ? 0 :
     rates.social_minimum_annual_base
       ? Math.ceil(rates.social_minimum_annual_base * rates.social_insurance_rate)
       : rates.social_minimum_advance * 12  // fallback: monthly × 12 pro roky bez konstanty
+  const socialMinimumAnnual = Math.ceil(socialMinimumAnnualFull * monthRatio)
   const socialMinimumApplied = socialFromRate < socialMinimumAnnual && !config.is_secondary_activity
   const socialCalculated = config.is_secondary_activity
     ? socialFromRate  // secondary: no minimum enforcement
@@ -279,8 +285,9 @@ export function calculateIncomeTax(
 
   // Health insurance: profit × base_percentage × rate, enforce minimum assessment base
   const healthBaseRaw = profit * rates.health_base_percentage
-  // Minimum assessment base applies for main activity (0.5 × avg wage × 12)
-  const healthMinBase = config.is_secondary_activity ? 0 : (rates.health_min_assessment_base || 0)
+  // Minimum assessment base applies for main activity (0.5 × avg wage × 12), pro-rated
+  const healthMinBaseFull = config.is_secondary_activity ? 0 : (rates.health_min_assessment_base || 0)
+  const healthMinBase = Math.ceil(healthMinBaseFull * monthRatio)
   const healthBase = Math.max(healthBaseRaw, healthMinBase)
   const healthFromRate = Math.ceil(healthBase * rates.health_insurance_rate)
 
