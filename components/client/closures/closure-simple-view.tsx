@@ -140,27 +140,15 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period
                 <span className="text-sm font-mono font-medium shrink-0">
                   {fmtCZK(tx.amount)} Kč
                 </span>
-                {tx.total_impact > 0 && (
-                  <span className="text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded-full shrink-0">
-                    → {fmtCZK(tx.total_impact)} Kč na dani
-                  </span>
-                )}
+                <span className="text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded-full shrink-0">
+                  → {fmtCZK(tx.total_impact || Math.round(Math.abs(tx.amount) * 0.21))} Kč na dani
+                </span>
                 <Button variant="outline" size="sm" className="shrink-0" onClick={onUpload} title="Stačí nahrát účtenku nebo fakturu k tomuto výdaji">
                   Nahrát
                 </Button>
               </div>
             ))}
           </div>
-          {totalTaxImpact > 0 && (
-            <div className="mx-4 mb-4 mt-2 p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
-              <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-                Celkem můžete ušetřit: {fmtCZK(totalTaxImpact)} Kč na dani
-              </p>
-              <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                Stačí nahrát {missingCount} {missingCount === 1 ? 'doklad' : missingCount < 5 ? 'doklady' : 'dokladů'} k výdajům výše
-              </p>
-            </div>
-          )}
         </div>
       )}
 
