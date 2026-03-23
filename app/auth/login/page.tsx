@@ -40,7 +40,7 @@ const CLAIMS_USP = [
 function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [portal, setPortal] = useState<Portal>('accountant')
+  const [portal, setPortal] = useState<Portal>('client')
   const [isClaims, setIsClaims] = useState(false)
   const searchParams = useSearchParams()
 
@@ -56,7 +56,8 @@ function LoginForm() {
       // Override favicon for claims domain
       document.querySelector('link[rel="icon"]')?.setAttribute('href', '/favicon-claims.svg')
     }
-    if (p === 'client' || claimsHost) setPortal('client')
+    if (p === 'accountant') setPortal('accountant')
+    else if (p === 'client' || claimsHost) setPortal('client')
     if (verified === 'true') {
       toast.success('Email ověřen', {
         description: 'Váš účet byl úspěšně ověřen. Nyní se můžete přihlásit.',
