@@ -167,8 +167,8 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, period
             className="w-full px-4 py-3 flex items-center justify-between text-sm font-medium hover:bg-muted/50 transition-colors"
           >
             <div>
-              <span>Zobrazit detaily ({totalTxns} transakcí)</span>
-              <p className="text-xs text-muted-foreground font-normal mt-0.5">Detailní pohled na bankovní transakce, doklady a faktury za tento měsíc</p>
+              <span>Podrobný přehled ({totalTxns} transakcí)</span>
+              <p className="text-xs text-muted-foreground font-normal mt-0.5">Kompletní přehled bankovních transakcí, dokladů a faktur za tento měsíc</p>
             </div>
             <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', detailOpen && 'rotate-180')} />
           </button>
