@@ -32,8 +32,8 @@ export function CompanyTilesWidget({ companies, selectedCompanyId, onSelectCompa
               Zobrazit vše <ChevronRight className="h-3 w-3 inline" />
             </Link>
           </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {companies.slice(0, 8).map(company => (
+          <div className="flex items-center gap-1.5 overflow-hidden">
+            {companies.slice(0, 7).map(company => (
               <button
                 key={company.id}
                 onClick={() => onSelectCompany(company.id)}
@@ -47,9 +47,9 @@ export function CompanyTilesWidget({ companies, selectedCompanyId, onSelectCompa
                 {company.name.length > 15 ? company.name.slice(0, 15) + '\u2026' : company.name}
               </button>
             ))}
-            {companies.length > 8 && (
-              <Link href="/client/companies/universe" className="flex-shrink-0 px-2.5 py-1.5 rounded-lg text-xs bg-muted/50 text-muted-foreground">
-                +{companies.length - 8}
+            {companies.length > 7 && (
+              <Link href="/client/companies/universe" className="flex-shrink-0 ml-auto px-2.5 py-1.5 rounded-lg text-xs bg-muted/50 text-muted-foreground">
+                +{companies.length - 7}
               </Link>
             )}
           </div>
