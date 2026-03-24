@@ -66,7 +66,7 @@ type NavItem = { name: string; href: string; icon: typeof LayoutDashboard; featu
 // Accounting context navigation
 const accountingNavigation: NavItem[] = [
   { name: 'Nástěnka',          href: '/client/dashboard',   icon: LayoutDashboard, tourId: 'client-dashboard' },
-  { name: 'Doklady a uzávěrky', href: '/client/closures',  icon: CalendarCheck,   tourId: 'client-closures', matchPaths: ['/client/closures'] },
+  { name: 'Měsíční uzávěrky',  href: '/client/closures',  icon: CalendarCheck,   tourId: 'client-closures', matchPaths: ['/client/closures'] },
   { name: 'Doklady & Faktury', href: '/client/documents',   icon: FileText,        tourId: 'client-documents', matchPaths: ['/client/documents', '/client/invoices'] },
   { name: 'Kniha jízd',        href: '/client/travel',      icon: Car,             tourId: 'client-travel' },
   { name: 'Zprávy',            href: '/client/messages',    icon: MessageSquare,   tourId: 'client-messages' },
