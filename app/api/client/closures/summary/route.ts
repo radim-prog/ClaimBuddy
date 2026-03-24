@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
     const totalActionable = txs.length - privateCount
     const progress = totalActionable > 0
       ? Math.round((matchedCount / totalActionable) * 100)
-      : 100
+      : 0
 
     // Pending actions
     const actions: string[] = []

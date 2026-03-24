@@ -66,7 +66,7 @@ export async function requestPushPermission(): Promise<boolean> {
       fetch('/api/client/push-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, platform: 'android' }),
+        body: JSON.stringify({ token, platform: /iPad|iPhone|iPod/.test(navigator.userAgent) ? 'ios' : 'android' }),
       }).catch(() => {})
       return true
     }
