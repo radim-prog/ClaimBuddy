@@ -49,7 +49,9 @@ export default function RootLayout({
       <body className={`${dmSans.variable} ${plusJakarta.variable} font-sans`}>
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+              registrations.forEach(function(r) { r.unregister() })
+            })
           }
         ` }} />
         <ThemeProvider>
