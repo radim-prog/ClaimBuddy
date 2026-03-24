@@ -190,7 +190,7 @@ export function CashTransactionForm({
             size="sm"
             variant={docType === 'PPD' ? 'default' : 'outline'}
             className={docType === 'PPD' ? 'bg-green-600 hover:bg-green-700' : ''}
-            onClick={() => setDocType('PPD')}
+            onClick={() => { setDocType('PPD'); if (!isEdit) setDocNumber('') }}
           >
             PPD (příjem)
           </Button>
@@ -199,7 +199,7 @@ export function CashTransactionForm({
             size="sm"
             variant={docType === 'VPD' ? 'default' : 'outline'}
             className={docType === 'VPD' ? 'bg-red-600 hover:bg-red-700' : ''}
-            onClick={() => setDocType('VPD')}
+            onClick={() => { setDocType('VPD'); if (!isEdit) setDocNumber('') }}
           >
             VPD (výdej)
           </Button>
