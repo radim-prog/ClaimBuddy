@@ -72,7 +72,7 @@ export function RapidCaptureOverlay({ open, companyId, onClose, onComplete }: Ra
     uploadForm.append('file', item.file)
     uploadForm.append('companyId', companyId)
     uploadForm.append('period', period)
-    uploadForm.append('type', 'expense_invoice')
+    uploadForm.append('type', 'unknown')
 
     try {
       const uploadRes = await fetch('/api/documents/upload', {
@@ -128,6 +128,7 @@ export function RapidCaptureOverlay({ open, companyId, onClose, onComplete }: Ra
   const handleDone = () => {
     const doneCount = items.filter(i => i.status === 'done').length
     onComplete?.(doneCount)
+    items.forEach(item => URL.revokeObjectURL(item.previewUrl))
     setItems([])
     onClose()
   }

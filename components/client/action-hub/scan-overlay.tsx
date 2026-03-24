@@ -283,14 +283,20 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
       const data = job.extractedData as Record<string, unknown>
       if (corrSupplier !== (data?.supplier_name || '')) corrections.supplier_name = corrSupplier
       if (corrIco !== (data?.supplier_ico || '')) corrections.supplier_ico = corrIco
-      if (corrAmount !== String(data?.total_amount || '')) corrections.total_amount = parseFloat(corrAmount) || undefined
+      if (corrAmount !== String(data?.total_amount || '')) {
+        const parsed = parseFloat(corrAmount)
+        corrections.total_amount = isNaN(parsed) ? undefined : parsed
+      }
       if (corrDate !== (data?.date_issued || '')) corrections.date_issued = corrDate
       if (corrVs !== (data?.variable_symbol || '')) corrections.variable_symbol = corrVs
-      if (corrVat !== String(data?.total_vat || '')) corrections.total_vat = parseFloat(corrVat) || undefined
+      if (corrVat !== String(data?.total_vat || '')) {
+        const parsed = parseFloat(corrVat)
+        corrections.total_vat = isNaN(parsed) ? undefined : parsed
+      }
 
       const docId = job.documentId || job.draftId
       if (docId) {
-        await fetch(`/api/client/documents/${docId}/verify`, {
+        const res = await fetch(`/api/client/documents/${docId}/verify`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -298,6 +304,7 @@ export function ScanOverlay({ open, companyId: initialCompanyId, companies, onCl
             corrections: Object.keys(corrections).length > 0 ? corrections : undefined,
           }),
         })
+        if (!res.ok) { toast.error('Ověření se nezdařilo'); return }
       }
 
       // Also submit the draft

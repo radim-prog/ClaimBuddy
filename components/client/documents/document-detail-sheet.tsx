@@ -45,6 +45,7 @@ export function DocumentDetailSheet({ doc, open, onClose, onVerified, onDeleted 
         body: JSON.stringify({
           verified: true,
           corrections: Object.keys(corrections).length > 0 ? corrections : undefined,
+          notes: notes || undefined,
         }),
       })
       if (res.ok) {
