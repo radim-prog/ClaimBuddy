@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
 import { Upload, CheckCircle2, ChevronDown, Inbox } from 'lucide-react'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 const fmtCZK = (n: number) => Math.round(Math.abs(n)).toLocaleString('cs-CZ')
 
@@ -50,6 +51,7 @@ interface ClosureSimpleViewProps {
 }
 
 export function ClosureSimpleView({ summary, tiers, unmatched, companyId, companies, period, monthName, year, onRefresh }: ClosureSimpleViewProps) {
+  const router = useRouter()
   const [detailOpen, setDetailOpen] = useState(false)
   const [showScan, setShowScan] = useState(false)
   const missingExpenses = unmatched?.expenses.transactions || []
@@ -67,7 +69,7 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, compan
           <Inbox className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />
           <p className="text-muted-foreground font-medium">Zatím žádné transakce za {monthName}</p>
           <p className="text-sm text-muted-foreground/60 mt-1">Stačí nahrát bankovní výpis pro zahájení uzávěrky</p>
-          <Button size="sm" className="mt-3" onClick={() => setShowScan(true)}>
+          <Button size="sm" className="mt-3" onClick={() => router.push('/client/documents?tab=bank')}>
             <Upload className="h-4 w-4 mr-1.5" />
             Nahrát výpis
           </Button>
@@ -119,38 +121,52 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, compan
         </div>
       )}
 
-      {/* 2. Missing documents list */}
+      {/* 2. Missing documents table */}
       {!noData && missingCount > 0 && (
-        <div className="rounded-lg border bg-card">
+        <div className="rounded-lg border bg-card overflow-hidden">
           <div className="px-4 py-3 border-b">
             <h3 className="text-sm font-semibold">Doklady k doplnění</h3>
             <p className="text-xs text-muted-foreground mt-1">
               Tyto výdaje z vašeho bankovního výpisu nemají přiřazený doklad. Stačí nahrát doklad (účtenku, fakturu) ke každému výdaji.
             </p>
           </div>
-          <div className="divide-y">
-            {missingExpenses.map((tx: any) => (
-              <div key={tx.id} className="px-4 py-3 flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {tx.counterparty_name || tx.description || 'Neznámý příjemce'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(tx.transaction_date).toLocaleDateString('cs-CZ')} · {tx.description}
-                  </p>
-                </div>
-                <span className="text-sm font-mono font-medium shrink-0">
-                  {fmtCZK(tx.amount)} Kč
-                </span>
-                <span className="text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded-full shrink-0">
-                  → {fmtCZK(tx.total_impact || Math.round(Math.abs(tx.amount) * 0.21))} Kč na dani
-                </span>
-                <Button variant="outline" size="sm" className="shrink-0" onClick={() => setShowScan(true)} title="Stačí nahrát účtenku nebo fakturu k tomuto výdaji">
-                  Nahrát
-                </Button>
-              </div>
-            ))}
-          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/30 text-xs text-muted-foreground">
+                <th className="px-4 py-2 text-left font-medium">Výdaj</th>
+                <th className="px-4 py-2 text-right font-medium">Částka</th>
+                <th className="px-4 py-2 text-right font-medium">Daňový dopad</th>
+                <th className="px-4 py-2 text-right font-medium">Akce</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {missingExpenses.map((tx: any) => (
+                <tr key={tx.id} className="hover:bg-muted/30 transition-colors">
+                  <td className="px-4 py-3">
+                    <p className="font-medium truncate max-w-[250px]">
+                      {tx.counterparty_name || tx.description || 'Neznámý příjemce'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(tx.transaction_date).toLocaleDateString('cs-CZ')} · {tx.description}
+                    </p>
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono font-medium whitespace-nowrap">
+                    {fmtCZK(tx.amount)} Kč
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span className="text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded-full">
+                      {fmtCZK(tx.total_impact || Math.round(Math.abs(tx.amount) * 0.21))} Kč
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Button variant="outline" size="sm" onClick={() => setShowScan(true)} title="Stačí nahrát účtenku nebo fakturu k tomuto výdaji">
+                      Nahrát
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -169,7 +185,7 @@ export function ClosureSimpleView({ summary, tiers, unmatched, companyId, compan
             className="w-full px-4 py-3 flex items-center justify-between text-sm font-medium hover:bg-muted/50 transition-colors"
           >
             <div>
-              <span>Podrobný přehled ({totalTxns} transakcí)</span>
+              <span>Detailní pohled ({totalTxns} transakcí)</span>
               <p className="text-xs text-muted-foreground font-normal mt-0.5">Kompletní přehled bankovních transakcí, dokladů a faktur za tento měsíc</p>
             </div>
             <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', detailOpen && 'rotate-180')} />

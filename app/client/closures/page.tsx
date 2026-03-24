@@ -1,15 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ClosureProgressRing } from '@/components/client/closures/closure-progress-bar'
 import { TaxImpactInline } from '@/components/client/closures/tax-impact-inline'
+import { ClosureMonthInline } from '@/components/client/closures/closure-month-inline'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { cn } from '@/lib/utils'
 import {
-  Loader2, CheckCircle2, AlertTriangle, ChevronRight, ChevronDown,
+  Loader2, CheckCircle2, AlertTriangle, ChevronDown,
   TrendingUp, TrendingDown,
 } from 'lucide-react'
 import {
@@ -24,7 +24,7 @@ interface MonthData {
   status: string | null
   progress: number
   financials: { income: number; expense: number; cash_income: number; cash_expense: number; net: number }
-  matching: { total: number; matched: number; unmatched: number; private: number }
+  matching: { total: number; matched: number; unmatched: number; unmatched_expenses: number; private: number }
   tax_impact: { income_tax: number; vat: number; social_insurance: number; health_insurance: number; total: number }
 }
 
@@ -38,7 +38,6 @@ interface YearlySummary {
 const fmtCZK = (n: number) => Math.round(n).toLocaleString('cs-CZ')
 
 export default function ClosuresYearlyPage() {
-  const router = useRouter()
   const { visibleCompanies, selectedCompanyId } = useClientUser()
   const companyId = selectedCompanyId || visibleCompanies[0]?.id || ''
   const currentYear = new Date().getFullYear()
@@ -47,6 +46,7 @@ export default function ClosuresYearlyPage() {
   const [loading, setLoading] = useState(true)
   const [year, setYear] = useState(currentYear)
   const [showFinancials, setShowFinancials] = useState(false)
+  const [expandedMonth, setExpandedMonth] = useState<string | null>(null)
 
   useEffect(() => {
     if (!companyId) return
@@ -106,69 +106,81 @@ export default function ClosuresYearlyPage() {
         </div>
       </div>
 
-      {/* Monthly rows — simplified */}
+      {/* Monthly rows — inline expand */}
       <div className="rounded-lg border bg-card divide-y">
         {data.months.map((month, i) => {
           const hasData = month.matching.total > 0
           const isComplete = month.progress >= 100 && month.tax_impact.total === 0
           const isClosed = month.status === 'approved' || month.status === 'closed'
-          const missingCount = month.matching.unmatched
+          const missingCount = month.matching.unmatched_expenses
+          const isExpanded = expandedMonth === month.period
 
           return (
-            <div
-              key={month.period}
-              className={cn(
-                'px-4 py-3 flex items-center gap-3 transition-colors',
-                hasData ? 'cursor-pointer hover:bg-muted/50' : 'opacity-40'
-              )}
-              onClick={() => hasData && router.push(`/client/closures/${month.period}`)}
-            >
-              {/* Status icon */}
-              {isClosed || isComplete ? (
-                <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-              ) : hasData && month.tax_impact.total > 0 ? (
-                <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
-              ) : hasData ? (
-                <ClosureProgressRing value={month.progress} size={28} />
-              ) : (
-                <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/20 shrink-0" />
-              )}
-
-              {/* Month name */}
-              <span className="w-16 text-sm font-medium">{monthNames[i]}</span>
-
-              {/* Status text */}
-              <div className="flex-1 min-w-0">
-                {isClosed ? (
-                  <span className="text-sm text-green-600 dark:text-green-400 font-medium">Kompletní</span>
-                ) : isComplete ? (
-                  <span className="text-sm text-green-600 dark:text-green-400 font-medium">Vše v pořádku</span>
-                ) : hasData && missingCount > 0 ? (
-                  <span className="text-sm text-red-600 dark:text-red-400">
-                    Zbývá {missingCount} {missingCount === 1 ? 'doklad' : missingCount < 5 ? 'doklady' : 'dokladů'}
-                  </span>
+            <div key={month.period}>
+              <div
+                className={cn(
+                  'px-4 py-3 flex items-center gap-3 transition-colors',
+                  hasData ? 'cursor-pointer hover:bg-muted/50' : 'opacity-40',
+                  isExpanded && 'bg-muted/30'
+                )}
+                onClick={() => hasData && setExpandedMonth(isExpanded ? null : month.period)}
+              >
+                {/* Status icon */}
+                {isClosed || isComplete ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                ) : hasData && month.tax_impact.total > 0 ? (
+                  <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
                 ) : hasData ? (
-                  <span className="text-sm text-muted-foreground">{month.matching.matched}/{month.matching.total} spárováno</span>
+                  <ClosureProgressRing value={month.progress} size={28} />
                 ) : (
-                  <span className="text-sm text-muted-foreground">—</span>
+                  <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/20 shrink-0" />
+                )}
+
+                {/* Month name */}
+                <span className="w-16 text-sm font-medium">{monthNames[i]}</span>
+
+                {/* Status text */}
+                <div className="flex-1 min-w-0">
+                  {isClosed ? (
+                    <span className="text-sm text-green-600 dark:text-green-400 font-medium">Kompletní</span>
+                  ) : isComplete ? (
+                    <span className="text-sm text-green-600 dark:text-green-400 font-medium">Vše v pořádku</span>
+                  ) : hasData && missingCount > 0 ? (
+                    <span className="text-sm text-red-600 dark:text-red-400">
+                      Zbývá {missingCount} {missingCount === 1 ? 'doklad' : missingCount < 5 ? 'doklady' : 'dokladů'}
+                    </span>
+                  ) : hasData ? (
+                    <span className="text-sm text-muted-foreground">{month.matching.matched}/{month.matching.total} spárováno</span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </div>
+
+                {/* Tax impact badge */}
+                <div className="shrink-0">
+                  {month.tax_impact.total > 0 && (
+                    <TaxImpactInline total={month.tax_impact.total} showIcon={false} />
+                  )}
+                </div>
+
+                {/* Expand chevron */}
+                {hasData && (
+                  <ChevronDown className={cn('h-4 w-4 text-muted-foreground shrink-0 transition-transform', isExpanded && 'rotate-180')} />
                 )}
               </div>
 
-              {/* Tax impact badge */}
-              <div className="shrink-0">
-                {month.tax_impact.total > 0 && (
-                  <TaxImpactInline total={month.tax_impact.total} showIcon={false} />
-                )}
-              </div>
-
-              {/* Action */}
-              {hasData && missingCount > 0 ? (
-                <Button variant="outline" size="sm" className="shrink-0 text-xs" onClick={(e) => { e.stopPropagation(); router.push(`/client/closures/${month.period}`) }}>
-                  Doplnit
-                </Button>
-              ) : hasData ? (
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-              ) : null}
+              {/* Inline expanded detail */}
+              {isExpanded && hasData && (
+                <div className="px-4 pb-4 pt-2 border-t bg-muted/10">
+                  <ClosureMonthInline
+                    companyId={companyId}
+                    companies={visibleCompanies}
+                    period={month.period}
+                    monthName={monthNames[i]}
+                    year={year}
+                  />
+                </div>
+              )}
             </div>
           )
         })}

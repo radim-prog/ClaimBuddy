@@ -14,10 +14,10 @@ interface ClosureTabsProps {
 }
 
 const tabConfig: { value: ClosureTabValue; label: string; icon: typeof LayoutDashboard }[] = [
-  { value: 'overview', label: 'Finanční přehled', icon: LayoutDashboard },
-  { value: 'bank', label: 'Bankovní transakce', icon: Landmark },
+  { value: 'overview', label: 'Souhrn', icon: LayoutDashboard },
+  { value: 'bank', label: 'Výpis z účtu', icon: Landmark },
   { value: 'documents', label: 'Nahrané doklady', icon: FileText },
-  { value: 'invoices', label: 'Příjmy bez faktury', icon: Receipt },
+  { value: 'invoices', label: 'Vydané faktury', icon: Receipt },
 ]
 
 export function ClosureTabs({ defaultTab = 'overview', onTabChange, children, className }: ClosureTabsProps) {

@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       const closure = closureMap.get(period)
 
       let income = 0, expense = 0
-      let matched = 0, unmatched = 0, privateCount = 0
+      let matched = 0, unmatched = 0, unmatchedExpenses = 0, privateCount = 0
       let taxImpact = 0, vatImpact = 0, socialImpact = 0, healthImpact = 0, totalImpact = 0
 
       for (const tx of monthTxs) {
@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
           privateCount++
         } else {
           unmatched++
+          if (amount < 0) unmatchedExpenses++
           taxImpact += Number(tx.tax_impact) || 0
           vatImpact += Number(tx.vat_impact) || 0
           socialImpact += Number(tx.social_impact) || 0
@@ -114,6 +115,7 @@ export async function GET(request: NextRequest) {
           total: monthTxs.length,
           matched,
           unmatched,
+          unmatched_expenses: unmatchedExpenses,
           private: privateCount,
         },
         tax_impact: {

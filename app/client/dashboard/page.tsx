@@ -60,16 +60,18 @@ export default function ClientDashboard() {
   const [lastCaseActivity, setLastCaseActivity] = useState<string | null>(null)
   const [activeOverlay, setActiveOverlay] = useState<OverlayType>(null)
   const [showQuickActions, setShowQuickActions] = useState(false)
-  const [checklistDismissed, setChecklistDismissed] = useState(true)
+  const [checklistDismissed, setChecklistDismissed] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('onboarding-checklist-dismissed') === 'true'
+    return true
+  })
+  const [showDeadlines, setShowDeadlines] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('dashboard-deadlines-visible') === 'true'
+    return false
+  })
   const [recentMessages, setRecentMessages] = useState<Array<{
     id: string; subject: string; last_message_preview: string | null;
     last_message_at: string | null; unread_count: number; status: string;
   }>>([])
-
-  // Load checklist state
-  useEffect(() => {
-    setChecklistDismissed(localStorage.getItem('onboarding-checklist-dismissed') === 'true')
-  }, [])
 
   // Fetch draft count + cases
   useEffect(() => {
@@ -254,21 +256,21 @@ export default function ClientDashboard() {
             onClick={() => setActiveOverlay('invoice')}
           >
             <Receipt className="h-4 w-4 flex-shrink-0" />
-            Faktura
+            Vystavit fakturu
           </button>
           <button
             className="action-btn h-12 flex items-center justify-center gap-2 text-sm bg-amber-500 hover:bg-amber-600 text-white"
             onClick={() => setActiveOverlay('trip')}
           >
             <Car className="h-4 w-4 flex-shrink-0" />
-            Jízda
+            Zaznamenat jízdu
           </button>
           <Link
             href="/client/messages"
             className="action-btn h-12 flex items-center justify-center gap-2 text-sm bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 dark:hover:bg-gray-600 text-white"
           >
             <MessageCircle className="h-4 w-4 flex-shrink-0" />
-            Zprávy
+            Napsat zprávu
           </Link>
           <button
             className="action-btn h-12 flex items-center justify-center gap-2 text-sm bg-slate-500 hover:bg-slate-600 text-white"
@@ -528,46 +530,61 @@ export default function ClientDashboard() {
             </CardContent>
           </Card>
 
-          {/* Deadlines Widget */}
+          {/* Deadlines Widget — default hidden, localStorage toggle */}
           <Card className="rounded-2xl">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-display flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" />
-                Nadcházející termíny
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-display flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4" />
+                  Nadcházející termíny
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const next = !showDeadlines
+                    setShowDeadlines(next)
+                    localStorage.setItem('dashboard-deadlines-visible', String(next))
+                  }}
+                >
+                  {showDeadlines ? 'Skrýt' : 'Zobrazit'}
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent>
-              {deadlines.length === 0 ? (
-                <div className="text-center py-6 text-gray-500 dark:text-gray-400">
-                  <CalendarDays className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">Žádné blížící se zákonné termíny</p>
-                  <p className="text-xs mt-1">Termíny se zobrazí podle nastavení vaší firmy (DPH, zaměstnanci apod.)</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {deadlines.map(deadline => (
-                    <div key={deadline.id} className="flex items-start gap-3">
-                      <div className="text-center min-w-[40px]">
-                        <div className="text-lg font-bold font-display text-gray-900 dark:text-white">
-                          {new Date(deadline.due_date).getDate()}
+            {showDeadlines && (
+              <CardContent>
+                {deadlines.length === 0 ? (
+                  <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                    <CalendarDays className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Žádné blížící se zákonné termíny</p>
+                    <p className="text-xs mt-1">Termíny se zobrazí podle nastavení vaší firmy (DPH, zaměstnanci apod.)</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {deadlines.map(deadline => (
+                      <div key={deadline.id} className="flex items-start gap-3">
+                        <div className="text-center min-w-[40px]">
+                          <div className="text-lg font-bold font-display text-gray-900 dark:text-white">
+                            {new Date(deadline.due_date).getDate()}
+                          </div>
+                          <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                            {monthNames[new Date(deadline.due_date).getMonth()]?.slice(0, 3)}
+                          </div>
                         </div>
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400">
-                          {monthNames[new Date(deadline.due_date).getMonth()]?.slice(0, 3)}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {deadline.title}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {deadline.description}
+                          </p>
                         </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {deadline.title}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {deadline.description}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            )}
           </Card>
         </div>
 
