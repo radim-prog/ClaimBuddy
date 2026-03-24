@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       const totalActionable = monthTxs.length - privateCount
       const progress = totalActionable > 0
         ? Math.round((matched / totalActionable) * 100)
-        : (monthTxs.length > 0 ? 100 : 0)
+        : 0
 
       yearTotalIncome += income
       yearTotalExpense += expense

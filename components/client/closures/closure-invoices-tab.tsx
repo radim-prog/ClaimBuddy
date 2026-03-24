@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2, AlertCircle, Receipt, Eye, MessageSquare } from 'lucide-react'
@@ -37,7 +38,9 @@ export function ClosureInvoicesTab({ matchedCount, unmatchedIncome, totalIncome,
       if (res.ok) {
         setMarkedPrivate(prev => new Set(prev).add(txId))
       }
-    } catch {}
+    } catch {
+      toast.error('Akce se nezdařila')
+    }
   }, [])
 
   const handleSaveNote = useCallback(async (txId: string, note: string) => {
@@ -49,7 +52,9 @@ export function ClosureInvoicesTab({ matchedCount, unmatchedIncome, totalIncome,
       })
       setNotes(prev => ({ ...prev, [txId]: note }))
       setEditingNote(null)
-    } catch {}
+    } catch {
+      toast.error('Akce se nezdařila')
+    }
   }, [])
 
   const visibleIncome = unmatchedIncome.filter(tx => !markedPrivate.has(tx.id))

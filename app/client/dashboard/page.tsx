@@ -196,11 +196,11 @@ export default function ClientDashboard() {
     if (!el) return
 
     const onTouchStart = (e: TouchEvent) => {
-      if (el.scrollTop === 0) touchStartY.current = e.touches[0].clientY
+      if (window.scrollY === 0) touchStartY.current = e.touches[0].clientY
     }
     const onTouchEnd = (e: TouchEvent) => {
       const diff = e.changedTouches[0].clientY - touchStartY.current
-      if (diff > 80 && el.scrollTop === 0 && !refreshing) handleRefresh()
+      if (diff > 80 && window.scrollY === 0 && !refreshing) handleRefresh()
       touchStartY.current = 0
     }
 

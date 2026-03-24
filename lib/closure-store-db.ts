@@ -104,13 +104,6 @@ function mapFieldToColumn(field: StatusField): string {
   return field
 }
 
-function computeOverallStatus(bank: string, expense: string, income: string): string {
-  const vals = [bank, expense, income]
-  const allDone = vals.every(v => v === 'approved' || v === 'reviewed' || v === 'skipped')
-  const anyMissing = vals.some(v => v === 'missing')
-  return allDone ? 'closed' : anyMissing ? 'open' : 'in_progress'
-}
-
 /**
  * V2: compute overall status including cash_documents_status.
  * 'not_applicable' is treated as done (company doesn't use cash).
