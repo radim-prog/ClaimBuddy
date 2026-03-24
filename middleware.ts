@@ -25,8 +25,8 @@ const CLAIMS_REWRITES: Record<string, string> = {
 
 // --- Rate Limiting (in-memory, sliding window) ---
 const RATE_LIMITS = {
-  login: { window: 60_000, max: 5 },   // 5 login attempts per minute
-  api:   { window: 60_000, max: 60 },   // 60 API calls per minute
+  login: { window: 60_000, max: 10 },   // 10 login attempts per minute
+  api:   { window: 60_000, max: 200 },  // 200 API calls per minute
 } as const
 
 const hits = new Map<string, number[]>()
