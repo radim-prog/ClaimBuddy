@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { canAccessCompany } from '@/lib/access-check'
 import { calculateDetailedTaxImpact } from '@/lib/tax-impact'
+import { NON_TAXABLE_CATEGORIES } from '@/lib/types/bank-matching'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
       .lt('amount', 0)
       .is('matched_document_id', null)
       .is('matched_dohoda_mesic_id', null)
-      .not('category', 'in', '("private_transfer","owner_deposit","loan_repayment","internal_transfer")')
+      .not('category', 'in', `(${NON_TAXABLE_CATEGORIES.map(c => `"${c}"`).join(',')})`)
       .order('amount', { ascending: true })
       .limit(500)
 

@@ -442,7 +442,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         <nav className="flex justify-around px-1 pt-1" style={{ paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom))' }}>
           {navigation.filter(n => isClaims
             ? ['Moje případy', 'Soubory', 'Zprávy', 'Nahlásit událost'].includes(n.name)
-            : ['Přehled', 'Doklady & Faktury', 'Zprávy', 'Kniha jízd'].includes(n.name)
+            : ['Nástěnka', 'Doklady & Faktury', 'Zprávy', 'Kniha jízd'].includes(n.name)
           ).map((item) => {
             const isActive = item.matchPaths
               ? item.matchPaths.some(p => pathname === p || pathname.startsWith(p + '/'))
