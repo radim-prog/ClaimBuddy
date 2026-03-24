@@ -1,0 +1,13 @@
+"accountId";"bankId";"currency";"iban";"bic";"openingBalance";"closingBalance";"dateStart";"dateEnd";"idFrom";"idTo"
+"2345678901";"2010";"CZK";"CZ1220100000002345678901";"FIOBCZPPXXX";"150000.00";"142350.50";"2026-01-01";"2026-01-31";"10000001";"10000008"
+
+"column0";"column1";"column2";"column3";"column4";"column5";"column6";"column7";"column8";"column9";"column10";"column11";"column12";"column13";"column14";"column16";"column17";"column18";"column22";"column25";"column26"
+"ID pohybu";"Datum";"Objem";"Měna";"Protiúčet";"Název protiúčtu";"Kód banky";"Název banky";"KS";"VS";"SS";"Uživatelská identifikace";"Zpráva pro příjemce";"Typ";"Provedl";"ID pokynu";"Upřesnění";"Komentář";"BIC";"Referenční číslo příjemce";"ID příjemce"
+"10000001";"2026-01-03";"-12500.00";"CZK";"1234567890";"Kancelářské potřeby s.r.o.";"0100";"Komerční banka";"0308";"2026001";"";"";"Faktura 2026001";"Bezhotovostní příjem";"";"";"";"";"";"";""
+"10000002";"2026-01-05";"45000.00";"CZK";"9876543210";"ABC Trading a.s.";"0800";"Česká spořitelna";"0008";"20260101";"";"";"Úhrada faktury";"Bezhotovostní příjem";"";"";"";"";"";"";""
+"10000003";"2026-01-08";"-3200.00";"CZK";"5555555555";"Vodafone Czech Republic";"0300";"ČSOB";"0558";"8812345";"";"";"Měsíční paušál";"Bezhotovostní příjem";"";"";"";"";"";"";""
+"10000004";"2026-01-10";"28000.00";"CZK";"1111222233";"Novák Jan";"0100";"Komerční banka";"0008";"20260015";"";"";"Faktura 20260015";"Bezhotovostní příjem";"";"";"";"";"";"";""
+"10000005";"2026-01-15";"-8500.00";"CZK";"4444555566";"České dráhy, a.s.";"0100";"Komerční banka";"0008";"CD2026";"";"";"Jízdné leden";"Bezhotovostní příjem";"";"";"";"";"";"";""
+"10000006";"2026-01-18";"-45000.00";"CZK";"77788899";"Finanční úřad";"0710";"ČNB";"1148";"6543210";"";"";"Záloha DPH";"Bezhotovostní příjem";"";"";"";"";"";"";""
+"10000007";"2026-01-22";"25000.00";"CZK";"3333444455";"XYZ Consulting s.r.o.";"0600";"MONETA";"0008";"20260022";"";"";"Konzultace";"Bezhotovostní příjem";"";"";"";"";"";"";""
+"10000008";"2026-01-28";"-11549.50";"CZK";"8888999900";"OSSZ Praha";"0710";"ČNB";"0008";"1234567890";"";"";"Sociální pojištění";"Bezhotovostní příjem";"";"";"";"";"";"";""
