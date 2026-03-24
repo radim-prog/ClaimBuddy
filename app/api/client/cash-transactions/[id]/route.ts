@@ -19,7 +19,7 @@ export async function PATCH(
     // Fetch existing to verify ownership
     const { data: existing } = await supabaseAdmin
       .from('cash_transactions')
-      .select('company_id, doc_type')
+      .select('company_id, doc_type, transaction_date, amount, counterparty_name')
       .eq('id', id)
       .single()
 
@@ -46,15 +46,15 @@ export async function PATCH(
     // Validate
     const txForValidation = {
       doc_type: body.doc_type || existing.doc_type,
-      transaction_date: body.transaction_date,
-      amount: body.amount ? Math.abs(body.amount) : undefined,
-      counterparty_name: body.counterparty_name,
+      transaction_date: body.transaction_date || existing.transaction_date,
+      amount: body.amount ? Math.abs(body.amount) : Math.abs(existing.amount),
+      counterparty_name: body.counterparty_name ?? existing.counterparty_name,
     }
 
     let dailyTotal = 0
     if (txForValidation.counterparty_name && txForValidation.transaction_date) {
       dailyTotal = await getDailyPartnerTotal(
-        supabaseAdmin, existing.company_id, txForValidation.counterparty_name, txForValidation.transaction_date
+        supabaseAdmin, existing.company_id, txForValidation.counterparty_name, txForValidation.transaction_date, id
       )
     }
 

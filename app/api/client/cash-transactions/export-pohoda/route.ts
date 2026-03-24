@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { canAccessCompany } from '@/lib/access-check'
 import { generateVoucherXml, type CashVoucherForExport } from '@/lib/pohoda-xml'
+import { suggestVatRate } from '@/lib/cash-validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     // Get cash transactions for period
     const { data: cashTxs } = await supabaseAdmin
       .from('cash_transactions')
-      .select('id, doc_type, doc_number, transaction_date, amount, description, counterparty_name')
+      .select('id, doc_type, doc_number, transaction_date, amount, description, counterparty_name, category')
       .eq('company_id', companyId)
       .eq('period', period)
       .order('doc_number')
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
       description: tx.description,
       counterparty_name: tx.counterparty_name,
       counterparty_ico: null,
-      vat_rate: 21,
+      vat_rate: suggestVatRate(tx.category),
     }))
 
     const xml = generateVoucherXml(vouchers, ico)

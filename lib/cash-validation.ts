@@ -138,14 +138,21 @@ export async function getDailyPartnerTotal(
   supabaseAdmin: any,
   companyId: string,
   counterpartyName: string,
-  date: string
+  date: string,
+  excludeId?: string
 ): Promise<number> {
-  const { data } = await supabaseAdmin
+  let query = supabaseAdmin
     .from('cash_transactions')
     .select('amount')
     .eq('company_id', companyId)
     .eq('transaction_date', date)
     .ilike('counterparty_name', counterpartyName)
+
+  if (excludeId) {
+    query = query.neq('id', excludeId)
+  }
+
+  const { data } = await query
 
   if (!data || data.length === 0) return 0
   return data.reduce((sum: number, row: { amount: number }) => sum + Math.abs(row.amount), 0)

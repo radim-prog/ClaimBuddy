@@ -144,6 +144,7 @@ export async function POST(request: NextRequest) {
         matched_document_id: document_id || null,
         matched_invoice_id: invoice_id || null,
         matched_dohoda_mesic_id: dohoda_mesic_id || null,
+        match_group_id: null,
         match_confidence: 1.0,
         match_method: 'manual',
         tax_impact: 0,
