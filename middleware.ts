@@ -156,6 +156,7 @@ async function verifySignedCookie(signedValue: string): Promise<string | null> {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const hostname = request.headers.get('host')?.split(':')[0] || ''
+  let rewrittenPath: string | null = null
 
   // Allow static assets
   if (STATIC_PREFIXES.some(p => pathname.startsWith(p))) {
@@ -167,43 +168,47 @@ export async function middleware(request: NextRequest) {
 
   // Host-based routing: claims.zajcon.cz → clean URLs
   if (hostname === 'claims.zajcon.cz') {
-    // Root → check auth first to avoid redirect loop
+    // Root → check auth to determine destination
     if (pathname === '/' || pathname === '') {
       const token = request.cookies.get(COOKIE_NAME)?.value
       if (token) {
         const user = await verifyToken(token)
         if (user) {
-          const dest = user.role === 'client' ? '/client/claims' : '/dashboard'
-          return NextResponse.redirect(new URL(dest, request.url))
+          // Rewrite directly to internal path — fall through to auth flow for headers
+          rewrittenPath = user.role === 'client' ? '/client/claims' : '/accountant/claims/dashboard'
         }
       }
-      const url = request.nextUrl.clone()
-      url.pathname = '/claims'
-      return NextResponse.rewrite(url)
-    }
-    // Clean URL rewrites: /dashboard → /accountant/claims/dashboard, etc.
-    if (CLAIMS_REWRITES[pathname]) {
-      const url = request.nextUrl.clone()
-      url.pathname = CLAIMS_REWRITES[pathname]
-      return NextResponse.rewrite(url)
-    }
-    // Redirect old full paths to clean URLs on claims hostname
-    for (const [clean, internal] of Object.entries(CLAIMS_REWRITES)) {
-      if (pathname === internal) {
-        return NextResponse.redirect(new URL(clean, request.url))
+      if (!rewrittenPath) {
+        // Not logged in → show claims landing (public page, no auth needed)
+        const url = request.nextUrl.clone()
+        url.pathname = '/claims'
+        return NextResponse.rewrite(url)
       }
     }
-    // Standard dashboards → claims clean URLs
-    if (pathname === '/client/dashboard') {
-      return NextResponse.redirect(new URL('/client/claims', request.url))
+    // Clean URL rewrites: /dashboard → /accountant/claims/dashboard, etc.
+    // Don't return — fall through to auth flow so x-user-id headers get set
+    if (!rewrittenPath && CLAIMS_REWRITES[pathname]) {
+      rewrittenPath = CLAIMS_REWRITES[pathname]
     }
-    if (pathname === '/accountant/dashboard') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-    // /auth, /api, /claims, /accountant, /client paths stay as-is
-    // Everything else → redirect to clean /dashboard
-    if (!pathname.startsWith('/claims') && !pathname.startsWith('/accountant') && !pathname.startsWith('/client') && !pathname.startsWith('/api') && !pathname.startsWith('/auth') && !pathname.startsWith('/_next')) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+    if (!rewrittenPath) {
+      // Redirect old full paths to clean URLs on claims hostname
+      for (const [clean, internal] of Object.entries(CLAIMS_REWRITES)) {
+        if (pathname === internal) {
+          return NextResponse.redirect(new URL(clean, request.url))
+        }
+      }
+      // Standard dashboards → claims clean URLs
+      if (pathname === '/client/dashboard') {
+        return NextResponse.redirect(new URL('/client/claims', request.url))
+      }
+      if (pathname === '/accountant/dashboard') {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+      // /auth, /api, /claims, /accountant, /client paths stay as-is
+      // Everything else → redirect to clean /dashboard
+      if (!pathname.startsWith('/claims') && !pathname.startsWith('/accountant') && !pathname.startsWith('/client') && !pathname.startsWith('/api') && !pathname.startsWith('/auth') && !pathname.startsWith('/_next')) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
     }
   }
 
@@ -346,6 +351,12 @@ export async function middleware(request: NextRequest) {
   if (impersonateUserId) {
     requestHeaders.set('x-impersonate-user', impersonateUserId)
     requestHeaders.set('x-real-user-id', user.id)
+  }
+
+  if (rewrittenPath) {
+    const url = request.nextUrl.clone()
+    url.pathname = rewrittenPath
+    return NextResponse.rewrite(url, { request: { headers: requestHeaders } })
   }
 
   return NextResponse.next({
