@@ -58,8 +58,8 @@ import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-co
 import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
-import { ActiveModuleProvider, useActiveModule } from '@/lib/contexts/active-module-context'
-import { Building2, FolderOpen, UserCog, X, Star, Plus, Network } from 'lucide-react'
+import { ActiveModuleProvider } from '@/lib/contexts/active-module-context'
+import { Building2, UserCog, X, Star, Plus, Network } from 'lucide-react'
 import { getSavedThemeId, getTheme } from '@/lib/sidebar-themes'
 import type { SidebarThemeId, SidebarTheme } from '@/lib/sidebar-themes'
 
@@ -109,39 +109,11 @@ type NavItem = {
   firmOnly?: boolean
 }
 
-// === CLAIMS MODULE NAVIGATION ===
-
-// Claims: internal paths → clean URLs (for claims.zajcon.cz hostname)
-const CLAIMS_CLEAN_URLS: Record<string, string> = {
-  '/accountant/claims/dashboard': '/dashboard',
-  '/accountant/clients': '/clients',
-  '/accountant/komunikace': '/komunikace',
-  '/accountant/claims/cases': '/cases',
-  '/accountant/claims/insurers': '/insurers',
-  '/accountant/claims/stats': '/stats',
-  '/accountant/claims/settings': '/settings',
-}
-
-// Claims: Daily work
-const claimsDailyNav: NavItem[] = [
-  { name: 'Přehled PU', href: '/accountant/claims/dashboard', icon: LayoutDashboard },
-  { name: 'Klienti', href: '/accountant/clients', icon: Users },
-  { name: 'Komunikace', href: '/accountant/komunikace', icon: MessageCircle, badge: 'messages' as const },
-  { name: 'Spisy', href: '/accountant/claims/cases', icon: FolderOpen },
-]
-
-// Claims: Management
-const claimsManagementNav: NavItem[] = [
-  { name: 'Pojišťovny', href: '/accountant/claims/insurers', icon: Building2 },
-  { name: 'Statistiky PU', href: '/accountant/claims/stats', icon: BarChart3 },
-  { name: 'Nastavení PU', href: '/accountant/claims/settings', icon: Settings },
-]
-
 // === TAB SYSTEM ===
 const TAB_EXCLUDED_PREFIXES = ['/accountant/settings', '/accountant/admin', '/accountant/firm']
 
 function getTabLabelFromPathname(pathname: string): string {
-  const allNavItems = [...dailyWorkNav, ...managementNav, ...toolsNav, ...adminNav, ...claimsDailyNav, ...claimsManagementNav]
+  const allNavItems = [...dailyWorkNav, ...managementNav, ...toolsNav, ...adminNav]
   for (const item of allNavItems) {
     if (pathname === item.href) return item.name
     if (item.activeMatch?.some(p => pathname.startsWith(p))) return item.name
@@ -154,7 +126,7 @@ function getTabLabelFromPathname(pathname: string): string {
 
 function isTabActiveForPath(tabUrl: string, pathname: string): boolean {
   if (pathname === tabUrl || pathname.startsWith(tabUrl + '/')) return true
-  const allNavItems = [...dailyWorkNav, ...managementNav, ...toolsNav, ...claimsDailyNav, ...claimsManagementNav]
+  const allNavItems = [...dailyWorkNav, ...managementNav, ...toolsNav]
   const navItem = allNavItems.find(item => item.href === tabUrl)
   if (navItem?.activeMatch) {
     return navItem.activeMatch.some(p => pathname.startsWith(p))
@@ -341,18 +313,30 @@ export default function AccountantLayout({
 }) {
   return (
     <AccountantUserProvider>
-      <SettingsProvider>
-        <AttentionProvider>
-          <TutorialProvider>
-            <ActiveModuleProvider>
-              <TooltipProvider delayDuration={0}>
-                <AccountantLayoutInner>{children}</AccountantLayoutInner>
-              </TooltipProvider>
-            </ActiveModuleProvider>
-          </TutorialProvider>
-        </AttentionProvider>
-      </SettingsProvider>
+      <ActiveModuleProvider>
+        <AccountantLayoutRouter>{children}</AccountantLayoutRouter>
+      </ActiveModuleProvider>
     </AccountantUserProvider>
+  )
+}
+
+function AccountantLayoutRouter({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() ?? ''
+  const isClaims = pathname.startsWith('/accountant/claims')
+
+  // Claims has its own lightweight layout — skip heavy providers
+  if (isClaims) return <>{children}</>
+
+  return (
+    <SettingsProvider>
+      <AttentionProvider>
+        <TutorialProvider>
+          <TooltipProvider delayDuration={0}>
+            <AccountantLayoutInner>{children}</AccountantLayoutInner>
+          </TooltipProvider>
+        </TutorialProvider>
+      </AttentionProvider>
+    </SettingsProvider>
   )
 }
 
@@ -366,11 +350,6 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const { needsResponseCount } = useUnreadMessages()
   const documentInboxCount = useDocumentInboxCount()
   const { isLocked } = usePlanFeatures()
-  const { activeModule } = useActiveModule()
-  const isClaims = activeModule === 'claims'
-  const isClaimsHostname = typeof window !== 'undefined' && window.location.hostname === 'claims.zajcon.cz'
-  const toCleanUrl = (items: NavItem[]) =>
-    isClaimsHostname ? items.map(item => ({ ...item, href: CLAIMS_CLEAN_URLS[item.href] || item.href })) : items
   // Attention for Klienti badge: exclude unread_messages (shown on Komunikace instead)
   const clientsAttentionCount = attentionTotals.total - attentionTotals.unread_messages
   const [sidebarThemeId, setSidebarThemeId] = useState<SidebarThemeId>('classic')
@@ -385,14 +364,6 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
     window.addEventListener('sidebar-theme-change', handler)
     return () => window.removeEventListener('sidebar-theme-change', handler)
   }, [])
-
-  // Claims branding override: favicon + title (re-run on navigation since Next.js resets title)
-  useEffect(() => {
-    if (!isClaims) return
-    document.title = document.title.replace('Účetní OS', 'Pojistná Pomoc')
-    const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
-    if (favicon) favicon.href = '/favicon-claims.svg'
-  }, [isClaims, pathname])
 
   const [collapsed, setCollapsed] = useState(false)
   const [managementOpen, setManagementOpen] = useState(() => {
@@ -593,20 +564,16 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <div className={`relative flex items-center h-16 flex-shrink-0 border-b ${sidebarTheme.border} transition-all duration-300 ${collapsed ? 'justify-center px-3' : 'px-5'}`}>
             <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-soft-sm flex-shrink-0 ${isClaims ? 'bg-gradient-to-br from-blue-400 to-blue-500' : `bg-gradient-to-br ${sidebarTheme.logoGradient}`}`}>
-                {isClaims ? (
-                  <Shield className="h-4 w-4 text-white" />
-                ) : (
-                  <span className="text-sm font-bold font-display text-white">U</span>
-                )}
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-soft-sm flex-shrink-0 bg-gradient-to-br ${sidebarTheme.logoGradient}`}>
+                <span className="text-sm font-bold font-display text-white">U</span>
               </div>
               {!collapsed && (
                 <div className="overflow-hidden">
                   <h1 className={`text-base font-semibold ${sidebarTheme.textActive} font-display tracking-tight whitespace-nowrap`}>
-                    {isClaims ? 'PU Manager' : 'Účetní OS'}
+                    Účetní OS
                   </h1>
                   <p className={`text-[10px] ${sidebarTheme.textMuted} font-medium whitespace-nowrap`}>
-                    {isClaims ? 'Pojistné události' : 'Portál pro účetní'}
+                    Portál pro účetní
                   </p>
                 </div>
               )}
@@ -623,9 +590,9 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Navigation */}
           <TooltipProvider delayDuration={0}>
             <NavContent
-              dailyWorkNav={isClaims ? toCleanUrl(claimsDailyNav) : dailyWorkNav}
-              managementNav={isClaims ? toCleanUrl(claimsManagementNav) : (userRole === 'admin' ? managementNav.filter(item => !item.firmOnly || firmId) : managementNav.filter(item => item.href !== '/accountant/revenue' && (!item.firmOnly || firmId)))}
-              toolsNav={isClaims ? [] : toolsNav}
+              dailyWorkNav={dailyWorkNav}
+              managementNav={userRole === 'admin' ? managementNav.filter(item => !item.firmOnly || firmId) : managementNav.filter(item => item.href !== '/accountant/revenue' && (!item.firmOnly || firmId))}
+              toolsNav={toolsNav}
               adminNav={adminNav}
               pathname={pathname}
               collapsed={collapsed}
@@ -814,14 +781,10 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
       <div className="md:hidden">
         <div className="flex items-center justify-between sidebar-purple px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isClaims ? 'bg-gradient-to-br from-blue-400 to-blue-500' : 'bg-gradient-to-br from-violet-400 to-violet-500'}`}>
-              {isClaims ? (
-                <Shield className="h-3.5 w-3.5 text-white" />
-              ) : (
-                <span className="text-xs font-bold text-white font-display">U</span>
-              )}
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-violet-400 to-violet-500">
+              <span className="text-xs font-bold text-white font-display">U</span>
             </div>
-            <span className="text-sm font-semibold text-white/[0.90] font-display">{isClaims ? 'PU Manager' : 'Účetní OS'}</span>
+            <span className="text-sm font-semibold text-white/[0.90] font-display">Účetní OS</span>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle variant="icon" className="text-white/[0.50] hover:text-white hover:bg-white/10 rounded-lg" />
@@ -832,7 +795,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-border/50 safe-area-bottom">
         <nav className="flex items-center justify-around px-1 py-1">
-          {(isClaims ? toCleanUrl(claimsDailyNav) : dailyWorkNav).slice(0, 5).map((item) => {
+          {dailyWorkNav.slice(0, 5).map((item) => {
             const isActive = item.activeMatch
               ? item.activeMatch.some(p => pathname.startsWith(p))
               : pathname === item.href || pathname.startsWith(item.href + '/')
