@@ -532,7 +532,10 @@ export default function CaseDetailPage({ params }: { params: Promise<{ caseId: s
     )
   }
 
-  const { case: insuranceCase, documents, events, payments } = data
+  const insuranceCase = data.case
+  const documents = Array.isArray(data.documents) ? data.documents : []
+  const events = Array.isArray(data.events) ? data.events : []
+  const payments = Array.isArray(data.payments) ? data.payments : []
   const canDelete = insuranceCase.status === 'new'
 
   // Payments summary
@@ -830,7 +833,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ caseId: s
                 <div>
                   <p className="text-xs text-muted-foreground">Tagy</p>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {insuranceCase.tags.map(tag => (
+                    {(insuranceCase.tags ?? []).map(tag => (
                       <Badge key={tag} variant="secondary" className="text-xs">
                         {tag}
                       </Badge>
