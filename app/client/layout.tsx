@@ -65,8 +65,8 @@ type NavItem = { name: string; href: string; icon: typeof LayoutDashboard; featu
 
 // Accounting context navigation
 const accountingNavigation: NavItem[] = [
-  { name: 'Přehled',           href: '/client/dashboard',   icon: LayoutDashboard, tourId: 'client-dashboard' },
-  { name: 'Měsíční přehled',  href: '/client/closures',    icon: CalendarCheck,   tourId: 'client-closures', matchPaths: ['/client/closures'] },
+  { name: 'Nástěnka',          href: '/client/dashboard',   icon: LayoutDashboard, tourId: 'client-dashboard' },
+  { name: 'Měsíční uzávěrky',  href: '/client/closures',  icon: CalendarCheck,   tourId: 'client-closures', matchPaths: ['/client/closures'] },
   { name: 'Doklady & Faktury', href: '/client/documents',   icon: FileText,        tourId: 'client-documents', matchPaths: ['/client/documents', '/client/invoices'] },
   { name: 'Kniha jízd',        href: '/client/travel',      icon: Car,             tourId: 'client-travel' },
   { name: 'Zprávy',            href: '/client/messages',    icon: MessageSquare,   tourId: 'client-messages' },
@@ -75,9 +75,9 @@ const accountingNavigation: NavItem[] = [
 // Claims context navigation
 const claimsNavigation: NavItem[] = [
   { name: 'Moje případy', href: '/client/claims', icon: FolderOpen },
-  { name: 'Soubory', href: '/client/documents', icon: FileText },
-  { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
-  { name: 'Nahlásit událost', href: '/claims/new', icon: FilePlus, divider: true },
+  { name: 'Soubory', href: '/client/claims/documents', icon: FileText },
+  { name: 'Zprávy', href: '/client/claims/messages', icon: MessageSquare },
+  { name: 'Nahlásit událost', href: '/client/claims/new', icon: FilePlus, divider: true },
 ]
 
 // Dynamic navigation — visible only when portal_sections[key] is true (accounting only)
@@ -442,7 +442,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
         <nav className="flex justify-around px-1 pt-1" style={{ paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom))' }}>
           {navigation.filter(n => isClaims
             ? ['Moje případy', 'Soubory', 'Zprávy', 'Nahlásit událost'].includes(n.name)
-            : ['Přehled', 'Doklady & Faktury', 'Zprávy', 'Kniha jízd'].includes(n.name)
+            : ['Nástěnka', 'Doklady & Faktury', 'Zprávy', 'Kniha jízd'].includes(n.name)
           ).map((item) => {
             const isActive = item.matchPaths
               ? item.matchPaths.some(p => pathname === p || pathname.startsWith(p + '/'))
