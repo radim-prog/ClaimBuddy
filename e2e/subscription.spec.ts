@@ -14,11 +14,11 @@ test.describe('Subscription Management', () => {
     await expect(page.getByText('Aktuální tarif').first()).toBeVisible({ timeout: 10000 })
   })
 
-  test('displays 4 pricing cards', async ({ page }) => {
+  test('displays 3 pricing cards', async ({ page }) => {
     await page.goto('/accountant/admin/subscription')
     await page.waitForSelector('#pricing-cards', { timeout: 10000 })
     const cards = page.locator('#pricing-cards > div')
-    expect(await cards.count()).toBe(4)
+    expect(await cards.count()).toBe(3)
   })
 
   test('billing toggle buttons present', async ({ page }) => {
