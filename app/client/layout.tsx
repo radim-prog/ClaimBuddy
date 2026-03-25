@@ -75,9 +75,9 @@ const accountingNavigation: NavItem[] = [
 // Claims context navigation
 const claimsNavigation: NavItem[] = [
   { name: 'Moje případy', href: '/client/claims', icon: FolderOpen },
-  { name: 'Soubory', href: '/client/documents', icon: FileText },
-  { name: 'Zprávy', href: '/client/messages', icon: MessageSquare },
-  { name: 'Nahlásit událost', href: '/claims/new', icon: FilePlus, divider: true },
+  { name: 'Soubory', href: '/client/claims/documents', icon: FileText },
+  { name: 'Zprávy', href: '/client/claims/messages', icon: MessageSquare },
+  { name: 'Nahlásit událost', href: '/client/claims/new', icon: FilePlus, divider: true },
 ]
 
 // Dynamic navigation — visible only when portal_sections[key] is true (accounting only)
