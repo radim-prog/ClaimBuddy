@@ -193,7 +193,11 @@ function ClaimsCasesPageInner() {
   // ── Insurance companies for filter dropdown ──
   const { data: insuranceCompanies } = useCachedFetch<InsuranceCompanyOption[]>(
     'claims-companies',
-    () => fetch('/api/claims/companies').then((r) => r.json()),
+    async () => {
+      const res = await fetch('/api/claims/companies')
+      const data = await res.json()
+      return Array.isArray(data) ? data : (Array.isArray(data?.companies) ? data.companies : [])
+    },
   )
 
   // ── Cases — rebuild fetch key whenever filters change ──
@@ -329,7 +333,7 @@ function ClaimsCasesPageInner() {
                 className="h-10 px-3 rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px]"
               >
                 <option value="">Všechny pojišťovny</option>
-                {(insuranceCompanies ?? []).map((ic) => (
+                {(Array.isArray(insuranceCompanies) ? insuranceCompanies : []).map((ic) => (
                   <option key={ic.id} value={ic.id}>
                     {ic.name}
                   </option>
