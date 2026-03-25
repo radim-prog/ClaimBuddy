@@ -266,7 +266,7 @@ export function calculateIncomeTax(
 
   // Social insurance: profit × base_percentage × rate, enforce minimum
   const profit = Math.max(0, effectiveBase)
-  const socialBase = Math.min(profit * rates.social_base_percentage, rates.social_max_assessment_base)
+  const socialBase = Math.ceil(Math.min(profit * rates.social_base_percentage, rates.social_max_assessment_base))
   const socialFromRate = Math.ceil(socialBase * rates.social_insurance_rate)
 
   // Roční minimum SP: krátit VZ o nepracované měsíce, POTOM spočítat pojistné
