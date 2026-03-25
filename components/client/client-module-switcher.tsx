@@ -88,7 +88,7 @@ export function ClientModuleSwitcher({
   const hasClaims = userModules.includes('claims')
 
   // Only one module and nothing to show
-  if (userModules.length <= 1 && !otherModule) return null
+  if (userModules.length <= 1) return null
 
   const CurrentIcon = currentModule.icon
 

@@ -309,7 +309,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
           {/* Tools - Průvodce & Tmavý režim */}
           <div className="relative flex-shrink-0 border-t border-white/[0.06] px-3 py-3 space-y-0.5">
-            {collapsed ? (
+            {!isClaims && (collapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
@@ -329,7 +329,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                 <BookOpen className="mr-3 h-[18px] w-[18px] flex-shrink-0" />
                 Průvodce
               </button>
-            )}
+            ))}
             <div className={`${collapsed ? 'flex justify-center' : ''}`}>
               <ThemeToggle
                 variant={collapsed ? 'icon' : 'full'}
