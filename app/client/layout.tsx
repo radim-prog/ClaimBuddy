@@ -389,10 +389,21 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
       <div className="md:hidden">
         <div className="flex items-center justify-between sidebar-blue px-4 py-3" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
           <Link href={isClaims ? '/client/claims' : '/client/dashboard'} className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center">
-              <span className="text-xs font-bold text-white font-display">U</span>
-            </div>
-            <span className="text-sm font-semibold text-white/90 font-display">Účetní OS</span>
+            {isClaims ? (
+              <>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                  <Shield className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-sm font-semibold text-white/90 font-display">PU Portál</span>
+              </>
+            ) : (
+              <>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center">
+                  <span className="text-xs font-bold text-white font-display">U</span>
+                </div>
+                <span className="text-sm font-semibold text-white/90 font-display">Účetní OS</span>
+              </>
+            )}
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
