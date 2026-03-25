@@ -219,8 +219,9 @@ function ClaimsCasesPageInner() {
     if (priorityFilter) params.set('priority', priorityFilter)
     if (typeFilter) params.set('insurance_type', typeFilter)
     const res = await fetch(`/api/claims/cases?${params.toString()}`)
-    const data = await res.json() as { cases: InsuranceCase[], total: number }
-    return data.cases || []
+    const data = await res.json()
+    const list = Array.isArray(data) ? data : Array.isArray(data?.cases) ? data.cases : []
+    return list as InsuranceCase[]
   }, [search, statusFilter, companyFilter, priorityFilter, typeFilter])
 
   const { data: cases, loading: casesLoading } = useCachedFetch<InsuranceCase[]>(
@@ -394,7 +395,7 @@ function ClaimsCasesPageInner() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
           </div>
-        ) : !cases || cases.length === 0 ? (
+        ) : !Array.isArray(cases) || cases.length === 0 ? (
           <EmptyState hasFilters={hasFilters} />
         ) : (
           <div className="overflow-x-auto">
