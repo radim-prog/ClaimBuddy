@@ -56,6 +56,8 @@ import { CompanyPickerModal } from '@/components/client/company-picker-modal'
 import { ClientModuleSwitcher } from '@/components/client/client-module-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { initNativeFeatures } from '@/lib/native-init'
+import { BugReportButton } from '@/components/shared/bug-report-button'
+import { logBuffer } from '@/lib/client-log-buffer'
 import { useClientUnreadMessages } from '@/hooks/use-client-unread-messages'
 import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-context'
 import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
@@ -110,6 +112,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
     } catch {
       // Capacitor not available — OK, we're on web
     }
+    logBuffer.init()
   }, [])
 
   // Check if there's a questionnaire with status='sent' (new for client)
@@ -447,6 +450,8 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
 
         <TutorialOverlay />
       </div>
+
+      <BugReportButton />
 
       {/* Mobile bottom tab bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-950/90 backdrop-blur-2xl border-t border-gray-200/60 dark:border-gray-800/60 z-50">

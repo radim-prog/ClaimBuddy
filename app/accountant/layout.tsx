@@ -23,6 +23,7 @@ import {
   ScanLine,
   FileSignature,
   ChevronDown,
+  Bug,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -62,6 +63,8 @@ import { ActiveModuleProvider } from '@/lib/contexts/active-module-context'
 import { Building2, UserCog, X, Star, Plus, Network } from 'lucide-react'
 import { getSavedThemeId, getTheme } from '@/lib/sidebar-themes'
 import type { SidebarThemeId, SidebarTheme } from '@/lib/sidebar-themes'
+import { BugReportButton } from '@/components/shared/bug-report-button'
+import { logBuffer } from '@/lib/client-log-buffer'
 
 // === NAVIGATION GROUPS ===
 
@@ -95,6 +98,7 @@ const adminNav = [
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings, tourId: 'nav-settings' },
   { name: 'Moje firma', href: '/accountant/firm', icon: Building2, activeMatch: ['/accountant/firm'] },
   { name: 'Administrace', href: '/accountant/admin', icon: Shield },
+  { name: 'Bug reporty', href: '/accountant/admin/bug-reports', icon: Bug, activeMatch: ['/accountant/admin/bug-reports'] },
 ]
 
 // Nav item type
@@ -497,6 +501,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const saved = localStorage.getItem('accountant-sidebar-collapsed')
     if (saved === 'true') setCollapsed(true)
+    logBuffer.init()
   }, [])
 
   useEffect(() => {
@@ -1087,6 +1092,8 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
         <WelcomeModal />
 
         <TutorialOverlay />
+
+        <BugReportButton />
 
         <ConfirmDialog
           open={showLogoutDialog}
