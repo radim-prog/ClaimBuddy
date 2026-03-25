@@ -36,15 +36,17 @@ test.describe('M4: Accountant Portal Walkthrough', () => {
       await page.waitForTimeout(500)
     }
     await page.waitForTimeout(2000)
-    // Click first client link with UUID (if clients exist in DB)
-    const clientLink = page.locator('main a[href*="/accountant/clients/"]').first()
-    const hasClients = await clientLink.isVisible({ timeout: 3000 }).catch(() => false)
-    if (hasClients) {
-      const href = await clientLink.getAttribute('href')
-      if (href && href.length > '/accountant/clients/'.length) {
-        await clientLink.click({ force: true })
+    // Try to navigate to first client detail via direct URL (avoids overlay issues)
+    const uuidPattern = /\/accountant\/clients\/[0-9a-f]{8}-/
+    const allLinks = page.locator('main a[href*="/accountant/clients/"]')
+    const count = await allLinks.count()
+    for (let i = 0; i < count; i++) {
+      const href = await allLinks.nth(i).getAttribute('href')
+      if (href && uuidPattern.test(href)) {
+        await page.goto(href)
         await page.waitForLoadState('networkidle')
         expect(page.url()).toContain('/accountant/clients/')
+        break
       }
     }
     // Verify clients page itself loaded regardless
