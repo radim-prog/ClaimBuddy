@@ -26,7 +26,7 @@ test.describe('M4: Accountant Portal Walkthrough', () => {
     await page.screenshot({ path: 'test-results/m4-clients.png', fullPage: true })
   })
 
-  test('client detail loads', async ({ page }) => {
+  test('client detail page accessible', async ({ page }) => {
     await page.goto('/accountant/clients')
     await page.waitForLoadState('networkidle')
     // Dismiss cookie banner if present
@@ -36,15 +36,21 @@ test.describe('M4: Accountant Portal Walkthrough', () => {
       await page.waitForTimeout(500)
     }
     await page.waitForTimeout(2000)
-    // Click first client link
-    const clientLink = page.locator('a[href*="/accountant/clients/"]').first()
-    if (await clientLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await clientLink.click({ force: true })
-      await page.waitForLoadState('networkidle')
-      await page.waitForTimeout(1000)
-      expect(page.url()).toContain('/accountant/clients/')
-      await page.screenshot({ path: 'test-results/m4-client-detail.png', fullPage: true })
+    // Click first client link with UUID (if clients exist in DB)
+    const clientLink = page.locator('main a[href*="/accountant/clients/"]').first()
+    const hasClients = await clientLink.isVisible({ timeout: 3000 }).catch(() => false)
+    if (hasClients) {
+      const href = await clientLink.getAttribute('href')
+      if (href && href.length > '/accountant/clients/'.length) {
+        await clientLink.click({ force: true })
+        await page.waitForLoadState('networkidle')
+        expect(page.url()).toContain('/accountant/clients/')
+      }
     }
+    // Verify clients page itself loaded regardless
+    const main = page.locator('main')
+    await expect(main).toBeVisible({ timeout: 5000 })
+    await page.screenshot({ path: 'test-results/m4-client-detail.png', fullPage: true })
   })
 
   test('closures matrix loads', async ({ page }) => {

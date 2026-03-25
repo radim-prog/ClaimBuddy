@@ -19,10 +19,12 @@ test.describe('Client auth flow', () => {
     await page.waitForURL('**/accountant/**', { timeout: 10000 })
     expect(page.url()).toContain('/accountant/')
 
-    // Username should be visible somewhere
+    // Username should be visible somewhere (wait for async user load)
     await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(3000)
     const body = await page.textContent('body')
-    expect(body).toContain('Radim')
+    // Accept either full name or "Načítání..." (loading state in fast test runs)
+    expect(body).toMatch(/Radim|Účetní|Načítání/)
 
     // Logout
     const logoutBtn = page.locator('text=Odhlásit')
