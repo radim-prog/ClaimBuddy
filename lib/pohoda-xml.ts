@@ -449,10 +449,10 @@ function generateBankDocumentItem(
           <typ:company>${escapeXml(tx.counterparty_name || '')}</typ:company>
         </typ:address>
       </bnk:partnerIdentity>
-      <bnk:account>
+      <bnk:paymentAccount>
         <typ:accountNo>${escapeXml(tx.counterparty_account)}</typ:accountNo>${tx.counterparty_bank_code ? `
         <typ:bankCode>${escapeXml(tx.counterparty_bank_code)}</typ:bankCode>` : ''}
-      </bnk:account>`
+      </bnk:paymentAccount>`
     : ''
 
   return `  <dat:dataPackItem id="${escapeXml(itemId)}" version="2.0">
