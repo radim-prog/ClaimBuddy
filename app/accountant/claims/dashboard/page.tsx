@@ -122,7 +122,7 @@ export default function ClaimsDashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link href="/accountant/claims/cases?status=in_progress">
+        <Link href="/accountant/claims/cases?status=gathering_docs">
           <Card className="rounded-xl hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
@@ -347,7 +347,7 @@ export default function ClaimsDashboard() {
             </CardContent>
           </Card>
         </Link>
-        <Link href="/accountant/claims/cases?status=information_requested">
+        <Link href="/accountant/claims/cases?status=additional_info">
           <Card className="rounded-xl hover:shadow-md transition-all cursor-pointer group">
             <CardContent className="p-5 flex items-center gap-4">
               <div className="h-10 w-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">

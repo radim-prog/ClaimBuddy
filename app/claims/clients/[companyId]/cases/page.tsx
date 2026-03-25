@@ -115,8 +115,9 @@ export default function ClaimsClientCasesPage() {
         setError(null)
         const res = await fetch(`/api/claims/cases?company_id=${companyId}`)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data: InsuranceCase[] = await res.json()
-        if (!cancelled) setCases(data)
+        const data = await res.json()
+        const list = Array.isArray(data) ? data : Array.isArray(data?.cases) ? data.cases : []
+        if (!cancelled) setCases(list as InsuranceCase[])
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Chyba načítání')
       } finally {
@@ -165,7 +166,7 @@ export default function ClaimsClientCasesPage() {
 
   // ── Empty ──
 
-  if (!cases || cases.length === 0) {
+  if (!Array.isArray(cases) || cases.length === 0) {
     return <EmptyState companyId={companyId} />
   }
 
