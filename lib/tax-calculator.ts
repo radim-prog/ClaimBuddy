@@ -269,14 +269,16 @@ export function calculateIncomeTax(
   const socialBase = Math.min(profit * rates.social_base_percentage, rates.social_max_assessment_base)
   const socialFromRate = Math.ceil(socialBase * rates.social_insurance_rate)
 
-  // Roční minimum SP: z ročního min VZ (ne monthly × 12, kvůli zaokrouhlení)
-  // Min roční VZ = 35% průměrné mzdy × 12 = 195 540 (2025)
-  // Math.ceil(195540 × 0.292) = Math.ceil(57097.68) = 57098 ✓
-  const socialMinimumAnnualFull = config.is_secondary_activity ? 0 :
-    rates.social_minimum_annual_base
-      ? Math.ceil(rates.social_minimum_annual_base * rates.social_insurance_rate)
-      : rates.social_minimum_advance * 12  // fallback: monthly × 12 pro roky bez konstanty
-  const socialMinimumAnnual = Math.ceil(socialMinimumAnnualFull * monthRatio)
+  // Roční minimum SP: krátit VZ o nepracované měsíce, POTOM spočítat pojistné
+  // OSSZ postup: min_VZ_prorated = roční_min_VZ - (měsíční_min_VZ × nepracované_měsíce)
+  // Pojistné = ceil(min_VZ_prorated × sazba)
+  // Pro 2025: měsíční min VZ = 16295, roční = 195540
+  const socialMinVZFull = config.is_secondary_activity ? 0 :
+    (rates.social_minimum_annual_base || rates.social_minimum_advance * 12 / rates.social_base_percentage)
+  const socialMonthlyMinVZ = socialMinVZFull / 12
+  const socialMinVZProrated = Math.max(0, socialMinVZFull - socialMonthlyMinVZ * (12 - monthsActive))
+  const socialMinimumAnnual = config.is_secondary_activity ? 0 :
+    Math.ceil(socialMinVZProrated * rates.social_insurance_rate)
   const socialMinimumApplied = socialFromRate < socialMinimumAnnual && !config.is_secondary_activity
   const socialCalculated = config.is_secondary_activity
     ? socialFromRate  // secondary: no minimum enforcement
