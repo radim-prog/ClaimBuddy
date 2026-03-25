@@ -221,7 +221,7 @@ export default function BugReportsPage() {
                         {report.url && (
                           <span className="flex items-center gap-1 truncate max-w-[200px]">
                             <Globe className="h-3 w-3 shrink-0" />
-                            {new URL(report.url).pathname}
+                            {(() => { try { return new URL(report.url).pathname } catch { return report.url.slice(0, 100) } })()}
                           </span>
                         )}
                       </div>
@@ -253,7 +253,7 @@ export default function BugReportsPage() {
                       <div>
                         <p className="font-medium text-muted-foreground mb-0.5">URL</p>
                         <a href={report.url} target="_blank" rel="noopener noreferrer" className="text-primary flex items-center gap-1 hover:underline truncate">
-                          {new URL(report.url).pathname}
+                          {(() => { try { return new URL(report.url).pathname } catch { return report.url.slice(0, 100) } })()}
                           <ExternalLink className="h-3 w-3 shrink-0" />
                         </a>
                       </div>

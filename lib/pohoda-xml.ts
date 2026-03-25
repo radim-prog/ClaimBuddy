@@ -429,9 +429,10 @@ export type BankDocumentInvoiceLink = {
  */
 function generateBankDocumentItem(
   tx: BankDocumentForExport,
-  bankAccount?: { accountNo: string; bankCode: string } | null
+  bankAccount?: { accountNo: string; bankCode: string } | null,
+  index: number = 0
 ): string {
-  const itemId = `BNK_${tx.id.slice(0, 8)}`
+  const itemId = `BNK_${index}_${tx.id.slice(-6)}`
   const isIncome = tx.amount > 0
   const absAmount = Math.abs(tx.amount)
   const docType = isIncome ? 'receipt' : 'expense'
@@ -541,7 +542,7 @@ export function generateBankDocumentXml(
   bankAccount?: { accountNo: string; bankCode: string } | null
 ): string {
   const dataPackItems = transactions
-    .map(tx => generateBankDocumentItem(tx, bankAccount))
+    .map((tx, i) => generateBankDocumentItem(tx, bankAccount, i))
     .join('\n')
 
   return `<?xml version="1.0" encoding="UTF-8"?>

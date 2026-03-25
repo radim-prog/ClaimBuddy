@@ -101,7 +101,8 @@ export async function POST(request: NextRequest) {
     let documentId: string | undefined
     if (mode === 'extract_and_save') {
       const period = rawTransactions[0]?.date?.substring(0, 7) || new Date().toISOString().substring(0, 7)
-      const storagePath = `bank-statements/${companyId}/${period}/${Date.now()}-${file.name}`
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const storagePath = `bank-statements/${companyId}/${period}/${Date.now()}-${safeName}`
 
       await supabaseAdmin.storage
         .from('documents')
