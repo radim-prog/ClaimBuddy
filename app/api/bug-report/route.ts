@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       user_role: userRole,
       description: description.trim(),
       category: category || null,
-      url: typeof url === 'string' ? url.slice(0, 2000) : null,
+      url: typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://')) ? url.slice(0, 2000) : null,
       user_agent: typeof userAgent === 'string' ? userAgent.slice(0, 500) : null,
       viewport: typeof viewport === 'string' ? viewport.slice(0, 50) : null,
       client_logs: Array.isArray(logs) ? logs.slice(0, 500) : [],

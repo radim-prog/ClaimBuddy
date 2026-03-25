@@ -49,6 +49,7 @@ export function BankExtractPanel({ companyId }: BankExtractPanelProps) {
   const [error, setError] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [fileName, setFileName] = useState<string | null>(null)
+  const [currentFile, setCurrentFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleExtract = useCallback(async (file: File) => {
@@ -56,6 +57,7 @@ export function BankExtractPanel({ companyId }: BankExtractPanelProps) {
     setError(null)
     setResult(null)
     setFileName(file.name)
+    setCurrentFile(file)
 
     try {
       const formData = new FormData()
@@ -106,13 +108,13 @@ export function BankExtractPanel({ companyId }: BankExtractPanelProps) {
   }, [result, companyId])
 
   const handleSave = useCallback(async () => {
-    if (!fileInputRef.current?.files?.[0]) return
+    if (!currentFile) return
     setSaving(true)
     setError(null)
 
     try {
       const formData = new FormData()
-      formData.append('file', fileInputRef.current.files[0])
+      formData.append('file', currentFile)
       formData.append('companyId', companyId)
       formData.append('mode', 'extract_and_save')
 
@@ -133,7 +135,7 @@ export function BankExtractPanel({ companyId }: BankExtractPanelProps) {
     } finally {
       setSaving(false)
     }
-  }, [companyId])
+  }, [companyId, currentFile])
 
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('cs-CZ', {
