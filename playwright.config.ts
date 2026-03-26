@@ -18,13 +18,27 @@ export default defineConfig({
       use: { browserName: 'chromium' },
     },
     {
+      name: 'setup-client',
+      testMatch: /auth-client\.setup\.ts/,
+      use: { browserName: 'chromium' },
+    },
+    {
       name: 'chromium',
       use: {
         browserName: 'chromium',
         storageState: 'e2e/.auth/user.json',
       },
       dependencies: ['setup'],
-      testIgnore: /auth\.setup\.ts/,
+      testIgnore: /auth.*\.setup\.ts|nav-links\.spec\.ts|client-walkthrough\.spec\.ts/,
+    },
+    {
+      name: 'client-tests',
+      use: {
+        browserName: 'chromium',
+        storageState: 'e2e/.auth/client.json',
+      },
+      dependencies: ['setup-client'],
+      testMatch: /client-walkthrough\.spec\.ts|nav-links\.spec\.ts/,
     },
   ],
 })
