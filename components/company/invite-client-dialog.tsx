@@ -82,6 +82,8 @@ export function InviteClientDialog({ companyId, companyName, companyIco, hasOwne
       if (res.ok) {
         toast.success('Pozvánka zrušena')
         loadInvitations()
+      } else {
+        toast.error('Nepodařilo se zrušit pozvánku')
       }
     } catch {
       toast.error('Nepodařilo se zrušit pozvánku')
@@ -90,10 +92,28 @@ export function InviteClientDialog({ companyId, companyName, companyIco, hasOwne
 
   const handleResend = async () => {
     if (!pendingInvite) return
-    // Cancel old + send new
+    const resendEmail = pendingInvite.invited_email
     await handleCancel(pendingInvite.id)
-    setEmail(pendingInvite.invited_email)
-    // Will re-trigger send after state update
+    // Send new invite with same email
+    setSending(true)
+    try {
+      const res = await fetch(`/api/accountant/companies/${companyId}/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resendEmail }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Pozvánka znovu odeslána!')
+        loadInvitations()
+      } else {
+        toast.error(data.error || 'Nepodařilo se odeslat pozvánku')
+      }
+    } catch {
+      toast.error('Chyba při odesílání pozvánky')
+    } finally {
+      setSending(false)
+    }
   }
 
   if (hasOwner) {

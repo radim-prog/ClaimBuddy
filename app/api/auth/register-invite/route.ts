@@ -97,24 +97,18 @@ export async function POST(request: NextRequest) {
     newUserId = newUser!.id
   }
 
-  // Update company: set owner_id and ensure assigned_accountant_id
-  await supabaseAdmin
-    .from('companies')
-    .update({
+  // Parallel: update company + mark invite as accepted
+  await Promise.all([
+    supabaseAdmin.from('companies').update({
       owner_id: newUserId,
       assigned_accountant_id: invite.invited_by,
-    })
-    .eq('id', invite.company_id)
-
-  // Mark invite as accepted
-  await supabaseAdmin
-    .from('client_invitations')
-    .update({
+    }).eq('id', invite.company_id),
+    supabaseAdmin.from('client_invitations').update({
       status: 'accepted',
       accepted_by: newUserId,
       accepted_at: new Date().toISOString(),
-    })
-    .eq('id', invite.id)
+    }).eq('id', invite.id),
+  ])
 
   // Send welcome email (non-blocking)
   const userName = name?.trim() || email.split('@')[0]

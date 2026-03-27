@@ -25,19 +25,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ valid: false, error: 'Pozvánka vypršela' })
   }
 
-  // Get company name (no internal IDs exposed)
-  const { data: company } = await supabaseAdmin
-    .from('companies')
-    .select('name, ico')
-    .eq('id', invite.company_id)
-    .single()
-
-  // Get inviter name
-  const { data: inviter } = await supabaseAdmin
-    .from('users')
-    .select('name')
-    .eq('id', invite.invited_by)
-    .single()
+  // Parallel: company name + inviter name (no internal IDs exposed)
+  const [{ data: company }, { data: inviter }] = await Promise.all([
+    supabaseAdmin.from('companies').select('name, ico').eq('id', invite.company_id).single(),
+    supabaseAdmin.from('users').select('name').eq('id', invite.invited_by).single(),
+  ])
 
   return NextResponse.json({
     valid: true,

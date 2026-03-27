@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -21,6 +21,18 @@ interface InviteInfo {
 }
 
 export default function InviteRegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    }>
+      <InviteRegisterContent />
+    </Suspense>
+  )
+}
+
+function InviteRegisterContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
 

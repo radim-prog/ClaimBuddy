@@ -21,12 +21,12 @@ export async function POST(
     return NextResponse.json({ error: 'Neplatný email' }, { status: 400 })
   }
 
-  // Check company exists and has no owner
-  const { data: company } = await supabaseAdmin
-    .from('companies')
-    .select('id, name, ico, owner_id')
-    .eq('id', companyId)
-    .single()
+  // Parallel: company check + email collision check + inviter name
+  const [{ data: company }, { data: existingUser }, { data: inviter }] = await Promise.all([
+    supabaseAdmin.from('companies').select('id, name, ico, owner_id').eq('id', companyId).single(),
+    supabaseAdmin.from('users').select('id, role').eq('email', email).single(),
+    supabaseAdmin.from('users').select('name').eq('id', userId).single(),
+  ])
 
   if (!company) {
     return NextResponse.json({ error: 'Firma nenalezena' }, { status: 404 })
@@ -37,14 +37,6 @@ export async function POST(
       { status: 409 }
     )
   }
-
-  // Check no existing user with this email is an accountant
-  const { data: existingUser } = await supabaseAdmin
-    .from('users')
-    .select('id, role')
-    .eq('email', email)
-    .single()
-
   if (existingUser && existingUser.role !== 'client') {
     return NextResponse.json(
       { error: 'Tento email patří existujícímu účtu s jinou rolí.' },
@@ -52,7 +44,6 @@ export async function POST(
     )
   }
 
-  // Generate token
   const token = crypto.randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
@@ -78,14 +69,6 @@ export async function POST(
     return NextResponse.json({ error: 'Nepodařilo se vytvořit pozvánku' }, { status: 500 })
   }
 
-  // Get inviter name for email
-  const { data: inviter } = await supabaseAdmin
-    .from('users')
-    .select('name')
-    .eq('id', userId)
-    .single()
-
-  // Send invitation email
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.zajcon.cz'
   const inviteUrl = `${appUrl}/auth/register/invite?token=${token}`
 
