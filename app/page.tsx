@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import StripeLanding from './design-variants/variant-2/page'
+import StripeLanding from '@/components/landing/stripe-landing'
 
 export const metadata: Metadata = {
   title: 'Účetní OS — Účetnictví pod kontrolou pro klienty i účetní',

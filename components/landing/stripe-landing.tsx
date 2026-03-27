@@ -105,10 +105,10 @@ const PLANS = [
 ]
 
 // ============================================
-// PAGE
+// COMPONENT
 // ============================================
 
-export default function Variant2Page() {
+export default function StripeLanding() {
   return (
     <div className="min-h-screen bg-white text-gray-950 selection:bg-purple-200">
       {/* Inline styles for fade animation */}
