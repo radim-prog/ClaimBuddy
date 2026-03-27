@@ -137,14 +137,14 @@ export async function getSubscriptionByStripeCustomerId(stripeCustomerId: string
 // ============================================
 
 export async function clientHasAccountant(userId: string): Promise<boolean> {
-  const { data } = await supabase
+  const { count } = await supabase
     .from('companies')
-    .select('assigned_accountant_id')
+    .select('id', { count: 'exact', head: true })
     .eq('owner_id', userId)
     .not('assigned_accountant_id', 'is', null)
-    .limit(1)
+    .is('deleted_at', null)
 
-  return (data?.length ?? 0) > 0
+  return (count ?? 0) > 0
 }
 
 // ============================================

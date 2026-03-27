@@ -34,12 +34,13 @@ export async function POST(request: NextRequest) {
 
   const isClientTier = tier === 'plus' || tier === 'premium'
   let priceId: string
-  let pricingVariant = 'accountant'
+  let pricingVariant: string
   if (isClientTier) {
     const hasAccountant = await clientHasAccountant(userId)
     pricingVariant = hasAccountant ? 'discounted' : 'standard'
     priceId = getClientStripePriceId(tier as 'plus' | 'premium', cycle, hasAccountant)
   } else {
+    pricingVariant = 'accountant'
     priceId = getStripePriceId(tier, cycle)
   }
   if (!priceId) {
@@ -50,12 +51,13 @@ export async function POST(request: NextRequest) {
   }
 
   // Find or create Stripe customer
-  const user = await getUserById(userId)
+  const [user, existingCustomerId] = await Promise.all([
+    getUserById(userId),
+    getStripeCustomerId(userId),
+  ])
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
-
-  const existingCustomerId = await getStripeCustomerId(userId)
   const customerId = await findOrCreateStripeCustomer(userId, user.email, user.name, existingCustomerId)
 
   if (customerId && customerId !== existingCustomerId) {
