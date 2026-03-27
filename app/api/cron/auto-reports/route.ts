@@ -17,7 +17,7 @@ const REPORT_LABELS: Record<string, string> = {
 
 // GET /api/cron/auto-reports — called daily by external cron
 export async function GET(request: NextRequest) {
-  // Auth check (fail-closed: reject if CRON_SECRET not configured)
+  // Fail-closed auth
   if (!CRON_SECRET) {
     console.error('CRON_SECRET is not configured — rejecting cron request')
     return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })

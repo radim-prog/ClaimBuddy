@@ -114,9 +114,11 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
 
       // Load bank statement report
       const bankRes = await fetch(`/api/reports/${companyId}/bank-statements?period=${period}`)
-      const bankData = await bankRes.json()
-      if (bankData.success && bankData.report) {
-        setBankReport(bankData.report)
+      if (bankRes.ok) {
+        const bankData = await bankRes.json()
+        if (bankData.success && bankData.report) {
+          setBankReport(bankData.report)
+        }
       }
     } catch (err) {
       console.error('Failed to load reports:', err)

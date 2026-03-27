@@ -4,6 +4,15 @@ import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
+const EMPTY_REPORT = {
+  income: { total: 0, paid: 0, unpaid: 0 },
+  expenses: { total: 0, matched: 0, unmatched: 0, non_deductible: 0, ignored: 0 },
+  tax_impact: 0,
+  tax_impact_breakdown: { income_tax_loss: 0, vat_deduction_loss: 0 },
+  top_missing: [] as any[],
+  monthly_chart: [] as any[],
+}
+
 async function buildReportFromTransactions(companyId: string, period: string) {
   const { data: allTrans, error } = await supabaseAdmin
     .from('transactions')
@@ -75,15 +84,7 @@ export async function GET(
     } catch { /* table may not exist */ }
 
     // No data sources returned data — legitimate empty state
-    return NextResponse.json({
-      income: { total: 0, paid: 0, unpaid: 0 },
-      expenses: { total: 0, matched: 0, unmatched: 0, non_deductible: 0, ignored: 0 },
-      tax_impact: 0,
-      tax_impact_breakdown: { income_tax_loss: 0, vat_deduction_loss: 0 },
-      top_missing: [],
-      monthly_chart: [],
-      _empty: true
-    })
+    return NextResponse.json({ ...EMPTY_REPORT, _empty: true })
   } catch (error) {
     console.error(`Report generation failed for company ${companyId}:`, error)
     return NextResponse.json(
