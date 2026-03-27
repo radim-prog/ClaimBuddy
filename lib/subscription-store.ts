@@ -133,6 +133,21 @@ export async function getSubscriptionByStripeCustomerId(stripeCustomerId: string
 }
 
 // ============================================
+// CLIENT ACCOUNTANT DETECTION (dual pricing)
+// ============================================
+
+export async function clientHasAccountant(userId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('companies')
+    .select('assigned_accountant_id')
+    .eq('owner_id', userId)
+    .not('assigned_accountant_id', 'is', null)
+    .limit(1)
+
+  return (data?.length ?? 0) > 0
+}
+
+// ============================================
 // PLAN LIMITS
 // ============================================
 

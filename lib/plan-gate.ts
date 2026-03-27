@@ -32,10 +32,13 @@ export async function checkFeatureAccess(
   const tier = resolveTier(sub?.plan_tier ?? 'free')
 
   // Check subscription status
-  if (sub && sub.status === 'cancelled') {
+  if (sub && (sub.status === 'cancelled' || sub.status === 'past_due')) {
+    const message = sub.status === 'cancelled'
+      ? 'Vaše předplatné bylo zrušeno.'
+      : 'Vaše platba se nezdařila. Aktualizujte platební údaje.'
     return {
       allowed: false,
-      reason: 'Vaše předplatné bylo zrušeno.',
+      reason: message,
       currentTier: tier,
     }
   }

@@ -25,11 +25,19 @@ export const STRIPE_PRICES = {
   profi_yearly: process.env.STRIPE_PRICE_PROFI_YEARLY || '',
   business_monthly: process.env.STRIPE_PRICE_BUSINESS_MONTHLY || '',
   business_yearly: process.env.STRIPE_PRICE_BUSINESS_YEARLY || '',
-  // Client tiers
+  // Client tiers — standard (without accountant)
   client_plus_monthly: process.env.STRIPE_PRICE_CLIENT_PLUS_MONTHLY || '',
   client_plus_yearly: process.env.STRIPE_PRICE_CLIENT_PLUS_YEARLY || '',
   client_premium_monthly: process.env.STRIPE_PRICE_CLIENT_PREMIUM_MONTHLY || '',
   client_premium_yearly: process.env.STRIPE_PRICE_CLIENT_PREMIUM_YEARLY || '',
+  // Client tiers — discounted (with accountant on platform)
+  client_plus_discounted_monthly: process.env.STRIPE_PRICE_CLIENT_PLUS_DISC_MONTHLY || '',
+  client_plus_discounted_yearly: process.env.STRIPE_PRICE_CLIENT_PLUS_DISC_YEARLY || '',
+  client_premium_discounted_monthly: process.env.STRIPE_PRICE_CLIENT_PREMIUM_DISC_MONTHLY || '',
+  client_premium_discounted_yearly: process.env.STRIPE_PRICE_CLIENT_PREMIUM_DISC_YEARLY || '',
+  // Credit packs
+  credit_starter: process.env.STRIPE_PRICE_CREDIT_STARTER || '',
+  credit_pro: process.env.STRIPE_PRICE_CREDIT_PRO || '',
   // Per-use addon prices (one-time or metered)
   extraction_single: process.env.STRIPE_PRICE_EXTRACTION_SINGLE || '',
   extraction_bulk: process.env.STRIPE_PRICE_EXTRACTION_BULK || '',
@@ -59,6 +67,16 @@ export function getStripePriceId(tier: PlanTier, cycle: BillingCycle): string {
   const key = isClientTier
     ? `client_${tier}_${cycle}` as keyof typeof STRIPE_PRICES
     : `${tier}_${cycle}` as keyof typeof STRIPE_PRICES
+  return STRIPE_PRICES[key]
+}
+
+export function getClientStripePriceId(
+  tier: 'plus' | 'premium',
+  cycle: BillingCycle,
+  hasAccountant: boolean
+): string {
+  const variant = hasAccountant ? 'discounted_' : ''
+  const key = `client_${tier}_${variant}${cycle}` as keyof typeof STRIPE_PRICES
   return STRIPE_PRICES[key]
 }
 
