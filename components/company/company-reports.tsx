@@ -103,9 +103,13 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
     try {
       // Load main report
       const reportRes = await fetch(`/api/reports/${companyId}?period=${period}`)
-      const reportData = await reportRes.json()
-      if (reportData.success && reportData.report) {
-        setReport(reportData.report)
+      if (!reportRes.ok) {
+        setReport(null)
+      } else {
+        const reportData = await reportRes.json()
+        if (reportData.success && reportData.report) {
+          setReport(reportData.report)
+        }
       }
 
       // Load bank statement report
