@@ -21,6 +21,7 @@ import {
   ScanLine,
   MessageSquare,
   ScrollText,
+  PartyPopper,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -32,7 +33,9 @@ const PLANS: {
   id: ClientTier
   name: string
   price: number
+  priceWithAccountant: number
   yearlyPrice: number
+  yearlyPriceWithAccountant: number
   icon: typeof Gift
   description: string
   features: { name: string; icon: typeof FileText }[]
@@ -43,7 +46,9 @@ const PLANS: {
     id: 'free',
     name: 'Zdarma',
     price: 0,
+    priceWithAccountant: 0,
     yearlyPrice: 0,
+    yearlyPriceWithAccountant: 0,
     icon: Gift,
     description: 'Základní fakturace a správa dokladů',
     features: [
@@ -58,8 +63,10 @@ const PLANS: {
   {
     id: 'plus',
     name: 'Plus',
-    price: 199,
-    yearlyPrice: 1990,
+    price: 249,
+    priceWithAccountant: 149,
+    yearlyPrice: 2490,
+    yearlyPriceWithAccountant: 1490,
     icon: Sparkles,
     description: 'Pro aktivní podnikatele',
     features: [
@@ -74,8 +81,10 @@ const PLANS: {
   {
     id: 'premium',
     name: 'Premium',
-    price: 399,
-    yearlyPrice: 3990,
+    price: 499,
+    priceWithAccountant: 299,
+    yearlyPrice: 4990,
+    yearlyPriceWithAccountant: 2990,
     icon: Crown,
     description: 'Kompletní sada nástrojů',
     features: [
@@ -91,8 +100,16 @@ const PLANS: {
 
 export default function ClientSubscriptionPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
+  const [hasAccountant, setHasAccountant] = useState(false)
   const { planTier, subscription, loading, refreshFeatures } = usePlanFeatures()
   const currentPlan = (planTier || 'free') as ClientTier
+
+  useEffect(() => {
+    fetch('/api/client/has-accountant')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setHasAccountant(data.hasAccountant) })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -191,6 +208,21 @@ export default function ClientSubscriptionPage() {
         </Card>
       )}
 
+      {/* Accountant discount banner */}
+      {hasAccountant && (
+        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <PartyPopper className="h-5 w-5 text-green-600 flex-shrink-0" />
+              <p className="text-sm text-green-800 dark:text-green-200">
+                <span className="font-semibold">Zvýhodněná cena!</span>{' '}
+                Protože váš účetní používá naší platformu, máte nárok na slevu na placené tarify.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Billing toggle */}
       <div className="flex items-center justify-center gap-3">
         <button
@@ -223,7 +255,11 @@ export default function ClientSubscriptionPage() {
         {PLANS.map((plan) => {
           const Icon = plan.icon
           const isCurrent = plan.id === currentPlan
-          const price = billingCycle === 'monthly' ? plan.price : (plan.yearlyPrice > 0 ? Math.round(plan.yearlyPrice / 12) : 0)
+          const showDiscounted = hasAccountant && plan.priceWithAccountant > 0
+          const basePrice = billingCycle === 'monthly' ? plan.price : (plan.yearlyPrice > 0 ? Math.round(plan.yearlyPrice / 12) : 0)
+          const price = showDiscounted
+            ? (billingCycle === 'monthly' ? plan.priceWithAccountant : (plan.yearlyPriceWithAccountant > 0 ? Math.round(plan.yearlyPriceWithAccountant / 12) : 0))
+            : basePrice
 
           return (
             <Card
@@ -259,18 +295,26 @@ export default function ClientSubscriptionPage() {
 
               <CardContent className="flex-1 flex flex-col">
                 <div className="text-center mb-6">
+                  {showDiscounted && basePrice > 0 && (
+                    <div className="text-lg text-gray-400 line-through mb-1">
+                      {basePrice.toLocaleString('cs-CZ')} Kč/měs
+                    </div>
+                  )}
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-4xl font-bold text-gray-900 dark:text-white">
                       {price > 0 ? price.toLocaleString('cs-CZ') : 'Zdarma'}
                     </span>
                     {price > 0 && <span className="text-gray-500 dark:text-gray-400">Kč/měs</span>}
                   </div>
-                  {plan.highlight && (
+                  {showDiscounted && price > 0 && (
+                    <p className="text-sm text-green-600 mt-1 font-medium">S účetním na platformě</p>
+                  )}
+                  {plan.highlight && !showDiscounted && (
                     <p className="text-sm text-green-600 mt-1 font-medium">{plan.highlight}</p>
                   )}
                   {billingCycle === 'yearly' && plan.yearlyPrice > 0 && (
                     <p className="text-sm text-green-600 mt-1">
-                      {plan.yearlyPrice.toLocaleString('cs-CZ')} Kč/rok
+                      {(showDiscounted ? plan.yearlyPriceWithAccountant : plan.yearlyPrice).toLocaleString('cs-CZ')} Kč/rok
                     </p>
                   )}
                 </div>

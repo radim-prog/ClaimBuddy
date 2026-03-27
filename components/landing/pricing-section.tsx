@@ -19,11 +19,12 @@ interface Plan {
   badge?: string
   priceMonthly: number
   priceYearly: number
+  priceMonthlyWithAccountant?: number
+  priceYearlyWithAccountant?: number
   description: string
   features: PlanFeature[]
   cta: string
   popular?: boolean
-  decoy?: boolean
 }
 
 // Format price with Czech thousands separator (1 499 → "1 499")
@@ -33,7 +34,7 @@ function fmtPrice(price: number): string {
 }
 
 // =============================================================================
-// CLIENT PLANS — decoy: Premium at 799 Kč makes Plus (199 Kč) look like a steal
+// CLIENT PLANS
 // =============================================================================
 const CLIENT_PLANS: Plan[] = [
   {
@@ -56,8 +57,10 @@ const CLIENT_PLANS: Plan[] = [
   {
     name: 'Plus',
     badge: 'Nejoblíbenější',
-    priceMonthly: 199,
-    priceYearly: 1990,
+    priceMonthly: 249,
+    priceYearly: 2490,
+    priceMonthlyWithAccountant: 149,
+    priceYearlyWithAccountant: 1490,
     description: 'Pro aktivní podnikatele. Vše co potřebujete.',
     popular: true,
     features: [
@@ -75,26 +78,26 @@ const CLIENT_PLANS: Plan[] = [
   {
     name: 'Premium',
     badge: 'Pro náročné',
-    priceMonthly: 799,
-    priceYearly: 7990,
-    description: 'Kompletní řešení pro velké podnikatele.',
-    decoy: true,
+    priceMonthly: 499,
+    priceYearly: 4990,
+    priceMonthlyWithAccountant: 299,
+    priceYearlyWithAccountant: 2990,
+    description: 'Kompletní sada nástrojů pro podnikatele.',
     features: [
       { text: 'Vše z Plus', included: true },
-      { text: '50 AI extrakcí / měsíc', included: true, highlight: true },
+      { text: '20 AI extrakcí / měsíc', included: true, highlight: true },
       { text: 'Proforma / faktura / dobropis', included: true },
       { text: 'Rozšířené statistiky a reporty', included: true },
-      { text: 'Krizový AI chatbot', included: true, highlight: true },
       { text: 'Cestovní randomizér', included: true },
       { text: 'Extra vytěžování: 1,50 Kč/ks', included: true },
-      { text: 'Prioritní podpora 24/7', included: true },
+      { text: 'Prioritní podpora', included: true },
     ],
-    cta: 'Vyzkoušet 90 dní zdarma',
+    cta: 'Vyzkoušet 30 dní zdarma',
   },
 ]
 
 // =============================================================================
-// ACCOUNTANT PLANS — decoy: Enterprise at 3 999 Kč makes Profi (699 Kč) the obvious choice
+// ACCOUNTANT PLANS
 // =============================================================================
 const ACCOUNTANT_PLANS: Plan[] = [
   {
@@ -117,8 +120,8 @@ const ACCOUNTANT_PLANS: Plan[] = [
   {
     name: 'Profi',
     badge: 'Nejlepší hodnota',
-    priceMonthly: 699,
-    priceYearly: 6990,
+    priceMonthly: 690,
+    priceYearly: 6900,
     description: 'Pro účetní firmy. Vše pro efektivní práci.',
     popular: true,
     features: [
@@ -134,23 +137,22 @@ const ACCOUNTANT_PLANS: Plan[] = [
     cta: 'Vyzkoušet 30 dní zdarma',
   },
   {
-    name: 'Enterprise',
+    name: 'Business',
     badge: 'Pro velké firmy',
-    priceMonthly: 3999,
-    priceYearly: 39990,
+    priceMonthly: 1490,
+    priceYearly: 14900,
     description: 'Neomezené řešení pro velké kanceláře.',
-    decoy: true,
     features: [
       { text: 'Neomezené firmy + uživatelé', included: true },
-      { text: '200 AI extrakcí / měsíc', included: true, highlight: true },
+      { text: '100 AI extrakcí / měsíc', included: true, highlight: true },
       { text: 'Health score klientů', included: true },
       { text: 'Znalostní báze', included: true },
-      { text: 'Multi-tenant správa', included: true, highlight: true },
       { text: 'Raynet CRM + API přístup', included: true },
-      { text: 'Onboarding konzultace', included: true },
-      { text: 'Dedikovaná podpora', included: true },
+      { text: 'Onboarding editor', included: true },
+      { text: 'Admin panel', included: true },
+      { text: 'Prioritní podpora (4h)', included: true },
     ],
-    cta: 'Kontaktujte nás',
+    cta: 'Vyzkoušet 30 dní zdarma',
   },
 ]
 
@@ -164,8 +166,12 @@ function PlanCard({ plan, billing, accentColor }: { plan: Plan; billing: Billing
     ? Math.round((1 - plan.priceYearly / (plan.priceMonthly * 12)) * 100)
     : 0
 
+  const hasDiscountedPrice = plan.priceMonthlyWithAccountant !== undefined && plan.priceMonthlyWithAccountant > 0
+  const discountedPrice = billing === 'monthly'
+    ? plan.priceMonthlyWithAccountant
+    : plan.priceYearlyWithAccountant
+
   const isPopular = plan.popular
-  const isDecoy = plan.decoy
 
   return (
     <div
@@ -174,9 +180,7 @@ function PlanCard({ plan, billing, accentColor }: { plan: Plan; billing: Billing
         min-h-[520px]
         ${isPopular
           ? `border-${accentColor}-400 dark:border-${accentColor}-500 shadow-2xl ring-2 ring-${accentColor}-400/30 dark:ring-${accentColor}-500/30 scale-[1.03] z-10 bg-gradient-to-b from-white to-${accentColor}-50/30 dark:from-gray-900 dark:to-${accentColor}-950/20`
-          : isDecoy
-            ? 'border-border/40 bg-muted/20 dark:bg-gray-900/50'
-            : 'border-border/50 bg-white dark:bg-gray-900'
+          : 'border-border/50 bg-white dark:bg-gray-900'
         }
       `}
       style={isPopular ? {
@@ -199,7 +203,7 @@ function PlanCard({ plan, billing, accentColor }: { plan: Plan; billing: Billing
             `}
           >
             {isPopular && <Star className="w-3 h-3 mr-1 inline" />}
-            {isDecoy && <Building2 className="w-3 h-3 mr-1 inline" />}
+            {!isPopular && <Building2 className="w-3 h-3 mr-1 inline" />}
             {plan.badge}
           </Badge>
         </div>
@@ -207,7 +211,7 @@ function PlanCard({ plan, billing, accentColor }: { plan: Plan; billing: Billing
 
       {/* Plan name + description */}
       <div className="mb-6 mt-1">
-        <h3 className={`text-xl font-bold font-display ${isPopular ? 'text-foreground' : isDecoy ? 'text-muted-foreground' : 'text-foreground'}`}>
+        <h3 className="text-xl font-bold font-display text-foreground">
           {plan.name}
         </h3>
         <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
@@ -216,21 +220,25 @@ function PlanCard({ plan, billing, accentColor }: { plan: Plan; billing: Billing
       {/* Price */}
       <div className="mb-6 min-h-[72px]">
         <div className="flex items-baseline gap-1">
-          <span className={`text-4xl font-bold font-display ${isPopular ? 'text-foreground' : isDecoy ? 'text-muted-foreground/80' : 'text-foreground'}`}>
+          <span className="text-4xl font-bold font-display text-foreground">
             {price === 0 ? 'Zdarma' : `${fmtPrice(price)}\u00A0Kč`}
           </span>
           {price > 0 && (
             <span className="text-sm text-muted-foreground">{period}</span>
           )}
         </div>
+        {hasDiscountedPrice && (
+          <p className="text-sm text-green-600 dark:text-green-400 mt-1 font-medium">
+            nebo jen {fmtPrice(discountedPrice!)}{billing === 'monthly' ? ' Kč/měs' : ' Kč/rok'} s účetním na platformě
+          </p>
+        )}
         {billing === 'yearly' && savingsPercent > 0 && (
           <p className="text-sm text-green-600 dark:text-green-400 mt-1 font-medium">
             Úspora {savingsPercent} % oproti měsíčnímu
           </p>
         )}
-        {billing === 'monthly' && price > 0 && (
+        {billing === 'monthly' && price > 0 && !hasDiscountedPrice && (
           <p className="text-sm text-muted-foreground/60 mt-1">
-            {/* Show yearly equivalent for anchoring */}
             nebo {fmtPrice(plan.priceYearly)} Kč/rok
           </p>
         )}
@@ -273,7 +281,7 @@ function PlanCard({ plan, billing, accentColor }: { plan: Plan; billing: Billing
         size="lg"
         asChild
       >
-        <Link href={isDecoy && plan.priceMonthly >= 3000 ? '/auth/register?plan=enterprise' : '/auth/register'}>
+        <Link href="/auth/register">
           {plan.cta}
         </Link>
       </Button>

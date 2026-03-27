@@ -25,7 +25,9 @@ interface PricingPlan {
   id: string
   name: string
   price: number
+  priceWithAccountant?: number
   yearlyPrice: number
+  yearlyPriceWithAccountant?: number
   icon: typeof Crown
   description: string
   maxCompanies: number | null
@@ -60,8 +62,8 @@ const ACCOUNTANT_PLANS: PricingPlan[] = [
   {
     id: 'profi',
     name: 'Profi',
-    price: 699,
-    yearlyPrice: 6990,
+    price: 690,
+    yearlyPrice: 6900,
     icon: Crown,
     description: 'Pro profesionální účetní kanceláře',
     maxCompanies: 100,
@@ -83,8 +85,8 @@ const ACCOUNTANT_PLANS: PricingPlan[] = [
   {
     id: 'business',
     name: 'Business',
-    price: 1499,
-    yearlyPrice: 14990,
+    price: 1490,
+    yearlyPrice: 14900,
     icon: Building2,
     description: 'Pro velké kanceláře — neomezeno',
     maxCompanies: null,
@@ -128,8 +130,10 @@ const CLIENT_PLANS: PricingPlan[] = [
   {
     id: 'plus',
     name: 'Plus',
-    price: 199,
-    yearlyPrice: 1990,
+    price: 249,
+    priceWithAccountant: 149,
+    yearlyPrice: 2490,
+    yearlyPriceWithAccountant: 1490,
     icon: Briefcase,
     description: 'Pro aktivní podnikatele',
     maxCompanies: null,
@@ -149,8 +153,10 @@ const CLIENT_PLANS: PricingPlan[] = [
   {
     id: 'premium',
     name: 'Premium',
-    price: 399,
-    yearlyPrice: 3990,
+    price: 499,
+    priceWithAccountant: 299,
+    yearlyPrice: 4990,
+    yearlyPriceWithAccountant: 2990,
     icon: Crown,
     description: 'Kompletní sada nástrojů',
     maxCompanies: null,
@@ -173,6 +179,7 @@ interface PricingTableProps {
   currentPlan?: string
   ctaLabel?: string
   showCta?: boolean
+  hasAccountant?: boolean
 }
 
 export function PricingTable({
@@ -181,6 +188,7 @@ export function PricingTable({
   currentPlan,
   ctaLabel,
   showCta = true,
+  hasAccountant = false,
 }: PricingTableProps) {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
   const plans = portal === 'accountant' ? ACCOUNTANT_PLANS : CLIENT_PLANS
@@ -223,9 +231,15 @@ export function PricingTable({
         {plans.map((plan) => {
           const Icon = plan.icon
           const isCurrent = plan.id === currentPlan
-          const price = billingCycle === 'monthly'
+          const showDiscounted = hasAccountant && portal === 'client' && plan.priceWithAccountant !== undefined
+          const basePrice = billingCycle === 'monthly'
             ? plan.price
             : plan.yearlyPrice > 0 ? Math.round(plan.yearlyPrice / 12) : 0
+          const price = showDiscounted
+            ? (billingCycle === 'monthly'
+              ? plan.priceWithAccountant!
+              : plan.yearlyPriceWithAccountant! > 0 ? Math.round(plan.yearlyPriceWithAccountant! / 12) : 0)
+            : basePrice
 
           return (
             <Card
@@ -261,18 +275,28 @@ export function PricingTable({
 
               <CardContent className="flex-1 flex flex-col">
                 <div className="text-center mb-6">
+                  {showDiscounted && basePrice > 0 && (
+                    <div className="text-lg text-gray-400 line-through mb-1">
+                      {basePrice.toLocaleString('cs-CZ')} Kč/měs
+                    </div>
+                  )}
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-4xl font-bold text-gray-900 dark:text-white">
                       {price > 0 ? price.toLocaleString('cs-CZ') : 'Zdarma'}
                     </span>
                     {price > 0 && <span className="text-gray-500 dark:text-gray-400">Kč/měs</span>}
                   </div>
-                  {billingCycle === 'yearly' && plan.yearlyPrice > 0 && (
-                    <p className="text-sm text-green-600 mt-1">
-                      {plan.yearlyPrice.toLocaleString('cs-CZ')} Kč/rok
+                  {showDiscounted && price > 0 && (
+                    <p className="text-sm text-green-600 mt-1 font-medium">
+                      S účetním na platformě
                     </p>
                   )}
-                  {billingCycle === 'monthly' && plan.price > 0 && (
+                  {billingCycle === 'yearly' && plan.yearlyPrice > 0 && (
+                    <p className="text-sm text-green-600 mt-1">
+                      {(showDiscounted ? plan.yearlyPriceWithAccountant! : plan.yearlyPrice).toLocaleString('cs-CZ')} Kč/rok
+                    </p>
+                  )}
+                  {billingCycle === 'monthly' && plan.price > 0 && !showDiscounted && (
                     <p className="text-xs text-gray-400 mt-1">
                       nebo {Math.round(plan.yearlyPrice / 12).toLocaleString('cs-CZ')} Kč/měs ročně
                     </p>
