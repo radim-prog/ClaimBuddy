@@ -121,14 +121,16 @@ async function runSnapshot(job: SnapshotJob, now: Date): Promise<{ success: bool
 
 // POST /api/cron/snapshots
 // Called by cron scheduler (e.g. systemd timer or Vercel cron)
-// Authorization: Bearer <CRON_SECRET>  (skipped if CRON_SECRET not set)
+// Authorization: Bearer <CRON_SECRET>
 export async function POST(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret) {
-    const authHeader = request.headers.get('authorization')
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  if (!cronSecret) {
+    console.error('CRON_SECRET is not configured — rejecting cron request')
+    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
+  }
+  const authHeader = request.headers.get('authorization')
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const now = new Date()
