@@ -340,6 +340,39 @@ export async function sendPasswordResetEmail(
   })
 }
 
+/** Pozvánka klienta do portálu. */
+export async function sendInvitationEmail(
+  email: string,
+  companyName: string,
+  inviterName: string,
+  inviteUrl: string
+): Promise<EmailResult> {
+  const bodyContent = `
+    <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Pozvánka do klientského portálu</h2>
+    <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
+      Dobrý den,
+    </p>
+    <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
+      <strong>${inviterName}</strong> vás zve do klientského portálu ÚčetníOS
+      pro správu firmy <strong>${companyName}</strong>.
+    </p>
+    <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
+      V portálu najdete přehled faktur, dokladů, komunikaci s účetním
+      a další nástroje pro snadnou spolupráci.
+    </p>
+    ${ctaButton(inviteUrl, 'Přijmout pozvánku')}
+    <p style="margin:20px 0 0;font-size:13px;color:#6b7280;line-height:1.5;">
+      Odkaz je platný 7 dní. Pokud o pozvánku nežádáte, ignorujte tento email.
+    </p>`
+
+  return sendEmail({
+    to: email,
+    subject: `Pozvánka do ÚčetníOS — ${companyName}`,
+    html: baseHtml('Pozvánka do ÚčetníOS', bodyContent),
+    text: `Dobrý den,\n\n${inviterName} vás zve do klientského portálu ÚčetníOS pro firmu ${companyName}.\n\nPřijměte pozvánku: ${inviteUrl}\n\nOdkaz platí 7 dní.\n\n— ÚčetníOS`,
+  })
+}
+
 /** Uvítací email po úspěšné registraci / ověření. */
 export async function sendWelcomeEmail(
   email: string,
