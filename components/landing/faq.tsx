@@ -19,14 +19,14 @@ const FAQ_ITEMS = [
     accent: 'text-emerald-400',
     accentBg: 'bg-emerald-500/10',
     q: 'Můžu to vyzkoušet zdarma?',
-    a: 'Ano. Základní tarif je zdarma navždy — fakturace, nahrávání dokladů, komunikace s účetní. Navíc každý nový uživatel dostane 30 dní tarifu Professional zdarma, bez nutnosti zadávat platební kartu. Po uplynutí se automaticky přepnete na Free.',
+    a: 'Ano. Základní tarif je zdarma navždy — fakturace, nahrávání dokladů, komunikace s účetní. Navíc každý nový uživatel dostane 30 dní tarifu Profi zdarma, bez nutnosti zadávat platební kartu. Po uplynutí se automaticky přepnete na Free.',
   },
   {
     icon: Building2,
     accent: 'text-violet-400',
     accentBg: 'bg-violet-500/10',
     q: 'Kolik firem můžu spravovat?',
-    a: 'Záleží na tarifu. Základ (zdarma): 10 firem a 1 uživatel. Profi (699 Kč/měs): 100 firem a 5 uživatelů. Enterprise (3 999 Kč/měs): bez limitu. Firmy můžete organizovat do skupin a spravovat hromadně.',
+    a: 'Záleží na tarifu. Základ (zdarma): 10 firem a 1 uživatel. Profi (690 Kč/měs): 100 firem a 5 uživatelů. Business (1 490 Kč/měs): bez limitu. Firmy můžete organizovat do skupin a spravovat hromadně.',
   },
   {
     icon: MessageCircle,
