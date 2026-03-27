@@ -107,8 +107,10 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
         setReport(null)
       } else {
         const reportData = await reportRes.json()
-        if (reportData.success && reportData.report) {
-          setReport(reportData.report)
+        if (reportData.error || reportData._empty) {
+          setReport(null)
+        } else {
+          setReport(reportData)
         }
       }
 
@@ -116,8 +118,8 @@ export function CompanyReports({ companyId, companyName }: CompanyReportsProps) 
       const bankRes = await fetch(`/api/reports/${companyId}/bank-statements?period=${period}`)
       if (bankRes.ok) {
         const bankData = await bankRes.json()
-        if (bankData.success && bankData.report) {
-          setBankReport(bankData.report)
+        if (!bankData.error && !bankData._empty) {
+          setBankReport(bankData)
         }
       }
     } catch (err) {
