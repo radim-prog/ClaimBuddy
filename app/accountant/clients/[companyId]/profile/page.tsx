@@ -46,6 +46,7 @@ import { NotificationSettings } from '@/components/accountant/notification-setti
 import { ReminderList } from '@/components/accountant/reminder-list'
 import { ActivityFeed } from '@/components/accountant/activity-feed'
 import { PaymentMoralityTile } from '@/components/payment-morality-tile'
+import { InviteClientDialog } from '@/components/company/invite-client-dialog'
 import { TileContainer } from '@/components/tiles/tile-container'
 import type { TileDefinition } from '@/lib/types/layout'
 import { OnboardingQuestionnaireViewer } from '@/components/onboarding/onboarding-questionnaire-viewer'
@@ -228,7 +229,15 @@ export default function ProfilePage() {
           case 'portal-sections':
             return (
               <CollapsibleSection id="portal-sections" title="Klientský portál" icon={Monitor} defaultOpen={false}>
-                <PortalSectionsToggle companyId={companyId} company={company} />
+                <div className="space-y-4">
+                  <InviteClientDialog
+                    companyId={companyId}
+                    companyName={company.name}
+                    companyIco={company.ico}
+                    hasOwner={!!company.owner_id}
+                  />
+                  <PortalSectionsToggle companyId={companyId} company={company} />
+                </div>
               </CollapsibleSection>
             )
           case 'onboarding-questionnaire':
