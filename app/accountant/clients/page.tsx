@@ -629,7 +629,11 @@ function ClientsPageContent() {
         // Client status filter (onboarding/active/inactive)
         if (filterClientStatus) {
           const cs = (company as any).status || getClientStatus(company.id)
-          if (filterClientStatus !== cs) return false
+          if (filterClientStatus === 'active') {
+            if (cs !== 'active' && cs !== 'onboarding') return false
+          } else {
+            if (filterClientStatus !== cs) return false
+          }
         }
 
         return true
@@ -831,7 +835,7 @@ function ClientsPageContent() {
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${filterClientStatus === 'active' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 shadow-sm ring-1 ring-green-200 dark:ring-green-800' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
             >
               Aktivní
-              <span className="ml-1 opacity-60">{companies.filter((c: any) => (c.status || 'active') === 'active').length}</span>
+              <span className="ml-1 opacity-60">{companies.filter((c: any) => { const s = c.status || 'active'; return s === 'active' || s === 'onboarding' }).length}</span>
             </button>
             <button
               onClick={() => setClientStatusFilter(filterClientStatus === 'onboarding' ? 'active' : 'onboarding')}
