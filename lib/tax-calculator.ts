@@ -34,7 +34,7 @@ export type TaxRates = {
   dppo_rate: number               // 0.21 (21% od 2024, dříve 0.19)
   deduction_limit_savings: number // 48000 (DIP+penzijko+živ.poj. celkem)
   deduction_limit_mortgage: number // 150000 (hypotéka, smlouvy od 2021)
-  social_minimum_annual_base?: number // Min roční VZ SP: 35% × průměrná mzda × 12 (2025: 195540)
+  social_minimum_annual_base?: number // Min roční VZ SP: 50% × průměrná mzda ČSSZ × 12 (2025: 270864)
   flat_tax_bands?: Record<number, FlatTaxBand>
 }
 
@@ -67,7 +67,7 @@ export const DEFAULT_TAX_RATES: TaxRates = {
   dppo_rate: 0.21,
   deduction_limit_savings: 48000,
   deduction_limit_mortgage: 150000,
-  social_minimum_annual_base: 195540, // 35% × 46557 × 12 (min roční VZ SP 2025)
+  social_minimum_annual_base: 270864, // 50% × 45144 × 12 (min roční VZ SP hlavní 2025, průměrná mzda ČSSZ = 45144)
   flat_tax_bands: {
     1: { revenue_limit: 1000000, monthly_tax: 100, monthly_social: 5473, monthly_health: 3143},
     2: { revenue_limit: 1500000, monthly_tax: 4963, monthly_social: 8191, monthly_health: 3591 },
@@ -273,9 +273,9 @@ export function calculateIncomeTax(
   // Roční minimum SP: krátit VZ o nepracované měsíce, POTOM spočítat pojistné
   // OSSZ postup: min_VZ_prorated = roční_min_VZ - (měsíční_min_VZ × nepracované_měsíce)
   // Pojistné = ceil(min_VZ_prorated × sazba)
-  // Pro 2025: měsíční min VZ = 16295, roční = 195540
+  // Pro 2025: měsíční min VZ = 22572, roční = 270864
   const socialMinVZFull = config.is_secondary_activity ? 0 :
-    (rates.social_minimum_annual_base || rates.social_minimum_advance * 12 / rates.social_base_percentage)
+    (rates.social_minimum_annual_base || rates.health_min_assessment_base || rates.social_minimum_advance * 12 / rates.social_insurance_rate)
   const socialMonthlyMinVZ = socialMinVZFull / 12
   const socialMinVZProrated = Math.max(0, socialMinVZFull - socialMonthlyMinVZ * (12 - monthsActive))
   const socialMinimumAnnual = config.is_secondary_activity ? 0 :
@@ -409,7 +409,7 @@ export function calculateMultiSectionTax(
   const socialBase = Math.ceil(Math.min(profit7 * rates.social_base_percentage, rates.social_max_assessment_base))
   const socialFromRate = Math.ceil(socialBase * rates.social_insurance_rate)
   const socialMinVZFull = config.is_secondary_activity ? 0 :
-    (rates.social_minimum_annual_base || rates.social_minimum_advance * 12 / rates.social_base_percentage)
+    (rates.social_minimum_annual_base || rates.health_min_assessment_base || rates.social_minimum_advance * 12 / rates.social_insurance_rate)
   const socialMonthlyMinVZ = socialMinVZFull / 12
   const socialMinVZProrated = Math.max(0, socialMinVZFull - socialMonthlyMinVZ * (12 - monthsActive))
   const socialMinimumAnnual = config.is_secondary_activity ? 0 :
