@@ -3,8 +3,8 @@
 import { useState, useMemo } from 'react'
 import { Save, Loader2, Plus, X, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { calculateIncomeTax, calculateFlatTax, DEFAULT_TAX_RATES, type TaxRates, type TaxAnnualConfig, type IncomeTaxCalculation } from '@/lib/tax-calculator'
-import type { TaxAnnualConfigRow } from '@/lib/types/tax'
+import { calculateIncomeTax, calculateFlatTax, calculateMultiSectionTax, DEFAULT_TAX_RATES, type TaxRates, type TaxAnnualConfig, type IncomeTaxCalculation, type MultiSectionResult } from '@/lib/tax-calculator'
+import type { TaxAnnualConfigRow, IncomeSection } from '@/lib/types/tax'
 import { TaxResultSummary } from './tax-result-summary'
 
 function CZK(n: number): string {
@@ -24,6 +24,16 @@ export function OsvcTaxWorkspace({ companyId, year, config, yearTotals, rates: r
   const [saving, setSaving] = useState(false)
   const [localConfig, setLocalConfig] = useState<Partial<TaxAnnualConfigRow>>(config)
   const rates = ratesProp || DEFAULT_TAX_RATES
+
+  // Multi-section state
+  const [multiMode, setMultiMode] = useState(() => {
+    const sections = config.income_sections
+    return Array.isArray(sections) && sections.length > 0
+  })
+  const [sections, setSections] = useState<IncomeSection[]>(() => {
+    const s = config.income_sections
+    return Array.isArray(s) && s.length > 0 ? s : []
+  })
 
   // Use annual_revenue/expenses from config if set, otherwise from yearTotals
   const revenue = localConfig.annual_revenue ?? yearTotals.revenue
@@ -48,8 +58,27 @@ export function OsvcTaxWorkspace({ companyId, year, config, yearTotals, rates: r
   }
 
   const calc = useMemo(() => {
+    if (multiMode && sections.length > 0) {
+      return calculateMultiSectionTax(sections, taxConfig, rates)
+    }
     return calculateIncomeTax({ revenue, expenses }, taxConfig, rates)
-  }, [revenue, expenses, taxConfig, rates])
+  }, [revenue, expenses, taxConfig, rates, multiMode, sections])
+
+  const multiCalc = multiMode && sections.length > 0 ? (calc as MultiSectionResult) : null
+
+  function addSection(type: '§7' | '§9' | '§10') {
+    const labels: Record<string, string> = { '§7': 'Podnikání', '§9': 'Pronájem', '§10': 'Ostatní příjmy' }
+    const defaultFlat: Record<string, number | null> = { '§7': null, '§9': null, '§10': null }
+    setSections(prev => [...prev, { type, label: labels[type], revenue: 0, expenses: 0, flat_rate: defaultFlat[type] }])
+  }
+
+  function removeSection(index: number) {
+    setSections(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function updateSection(index: number, field: keyof IncomeSection, value: any) {
+    setSections(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s))
+  }
 
   const flatTaxCalc = taxConfig.is_flat_tax && taxConfig.flat_tax_band
     ? calculateFlatTax(taxConfig.flat_tax_band, rates)
@@ -92,6 +121,7 @@ export function OsvcTaxWorkspace({ companyId, year, config, yearTotals, rates: r
           ...localConfig,
           annual_revenue: revenue,
           annual_expenses: expenses,
+          income_sections: multiMode && sections.length > 0 ? sections : null,
         }),
       })
       if (!res.ok) throw new Error('Failed')
@@ -133,31 +163,173 @@ export function OsvcTaxWorkspace({ companyId, year, config, yearTotals, rates: r
 
       {/* PŘÍJMY A VÝDAJE */}
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-3">
-        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Příjmy a výdaje</div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">Příjmy</label>
+        <div className="flex items-center justify-between">
+          <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Příjmy a výdaje</div>
+          <label className="flex items-center gap-2 text-sm">
             <input
-              type="number"
-              value={(localConfig.annual_revenue ?? yearTotals.revenue) || ''}
-              onChange={e => updateField('annual_revenue', parseFloat(e.target.value) || 0)}
-              className="h-9 w-full px-3 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+              type="checkbox"
+              checked={multiMode}
+              onChange={e => {
+                setMultiMode(e.target.checked)
+                if (e.target.checked && sections.length === 0) {
+                  addSection('§7')
+                }
+              }}
+              className="rounded border-gray-300"
             />
-          </div>
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">Výdaje</label>
-            <input
-              type="number"
-              value={(localConfig.annual_expenses ?? yearTotals.expenses) || ''}
-              onChange={e => updateField('annual_expenses', parseFloat(e.target.value) || 0)}
-              className="h-9 w-full px-3 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-gray-500 block mb-1">Základ daně</label>
-            <div className="h-9 flex items-center text-sm font-semibold text-gray-900 dark:text-white">{CZK(revenue - expenses)}</div>
-          </div>
+            Více činností
+          </label>
         </div>
+
+        {!multiMode ? (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Příjmy</label>
+                <input
+                  type="number"
+                  value={(localConfig.annual_revenue ?? yearTotals.revenue) || ''}
+                  onChange={e => updateField('annual_revenue', parseFloat(e.target.value) || 0)}
+                  className="h-9 w-full px-3 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Výdaje</label>
+                <input
+                  type="number"
+                  value={(localConfig.annual_expenses ?? yearTotals.expenses) || ''}
+                  onChange={e => updateField('annual_expenses', parseFloat(e.target.value) || 0)}
+                  className="h-9 w-full px-3 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Základ daně</label>
+                <div className="h-9 flex items-center text-sm font-semibold text-gray-900 dark:text-white">{CZK(revenue - expenses)}</div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Multi-section cards */}
+            <div className="space-y-3">
+              {sections.map((section, idx) => {
+                const sectionResult = multiCalc?.sections[idx]
+                const dzd = sectionResult?.dzd ?? (section.revenue - (section.flat_rate != null ? Math.round(section.revenue * section.flat_rate / 100) : section.expenses))
+                return (
+                  <div key={idx} className="rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">{section.type}</span>
+                        <input
+                          type="text"
+                          value={section.label}
+                          onChange={e => updateSection(idx, 'label', e.target.value)}
+                          className="h-7 px-2 text-sm rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 w-48"
+                          placeholder="Název činnosti"
+                        />
+                      </div>
+                      <button onClick={() => removeSection(idx)} className="p-1 text-gray-400 hover:text-red-500 transition-colors">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div>
+                        <label className="text-xs text-gray-500 block mb-1">Příjmy</label>
+                        <input
+                          type="number"
+                          value={section.revenue || ''}
+                          onChange={e => updateSection(idx, 'revenue', parseFloat(e.target.value) || 0)}
+                          className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-right"
+                        />
+                      </div>
+                      {section.flat_rate != null ? (
+                        <div>
+                          <label className="text-xs text-gray-500 block mb-1">Paušál %</label>
+                          <input
+                            type="number"
+                            min={0}
+                            max={80}
+                            value={section.flat_rate}
+                            onChange={e => updateSection(idx, 'flat_rate', parseFloat(e.target.value) || 0)}
+                            className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-right"
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="text-xs text-gray-500 block mb-1">Výdaje</label>
+                          <input
+                            type="number"
+                            value={section.expenses || ''}
+                            onChange={e => updateSection(idx, 'expenses', parseFloat(e.target.value) || 0)}
+                            className="h-8 w-full px-2 text-sm rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-right"
+                          />
+                        </div>
+                      )}
+                      <div className="flex items-end">
+                        <label className="flex items-center gap-1.5 text-xs h-8">
+                          <input
+                            type="checkbox"
+                            checked={section.flat_rate != null}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                const defaults: Record<string, number> = { '§7': 60, '§9': 30, '§10': 40 }
+                                updateSection(idx, 'flat_rate', defaults[section.type] || 60)
+                              } else {
+                                updateSection(idx, 'flat_rate', null)
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          Paušální výdaje
+                        </label>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 block mb-1">DZD</label>
+                        <div className={`h-8 flex items-center text-sm font-semibold ${dzd >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-600 dark:text-red-400'}`}>
+                          {CZK(dzd)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Add section buttons */}
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button onClick={() => addSection('§7')} className="h-7 px-3 text-xs text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg flex items-center gap-1 transition-colors border border-purple-200 dark:border-purple-800">
+                <Plus className="h-3 w-3" /> §7 Podnikání
+              </button>
+              <button onClick={() => addSection('§9')} className="h-7 px-3 text-xs text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg flex items-center gap-1 transition-colors border border-purple-200 dark:border-purple-800">
+                <Plus className="h-3 w-3" /> §9 Pronájem
+              </button>
+              <button onClick={() => addSection('§10')} className="h-7 px-3 text-xs text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg flex items-center gap-1 transition-colors border border-purple-200 dark:border-purple-800">
+                <Plus className="h-3 w-3" /> §10 Ostatní
+              </button>
+            </div>
+
+            {/* Multi-section summary */}
+            {multiCalc && (
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 space-y-1.5">
+                <div className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                  {multiCalc.sections.map((s, i) => (
+                    <span key={i}>
+                      {i > 0 && ' + '}
+                      {s.type}: {CZK(s.dzd)}
+                    </span>
+                  ))}
+                </div>
+                <div className="text-sm font-bold text-purple-800 dark:text-purple-200">
+                  Celkový základ daně: {CZK(multiCalc.sections.reduce((sum, s) => sum + s.dzd, 0))}
+                </div>
+                <div className="text-xs text-purple-600 dark:text-purple-400">
+                  SP/ZP se počítá jen z §7: {CZK(multiCalc.profitParagraph7)}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
         <div className="flex flex-wrap gap-4 pt-2">
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -374,15 +546,11 @@ export function OsvcTaxWorkspace({ companyId, year, config, yearTotals, rates: r
       <TaxResultSummary
         items={[
           { label: 'Daň', value: isFlatTax ? (calc.netTax) : Math.max(0, calc.netTax) },
-          ...(!isFlatTax ? [
-            { label: 'SP', value: calc.socialDue },
-            { label: 'ZP', value: calc.healthDue },
-          ] : [
-            { label: 'SP', value: calc.socialDue },
-            { label: 'ZP', value: calc.healthDue },
-          ]),
+          { label: 'SP', value: calc.socialDue },
+          { label: 'ZP', value: calc.healthDue },
         ]}
         total={calc.totalDue}
+        sections={multiCalc?.sections}
       />
 
       {/* Poznámka */}

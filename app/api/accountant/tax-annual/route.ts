@@ -134,6 +134,18 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Missing company_id or year' }, { status: 400 })
     }
 
+    // Validate income_sections if provided
+    if (fields.income_sections != null) {
+      if (!Array.isArray(fields.income_sections)) {
+        return NextResponse.json({ error: 'income_sections must be array' }, { status: 400 })
+      }
+      for (const s of fields.income_sections) {
+        if (!['§7', '§9', '§10'].includes(s.type)) {
+          return NextResponse.json({ error: 'Invalid section type: ' + s.type }, { status: 400 })
+        }
+      }
+    }
+
     const { data, error } = await supabaseAdmin
       .from('tax_annual_config')
       .upsert(

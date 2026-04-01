@@ -1,3 +1,20 @@
+export type IncomeSection = {
+  type: '§7' | '§9' | '§10'
+  label: string
+  revenue: number
+  expenses: number
+  flat_rate?: number | null  // e.g. 60 for §7, 30 for §9 — null = actual expenses
+}
+
+export type SectionResult = {
+  type: '§7' | '§9' | '§10'
+  label: string
+  revenue: number
+  expenses: number
+  flatRateUsed: number | null
+  dzd: number  // dílčí základ daně
+}
+
 export type TaxPeriodData = {
   id: string
   company_id: string
@@ -48,6 +65,7 @@ export type TaxAnnualConfigRow = {
   use_profile_data: boolean
   annual_revenue: number | null
   annual_expenses: number | null
+  income_sections: IncomeSection[] | null
   notes: string | null
   updated_by: string | null
   created_at?: string

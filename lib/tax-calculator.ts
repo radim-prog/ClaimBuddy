@@ -1,4 +1,5 @@
 // Pure functions for Czech income tax (DPFO) calculation
+import type { IncomeSection, SectionResult } from '@/lib/types/tax'
 
 export type FlatTaxBand = {
   revenue_limit: number
@@ -349,6 +350,110 @@ export function calculateIncomeTax(
     initialTaxBase: config.initial_tax_base,
     taxSavings,
     flatTax: null,
+  }
+}
+
+// Multi-section income tax (§7/§9/§10) — Czech DPFO with multiple income types
+// SP/ZP is computed ONLY from §7 (business income), tax from total base
+
+export type MultiSectionResult = IncomeTaxCalculation & {
+  sections: SectionResult[]
+  profitParagraph7: number  // SP/ZP base — only §7 profit
+}
+
+export function calculateMultiSectionTax(
+  incomeSections: IncomeSection[],
+  config: TaxAnnualConfig,
+  rates: TaxRates,
+): MultiSectionResult {
+  // Calculate DZD for each section
+  const sections: SectionResult[] = incomeSections.map(s => {
+    const effectiveExpenses = s.flat_rate != null
+      ? Math.round(s.revenue * s.flat_rate / 100)
+      : s.expenses
+    return {
+      type: s.type,
+      label: s.label,
+      revenue: s.revenue,
+      expenses: effectiveExpenses,
+      flatRateUsed: s.flat_rate ?? null,
+      dzd: s.revenue - effectiveExpenses,
+    }
+  })
+
+  // Total tax base = sum of all DZDs (negative DZDs allowed for §9/§10)
+  const totalTaxBase = sections.reduce((sum, s) => sum + s.dzd, 0)
+
+  // §7 profit for SP/ZP (only business income)
+  const profitParagraph7 = sections
+    .filter(s => s.type === '§7')
+    .reduce((sum, s) => sum + s.dzd, 0)
+
+  // Total revenue and expenses for display
+  const totalRevenue = sections.reduce((sum, s) => sum + s.revenue, 0)
+  const totalExpenses = sections.reduce((sum, s) => sum + s.expenses, 0)
+
+  // Run standard tax calculation with total base, but override SP/ZP profit source
+  const baseCalc = calculateIncomeTax(
+    { revenue: totalRevenue, expenses: totalExpenses },
+    config,
+    rates,
+    totalTaxBase, // override tax base
+  )
+
+  // Recalculate SP and ZP using only §7 profit
+  const monthsActive = Math.min(12, Math.max(1, config.months_active ?? 12))
+  const monthRatio = monthsActive / 12
+  const profit7 = Math.max(0, profitParagraph7)
+
+  // Social insurance from §7 only
+  const socialBase = Math.ceil(Math.min(profit7 * rates.social_base_percentage, rates.social_max_assessment_base))
+  const socialFromRate = Math.ceil(socialBase * rates.social_insurance_rate)
+  const socialMinVZFull = config.is_secondary_activity ? 0 :
+    (rates.social_minimum_annual_base || rates.social_minimum_advance * 12 / rates.social_base_percentage)
+  const socialMonthlyMinVZ = socialMinVZFull / 12
+  const socialMinVZProrated = Math.max(0, socialMinVZFull - socialMonthlyMinVZ * (12 - monthsActive))
+  const socialMinimumAnnual = config.is_secondary_activity ? 0 :
+    Math.ceil(socialMinVZProrated * rates.social_insurance_rate)
+  const socialMinimumApplied = socialFromRate < socialMinimumAnnual && !config.is_secondary_activity
+  const socialCalculated = config.is_secondary_activity
+    ? socialFromRate
+    : Math.max(socialFromRate, socialMinimumAnnual)
+  const socialDue = socialCalculated - config.social_advances_paid
+
+  // Health insurance from §7 only
+  const healthBaseRaw = profit7 * rates.health_base_percentage
+  const healthMinBaseFull = config.is_secondary_activity ? 0 : (rates.health_min_assessment_base || 0)
+  const healthMinBase = Math.ceil(healthMinBaseFull * monthRatio)
+  const healthBase = Math.max(healthBaseRaw, healthMinBase)
+  const healthFromRate = Math.ceil(healthBase * rates.health_insurance_rate)
+  const healthMinimumAnnual = config.is_secondary_activity ? 0 : Math.ceil(healthMinBase * rates.health_insurance_rate)
+  const healthMinimumApplied = healthBase > healthBaseRaw
+  const healthCalculated = Math.max(healthFromRate, healthMinimumAnnual)
+  const healthDue = healthCalculated - config.health_advances_paid
+
+  // Total with corrected SP/ZP
+  const totalDue = Math.max(0, baseCalc.netTax) + Math.max(0, socialDue) + Math.max(0, healthDue)
+
+  return {
+    ...baseCalc,
+    // Override SP/ZP with §7-only values
+    socialBase,
+    socialFromRate,
+    socialMinimumAnnual,
+    socialMinimumApplied,
+    socialCalculated,
+    socialDue,
+    healthBase,
+    healthFromRate,
+    healthMinimumAnnual,
+    healthMinimumApplied,
+    healthCalculated,
+    healthDue,
+    totalDue,
+    // Multi-section specific
+    sections,
+    profitParagraph7,
   }
 }
 
