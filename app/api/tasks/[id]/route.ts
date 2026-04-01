@@ -135,6 +135,7 @@ export async function PATCH(
       'title', 'description', 'status',
       'is_project', 'project_outcome', 'parent_project_id',
       'score_money', 'score_fire', 'score_time', 'score_distance', 'score_personal',
+      'priority', 'total_score',
       'assigned_to', 'assigned_to_name',
       'delegated_from', 'delegated_to', 'delegation_reason',
       'is_waiting_for', 'waiting_for_who', 'waiting_for_what',

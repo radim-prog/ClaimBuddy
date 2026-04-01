@@ -238,6 +238,7 @@ export async function POST(request: NextRequest) {
       'estimated_minutes', 'is_billable', 'hourly_rate',
       'gtd_context', 'gtd_energy_level', 'tags', 'task_data',
       'project_id', 'phase_id', 'location_id', 'position_in_phase', 'is_next_action',
+      'priority', 'total_score',
     ] as const
 
     const taskData: Record<string, any> = {
