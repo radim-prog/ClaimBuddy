@@ -12,11 +12,12 @@ type SummaryItem = {
   highlight?: boolean
 }
 
-export function TaxResultSummary({ items, total, totalLabel, sections }: {
+export function TaxResultSummary({ items, total, totalLabel, sections, totalSectionBase }: {
   items: SummaryItem[]
   total: number
   totalLabel?: string
   sections?: SectionResult[]
+  totalSectionBase?: number
 }) {
   return (
     <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-800 p-4">
@@ -35,7 +36,7 @@ export function TaxResultSummary({ items, total, totalLabel, sections }: {
           ))}
           <div className="flex items-center justify-between text-sm font-semibold pt-1">
             <span className="text-gray-700 dark:text-gray-300">Základ daně:</span>
-            <span className="text-gray-900 dark:text-white">{CZK(sections.reduce((sum, s) => sum + s.dzd, 0))}</span>
+            <span className="text-gray-900 dark:text-white">{CZK(totalSectionBase ?? sections.reduce((sum, s) => sum + s.dzd, 0))}</span>
           </div>
         </div>
       )}

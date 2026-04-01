@@ -1,5 +1,14 @@
+export const SECTION_TYPES = ['§7', '§9', '§10'] as const
+export type SectionType = (typeof SECTION_TYPES)[number]
+
+export const SECTION_DEFAULTS: Record<SectionType, { label: string; defaultFlatRate: number }> = {
+  '§7': { label: 'Podnikání', defaultFlatRate: 60 },
+  '§9': { label: 'Pronájem', defaultFlatRate: 30 },
+  '§10': { label: 'Ostatní příjmy', defaultFlatRate: 40 },
+}
+
 export type IncomeSection = {
-  type: '§7' | '§9' | '§10'
+  type: SectionType
   label: string
   revenue: number
   expenses: number

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
+import { SECTION_TYPES } from '@/lib/types/tax'
 
 export const dynamic = 'force-dynamic'
 
@@ -140,7 +141,7 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: 'income_sections must be array' }, { status: 400 })
       }
       for (const s of fields.income_sections) {
-        if (!['§7', '§9', '§10'].includes(s.type)) {
+        if (!(SECTION_TYPES as readonly string[]).includes(s.type)) {
           return NextResponse.json({ error: 'Invalid section type: ' + s.type }, { status: 400 })
         }
       }

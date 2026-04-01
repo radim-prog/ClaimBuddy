@@ -358,6 +358,7 @@ export function calculateIncomeTax(
 
 export type MultiSectionResult = IncomeTaxCalculation & {
   sections: SectionResult[]
+  totalSectionBase: number  // sum of all DZDs
   profitParagraph7: number  // SP/ZP base — only §7 profit
 }
 
@@ -381,8 +382,7 @@ export function calculateMultiSectionTax(
     }
   })
 
-  // Total tax base = sum of all DZDs (negative DZDs allowed for §9/§10)
-  const totalTaxBase = sections.reduce((sum, s) => sum + s.dzd, 0)
+  const totalSectionBase = sections.reduce((sum, s) => sum + s.dzd, 0)
 
   // §7 profit for SP/ZP (only business income)
   const profitParagraph7 = sections
@@ -393,12 +393,11 @@ export function calculateMultiSectionTax(
   const totalRevenue = sections.reduce((sum, s) => sum + s.revenue, 0)
   const totalExpenses = sections.reduce((sum, s) => sum + s.expenses, 0)
 
-  // Run standard tax calculation with total base, but override SP/ZP profit source
   const baseCalc = calculateIncomeTax(
     { revenue: totalRevenue, expenses: totalExpenses },
     config,
     rates,
-    totalTaxBase, // override tax base
+    totalSectionBase,
   )
 
   // Recalculate SP and ZP using only §7 profit
@@ -451,8 +450,8 @@ export function calculateMultiSectionTax(
     healthCalculated,
     healthDue,
     totalDue,
-    // Multi-section specific
     sections,
+    totalSectionBase,
     profitParagraph7,
   }
 }
