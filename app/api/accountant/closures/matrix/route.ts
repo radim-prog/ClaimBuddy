@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url)
-    const year = searchParams.get('year') || new Date().getFullYear().toString()
+    const year = parseInt(searchParams.get('year') || String(new Date().getFullYear()))
 
     // Fetch all active companies
     const { data: companies } = await supabaseAdmin
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       .order('name')
 
     if (!companies || companies.length === 0) {
-      return NextResponse.json({ year: parseInt(year), companies: [] })
+      return NextResponse.json({ year, companies: [] })
     }
 
     const companyIds = companies.map(c => c.id)
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({
-      year: parseInt(year),
+      year,
       companies: matrix,
       total_companies: companies.length,
     })

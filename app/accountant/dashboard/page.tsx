@@ -190,6 +190,7 @@ const StatusCell = React.memo(function StatusCell({
   closureMap: Map<string, MonthlyClosure>
   year: number
   onCellClick: (closure: MonthlyClosure, companyName: string) => void
+  onCellClickOrCreate: (companyId: string, period: string, companyName: string) => void
   aggregateCompanyIds?: string[]
 }) {
   const cellRef = useRef<HTMLTableCellElement>(null)
@@ -278,8 +279,8 @@ const StatusCell = React.memo(function StatusCell({
           role="button"
           tabIndex={0}
           aria-describedby={isHovered ? tooltipId : undefined}
-          onClick={() => closure && onCellClick(closure, companyName)}
-          onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && closure) { e.preventDefault(); onCellClick(closure, companyName) } }}
+          onClick={() => onCellClickOrCreate(companyId, period, companyName)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCellClickOrCreate(companyId, period, companyName) } }}
           className={`
             w-10 h-10 sm:w-14 sm:h-14 mx-auto rounded-lg border-2 transition-all cursor-pointer
             ${colors.bg} ${colors.border}
@@ -416,6 +417,27 @@ export default function AccountantDashboard() {
     }
     return map
   }, [closures])
+
+  const handleCellClickOrCreate = useCallback(async (companyId: string, period: string, companyName: string) => {
+    let closure = closureMap.get(`${companyId}:${period}`)
+    if (!closure) {
+      try {
+        const res = await fetch('/api/accountant/closures', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company_id: companyId, period, field: 'bank_statement_status', value: 'missing' }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          closure = data.closure
+        }
+      } catch { /* fallback: do nothing */ }
+    }
+    if (closure) {
+      handleCellClick(closure as MonthlyClosure, companyName)
+    }
+  }, [closureMap, handleCellClick])
+
   const stats = data?.stats ?? { total: 0, missing: 0, uploaded: 0, approved: 0 }
   const groups = data?.groups ?? []
 
@@ -702,6 +724,7 @@ export default function AccountantDashboard() {
                             closureMap={closureMap}
                             year={selectedYear}
                             onCellClick={handleCellClick}
+                            onCellClickOrCreate={handleCellClickOrCreate}
                             aggregateCompanyIds={isCollapsed && isBillingEntity && groupMembers.length > 1 ? groupMembers : undefined}
                           />
                         ))}
@@ -716,7 +739,7 @@ export default function AccountantDashboard() {
             </div>
           </>
         )
-  }, [companies, closures, selectedYear, filter, filteredCompanies, stats, data, handleCellClick, collapsedGroups, groupBillingMap, groupMembersMap, closureMap])
+  }, [companies, closures, selectedYear, filter, filteredCompanies, stats, data, handleCellClick, handleCellClickOrCreate, collapsedGroups, groupBillingMap, groupMembersMap, closureMap])
 
   if (loading) {
     return (
