@@ -305,11 +305,11 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
     if (month !== null) formData.append('periodMonth', String(month))
 
     for (let i = 0; i < selectedFiles.length; i++) {
-      formData.append('files', selectedFiles[i])
+      formData.append('file', selectedFiles[i])
     }
 
     try {
-      await fetch('/api/drive/upload', { method: 'POST', body: formData })
+      await fetch('/api/drive/files/upload', { method: 'POST', body: formData })
       // Refresh
       if (currentFolderId) {
         await fetchFiles(currentFolderId)
@@ -423,9 +423,11 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
               size="sm"
               className="rounded-lg border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 transition-colors"
               onClick={handleUploadClick}
+              disabled={!currentFolderId}
+              title={!currentFolderId ? 'Nejprve otevřete složku' : undefined}
             >
               <Upload className="h-4 w-4 mr-1.5" />
-              Nahrat
+              Nahrát
             </Button>
             {canManageFolders && !showCreateFolder && (
               <Button
@@ -647,9 +649,11 @@ export function FileBrowser({ companyId, companyName }: FileBrowserProps) {
             size="sm"
             className="rounded-lg border-gray-200 dark:border-gray-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-200 dark:hover:border-purple-800 transition-colors"
             onClick={handleUploadClick}
+            disabled={!currentFolderId}
+            title={!currentFolderId ? 'Nejprve otevřete složku' : undefined}
           >
             <Upload className="h-4 w-4 mr-1.5" />
-            Nahrat
+            Nahrát
           </Button>
 
           {/* View mode toggle */}
