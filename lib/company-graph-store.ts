@@ -55,6 +55,8 @@ export interface GraphCompany {
   reliability_score: number
   founded_date: string | null
   holding_notes: string | null
+  description: string | null
+  nickname: string | null
 }
 
 // Full graph data (nodes + edges) returned by API
@@ -250,7 +252,7 @@ export async function getCompanyGraphData(
   // Fetch companies, ownership, and layout in parallel
   let companiesQuery = supabaseAdmin
     .from('companies')
-    .select('id, name, ico, dic, company_type, vat_payer, status, group_name, managing_director, address, has_employees, total_revenue, reliability_score, founded_date, holding_notes')
+    .select('id, name, ico, dic, company_type, vat_payer, status, group_name, managing_director, address, has_employees, total_revenue, reliability_score, founded_date, holding_notes, description, nickname')
     .is('deleted_at', null)
     .order('name')
 
