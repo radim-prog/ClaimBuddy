@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { mapCompanyToDrive, unmapCompanyDrive, getCompanyDriveMappings } from '@/lib/drive-sync-store'
 import * as gdrive from '@/lib/google-drive'
+import { getDriveClientForFirm } from '@/lib/google-drive-firm'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
@@ -40,9 +42,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get per-firma Drive client for validation
+    const firmId = request.headers.get('x-firm-id')
+    let driveClient: Awaited<ReturnType<typeof getDriveClientForFirm>>['drive'] = null
+    if (firmId) {
+      const result = await getDriveClientForFirm(firmId)
+      driveClient = result.drive
+    }
+
     // Validate that the Drive folder exists and is accessible
     try {
-      await gdrive.listFolder(driveFolderId)
+      await gdrive.listFolder(driveFolderId, undefined, 1, driveClient || undefined)
     } catch {
       return NextResponse.json(
         { error: 'Drive folder not found or not accessible' },

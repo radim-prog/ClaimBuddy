@@ -54,9 +54,10 @@ const SHARED_DRIVE_OPTS = {
 export async function listFolder(
   folderId: string,
   pageToken?: string,
-  pageSize: number = 100
+  pageSize: number = 100,
+  driveClient?: drive_v3.Drive
 ): Promise<{ files: DriveFileInfo[]; nextPageToken: string | null }> {
-  const drive = getDriveClient()
+  const drive = driveClient || getDriveClient()
   const res = await drive.files.list({
     q: `'${folderId}' in parents and trashed = false`,
     fields: `nextPageToken, files(${FILE_FIELDS})`,
@@ -72,12 +73,12 @@ export async function listFolder(
 
 // --- List all files in folder (handles pagination) ---
 
-export async function listFolderAll(folderId: string): Promise<DriveFileInfo[]> {
+export async function listFolderAll(folderId: string, driveClient?: drive_v3.Drive): Promise<DriveFileInfo[]> {
   const allFiles: DriveFileInfo[] = []
   let pageToken: string | null = null
 
   do {
-    const result = await listFolder(folderId, pageToken || undefined)
+    const result = await listFolder(folderId, pageToken || undefined, 100, driveClient)
     allFiles.push(...result.files)
     pageToken = result.nextPageToken
   } while (pageToken)
@@ -88,13 +89,14 @@ export async function listFolderAll(folderId: string): Promise<DriveFileInfo[]> 
 // --- List folder recursive (full tree) ---
 
 export async function listFolderRecursive(
-  folderId: string
+  folderId: string,
+  driveClient?: drive_v3.Drive
 ): Promise<{ folders: DriveFolderInfo[]; files: DriveFileInfo[] }> {
   const allFolders: DriveFolderInfo[] = []
   const allFiles: DriveFileInfo[] = []
 
   async function traverse(parentId: string) {
-    const items = await listFolderAll(parentId)
+    const items = await listFolderAll(parentId, driveClient)
     for (const item of items) {
       if (item.mimeType === FOLDER_MIME) {
         allFolders.push({ id: item.id, name: item.name, mimeType: item.mimeType })
@@ -111,8 +113,8 @@ export async function listFolderRecursive(
 
 // --- Get file metadata ---
 
-export async function getFileMetadata(fileId: string): Promise<DriveFileInfo> {
-  const drive = getDriveClient()
+export async function getFileMetadata(fileId: string, driveClient?: drive_v3.Drive): Promise<DriveFileInfo> {
+  const drive = driveClient || getDriveClient()
   const res = await drive.files.get({
     fileId,
     fields: FILE_FIELDS,
@@ -123,8 +125,8 @@ export async function getFileMetadata(fileId: string): Promise<DriveFileInfo> {
 
 // --- Download file as stream ---
 
-export async function downloadFile(fileId: string): Promise<NodeJS.ReadableStream> {
-  const drive = getDriveClient()
+export async function downloadFile(fileId: string, driveClient?: drive_v3.Drive): Promise<NodeJS.ReadableStream> {
+  const drive = driveClient || getDriveClient()
   const res = await drive.files.get(
     { fileId, alt: 'media', ...SHARED_DRIVE_OPTS },
     { responseType: 'stream' }
@@ -138,9 +140,10 @@ export async function uploadFile(
   folderId: string,
   name: string,
   content: Buffer | NodeJS.ReadableStream,
-  mimeType: string
+  mimeType: string,
+  driveClient?: drive_v3.Drive
 ): Promise<DriveFileInfo> {
-  const drive = getDriveClient()
+  const drive = driveClient || getDriveClient()
   const res = await drive.files.create({
     requestBody: {
       name,
@@ -160,9 +163,10 @@ export async function uploadFile(
 
 export async function createDriveFolder(
   parentId: string,
-  name: string
+  name: string,
+  driveClient?: drive_v3.Drive
 ): Promise<DriveFolderInfo> {
-  const drive = getDriveClient()
+  const drive = driveClient || getDriveClient()
   const res = await drive.files.create({
     requestBody: {
       name,
@@ -181,8 +185,8 @@ export async function createDriveFolder(
 
 // --- Move file ---
 
-export async function moveFile(fileId: string, newParentId: string): Promise<void> {
-  const drive = getDriveClient()
+export async function moveFile(fileId: string, newParentId: string, driveClient?: drive_v3.Drive): Promise<void> {
+  const drive = driveClient || getDriveClient()
   const file = await drive.files.get({ fileId, fields: 'parents', ...SHARED_DRIVE_OPTS })
   const previousParents = (file.data.parents || []).join(',')
 
@@ -196,8 +200,8 @@ export async function moveFile(fileId: string, newParentId: string): Promise<voi
 
 // --- Rename file ---
 
-export async function renameFile(fileId: string, newName: string): Promise<void> {
-  const drive = getDriveClient()
+export async function renameFile(fileId: string, newName: string, driveClient?: drive_v3.Drive): Promise<void> {
+  const drive = driveClient || getDriveClient()
   await drive.files.update({
     fileId,
     requestBody: { name: newName },
@@ -207,8 +211,8 @@ export async function renameFile(fileId: string, newName: string): Promise<void>
 
 // --- Delete file (move to trash) ---
 
-export async function trashFile(fileId: string): Promise<void> {
-  const drive = getDriveClient()
+export async function trashFile(fileId: string, driveClient?: drive_v3.Drive): Promise<void> {
+  const drive = driveClient || getDriveClient()
   await drive.files.update({
     fileId,
     requestBody: { trashed: true },
@@ -221,9 +225,10 @@ export async function trashFile(fileId: string): Promise<void> {
 export async function copyFile(
   fileId: string,
   newName?: string,
-  newParentId?: string
+  newParentId?: string,
+  driveClient?: drive_v3.Drive
 ): Promise<DriveFileInfo> {
-  const drive = getDriveClient()
+  const drive = driveClient || getDriveClient()
   const requestBody: Record<string, unknown> = {}
   if (newName) requestBody.name = newName
   if (newParentId) requestBody.parents = [newParentId]
@@ -239,8 +244,8 @@ export async function copyFile(
 
 // --- Changes API (incremental sync) ---
 
-export async function getStartPageToken(): Promise<string> {
-  const drive = getDriveClient()
+export async function getStartPageToken(driveClient?: drive_v3.Drive): Promise<string> {
+  const drive = driveClient || getDriveClient()
   const res = await drive.changes.getStartPageToken({ ...SHARED_DRIVE_OPTS })
   return res.data.startPageToken!
 }
@@ -252,9 +257,10 @@ export type DriveChange = {
 }
 
 export async function getChanges(
-  pageToken: string
+  pageToken: string,
+  driveClient?: drive_v3.Drive
 ): Promise<{ changes: DriveChange[]; newStartPageToken: string | null; nextPageToken: string | null }> {
-  const drive = getDriveClient()
+  const drive = driveClient || getDriveClient()
   const res = await drive.changes.list({
     pageToken,
     fields: `nextPageToken, newStartPageToken, changes(fileId, removed, file(${FILE_FIELDS}))`,

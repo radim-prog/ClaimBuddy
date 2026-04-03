@@ -12,8 +12,27 @@ import type {
   DriveCompanyMapping,
 } from '@/lib/types/drive'
 import * as gdrive from '@/lib/google-drive'
+import { getDriveClientForFirm } from '@/lib/google-drive-firm'
+import type { drive_v3 } from 'googleapis'
 
 const DRIVE_CACHE_BUCKET = 'drive-cache'
+
+/**
+ * Resolve Drive client for a company by looking up its accounting firm.
+ * Returns the per-firma client if firm has credentials, otherwise global fallback.
+ */
+async function getDriveClientForCompany(companyId: string): Promise<drive_v3.Drive | undefined> {
+  const { data: company } = await supabaseAdmin
+    .from('companies')
+    .select('firm_id')
+    .eq('id', companyId)
+    .single()
+
+  if (!company?.firm_id) return undefined
+
+  const { drive } = await getDriveClientForFirm(company.firm_id)
+  return drive || undefined
+}
 
 // ============================================================
 // FOLDER OPERATIONS
@@ -394,10 +413,11 @@ export async function deleteFile(fileId: string): Promise<void> {
     await supabaseAdmin.storage.from(DRIVE_CACHE_BUCKET).remove([file.storage_path])
   }
 
-  // Trash in Google Drive
+  // Trash in Google Drive (per-firma client)
   if (file.google_drive_id) {
     try {
-      await gdrive.trashFile(file.google_drive_id)
+      const dc = await getDriveClientForCompany(file.company_id)
+      await gdrive.trashFile(file.google_drive_id, dc)
     } catch {
       // Continue even if Drive delete fails (file may not exist)
     }
@@ -445,8 +465,9 @@ export async function cacheFileToStorage(
   if (!file) throw new Error('File not found')
   if (!file.google_drive_id) throw new Error('No Drive file ID')
 
-  // Download from Drive
-  const stream = await gdrive.downloadFile(file.google_drive_id)
+  // Download from Drive (per-firma client)
+  const dc = await getDriveClientForCompany(file.company_id)
+  const stream = await gdrive.downloadFile(file.google_drive_id, dc)
 
   // Collect into buffer
   const chunks: Buffer[] = []
@@ -556,11 +577,13 @@ export async function uploadNewFile(
 
   if (folder?.google_drive_id) {
     try {
+      const dc = await getDriveClientForCompany(companyId)
       const driveFile = await gdrive.uploadFile(
         folder.google_drive_id,
         fileName,
         fileBuffer,
-        mimeType
+        mimeType,
+        dc
       )
       driveFileId = driveFile.id
       webViewLink = driveFile.webViewLink
@@ -619,8 +642,11 @@ export async function syncCompanyFull(companyId: string): Promise<SyncResult> {
   await upsertSyncState(companyId, { sync_status: 'syncing' })
 
   try {
+    // Get per-firma Drive client
+    const dc = await getDriveClientForCompany(companyId)
+
     // List all Drive files
-    const { files: driveFiles } = await gdrive.listFolderRecursive(company.google_drive_folder_id)
+    const { files: driveFiles } = await gdrive.listFolderRecursive(company.google_drive_folder_id, dc)
 
     // Get existing files in DB
     const { data: dbFiles } = await supabaseAdmin
@@ -696,7 +722,7 @@ export async function syncCompanyFull(companyId: string): Promise<SyncResult> {
     }
 
     // Get start page token for future incremental syncs
-    const pageToken = await gdrive.getStartPageToken()
+    const pageToken = await gdrive.getStartPageToken(dc)
 
     // Update sync state
     await upsertSyncState(companyId, {
@@ -739,11 +765,14 @@ export async function syncCompanyIncremental(companyId: string): Promise<SyncRes
   await upsertSyncState(companyId, { sync_status: 'syncing' })
 
   try {
+    // Get per-firma Drive client
+    const dc = await getDriveClientForCompany(companyId)
+
     let pageToken: string | null = syncState.changes_page_token
     let newToken: string | null = null
 
     while (pageToken) {
-      const result = await gdrive.getChanges(pageToken)
+      const result = await gdrive.getChanges(pageToken, dc)
 
       for (const change of result.changes) {
         try {

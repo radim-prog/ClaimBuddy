@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getFileById, updateFile, deleteFile, getStorageDownloadUrl } from '@/lib/drive-sync-store'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import * as gdrive from '@/lib/google-drive'
+import { getDriveClientForFirm } from '@/lib/google-drive-firm'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,10 +52,18 @@ export async function PATCH(
 
     const { name, folderId, fiscalYear, periodMonth, projectId, clientVisible, starred, tags } = body
 
+    // Get per-firma Drive client
+    const firmId = request.headers.get('x-firm-id')
+    let dc: Awaited<ReturnType<typeof getDriveClientForFirm>>['drive'] | undefined
+    if (firmId) {
+      const result = await getDriveClientForFirm(firmId)
+      dc = result.drive || undefined
+    }
+
     // Sync rename to Google Drive if applicable
     if (name && name !== file.name && file.google_drive_id) {
       try {
-        await gdrive.renameFile(file.google_drive_id, name)
+        await gdrive.renameFile(file.google_drive_id, name, dc || undefined)
       } catch (driveErr) {
         console.error('Drive rename failed (continuing):', driveErr)
       }
@@ -70,7 +79,7 @@ export async function PATCH(
           .single()
 
         if (newFolder?.google_drive_id) {
-          await gdrive.moveFile(file.google_drive_id, newFolder.google_drive_id)
+          await gdrive.moveFile(file.google_drive_id, newFolder.google_drive_id, dc || undefined)
         }
       } catch (driveErr) {
         console.error('Drive move failed (continuing):', driveErr)
