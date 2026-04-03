@@ -8,6 +8,7 @@ import {
   Settings2,
   Database,
   Trash2,
+  Bug,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -16,6 +17,7 @@ const adminNavItems = [
   { href: '/accountant/admin/people', label: 'Lidé', icon: Users },
   { href: '/accountant/admin/operations', label: 'Provoz', icon: Settings2 },
   { href: '/accountant/admin/system', label: 'Systém', icon: Database },
+  { href: '/accountant/admin/bug-reports', label: 'Bug reporty', icon: Bug },
   { href: '/accountant/admin/trash', label: 'Koš', icon: Trash2 },
 ]
 

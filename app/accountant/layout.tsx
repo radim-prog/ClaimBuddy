@@ -23,7 +23,6 @@ import {
   ScanLine,
   FileSignature,
   ChevronDown,
-  Bug,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { GlobalDeadlineAlert } from '@/components/global-deadline-alert'
@@ -98,7 +97,6 @@ const adminNav = [
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings, tourId: 'nav-settings' },
   { name: 'Moje firma', href: '/accountant/firm', icon: Building2, activeMatch: ['/accountant/firm'] },
   { name: 'Administrace', href: '/accountant/admin', icon: Shield },
-  { name: 'Bug reporty', href: '/accountant/admin/bug-reports', icon: Bug, activeMatch: ['/accountant/admin/bug-reports'] },
 ]
 
 // Nav item type
