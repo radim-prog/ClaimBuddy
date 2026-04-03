@@ -83,7 +83,6 @@ const managementNav = [
   { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics', '/accountant/revenue'], feature: 'analytics' },
   { name: 'Tržiště', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'], label: 'Demo' },
   { name: 'Struktura', href: '/accountant/companies/universe', icon: Network, activeMatch: ['/accountant/companies/universe'] },
-  { name: 'Můj tým', href: '/accountant/firm/team', icon: Users, activeMatch: ['/accountant/firm/team'], firmOnly: true },
 ]
 
 // Group 3: Tools — collapsible (2 items)
@@ -108,7 +107,6 @@ type NavItem = {
   feature?: string
   activeMatch?: string[]
   tourId?: string
-  firmOnly?: boolean
   label?: string
 }
 
@@ -598,7 +596,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           <TooltipProvider delayDuration={0}>
             <NavContent
               dailyWorkNav={dailyWorkNav}
-              managementNav={userRole === 'admin' ? managementNav.filter(item => !item.firmOnly || firmId) : managementNav.filter(item => item.href !== '/accountant/revenue' && (!item.firmOnly || firmId))}
+              managementNav={userRole === 'admin' ? managementNav : managementNav.filter(item => item.href !== '/accountant/revenue')}
               toolsNav={toolsNav}
               adminNav={adminNav}
               pathname={pathname}
