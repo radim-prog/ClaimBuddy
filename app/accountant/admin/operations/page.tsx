@@ -6,6 +6,7 @@ import {
   GitBranch,
   Bell,
   Receipt,
+  SlidersHorizontal,
   DollarSign,
   HardDrive,
   Link2,
@@ -37,6 +38,7 @@ import { OperationsBilling } from '@/components/admin/operations-billing'
 import { OperationsFolderTemplates } from '@/components/admin/operations-folder-templates'
 import { OperationsEmail } from '@/components/admin/operations-email'
 import { InvoiceNoticesSettings } from '@/components/admin/operations-invoice-notices'
+import { OperationsBillingSettings } from '@/components/admin/operations-billing-settings'
 
 const sections = [
   { id: 'marketplace', label: 'Marketplace — registrace', icon: Store, Component: MarketplaceProviders },
@@ -47,6 +49,7 @@ const sections = [
   { id: 'workflow', label: 'Workflow pravidla', icon: GitBranch, Component: OperationsWorkflow },
   { id: 'notifications', label: 'Notifikace', icon: Bell, Component: OperationsNotifications },
   { id: 'email-settings', label: 'Email adresy', icon: Mail, Component: OperationsEmail },
+  { id: 'billing-settings', label: 'Fakturační nastavení', icon: SlidersHorizontal, Component: OperationsBillingSettings },
   { id: 'invoicing', label: 'Fakturace', icon: Receipt, Component: InvoicingSettings },
   { id: 'invoice-notices', label: 'Hlášky na fakturách', icon: FileText, Component: InvoiceNoticesSettings },
   { id: 'pricing', label: 'Ceník a sazby', icon: DollarSign, Component: PricingSettings },
