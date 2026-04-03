@@ -58,6 +58,8 @@ export async function GET(
         accounting_start_date: (company as unknown as Record<string, unknown>).accounting_start_date as string | null ?? null,
         notification_preferences: company.notification_preferences || null,
         managing_director: company.managing_director || null,
+        description: (company as any).description || null,
+        nickname: (company as any).nickname || null,
         portal_sections: (company as any).portal_sections || {},
       },
       closures,
@@ -114,6 +116,8 @@ export async function PATCH(
     if (body.billing_settings !== undefined) updates.billing_settings = body.billing_settings
     if (body.managing_director !== undefined) updates.managing_director = body.managing_director || null
     if (body.portal_sections !== undefined) updates.portal_sections = body.portal_sections
+    if (body.description !== undefined) updates.description = body.description || null
+    if (body.nickname !== undefined) updates.nickname = body.nickname || null
 
     // Address is stored as JSONB object in DB
     if (body.street !== undefined || body.city !== undefined || body.zip !== undefined) {

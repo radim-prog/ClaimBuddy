@@ -25,6 +25,7 @@ import {
   Inbox,
   Shield,
   Hourglass,
+  Network,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -334,6 +335,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                 { href: `${basePath}/taxes`, label: 'Daně a mzdy', icon: Calculator, match: (p: string) => p.includes('/taxes') || p.includes('/dohodari') || p.includes('/agreements') },
                 { href: `${basePath}/travel`, label: 'Jízdy', icon: Car, match: (p: string) => p.includes('/travel') },
                 { href: `${basePath}/claims`, label: 'PU', icon: Shield, match: (p: string) => p.includes('/claims') },
+                { href: `${basePath}/structure`, label: 'Struktura', icon: Network, match: (p: string) => p.includes('/structure') },
               ]
 
           return (

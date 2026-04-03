@@ -9,9 +9,11 @@ export type CompanyNode = {
   id: string
   name: string
   ico: string
-  company_type: 'person' | 'holding' | 'daughter' | 'standalone'
+  company_type: 'person' | 'holding' | 'subholding' | 'daughter' | 'granddaughter' | 'standalone' | 'external'
   dph_status: 'payer' | 'non_payer' | 'in_process'
   health_score: number | null
+  description?: string | null
+  nickname?: string | null
   x?: number
   y?: number
   fx?: number | null
@@ -38,17 +40,33 @@ type GalaxyViewProps = {
 // ============ CONSTANTS ============
 
 const TYPE_COLORS: Record<string, string> = {
-  holding: '#A855F7',   // purple
-  daughter: '#3B82F6',  // blue
-  person: '#22C55E',    // green
-  standalone: '#6B7280', // gray
+  person: '#F59E0B',       // amber — physical person at the top
+  holding: '#A855F7',      // purple — main holding
+  subholding: '#8B5CF6',   // violet — sub-holding
+  daughter: '#3B82F6',     // blue — daughter company
+  granddaughter: '#06B6D4', // cyan — granddaughter
+  standalone: '#6B7280',   // gray — standalone
+  external: '#EF4444',     // red — external entity
 }
 
 const TYPE_SIZES: Record<string, number> = {
-  holding: 22,
+  person: 26,
+  holding: 24,
+  subholding: 20,
   daughter: 16,
-  person: 14,
+  granddaughter: 14,
   standalone: 12,
+  external: 12,
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  person: 'Fyzická osoba',
+  holding: 'Holding',
+  subholding: 'Sub-holding',
+  daughter: 'Dcera',
+  granddaughter: 'Vnučka',
+  standalone: 'Samostatná',
+  external: 'Externí',
 }
 
 const DPH_COLORS: Record<string, string> = {
@@ -288,6 +306,22 @@ export function GalaxyView({
       })
       .attr('stroke-width', 2)
 
+    // Type initial inside circle
+    nodeGs.append('text')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'central')
+      .attr('fill', 'rgba(255,255,255,0.9)')
+      .attr('font-size', (d) => Math.max(9, (TYPE_SIZES[d.company_type] || 12) * 0.6) + 'px')
+      .attr('font-weight', '700')
+      .attr('pointer-events', 'none')
+      .text((d) => {
+        const initials: Record<string, string> = {
+          person: 'FO', holding: 'H', subholding: 'SH',
+          daughter: 'D', granddaughter: 'V', standalone: 'S', external: 'E',
+        }
+        return initials[d.company_type] || '?'
+      })
+
     // DPH indicator dot (top-right of node)
     nodeGs.filter((d) => !!DPH_COLORS[d.dph_status])
       .append('circle')
@@ -320,9 +354,10 @@ export function GalaxyView({
       })
       .attr('transform', 'rotate(-90)')
 
-    // Display name: strip s.r.o., truncate to 2 words
+    // Display name: prefer nickname, strip s.r.o., truncate to 2 words
     function displayName(d: SimNode): string {
-      return d.name
+      const raw = d.nickname || d.name
+      return raw
         .replace(/ s\.r\.o\./g, '')
         .replace(/, s\.r\.o\./g, '')
         .split(' ')
@@ -342,16 +377,29 @@ export function GalaxyView({
       .attr('pointer-events', 'none')
       .text((d) => displayName(d))
 
-    // Label: ICO
-    nodeGs.filter((d) => !!d.ico)
-      .append('text')
+    // Label: type
+    nodeGs.append('text')
       .attr('y', (d) => labelOffset(d) + 25)
       .attr('text-anchor', 'middle')
-      .attr('fill', '#94A3B8')
+      .attr('fill', (d) => TYPE_COLORS[d.company_type] || '#94A3B8')
       .attr('font-size', '9px')
-      .attr('font-family', 'monospace')
+      .attr('font-weight', '500')
       .attr('pointer-events', 'none')
-      .text((d) => d.ico)
+      .text((d) => TYPE_LABELS[d.company_type] || d.company_type)
+
+    // Label: description (if present)
+    nodeGs.filter((d) => !!d.description)
+      .append('text')
+      .attr('y', (d) => labelOffset(d) + 38)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#64748B')
+      .attr('font-size', '8px')
+      .attr('font-style', 'italic')
+      .attr('pointer-events', 'none')
+      .text((d) => {
+        const desc = d.description || ''
+        return desc.length > 30 ? desc.slice(0, 28) + '…' : desc
+      })
 
     // Label background card
     nodeGs.each(function (d) {

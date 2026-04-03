@@ -41,11 +41,13 @@ export default function CompanyUniversePage() {
       setGraphData({
         companies: (data.companies || []).map((c: Record<string, unknown>) => ({
           id: c.id,
-          name: c.name,
-          ico: c.ico || '',
-          company_type: c.company_type || 'standalone',
+          name: c.name as string,
+          ico: (c.ico as string) || '',
+          company_type: (c.company_type as string) || 'standalone',
           dph_status: c.vat_payer ? 'payer' : 'non_payer',
           health_score: null,
+          description: (c.description as string) || null,
+          nickname: (c.nickname as string) || null,
         })),
         ownership: (data.ownership || []).map((o: Record<string, unknown>) => ({
           source: o.parent_company_id,
