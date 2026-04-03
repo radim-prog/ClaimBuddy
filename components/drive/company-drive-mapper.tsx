@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import {
   HardDrive,
   Loader2,
@@ -12,6 +13,9 @@ import {
   CheckCircle2,
   Clock,
   Activity,
+  PlugZap,
+  Wifi,
+  WifiOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,6 +38,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import type { DriveCompanyMapping, DriveSyncState } from '@/lib/types/drive'
 
 type SyncStatus = DriveSyncState['sync_status'] | null
@@ -94,10 +99,19 @@ function formatSyncDate(dateStr: string | null): string {
 }
 
 export function CompanyDriveMapper() {
+  const { firmId } = useAccountantUser()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
   const [mappings, setMappings] = useState<MappingRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+
+  // Drive connection state
+  const [driveConnected, setDriveConnected] = useState<boolean | null>(null)
+  const [driveEmail, setDriveEmail] = useState<string | null>(null)
+  const [connecting, setConnecting] = useState(false)
 
   // Map dialog state
   const [mapDialogOpen, setMapDialogOpen] = useState(false)
@@ -107,6 +121,42 @@ export function CompanyDriveMapper() {
 
   // Disconnect dialog state
   const [disconnectTarget, setDisconnectTarget] = useState<MappingRow | null>(null)
+
+  // Handle OAuth callback params
+  useEffect(() => {
+    const success = searchParams.get('drive_success')
+    const driveError = searchParams.get('drive_error')
+    if (success) {
+      toast.success(success)
+      router.replace('/accountant/admin/operations', { scroll: false })
+    } else if (driveError) {
+      toast.error(driveError)
+      router.replace('/accountant/admin/operations', { scroll: false })
+    }
+  }, [searchParams, router])
+
+  // Check Drive connection status
+  useEffect(() => {
+    if (!firmId) return
+    fetch(`/api/drive/connection-status?firmId=${firmId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          setDriveConnected(data.connected)
+          setDriveEmail(data.email || null)
+        }
+      })
+      .catch(() => { /* ignore */ })
+  }, [firmId, searchParams])
+
+  const handleConnectDrive = () => {
+    if (!firmId) {
+      toast.error('Firma není nastavena')
+      return
+    }
+    setConnecting(true)
+    window.location.href = `/api/auth/google/drive?firmId=${firmId}`
+  }
 
   const fetchMappings = useCallback(async () => {
     setLoading(true)
@@ -258,6 +308,29 @@ export function CompanyDriveMapper() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Drive connection status */}
+          {driveConnected === true ? (
+            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border-green-200 dark:border-green-800 gap-1">
+              <Wifi className="h-3 w-3" />
+              {driveEmail || 'Připojeno'}
+            </Badge>
+          ) : driveConnected === false ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleConnectDrive}
+              disabled={connecting}
+              className="h-8 gap-1.5 text-amber-600 border-amber-200 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:hover:bg-amber-900/20"
+            >
+              {connecting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <PlugZap className="h-3.5 w-3.5" />
+              )}
+              Připojit Google Drive
+            </Button>
+          ) : null}
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
