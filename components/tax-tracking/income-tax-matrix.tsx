@@ -6,6 +6,7 @@ import { ChevronRight, ChevronDown, Save, Check, Loader2, AlertTriangle } from '
 import { toast } from 'sonner'
 import { calculateIncomeTax, calculateFlatTax, DEFAULT_TAX_RATES, type TaxRates, type TaxAnnualConfig, type IncomeTaxCalculation } from '@/lib/tax-calculator'
 import type { TaxCompany, TaxAnnualConfigRow } from '@/lib/types/tax'
+import { getInsuranceResult } from '@/lib/tax-insurance-helper'
 
 const currentYear = new Date().getFullYear()
 
@@ -139,8 +140,9 @@ function ExpandedDetail({ config, rates, calc, onConfigChange, onSave, saving, i
   const flatTaxCalc = isFlatTax && flatTaxBand ? calculateFlatTax(flatTaxBand, rates) : null
   const revenueExceedsBand = flatTaxCalc && revenue > flatTaxCalc.revenueLimit
 
-  const socialDue = calc?.socialDue ?? 0
-  const healthDue = calc?.healthDue ?? 0
+  const expandInsResult = getInsuranceResult(config, calc ? { socialDue: calc.socialDue, healthDue: calc.healthDue } : null)
+  const socialDue = expandInsResult.socialDue
+  const healthDue = expandInsResult.healthDue
 
   return (
     <tr>
@@ -551,9 +553,10 @@ function CompanyRow({
   const sroTax = !isFO ? Math.max(0, Math.round(taxBase * 0.21)) : 0
 
   const netTax = isFO ? Math.max(0, calc?.netTax ?? 0) : sroTax
-  const socialDue = isFO ? Math.max(0, calc?.socialDue ?? 0) : 0
-  const healthDue = isFO ? Math.max(0, calc?.healthDue ?? 0) : 0
-  const totalDue = isFO ? (calc?.totalDue ?? 0) : sroTax
+  const insResult = isFO ? getInsuranceResult(config, calc) : null
+  const socialDue = isFO ? insResult!.socialDue : 0
+  const healthDue = isFO ? insResult!.healthDue : 0
+  const totalDue = isFO ? (netTax + socialDue + healthDue) : sroTax
 
   const isMainDirty = revenue !== initialRevRef.current || expenses !== initialExpRef.current
 
@@ -652,8 +655,8 @@ function CompanyRow({
         </td>
         {isFO ? (
           <>
-            <td className="px-3 py-2 text-sm text-right whitespace-nowrap text-gray-700 dark:text-gray-300">{formatCZK(socialDue)}</td>
-            <td className="px-3 py-2 text-sm text-right whitespace-nowrap text-gray-700 dark:text-gray-300">{formatCZK(healthDue)}</td>
+            <td className={`px-3 py-2 text-sm text-right whitespace-nowrap ${insResult?.isManual.social ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'}`} title={insResult?.isManual.social ? undefined : 'Automatický výpočet — neověřeno účetní'}>{formatCZK(socialDue)}</td>
+            <td className={`px-3 py-2 text-sm text-right whitespace-nowrap ${insResult?.isManual.health ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'}`} title={insResult?.isManual.health ? undefined : 'Automatický výpočet — neověřeno účetní'}>{formatCZK(healthDue)}</td>
           </>
         ) : (
           <>

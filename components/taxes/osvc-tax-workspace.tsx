@@ -7,6 +7,8 @@ import { calculateIncomeTax, calculateFlatTax, calculateMultiSectionTax, DEFAULT
 import type { TaxAnnualConfigRow, IncomeSection, SectionType } from '@/lib/types/tax'
 import { SECTION_TYPES, SECTION_DEFAULTS } from '@/lib/types/tax'
 import { TaxResultSummary } from './tax-result-summary'
+import { ManualInsuranceCard } from './manual-insurance-card'
+import { getInsuranceResult } from '@/lib/tax-insurance-helper'
 
 function CZK(n: number): string {
   return Math.round(n).toLocaleString('cs-CZ') + ' Kč'
@@ -483,29 +485,70 @@ export function OsvcTaxWorkspace({ companyId, year, config, yearTotals, rates: r
             </div>
           </div>
 
-          {/* SOCIÁLNÍ POJIŠTĚNÍ */}
-          <InsuranceCard
-            label="Sociální pojištění"
-            base={calc.socialBase}
-            calculated={calc.socialCalculated}
-            rateLabel={`${(rates.social_base_percentage * 100).toFixed(0)}% × ${(rates.social_insurance_rate * 100).toFixed(1)}%`}
-            advancesPaid={localConfig.social_advances_paid || 0}
-            onAdvancesChange={v => updateField('social_advances_paid', v)}
-            due={calc.socialDue}
-            minimumApplied={calc.socialMinimumApplied}
-          />
+          {/* RUČNÍ VSTUPY SP/ZP (berná mince) */}
+          <div className="space-y-3">
+            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Pojistné — ruční údaje</div>
+            <p className="text-xs text-muted-foreground -mt-1">
+              Vyplňte podle formulářů OSSZ a zdravotní pojišťovny
+            </p>
 
-          {/* ZDRAVOTNÍ POJIŠTĚNÍ */}
-          <InsuranceCard
-            label="Zdravotní pojištění"
-            base={calc.healthBase}
-            calculated={calc.healthCalculated}
-            rateLabel={`${(rates.health_base_percentage * 100).toFixed(0)}% × ${(rates.health_insurance_rate * 100).toFixed(1)}%`}
-            advancesPaid={localConfig.health_advances_paid || 0}
-            onAdvancesChange={v => updateField('health_advances_paid', v)}
-            due={calc.healthDue}
-            minimumApplied={calc.healthMinimumApplied}
-          />
+            <ManualInsuranceCard
+              label="Sociální pojištění"
+              manualBase={localConfig.social_manual_base ?? null}
+              manualCalculated={localConfig.social_manual_calculated ?? null}
+              advancesPaid={localConfig.social_advances_paid || 0}
+              onBaseChange={v => updateField('social_manual_base', v)}
+              onCalculatedChange={v => updateField('social_manual_calculated', v)}
+              onAdvancesChange={v => updateField('social_advances_paid', v)}
+            />
+
+            <ManualInsuranceCard
+              label="Zdravotní pojištění"
+              manualBase={localConfig.health_manual_base ?? null}
+              manualCalculated={localConfig.health_manual_calculated ?? null}
+              advancesPaid={localConfig.health_advances_paid || 0}
+              onBaseChange={v => updateField('health_manual_base', v)}
+              onCalculatedChange={v => updateField('health_manual_calculated', v)}
+              onAdvancesChange={v => updateField('health_advances_paid', v)}
+            />
+          </div>
+
+          {/* AUTO-VÝPOČET SP/ZP (Beta) */}
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-muted/30 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 uppercase">Beta</span>
+              <span className="text-xs text-muted-foreground">Automatický výpočet (ve vývoji)</span>
+            </div>
+
+            <div className="space-y-2 opacity-60">
+              <InsuranceCard
+                label="Sociální pojištění"
+                base={calc.socialBase}
+                calculated={calc.socialCalculated}
+                rateLabel={`${(rates.social_base_percentage * 100).toFixed(0)}% × ${(rates.social_insurance_rate * 100).toFixed(1)}%`}
+                advancesPaid={localConfig.social_advances_paid || 0}
+                onAdvancesChange={() => {}}
+                due={calc.socialDue}
+                minimumApplied={calc.socialMinimumApplied}
+                isBeta
+              />
+              <InsuranceCard
+                label="Zdravotní pojištění"
+                base={calc.healthBase}
+                calculated={calc.healthCalculated}
+                rateLabel={`${(rates.health_base_percentage * 100).toFixed(0)}% × ${(rates.health_insurance_rate * 100).toFixed(1)}%`}
+                advancesPaid={localConfig.health_advances_paid || 0}
+                onAdvancesChange={() => {}}
+                due={calc.healthDue}
+                minimumApplied={calc.healthMinimumApplied}
+                isBeta
+              />
+            </div>
+
+            <p className="text-[10px] text-muted-foreground">
+              Tyto hodnoty jsou orientační. Směrodatné jsou ruční údaje vyplněné výše.
+            </p>
+          </div>
         </>
       )}
 
@@ -534,12 +577,18 @@ export function OsvcTaxWorkspace({ companyId, year, config, yearTotals, rates: r
 
       {/* CELKOVÝ SOUHRN */}
       <TaxResultSummary
-        items={[
-          { label: 'Daň', value: isFlatTax ? (calc.netTax) : Math.max(0, calc.netTax) },
-          { label: 'SP', value: calc.socialDue },
-          { label: 'ZP', value: calc.healthDue },
-        ]}
-        total={calc.totalDue}
+        items={(() => {
+          const ins = getInsuranceResult(localConfig as any, calc)
+          return [
+            { label: 'Daň', value: isFlatTax ? (calc.netTax) : Math.max(0, calc.netTax) },
+            { label: 'SP', value: ins.socialDue },
+            { label: 'ZP', value: ins.healthDue },
+          ]
+        })()}
+        total={(() => {
+          const ins = getInsuranceResult(localConfig as any, calc)
+          return Math.max(0, calc.netTax) + ins.socialDue + ins.healthDue
+        })()}
         sections={multiCalc?.sections}
         totalSectionBase={multiCalc?.totalSectionBase}
       />
@@ -560,21 +609,21 @@ export function OsvcTaxWorkspace({ companyId, year, config, yearTotals, rates: r
 }
 
 function InsuranceCard({
-  label, base, calculated, rateLabel, advancesPaid, onAdvancesChange, due, minimumApplied,
+  label, base, calculated, rateLabel, advancesPaid, onAdvancesChange, due, minimumApplied, isBeta,
 }: {
   label: string; base: number; calculated: number; rateLabel: string
-  advancesPaid: number; onAdvancesChange: (v: number) => void; due: number; minimumApplied?: boolean
+  advancesPaid: number; onAdvancesChange: (v: number) => void; due: number; minimumApplied?: boolean; isBeta?: boolean
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-2">
-      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">{label}</div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end text-sm">
+    <div className={`rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-2 ${isBeta ? 'bg-transparent' : 'bg-white dark:bg-gray-800'}`}>
+      <div className={`font-semibold text-gray-500 dark:text-gray-400 uppercase ${isBeta ? 'text-[10px]' : 'text-xs'}`}>{label}</div>
+      <div className={`grid gap-3 items-end ${isBeta ? 'grid-cols-3 text-xs' : 'grid-cols-2 sm:grid-cols-4 text-sm'}`}>
         <div>
-          <div className="text-xs text-gray-400 mb-0.5">Vym. základ</div>
+          <div className={`text-gray-400 mb-0.5 ${isBeta ? 'text-[10px]' : 'text-xs'}`}>Vym. základ</div>
           <div className="font-medium">{CZK(base)}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-400 mb-0.5">Pojistné ({rateLabel})</div>
+          <div className={`text-gray-400 mb-0.5 ${isBeta ? 'text-[10px]' : 'text-xs'}`}>Pojistné ({rateLabel})</div>
           <div className="font-medium">
             {CZK(calculated)}
             {minimumApplied && (
@@ -582,18 +631,20 @@ function InsuranceCard({
             )}
           </div>
         </div>
+        {!isBeta && (
+          <div>
+            <div className="text-xs text-gray-400 mb-0.5">Zaplacené zálohy</div>
+            <input
+              type="number"
+              value={advancesPaid || ''}
+              onChange={e => onAdvancesChange(parseFloat(e.target.value) || 0)}
+              className="h-9 w-full px-3 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
+              placeholder="0"
+            />
+          </div>
+        )}
         <div>
-          <div className="text-xs text-gray-400 mb-0.5">Zaplacené zálohy</div>
-          <input
-            type="number"
-            value={advancesPaid || ''}
-            onChange={e => onAdvancesChange(parseFloat(e.target.value) || 0)}
-            className="h-9 w-full px-3 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 text-right"
-            placeholder="0"
-          />
-        </div>
-        <div>
-          <div className="text-xs text-gray-400 mb-0.5">Doplatek/přeplatek</div>
+          <div className={`text-gray-400 mb-0.5 ${isBeta ? 'text-[10px]' : 'text-xs'}`}>Doplatek/přeplatek</div>
           <div className={`font-bold ${due > 0 ? 'text-red-600 dark:text-red-400' : due < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
             {due > 0 ? '+' : ''}{CZK(due)}
           </div>
