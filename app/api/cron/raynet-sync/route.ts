@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { syncFromRaynet, createMonthlyBCs } from '@/lib/raynet-store'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
 // POST - Cron endpoint for Raynet sync (called by systemd timer or node-cron)
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   // Check working hours (8:00-20:00)
   const now = new Date()

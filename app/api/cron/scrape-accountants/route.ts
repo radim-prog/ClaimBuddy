@@ -28,14 +28,11 @@ export const maxDuration = 300 // 5 min — scraping takes time
 
 import { NextRequest, NextResponse } from 'next/server'
 import { runAccountantScraper, getScrapedLeadsStats } from '@/lib/scraper'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 export async function POST(request: NextRequest) {
-  // Auth — Bearer CRON_SECRET
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   // Parse options from body (optional)
   let sources: Array<'ares' | 'firmy.cz'> = ['ares', 'firmy.cz']
@@ -92,11 +89,8 @@ export async function POST(request: NextRequest) {
 
 // GET — return current stats without running the scraper
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   const stats = await getScrapedLeadsStats()
   return NextResponse.json({ stats })

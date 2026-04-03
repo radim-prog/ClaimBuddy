@@ -1,21 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { getAllPlanLimits } from '@/lib/subscription-store'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
 // Monthly cron: reset extraction credits for all users based on their plan
 // Should run on the 1st of each month
 export async function GET(request: NextRequest) {
-  const expectedSecret = process.env.CRON_SECRET
-  if (!expectedSecret) {
-    console.error('CRON_SECRET not configured')
-    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
-  }
-  const cronSecret = request.headers.get('authorization')?.replace('Bearer ', '')
-  if (cronSecret !== expectedSecret) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   const currentPeriod = new Date().toISOString().slice(0, 7)
 

@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { processDueDeliveries } from '@/lib/reminder-engine'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
 // POST /api/cron/reminders — process due reminder deliveries (every 15 min)
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   try {
     const result = await processDueDeliveries()

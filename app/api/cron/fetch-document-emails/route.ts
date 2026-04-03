@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { fetchNewEmails, downloadAttachment, parseRecipientSlug, markAsProcessed } from '@/lib/gmail'
 import {
@@ -7,6 +7,7 @@ import {
   addDocumentInboxItem,
   updateInboxSyncTime,
 } from '@/lib/document-inbox-store'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,12 +24,9 @@ const ALLOWED_MIME_TYPES = [
 ]
 
 // POST: Cron job to fetch document emails and store attachments
-export async function POST(request: Request) {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+export async function POST(request: NextRequest) {
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   try {
     // Get all active document inboxes (to know which slugs are valid)

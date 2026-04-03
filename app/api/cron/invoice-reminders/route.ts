@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { scheduleReminder, resolveReminder } from '@/lib/reminder-engine'
 import type { DeliveryChannel } from '@/lib/reminder-engine'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,11 +17,8 @@ const ESCALATION_SCHEDULE = [
 
 // POST /api/cron/invoice-reminders — daily check for unpaid invoices, create/escalate reminders
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   try {
     const today = new Date()

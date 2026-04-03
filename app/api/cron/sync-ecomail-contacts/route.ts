@@ -1,17 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { syncContact } from '@/lib/marketing-service'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
 // Enhanced cron: sync all active users to Ecomail with tags and segmentation
 // Called daily via Vercel cron or external scheduler
-export async function POST(request: Request) {
-  const cronSecret = process.env.CRON_SECRET
-  const authHeader = request.headers.get('authorization')
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+export async function POST(request: NextRequest) {
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   if (!process.env.ECOMAIL_API_KEY) {
     return NextResponse.json({ message: 'Ecomail not configured, skipping' })

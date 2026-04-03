@@ -2,21 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { downgradeExpiredTrials } from '@/lib/subscription-store'
 import { triggerTrialReminder } from '@/lib/marketing-service'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
 // Cron endpoint: downgrade expired trials to Free
 // Should be called daily (e.g., via Vercel cron or external scheduler)
 export async function GET(request: NextRequest) {
-  const expectedSecret = process.env.CRON_SECRET
-  if (!expectedSecret) {
-    console.error('CRON_SECRET not configured')
-    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
-  }
-  const cronSecret = request.headers.get('authorization')?.replace('Bearer ', '')
-  if (cronSecret !== expectedSecret) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   try {
     // Send trial reminder emails for trials expiring in 3 days (non-blocking)

@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateMonthlyInvoices, processOverdueInvoices, generatePayouts } from '@/lib/billing-service'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
 // Cron: runs monthly (1st of month) and daily (for dunning)
 // POST /api/cron/billing?action=generate|dunning|payouts|all
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   const url = new URL(request.url)
   const action = url.searchParams.get('action') || 'all'

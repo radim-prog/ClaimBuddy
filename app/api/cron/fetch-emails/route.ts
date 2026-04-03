@@ -1,16 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { fetchNewEmails, markAsProcessed } from '@/lib/gmail'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
 // POST: Cron job to fetch new emails from configured inboxes
-export async function POST(request: Request) {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+export async function POST(request: NextRequest) {
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   try {
     // Get active inboxes

@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail } from '@/lib/email-service'
 import { reportEmailTemplate, type ReportKpi } from '@/lib/email-templates'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
-
-const CRON_SECRET = process.env.CRON_SECRET
 
 // Report type labels for email subjects
 const REPORT_LABELS: Record<string, string> = {
@@ -17,15 +16,8 @@ const REPORT_LABELS: Record<string, string> = {
 
 // GET /api/cron/auto-reports — called daily by external cron
 export async function GET(request: NextRequest) {
-  // Fail-closed auth
-  if (!CRON_SECRET) {
-    console.error('CRON_SECRET is not configured — rejecting cron request')
-    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
-  }
-  const secret = request.headers.get('x-cron-secret')
-  if (secret !== CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   const now = new Date()
   const dayOfWeek = now.getDay() // 0=Sun, 1=Mon

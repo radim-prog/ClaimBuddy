@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,15 +9,8 @@ const TABLES_WITH_SOFT_DELETE = ['documents', 'invoices', 'tasks', 'projects', '
 // POST — permanently delete items older than retention period
 // Called by external cron (e.g. daily at 3:00 AM)
 export async function POST(request: NextRequest) {
-  const expectedSecret = process.env.CRON_SECRET
-  if (!expectedSecret) {
-    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
-  }
-
-  const cronSecret = request.headers.get('authorization')?.replace('Bearer ', '')
-  if (cronSecret !== expectedSecret) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = verifyCronAuth(request)
+  if (authError) return authError
 
   try {
     // Get global retention setting (maybeSingle avoids PGRST116 when table is empty)
