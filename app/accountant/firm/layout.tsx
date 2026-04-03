@@ -2,12 +2,11 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Receipt, Settings, Shield, Building2 } from 'lucide-react'
+import { Settings, Shield, Building2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 const firmTabs = [
-  { href: '/accountant/firm/billing', label: 'Fakturace', icon: Receipt },
   { href: '/accountant/firm/settings', label: 'Nastavení', icon: Settings },
 ]
 
