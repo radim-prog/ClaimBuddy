@@ -93,7 +93,7 @@ const toolsNav = [
 // Group 4a: Firm admin — admin-only (Nastavení, Moje firma)
 const firmAdminNav = [
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings, tourId: 'nav-settings' },
-  { name: 'Moje firma', href: '/accountant/firm', icon: Building2, activeMatch: ['/accountant/firm'] },
+  { name: 'Moje firma', href: '/accountant/firm', icon: Building2, activeMatch: ['/accountant/firm'], label: 'Ve vývoji' },
 ]
 
 // Group 4b: System admin — system admin only (Administrace)
