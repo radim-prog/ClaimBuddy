@@ -2,12 +2,11 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, Users, Receipt, Settings, Shield, Building2 } from 'lucide-react'
+import { Users, Receipt, Settings, Shield, Building2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 const firmTabs = [
-  { href: '/accountant/firm', label: 'Přehled', icon: LayoutDashboard },
   { href: '/accountant/firm/clients', label: 'Klienti', icon: Users },
   { href: '/accountant/firm/team', label: 'Tým', icon: Users },
   { href: '/accountant/firm/billing', label: 'Fakturace', icon: Receipt },
@@ -53,9 +52,7 @@ export default function FirmLayout({ children }: { children: React.ReactNode }) 
           <nav className="flex items-center gap-2 flex-wrap">
             {firmTabs.map((tab) => {
               const Icon = tab.icon
-              const isActive = tab.href === '/accountant/firm'
-                ? pathname === '/accountant/firm'
-                : pathname.startsWith(tab.href)
+              const isActive = pathname.startsWith(tab.href)
 
               return (
                 <Link key={tab.href} href={tab.href}>
