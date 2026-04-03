@@ -40,11 +40,13 @@ import { OperationsEmail } from '@/components/admin/operations-email'
 import { InvoiceNoticesSettings } from '@/components/admin/operations-invoice-notices'
 import { OperationsBillingSettings } from '@/components/admin/operations-billing-settings'
 
+const demoBadge = <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Demo</span>
+
 const sections = [
-  { id: 'marketplace', label: 'Marketplace — registrace', icon: Store, Component: MarketplaceProviders },
-  { id: 'revenue', label: 'Revenue sharing', icon: TrendingUp, Component: OperationsRevenue },
-  { id: 'billing', label: 'Billing-as-a-service', icon: CreditCard, Component: OperationsBilling },
-  { id: 'leads', label: 'Leady — Chci účetní', icon: Sparkles, Component: LeadsList },
+  { id: 'marketplace', label: 'Marketplace — registrace', icon: Store, Component: MarketplaceProviders, badge: demoBadge },
+  { id: 'revenue', label: 'Revenue sharing', icon: TrendingUp, Component: OperationsRevenue, badge: demoBadge },
+  { id: 'billing', label: 'Billing-as-a-service', icon: CreditCard, Component: OperationsBilling, badge: demoBadge },
+  { id: 'leads', label: 'Leady — Chci účetní', icon: Sparkles, Component: LeadsList, badge: demoBadge },
   { id: 'templates', label: 'Šablony úkolů', icon: Repeat, Component: TaskTemplates },
   { id: 'workflow', label: 'Workflow pravidla', icon: GitBranch, Component: OperationsWorkflow },
   { id: 'notifications', label: 'Notifikace', icon: Bell, Component: OperationsNotifications },
@@ -59,7 +61,7 @@ const sections = [
   { id: 'tax-rates', label: 'Daňové sazby', icon: Calculator, Component: OperationsTaxRates },
   { id: 'marketing', label: 'Email Marketing (Ecomail)', icon: Mail, Component: OperationsMarketing },
   { id: 'signi', label: 'Signi.com — Elektronický podpis', icon: PenLine, Component: SigniSettings },
-] as const
+]
 
 export default function OperationsPage() {
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['templates']))
@@ -78,7 +80,7 @@ export default function OperationsPage() {
 
   return (
     <div className="space-y-2">
-      {sections.map(({ id, label, icon, Component }) => (
+      {sections.map(({ id, label, icon, Component, badge }) => (
         <CollapsibleSection
           key={id}
           id={id}
@@ -87,6 +89,7 @@ export default function OperationsPage() {
           expanded={openSections.has(id)}
           onToggle={() => toggle(id)}
           variant="bordered"
+          badge={badge}
         >
           <Component />
         </CollapsibleSection>

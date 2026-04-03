@@ -55,6 +55,7 @@ export function CollapsibleSection({
           />
           <Icon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
           <span className="font-medium text-gray-900 dark:text-white">{displayTitle}</span>
+          {badge}
         </button>
         {isOpen && (
           <div className="p-4 border-t border-border/50">
