@@ -81,7 +81,7 @@ const managementNav = [
   { name: 'Kalendář', href: '/accountant/calendar', icon: CalendarCheck, activeMatch: ['/accountant/calendar', '/accountant/deadlines', '/accountant/reminders'], tourId: 'nav-deadlines' },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices', '/accountant/billing'], tourId: 'nav-invoicing', feature: 'client_invoicing' },
   { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics', '/accountant/revenue'], feature: 'analytics' },
-  { name: 'Tržiště', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'] },
+  { name: 'Tržiště', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'], label: 'Demo' },
   { name: 'Struktura', href: '/accountant/companies/universe', icon: Network, activeMatch: ['/accountant/companies/universe'] },
   { name: 'Můj tým', href: '/accountant/firm/team', icon: Users, activeMatch: ['/accountant/firm/team'], firmOnly: true },
 ]
@@ -109,6 +109,7 @@ type NavItem = {
   activeMatch?: string[]
   tourId?: string
   firmOnly?: boolean
+  label?: string
 }
 
 // === TAB SYSTEM ===
@@ -198,6 +199,9 @@ function NavContent({
         <span className={`flex items-center ${collapsed ? 'relative' : ''}`}>
           <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 transition-colors ${locked ? theme.textMuted : isActive ? theme.activeIcon : iconGroupColor || `${theme.textMuted} ${theme.hoverText.replace('hover:', 'group-hover:')}`}`} />
           {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+          {!collapsed && item.label && (
+            <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{item.label}</span>
+          )}
           {!collapsed && locked && <Lock className={`ml-1.5 h-3 w-3 ${theme.textMuted}`} />}
           {collapsed && item.badge === 'dynamic' && inboxCount > 0 && (
             <span className={`absolute -top-1.5 -right-2 inline-flex items-center justify-center px-1 min-w-[16px] h-4 text-[10px] font-bold ${theme.badgeAccent} text-white rounded-full`}>{inboxCount}</span>
