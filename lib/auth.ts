@@ -65,6 +65,7 @@ export interface TokenPayload {
   plan: string
   modules: string[]
   firm_id: string | null
+  is_system_admin?: boolean
   exp: number
 }
 
@@ -134,6 +135,7 @@ export async function authenticate(
     plan: user.plan_tier || 'free',
     modules: user.modules || ['accounting'],
     firm_id: user.firm_id || null,
+    is_system_admin: user.is_system_admin || false,
   })
 
   return {

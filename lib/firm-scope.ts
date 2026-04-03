@@ -40,11 +40,14 @@ export function isTenantAdmin(request: NextRequest): boolean {
   return role === 'admin' && !!firmId
 }
 
-/** Check if user is a super admin (admin without firm_id — platform-level) */
+/** Check if user is a system admin (platform-level, set via is_system_admin flag) */
+export function isSystemAdmin(request: NextRequest): boolean {
+  return request.headers.get('x-system-admin') === 'true'
+}
+
+/** @deprecated Use isSystemAdmin instead */
 export function isSuperAdmin(request: NextRequest): boolean {
-  const role = request.headers.get('x-user-role')
-  const firmId = request.headers.get('x-firm-id')
-  return role === 'admin' && !firmId
+  return isSystemAdmin(request)
 }
 
 /** Verify that a company belongs to the user's firm. Returns true if access is allowed. */

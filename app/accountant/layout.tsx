@@ -91,10 +91,14 @@ const toolsNav = [
   { name: 'Podepisování', href: '/accountant/signing', icon: FileSignature, activeMatch: ['/accountant/signing'] },
 ]
 
-// Group 4: Admin — bottom section, admin-only (3 items)
-const adminNav = [
+// Group 4a: Firm admin — admin-only (Nastavení, Moje firma)
+const firmAdminNav = [
   { name: 'Nastavení', href: '/accountant/settings', icon: Settings, tourId: 'nav-settings' },
   { name: 'Moje firma', href: '/accountant/firm', icon: Building2, activeMatch: ['/accountant/firm'] },
+]
+
+// Group 4b: System admin — system admin only (Administrace)
+const systemAdminNav = [
   { name: 'Administrace', href: '/accountant/admin', icon: Shield },
 ]
 
@@ -114,7 +118,7 @@ type NavItem = {
 const TAB_EXCLUDED_PREFIXES = ['/accountant/settings', '/accountant/admin', '/accountant/firm']
 
 function getTabLabelFromPathname(pathname: string): string {
-  const allNavItems = [...dailyWorkNav, ...managementNav, ...toolsNav, ...adminNav]
+  const allNavItems = [...dailyWorkNav, ...managementNav, ...toolsNav, ...firmAdminNav, ...systemAdminNav]
   for (const item of allNavItems) {
     if (pathname === item.href) return item.name
     if (item.activeMatch?.some(p => pathname.startsWith(p))) return item.name
@@ -140,10 +144,12 @@ function NavContent({
   dailyWorkNav,
   managementNav,
   toolsNav,
-  adminNav,
+  firmAdminNav,
+  systemAdminNav,
   pathname,
   collapsed,
   showAdmin,
+  isSystemAdmin,
   managementOpen,
   toolsOpen,
   toggleManagement,
@@ -158,10 +164,12 @@ function NavContent({
   dailyWorkNav: NavItem[]
   managementNav: NavItem[]
   toolsNav: NavItem[]
-  adminNav: NavItem[]
+  firmAdminNav: NavItem[]
+  systemAdminNav: NavItem[]
   pathname: string
   collapsed: boolean
   showAdmin: boolean
+  isSystemAdmin: boolean
   managementOpen: boolean
   toolsOpen: boolean
   toggleManagement: () => void
@@ -295,7 +303,7 @@ function NavContent({
         </div>
       )}
 
-      {/* Admin — bottom, admin-only */}
+      {/* Admin — bottom, role-based visibility */}
       {showAdmin && (
         <div className={`pt-3 mt-3 border-t ${theme.border}`}>
           {!collapsed && (
@@ -303,7 +311,8 @@ function NavContent({
               Admin
             </p>
           )}
-          {adminNav.map((item, i) => renderNavItem(item, i, 'admin'))}
+          {firmAdminNav.map((item, i) => renderNavItem(item, i, 'admin'))}
+          {isSystemAdmin && systemAdminNav.map((item, i) => renderNavItem(item, i, 'admin'))}
         </div>
       )}
     </nav>
@@ -347,7 +356,7 @@ function AccountantLayoutRouter({ children }: { children: React.ReactNode }) {
 function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? ''
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const { userName, userInitials, userRole, permissions, userModules, firmId } = useAccountantUser()
+  const { userName, userInitials, userRole, permissions, userModules, firmId, isSystemAdmin } = useAccountantUser()
   const { startTour } = useTutorialContext()
   const inboxCount = useInboxCount()
   const { totals: attentionTotals } = useAttention()
@@ -596,12 +605,14 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
           <TooltipProvider delayDuration={0}>
             <NavContent
               dailyWorkNav={dailyWorkNav}
-              managementNav={userRole === 'admin' ? managementNav : managementNav.filter(item => item.href !== '/accountant/revenue')}
-              toolsNav={toolsNav}
-              adminNav={adminNav}
+              managementNav={showAdmin ? managementNav : managementNav.filter(item => !['Fakturace', 'Analytika', 'Tržiště'].includes(item.name))}
+              toolsNav={showAdmin ? toolsNav : toolsNav.filter(item => item.name !== 'Podepisování')}
+              firmAdminNav={firmAdminNav}
+              systemAdminNav={systemAdminNav}
               pathname={pathname}
               collapsed={collapsed}
               showAdmin={showAdmin}
+              isSystemAdmin={isSystemAdmin}
               managementOpen={managementOpen}
               toolsOpen={toolsOpen}
               toggleManagement={toggleManagement}
@@ -922,7 +933,26 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
                 <>
                 <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
                 <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Admin</p>
-                {adminNav.map((item) => {
+                {firmAdminNav.map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+                        isActive
+                          ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                          : 'text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-800'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="text-sm font-medium">{item.name}</span>
+                    </Link>
+                  )
+                })}
+                {isSystemAdmin && systemAdminNav.map((item) => {
                   const Icon = item.icon
                   const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                   return (

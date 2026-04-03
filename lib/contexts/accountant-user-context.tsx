@@ -13,6 +13,7 @@ type AccountantUserContextType = {
   permissions: UserPermissions | null
   userModules: string[]
   firmId: string | null
+  isSystemAdmin: boolean
   loading: boolean
 }
 
@@ -27,6 +28,7 @@ export function AccountantUserProvider({ children }: { children: ReactNode }) {
   const [permissions, setPermissions] = useState<UserPermissions | null>(null)
   const [userModules, setUserModules] = useState<string[]>(['accounting'])
   const [firmId, setFirmId] = useState<string | null>(null)
+  const [isSystemAdmin, setIsSystemAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -49,6 +51,7 @@ export function AccountantUserProvider({ children }: { children: ReactNode }) {
         setPermissions(data.permissions)
         setUserModules(data.modules || ['accounting'])
         setFirmId(data.firm_id || null)
+        setIsSystemAdmin(data.is_system_admin || false)
 
         const initials = data.name
           .split(' ')
@@ -90,8 +93,9 @@ export function AccountantUserProvider({ children }: { children: ReactNode }) {
     permissions,
     userModules,
     firmId,
+    isSystemAdmin,
     loading,
-  }), [userId, userName, userEmail, userInitials, userRole, permissions, userModules, firmId, loading])
+  }), [userId, userName, userEmail, userInitials, userRole, permissions, userModules, firmId, isSystemAdmin, loading])
 
   return (
     <AccountantUserContext.Provider value={value}>

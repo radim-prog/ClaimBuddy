@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
           plan: user.plan_tier || 'free',
           modules: user.modules || ['accounting'],
           firm_id: user.firm_id || null,
+          is_system_admin: user.is_system_admin || false,
         })
         cookies().set(COOKIE_NAME, newToken, {
           httpOnly: true,
@@ -53,6 +54,7 @@ export async function GET(request: NextRequest) {
       permissions: user.permissions,
       modules: user.modules || ['accounting'],
       firm_id: user.firm_id || null,
+      is_system_admin: user.is_system_admin || false,
       impersonate_company: impersonateCompany,
       impersonate_user: impersonateUser,
     })

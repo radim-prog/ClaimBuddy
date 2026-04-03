@@ -69,6 +69,7 @@ interface TokenPayload {
   plan?: string
   modules?: string[]
   firm_id?: string | null
+  is_system_admin?: boolean
   exp: number
 }
 
@@ -342,6 +343,9 @@ export async function middleware(request: NextRequest) {
   requestHeaders.set('x-token-exp', String(user.exp))
   if (user.firm_id) {
     requestHeaders.set('x-firm-id', user.firm_id)
+  }
+  if (user.is_system_admin) {
+    requestHeaders.set('x-system-admin', 'true')
   }
 
   // Forward impersonation context if active
