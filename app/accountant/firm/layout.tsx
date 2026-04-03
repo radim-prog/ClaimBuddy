@@ -7,7 +7,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
 const firmTabs = [
-  { href: '/accountant/firm/clients', label: 'Klienti', icon: Users },
   { href: '/accountant/firm/team', label: 'Tým', icon: Users },
   { href: '/accountant/firm/billing', label: 'Fakturace', icon: Receipt },
   { href: '/accountant/firm/settings', label: 'Nastavení', icon: Settings },
