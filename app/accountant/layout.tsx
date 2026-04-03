@@ -59,7 +59,7 @@ import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { ActiveModuleProvider } from '@/lib/contexts/active-module-context'
-import { Building2, UserCog, X, Star, Plus, Network } from 'lucide-react'
+import { Building2, UserCog, X, Star, Plus } from 'lucide-react'
 import { getSavedThemeId, getTheme } from '@/lib/sidebar-themes'
 import type { SidebarThemeId, SidebarTheme } from '@/lib/sidebar-themes'
 import { BugReportButton } from '@/components/shared/bug-report-button'
@@ -82,7 +82,6 @@ const managementNav = [
   { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices', '/accountant/billing'], tourId: 'nav-invoicing', feature: 'client_invoicing' },
   { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics', '/accountant/revenue'], feature: 'analytics' },
   { name: 'Tržiště', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'], label: 'Demo' },
-  { name: 'Struktura', href: '/accountant/companies/universe', icon: Network, activeMatch: ['/accountant/companies/universe'] },
 ]
 
 // Group 3: Tools — collapsible (2 items)
