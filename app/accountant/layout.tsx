@@ -78,7 +78,7 @@ const dailyWorkNav = [
 
 // Group 2: Management — collapsible (6 items)
 const managementNav = [
-  { name: 'Kalendář', href: '/accountant/calendar', icon: CalendarCheck, activeMatch: ['/accountant/calendar', '/accountant/deadlines', '/accountant/reminders'], tourId: 'nav-deadlines' },
+  { name: 'Kalendář', href: '/accountant/calendar', icon: CalendarCheck, activeMatch: ['/accountant/calendar', '/accountant/deadlines', '/accountant/reminders'], tourId: 'nav-deadlines', label: 'Ve vývoji' },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices', '/accountant/billing'], tourId: 'nav-invoicing', feature: 'client_invoicing' },
   { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics', '/accountant/revenue'], feature: 'analytics' },
   { name: 'Tržiště', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'], label: 'Demo' },
