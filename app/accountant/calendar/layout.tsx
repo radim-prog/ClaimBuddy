@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 const tabs = [
   { name: 'Termíny', href: '/accountant/calendar', icon: CalendarCheck, exact: true },
   { name: 'Připomínky', href: '/accountant/calendar/reminders', icon: Bell },
-  { name: 'Kalendář', href: '/accountant/calendar/view', icon: Calendar },
+  { name: 'Kalendář', href: '/accountant/calendar/view', icon: Calendar, badge: 'Ve vývoji' },
 ]
 
 export default function CalendarLayout({ children }: { children: React.ReactNode }) {
@@ -45,6 +45,11 @@ export default function CalendarLayout({ children }: { children: React.ReactNode
                 >
                   <Icon className="h-3.5 w-3.5" />
                   {tab.name}
+                  {'badge' in tab && tab.badge && (
+                    <span className="ml-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                      {tab.badge}
+                    </span>
+                  )}
                 </Link>
               )
             })}
