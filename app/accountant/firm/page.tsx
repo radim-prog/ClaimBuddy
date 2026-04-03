@@ -53,7 +53,7 @@ export default function FirmOverviewPage() {
 
   const kpis = [
     { label: 'Klienti', value: data?.clientCount ?? 0, icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-    { label: 'MRR', value: `${(data?.mrr ?? 0).toLocaleString('cs-CZ')} Kč`, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
+    { label: 'Měsíční příjem', value: `${(data?.mrr ?? 0).toLocaleString('cs-CZ')} Kč`, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
     { label: 'Zaplaceno', value: data?.paidThisMonth ?? 0, icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
     { label: 'Neuhrazené', value: data?.overdueCount ?? 0, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
   ]

@@ -92,7 +92,7 @@ export function OperationsBilling() {
                 <div className="text-lg font-bold">{stats.active_configs}</div>
               </div>
               <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">MRR</div>
+                <div className="text-xs text-muted-foreground">Měsíční příjem</div>
                 <div className="text-lg font-bold">{czk(stats.total_mrr)}</div>
                 <div className="text-xs text-green-600">Fee: {czk(stats.platform_fee_mrr)}</div>
               </div>

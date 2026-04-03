@@ -230,9 +230,9 @@ export function CompanyDetailPanel({ companyId, onClose }: CompanyDetailPanelPro
           {/* === FINANCE === */}
           <TabsContent value="finance" className="flex-1 overflow-y-auto px-4 pb-4">
             <div className="space-y-4 mt-2">
-              {/* MRR */}
+              {/* Měsíční příjem */}
               <div className="rounded-lg border border-border p-3">
-                <div className="text-xs text-muted-foreground mb-1">Mesicni poplatek (MRR)</div>
+                <div className="text-xs text-muted-foreground mb-1">Měsíční poplatek</div>
                 <div className="text-2xl font-bold font-display">
                   {monthlyFee > 0 ? `${monthlyFee.toLocaleString('cs-CZ')} Kc` : 'Nenastaveno'}
                 </div>

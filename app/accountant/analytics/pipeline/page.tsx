@@ -207,7 +207,7 @@ export default function PipelinePage() {
         </Card>
         <Card className="rounded-xl">
           <CardContent className="pt-3 pb-3">
-            <div className="text-xs text-muted-foreground" title="Monthly Recurring Revenue — mesicni opakujici se prijem">Aktivni MRR</div>
+            <div className="text-xs text-muted-foreground" title="Měsíční opakující se příjem">Aktivní měsíční příjem</div>
             <div className="text-2xl font-bold text-green-600">{activeTotal.toLocaleString('cs-CZ')} Kc</div>
           </CardContent>
         </Card>

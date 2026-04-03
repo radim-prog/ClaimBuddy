@@ -399,14 +399,14 @@ export default function BillingPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">MRR</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Měsíční příjem</CardTitle>
               <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
                 <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{fmtCZK(dashboard.totalMRR)}</div>
-              <p className="text-xs text-muted-foreground mt-1">mesicni opakovany prijem</p>
+              <p className="text-xs text-muted-foreground mt-1">měsíční opakovaný příjem</p>
             </CardContent>
           </Card>
 

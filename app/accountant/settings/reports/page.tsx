@@ -28,7 +28,7 @@ const REPORT_TYPES = [
   {
     type: 'weekly_summary',
     label: 'Týdenní přehled',
-    description: 'Souhrn: MRR, neplacené faktury, uzávěrky, platby',
+    description: 'Souhrn: měsíční příjem, neplacené faktury, uzávěrky, platby',
     icon: Calendar,
     defaultFreq: 'weekly' as const,
   },

@@ -222,7 +222,7 @@ function buildReport(
     case 'monthly_summary':
       return {
         kpis: [
-          { label: 'MRR', value: fmtCzk(data.currentMRR), color: '#2563eb' },
+          { label: 'Měsíční příjem', value: fmtCzk(data.currentMRR), color: '#2563eb' },
           { label: 'Aktivních klientů', value: String(data.activeClients), color: '#16a34a' },
           { label: 'Neplacených faktur', value: String(data.unpaidInvoices), color: data.unpaidInvoices > 0 ? '#dc2626' : '#16a34a' },
         ],
@@ -253,7 +253,7 @@ function buildReport(
           { label: 'Platby měsíc', value: `${data.paymentsThisMonth}/${data.paymentsTotal}`, color: '#2563eb' },
         ],
         tableRows: [
-          { label: 'MRR', value: fmtCzk(data.currentMRR) },
+          { label: 'Měsíční příjem', value: fmtCzk(data.currentMRR) },
           { label: 'Aktivních klientů', value: String(data.activeClients) },
         ],
       }
