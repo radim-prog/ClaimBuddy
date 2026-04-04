@@ -69,10 +69,10 @@ export default function ProPodnikatelePage() {
 
               <div className="mt-8 flex flex-col sm:flex-row gap-3">
                 <Button size="lg" className="h-12 px-8 text-base font-semibold bg-blue-600 hover:bg-blue-700" asChild>
-                  <a href="#lead-form">
+                  <Link href="/auth/register">
                     Vyzkoušet zdarma
                     <ArrowRight className="ml-2 h-4 w-4" />
-                  </a>
+                  </Link>
                 </Button>
                 <Button size="lg" variant="outline" className="h-12 px-8 text-base" asChild>
                   <Link href="/#pricing">Zobrazit ceník</Link>
@@ -183,14 +183,14 @@ export default function ProPodnikatelePage() {
             Začněte mít účetnictví pod kontrolou
           </h2>
           <p className="mt-4 text-lg text-white/80 max-w-xl mx-auto">
-            Vyplňte formulář a získáte 30 dní plného přístupu zdarma.
+            Zaregistrujte se a získáte 30 dní plného přístupu zdarma.
           </p>
           <div className="mt-10">
             <Button size="lg" className="h-12 px-8 text-base font-semibold bg-white text-blue-700 hover:bg-white/90" asChild>
-              <a href="#lead-form">
+              <Link href="/auth/register">
                 Vyzkoušet zdarma
                 <ArrowRight className="ml-2 h-4 w-4" />
-              </a>
+              </Link>
             </Button>
           </div>
         </div>

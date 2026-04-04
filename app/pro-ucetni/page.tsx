@@ -213,12 +213,17 @@ export default function ProUcetniPage() {
           <p className="mt-4 text-lg text-white/80 max-w-xl mx-auto">
             Založte si účet zdarma. 30 dní plný přístup, bez platební karty.
           </p>
-          <div className="mt-10">
+          <div className="mt-10 flex flex-col sm:flex-row items-center gap-3 justify-center">
             <Button size="lg" className="h-12 px-8 text-base font-semibold bg-white text-purple-700 hover:bg-white/90" asChild>
               <a href="#lead-form">
-                Vyzkoušet zdarma
+                Nezávazná konzultace
                 <ArrowRight className="ml-2 h-4 w-4" />
               </a>
+            </Button>
+            <Button size="lg" variant="outline" className="h-12 px-8 text-base text-white border-white/40 hover:bg-white/10" asChild>
+              <Link href="/auth/register">
+                Registrovat se
+              </Link>
             </Button>
           </div>
         </div>
