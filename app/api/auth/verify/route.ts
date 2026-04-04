@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendWelcomeEmail } from '@/lib/email-service'
+import { startReverseTrial } from '@/lib/subscription-store'
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token')
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     // Find user with this verification token
     const { data: user, error: findError } = await supabaseAdmin
       .from('users')
-      .select('id, email, name, verification_token_expires')
+      .select('id, email, name, role, verification_token_expires')
       .eq('verification_token', token)
       .single()
 
@@ -45,6 +46,12 @@ export async function GET(request: NextRequest) {
       console.error('Verification update error:', updateError)
       return NextResponse.redirect(`${appUrl}/auth/login?error=invalid_token`)
     }
+
+    // Start reverse trial (non-blocking)
+    const portalType = user.role === 'client' ? 'client' : 'accountant'
+    startReverseTrial(user.id, portalType as 'accountant' | 'client').catch((err) => {
+      console.error('Failed to start trial:', err)
+    })
 
     // Send welcome email (non-blocking)
     sendWelcomeEmail(user.email, user.name).catch((err) => {

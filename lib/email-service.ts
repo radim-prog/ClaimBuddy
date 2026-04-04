@@ -389,9 +389,18 @@ export async function sendWelcomeEmail(
       účetnictví.
     </p>
     <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
-      Jako nový uživatel máte aktivovanou <strong>30denní zkušební verzi Professional</strong>
+      Jako nový uživatel máte aktivovanou <strong>30denní zkušební verzi Premium</strong>
       zdarma. Užijte si všechny prémiové funkce bez omezení.
     </p>
+    <div style="margin:16px 0;padding:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">
+      <p style="margin:0 0 8px;font-size:15px;color:#166534;font-weight:600;">
+        Dárek pro vás: 3 měsíce zdarma!
+      </p>
+      <p style="margin:0;font-size:14px;color:#374151;line-height:1.5;">
+        Po skončení zkušební doby použijte kód <strong style="color:#7c3aed;font-size:16px;letter-spacing:1px;">ZDARMA3</strong>
+        při výběru tarifu a získejte <strong>3 měsíce Premium zcela zdarma</strong>.
+      </p>
+    </div>
     ${ctaButton('https://app.zajcon.cz', 'Přejít do aplikace')}
     <p style="margin:20px 0 0;font-size:13px;color:#6b7280;line-height:1.5;">
       Máte otázky? Odpovídáme na <a href="mailto:podpora@zajcon.cz"
@@ -400,9 +409,9 @@ export async function sendWelcomeEmail(
 
   return sendEmail({
     to: email,
-    subject: 'Vítejte v ÚčetníOS!',
+    subject: 'Vítejte v ÚčetníOS! + kód na 3 měsíce zdarma',
     html: baseHtml('Vítejte v ÚčetníOS', bodyContent),
-    text: `Dobrý den, ${name},\n\nVáš účet v ÚčetníOS je aktivní. Máte 30denní zkušební verzi Professional zdarma.\n\nPřihlaste se na: https://app.zajcon.cz\n\n— ÚčetníOS`,
+    text: `Dobrý den, ${name},\n\nVáš účet v ÚčetníOS je aktivní. Máte 30denní zkušební verzi Premium zdarma.\n\nDárek: použijte kód ZDARMA3 při výběru tarifu a získejte 3 měsíce Premium zcela zdarma!\n\nPřihlaste se na: https://app.zajcon.cz\n\n— ÚčetníOS`,
   })
 }
 

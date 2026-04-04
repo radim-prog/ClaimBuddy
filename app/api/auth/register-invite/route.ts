@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { hashPassword } from '@/lib/auth'
 import { sendWelcomeEmail } from '@/lib/email-service'
+import { startReverseTrial } from '@/lib/subscription-store'
 
 export async function POST(request: NextRequest) {
   const { token, password, name, gdprConsent } = await request.json()
@@ -109,6 +110,11 @@ export async function POST(request: NextRequest) {
       accepted_at: new Date().toISOString(),
     }).eq('id', invite.id),
   ])
+
+  // Start reverse trial (non-blocking) — client portal
+  startReverseTrial(newUserId, 'client').catch((err) => {
+    console.error('Failed to start trial for invite user:', err)
+  })
 
   // Send welcome email (non-blocking)
   const userName = name?.trim() || email.split('@')[0]

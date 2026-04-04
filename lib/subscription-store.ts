@@ -278,7 +278,10 @@ export async function logUsage(userId: string, action: string, resourceId?: stri
 // ============================================
 
 const TRIAL_DURATION_DAYS = 30
-const TRIAL_TIER = 'professional'
+const TRIAL_TIERS: Record<string, string> = {
+  accountant: 'professional',
+  client: 'plus',
+}
 
 export async function startReverseTrial(userId: string, portalType: 'accountant' | 'client' = 'accountant'): Promise<Subscription | null> {
   // Prevent trial restart: if user already has any subscription (active, trialing, cancelled, etc.), skip
@@ -288,10 +291,12 @@ export async function startReverseTrial(userId: string, portalType: 'accountant'
   const trialEnd = new Date()
   trialEnd.setDate(trialEnd.getDate() + TRIAL_DURATION_DAYS)
 
+  const trialTier = TRIAL_TIERS[portalType] || 'professional'
+
   return upsertSubscription({
     user_id: userId,
     portal_type: portalType,
-    plan_tier: TRIAL_TIER,
+    plan_tier: trialTier,
     status: 'trialing',
     trial_end: trialEnd.toISOString().split('T')[0],
   })
