@@ -22,6 +22,7 @@ import {
   AlertCircle,
   AlertTriangle,
   Clock,
+  Eye,
   Save,
   FileText,
   CreditCard,
@@ -54,6 +55,7 @@ type ClosureDetailModalProps = {
 const STATUS_OPTIONS = [
   { value: 'missing', label: 'Chybí', icon: AlertCircle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20' },
   { value: 'uploaded', label: 'Nahráno', icon: Clock, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-900/20' },
+  { value: 'reviewed', label: 'Ke kontrole', icon: Eye, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
   { value: 'approved', label: 'Schváleno', icon: CheckCircle, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20' },
 ]
 

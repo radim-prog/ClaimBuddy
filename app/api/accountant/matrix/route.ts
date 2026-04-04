@@ -100,6 +100,11 @@ export async function GET(request: NextRequest) {
         c.expense_documents_status !== 'missing' &&
         c.income_invoices_status !== 'missing'
       ).length,
+      reviewed: reportingClosures.filter(c =>
+        [c.bank_statement_status, c.expense_documents_status, c.income_invoices_status]
+          .every(s => s === 'reviewed' || s === 'approved') &&
+        !(c.bank_statement_status === 'approved' && c.expense_documents_status === 'approved' && c.income_invoices_status === 'approved')
+      ).length,
       approved: reportingClosures.filter(c =>
         c.bank_statement_status === 'approved' &&
         c.expense_documents_status === 'approved' &&

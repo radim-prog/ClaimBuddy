@@ -23,7 +23,7 @@ function getSurnameKey(name: string): string {
   return name.toLowerCase()
 }
 
-type StatusType = 'missing' | 'uploaded' | 'approved' | 'future' | 'current'
+type StatusType = 'missing' | 'uploaded' | 'reviewed' | 'approved' | 'future' | 'current'
 
 type Company = {
   id: string
@@ -125,6 +125,11 @@ const statusColors: Record<StatusType, { bg: string; text: string; border: strin
     text: 'text-yellow-900',
     border: 'border-yellow-500'
   },
+  reviewed: {
+    bg: 'bg-blue-400',
+    text: 'text-white',
+    border: 'border-blue-500'
+  },
   current: {
     bg: 'bg-orange-400',
     text: 'text-orange-900',
@@ -172,6 +177,15 @@ function getMonthStatus(closureMap: Map<string, MonthlyClosure>, companyId: stri
     closure.income_invoices_status === 'approved'
 
   if (allApproved) return 'approved'
+
+  // Všechny reviewed (nebo mix reviewed+approved) = modrá
+  const allReviewedOrAbove = [
+    closure.bank_statement_status,
+    closure.expense_documents_status,
+    closure.income_invoices_status,
+  ].every(s => s === 'reviewed' || s === 'approved')
+
+  if (allReviewedOrAbove) return 'reviewed'
 
   // Jinak = něco uploaded, nic nechybí → žlutá
   return 'uploaded'
@@ -251,13 +265,14 @@ const StatusCell = React.memo(function StatusCell({
 
   const getIndicatorColor = (s: StatusType) => {
     if (s === 'approved') return 'bg-green-400'
+    if (s === 'reviewed') return 'bg-blue-300'
     if (s === 'uploaded') return 'bg-yellow-300'
     if (s === 'current') return 'bg-orange-300'
     return 'bg-red-300'
   }
 
-  const getStatusIcon = (s: string) => s === 'approved' ? '✓' : s === 'uploaded' ? '⏳' : s === 'current' ? '⏳' : '✗'
-  const getStatusColor = (s: string) => s === 'approved' ? 'text-green-400' : s === 'uploaded' ? 'text-yellow-400' : s === 'current' ? 'text-orange-400' : 'text-red-400'
+  const getStatusIcon = (s: string) => s === 'approved' ? '✓' : s === 'reviewed' ? '👁' : s === 'uploaded' ? '⏳' : s === 'current' ? '⏳' : '✗'
+  const getStatusColor = (s: string) => s === 'approved' ? 'text-green-400' : s === 'reviewed' ? 'text-blue-400' : s === 'uploaded' ? 'text-yellow-400' : s === 'current' ? 'text-orange-400' : 'text-red-400'
 
   return (
     <td
@@ -292,7 +307,7 @@ const StatusCell = React.memo(function StatusCell({
           `}
         >
           <span className={`text-sm sm:text-lg font-bold ${colors.text}`}>
-            {status === 'approved' ? '✓' : status === 'uploaded' ? '⏳' : status === 'current' ? '⏳' : '!'}
+            {status === 'approved' ? '✓' : status === 'reviewed' ? '👁' : status === 'uploaded' ? '⏳' : status === 'current' ? '⏳' : '!'}
           </span>
           <div className="flex gap-0.5">
             <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${getIndicatorColor(bankStatus)} border border-white/50`} title="Výpis"></div>
@@ -355,7 +370,7 @@ export default function AccountantDashboard() {
   const [selectedYear, setSelectedYear] = useState(currentYear)
   const { userRole, permissions } = useAccountantUser()
   const isAdmin = userRole === 'admin'
-  const [filter, setFilter] = useState<'all' | 'missing' | 'uploaded' | 'approved'>('all')
+  const [filter, setFilter] = useState<'all' | 'missing' | 'uploaded' | 'reviewed' | 'approved'>('all')
   const [closureModalOpen, setClosureModalOpen] = useState(false)
   const [selectedClosure, setSelectedClosure] = useState<MonthlyClosure | null>(null)
   const [selectedCompanyName, setSelectedCompanyName] = useState('')
@@ -384,7 +399,7 @@ export default function AccountantDashboard() {
     }
 
     return {
-      matrix: matrix || { companies: [], closures: [], stats: { total: 0, missing: 0, uploaded: 0, approved: 0 } },
+      matrix: matrix || { companies: [], closures: [], stats: { total: 0, missing: 0, uploaded: 0, reviewed: 0, approved: 0 } },
       todayTasks: tasksJson?.tasks || [],
       timeSummary: timeJson || null,
       overdueInvoices: overdueStats,
@@ -441,7 +456,7 @@ export default function AccountantDashboard() {
     }
   }, [closureMap, handleCellClick])
 
-  const stats = data?.stats ?? { total: 0, missing: 0, uploaded: 0, approved: 0 }
+  const stats = data?.stats ?? { total: 0, missing: 0, uploaded: 0, reviewed: 0, approved: 0 }
   const groups = data?.groups ?? []
 
   // Group billing map: group_name → billing_company_id (fallback: first company in group)
@@ -569,6 +584,19 @@ export default function AccountantDashboard() {
                   </button>
 
                   <button
+                    onClick={() => setFilter(filter === 'reviewed' ? 'all' : 'reviewed')}
+                    className={`flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg transition-colors ${filter === 'reviewed' ? 'bg-blue-100 ring-2 ring-blue-400' : 'hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
+                  >
+                    <div className="w-8 h-8 rounded bg-blue-400 border-2 border-blue-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm text-white font-bold">{stats.reviewed}</span>
+                    </div>
+                    <div className="text-left hidden sm:block">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Ke kontrole</div>
+                      <div className="text-lg font-bold text-blue-700 dark:text-blue-400">{stats.reviewed}</div>
+                    </div>
+                  </button>
+
+                  <button
                     onClick={() => setFilter(filter === 'approved' ? 'all' : 'approved')}
                     className={`border-l pl-3 ml-1 hidden sm:flex items-center gap-2 px-2 py-2 rounded-lg transition-colors cursor-pointer ${filter === 'approved' ? 'bg-green-100 dark:bg-green-900/30 ring-2 ring-green-400' : 'hover:bg-green-50 dark:hover:bg-green-900/20'}`}
                   >
@@ -590,7 +618,7 @@ export default function AccountantDashboard() {
                       const rows = filteredCompanies.map(company => {
                         const statuses = months.map((_, i) => {
                           const status = getMonthStatus(closureMap, company.id, i, selectedYear)
-                          return status === 'approved' ? 'OK' : status === 'uploaded' ? 'Čeká' : status === 'missing' ? 'Chybí' : '-'
+                          return status === 'approved' ? 'OK' : status === 'reviewed' ? 'Kontrola' : status === 'uploaded' ? 'Čeká' : status === 'missing' ? 'Chybí' : '-'
                         })
                         return [company.name, company.ico, ...statuses].join(';')
                       })
