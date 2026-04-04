@@ -431,7 +431,7 @@ export function DocumentDetailPanel({ document: doc, companyId, onExtract, extra
                 ? 'text-green-700 dark:text-green-300'
                 : 'text-blue-700 dark:text-blue-300'
             )}>
-              {extractionJob.status === 'completed' ? 'Vytěžení dokončeno' : 'Pipeline vytěžování'}
+              {extractionJob.status === 'completed' ? 'Vytěžení dokončeno' : 'Postup vytěžování'}
             </span>
             {extractionJob.steps.length > 0 && (() => {
               const first = extractionJob.steps[0]
