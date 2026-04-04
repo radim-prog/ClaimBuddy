@@ -88,6 +88,7 @@ type DocumentCheckData = {
     uploaded_count: number
     system_invoices_count: number
     uses_internal_invoicing: boolean
+    income_source?: string
   }
 }
 
@@ -269,11 +270,17 @@ export function ClosureDetailModal({ open, onOpenChange, closure, companyName, o
                 )}
                 {docType.key === 'income_invoices_status' && documentCheck?.income_invoices && (
                   <div className="text-xs text-gray-500 dark:text-gray-400 pl-6">
-                    {documentCheck.income_invoices.uploaded_count} nahráno
-                    {documentCheck.income_invoices.system_invoices_count > 0 && (
-                      <span className="ml-1 text-blue-500 dark:text-blue-400">
-                        + {documentCheck.income_invoices.system_invoices_count} v systému
-                      </span>
+                    {documentCheck.income_invoices.income_source === 'external' || documentCheck.income_invoices.income_source === 'parent_company' ? (
+                      <span className="text-blue-500 dark:text-blue-400">Faktury vystavuje externí subjekt</span>
+                    ) : (
+                      <>
+                        {documentCheck.income_invoices.uploaded_count} nahráno
+                        {documentCheck.income_invoices.system_invoices_count > 0 && (
+                          <span className="ml-1 text-blue-500 dark:text-blue-400">
+                            + {documentCheck.income_invoices.system_invoices_count} v systému
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -335,7 +342,7 @@ export function ClosureDetailModal({ open, onOpenChange, closure, companyName, o
                     {expenseStatus === 'missing' && (
                       <p>Nákladové doklady: {documentCheck.expense_documents.uploaded_count} nahráno</p>
                     )}
-                    {incomeStatus === 'missing' && (
+                    {incomeStatus === 'missing' && documentCheck.income_invoices.income_source !== 'external' && documentCheck.income_invoices.income_source !== 'parent_company' && (
                       <div>
                         <p>Příjmové faktury: {documentCheck.income_invoices.uploaded_count} nahráno</p>
                         {documentCheck.income_invoices.system_invoices_count > 0 && (
