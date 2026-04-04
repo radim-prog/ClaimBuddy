@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const { data: companies } = await supabaseAdmin
       .from('companies')
       .select('id, name')
-      .eq('active', true)
+      .in('status', ['active', 'onboarding'])
       .order('name')
 
     if (!companies || companies.length === 0) {

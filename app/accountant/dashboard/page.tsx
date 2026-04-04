@@ -12,6 +12,7 @@ import { VatMatrix } from '@/components/tax-tracking/vat-matrix'
 import { IncomeTaxMatrix } from '@/components/tax-tracking/income-tax-matrix'
 import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { toast } from 'sonner'
 
 // Sort by surname for people, full name for companies
 function getSurnameKey(name: string): string {
@@ -429,7 +430,10 @@ export default function AccountantDashboard() {
           const data = await res.json()
           closure = data.closure
         }
-      } catch { /* fallback: do nothing */ }
+      } catch (err) {
+          console.error('Failed to create closure:', err)
+          toast.error('Nepodařilo se vytvořit záznam')
+        }
     }
     if (closure) {
       handleCellClick(closure as MonthlyClosure, companyName)
