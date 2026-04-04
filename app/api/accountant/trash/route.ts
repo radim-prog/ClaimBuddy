@@ -165,6 +165,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Sync closure status on document restore
+    if (type === 'documents') {
+      try {
+        const { data: restoredDoc } = await supabaseAdmin
+          .from('documents')
+          .select('company_id, period, type')
+          .eq('id', id)
+          .single()
+
+        if (restoredDoc?.company_id && restoredDoc?.period && restoredDoc?.type) {
+          const { onDocumentRestored } = await import('@/lib/closure-document-sync')
+          await onDocumentRestored(restoredDoc.company_id, restoredDoc.period, restoredDoc.type, userId)
+        }
+      } catch (e) {
+        console.warn('[Trash] Closure sync on restore failed:', e)
+      }
+    }
+
     return NextResponse.json({ success: true, message: `${TYPE_LABELS[type]} obnoven(a)` })
   } catch (error) {
     console.error('[Trash POST]', error)

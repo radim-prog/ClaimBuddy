@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { updateClosureStatus } from '@/lib/closure-store-db'
+import { updateClosureStatus, getClosure } from '@/lib/closure-store-db'
 import { addActivity } from '@/lib/activity-store-db'
 import { resolveReminder } from '@/lib/reminder-engine'
 
@@ -52,19 +52,29 @@ export async function addUpload(data: Omit<UploadRecord, 'id' | 'uploaded_at'>):
 
   if (error) throw new Error(`Failed to add upload: ${error.message}`)
 
-  // Update closure status: missing → uploaded
+  // Update closure status: only upgrade missing → uploaded (never overwrite reviewed/approved/skipped)
   const closureField = typeToClosureField[data.document_type]
   if (closureField) {
     try {
-      await updateClosureStatus(
-        data.company_id,
-        data.period,
-        closureField,
-        'uploaded',
-        data.uploaded_by || 'system'
-      )
+      const existing = await getClosure(data.company_id, data.period)
+      const currentFieldStatus = existing
+        ? (closureField === 'bank_statement_status'
+            ? existing.bank_statement_status
+            : closureField === 'expense_documents_status'
+              ? existing.expense_documents_status
+              : existing.income_invoices_status)
+        : 'missing'
+
+      if (currentFieldStatus === 'missing' || !existing) {
+        await updateClosureStatus(
+          data.company_id,
+          data.period,
+          closureField,
+          'uploaded',
+          data.uploaded_by || 'system'
+        )
+      }
     } catch (e) {
-      // Non-critical - closure update can fail if no closure exists
       console.warn('Failed to update closure status:', e)
     }
   }
