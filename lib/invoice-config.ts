@@ -1,5 +1,6 @@
 // Supplier configuration for invoice PDF generation
-// TODO: Load from app_settings DB table in the future
+// Server-side: use getSupplierInfo() from lib/supplier-loader.ts (loads from app_settings DB with this as fallback)
+// Client-side: uses this static export directly (see app/client/billing/page.tsx)
 
 export interface SupplierInfo {
   name: string

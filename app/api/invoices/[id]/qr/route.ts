@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generatePaymentQR } from '@/lib/qr-payment';
 import type { QRCodeOptions } from '@/lib/qr-payment';
+import { getSupplierInfo } from '@/lib/supplier-loader';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,10 +33,9 @@ export async function GET(
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
-    // Use hardcoded supplier bank account (same as PDF generation)
-    // Company-specific bank accounts can be added later
-    const { SUPPLIER } = await import('@/lib/invoice-config');
-    const bankAccount = SUPPLIER.iban || SUPPLIER.bankAccount;
+    // Load supplier from DB (falls back to hardcoded config)
+    const supplier = await getSupplierInfo();
+    const bankAccount = supplier.iban || supplier.bankAccount;
 
     const qrOptions: QRCodeOptions = {
       size,
