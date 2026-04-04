@@ -133,7 +133,17 @@ export async function POST(request: NextRequest) {
 
       if (company) {
         if (!companyName) companyName = company.name
-        if (hourlyRate === undefined) hourlyRate = company.default_hourly_rate || 700
+        if (hourlyRate === undefined) {
+          hourlyRate = company.default_hourly_rate
+          if (!hourlyRate) {
+            const { data: pricing } = await supabaseAdmin
+              .from('pricing_settings')
+              .select('hourly_rates')
+              .limit(1)
+              .maybeSingle()
+            hourlyRate = (pricing?.hourly_rates as any)?.standard || 700
+          }
+        }
       }
     }
 

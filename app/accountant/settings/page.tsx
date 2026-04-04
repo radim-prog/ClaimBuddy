@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { useSettings, AlertSettings } from '@/lib/contexts/settings-context'
-import { Check, RotateCcw, Calendar, Banknote } from 'lucide-react'
+import { Check, RotateCcw, Calendar } from 'lucide-react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 
 function InlineField({ label, id, children, className }: { label: string; id?: string; children: React.ReactNode; className?: string }) {
@@ -45,40 +46,15 @@ export default function AccountantSettingsPage() {
   const [saved, setSaved] = useState(false)
   const [deadlineDay, setDeadlineDay] = useState(15)
   const [deadlineSaving, setDeadlineSaving] = useState(false)
-  const [hourlyRate, setHourlyRate] = useState(700)
-  const [kmRate, setKmRate] = useState(4.5)
-  const [wastedTimeRate, setWastedTimeRate] = useState(350)
-  const [ratesSaving, setRatesSaving] = useState(false)
 
   useEffect(() => {
     fetch('/api/accountant/settings')
       .then(r => r.json())
       .then(data => {
         if (data.settings?.deadline_day) setDeadlineDay(Number(data.settings.deadline_day))
-        if (data.settings?.default_hourly_rate) setHourlyRate(Number(data.settings.default_hourly_rate))
-        if (data.settings?.default_km_rate) setKmRate(Number(data.settings.default_km_rate))
-        if (data.settings?.default_wasted_time_rate) setWastedTimeRate(Number(data.settings.default_wasted_time_rate))
       })
       .catch(() => {})
   }, [])
-
-  const handleRatesSave = async () => {
-    setRatesSaving(true)
-    try {
-      const res = await fetch('/api/accountant/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          default_hourly_rate: hourlyRate,
-          default_km_rate: kmRate,
-          default_wasted_time_rate: wastedTimeRate,
-        }),
-      })
-      if (res.ok) toast.success('Sazby uloženy')
-      else toast.error('Chyba při ukládání')
-    } catch { toast.error('Chyba při ukládání') }
-    finally { setRatesSaving(false) }
-  }
 
   const handleDeadlineDaySave = async () => {
     setDeadlineSaving(true)
@@ -120,12 +96,12 @@ export default function AccountantSettingsPage() {
 
   return (
     <div className="space-y-4">
-      {/* Deadline + Sazby */}
+      {/* Termíny */}
       <Card>
         <CardHeader className="pb-2 pt-4 px-4">
           <CardTitle className="text-sm font-display flex items-center gap-2">
             <Calendar className="h-3.5 w-3.5" />
-            Termíny a sazby
+            Termíny
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4 space-y-3">
@@ -137,20 +113,12 @@ export default function AccountantSettingsPage() {
               {deadlineSaving ? '...' : 'Uložit'}
             </Button>
           </div>
-          <div className="border-t pt-3 flex items-center gap-4 flex-wrap">
-            <InlineField label="Práce" id="hourlyRate">
-              <CompactInput id="hourlyRate" value={hourlyRate} onChange={setHourlyRate} min={0} step={50} unit="Kč/hod" />
-            </InlineField>
-            <InlineField label="Cesta" id="wastedTimeRate">
-              <CompactInput id="wastedTimeRate" value={wastedTimeRate} onChange={setWastedTimeRate} min={0} step={50} unit="Kč/hod" />
-            </InlineField>
-            <InlineField label="Kilometry" id="kmRate">
-              <CompactInput id="kmRate" value={kmRate} onChange={setKmRate} min={0} step={0.5} unit="Kč/km" />
-            </InlineField>
-            <Button size="sm" variant="outline" className="h-8 text-xs ml-auto" onClick={handleRatesSave} disabled={ratesSaving}>
-              {ratesSaving ? '...' : 'Uložit sazby'}
-            </Button>
-          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            Sazby a ceník nastavíte v{' '}
+            <Link href="/accountant/admin/operations#pricing" className="text-purple-600 hover:underline">
+              Admin → Provoz → Ceník
+            </Link>
+          </p>
         </CardContent>
       </Card>
 
