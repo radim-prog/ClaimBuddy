@@ -456,6 +456,97 @@ export function calculateMultiSectionTax(
   }
 }
 
+// DPPO (Corporate income tax) calculation — Czech §21 ZDP
+
+export type DppoConfig = {
+  revenue: number
+  expenses: number
+  add_back: number            // připočitatelné (§25)
+  deductible: number          // odčitatelné (§23/4, §19)
+  loss_deduction: number      // ztráta z min. let (§34/1)
+  donations: number           // dary (§20/8)
+  rd_deduction: number        // výzkum a vývoj (§34/4)
+  ztpp_employees: number      // ZTP zaměstnanci (§35)
+  advances_paid: number       // zálohy na DPPO
+}
+
+export type DppoCalculation = {
+  revenue: number
+  expenses: number
+  accountingProfit: number
+  addBack: number
+  deductible: number
+  adjustedBase: number
+  lossDeduction: number
+  donations: number
+  donationsLimit: number
+  rdDeduction: number
+  totalDeductions: number
+  baseAfterDeductions: number
+  roundedBase: number
+  taxRate: number
+  grossTax: number
+  ztppCredit: number
+  netTax: number
+  advancesPaid: number
+  taxDue: number
+}
+
+const ZTPP_CREDIT_PER_EMPLOYEE = 18000 // §35 ZDP
+
+export function calculateDppo(config: DppoConfig, rates: TaxRates): DppoCalculation {
+  const dppoRate = rates.dppo_rate ?? 0.21
+
+  // Step 1: Accounting profit
+  const accountingProfit = config.revenue - config.expenses
+
+  // Step 2-3: Tax base adjustments
+  const adjustedBase = accountingProfit + config.add_back - config.deductible
+
+  // Step 4: Deductions
+  const positiveBase = Math.max(0, adjustedBase)
+  const lossDeduction = Math.min(config.loss_deduction, positiveBase)
+  const baseAfterLoss = positiveBase - lossDeduction
+  const donationsLimit = Math.floor(baseAfterLoss * 0.10) // max 10% of base after loss
+  const donations = Math.min(config.donations, donationsLimit)
+  const rdDeduction = config.rd_deduction
+  const totalDeductions = lossDeduction + donations + rdDeduction
+  const baseAfterDeductions = Math.max(0, adjustedBase - totalDeductions)
+
+  // Step 5: Tax
+  const roundedBase = Math.floor(baseAfterDeductions / 1000) * 1000
+  const grossTax = Math.round(roundedBase * dppoRate)
+
+  // Step 6: Credits
+  const ztppCredit = config.ztpp_employees * ZTPP_CREDIT_PER_EMPLOYEE
+  const netTax = Math.max(0, grossTax - ztppCredit)
+
+  // Step 7: Balance
+  const taxDue = netTax - config.advances_paid
+
+  return {
+    revenue: config.revenue,
+    expenses: config.expenses,
+    accountingProfit,
+    addBack: config.add_back,
+    deductible: config.deductible,
+    adjustedBase,
+    lossDeduction,
+    donations,
+    donationsLimit,
+    rdDeduction,
+    totalDeductions,
+    baseAfterDeductions,
+    roundedBase,
+    taxRate: dppoRate,
+    grossTax,
+    ztppCredit,
+    netTax,
+    advancesPaid: config.advances_paid,
+    taxDue,
+  }
+}
+
 // Employee annual tax settlement (roční zúčtování zaměstnance)
 
 export type EmployeeTaxConfig = {

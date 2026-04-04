@@ -79,6 +79,14 @@ export type TaxAnnualConfigRow = {
   annual_revenue: number | null
   annual_expenses: number | null
   income_sections: IncomeSection[] | null
+  // DPPO fields (s.r.o.)
+  dppo_add_back: number         // připočitatelné položky (§25 ZDP)
+  dppo_deductible: number       // odčitatelné položky (§23/4, §19 ZDP)
+  dppo_loss_deduction: number   // ztráta z minulých let (§34/1 ZDP)
+  dppo_donations: number        // dary (§20/8 ZDP)
+  dppo_rd_deduction: number     // výzkum a vývoj (§34/4 ZDP)
+  dppo_ztpp_employees: number   // počet ZTP zaměstnanců (§35 ZDP)
+  dppo_advances_paid: number    // zaplacené zálohy na DPPO
   notes: string | null
   updated_by: string | null
   created_at?: string
