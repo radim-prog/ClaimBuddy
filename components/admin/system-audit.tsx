@@ -133,6 +133,9 @@ export function SystemAudit() {
       case 'LOGIN': return LogIn
       case 'LOGOUT': return LogOut
       case 'EXPORT': return Download
+      case 'closure_status_changed': return Edit2
+      case 'closure_approved': return CheckCircle2
+      case 'closure_bulk_review': return FileText
       default: return FileText
     }
   }
@@ -145,6 +148,9 @@ export function SystemAudit() {
       case 'LOGIN': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
       case 'LOGOUT': return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
       case 'EXPORT': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+      case 'closure_status_changed': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+      case 'closure_approved': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+      case 'closure_bulk_review': return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
       default: return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
     }
   }
@@ -157,6 +163,9 @@ export function SystemAudit() {
       LOGIN: 'Přihlášení',
       LOGOUT: 'Odhlášení',
       EXPORT: 'Export',
+      closure_status_changed: 'Změna uzávěrky',
+      closure_approved: 'Schválení uzávěrky',
+      closure_bulk_review: 'Hromadná kontrola',
     }
     return map[action] || action
   }
@@ -212,6 +221,9 @@ export function SystemAudit() {
                   <SelectItem value="LOGIN">Přihlášení</SelectItem>
                   <SelectItem value="LOGOUT">Odhlášení</SelectItem>
                   <SelectItem value="EXPORT">Export</SelectItem>
+                  <SelectItem value="closure_status_changed">Změna uzávěrky</SelectItem>
+                  <SelectItem value="closure_approved">Schválení uzávěrky</SelectItem>
+                  <SelectItem value="closure_bulk_review">Hromadná kontrola</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -339,9 +351,58 @@ export function SystemAudit() {
                           {log.new_values && Object.keys(log.new_values).length > 0 && (
                             <div className="col-span-2">
                               <p className="text-gray-500 dark:text-gray-400 mb-2">Nové hodnoty</p>
-                              <pre className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-border/50 text-xs overflow-x-auto">
-                                {JSON.stringify(log.new_values, null, 2)}
-                              </pre>
+                              {log.action?.startsWith('closure') ? (
+                                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-border/50 text-sm space-y-1">
+                                  {log.new_values.bank_statement_status && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-500">Výpisy:</span>
+                                      <Badge variant="outline">{log.new_values.bank_statement_status}</Badge>
+                                    </div>
+                                  )}
+                                  {log.new_values.expense_documents_status && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-500">Náklady:</span>
+                                      <Badge variant="outline">{log.new_values.expense_documents_status}</Badge>
+                                    </div>
+                                  )}
+                                  {log.new_values.income_invoices_status && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-500">Příjmy:</span>
+                                      <Badge variant="outline">{log.new_values.income_invoices_status}</Badge>
+                                    </div>
+                                  )}
+                                  {log.new_values.period && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-500">Období:</span>
+                                      <span>{log.new_values.period}</span>
+                                    </div>
+                                  )}
+                                  {log.new_values.field && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-500">Pole:</span>
+                                      <span>{log.new_values.field}</span>
+                                      <span className="text-gray-400">→</span>
+                                      <Badge variant="outline">{log.new_values.value}</Badge>
+                                    </div>
+                                  )}
+                                  {log.new_values.count !== undefined && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-500">Počet:</span>
+                                      <span>{log.new_values.count} úspěšně, {log.new_values.errors || 0} chyb</span>
+                                    </div>
+                                  )}
+                                  {log.new_values.notes && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-500">Poznámka:</span>
+                                      <span>{log.new_values.notes}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <pre className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-border/50 text-xs overflow-x-auto">
+                                  {JSON.stringify(log.new_values, null, 2)}
+                                </pre>
+                              )}
                             </div>
                           )}
                         </div>
