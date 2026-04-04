@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
 import { upsertClosureField } from '@/lib/closure-store-db'
-import { checkPermission } from '@/lib/permission-check'
+import { canApproveClosures } from '@/lib/permission-check'
+import { getFirmId } from '@/lib/firm-scope'
+import { logAudit } from '@/lib/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,10 +17,11 @@ export async function POST(request: NextRequest) {
   const userRole = request.headers.get('x-user-role')
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  // Approve endpoint always sets to 'approved' — check permission
-  const canApprove = await checkPermission(userId, 'documents_approve')
+  // Approve endpoint always sets to 'approved' — check permission (respects two-step workflow)
+  const firmId = getFirmId(request)
+  const canApprove = await canApproveClosures(userId, firmId)
   if (!canApprove) {
-    return NextResponse.json({ error: 'Nemáte oprávnění schvalovat uzávěrky.' }, { status: 403 })
+    return NextResponse.json({ error: 'Nemáte oprávnění schvalovat uzávěrky. Vyžaduje se schválení manažerem.' }, { status: 403 })
   }
 
   try {
@@ -69,19 +72,15 @@ export async function POST(request: NextRequest) {
         })
     }
 
-    // Log activity (ignore errors)
-    try {
-      await supabaseAdmin
-        .from('activity_log')
-        .insert({
-          user_id: userId,
-          action: 'closure_approved',
-          entity_type: 'monthly_closure',
-          entity_id: company_id,
-          details: { period, notes },
-          created_at: now,
-        })
-    } catch { /* ignore */ }
+    // Audit log
+    await logAudit({
+      userId,
+      action: 'closure_approved',
+      tableName: 'monthly_closures',
+      recordId: company_id,
+      newValues: { period, notes },
+      request,
+    })
 
     return NextResponse.json({
       success: true,

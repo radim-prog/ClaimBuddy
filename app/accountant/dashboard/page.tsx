@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { ClosureDetailModal } from '@/components/closure-detail-modal'
 // settings context removed — no longer needed on dashboard
@@ -371,6 +371,20 @@ export default function AccountantDashboard() {
   const { userRole, permissions } = useAccountantUser()
   const isAdmin = userRole === 'admin'
   const [filter, setFilter] = useState<'all' | 'missing' | 'uploaded' | 'reviewed' | 'approved'>('all')
+  const [requireManagerApproval, setRequireManagerApproval] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/accountant/firm/closure-settings')
+      .then(r => r.json())
+      .then(data => setRequireManagerApproval(data.require_manager_approval ?? false))
+      .catch(() => {})
+  }, [])
+
+  const canApproveClosures = useMemo(() => {
+    if (!hasPermission(permissions, 'documents_approve')) return false
+    if (requireManagerApproval && userRole !== 'manager' && userRole !== 'admin') return false
+    return true
+  }, [permissions, requireManagerApproval, userRole])
   const [closureModalOpen, setClosureModalOpen] = useState(false)
   const [selectedClosure, setSelectedClosure] = useState<MonthlyClosure | null>(null)
   const [selectedCompanyName, setSelectedCompanyName] = useState('')
@@ -897,7 +911,7 @@ export default function AccountantDashboard() {
         closure={selectedClosure}
         companyName={selectedCompanyName}
         onSave={handleClosureSave}
-        canApprove={hasPermission(permissions, 'documents_approve')}
+        canApprove={canApproveClosures}
       />
     </div>
   )

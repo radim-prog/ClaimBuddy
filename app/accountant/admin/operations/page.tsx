@@ -19,6 +19,7 @@ import {
   PenLine,
   FolderTree,
   FileText,
+  CheckSquare,
 } from 'lucide-react'
 import { CollapsibleSection } from '@/components/collapsible-section'
 import { TaskTemplates } from '@/components/admin/task-templates'
@@ -39,6 +40,7 @@ import { OperationsFolderTemplates } from '@/components/admin/operations-folder-
 import { OperationsEmail } from '@/components/admin/operations-email'
 import { InvoiceNoticesSettings } from '@/components/admin/operations-invoice-notices'
 import { OperationsBillingSettings } from '@/components/admin/operations-billing-settings'
+import { OperationsClosureSettings } from '@/components/admin/operations-closure-settings'
 
 const demoBadge = <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Demo</span>
 
@@ -47,6 +49,7 @@ const sections = [
   { id: 'revenue', label: 'Revenue sharing', icon: TrendingUp, Component: OperationsRevenue, badge: demoBadge },
   { id: 'billing', label: 'Billing-as-a-service', icon: CreditCard, Component: OperationsBilling, badge: demoBadge },
   { id: 'leads', label: 'Leady — Chci účetní', icon: Sparkles, Component: LeadsList, badge: demoBadge },
+  { id: 'closure-settings', label: 'Nastavení uzávěrek', icon: CheckSquare, Component: OperationsClosureSettings },
   { id: 'templates', label: 'Šablony úkolů', icon: Repeat, Component: TaskTemplates },
   { id: 'workflow', label: 'Automatická pravidla', icon: GitBranch, Component: OperationsWorkflow },
   { id: 'notifications', label: 'Notifikace', icon: Bell, Component: OperationsNotifications },

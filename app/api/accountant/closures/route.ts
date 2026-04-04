@@ -6,7 +6,9 @@ import { isStaffRole } from '@/lib/access-check'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { triggerMissingDocsReminder } from '@/lib/missing-docs-reminder'
 import { getUserName } from '@/lib/request-utils'
-import { checkPermission } from '@/lib/permission-check'
+import { checkPermission, canApproveClosures } from '@/lib/permission-check'
+import { getFirmId } from '@/lib/firm-scope'
+import { logAudit } from '@/lib/audit'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,12 +48,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'closure_id is required' }, { status: 400 })
     }
 
-    // Permission check: 'approved' status requires documents_approve permission
+    // Permission check: 'approved' status requires canApproveClosures (respects two-step workflow)
     const statusesToSet = [bank_statement_status, expense_documents_status, income_invoices_status]
     if (statusesToSet.some((s: string) => s === 'approved')) {
-      const canApprove = await checkPermission(userId, 'documents_approve')
+      const firmId = getFirmId(request)
+      const canApprove = await canApproveClosures(userId, firmId)
       if (!canApprove) {
-        return NextResponse.json({ error: 'Nemáte oprávnění schvalovat uzávěrky.' }, { status: 403 })
+        return NextResponse.json({ error: 'Nemáte oprávnění schvalovat uzávěrky. Vyžaduje se schválení manažerem.' }, { status: 403 })
       }
     }
 
@@ -69,7 +72,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Closure not found' }, { status: 404 })
     }
 
-    // Record activity
+    // Record activity (dashboard feed)
     await addActivity({
       type: 'closure_status_changed',
       company_id: updated.company_id,
@@ -77,6 +80,21 @@ export async function PUT(request: NextRequest) {
       title: `Uzávěrka ${period || updated.period} aktualizována`,
       description: `Výpisy: ${updated.bank_statement_status}, Náklady: ${updated.expense_documents_status}, Příjmy: ${updated.income_invoices_status}`,
       created_by: userName,
+    })
+
+    // Audit log (admin UI)
+    await logAudit({
+      userId,
+      action: 'closure_status_changed',
+      tableName: 'monthly_closures',
+      recordId: updated.id,
+      newValues: {
+        bank_statement_status: updated.bank_statement_status,
+        expense_documents_status: updated.expense_documents_status,
+        income_invoices_status: updated.income_invoices_status,
+        notes: updated.notes,
+      },
+      request,
     })
 
     // Trigger missing docs reminder check
@@ -118,27 +136,26 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid value' }, { status: 400 })
     }
 
-    // Permission check: 'approved' requires documents_approve permission
+    // Permission check: 'approved' requires canApproveClosures (respects two-step workflow)
     if (value === 'approved') {
-      const canApprove = await checkPermission(userId, 'documents_approve')
+      const firmId = getFirmId(request)
+      const canApprove = await canApproveClosures(userId, firmId)
       if (!canApprove) {
-        return NextResponse.json({ error: 'Nemáte oprávnění schvalovat uzávěrky.' }, { status: 403 })
+        return NextResponse.json({ error: 'Nemáte oprávnění schvalovat uzávěrky. Vyžaduje se schválení manažerem.' }, { status: 403 })
       }
     }
 
     const closure = await upsertClosureField(company_id, period, field, value, userId)
 
-    // Log status change to activity_log
-    try {
-      await supabaseAdmin.from('activity_log').insert({
-        user_id: userId,
-        action: 'closure_status_changed',
-        entity_type: 'monthly_closure',
-        entity_id: company_id,
-        details: { period, field, value },
-        created_at: new Date().toISOString(),
-      })
-    } catch { /* ignore logging errors */ }
+    // Audit log
+    await logAudit({
+      userId,
+      action: 'closure_status_changed',
+      tableName: 'monthly_closures',
+      recordId: company_id,
+      newValues: { period, field, value },
+      request,
+    })
 
     // Trigger missing docs reminder check after closure update
     triggerMissingDocsReminder(company_id, period, userId).catch(err => {
@@ -199,7 +216,8 @@ export async function POST(request: NextRequest) {
         }
         const targetValue: StatusValue = (value === 'reviewed' || value === 'approved') ? value : 'reviewed'
         if (targetValue === 'approved') {
-          const canApprove = await checkPermission(userId, 'documents_approve')
+          const firmId = getFirmId(request)
+          const canApprove = await canApproveClosures(userId, firmId)
           if (!canApprove) {
             errors.push({ company_id, period, error: 'Nemáte oprávnění schvalovat' })
             continue
@@ -216,7 +234,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Log activity for the batch
+    // Log activity for the batch (dashboard feed)
     if (results.length > 0) {
       await addActivity({
         type: 'closure_status_changed',
@@ -225,6 +243,15 @@ export async function POST(request: NextRequest) {
         title: `Hromadný ${action === 'bulk_review' ? 'review' : 'close'}: ${results.length} uzávěrek`,
         description: `${results.length} úspěšně, ${errors.length} chyb`,
         created_by: userName,
+      })
+
+      // Audit log
+      await logAudit({
+        userId,
+        action: 'closure_bulk_review',
+        tableName: 'monthly_closures',
+        newValues: { action, count: results.length, errors: errors.length },
+        request,
       })
     }
 
