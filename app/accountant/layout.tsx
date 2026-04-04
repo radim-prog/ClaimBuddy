@@ -72,7 +72,7 @@ const dailyWorkNav = [
   { name: 'Přehled', href: '/accountant/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
   { name: 'Klienti', href: '/accountant/clients', icon: Users, badge: 'attention' as const, tourId: 'nav-clients' },
   { name: 'Komunikace', href: '/accountant/komunikace', icon: MessageCircle, badge: 'messages' as const, feature: 'messages', tourId: 'nav-komunikace' },
-  { name: 'Doklady', href: '/accountant/extraction', icon: ScanLine, badge: 'inbox' as const, activeMatch: ['/accountant/extraction', '/accountant/inbox'], feature: 'extraction', tourId: 'nav-extraction' },
+  { name: 'Vytěžování', href: '/accountant/extraction', icon: ScanLine, badge: 'inbox' as const, activeMatch: ['/accountant/extraction', '/accountant/inbox'], feature: 'extraction', tourId: 'nav-extraction' },
   { name: 'Práce', href: '/accountant/work', icon: Briefcase, badge: 'dynamic' as const, activeMatch: ['/accountant/work', '/accountant/tasks', '/accountant/projects'], tourId: 'nav-work' },
 ]
 
