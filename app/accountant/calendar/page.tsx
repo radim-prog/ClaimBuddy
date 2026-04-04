@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { FeatureGate } from '@/components/shared/feature-gate'
 import {
   Select,
   SelectContent,
@@ -276,6 +277,7 @@ export default function DeadlinesPage() {
   }
 
   return (
+    <FeatureGate feature="closures">
     <div>
       {/* Header */}
       <div className="mb-6">
@@ -523,5 +525,6 @@ export default function DeadlinesPage() {
         </div>
       )}
     </div>
+    </FeatureGate>
   )
 }

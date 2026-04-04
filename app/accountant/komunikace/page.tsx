@@ -10,12 +10,15 @@ import { KomunikaceListView } from '@/components/komunikace/komunikace-list-view
 import { KomunikaceChatDetail } from '@/components/komunikace/komunikace-chat-detail'
 import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
 import { useActiveModule } from '@/lib/contexts/active-module-context'
+import { FeatureGate } from '@/components/shared/feature-gate'
 
 export default function KomunikacePage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
-      <KomunikaceOrchestrator />
-    </Suspense>
+    <FeatureGate feature="messages">
+      <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+        <KomunikaceOrchestrator />
+      </Suspense>
+    </FeatureGate>
   )
 }
 

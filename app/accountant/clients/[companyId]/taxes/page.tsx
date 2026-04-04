@@ -9,6 +9,7 @@ import { SroTaxWorkspace } from '@/components/taxes/sro-tax-workspace'
 import { QuestionnaireViewer } from '@/components/taxes/questionnaire-viewer'
 import type { TaxRates } from '@/lib/tax-calculator'
 import type { TaxAnnualConfigRow } from '@/lib/types/tax'
+import { FeatureGate } from '@/components/shared/feature-gate'
 
 export default function TaxesPage() {
   const { company, companyId, employees } = useCompany()
@@ -42,6 +43,7 @@ export default function TaxesPage() {
   const basePath = `/accountant/clients/${companyId}`
 
   return (
+    <FeatureGate feature="income_tax">
     <div className="space-y-4">
       {/* Sub-navigation: Daně / Dohodáři */}
       <div className="flex items-center gap-1 border-b border-border pb-2">
@@ -108,5 +110,6 @@ export default function TaxesPage() {
         />
       )}
     </div>
+    </FeatureGate>
   )
 }

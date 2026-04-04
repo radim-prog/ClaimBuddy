@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { FeatureGate } from '@/components/shared/feature-gate'
 import { Button } from '@/components/ui/button'
 import { ClosureTabs, ClosureTabContent } from '@/components/client/closures/closure-tabs'
 import { ClosureSummaryTab } from '@/components/client/closures/closure-summary-tab'
@@ -149,6 +150,7 @@ export default function AccountantClientClosurePage() {
   }
 
   return (
+    <FeatureGate feature="closures">
     <div className="space-y-5 max-w-5xl mx-auto p-4 md:p-6">
       {/* Header */}
       <div className="flex items-center gap-3">
@@ -228,5 +230,6 @@ export default function AccountantClientClosurePage() {
         </ClosureTabs>
       )}
     </div>
+    </FeatureGate>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { FeatureGate } from '@/components/shared/feature-gate'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -137,6 +138,7 @@ export default function AnalyticsDashboard() {
   )
 
   return (
+    <FeatureGate feature="analytics">
     <div className="space-y-6">
       {/* Hlavicka */}
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -431,6 +433,7 @@ export default function AnalyticsDashboard() {
         </CardContent>
       </Card>
     </div>
+    </FeatureGate>
   )
 }
 

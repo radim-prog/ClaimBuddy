@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { FeatureGate } from '@/components/shared/feature-gate'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -330,6 +331,7 @@ export default function ExtractionInboxPage() {
   }
 
   return (
+    <FeatureGate feature="extraction">
     <div className="space-y-4 max-w-5xl mx-auto">
       {/* Compact toolbar (layout provides page title) */}
       <div className="flex items-center justify-between">
@@ -631,5 +633,6 @@ export default function ExtractionInboxPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </FeatureGate>
   )
 }
