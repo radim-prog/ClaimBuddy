@@ -9,16 +9,30 @@ import {
   Database,
   Trash2,
   Bug,
+  CreditCard,
+  Building2,
+  AlertTriangle,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
+import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 
-const adminNavItems = [
+type NavItem = {
+  href: string
+  label: string
+  icon: typeof Shield
+  systemAdminOnly?: boolean
+}
+
+const adminNavItems: NavItem[] = [
   { href: '/accountant/admin', label: 'Přehled', icon: Shield },
   { href: '/accountant/admin/people', label: 'Lidé', icon: Users },
   { href: '/accountant/admin/operations', label: 'Provoz', icon: Settings2 },
   { href: '/accountant/admin/system', label: 'Systém', icon: Database },
   { href: '/accountant/admin/bug-reports', label: 'Bug reporty', icon: Bug },
   { href: '/accountant/admin/trash', label: 'Koš', icon: Trash2 },
+  { href: '/accountant/admin/subscription', label: 'Předplatné', icon: CreditCard, systemAdminOnly: true },
+  { href: '/accountant/admin/tenants', label: 'Tenanti', icon: Building2, systemAdminOnly: true },
+  { href: '/accountant/admin/error-logs', label: 'Error logy', icon: AlertTriangle, systemAdminOnly: true },
 ]
 
 export default function AdminLayout({
@@ -27,6 +41,11 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname() ?? ''
+  const { isSystemAdmin } = useAccountantUser()
+
+  const visibleItems = adminNavItems.filter(item =>
+    !item.systemAdminOnly || isSystemAdmin
+  )
 
   return (
     <div className="max-w-4xl">
@@ -37,11 +56,11 @@ export default function AdminLayout({
         <span className="text-purple-400 dark:text-purple-500 text-xs">&mdash; akce jsou logovány</span>
       </div>
 
-      {/* Admin Navigation — 4 flat tabs */}
+      {/* Admin Navigation — flat tabs */}
       <Card className="mb-6">
         <CardContent className="pt-3 pb-3">
           <nav className="flex items-center gap-2 flex-wrap">
-            {adminNavItems.map((item) => {
+            {visibleItems.map((item) => {
               const Icon = item.icon
               const isActive = item.href === '/accountant/admin'
                 ? pathname === '/accountant/admin'
