@@ -3,6 +3,8 @@ import { DM_Sans, Plus_Jakarta_Sans } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 import { CookieConsentBanner } from '@/components/cookie-consent-banner'
+import { ChunkErrorBoundary } from '@/components/chunk-error-boundary'
+import { VersionChecker } from '@/components/version-checker'
 import './globals.css'
 
 const dmSans = DM_Sans({
@@ -55,7 +57,10 @@ export default function RootLayout({
           }
         ` }} />
         <ThemeProvider>
-          {children}
+          <ChunkErrorBoundary>
+            {children}
+          </ChunkErrorBoundary>
+          <VersionChecker />
           <Toaster position="top-center" richColors />
           <CookieConsentBanner />
         </ThemeProvider>
