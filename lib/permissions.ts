@@ -83,11 +83,29 @@ const ALL_FALSE: UserPermissions = {
 
 export const ROLE_PRESETS: Record<UserRole, UserPermissions> = {
   admin: { ...ALL_TRUE },
+  manager: {
+    ...ALL_FALSE,
+    dashboard: true, matrix_view: true, matrix_edit: true,
+    clients_view: true, clients_edit: true, messages: true,
+    documents_approve: true, reports: true,
+    admin_access: true, settings: true,
+  },
+  senior: {
+    ...ALL_FALSE,
+    dashboard: true, matrix_view: true, matrix_edit: true,
+    clients_view: true, clients_edit: true, messages: true,
+    documents_approve: true, reports: true,
+  },
   accountant: {
     ...ALL_FALSE,
     dashboard: true, matrix_view: true, matrix_edit: true,
     clients_view: true, clients_edit: true, messages: true,
     documents_approve: true, reports: true,
+  },
+  junior: {
+    ...ALL_FALSE,
+    dashboard: true, matrix_view: true, clients_view: true,
+    messages: true,
   },
   assistant: {
     ...ALL_FALSE,
