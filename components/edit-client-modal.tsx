@@ -44,6 +44,7 @@ type Company = {
   status?: string
   accounting_start_date?: string | null
   managing_director?: string | null
+  income_invoice_source?: string | null
 }
 
 type EditClientModalProps = {
@@ -296,6 +297,32 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
                   formData.monthly_reporting !== false ? 'translate-x-6' : 'translate-x-1'
                 }`} />
               </button>
+            </div>
+          </div>
+
+          {/* Fakturace */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2">Fakturace</h3>
+            <div>
+              <Label htmlFor="income_invoice_source">Zdroj příjmových faktur</Label>
+              <Select
+                value={formData.income_invoice_source || 'unknown'}
+                onValueChange={(value) => setFormData({ ...formData, income_invoice_source: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="internal">Vystavujeme v systému</SelectItem>
+                  <SelectItem value="external">Jiný fakturační systém</SelectItem>
+                  <SelectItem value="parent_company">Vystavuje mateřská společnost</SelectItem>
+                  <SelectItem value="none">Nefakturuje</SelectItem>
+                  <SelectItem value="unknown">Neznámý</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Ovlivňuje kontrolu příjmových faktur v uzávěrkách
+              </p>
             </div>
           </div>
 

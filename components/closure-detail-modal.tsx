@@ -27,6 +27,7 @@ import {
   FileText,
   CreditCard,
   Receipt,
+  SkipForward,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -57,6 +58,7 @@ const STATUS_OPTIONS = [
   { value: 'uploaded', label: 'Nahráno', icon: Clock, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-900/20' },
   { value: 'reviewed', label: 'Ke kontrole', icon: Eye, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
   { value: 'approved', label: 'Schváleno', icon: CheckCircle, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20' },
+  { value: 'skipped', label: 'Přeskočeno', icon: SkipForward, color: 'text-gray-500 dark:text-gray-400', bg: 'bg-gray-50 dark:bg-gray-800' },
 ]
 
 const DOC_TYPES = [
