@@ -67,7 +67,7 @@ sleep 65
 echo ""
 echo "=== 4. AUTH FLOW ==="
 # Login
-LOGIN_CODE=$(curl -s -c /tmp/smoke-cookies.txt -o /dev/null -w "%{http_code}" -X POST "$BASE/api/auth/login" -H "Content-Type: application/json" -d '{"username":"radim","password":"admin123"}')
+LOGIN_CODE=$(curl -s -c /tmp/smoke-cookies.txt -o /dev/null -w "%{http_code}" -X POST "$BASE/api/auth/login" -H "Content-Type: application/json" -d "{\"username\":\"radim\",\"password\":\"${TEST_PASSWORD:-admin123}\"}")
 sleep 2
 check "200" "$LOGIN_CODE" "POST /api/auth/login"
 

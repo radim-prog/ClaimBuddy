@@ -8,8 +8,9 @@
 
 const { createClient } = require('@supabase/supabase-js')
 
-const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InliY3Via3Vza2lyYnNweW94cGFrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzkxNzE1OCwiZXhwIjoyMDc5NDkzMTU4fQ.zVg4FIzm-DT3bRZZMXHF5a1647MGwFaGg-SLEEq5880'
-const supabase = createClient('https://ybcubkuskirbspyoxpak.supabase.co', SK)
+const SK = process.env.SUPABASE_SERVICE_ROLE_KEY
+if (!SK) throw new Error('SUPABASE_SERVICE_ROLE_KEY env var is required')
+const supabase = createClient(process.env.SUPABASE_URL || 'https://ybcubkuskirbspyoxpak.supabase.co', SK)
 
 const COMPANY_ID = '9912feb5-ca03-48aa-9bd0-09b9769cfdd9'
 const USER_ID = 'd84a9316-03e5-4ce3-bab8-c0f340042f1e'

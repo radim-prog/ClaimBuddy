@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Seed knowledge base with comprehensive Czech accounting data."""
 import json
+import os
 import urllib.request
 import urllib.error
 
-SUPABASE_URL = "https://ybcubkuskirbspyoxpak.supabase.co"
-SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InliY3Via3Vza2lyYnNweW94cGFrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzkxNzE1OCwiZXhwIjoyMDc5NDkzMTU4fQ.zVg4FIzm-DT3bRZZMXHF5a1647MGwFaGg-SLEEq5880"
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://ybcubkuskirbspyoxpak.supabase.co")
+SERVICE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 
 def upsert_article(category, title, content, source_url=None, sort_order=0):
     """Insert article, skip if title+category already exists."""

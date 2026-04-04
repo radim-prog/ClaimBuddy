@@ -96,7 +96,7 @@ fi
 # Login with valid credentials
 RESPONSE=$(curl -s -D /tmp/test-headers.txt -X POST "$BASE_URL/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"username":"radim","password":"admin123"}' 2>/dev/null)
+  -d "{\"username\":\"radim\",\"password\":\"${TEST_PASSWORD:-admin123}\"}" 2>/dev/null)
 STATUS=$(grep -o "HTTP/[0-9.]* [0-9]*" /tmp/test-headers.txt | tail -1 | grep -o "[0-9]*$")
 if [ "$STATUS" = "200" ]; then
   log_pass "Valid login accepted → 200"

@@ -8,8 +8,8 @@
 
 set -e
 
-SUPABASE_URL="https://ybcubkuskirbspyoxpak.supabase.co"
-SERVICE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InliY3Via3Vza2lyYnNweW94cGFrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzkxNzE1OCwiZXhwIjoyMDc5NDkzMTU4fQ.zVg4FIzm-DT3bRZZMXHF5a1647MGwFaGg-SLEEq5880"
+SUPABASE_URL="${SUPABASE_URL:-https://ybcubkuskirbspyoxpak.supabase.co}"
+SERVICE_KEY="${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY env var is required}"
 
 echo "🚀 Supabase Auto-Setup"
 echo "======================="
