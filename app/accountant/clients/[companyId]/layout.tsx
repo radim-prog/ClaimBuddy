@@ -393,7 +393,10 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
               </div>
 
               {/* Tabs — always visible */}
-              <div className="flex gap-1 overflow-x-auto pb-0.5 -mx-1 px-1" data-tour="client-tabs">
+              <div className="relative" data-tour="client-tabs">
+              {/* Right fade indicator for desktop scroll */}
+              <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white dark:from-gray-900 to-transparent z-10 pointer-events-none" />
+              <div className="flex flex-wrap gap-1 pb-0.5 -mx-1 px-1 sm:flex-nowrap sm:overflow-x-auto scrollbar-none">
                 {tabs.map(tab => {
                   const active = tab.match(pathname)
                   const badge = tab.badge
@@ -421,6 +424,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                     </Link>
                   )
                 })}
+              </div>
               </div>
             </>
           )
