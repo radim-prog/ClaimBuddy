@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
 export default function FirmBillingPage() {
-  redirect('/accountant/invoicing/billing')
+  redirect('/accountant/firm')
 }

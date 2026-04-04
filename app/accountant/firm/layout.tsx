@@ -14,14 +14,15 @@ export default function FirmLayout({ children }: { children: React.ReactNode }) 
     )
   }
 
-  if (userRole !== 'admin') {
+  const STAFF_ROLES = ['admin', 'manager', 'accountant', 'senior', 'junior', 'assistant']
+  if (!STAFF_ROLES.includes(userRole || '')) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
           <Shield className="h-8 w-8 text-red-500" />
         </div>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Nedostatečná oprávnění</h2>
-        <p className="text-gray-500 dark:text-gray-400">Tato sekce je dostupná pouze pro administrátory.</p>
+        <p className="text-gray-500 dark:text-gray-400">Tato sekce je dostupná pouze pro zaměstnance firmy.</p>
       </div>
     )
   }
