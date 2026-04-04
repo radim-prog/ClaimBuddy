@@ -6,7 +6,7 @@ import { FileText, CreditCard, Receipt } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = [
-  { name: 'Faktury', href: '/accountant/invoicing', icon: FileText, exact: true },
+  { name: 'K fakturaci', href: '/accountant/invoicing', icon: FileText, exact: true },
   { name: 'Předplatné', href: '/accountant/invoicing/billing', icon: CreditCard },
 ]
 
