@@ -72,6 +72,25 @@ function formatPeriod(period: string): string {
   return `${months[parseInt(month) - 1]} ${year}`
 }
 
+type DocumentCheckData = {
+  bank_statements: {
+    expected: number
+    uploaded: number
+    matched: number
+    accounts: Array<{
+      id: string
+      label: string
+      has_statement: boolean
+    }>
+  }
+  expense_documents: { uploaded_count: number }
+  income_invoices: {
+    uploaded_count: number
+    system_invoices_count: number
+    uses_internal_invoicing: boolean
+  }
+}
+
 export function ClosureDetailModal({ open, onOpenChange, closure, companyName, onSave, canApprove = true }: ClosureDetailModalProps) {
   const [bankStatus, setBankStatus] = useState('missing')
   const [expenseStatus, setExpenseStatus] = useState('missing')
@@ -79,6 +98,7 @@ export function ClosureDetailModal({ open, onOpenChange, closure, companyName, o
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [showApproveWarning, setShowApproveWarning] = useState(false)
+  const [documentCheck, setDocumentCheck] = useState<DocumentCheckData | null>(null)
 
   useEffect(() => {
     if (closure) {
@@ -88,6 +108,32 @@ export function ClosureDetailModal({ open, onOpenChange, closure, companyName, o
       setNotes(closure.notes || '')
     }
   }, [closure])
+
+  // Fetch document check data when modal opens
+  useEffect(() => {
+    if (!open || !closure) {
+      setDocumentCheck(null)
+      return
+    }
+    fetch(`/api/accountant/closures/document-check?companyId=${closure.company_id}&period=${closure.period}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setDocumentCheck(data))
+      .catch(() => setDocumentCheck(null))
+  }, [open, closure?.company_id, closure?.period])
+
+  // Auto-suggest: if company uses internal invoicing and has system invoices, suggest 'uploaded'
+  useEffect(() => {
+    if (!documentCheck || !closure) return
+    const { income_invoices } = documentCheck
+    if (
+      income_invoices.uses_internal_invoicing &&
+      income_invoices.system_invoices_count > 0 &&
+      closure.income_invoices_status === 'missing' &&
+      incomeStatus === 'missing'
+    ) {
+      setIncomeStatus('uploaded')
+    }
+  }, [documentCheck, closure, incomeStatus])
 
   const availableStatuses = canApprove
     ? STATUS_OPTIONS
@@ -180,32 +226,57 @@ export function ClosureDetailModal({ open, onOpenChange, closure, companyName, o
             const Icon = docType.icon
 
             return (
-              <div key={docType.key} className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Icon className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{docType.label}</span>
+              <div key={docType.key} className="space-y-1">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Icon className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{docType.label}</span>
+                  </div>
+                  <Select
+                    value={currentStatus}
+                    onValueChange={(value) => statusSetters[docType.key](value)}
+                  >
+                    <SelectTrigger className={`w-40 ${statusConfig?.bg || ''}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableStatuses.map(opt => {
+                        const StatusIcon = opt.icon
+                        return (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            <span className={`flex items-center gap-1.5 ${opt.color}`}>
+                              <StatusIcon className="h-3.5 w-3.5" />
+                              {opt.label}
+                            </span>
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select
-                  value={currentStatus}
-                  onValueChange={(value) => statusSetters[docType.key](value)}
-                >
-                  <SelectTrigger className={`w-40 ${statusConfig?.bg || ''}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableStatuses.map(opt => {
-                      const StatusIcon = opt.icon
-                      return (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          <span className={`flex items-center gap-1.5 ${opt.color}`}>
-                            <StatusIcon className="h-3.5 w-3.5" />
-                            {opt.label}
-                          </span>
-                        </SelectItem>
-                      )
-                    })}
-                  </SelectContent>
-                </Select>
+                {/* Info badges from document-check */}
+                {docType.key === 'bank_statement_status' && documentCheck?.bank_statements && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 pl-6">
+                    {documentCheck.bank_statements.expected > 0
+                      ? `${documentCheck.bank_statements.matched}/${documentCheck.bank_statements.expected} účtů má výpis`
+                      : 'Žádné bankovní účty evidovány'}
+                  </div>
+                )}
+                {docType.key === 'expense_documents_status' && documentCheck?.expense_documents && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 pl-6">
+                    {documentCheck.expense_documents.uploaded_count} dokladů nahráno
+                  </div>
+                )}
+                {docType.key === 'income_invoices_status' && documentCheck?.income_invoices && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 pl-6">
+                    {documentCheck.income_invoices.uploaded_count} nahráno
+                    {documentCheck.income_invoices.system_invoices_count > 0 && (
+                      <span className="ml-1 text-blue-500 dark:text-blue-400">
+                        + {documentCheck.income_invoices.system_invoices_count} v systému
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )
           })}
@@ -231,18 +302,64 @@ export function ClosureDetailModal({ open, onOpenChange, closure, companyName, o
         </div>
 
         {showApproveWarning && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-medium text-amber-800 dark:text-amber-300">Pozor: schvalujete bez nahraných dokladů</p>
-              <p className="text-amber-700 dark:text-amber-400 mt-0.5">Některé dokumenty stále chybí. Chcete přesto uložit?</p>
-              <div className="flex gap-2 mt-2">
-                <Button size="sm" variant="outline" onClick={() => setShowApproveWarning(false)} className="h-7 text-xs">
-                  Zpět
-                </Button>
-                <Button size="sm" onClick={doSave} className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white">
-                  Ano, uložit
-                </Button>
+          <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm flex-1">
+                <p className="font-medium text-amber-800 dark:text-amber-300">
+                  Chybí dokumenty pro schválení
+                </p>
+
+                {documentCheck ? (
+                  <div className="mt-2 space-y-2 text-amber-700 dark:text-amber-400">
+                    {bankStatus === 'missing' && documentCheck.bank_statements.expected > 0 && (
+                      <div>
+                        <p className="font-medium">
+                          Bankovní výpisy: {documentCheck.bank_statements.matched}/{documentCheck.bank_statements.expected}
+                        </p>
+                        <ul className="ml-4 mt-0.5 space-y-0.5">
+                          {documentCheck.bank_statements.accounts.map(acc => (
+                            <li key={acc.id} className="flex items-center gap-1">
+                              {acc.has_statement
+                                ? <CheckCircle className="h-3 w-3 text-green-500" />
+                                : <AlertCircle className="h-3 w-3 text-red-500" />
+                              }
+                              <span className={acc.has_statement ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
+                                {acc.label}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {expenseStatus === 'missing' && (
+                      <p>Nákladové doklady: {documentCheck.expense_documents.uploaded_count} nahráno</p>
+                    )}
+                    {incomeStatus === 'missing' && (
+                      <div>
+                        <p>Příjmové faktury: {documentCheck.income_invoices.uploaded_count} nahráno</p>
+                        {documentCheck.income_invoices.system_invoices_count > 0 && (
+                          <p className="ml-4 text-xs text-blue-600 dark:text-blue-400">
+                            V systému je {documentCheck.income_invoices.system_invoices_count} vydaných faktur
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-amber-700 dark:text-amber-400 mt-0.5">
+                    Některé dokumenty stále chybí. Chcete přesto uložit?
+                  </p>
+                )}
+
+                <div className="flex gap-2 mt-3">
+                  <Button size="sm" variant="outline" onClick={() => setShowApproveWarning(false)} className="h-7 text-xs">
+                    Zpět
+                  </Button>
+                  <Button size="sm" onClick={doSave} className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white">
+                    Ano, uložit
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
