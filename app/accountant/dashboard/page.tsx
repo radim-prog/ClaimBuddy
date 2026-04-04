@@ -313,22 +313,26 @@ const StatusCell = React.memo(function StatusCell({
               <div className="text-purple-300 mb-1">Skupina ({aggregateCompanyIds.length} firem)</div>
             )}
             <div className="text-gray-300 mb-2">{months[monthIndex]} {year}</div>
-            {closure && (
-              <div className="space-y-1 text-left">
-                <div className="flex items-center gap-2">
-                  <span className={getStatusColor(closure.bank_statement_status)}>{getStatusIcon(closure.bank_statement_status)}</span>
-                  <span>Bankovní výpis</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={getStatusColor(closure.expense_documents_status)}>{getStatusIcon(closure.expense_documents_status)}</span>
-                  <span>Nákladové doklady</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={getStatusColor(closure.income_invoices_status)}>{getStatusIcon(closure.income_invoices_status)}</span>
-                  <span>Příjmové faktury</span>
-                </div>
-              </div>
-            )}
+            <div className="space-y-1 text-left">
+              {closure ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className={getStatusColor(closure.bank_statement_status)}>{getStatusIcon(closure.bank_statement_status)}</span>
+                    <span>Bankovní výpis</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={getStatusColor(closure.expense_documents_status)}>{getStatusIcon(closure.expense_documents_status)}</span>
+                    <span>Nákladové doklady</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={getStatusColor(closure.income_invoices_status)}>{getStatusIcon(closure.income_invoices_status)}</span>
+                    <span>Příjmové faktury</span>
+                  </div>
+                </>
+              ) : (
+                <div className="text-amber-300">Chybí: výpisy, doklady, faktury</div>
+              )}
+            </div>
           </div>
           <div className={`w-3 h-3 bg-gray-900 transform rotate-45 absolute ${showAbove ? 'top-full -mt-1.5' : 'bottom-full -mb-1.5'} left-1/2 -translate-x-1/2`}></div>
         </div>
