@@ -319,7 +319,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
           const tabs: Array<{ href: string; label: string; icon: typeof Clock; match: (p: string) => boolean; badge?: number }> = activeModule === 'claims'
             ? [
                 { href: `${basePath}/profile`, label: 'Firma', icon: Building2, match: (p: string) => p.includes('/profile'), badge: notificationsBadge },
-                { href: `${basePath}/claims`, label: 'Spisy PÚ', icon: Shield, match: (p: string) => p.includes('/claims') },
+                { href: `${basePath}/claims`, label: 'Pojistné události', icon: Shield, match: (p: string) => p.includes('/claims') },
                 { href: `${basePath}/tasks`, label: 'Úkoly', icon: ClipboardList, match: (p: string) => p.includes('/tasks'), badge: tasksBadge },
                 { href: `${basePath}/messages`, label: 'Zprávy', icon: MessageCircle, match: (p: string) => p.includes('/messages'), badge: messagesBadge },
                 { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files'), badge: filesBadge },
@@ -330,11 +330,11 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                 { href: `${basePath}/tasks`, label: 'Úkoly', icon: ClipboardList, match: (p: string) => p.includes('/tasks'), badge: tasksBadge },
                 { href: `${basePath}/messages`, label: 'Zprávy', icon: MessageCircle, match: (p: string) => p.includes('/messages'), badge: messagesBadge },
                 { href: `${basePath}/documents`, label: 'Doklady', icon: FileText, match: (p: string) => p.includes('/documents'), badge: documentsBadge },
-                { href: `${basePath}/inbox`, label: 'Inbox', icon: Inbox, match: (p: string) => p.includes('/inbox') },
+                { href: `${basePath}/inbox`, label: 'Příchozí', icon: Inbox, match: (p: string) => p.includes('/inbox') },
                 { href: `${basePath}/files`, label: 'Soubory', icon: FolderOpen, match: (p: string) => p.includes('/files'), badge: filesBadge },
                 { href: `${basePath}/taxes`, label: 'Daně a mzdy', icon: Calculator, match: (p: string) => p.includes('/taxes') || p.includes('/dohodari') || p.includes('/agreements') },
                 { href: `${basePath}/travel`, label: 'Jízdy', icon: Car, match: (p: string) => p.includes('/travel') },
-                { href: `${basePath}/claims`, label: 'PU', icon: Shield, match: (p: string) => p.includes('/claims') },
+                { href: `${basePath}/claims`, label: 'Pojistky', icon: Shield, match: (p: string) => p.includes('/claims') },
                 { href: `${basePath}/structure`, label: 'Struktura', icon: Network, match: (p: string) => p.includes('/structure') },
               ]
 
@@ -442,7 +442,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                   </h1>
                   <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
                     {company.status === 'onboarding' && (
-                      <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 text-[10px] sm:text-xs">Onboarding</Badge>
+                      <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 text-[10px] sm:text-xs">Nový</Badge>
                     )}
                     {company.status === 'inactive' && (
                       <Badge variant="outline" className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700 text-[10px] sm:text-xs">Neaktivní</Badge>
@@ -678,7 +678,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                         </div>
                       </>
                     )}
-                    {/* Health Score */}
+                    {/* Hodnocení klienta */}
                     {healthScore !== null && (
                       <>
                         <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />

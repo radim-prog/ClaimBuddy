@@ -220,7 +220,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               {!collapsed && (
                 <div className="overflow-hidden">
                   <h1 className="text-base font-semibold text-white/95 font-display tracking-tight whitespace-nowrap">
-                    {isClaims ? 'PU Portál' : 'Účetní OS'}
+                    {isClaims ? 'Portál pojistných událostí' : 'Účetní OS'}
                   </h1>
                   <p className="text-[10px] text-white/40 font-medium whitespace-nowrap">
                     {isClaims ? 'Pojistné události' : 'Klientský portál'}
@@ -397,7 +397,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
                   <Shield className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-sm font-semibold text-white/90 font-display">PU Portál</span>
+                <span className="text-sm font-semibold text-white/90 font-display">Pojistné události</span>
               </>
             ) : (
               <>

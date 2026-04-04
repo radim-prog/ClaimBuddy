@@ -162,7 +162,7 @@ export function CompanyDetailPanel({ companyId, onClose }: CompanyDetailPanelPro
               {company.health_grade && (
                 <div className="flex items-center gap-2">
                   <Heart className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Health Score</span>
+                  <span className="text-sm text-muted-foreground">Hodnocení klienta</span>
                   <Badge className={cn('ml-auto', GRADE_COLORS[company.health_grade] || '')}>
                     {company.health_grade} {company.health_score !== null && company.health_score !== undefined ? `(${company.health_score})` : ''}
                   </Badge>

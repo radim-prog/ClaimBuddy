@@ -120,7 +120,7 @@ function InboxList({ items, searchQuery, onAction }: {
       <div className="py-16 text-center">
         <Inbox className="h-12 w-12 text-green-400 mx-auto mb-3" />
         <h3 className="text-lg font-semibold font-display mb-1 text-gray-900 dark:text-white">
-          {searchQuery ? 'Nic nenalezeno' : 'Inbox je prázdný'}
+          {searchQuery ? 'Nic nenalezeno' : 'Příchozí je prázdné'}
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {searchQuery ? 'Zkuste jiný dotaz' : 'Žádné nezpracované položky.'}
@@ -387,7 +387,7 @@ export default function WorkPage() {
         {/* Type switcher — same row, TabsList style */}
         <div className="inline-flex items-center rounded-lg bg-muted p-1">
           {[
-            { mode: 'inbox' as TypeFilter, icon: Inbox, label: 'Inbox', count: inboxCount },
+            { mode: 'inbox' as TypeFilter, icon: Inbox, label: 'Příchozí', count: inboxCount },
             { mode: 'tasks' as TypeFilter, icon: CheckSquare, label: 'Úkoly', count: taskCount },
             { mode: 'projects' as TypeFilter, icon: FolderKanban, label: 'Projekty', count: projectCount },
           ].map(v => (

@@ -442,7 +442,7 @@ function DocumentInboxTab() {
               {!isActive && (
                 <div className="flex items-center gap-2 text-amber-600 text-sm">
                   <AlertCircle className="h-4 w-4" />
-                  <span>Inbox je momentálně neaktivní. Kontaktujte svého účetního.</span>
+                  <span>Příchozí schránka je momentálně neaktivní. Kontaktujte svého účetního.</span>
                 </div>
               )}
               <div className="text-xs text-muted-foreground space-y-1">

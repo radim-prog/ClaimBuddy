@@ -113,7 +113,7 @@ function ClaimsLayoutInner({ children }: { children: React.ReactNode }) {
               {!collapsed && (
                 <div className="overflow-hidden">
                   <h1 className="text-base font-semibold text-white font-display tracking-tight whitespace-nowrap">
-                    PU Manager
+                    Správa pojistných událostí
                   </h1>
                   <p className="text-[10px] text-blue-300/70 font-medium whitespace-nowrap">
                     Pojistné události
@@ -218,7 +218,7 @@ function ClaimsLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-400 to-blue-500">
               <Shield className="h-3.5 w-3.5 text-white" />
             </div>
-            <span className="text-sm font-semibold text-white/90 font-display">PU Manager</span>
+            <span className="text-sm font-semibold text-white/90 font-display">Pojistné události</span>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle variant="icon" className="text-white/50 hover:text-white hover:bg-white/10 rounded-lg" />

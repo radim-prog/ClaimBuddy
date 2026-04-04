@@ -61,10 +61,10 @@ const sections: SettingsSection[] = [
   },
   {
     icon: <Workflow className="h-5 w-5 text-blue-600 dark:text-blue-400" />,
-    title: 'Workflow automatizace',
+    title: 'Automatická pravidla',
     description: 'Automatická pravidla pro přechody stavů a přiřazování úkolů.',
     status: 'planned',
-    items: ['Automatický přechod stavu', 'Pravidla pro eskalaci', 'SLA sledování'],
+    items: ['Automatický přechod stavu', 'Pravidla pro eskalaci', 'Sledování lhůt'],
   },
   {
     icon: <Lock className="h-5 w-5 text-blue-600 dark:text-blue-400" />,

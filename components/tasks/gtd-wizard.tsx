@@ -192,7 +192,7 @@ export function GTDWizard({
     <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>
         <div className="flex items-center justify-between mb-2">
-          <CardTitle className="text-2xl">GTD Wizard - Zpracování úkolu</CardTitle>
+          <CardTitle className="text-2xl">GTD — Průvodce zpracováním úkolu</CardTitle>
           <div className="text-sm text-muted-foreground">
             Krok {currentStep} / {totalSteps}
           </div>
@@ -332,7 +332,7 @@ export function GTDWizard({
               {data.isQuickAction && (
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg animate-in fade-in-50 duration-200">
                   <p className="text-sm text-green-800">
-                    <strong>GTD doporučení:</strong> Udělejte tento úkol hned! Čas strávený plánováním by byl delší než samotné provedení.
+                    <strong>Doporučení:</strong> Udělejte tento úkol hned! Čas strávený plánováním by byl delší než samotné provedení.
                   </p>
                 </div>
               )}

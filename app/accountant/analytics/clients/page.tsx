@@ -41,7 +41,7 @@ const STATUS_LABELS: Record<string, string> = {
   active: 'Aktivní',
   churned: 'Odešel',
   paused: 'Pozastavený',
-  onboarding: 'Onboarding',
+  onboarding: 'Zavedení',
 }
 
 const STATUS_COLORS: Record<string, string> = {

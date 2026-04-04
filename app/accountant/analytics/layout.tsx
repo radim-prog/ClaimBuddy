@@ -21,7 +21,7 @@ const analyticsTabs = [
   { href: '/accountant/analytics/clients', label: 'Klienti', icon: Users },
   { href: '/accountant/analytics/time-reports', label: 'Odpracovano', icon: Clock },
   { href: '/accountant/analytics/capacity', label: 'Kapacity', icon: Gauge },
-  { href: '/accountant/analytics/pipeline', label: 'Pipeline', icon: GitBranchPlus },
+  { href: '/accountant/analytics/pipeline', label: 'Tok klientů', icon: GitBranchPlus },
   { href: '/accountant/analytics/profitability', label: 'Ziskovost', icon: TrendingUp },
 ]
 

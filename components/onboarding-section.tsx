@@ -181,7 +181,7 @@ export function OnboardingSection({
       last_activity_at: new Date().toISOString(),
     })
 
-    toast.success(`Onboarding klienta ${companyName} byl úspěšně dokončen!`)
+    toast.success(`Zavedení klienta ${companyName} bylo úspěšně dokončeno!`)
   }
 
   const handleStepsUpdate = (newSteps: OnboardingStep[]) => {
@@ -341,7 +341,7 @@ export function OnboardingSection({
   return (
     <CollapsibleSection
       id="onboarding"
-      title="Onboarding"
+      title="Zavedení klienta"
       icon={Sparkles}
       badge={
         onboarding.status === 'active' ? (
@@ -373,7 +373,7 @@ export function OnboardingSection({
             )}
             <div>
               <h4 className="font-semibold text-gray-900 dark:text-white">
-                {onboarding.status === 'active' ? 'Onboarding dokončen' : 'Onboarding probíhá'}
+                {onboarding.status === 'active' ? 'Zavedení dokončeno' : 'Zavedení probíhá'}
               </h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Zahájeno: {formatDate(onboarding.started_at)}

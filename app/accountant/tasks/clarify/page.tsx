@@ -226,7 +226,7 @@ export default function ClarifyPage() {
     return (
       <div className="max-w-lg mx-auto text-center py-20 space-y-6">
         <PartyPopper className="h-16 w-16 mx-auto text-purple-600" />
-        <h2 className="text-2xl font-bold font-display">Inbox je prázdný!</h2>
+        <h2 className="text-2xl font-bold font-display">Příchozí je prázdné!</h2>
         <p className="text-muted-foreground">
           Zpracováno {processedCount} {processedCount === 1 ? 'úkol' : processedCount < 5 ? 'úkoly' : 'úkolů'}.
         </p>
@@ -280,7 +280,7 @@ export default function ClarifyPage() {
       <Card className="border-2 border-purple-200 dark:border-purple-800">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <Badge variant="outline" className="text-xs">Inbox</Badge>
+            <Badge variant="outline" className="text-xs">Příchozí</Badge>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {currentTask.estimated_minutes && (
                 <span className="flex items-center gap-1">

@@ -281,7 +281,7 @@ function generateOnboardingDeadlines(
         type: 'urgent',
         companyId: company.id,
         companyName: displayName,
-        description: `Onboarding klienta ${displayName} má vysokou prioritu. Postup: ${completedSteps}/${totalSteps} kroků dokončeno.`,
+        description: `Zavedení klienta ${displayName} má vysokou prioritu. Postup: ${completedSteps}/${totalSteps} kroků dokončeno.`,
         checklist,
         assignedTo: onboarding.assigned_to_name
       })
@@ -294,7 +294,7 @@ function generateOnboardingDeadlines(
         type: 'warning',
         companyId: company.id,
         companyName: displayName,
-        description: `Onboarding klienta ${displayName} má nízký postup. Dokončeno ${completedSteps}/${totalSteps} kroků.`,
+        description: `Zavedení klienta ${displayName} má nízký postup. Dokončeno ${completedSteps}/${totalSteps} kroků.`,
         checklist,
         assignedTo: onboarding.assigned_to_name
       })

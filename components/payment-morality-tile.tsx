@@ -123,7 +123,7 @@ export function PaymentMoralityTile({ companyId }: { companyId: string }) {
         <div className="p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/50">
           <div className="flex items-center gap-1.5 mb-1">
             <TrendingUp className="h-3 w-3 text-purple-500" />
-            <span className="text-[10px] text-gray-500 uppercase tracking-wide">Health score</span>
+            <span className="text-[10px] text-gray-500 uppercase tracking-wide">Hodnocení klienta</span>
           </div>
           <span className="text-sm font-semibold text-gray-900 dark:text-white">
             {data.health_payment_score !== null ? `${data.health_payment_score}/100` : '—'}

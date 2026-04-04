@@ -185,10 +185,10 @@ function CompanyRow({ company, fullStatus, clientStatus, selected, onToggleSelec
                   </Tip>
                 )}
                 {isOnboarding && (
-                  <Tip text="Klient v procesu onboardingu">
+                  <Tip text="Klient v procesu zavedení">
                     <span>
                       <Badge className="bg-purple-500 text-white hover:bg-purple-500 text-xs px-1.5 py-0">
-                        Onboarding
+                        Nový
                       </Badge>
                     </span>
                   </Tip>
@@ -700,7 +700,7 @@ function ClientsPageContent() {
     }
     setBulkLoading(false)
     if (success > 0) {
-      toast.success(`${success} klientů změněno na "${newStatus === 'active' ? 'Aktivní' : newStatus === 'inactive' ? 'Neaktivní' : 'Onboarding'}"`)
+      toast.success(`${success} klientů změněno na "${newStatus === 'active' ? 'Aktivní' : newStatus === 'inactive' ? 'Neaktivní' : 'Nový'}"`)
       setSelectedIds(new Set())
       fetchCompanies()
     }
@@ -841,7 +841,7 @@ function ClientsPageContent() {
               onClick={() => setClientStatusFilter(filterClientStatus === 'onboarding' ? 'active' : 'onboarding')}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${filterClientStatus === 'onboarding' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 shadow-sm ring-1 ring-purple-200 dark:ring-purple-800' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
             >
-              Onboarding
+              Nový
               <span className="ml-1 opacity-60">{companies.filter((c: any) => (c.status) === 'onboarding').length}</span>
             </button>
             {companies.filter((c: any) => c.status === 'pending_review').length > 0 && (
@@ -1239,7 +1239,7 @@ function ClientsPageContent() {
       open={confirmStatusChange !== null}
       onOpenChange={(open) => { if (!open) setConfirmStatusChange(null) }}
       title="Změna stavu klientů"
-      description={`Opravdu chcete změnit stav ${selectedIds.size} klientů na "${confirmStatusChange === 'active' ? 'Aktivní' : confirmStatusChange === 'inactive' ? 'Neaktivní' : 'Onboarding'}"?`}
+      description={`Opravdu chcete změnit stav ${selectedIds.size} klientů na "${confirmStatusChange === 'active' ? 'Aktivní' : confirmStatusChange === 'inactive' ? 'Neaktivní' : 'Nový'}"?`}
       confirmLabel="Změnit"
       onConfirm={() => {
         if (confirmStatusChange) executeBulkStatusUpdate(confirmStatusChange)

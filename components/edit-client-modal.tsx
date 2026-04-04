@@ -137,7 +137,7 @@ export function EditClientModal({ open, onOpenChange, company, onSave }: EditCli
                   }`}
                 >
                   <Sparkles className="w-4 h-4 inline mr-1" />
-                  Onboarding
+                  Nový
                 </button>
               </div>
             </div>

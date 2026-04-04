@@ -46,7 +46,7 @@ import {
 const categoryLabels: Record<NotificationEventCategory, string> = {
   task: 'Úkoly',
   document: 'Doklady',
-  onboarding: 'Onboarding',
+  onboarding: 'Zavedení klienta',
   deadline: 'Termíny',
   user: 'Uživatelé',
   invoicing: 'Fakturace',

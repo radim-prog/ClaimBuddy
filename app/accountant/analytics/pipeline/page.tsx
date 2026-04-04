@@ -33,7 +33,7 @@ interface PipelineItem {
 const STAGES: { value: Stage; label: string; color: string; bg: string }[] = [
   { value: 'lead', label: 'Lead', color: 'text-gray-700 dark:text-gray-300', bg: 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600' },
   { value: 'contacted', label: 'Kontaktovan', color: 'text-blue-700 dark:text-blue-300', bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700' },
-  { value: 'onboarding', label: 'Onboarding', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700' },
+  { value: 'onboarding', label: 'Zavedení', color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700' },
   { value: 'planned', label: 'Planovaný', color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700' },
   { value: 'active', label: 'Aktivní', color: 'text-green-700 dark:text-green-300', bg: 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' },
 ]
@@ -180,7 +180,7 @@ export default function PipelinePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold font-display">Onboarding Pipeline</h1>
+          <h1 className="text-xl font-bold font-display">Tok klientů</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Sledovani novych klientu od leadu po aktivniho klienta
           </p>
@@ -201,7 +201,7 @@ export default function PipelinePage() {
         </Card>
         <Card className="rounded-xl">
           <CardContent className="pt-3 pb-3">
-            <div className="text-xs text-muted-foreground">Pipeline hodnota</div>
+            <div className="text-xs text-muted-foreground">Hodnota potenciálu</div>
             <div className="text-2xl font-bold">{totalPipeline.toLocaleString('cs-CZ')} Kc</div>
           </CardContent>
         </Card>

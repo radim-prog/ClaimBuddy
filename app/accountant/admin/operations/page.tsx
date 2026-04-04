@@ -48,7 +48,7 @@ const sections = [
   { id: 'billing', label: 'Billing-as-a-service', icon: CreditCard, Component: OperationsBilling, badge: demoBadge },
   { id: 'leads', label: 'Leady — Chci účetní', icon: Sparkles, Component: LeadsList, badge: demoBadge },
   { id: 'templates', label: 'Šablony úkolů', icon: Repeat, Component: TaskTemplates },
-  { id: 'workflow', label: 'Workflow pravidla', icon: GitBranch, Component: OperationsWorkflow },
+  { id: 'workflow', label: 'Automatická pravidla', icon: GitBranch, Component: OperationsWorkflow },
   { id: 'notifications', label: 'Notifikace', icon: Bell, Component: OperationsNotifications },
   { id: 'email-settings', label: 'Email adresy', icon: Mail, Component: OperationsEmail },
   { id: 'billing-settings', label: 'Fakturační nastavení', icon: SlidersHorizontal, Component: OperationsBillingSettings },

@@ -138,7 +138,7 @@ export default function OnboardingPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold font-display text-gray-900 dark:text-white">Onboarding</h1>
+            <h1 className="text-3xl font-bold font-display text-gray-900 dark:text-white">Zavedení klientů</h1>
             <p className="mt-1 text-gray-600 dark:text-gray-400">
               {totalClients} klientů v procesu
               {stalledCount > 0 && (

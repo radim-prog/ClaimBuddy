@@ -11,7 +11,7 @@ import { PresenceBar } from '@/components/extraction/presence-bar'
 import { ExtractionModeProvider, useExtractionMode } from '@/lib/contexts/extraction-mode-context'
 
 const tabs = [
-  { name: 'Inbox', href: '/accountant/extraction', icon: Inbox, exact: true },
+  { name: 'Příchozí', href: '/accountant/extraction', icon: Inbox, exact: true },
   { name: 'Klienti', href: '/accountant/extraction/clients', icon: Users },
   { name: 'Verifikace', href: '/accountant/extraction/verify', icon: CheckSquare },
 ]

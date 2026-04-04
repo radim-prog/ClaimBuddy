@@ -38,7 +38,7 @@ const STEPS: {
 export function GTDFlowDiagram({ currentStep, completedSteps, onStepClick }: GTDFlowDiagramProps) {
   return (
     <div className="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-4 border border-gray-200 dark:border-gray-800">
-      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-1">GTD Flow</h3>
+      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-1">GTD — Postup zpracování</h3>
 
       <div className="space-y-1">
         {STEPS.map((step, i) => {

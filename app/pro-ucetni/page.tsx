@@ -26,7 +26,7 @@ const BENEFITS = [
   { icon: Clock, title: 'Time tracking + fakturace', desc: 'Sledujte čas u klientů, automaticky generujte faktury. Žádné ruční počítání.' },
   { icon: Calculator, title: 'DPH a daňové matice', desc: 'Kontrola plateb, DPH přehledy, daň z příjmů — vše v přehledných maticích.' },
   { icon: Shield, title: 'AI vytěžování dokladů', desc: 'Umělá inteligence přečte doklad za 5 sekund. Vy jen zkontrolujete a schválíte.' },
-  { icon: BarChart3, title: 'Health score klientů', desc: 'Automatické hodnocení spolupráce. Víte, kdo potřebuje pozornost.' },
+  { icon: BarChart3, title: 'Hodnocení klientů', desc: 'Automatické hodnocení spolupráce. Víte, kdo potřebuje pozornost.' },
 ]
 
 const STATS = [

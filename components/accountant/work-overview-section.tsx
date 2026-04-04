@@ -194,7 +194,7 @@ export function WorkOverviewSection({ companyId, vatPayer = true, vatPeriod = 'm
         body: JSON.stringify({ company_id: companyId, period: selectedPeriod, field, value: newValue }),
       })
       if (res.ok) {
-        toast.success(newValue === 'skipped' ? 'Označeno jako N/A' : 'Označeno jako chybí')
+        toast.success(newValue === 'skipped' ? 'Označeno jako Nesleduje se' : 'Označeno jako chybí')
         fetchAnnual()
       }
     } catch { /* */ }
@@ -330,14 +330,14 @@ export function WorkOverviewSection({ companyId, vatPayer = true, vatPeriod = 'm
                           className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                           title="Klikněte pro změnu zpět na Chybí"
                         >
-                          N/A
+                          —
                         </button>
                       )}
                       {status === 'missing' && (
                         <button
                           onClick={() => handleDocToggleSkipped(field, status)}
                           className={`${isCurrentMonth ? 'text-orange-500 dark:text-orange-400' : 'text-red-500 dark:text-red-400'} hover:text-gray-500 transition-colors`}
-                          title="Klikněte pro označení jako N/A"
+                          title="Klikněte pro označení jako Nesleduje se"
                         >
                           {isCurrentMonth ? 'Probíhá' : 'Chybí'}
                         </button>
@@ -348,7 +348,7 @@ export function WorkOverviewSection({ companyId, vatPayer = true, vatPeriod = 'm
                     <button
                       onClick={() => handleDocToggleSkipped(field, status)}
                       className="p-0.5 rounded text-gray-300 hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400 transition-colors"
-                      title={status === 'skipped' ? 'Vrátit na Chybí' : 'Označit jako N/A'}
+                      title={status === 'skipped' ? 'Vrátit na Chybí' : 'Označit jako Nesleduje se'}
                     >
                       <MinusCircle className="h-3 w-3" />
                     </button>

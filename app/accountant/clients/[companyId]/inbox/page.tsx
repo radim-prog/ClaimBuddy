@@ -155,7 +155,7 @@ export default function ClientInboxPage() {
           </div>
           <div>
             <h2 className="text-lg font-semibold font-display text-gray-900 dark:text-white">
-              Inbox dokladů
+              Příchozí doklady
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Doklady přijaté emailem pro {company.name}

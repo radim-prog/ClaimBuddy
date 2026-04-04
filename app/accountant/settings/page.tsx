@@ -210,7 +210,7 @@ export default function AccountantSettingsPage() {
       {/* Onboarding */}
       <Card>
         <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-sm font-display">Onboarding klientů</CardTitle>
+          <CardTitle className="text-sm font-display">Zavedení klientů</CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4 space-y-2">
           <div className="flex items-center gap-4 flex-wrap">
