@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -233,7 +234,7 @@ export function ChatPanel({
       setPendingAttachments([])
       fetchConversations()
     } catch {
-      // TODO: toast error
+      toast.error('Nepodařilo se odeslat zprávu')
     } finally {
       setSending(false)
     }
@@ -259,7 +260,7 @@ export function ChatPanel({
       setShowNewConversation(false)
       setNewSubject('')
     } catch {
-      // TODO: toast error
+      toast.error('Nepodařilo se vytvořit konverzaci')
     } finally {
       setCreatingConversation(false)
     }
