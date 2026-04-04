@@ -197,10 +197,39 @@ export default function InvoicingPage() {
       .finally(() => setTimeLoading(false))
   }, [currentPeriod])
 
-  // Billable extra tasks (secondary concern, not yet connected)
-  const billableTasksByCompany = useMemo(() => {
-    return {} as Record<string, { company: any, tasks: any[], totalHours: number, totalAmount: number }>
+  // Billable tasks from API
+  const [billableTasks, setBillableTasks] = useState<Array<{
+    id: string; title: string; company_id: string; company_name: string
+    billable_hours: number; hourly_rate: number; status: string
+  }>>([])
+
+  useEffect(() => {
+    fetch(`/api/tasks?is_billable=true&status=completed&page_size=200`)
+      .then(r => r.ok ? r.json() : null)
+      .then(json => {
+        if (json?.tasks) setBillableTasks(json.tasks.filter((t: any) => t.billable_hours > 0))
+      })
+      .catch(() => {})
   }, [])
+
+  const billableTasksByCompany = useMemo(() => {
+    const map: Record<string, { company: { name: string }, tasks: any[], totalHours: number, totalAmount: number }> = {}
+    for (const t of billableTasks) {
+      if (!t.company_id) continue
+      if (!map[t.company_id]) {
+        map[t.company_id] = {
+          company: { name: t.company_name || 'Neznámá firma' },
+          tasks: [], totalHours: 0, totalAmount: 0,
+        }
+      }
+      const rate = t.hourly_rate || 700
+      const hours = t.billable_hours || 0
+      map[t.company_id].tasks.push(t)
+      map[t.company_id].totalHours += hours
+      map[t.company_id].totalAmount += hours * rate
+    }
+    return map
+  }, [billableTasks])
 
   // Handler: Open invoice preview modal
   const handleGenerateInvoice = (project: BillableProject) => {
