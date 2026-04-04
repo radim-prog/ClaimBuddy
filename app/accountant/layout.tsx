@@ -55,7 +55,7 @@ import { KeyboardShortcuts } from '@/components/keyboard-shortcuts'
 import { WelcomeModal } from '@/components/accountant/welcome-modal'
 import { TutorialOverlay } from '@/components/accountant/tutorial-overlay'
 import { TutorialProvider, useTutorialContext } from '@/lib/contexts/tutorial-context'
-import { BookOpen, Lock, UserPlus, Network } from 'lucide-react'
+import { BookOpen, Lock, UserPlus } from 'lucide-react'
 import { AppSwitcher } from '@/components/app-switcher'
 import { usePlanFeatures } from '@/lib/hooks/use-plan-features'
 import { ActiveModuleProvider } from '@/lib/contexts/active-module-context'
@@ -81,7 +81,6 @@ const managementNav = [
   { name: 'Kalendář', href: '/accountant/calendar', icon: CalendarCheck, activeMatch: ['/accountant/calendar', '/accountant/deadlines', '/accountant/reminders'], tourId: 'nav-deadlines', label: 'Ve vývoji' },
   { name: 'Fakturace', href: '/accountant/invoicing', icon: Receipt, activeMatch: ['/accountant/invoicing', '/accountant/invoices', '/accountant/billing'], tourId: 'nav-invoicing', feature: 'client_invoicing' },
   { name: 'Analytika', href: '/accountant/analytics', icon: BarChart3, activeMatch: ['/accountant/analytics', '/accountant/revenue'], feature: 'analytics' },
-  { name: 'Struktura', href: '/accountant/companies/universe', icon: Network, activeMatch: ['/accountant/companies/universe'], label: 'Ve vývoji' },
   { name: 'Tržiště', href: '/accountant/marketplace-requests', icon: UserPlus, activeMatch: ['/accountant/marketplace-requests'], label: 'Demo' },
 ]
 
