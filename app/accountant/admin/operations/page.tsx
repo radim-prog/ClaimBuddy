@@ -44,26 +44,69 @@ import { OperationsClosureSettings } from '@/components/admin/operations-closure
 
 const demoBadge = <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Demo</span>
 
-const sections = [
-  { id: 'marketplace', label: 'Marketplace — registrace', icon: Store, Component: MarketplaceProviders, badge: demoBadge },
-  { id: 'revenue', label: 'Revenue sharing', icon: TrendingUp, Component: OperationsRevenue, badge: demoBadge },
-  { id: 'billing', label: 'Billing-as-a-service', icon: CreditCard, Component: OperationsBilling, badge: demoBadge },
-  { id: 'leads', label: 'Leady — Chci účetní', icon: Sparkles, Component: LeadsList, badge: demoBadge },
-  { id: 'closure-settings', label: 'Nastavení uzávěrek', icon: CheckSquare, Component: OperationsClosureSettings },
-  { id: 'templates', label: 'Šablony úkolů', icon: Repeat, Component: TaskTemplates },
-  { id: 'workflow', label: 'Automatická pravidla', icon: GitBranch, Component: OperationsWorkflow },
-  { id: 'notifications', label: 'Notifikace', icon: Bell, Component: OperationsNotifications },
-  { id: 'email-settings', label: 'Email adresy', icon: Mail, Component: OperationsEmail },
-  { id: 'billing-settings', label: 'Fakturační nastavení', icon: SlidersHorizontal, Component: OperationsBillingSettings },
-  { id: 'invoicing', label: 'Fakturace', icon: Receipt, Component: InvoicingSettings },
-  { id: 'invoice-notices', label: 'Hlášky na fakturách', icon: FileText, Component: InvoiceNoticesSettings },
-  { id: 'pricing', label: 'Ceník a sazby', icon: DollarSign, Component: PricingSettings },
-  { id: 'folder-templates', label: 'Struktura složek klientů', icon: FolderTree, Component: OperationsFolderTemplates },
-  { id: 'drive', label: 'Google Drive', icon: HardDrive, Component: CompanyDriveMapper },
-  { id: 'raynet', label: 'Raynet CRM', icon: Link2, Component: CompanyRaynetMapper },
-  { id: 'tax-rates', label: 'Daňové sazby', icon: Calculator, Component: OperationsTaxRates },
-  { id: 'marketing', label: 'Email Marketing (Ecomail)', icon: Mail, Component: OperationsMarketing },
-  { id: 'signi', label: 'Signi.com — Elektronický podpis', icon: PenLine, Component: SigniSettings },
+type Section = {
+  id: string
+  label: string
+  icon: typeof Store
+  Component: React.ComponentType
+  badge?: React.ReactNode
+}
+
+type SectionGroup = {
+  title: string
+  description?: string
+  sections: Section[]
+}
+
+const sectionGroups: SectionGroup[] = [
+  {
+    title: 'Platforma',
+    description: 'Marketplace a partnerský program',
+    sections: [
+      { id: 'marketplace', label: 'Marketplace — registrace', icon: Store, Component: MarketplaceProviders, badge: demoBadge },
+      { id: 'revenue', label: 'Revenue sharing', icon: TrendingUp, Component: OperationsRevenue, badge: demoBadge },
+      { id: 'billing', label: 'Billing-as-a-service', icon: CreditCard, Component: OperationsBilling, badge: demoBadge },
+      { id: 'leads', label: 'Leady — Chci účetní', icon: Sparkles, Component: LeadsList, badge: demoBadge },
+    ],
+  },
+  {
+    title: 'Workflow',
+    description: 'Úkoly, uzávěrky, automatizace',
+    sections: [
+      { id: 'closure-settings', label: 'Nastavení uzávěrek', icon: CheckSquare, Component: OperationsClosureSettings },
+      { id: 'templates', label: 'Šablony úkolů', icon: Repeat, Component: TaskTemplates },
+      { id: 'workflow', label: 'Automatická pravidla', icon: GitBranch, Component: OperationsWorkflow },
+      { id: 'notifications', label: 'Notifikace', icon: Bell, Component: OperationsNotifications },
+      { id: 'email-settings', label: 'Email adresy', icon: Mail, Component: OperationsEmail },
+    ],
+  },
+  {
+    title: 'Fakturace',
+    description: 'Ceník, nastavení faktur, upomínky',
+    sections: [
+      { id: 'billing-settings', label: 'Fakturační nastavení', icon: SlidersHorizontal, Component: OperationsBillingSettings },
+      { id: 'invoicing', label: 'Čísla a šablony faktur', icon: Receipt, Component: InvoicingSettings },
+      { id: 'invoice-notices', label: 'Hlášky na fakturách', icon: FileText, Component: InvoiceNoticesSettings },
+      { id: 'pricing', label: 'Ceník a sazby', icon: DollarSign, Component: PricingSettings },
+    ],
+  },
+  {
+    title: 'Integrace',
+    description: 'Připojené služby a třetí strany',
+    sections: [
+      { id: 'folder-templates', label: 'Struktura složek klientů', icon: FolderTree, Component: OperationsFolderTemplates },
+      { id: 'drive', label: 'Google Drive', icon: HardDrive, Component: CompanyDriveMapper },
+      { id: 'raynet', label: 'Raynet CRM', icon: Link2, Component: CompanyRaynetMapper },
+      { id: 'marketing', label: 'Email Marketing (Ecomail)', icon: Mail, Component: OperationsMarketing },
+      { id: 'signi', label: 'Signi.com — Elektronický podpis', icon: PenLine, Component: SigniSettings },
+    ],
+  },
+  {
+    title: 'Daně',
+    sections: [
+      { id: 'tax-rates', label: 'Daňové sazby', icon: Calculator, Component: OperationsTaxRates },
+    ],
+  },
 ]
 
 export default function OperationsPage() {
@@ -82,20 +125,36 @@ export default function OperationsPage() {
   }
 
   return (
-    <div className="space-y-2">
-      {sections.map(({ id, label, icon, Component, badge }) => (
-        <CollapsibleSection
-          key={id}
-          id={id}
-          label={label}
-          icon={icon}
-          expanded={openSections.has(id)}
-          onToggle={() => toggle(id)}
-          variant="bordered"
-          badge={badge}
-        >
-          <Component />
-        </CollapsibleSection>
+    <div className="space-y-6">
+      {sectionGroups.map((group) => (
+        <div key={group.title}>
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wide">
+              {group.title}
+            </h3>
+            {group.description && (
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                — {group.description}
+              </span>
+            )}
+          </div>
+          <div className="space-y-2">
+            {group.sections.map(({ id, label, icon, Component, badge }) => (
+              <CollapsibleSection
+                key={id}
+                id={id}
+                label={label}
+                icon={icon}
+                expanded={openSections.has(id)}
+                onToggle={() => toggle(id)}
+                variant="bordered"
+                badge={badge}
+              >
+                <Component />
+              </CollapsibleSection>
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   )
