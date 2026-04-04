@@ -71,9 +71,11 @@ export function ClosureProgressRing({ value, size = 48, className }: { value: nu
           strokeLinecap="round" className="transition-all duration-500"
         />
       </svg>
-      <span className={cn('absolute text-xs font-bold tabular-nums', getTextColor(clamped))}>
-        {clamped}
-      </span>
+      {size >= 36 && (
+        <span className={cn('absolute text-xs font-bold tabular-nums', getTextColor(clamped))}>
+          {clamped}
+        </span>
+      )}
     </div>
   )
 }
