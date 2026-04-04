@@ -20,6 +20,7 @@ import {
 import {
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   Clock,
   Save,
   FileText,
@@ -74,6 +75,7 @@ export function ClosureDetailModal({ open, onOpenChange, closure, companyName, o
   const [incomeStatus, setIncomeStatus] = useState('missing')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showApproveWarning, setShowApproveWarning] = useState(false)
 
   useEffect(() => {
     if (closure) {
@@ -98,8 +100,9 @@ export function ClosureDetailModal({ open, onOpenChange, closure, companyName, o
     income_invoices_status: incomeStatus,
   }
 
-  const handleSave = async () => {
+  const doSave = async () => {
     setSaving(true)
+    setShowApproveWarning(false)
 
     try {
       const res = await fetch('/api/accountant/closures', {
@@ -128,6 +131,20 @@ export function ClosureDetailModal({ open, onOpenChange, closure, companyName, o
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleSave = () => {
+    // Check: approving any field while others are still 'missing'?
+    const statuses = [bankStatus, expenseStatus, incomeStatus]
+    const hasApproved = statuses.some(s => s === 'approved')
+    const hasMissing = statuses.some(s => s === 'missing')
+
+    if (hasApproved && hasMissing) {
+      setShowApproveWarning(true)
+      return
+    }
+
+    doSave()
   }
 
   const hasChanges =
@@ -205,6 +222,24 @@ export function ClosureDetailModal({ open, onOpenChange, closure, companyName, o
             </div>
           )}
         </div>
+
+        {showApproveWarning && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium text-amber-800 dark:text-amber-300">Pozor: schvalujete bez nahraných dokladů</p>
+              <p className="text-amber-700 dark:text-amber-400 mt-0.5">Některé dokumenty stále chybí. Chcete přesto uložit?</p>
+              <div className="flex gap-2 mt-2">
+                <Button size="sm" variant="outline" onClick={() => setShowApproveWarning(false)} className="h-7 text-xs">
+                  Zpět
+                </Button>
+                <Button size="sm" onClick={doSave} className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white">
+                  Ano, uložit
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-end gap-2 pt-2 border-t dark:border-gray-700">
           <Button variant="outline" onClick={() => onOpenChange(false)} size="sm">
