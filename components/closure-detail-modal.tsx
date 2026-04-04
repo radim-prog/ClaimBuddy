@@ -48,6 +48,7 @@ type ClosureDetailModalProps = {
   closure: ClosureData | null
   companyName: string
   onSave: (updated: ClosureData) => void
+  canApprove?: boolean
 }
 
 const STATUS_OPTIONS = [
@@ -69,7 +70,7 @@ function formatPeriod(period: string): string {
   return `${months[parseInt(month) - 1]} ${year}`
 }
 
-export function ClosureDetailModal({ open, onOpenChange, closure, companyName, onSave }: ClosureDetailModalProps) {
+export function ClosureDetailModal({ open, onOpenChange, closure, companyName, onSave, canApprove = true }: ClosureDetailModalProps) {
   const [bankStatus, setBankStatus] = useState('missing')
   const [expenseStatus, setExpenseStatus] = useState('missing')
   const [incomeStatus, setIncomeStatus] = useState('missing')
@@ -85,6 +86,10 @@ export function ClosureDetailModal({ open, onOpenChange, closure, companyName, o
       setNotes(closure.notes || '')
     }
   }, [closure])
+
+  const availableStatuses = canApprove
+    ? STATUS_OPTIONS
+    : STATUS_OPTIONS.filter(s => s.value !== 'approved')
 
   if (!closure) return null
 
@@ -186,7 +191,7 @@ export function ClosureDetailModal({ open, onOpenChange, closure, companyName, o
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {STATUS_OPTIONS.map(opt => {
+                    {availableStatuses.map(opt => {
                       const StatusIcon = opt.icon
                       return (
                         <SelectItem key={opt.value} value={opt.value}>

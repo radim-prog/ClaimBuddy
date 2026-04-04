@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
 import { upsertClosureField } from '@/lib/closure-store-db'
+import { checkPermission } from '@/lib/permission-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +14,12 @@ export async function POST(request: NextRequest) {
 
   const userRole = request.headers.get('x-user-role')
   if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  // Approve endpoint always sets to 'approved' — check permission
+  const canApprove = await checkPermission(userId, 'documents_approve')
+  if (!canApprove) {
+    return NextResponse.json({ error: 'Nemáte oprávnění schvalovat uzávěrky.' }, { status: 403 })
+  }
 
   try {
     const body = await request.json()

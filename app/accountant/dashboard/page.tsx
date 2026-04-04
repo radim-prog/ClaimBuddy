@@ -12,6 +12,7 @@ import { VatMatrix } from '@/components/tax-tracking/vat-matrix'
 import { IncomeTaxMatrix } from '@/components/tax-tracking/income-tax-matrix'
 import { useCachedFetch } from '@/lib/hooks/use-cached-fetch'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
+import { hasPermission } from '@/lib/permissions'
 import { toast } from 'sonner'
 
 // Sort by surname for people, full name for companies
@@ -352,7 +353,7 @@ type DashboardData = {
 
 export default function AccountantDashboard() {
   const [selectedYear, setSelectedYear] = useState(currentYear)
-  const { userRole } = useAccountantUser()
+  const { userRole, permissions } = useAccountantUser()
   const isAdmin = userRole === 'admin'
   const [filter, setFilter] = useState<'all' | 'missing' | 'uploaded' | 'approved'>('all')
   const [closureModalOpen, setClosureModalOpen] = useState(false)
@@ -868,6 +869,7 @@ export default function AccountantDashboard() {
         closure={selectedClosure}
         companyName={selectedCompanyName}
         onSave={handleClosureSave}
+        canApprove={hasPermission(permissions, 'documents_approve')}
       />
     </div>
   )

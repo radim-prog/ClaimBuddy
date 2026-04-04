@@ -6,6 +6,7 @@ import { isStaffRole } from '@/lib/access-check'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { triggerMissingDocsReminder } from '@/lib/missing-docs-reminder'
 import { getUserName } from '@/lib/request-utils'
+import { checkPermission } from '@/lib/permission-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +44,15 @@ export async function PUT(request: NextRequest) {
 
     if (!closure_id) {
       return NextResponse.json({ error: 'closure_id is required' }, { status: 400 })
+    }
+
+    // Permission check: 'approved' status requires documents_approve permission
+    const statusesToSet = [bank_statement_status, expense_documents_status, income_invoices_status]
+    if (statusesToSet.some((s: string) => s === 'approved')) {
+      const canApprove = await checkPermission(userId, 'documents_approve')
+      if (!canApprove) {
+        return NextResponse.json({ error: 'Nemáte oprávnění schvalovat uzávěrky.' }, { status: 403 })
+      }
     }
 
     const userName = getUserName(request)
@@ -87,6 +97,9 @@ export async function PATCH(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const userRole = request.headers.get('x-user-role')
+  if (!isStaffRole(userRole)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   try {
     const body = await request.json()
     const { company_id, period, field, value } = body
@@ -103,6 +116,14 @@ export async function PATCH(request: NextRequest) {
     }
     if (!validValues.includes(value)) {
       return NextResponse.json({ error: 'Invalid value' }, { status: 400 })
+    }
+
+    // Permission check: 'approved' requires documents_approve permission
+    if (value === 'approved') {
+      const canApprove = await checkPermission(userId, 'documents_approve')
+      if (!canApprove) {
+        return NextResponse.json({ error: 'Nemáte oprávnění schvalovat uzávěrky.' }, { status: 403 })
+      }
     }
 
     const closure = await upsertClosureField(company_id, period, field, value, userId)
@@ -177,6 +198,13 @@ export async function POST(request: NextRequest) {
           continue
         }
         const targetValue: StatusValue = (value === 'reviewed' || value === 'approved') ? value : 'reviewed'
+        if (targetValue === 'approved') {
+          const canApprove = await checkPermission(userId, 'documents_approve')
+          if (!canApprove) {
+            errors.push({ company_id, period, error: 'Nemáte oprávnění schvalovat' })
+            continue
+          }
+        }
         const closure = await upsertClosureField(company_id, period, field, targetValue, userId)
         results.push({ company_id, period, status: closure?.status || 'updated' })
       } else {
