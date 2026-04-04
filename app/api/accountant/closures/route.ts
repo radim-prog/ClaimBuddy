@@ -3,6 +3,7 @@ import { getClosures, updateClosureFull, upsertClosureField } from '@/lib/closur
 import type { StatusField, StatusValue } from '@/lib/closure-store-db'
 import { addActivity } from '@/lib/activity-store-db'
 import { isStaffRole } from '@/lib/access-check'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { triggerMissingDocsReminder } from '@/lib/missing-docs-reminder'
 import { getUserName } from '@/lib/request-utils'
 
@@ -105,6 +106,18 @@ export async function PATCH(request: NextRequest) {
     }
 
     const closure = await upsertClosureField(company_id, period, field, value, userId)
+
+    // Log status change to activity_log
+    try {
+      await supabaseAdmin.from('activity_log').insert({
+        user_id: userId,
+        action: 'closure_status_changed',
+        entity_type: 'monthly_closure',
+        entity_id: company_id,
+        details: { period, field, value },
+        created_at: new Date().toISOString(),
+      })
+    } catch { /* ignore logging errors */ }
 
     // Trigger missing docs reminder check after closure update
     triggerMissingDocsReminder(company_id, period, userId).catch(err => {
