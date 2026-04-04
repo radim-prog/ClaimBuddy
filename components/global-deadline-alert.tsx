@@ -7,7 +7,6 @@ import { ClientsAlertBar } from './clients-alert-bar'
 import { ClientDetailAlertBar } from './client-detail-alert-bar'
 import { useAlertSettings } from '@/lib/contexts/settings-context'
 import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
-// TODO: Task deadlines budou načítané z API /api/tasks až bude implementováno
 
 type StatusType = 'missing' | 'uploaded' | 'approved'
 
@@ -310,8 +309,68 @@ function generateOnboardingDeadlines(
   })
 }
 
-// TODO: generateTaskDeadlines() - bude načítat z /api/tasks
-// Momentálně task deadlines nejsou implementované (data v Supabase, ne v mock)
+type TaskFromApi = {
+  id: string
+  title: string
+  due_date: string | null
+  status: string
+  company_id: string | null
+  assigned_to_name: string | null
+}
+
+function generateTaskDeadlines(
+  tasks: TaskFromApi[],
+  companies: Company[]
+) {
+  const deadlines: Array<{
+    id: string
+    title: string
+    dueDate: string
+    type: 'critical' | 'urgent' | 'warning'
+    companyId?: string
+    companyName?: string
+    description?: string
+    assignedTo?: string
+  }> = []
+
+  const now = new Date()
+  const today = now.toISOString().split('T')[0]
+  const companyMap = new Map(companies.map(c => [c.id, c]))
+
+  for (const task of tasks) {
+    if (!task.due_date) continue
+
+    const daysUntil = Math.ceil(
+      (new Date(task.due_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    )
+
+    const alertType: 'critical' | 'urgent' | 'warning' =
+      daysUntil < 0 ? 'critical' :
+      daysUntil <= 2 ? 'urgent' : 'warning'
+
+    const company = task.company_id ? companyMap.get(task.company_id) : null
+    const displayName = company
+      ? (company.group_name ? `${company.group_name} – ${company.name}` : company.name)
+      : undefined
+
+    deadlines.push({
+      id: `task-${task.id}`,
+      title: task.title,
+      dueDate: task.due_date,
+      type: alertType,
+      companyId: task.company_id || undefined,
+      companyName: displayName,
+      description: `Úkol do ${new Date(task.due_date).toLocaleDateString('cs-CZ')}${displayName ? ` — ${displayName}` : ''}`,
+      assignedTo: task.assigned_to_name || undefined,
+    })
+  }
+
+  return deadlines.sort((a, b) => {
+    if (a.type === 'critical' && b.type !== 'critical') return -1
+    if (a.type !== 'critical' && b.type === 'critical') return 1
+    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+  })
+}
 
 export function GlobalDeadlineAlert() {
   const pathname = usePathname() ?? ''
@@ -319,12 +378,22 @@ export function GlobalDeadlineAlert() {
   const { userName } = useAccountantUser()
   const [data, setData] = useState<{ companies: Company[], closures: MonthlyClosure[] } | null>(null)
   const [closureDeadlines, setClosureDeadlines] = useState<ReturnType<typeof generateDeadlines>>([])
+  const [taskDeadlines, setTaskDeadlines] = useState<ReturnType<typeof generateTaskDeadlines>>([])
   const [onboardingDeadlines, setOnboardingDeadlines] = useState<ReturnType<typeof generateOnboardingDeadlines>>([])
   const [loading, setLoading] = useState(true)
   const originalTitle = 'Účetní OS'
 
-  // Deadlines z uzávěrek (task deadlines budou přidány až bude API)
-  const deadlines = closureDeadlines
+  // Merge closure + task deadlines, sorted by severity then date
+  const deadlines = useMemo(() => {
+    const all = [...closureDeadlines, ...taskDeadlines]
+    return all.sort((a, b) => {
+      const severityOrder = { critical: 0, urgent: 1, warning: 2 }
+      const sa = severityOrder[a.type] ?? 2
+      const sb = severityOrder[b.type] ?? 2
+      if (sa !== sb) return sa - sb
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    })
+  }, [closureDeadlines, taskDeadlines])
 
   // Determine context based on URL
   const context: AlertContext = useMemo(() => {
@@ -347,15 +416,33 @@ export function GlobalDeadlineAlert() {
     return match ? match[1] : null
   }, [pathname])
 
-  // Fetch data on mount
+  const [rawTasks, setRawTasks] = useState<TaskFromApi[]>([])
+
+  // Fetch data on mount (matrix + tasks in parallel)
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await fetch('/api/accountant/matrix')
-        if (!response.ok) return
-        const fetchedData = await response.json()
-        setData(fetchedData)
-      } catch (err) {
+        const thirtyDaysFromNow = new Date()
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+        const dueTo = thirtyDaysFromNow.toISOString().split('T')[0]
+
+        const [matrixRes, tasksRes] = await Promise.all([
+          fetch('/api/accountant/matrix'),
+          fetch(`/api/tasks?status=pending,in_progress&due_date_to=${dueTo}&sort_by=due_date&sort_order=asc&page_size=100`),
+        ])
+
+        if (matrixRes.ok) {
+          const fetchedData = await matrixRes.json()
+          setData(fetchedData)
+        }
+
+        if (tasksRes.ok) {
+          const tasksData = await tasksRes.json()
+          if (tasksData.tasks) {
+            setRawTasks(tasksData.tasks.filter((t: any) => t.due_date))
+          }
+        }
+      } catch {
         // Silently fail - alert bar just won't show
       } finally {
         setLoading(false)
@@ -392,8 +479,12 @@ export function GlobalDeadlineAlert() {
       // Generuj deadlines z onboardingu
       const onbGenerated = generateOnboardingDeadlines(data.companies, settingsParams)
       setOnboardingDeadlines(onbGenerated)
+      // Generuj deadlines z úkolů
+      if (rawTasks.length > 0) {
+        setTaskDeadlines(generateTaskDeadlines(rawTasks, data.companies))
+      }
     }
-  }, [data, settingsLoaded, documentCriticalDays, documentUrgentDays, closureDeadlineDay, onboardingStalledDays, onboardingLowProgressPercent, onboardingShowStalled, userName])
+  }, [data, rawTasks, settingsLoaded, documentCriticalDays, documentUrgentDays, closureDeadlineDay, onboardingStalledDays, onboardingLowProgressPercent, onboardingShowStalled, userName])
 
   // Update browser tab title with count of urgent deadlines
   useEffect(() => {
@@ -438,8 +529,8 @@ export function GlobalDeadlineAlert() {
       return <DeadlineAlertBar deadlines={onboardingDeadlines} />
 
     case 'tasks':
-      // TODO: Na stránce úkolů zobrazit task deadlines z API
-      return null
+      if (taskDeadlines.length === 0) return null
+      return <DeadlineAlertBar deadlines={taskDeadlines} />
 
     case 'hidden':
       return null
