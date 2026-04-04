@@ -284,7 +284,7 @@ export async function middleware(request: NextRequest) {
 
   // Role-based access control
   if (pathname.startsWith('/accountant') || pathname.startsWith('/api/accountant')) {
-    if (user.role !== 'accountant' && user.role !== 'admin' && user.role !== 'assistant' && user.role !== 'junior' && user.role !== 'senior') {
+    if (user.role !== 'accountant' && user.role !== 'admin' && user.role !== 'assistant' && user.role !== 'junior' && user.role !== 'senior' && user.role !== 'manager') {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
@@ -293,7 +293,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const rawImpersonate = request.cookies.get('impersonate_company')?.value
-  const isStaffRole = ['junior', 'senior', 'accountant', 'admin', 'assistant'].includes(user.role)
+  const isStaffRole = ['junior', 'senior', 'accountant', 'admin', 'assistant', 'manager'].includes(user.role)
   let impersonateCompany: string | undefined
   if (rawImpersonate && isStaffRole) {
     impersonateCompany = await verifySignedCookie(rawImpersonate) || undefined

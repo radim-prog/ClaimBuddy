@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
-const STAFF_ROLES = ['junior', 'senior', 'accountant', 'admin', 'assistant']
+const STAFF_ROLES = ['junior', 'senior', 'accountant', 'admin', 'assistant', 'manager']
 
 export function isStaffRole(role: string | null): boolean {
   return !!role && STAFF_ROLES.includes(role)

@@ -20,7 +20,7 @@ const COOKIE_NAME = 'auth_token'
 // TYPES
 // ============================================
 
-export type UserRole = 'client' | 'junior' | 'senior' | 'accountant' | 'admin' | 'assistant'
+export type UserRole = 'client' | 'junior' | 'senior' | 'accountant' | 'admin' | 'assistant' | 'manager'
 
 export interface AuthUser {
   id: string
