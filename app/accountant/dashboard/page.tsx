@@ -198,6 +198,7 @@ const StatusCell = React.memo(function StatusCell({
   closureMap,
   year,
   onCellClick,
+  onCellClickOrCreate,
   aggregateCompanyIds,
 }: {
   companyId: string
