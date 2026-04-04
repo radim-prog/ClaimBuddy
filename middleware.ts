@@ -277,6 +277,8 @@ export async function middleware(request: NextRequest) {
   if (!user) {
     const response = handleUnauthenticated(request, pathname)
     response.cookies.delete(COOKIE_NAME)
+    response.cookies.delete('impersonate_company')
+    response.cookies.delete('impersonate_user')
     return response
   }
 

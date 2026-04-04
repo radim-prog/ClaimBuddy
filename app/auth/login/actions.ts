@@ -33,10 +33,16 @@ export async function login(formData: FormData) {
     path: '/',
   })
 
+  // Clear any leftover impersonation cookies on fresh login
+  cookies().delete('impersonate_company')
+  cookies().delete('impersonate_user')
+
   redirect(getRedirectPath(result.user.role))
 }
 
 export async function logout() {
   cookies().delete(COOKIE_NAME)
+  cookies().delete('impersonate_company')
+  cookies().delete('impersonate_user')
   redirect('/')
 }

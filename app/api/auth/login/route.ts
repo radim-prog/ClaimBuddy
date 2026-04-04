@@ -27,6 +27,10 @@ export async function POST(request: Request) {
       path: '/',
     })
 
+    // Clear any leftover impersonation cookies on fresh login
+    cookies().delete('impersonate_company')
+    cookies().delete('impersonate_user')
+
     return NextResponse.json({
       user: {
         id: result.user.id,
