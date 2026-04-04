@@ -69,6 +69,9 @@ export type Employee = {
   // Srážky
   deductions: Deduction[]
 
+  // Zdravotní prohlídka
+  medical_exam_due?: string | null // Datum příští lékařské prohlídky
+
   // Bankovní spojení
   bank_account?: string
 

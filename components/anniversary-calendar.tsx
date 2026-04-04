@@ -199,8 +199,27 @@ export function AnniversaryCalendar({
           })
         }
 
-        // Lékařská prohlídka (pokud by existovala)
-        // TODO: Přidat pole medical_exam_due do Employee typu
+        // Lékařská prohlídka
+        if (employee.medical_exam_due) {
+          const examDate = new Date(employee.medical_exam_due)
+          const examDaysUntil = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+          // Show if within 180 days or overdue
+          if (examDaysUntil <= 180) {
+            events.push({
+              id: `emp-medical-${employee.id}`,
+              type: 'employee_medical',
+              title: `Lékařská prohlídka: ${employee.first_name} ${employee.last_name}`,
+              description: examDaysUntil < 0
+                ? `Prohlídka po termínu!`
+                : `Termín: ${examDate.toLocaleDateString('cs-CZ')}`,
+              date: examDate,
+              sourceType: 'employee',
+              sourceId: employee.id,
+              daysUntil: examDaysUntil,
+              status: getStatus(examDaysUntil),
+            })
+          }
+        }
       })
 
     return events.sort((a, b) => a.daysUntil - b.daysUntil)
