@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useClientUser } from '@/lib/contexts/client-user-context'
 import { generateDeadlinesForCompany } from '@/lib/statutory-deadlines'
+import { AddFirstCompany } from '@/components/client/add-first-company'
 import { ScanOverlay } from '@/components/client/action-hub/scan-overlay'
 import { TripOverlay } from '@/components/client/action-hub/trip-overlay'
 import { InvoiceOverlay } from '@/components/client/action-hub/invoice-overlay'
@@ -481,14 +482,16 @@ export default function ClientDashboard() {
     )
   }
 
-  if (error || companies.length === 0) {
+  if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500 dark:text-gray-400">
-          {error || 'Nemáte přiřazené žádné firmy. Kontaktujte svého účetního.'}
-        </p>
+        <p className="text-gray-500 dark:text-gray-400">{error}</p>
       </div>
     )
+  }
+
+  if (companies.length === 0) {
+    return <AddFirstCompany onCreated={() => window.location.reload()} />
   }
 
   return (
