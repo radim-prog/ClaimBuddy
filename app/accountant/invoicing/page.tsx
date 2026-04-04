@@ -318,8 +318,6 @@ export default function InvoicingPage() {
 
   // Handler: Create invoice from selected tasks (billable extra tasks section)
   const handleCreateInvoice = (_companyId: string, _taskIds: string[]) => {
-    // Billable tasks section is not yet populated — this will work once
-    // billableTasksByCompany is connected to the tasks API
     toast.info('Tato funkce bude dostupná po napojení extra úkolů')
   }
 
