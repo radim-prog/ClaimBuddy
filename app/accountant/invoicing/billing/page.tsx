@@ -385,7 +385,7 @@ export default function BillingPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Aktivni klienti
+                Aktivní klienti
               </CardTitle>
               <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30">
                 <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
@@ -393,7 +393,7 @@ export default function BillingPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{dashboard.totalClients}</div>
-              <p className="text-xs text-muted-foreground mt-1">s aktivni fakturaci</p>
+              <p className="text-xs text-muted-foreground mt-1">s aktivní fakturací</p>
             </CardContent>
           </Card>
 
@@ -413,7 +413,7 @@ export default function BillingPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Zaplaceno tento mesic
+                Zaplaceno tento měsíc
               </CardTitle>
               <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
                 <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />

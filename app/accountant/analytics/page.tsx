@@ -65,10 +65,10 @@ interface RevenueData {
 }
 
 const EVENT_LABELS: Record<string, string> = {
-  onboarded: 'Novy klient',
+  onboarded: 'Nový klient',
   churned: 'Odchod klienta',
   paused: 'Pozastaveno',
-  fee_changed: 'Zmena pausalu',
+  fee_changed: 'Změna paušálu',
 }
 const EVENT_COLORS: Record<string, string> = {
   onboarded: 'text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400',
@@ -193,47 +193,47 @@ export default function AnalyticsDashboard() {
       {/* KPI cisla */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         <KPICard
-          title="Mesicni prijem"
+          title="Měsíční příjem"
           value={formatKc(data.currentMRR)}
-          subtitle="Soucet pausalu vsech aktivnich klientu"
+          subtitle="Součet paušálů všech aktivních klientů"
           icon={DollarSign}
           color="purple"
         />
         <KPICard
-          title="Aktivni klienti"
+          title="Aktivní klienti"
           value={String(data.totalActiveClients)}
-          subtitle={`Prumerny pausal: ${formatKc(data.avgFee)}`}
+          subtitle={`Průměrný paušál: ${formatKc(data.avgFee)}`}
           icon={Users}
           color="blue"
         />
         <KPICard
-          title="Odchod klientu"
+          title="Odchod klientů"
           value={`${data.churnRate} %`}
-          subtitle={`Letos odeslo ${data.thisYear.churned} klientu`}
+          subtitle={`Letos odešlo ${data.thisYear.churned} klientů`}
           icon={TrendingDown}
           color="red"
         />
         <KPICard
-          title="Cisty rust letos"
+          title="Čistý růst letos"
           value={formatKc(data.thisYear.netMRR)}
-          subtitle={`Prislo +${formatKc(data.thisYear.newMRR)}, odeslo -${formatKc(data.thisYear.churnedMRR)}`}
+          subtitle={`Přišlo +${formatKc(data.thisYear.newMRR)}, odešlo -${formatKc(data.thisYear.churnedMRR)}`}
           icon={TrendingUp}
           color="green"
         />
         {(data.totalExpensesYTD ?? 0) > 0 && (
           <KPICard
-            title="Naklady letos"
+            title="Náklady letos"
             value={formatKc(data.totalExpensesYTD || 0)}
-            subtitle="Mzdy a odmeny ucetnich"
+            subtitle="Mzdy a odměny účetních"
             icon={Wallet}
             color="red"
           />
         )}
         {(data.estimatedProfit ?? 0) !== 0 && (
           <KPICard
-            title="Odhadovany zisk"
+            title="Odhadovaný zisk"
             value={formatKc(data.estimatedProfit || 0)}
-            subtitle="Trzby z pausalu minus naklady"
+            subtitle="Tržby z paušálů minus náklady"
             icon={CircleDollarSign}
             color="green"
           />
@@ -317,20 +317,20 @@ export default function AnalyticsDashboard() {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold font-display flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-purple-600" />
-              Mesicni prijmy z pausalu
+              Měsíční příjmy z paušálů
             </h3>
             <div className="flex items-center gap-4 text-xs text-gray-500">
               <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded bg-purple-500" /> Skutecnost
+                <span className="w-3 h-3 rounded bg-purple-500" /> Skutečnost
               </span>
               {hasGoal && (
                 <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded bg-gray-300 dark:bg-gray-600" /> Plan
+                  <span className="w-3 h-3 rounded bg-gray-300 dark:bg-gray-600" /> Plán
                 </span>
               )}
               {data.monthlyExpenses && data.monthlyExpenses.some(e => e > 0) && (
                 <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded bg-red-400" /> Naklady
+                  <span className="w-3 h-3 rounded bg-red-400" /> Náklady
                 </span>
               )}
             </div>
@@ -349,11 +349,11 @@ export default function AnalyticsDashboard() {
                   <div className="absolute bottom-full mb-2 hidden group-hover:block z-10">
                     <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
                       <p className="font-semibold">{m.label} {year}</p>
-                      {m.actual != null && <p>Prijem: {formatKc(m.actual)}</p>}
-                      {hasGoal && <p>Cil: {formatKc(m.target)}</p>}
-                      {expense > 0 && <p className="text-red-400">Naklady: {formatKc(expense)}</p>}
+                      {m.actual != null && <p>Příjem: {formatKc(m.actual)}</p>}
+                      {hasGoal && <p>Cíl: {formatKc(m.target)}</p>}
+                      {expense > 0 && <p className="text-red-400">Náklady: {formatKc(expense)}</p>}
                       {m.actual != null && expense > 0 && <p className="text-green-400">Zisk: {formatKc(m.actual - expense)}</p>}
-                      {m.onboarded > 0 && <p className="text-green-400">+{m.onboarded} novych klientu</p>}
+                      {m.onboarded > 0 && <p className="text-green-400">+{m.onboarded} nových klientů</p>}
                       {m.churned > 0 && <p className="text-red-400">-{m.churned} odeslych</p>}
                     </div>
                   </div>
