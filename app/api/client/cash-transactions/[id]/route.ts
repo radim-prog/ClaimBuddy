@@ -58,7 +58,18 @@ export async function PATCH(
       )
     }
 
-    const errors = validateCashTransaction(txForValidation, { dailyTotalForPartner: dailyTotal })
+    // Fetch register balance for VPD validation (exclude current tx)
+    let registerBalance: number | undefined
+    if (txForValidation.doc_type === 'VPD') {
+      const { data: balRow } = await supabaseAdmin
+        .from('cash_transactions')
+        .select('amount')
+        .eq('company_id', existing.company_id)
+        .neq('id', id)
+      registerBalance = (balRow || []).reduce((sum: number, r: { amount: number }) => sum + r.amount, 0)
+    }
+
+    const errors = validateCashTransaction(txForValidation, { dailyTotalForPartner: dailyTotal, registerBalance })
     const hardErrors = errors.filter(e => e.severity === 'error')
     if (hardErrors.length > 0) {
       return NextResponse.json({ error: 'Validation failed', details: hardErrors }, { status: 422 })

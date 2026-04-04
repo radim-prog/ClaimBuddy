@@ -69,7 +69,6 @@ export function validateCashTransaction(
   }
 
   // Cash register balance check (VPD = výdej, balance must stay >= 0)
-  // TODO: Wire up registerBalance in POST/PATCH routes
   if (tx.doc_type === 'VPD' && tx.amount && opts?.registerBalance != null) {
     if (opts.registerBalance - tx.amount < 0) {
       errors.push({

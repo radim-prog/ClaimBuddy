@@ -72,9 +72,19 @@ export async function POST(request: NextRequest) {
       dailyTotal = await getDailyPartnerTotal(supabaseAdmin, company_id, counterparty_name, transaction_date)
     }
 
+    // Fetch current register balance (sum of all transactions for this company)
+    let registerBalance: number | undefined
+    if (doc_type === 'VPD') {
+      const { data: balRow } = await supabaseAdmin
+        .from('cash_transactions')
+        .select('amount')
+        .eq('company_id', company_id)
+      registerBalance = (balRow || []).reduce((sum: number, r: { amount: number }) => sum + r.amount, 0)
+    }
+
     const errors = validateCashTransaction(
       { doc_type, transaction_date, amount: Math.abs(amount), counterparty_name },
-      { dailyTotalForPartner: dailyTotal }
+      { dailyTotalForPartner: dailyTotal, registerBalance }
     )
     const hardErrors = errors.filter(e => e.severity === 'error')
     if (hardErrors.length > 0) {
