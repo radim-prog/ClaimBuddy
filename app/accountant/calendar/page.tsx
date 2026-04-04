@@ -63,20 +63,28 @@ export default function DeadlinesPage() {
   const [completedMap, setCompletedMap] = useState<Record<string, { at: string; by: string }>>({})
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set())
 
-  // Fetch companies
+  // Fetch companies + completions in parallel
   useEffect(() => {
-    async function fetchCompanies() {
+    async function fetchData() {
       try {
-        const res = await fetch('/api/accountant/matrix')
-        const data = await res.json()
-        setCompanies(data.companies.filter((c: any) => c.status !== 'inactive'))
+        const [companiesRes, completionsRes] = await Promise.all([
+          fetch('/api/accountant/matrix'),
+          fetch('/api/accountant/deadline-completions'),
+        ])
+        const companiesData = await companiesRes.json()
+        setCompanies(companiesData.companies.filter((c: any) => c.status !== 'inactive'))
+
+        if (completionsRes.ok) {
+          const completionsData = await completionsRes.json()
+          if (completionsData?.completions) setCompletedMap(completionsData.completions)
+        }
       } catch {
         // fallback
       } finally {
         setLoading(false)
       }
     }
-    fetchCompanies()
+    fetchData()
   }, [])
 
   // Generate deadlines
@@ -141,8 +149,11 @@ export default function DeadlinesPage() {
     pending: deadlines.filter(d => !d.completed).length,
   }), [deadlines])
 
-  // Toggle completion
-  const toggleCompleted = (deadlineId: string) => {
+  // Toggle completion (optimistic + persist to DB)
+  const toggleCompleted = async (deadlineId: string) => {
+    const wasCompleted = !!completedMap[deadlineId]
+
+    // Optimistic update
     setCompletedMap(prev => {
       if (prev[deadlineId]) {
         const next = { ...prev }
@@ -157,6 +168,31 @@ export default function DeadlinesPage() {
         },
       }
     })
+
+    // Persist to DB
+    try {
+      await fetch('/api/accountant/deadline-completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deadline_id: deadlineId }),
+      })
+    } catch {
+      // Revert on failure
+      setCompletedMap(prev => {
+        if (wasCompleted) {
+          return {
+            ...prev,
+            [deadlineId]: {
+              at: new Date().toISOString(),
+              by: userName || 'Účetní',
+            },
+          }
+        }
+        const next = { ...prev }
+        delete next[deadlineId]
+        return next
+      })
+    }
   }
 
   // Navigate months
