@@ -290,15 +290,58 @@ export function DeadlineAlertBar({ deadlines }: DeadlineAlertBarProps) {
     setNoteInput('')
   }
 
-  const handleSendReminder = (item: DeadlineItem) => {
-    // TODO: Implement actual email/SMS sending
-    toast.success(`Urgence odeslána klientovi: ${item.companyName}`)
+  const handleSendReminder = async (item: DeadlineItem) => {
+    if (!item.companyId || !item.companyName) {
+      toast.error('Chybí údaje o firmě')
+      return
+    }
+    try {
+      const dueDate = new Date(item.dueDate).toLocaleDateString('cs-CZ')
+      const res = await fetch('/api/accountant/send-reminder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: item.companyId,
+          companyName: item.companyName,
+          subject: `Upozornění: ${item.title}`,
+          body: `Dobrý den,\n\ndovoluji si Vás upozornit na blížící se termín: ${item.title}.\n\nTermín: ${dueDate}\n\n${item.description || ''}\n\nProsím o včasné dodání potřebných dokladů.\n\nS pozdravem,\nVaše účetní`,
+        }),
+      })
+      if (res.ok) {
+        toast.success(`Urgence odeslána klientovi: ${item.companyName}`)
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Nepodařilo se odeslat email')
+      }
+    } catch {
+      toast.error('Chyba při odesílání emailu')
+    }
   }
 
-  const handleSendAllReminders = () => {
-    const clientsToRemind = overdue.filter(d => d.companyName)
-    // TODO: Implement actual bulk sending
-    toast.success(`Hromadná upomínka odeslána ${clientsToRemind.length} klientům`)
+  const handleSendAllReminders = async () => {
+    const clientsToRemind = overdue.filter(d => d.companyName && d.companyId)
+    if (clientsToRemind.length === 0) {
+      toast.info('Žádní klienti k upomínce')
+      return
+    }
+    let sent = 0
+    for (const item of clientsToRemind) {
+      try {
+        const dueDate = new Date(item.dueDate).toLocaleDateString('cs-CZ')
+        const res = await fetch('/api/accountant/send-reminder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            companyId: item.companyId,
+            companyName: item.companyName,
+            subject: `Upozornění: ${item.title}`,
+            body: `Dobrý den,\n\ndovoluji si Vás upozornit na blížící se termín: ${item.title}.\n\nTermín: ${dueDate}\n\n${item.description || ''}\n\nProsím o včasné dodání potřebných dokladů.\n\nS pozdravem,\nVaše účetní`,
+          }),
+        })
+        if (res.ok) sent++
+      } catch { /* continue with others */ }
+    }
+    toast.success(`Hromadná upomínka odeslána ${sent}/${clientsToRemind.length} klientům`)
   }
 
   // Checklist položky jsou pouze read-only - odvozené ze skutečného stavu dokumentů

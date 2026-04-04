@@ -156,98 +156,62 @@ Vaše účetní`
     }
   }
 
-  const handleSend = () => {
-    /*
-     * ============================================
-     * TODO: NAPOJENÍ NA EMAIL API
-     * ============================================
-     *
-     * Zde se napojí email služba (doporučené možnosti):
-     *
-     * 1. RESEND (https://resend.com)
-     *    - Moderní, jednoduchý API
-     *    - npm install resend
-     *    - Příklad:
-     *      const resend = new Resend(process.env.RESEND_API_KEY)
-     *      await resend.emails.send({
-     *        from: 'ucetni@firma.cz',
-     *        to: recipient,
-     *        subject: subject,
-     *        text: body,
-     *        scheduledAt: sendOption === 'scheduled' ? new Date(scheduledTime) : undefined
-     *      })
-     *
-     * 2. SENDGRID (https://sendgrid.com)
-     *    - Robustní, enterprise ready
-     *    - npm install @sendgrid/mail
-     *    - Podpora plánovaného odeslání přes send_at parameter
-     *
-     * 3. MAILGUN (https://mailgun.com)
-     *    - npm install mailgun.js
-     *    - Podpora plánovaného odeslání přes o:deliverytime
-     *
-     * 4. NODEMAILER + SMTP
-     *    - Pro vlastní SMTP server
-     *    - Plánování řešit přes databázi + cron job
-     *
-     * API ENDPOINT:
-     * POST /api/accountant/send-urgency-email
-     * Body: {
-     *   to: string,
-     *   subject: string,
-     *   body: string,
-     *   scheduledAt?: string (ISO datetime),
-     *   companyId: string,
-     *   period: string
-     * }
-     *
-     * Response: {
-     *   success: boolean,
-     *   messageId?: string,
-     *   scheduledAt?: string
-     * }
-     *
-     * DATABÁZE - uložit historii urgencí:
-     * Table: urgency_emails
-     * - id
-     * - company_id
-     * - period
-     * - recipient
-     * - subject
-     * - body
-     * - status: 'scheduled' | 'sent' | 'delivered' | 'failed'
-     * - scheduled_at
-     * - sent_at
-     * - created_at
-     * ============================================
-     */
+  const [sending, setSending] = useState(false)
 
-    // Record reminder via API
-    fetch('/api/accountant/activities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        company_id: companyId,
-        company_name: companyName,
-        period,
-        type: 'missing_docs',
-        channel: 'email',
-        sent_by: 'Účetní',
-        notes: `Chybí: ${missingDocsText}`,
-      }),
-    }).catch(() => {})
+  const handleSend = async () => {
+    setSending(true)
+    try {
+      if (sendOption === 'scheduled') {
+        // Scheduled emails: log activity only (no SMTP scheduling support yet)
+        await fetch('/api/accountant/activities', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_id: companyId,
+            company_name: companyName,
+            period,
+            type: 'missing_docs',
+            channel: 'email',
+            sent_by: 'Účetní',
+            notes: `Naplánováno: ${subject} — chybí: ${missingDocsText}`,
+          }),
+        }).catch(() => {})
 
-    // DEMO: Simulace odeslání
-    if (sendOption === 'now') {
-      toast.success(`Email odeslán na ${recipient}`)
-    } else {
-      const scheduledDate = new Date(scheduledTime)
-      toast.success(
-        `Email naplánován na ${scheduledDate.toLocaleDateString('cs-CZ')} v ${scheduledDate.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}`
-      )
+        const scheduledDate = new Date(scheduledTime)
+        toast.success(
+          `Email naplánován na ${scheduledDate.toLocaleDateString('cs-CZ')} v ${scheduledDate.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}`
+        )
+      } else {
+        // Send immediately via API
+        const res = await fetch('/api/accountant/send-reminder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: recipient,
+            subject,
+            body,
+            companyId,
+            companyName,
+            period,
+          }),
+        })
+
+        if (res.ok) {
+          toast.success(`Email odeslán na ${recipient}`)
+        } else {
+          const data = await res.json()
+          toast.error(data.error || 'Nepodařilo se odeslat email')
+          setSending(false)
+          return
+        }
+      }
+
+      onOpenChange(false)
+    } catch {
+      toast.error('Chyba při odesílání emailu')
+    } finally {
+      setSending(false)
     }
-
-    onOpenChange(false)
   }
 
   return (
@@ -378,6 +342,7 @@ Vaše účetní`
           </Button>
           <Button
             onClick={handleSend}
+            disabled={sending}
             className="bg-orange-500 hover:bg-orange-600 text-white"
           >
             {sendOption === 'now' ? (
