@@ -163,7 +163,7 @@ export async function middleware(request: NextRequest) {
   if (STATIC_PREFIXES.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
   }
-  if (pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|woff2?)$/)) {
+  if (pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js|json|webmanifest|woff2?|xml|txt)$/)) {
     return NextResponse.next()
   }
 
