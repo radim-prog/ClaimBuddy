@@ -101,3 +101,13 @@ Rollback:
 - 2026-04-09: added storage sync script and confirmed current missing claims files belong to test fixture data, not production data.
 - 2026-04-09: added claims-only middleware guards so ClaimBuddy no longer routes users into accounting frontend flows.
 - 2026-04-09: prepared standalone server deploy checklist in `docs/claimbuddy-server-deploy.md`.
+- 2026-04-09: completed standalone claims split, committed it as `4643bbf3d6e6f3886cebbf2c4ce8dbe8ddeeb742`, and pushed branch `claimbuddy-split` to GitHub.
+- 2026-04-09: created rollout execution plan in `plans/2026-04-09-claimbuddy-rollout-plan.md`.
+
+## Next Step
+
+Next execution phase is server rollout, not more split work.
+
+- waiting for target server access
+- waiting for claims backend provisioning
+- use `plans/2026-04-09-claimbuddy-rollout-plan.md` as the active operational checklist

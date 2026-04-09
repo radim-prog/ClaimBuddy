@@ -66,6 +66,18 @@ Další proměnné přebírat jen pokud je claims část skutečně používá:
 Nevázat ClaimBuddy na účetní DB fallback v produkci. Fallback je jen migrační pojistka.
 ClaimBuddy teď v `NODE_ENV=production` bez dedikovaných claims envů při startu spadne schválně.
 
+Preflight před prvním deployem:
+
+```bash
+bash scripts/claimbuddy-preflight.sh /path/to/claimbuddy.env
+```
+
+Volitelně po startu aplikace:
+
+```bash
+BASE_URL=https://claims-staging.zajcon.cz bash scripts/claimbuddy-preflight.sh /path/to/claimbuddy.env
+```
+
 ## 4. Naplnit claims data
 
 Nejdřív dry-run:
