@@ -64,6 +64,34 @@ function getClientIp(request: NextRequest): string {
     || 'unknown'
 }
 
+function getRequestOrigin(request: NextRequest): string {
+  const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0]?.trim()
+  const host = forwardedHost || request.headers.get('host')?.split(',')[0]?.trim()
+  const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
+  const protocol = forwardedProto || request.nextUrl.protocol.replace(':', '') || 'https'
+
+  if (host) {
+    return `${protocol}://${host}`
+  }
+
+  return request.nextUrl.origin
+}
+
+function buildRequestUrl(request: NextRequest, pathname: string): URL {
+  return new URL(pathname, getRequestOrigin(request))
+}
+
+function buildInternalRewriteUrl(request: NextRequest, pathname: string): URL {
+  const url = request.nextUrl.clone()
+  url.pathname = pathname
+
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    url.protocol = 'http:'
+  }
+
+  return url
+}
+
 function getClientHomePath(hostname: string): string {
   if (IS_CLAIMS_ONLY_PRODUCT || hostname === 'claims.zajcon.cz') {
     return '/client/claims'
@@ -216,8 +244,7 @@ export async function middleware(request: NextRequest) {
       }
       if (!rewrittenPath) {
         // Not logged in → show claims landing (public page, no auth needed)
-        const url = request.nextUrl.clone()
-        url.pathname = '/claims'
+        const url = buildInternalRewriteUrl(request, '/claims')
         return NextResponse.rewrite(url)
       }
     }
@@ -230,20 +257,20 @@ export async function middleware(request: NextRequest) {
       // Redirect old full paths to clean URLs on claims hostname
       for (const [clean, internal] of Object.entries(CLAIMS_REWRITES)) {
         if (pathname === internal) {
-          return NextResponse.redirect(new URL(clean, request.url))
+          return NextResponse.redirect(buildRequestUrl(request, clean))
         }
       }
       // Standard dashboards → claims clean URLs
       if (pathname === '/client/dashboard') {
-        return NextResponse.redirect(new URL('/client/claims', request.url))
+        return NextResponse.redirect(buildRequestUrl(request, '/client/claims'))
       }
       if (pathname === '/accountant/dashboard') {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
+        return NextResponse.redirect(buildRequestUrl(request, '/dashboard'))
       }
       // /auth, /api, /claims, /accountant, /client paths stay as-is
       // Everything else → redirect to clean /dashboard
       if (!pathname.startsWith('/claims') && !pathname.startsWith('/accountant') && !pathname.startsWith('/client') && !pathname.startsWith('/api') && !pathname.startsWith('/auth') && !pathname.startsWith('/_next')) {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
+        return NextResponse.redirect(buildRequestUrl(request, '/dashboard'))
       }
     }
   }
@@ -252,7 +279,7 @@ export async function middleware(request: NextRequest) {
 
   if (IS_CLAIMS_ONLY_PRODUCT && !effectivePath.startsWith('/api/')) {
     if (!isClaimsOnlyAllowedPage(effectivePath)) {
-      return NextResponse.redirect(new URL(getClaimsOnlyRedirectPath(effectivePath), request.url))
+      return NextResponse.redirect(buildRequestUrl(request, getClaimsOnlyRedirectPath(effectivePath)))
     }
   }
 
@@ -265,18 +292,18 @@ export async function middleware(request: NextRequest) {
         if (pathname === '/claims') {
           // Claims landing: logged-in staff → claims dashboard, client → client claims
           if (user.role === 'client') {
-            return NextResponse.redirect(new URL(getClientHomePath(hostname), request.url))
+            return NextResponse.redirect(buildRequestUrl(request, getClientHomePath(hostname)))
           }
           const modules = user.modules || ['accounting']
           if (modules.includes('claims')) {
-            return NextResponse.redirect(new URL(getStaffHomePath(hostname), request.url))
+            return NextResponse.redirect(buildRequestUrl(request, getStaffHomePath(hostname)))
           }
         }
         // Default: ClaimBuddy always lands on claims homes.
         if (user.role === 'client') {
-          return NextResponse.redirect(new URL(getClientHomePath(hostname), request.url))
+          return NextResponse.redirect(buildRequestUrl(request, getClientHomePath(hostname)))
         }
-        return NextResponse.redirect(new URL(getStaffHomePath(hostname), request.url))
+        return NextResponse.redirect(buildRequestUrl(request, getStaffHomePath(hostname)))
       }
     }
     return NextResponse.next()
@@ -330,7 +357,7 @@ export async function middleware(request: NextRequest) {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
-      return NextResponse.redirect(new URL(getClientHomePath(hostname), request.url))
+      return NextResponse.redirect(buildRequestUrl(request, getClientHomePath(hostname)))
     }
   }
 
@@ -354,7 +381,7 @@ export async function middleware(request: NextRequest) {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
-      return NextResponse.redirect(new URL(getStaffHomePath(hostname), request.url))
+      return NextResponse.redirect(buildRequestUrl(request, getStaffHomePath(hostname)))
     }
   }
 
@@ -365,14 +392,14 @@ export async function middleware(request: NextRequest) {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Module not enabled' }, { status: 403 })
       }
-      return NextResponse.redirect(new URL('/accountant/dashboard', request.url))
+      return NextResponse.redirect(buildRequestUrl(request, '/accountant/dashboard'))
     }
     // Claims requires staff role (except /claims/new which is public intake)
     if (!isStaffRole && !pathname.startsWith('/claims/new')) {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
-      return NextResponse.redirect(new URL(getClientHomePath(hostname), request.url))
+      return NextResponse.redirect(buildRequestUrl(request, getClientHomePath(hostname)))
     }
   }
 
@@ -401,8 +428,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (rewrittenPath) {
-    const url = request.nextUrl.clone()
-    url.pathname = rewrittenPath
+    const url = buildInternalRewriteUrl(request, rewrittenPath)
     return NextResponse.rewrite(url, { request: { headers: requestHeaders } })
   }
 
@@ -416,7 +442,7 @@ function handleUnauthenticated(request: NextRequest, pathname: string): NextResp
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const hostname = request.headers.get('host')?.split(':')[0] || ''
-  return NextResponse.redirect(new URL(getPublicLandingPath(hostname), request.url))
+  return NextResponse.redirect(buildRequestUrl(request, getPublicLandingPath(hostname)))
 }
 
 export const config = {
