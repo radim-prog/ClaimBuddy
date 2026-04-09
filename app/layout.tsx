@@ -5,6 +5,12 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { CookieConsentBanner } from '@/components/cookie-consent-banner'
 import { ChunkErrorBoundary } from '@/components/chunk-error-boundary'
 import { VersionChecker } from '@/components/version-checker'
+import {
+  IS_CLAIMS_ONLY_PRODUCT,
+  PRODUCT_BRAND,
+  PRODUCT_DESCRIPTION,
+  PRODUCT_PROJECT_NAME,
+} from '@/lib/product-config'
 import './globals.css'
 
 const dmSans = DM_Sans({
@@ -19,6 +25,18 @@ const plusJakarta = Plus_Jakarta_Sans({
   variable: '--font-plus-jakarta',
 })
 
+const metadataBase = (() => {
+  const fallbackUrl = IS_CLAIMS_ONLY_PRODUCT
+    ? 'http://127.0.0.1:3020'
+    : 'http://127.0.0.1:3003'
+
+  try {
+    return new URL(process.env.NEXT_PUBLIC_APP_URL || fallbackUrl)
+  } catch {
+    return new URL(fallbackUrl)
+  }
+})()
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -27,10 +45,15 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Účetní OS - Portál pro klienty a účetní',
-  description: 'Komplexní webová aplikace pro účetní firmu - samoobslužný portál pro klienty a master dashboard pro účetní',
+  metadataBase,
+  title: IS_CLAIMS_ONLY_PRODUCT
+    ? `${PRODUCT_PROJECT_NAME} — ${PRODUCT_BRAND}`
+    : 'Účetní OS - Portál pro klienty a účetní',
+  description: IS_CLAIMS_ONLY_PRODUCT
+    ? PRODUCT_DESCRIPTION
+    : 'Komplexní webová aplikace pro účetní firmu - samoobslužný portál pro klienty a master dashboard pro účetní',
   icons: {
-    icon: '/favicon.svg',
+    icon: IS_CLAIMS_ONLY_PRODUCT ? '/favicon-claims.svg' : '/favicon.svg',
   },
 }
 
@@ -43,7 +66,7 @@ export default function RootLayout({
     <html lang="cs" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#7c3aed" />
+        <meta name="theme-color" content={IS_CLAIMS_ONLY_PRODUCT ? '#2563eb' : '#7c3aed'} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />

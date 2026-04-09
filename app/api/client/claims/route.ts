@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getUserCompanyIds } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,14 +10,10 @@ export async function GET(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    // Resolve company_id from client_users
-    const { data: clientUser } = await supabaseAdmin
-      .from('client_users')
-      .select('company_id')
-      .eq('user_id', userId)
-      .single()
+    const impersonateCompany = request.headers.get('x-impersonate-company')
+    const companyIds = impersonateCompany ? [impersonateCompany] : await getUserCompanyIds(userId)
 
-    if (!clientUser?.company_id) {
+    if (companyIds.length === 0) {
       return NextResponse.json({ cases: [] })
     }
 
@@ -28,7 +25,7 @@ export async function GET(request: NextRequest) {
         service_mode, payment_status, ai_report, ai_processed_at,
         insurance_company:insurance_companies(id, name)
       `)
-      .eq('company_id', clientUser.company_id)
+      .in('company_id', companyIds)
       .order('created_at', { ascending: false })
 
     if (error) {

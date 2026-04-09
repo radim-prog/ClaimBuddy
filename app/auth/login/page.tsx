@@ -12,6 +12,7 @@ import {
   Eye, EyeOff, LogIn, ArrowLeft, Calculator, Briefcase,
   FileSearch, ShieldCheck, BarChart3, Users, Upload, Clock, MessageSquare, CalendarCheck,
 } from 'lucide-react'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 import { login } from './actions'
 
 type Portal = 'accountant' | 'client'
@@ -41,7 +42,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [portal, setPortal] = useState<Portal>('client')
-  const [isClaims, setIsClaims] = useState(false)
+  const [isClaims, setIsClaims] = useState(IS_CLAIMS_ONLY_PRODUCT)
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -49,7 +50,7 @@ function LoginForm() {
     const reset = searchParams.get('reset')
     const error = searchParams.get('error')
     const p = searchParams.get('portal')
-    const claimsHost = window.location.hostname === 'claims.zajcon.cz'
+    const claimsHost = IS_CLAIMS_ONLY_PRODUCT || window.location.hostname === 'claims.zajcon.cz'
 
     if (claimsHost) {
       setIsClaims(true)

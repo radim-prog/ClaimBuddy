@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 const SHORTCUTS: Record<string, { path: string; label: string }> = {
   'd': { path: '/accountant/dashboard', label: 'Dashboard' },
@@ -12,10 +13,19 @@ const SHORTCUTS: Record<string, { path: string; label: string }> = {
   'n': { path: '/accountant/settings/templates', label: 'Šablony' },
 }
 
+const CLAIMS_SHORTCUTS: Record<string, { path: string; label: string }> = {
+  'd': { path: '/accountant/claims/dashboard', label: 'Claims dashboard' },
+  'k': { path: '/claims/clients', label: 'Klienti' },
+  'p': { path: '/accountant/claims/cases', label: 'Případy' },
+  'i': { path: '/accountant/claims/insurers', label: 'Pojišťovny' },
+  's': { path: '/accountant/claims/stats', label: 'Statistiky' },
+}
+
 export function KeyboardShortcuts() {
   const router = useRouter()
   const [pendingG, setPendingG] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const shortcuts = IS_CLAIMS_ONLY_PRODUCT ? CLAIMS_SHORTCUTS : SHORTCUTS
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // Ignore when typing in inputs
@@ -44,7 +54,7 @@ export function KeyboardShortcuts() {
     }
 
     if (pendingG) {
-      const shortcut = SHORTCUTS[e.key]
+      const shortcut = shortcuts[e.key]
       if (shortcut) {
         e.preventDefault()
         router.push(shortcut.path)
@@ -62,7 +72,7 @@ export function KeyboardShortcuts() {
         searchInput.focus()
       }
     }
-  }, [pendingG, router])
+  }, [pendingG, router, shortcuts])
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -86,7 +96,7 @@ export function KeyboardShortcuts() {
         </div>
         <div className="space-y-3">
           <div className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Navigace (g + klávesa)</div>
-          {Object.entries(SHORTCUTS).map(([key, { label }]) => (
+          {Object.entries(shortcuts).map(([key, { label }]) => (
             <div key={key} className="flex justify-between items-center text-sm">
               <span className="text-gray-700 dark:text-gray-300">{label}</span>
               <div className="flex gap-1">

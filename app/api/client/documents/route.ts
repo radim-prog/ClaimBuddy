@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getUserCompanyIds } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,14 +16,7 @@ export async function GET(request: NextRequest) {
     if (impersonateCompany) {
       companyIds = [impersonateCompany]
     } else {
-      // Real client - find their companies
-      const { data: companies } = await supabaseAdmin
-        .from('companies')
-        .select('id')
-        .eq('owner_id', userId)
-        .is('deleted_at', null)
-
-      companyIds = (companies ?? []).map(c => c.id)
+      companyIds = await getUserCompanyIds(userId)
     }
 
     if (companyIds.length === 0) {

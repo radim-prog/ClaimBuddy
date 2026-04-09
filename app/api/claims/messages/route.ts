@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isStaffRole } from '@/lib/access-check'
+import { getUserName } from '@/lib/request-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,35 +18,41 @@ export async function GET(request: NextRequest) {
   if (!companyId) return NextResponse.json({ error: 'company_id is required' }, { status: 400 })
 
   try {
-    // Find or create a company chat for claims context
-    let { data: chat } = await supabaseAdmin
+    const { data: chats, error: chatsError } = await supabaseAdmin
       .from('chats')
-      .select('id')
+      .select('id, subject, created_at')
       .eq('company_id', companyId)
       .eq('type', 'company_chat')
-      .eq('subject', 'Pojistné události')
-      .maybeSingle()
+      .order('last_message_at', { ascending: true })
+      .order('created_at', { ascending: true })
 
-    if (!chat) {
-      // No claims chat yet — return empty list (will be created on first POST)
+    if (chatsError) throw chatsError
+
+    if (!chats || chats.length === 0) {
       return NextResponse.json({ messages: [] })
     }
 
+    const chatIds = chats.map((chat) => chat.id)
+    const subjectByChatId = new Map(chats.map((chat) => [chat.id, chat.subject || 'Bez předmětu']))
+    const hasMultipleChats = chats.length > 1
+
     const { data: messages, error } = await supabaseAdmin
       .from('chat_messages')
-      .select('id, sender_id, sender_type, content, created_at, read')
-      .eq('chat_id', chat.id)
+      .select('id, chat_id, sender_id, sender_name, sender_type, text, created_at, read')
+      .in('chat_id', chatIds)
       .order('created_at', { ascending: true })
-      .limit(200)
+      .limit(500)
 
     if (error) throw error
 
-    // Map to frontend format
     const mapped = (messages ?? []).map(m => ({
       id: m.id,
+      chat_id: m.chat_id,
       sender_id: m.sender_id,
-      sender_name: m.sender_type === 'accountant' ? 'Účetní' : 'Klient',
-      text: m.content,
+      sender_name: hasMultipleChats
+        ? `${m.sender_name || (m.sender_type === 'accountant' ? 'Účetní' : 'Klient')} · ${subjectByChatId.get(m.chat_id) || 'Bez předmětu'}`
+        : (m.sender_name || (m.sender_type === 'accountant' ? 'Účetní' : 'Klient')),
+      text: m.text,
       created_at: m.created_at,
       is_read: m.read,
       is_own: m.sender_id === userId,
@@ -73,14 +80,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'company_id and text are required' }, { status: 400 })
     }
 
-    // Find or create claims chat for this company
-    let { data: chat } = await supabaseAdmin
+    const senderName = getUserName(request, 'Účetní')
+
+    let { data: chat, error: chatLookupError } = await supabaseAdmin
       .from('chats')
       .select('id')
       .eq('company_id', company_id)
       .eq('type', 'company_chat')
-      .eq('subject', 'Pojistné události')
+      .eq('status', 'open')
+      .order('last_message_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle()
+
+    if (chatLookupError) throw chatLookupError
 
     if (!chat) {
       const { data: newChat, error: chatErr } = await supabaseAdmin
@@ -91,6 +104,8 @@ export async function POST(request: NextRequest) {
           subject: 'Pojistné události',
           started_by: 'accountant',
           status: 'open',
+          channel: 'claims',
+          participants: [],
         })
         .select('id')
         .single()
@@ -99,14 +114,14 @@ export async function POST(request: NextRequest) {
       chat = newChat
     }
 
-    // Insert message
     const { data: message, error: msgErr } = await supabaseAdmin
       .from('chat_messages')
       .insert({
         chat_id: chat!.id,
         sender_id: userId,
+        sender_name: senderName,
         sender_type: 'accountant',
-        content: text.trim(),
+        text: text.trim(),
         read: false,
       })
       .select()
@@ -114,19 +129,21 @@ export async function POST(request: NextRequest) {
 
     if (msgErr) throw msgErr
 
-    // Update chat last_message
     await supabaseAdmin
       .from('chats')
       .update({
         last_message_at: new Date().toISOString(),
         last_message_preview: text.trim().substring(0, 100),
+        last_responder: 'accountant',
+        waiting_since: null,
       })
       .eq('id', chat!.id)
 
     return NextResponse.json({
       message: {
         id: message.id,
-        text: message.content,
+        sender_name: message.sender_name,
+        text: message.text,
         created_at: message.created_at,
         is_own: true,
       },

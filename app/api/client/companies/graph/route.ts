@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getUserCompanyIds } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,8 +28,12 @@ export async function GET(request: NextRequest) {
     } else if (userRole === 'admin' || userRole === 'accountant') {
       companyQuery = companyQuery.eq('status', 'active').order('name')
     } else {
+      const companyIds = await getUserCompanyIds(userId)
+      if (companyIds.length === 0) {
+        return NextResponse.json({ companies: [], ownership: [] })
+      }
       companyQuery = companyQuery
-        .eq('owner_id', userId)
+        .in('id', companyIds)
         .in('status', ['active', 'pending_review', 'onboarding'])
         .order('name')
     }

@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { getUserById } from '@/lib/user-store'
 import { createToken, COOKIE_NAME, TOKEN_MAX_AGE } from '@/lib/auth'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 export const dynamic = 'force-dynamic'
+
+const DEFAULT_MODULES = IS_CLAIMS_ONLY_PRODUCT ? ['claims'] : ['accounting']
 
 export async function GET(request: NextRequest) {
   const userId = request.headers.get('x-user-id')
@@ -31,7 +34,7 @@ export async function GET(request: NextRequest) {
           name: user.name,
           role: user.role,
           plan: user.plan_tier || 'free',
-          modules: user.modules || ['accounting'],
+          modules: user.modules || DEFAULT_MODULES,
           firm_id: user.firm_id || null,
           is_system_admin: user.is_system_admin || false,
         })
@@ -52,7 +55,7 @@ export async function GET(request: NextRequest) {
       role: user.role,
       login_name: user.login_name,
       permissions: user.permissions,
-      modules: user.modules || ['accounting'],
+      modules: user.modules || DEFAULT_MODULES,
       firm_id: user.firm_id || null,
       is_system_admin: user.is_system_admin || false,
       impersonate_company: impersonateCompany,

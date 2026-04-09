@@ -4,6 +4,7 @@
 
 import crypto from 'crypto'
 import { getUserByLoginName } from '@/lib/user-store'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 // ============================================
 // CONFIG
@@ -21,6 +22,8 @@ const COOKIE_NAME = 'auth_token'
 // ============================================
 
 export type UserRole = 'client' | 'junior' | 'senior' | 'accountant' | 'admin' | 'assistant' | 'manager'
+
+const DEFAULT_MODULES = IS_CLAIMS_ONLY_PRODUCT ? ['claims'] : ['accounting']
 
 export interface AuthUser {
   id: string
@@ -133,7 +136,7 @@ export async function authenticate(
     name: user.name,
     role: user.role,
     plan: user.plan_tier || 'free',
-    modules: user.modules || ['accounting'],
+    modules: user.modules || DEFAULT_MODULES,
     firm_id: user.firm_id || null,
     is_system_admin: user.is_system_admin || false,
   })
@@ -151,6 +154,11 @@ export async function authenticate(
 }
 
 export function getRedirectPath(role: UserRole): string {
+  if (IS_CLAIMS_ONLY_PRODUCT) {
+    if (role === 'client') return '/client/claims'
+    return '/accountant/claims/dashboard'
+  }
+
   if (role === 'client') return '/client/dashboard'
   return '/accountant/dashboard'
 }

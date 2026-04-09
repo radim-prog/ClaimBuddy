@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 export default function NotFound() {
   return (
@@ -12,10 +13,10 @@ export default function NotFound() {
           Tato stránka neexistuje nebo byla přesunuta.
         </p>
         <Link
-          href="/accountant/dashboard"
+          href={IS_CLAIMS_ONLY_PRODUCT ? '/claims' : '/accountant/dashboard'}
           className="inline-block px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
         >
-          Zpět na Dashboard
+          {IS_CLAIMS_ONLY_PRODUCT ? 'Zpět na ClaimBuddy' : 'Zpět na Dashboard'}
         </Link>
       </div>
     </div>

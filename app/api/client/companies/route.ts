@@ -4,6 +4,7 @@ import { getClosures } from '@/lib/closure-store-db'
 import { createCompany, getCompanyByIco } from '@/lib/company-store'
 import { validateIco, lookupByIco } from '@/lib/ares'
 import { getUserName } from '@/lib/request-utils'
+import { getUserCompanyIds } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,19 +49,22 @@ export async function GET(request: NextRequest) {
       }
       companies = data ?? []
     } else {
-      // Real client - load by owner_id (include pending_review so client sees their submitted companies)
-      const { data, error } = await supabaseAdmin
-        .from('companies')
-        .select(companySelect)
-        .eq('owner_id', userId)
-        .is('deleted_at', null)
-        .in('status', ['active', 'pending_review', 'onboarding'])
-        .order('name')
+      const companyIds = await getUserCompanyIds(userId)
 
-      if (error) {
-        return NextResponse.json({ error: 'Failed to fetch companies' }, { status: 500 })
+      if (companyIds.length > 0) {
+        const { data, error } = await supabaseAdmin
+          .from('companies')
+          .select(companySelect)
+          .in('id', companyIds)
+          .is('deleted_at', null)
+          .in('status', ['active', 'pending_review', 'onboarding'])
+          .order('name')
+
+        if (error) {
+          return NextResponse.json({ error: 'Failed to fetch companies' }, { status: 500 })
+        }
+        companies = data ?? []
       }
-      companies = data ?? []
     }
 
     // Load closures for these companies
@@ -189,13 +193,16 @@ export async function POST(request: NextRequest) {
     const address = aresData?.address || { street: '', city: '', zip: '' }
 
     // Check if user has an assigned accountant (via existing companies with accountant)
-    const { data: existingWithAccountant } = await supabaseAdmin
-      .from('companies')
-      .select('id')
-      .eq('owner_id', userId)
-      .not('assigned_accountant_id', 'is', null)
-      .is('deleted_at', null)
-      .limit(1)
+    const relatedCompanyIds = await getUserCompanyIds(userId)
+    const { data: existingWithAccountant } = relatedCompanyIds.length > 0
+      ? await supabaseAdmin
+          .from('companies')
+          .select('id')
+          .in('id', relatedCompanyIds)
+          .not('assigned_accountant_id', 'is', null)
+          .is('deleted_at', null)
+          .limit(1)
+      : { data: [] as Array<{ id: string }> }
 
     // iDoklad mode: client without accountant → company goes straight to active
     // Client with accountant → pending_review (accountant must approve)
@@ -215,6 +222,18 @@ export async function POST(request: NextRequest) {
       status,
       owner_id: userId,
     })
+
+    const { error: membershipError } = await supabaseAdmin
+      .from('client_users')
+      .upsert({
+        user_id: userId,
+        company_id: company.id,
+        role: 'owner',
+      }, { onConflict: 'user_id,company_id' })
+
+    if (membershipError) {
+      console.warn('Client company membership upsert warning:', membershipError)
+    }
 
     return NextResponse.json({ company, ares: aresData }, { status: 201 })
   } catch (error) {

@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { Calculator, Shield, ChevronDown } from 'lucide-react'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 import { useActiveModule } from '@/lib/contexts/active-module-context'
 
 interface AppModule {
@@ -47,6 +48,8 @@ const APP_MODULES: AppModule[] = [
 ]
 
 export function AppSwitcher({ userModules, collapsed = false }: { userModules: string[]; collapsed?: boolean }) {
+  if (IS_CLAIMS_ONLY_PRODUCT) return null
+
   const router = useRouter()
   const { activeModule, setActiveModule } = useActiveModule()
 

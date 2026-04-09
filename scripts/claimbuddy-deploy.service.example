@@ -1,0 +1,13 @@
+[Unit]
+Description=ClaimBuddy deploy
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/Projects/ClaimBuddy
+EnvironmentFile=/root/Projects/ClaimBuddy/scripts/claimbuddy-deploy.env
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/root/Projects/ClaimBuddy/scripts/claimbuddy-deploy.sh
+
+[Install]
+WantedBy=multi-user.target

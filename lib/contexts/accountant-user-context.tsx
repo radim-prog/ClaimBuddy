@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react'
 import type { UserRole } from '@/lib/auth'
 import type { UserPermissions } from '@/lib/permissions'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 type AccountantUserContextType = {
   userId: string
@@ -18,6 +19,7 @@ type AccountantUserContextType = {
 }
 
 const AccountantUserContext = createContext<AccountantUserContextType | undefined>(undefined)
+const DEFAULT_MODULES = IS_CLAIMS_ONLY_PRODUCT ? ['claims'] : ['accounting']
 
 export function AccountantUserProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState('')
@@ -26,7 +28,7 @@ export function AccountantUserProvider({ children }: { children: ReactNode }) {
   const [userInitials, setUserInitials] = useState('')
   const [userRole, setUserRole] = useState<UserRole>('accountant')
   const [permissions, setPermissions] = useState<UserPermissions | null>(null)
-  const [userModules, setUserModules] = useState<string[]>(['accounting'])
+  const [userModules, setUserModules] = useState<string[]>(DEFAULT_MODULES)
   const [firmId, setFirmId] = useState<string | null>(null)
   const [isSystemAdmin, setIsSystemAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -49,7 +51,7 @@ export function AccountantUserProvider({ children }: { children: ReactNode }) {
         setUserEmail(data.email || '')
         setUserRole(data.role)
         setPermissions(data.permissions)
-        setUserModules(data.modules || ['accounting'])
+        setUserModules(data.modules || DEFAULT_MODULES)
         setFirmId(data.firm_id || null)
         setIsSystemAdmin(data.is_system_admin || false)
 

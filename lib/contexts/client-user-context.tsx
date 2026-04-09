@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 type Company = {
   id: string
@@ -54,6 +55,7 @@ const ClientUserContext = createContext<ClientUserContextType | undefined>(undef
 
 const STORAGE_KEY = 'selected_company_id'
 const DEFAULT_KEY = 'default_company_id'
+const DEFAULT_MODULES = IS_CLAIMS_ONLY_PRODUCT ? ['claims'] : ['accounting']
 
 export function ClientUserProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState('')
@@ -64,7 +66,7 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedCompanyId, setSelectedCompanyIdState] = useState('')
-  const [userModules, setUserModules] = useState<string[]>(['accounting'])
+  const [userModules, setUserModules] = useState<string[]>(DEFAULT_MODULES)
   const [showCompanyPicker, setShowCompanyPicker] = useState(false)
   const [hiddenCompanyIds, setHiddenCompanyIds] = useState<Set<string>>(new Set())
 
@@ -99,7 +101,7 @@ export function ClientUserProvider({ children }: { children: ReactNode }) {
       // Load user modules from /api/auth/me
       if (meResponse.ok) {
         const meData = await meResponse.json()
-        setUserModules(meData.modules || ['accounting'])
+        setUserModules(meData.modules || DEFAULT_MODULES)
       }
 
       const companiesList: Company[] = data.companies || []

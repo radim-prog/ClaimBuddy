@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { hashPassword } from '@/lib/auth'
 import { sendWelcomeEmail } from '@/lib/email-service'
 import { startReverseTrial } from '@/lib/subscription-store'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 export async function POST(request: NextRequest) {
   const { token, password, name, gdprConsent } = await request.json()
@@ -61,10 +62,13 @@ export async function POST(request: NextRequest) {
     newUserId = existingUser.id
 
     // Activate if pending
-    if (existingUser.status === 'pending_verification') {
+    if (existingUser.status === 'pending_verification' || IS_CLAIMS_ONLY_PRODUCT) {
       await supabaseAdmin
         .from('users')
-        .update({ status: 'active' })
+        .update({
+          status: existingUser.status === 'pending_verification' ? 'active' : existingUser.status,
+          ...(IS_CLAIMS_ONLY_PRODUCT ? { modules: ['claims'] } : {}),
+        })
         .eq('id', existingUser.id)
     }
   } else {
@@ -80,6 +84,7 @@ export async function POST(request: NextRequest) {
         login_name: email,
         password_hash: passwordHash,
         role: 'client',
+        modules: IS_CLAIMS_ONLY_PRODUCT ? ['claims'] : ['accounting'],
         status: 'active', // Skip verification — invite = verified email
         gdpr_consent_at: new Date().toISOString(),
         gdpr_consent_version: '1.0',
@@ -98,18 +103,37 @@ export async function POST(request: NextRequest) {
     newUserId = newUser!.id
   }
 
-  // Parallel: update company + mark invite as accepted
-  await Promise.all([
+  // Parallel: update company + membership + mark invite as accepted
+  const [companyUpdate, clientMembershipUpsert, invitationUpdate] = await Promise.all([
     supabaseAdmin.from('companies').update({
       owner_id: newUserId,
       assigned_accountant_id: invite.invited_by,
     }).eq('id', invite.company_id),
+    supabaseAdmin.from('client_users').upsert({
+      user_id: newUserId,
+      company_id: invite.company_id,
+      role: 'owner',
+    }, { onConflict: 'user_id,company_id' }),
     supabaseAdmin.from('client_invitations').update({
       status: 'accepted',
       accepted_by: newUserId,
       accepted_at: new Date().toISOString(),
     }).eq('id', invite.id),
   ])
+
+  if (companyUpdate.error) {
+    console.error('Invite register company update error:', companyUpdate.error)
+    return NextResponse.json({ error: 'Nepodařilo se propojit klienta s firmou' }, { status: 500 })
+  }
+
+  if (invitationUpdate.error) {
+    console.error('Invite register invitation update error:', invitationUpdate.error)
+    return NextResponse.json({ error: 'Nepodařilo se dokončit přijetí pozvánky' }, { status: 500 })
+  }
+
+  if (clientMembershipUpsert.error) {
+    console.warn('Invite register client membership upsert warning:', clientMembershipUpsert.error)
+  }
 
   // Start reverse trial (non-blocking) — client portal
   startReverseTrial(newUserId, 'client').catch((err) => {

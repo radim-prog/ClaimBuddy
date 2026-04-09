@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,10 +14,11 @@ export async function GET(
 ) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userRole = request.headers.get('x-user-role')
+  const impersonateCompany = request.headers.get('x-impersonate-company')
 
   const { caseId } = await params
 
-  // Verify user owns a company linked to this case
   const { data: ic } = await supabaseAdmin
     .from('insurance_cases')
     .select('id, company_id')
@@ -26,14 +28,8 @@ export async function GET(
   if (!ic) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   if (ic.company_id) {
-    const { data: company } = await supabaseAdmin
-      .from('companies')
-      .select('id')
-      .eq('id', ic.company_id)
-      .eq('owner_id', userId)
-      .single()
-
-    if (!company) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const hasAccess = await canAccessCompany(userId, userRole, ic.company_id, impersonateCompany)
+    if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const { data: jobs } = await supabaseAdmin
@@ -56,6 +52,8 @@ export async function PATCH(
 ) {
   const userId = request.headers.get('x-user-id')
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userRole = request.headers.get('x-user-role')
+  const impersonateCompany = request.headers.get('x-impersonate-company')
 
   const { caseId } = await params
   const body = await request.json()
@@ -65,7 +63,6 @@ export async function PATCH(
     return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
   }
 
-  // Verify ownership
   const { data: ic } = await supabaseAdmin
     .from('insurance_cases')
     .select('id, company_id')
@@ -75,14 +72,8 @@ export async function PATCH(
   if (!ic) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   if (ic.company_id) {
-    const { data: company } = await supabaseAdmin
-      .from('companies')
-      .select('id')
-      .eq('id', ic.company_id)
-      .eq('owner_id', userId)
-      .single()
-
-    if (!company) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const hasAccess = await canAccessCompany(userId, userRole, ic.company_id, impersonateCompany)
+    if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   // Verify job belongs to this case

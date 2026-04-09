@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 // Inline constants (can't import Node.js crypto modules in Edge Runtime)
 const COOKIE_NAME = 'auth_token'
@@ -11,6 +12,8 @@ if (!AUTH_SECRET) {
 const PUBLIC_EXACT = ['/', '/ucetni', '/claims']  // Exact match only (startsWith '/' would match everything)
 const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-sent', '/api/auth/verify', '/api/auth/invite-info', '/api/auth/register-invite', '/pricing', '/marketplace', '/legal', '/pro-ucetni', '/pro-podnikatele', '/o-nas', '/funkce', '/claims/new', '/api/leads', '/api/marketplace', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/setup/first-admin', '/api/cron/drive-sync', '/api/cron/trial-expiry', '/api/cron/credits-reset', '/api/cron/fetch-emails', '/api/cron/fetch-document-emails', '/api/cron/lead-emails', '/api/cron/purge-trash', '/api/cron/sync-ecomail-contacts', '/api/cron/raynet-sync', '/api/cron/health-scores', '/api/cron/generate-notifications', '/api/cron/notion-sync', '/api/cron/reminders', '/api/cron/invoice-reminders', '/api/cron/billing', '/api/cron/snapshots', '/api/cron/calculate-penalties', '/api/cron/auto-reports', '/api/cron/account-cleanup', '/api/client/account/cancel-deletion', '/auth/cancel-deletion', '/api/signing/webhook', '/api/bridge', '/api/claims/intake', '/api/claims/companies', '/api/version']
 const STATIC_PREFIXES = ['/_next', '/static', '/favicon.ico']
+const CLAIMS_ONLY_PAGE_EXACT = ['/', '/claims', '/auth/cancel-deletion', '/client/account']
+const CLAIMS_ONLY_PAGE_PREFIXES = ['/claims', '/auth', '/legal', '/client/claims', '/accountant/claims']
 
 // Claims hostname URL rewrites: clean URL → internal path
 const CLAIMS_REWRITES: Record<string, string> = {
@@ -59,6 +62,38 @@ function getClientIp(request: NextRequest): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     || request.headers.get('x-real-ip')
     || 'unknown'
+}
+
+function getClientHomePath(hostname: string): string {
+  if (IS_CLAIMS_ONLY_PRODUCT || hostname === 'claims.zajcon.cz') {
+    return '/client/claims'
+  }
+  return '/client/dashboard'
+}
+
+function getStaffHomePath(hostname: string): string {
+  if (IS_CLAIMS_ONLY_PRODUCT || hostname === 'claims.zajcon.cz') {
+    return '/accountant/claims/dashboard'
+  }
+  return '/accountant/dashboard'
+}
+
+function getPublicLandingPath(hostname: string): string {
+  if (IS_CLAIMS_ONLY_PRODUCT || hostname === 'claims.zajcon.cz') {
+    return '/claims'
+  }
+  return '/'
+}
+
+function isClaimsOnlyAllowedPage(pathname: string): boolean {
+  if (CLAIMS_ONLY_PAGE_EXACT.includes(pathname)) return true
+  return CLAIMS_ONLY_PAGE_PREFIXES.some(prefix => pathname.startsWith(prefix))
+}
+
+function getClaimsOnlyRedirectPath(pathname: string): string {
+  if (pathname.startsWith('/client')) return '/client/claims'
+  if (pathname.startsWith('/accountant')) return '/accountant/claims/dashboard'
+  return '/claims'
 }
 
 // Token verification using Web Crypto API (Edge Runtime compatible)
@@ -213,6 +248,14 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  const effectivePath = rewrittenPath || pathname
+
+  if (IS_CLAIMS_ONLY_PRODUCT && !effectivePath.startsWith('/api/')) {
+    if (!isClaimsOnlyAllowedPage(effectivePath)) {
+      return NextResponse.redirect(new URL(getClaimsOnlyRedirectPath(effectivePath), request.url))
+    }
+  }
+
   // Landing pages (/ and /ucetni and /claims): logged-in users → redirect to dashboard
   if (PUBLIC_EXACT.includes(pathname)) {
     const token = request.cookies.get(COOKIE_NAME)?.value
@@ -222,19 +265,18 @@ export async function middleware(request: NextRequest) {
         if (pathname === '/claims') {
           // Claims landing: logged-in staff → claims dashboard, client → client claims
           if (user.role === 'client') {
-            return NextResponse.redirect(new URL('/client/claims', request.url))
+            return NextResponse.redirect(new URL(getClientHomePath(hostname), request.url))
           }
           const modules = user.modules || ['accounting']
           if (modules.includes('claims')) {
-            return NextResponse.redirect(new URL('/accountant/claims/dashboard', request.url))
+            return NextResponse.redirect(new URL(getStaffHomePath(hostname), request.url))
           }
         }
-        // Default: claims hostname clients → /client/claims, otherwise /client/dashboard
+        // Default: ClaimBuddy always lands on claims homes.
         if (user.role === 'client') {
-          const dest = hostname === 'claims.zajcon.cz' ? '/client/claims' : '/client/dashboard'
-          return NextResponse.redirect(new URL(dest, request.url))
+          return NextResponse.redirect(new URL(getClientHomePath(hostname), request.url))
         }
-        return NextResponse.redirect(new URL('/accountant/dashboard', request.url))
+        return NextResponse.redirect(new URL(getStaffHomePath(hostname), request.url))
       }
     }
     return NextResponse.next()
@@ -288,7 +330,7 @@ export async function middleware(request: NextRequest) {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
-      return NextResponse.redirect(new URL('/client/dashboard', request.url))
+      return NextResponse.redirect(new URL(getClientHomePath(hostname), request.url))
     }
   }
 
@@ -312,7 +354,7 @@ export async function middleware(request: NextRequest) {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
-      return NextResponse.redirect(new URL('/accountant/dashboard', request.url))
+      return NextResponse.redirect(new URL(getStaffHomePath(hostname), request.url))
     }
   }
 
@@ -330,8 +372,7 @@ export async function middleware(request: NextRequest) {
       if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
-      const clientDest = hostname === 'claims.zajcon.cz' ? '/client/claims' : '/client/dashboard'
-      return NextResponse.redirect(new URL(clientDest, request.url))
+      return NextResponse.redirect(new URL(getClientHomePath(hostname), request.url))
     }
   }
 
@@ -374,13 +415,8 @@ function handleUnauthenticated(request: NextRequest, pathname: string): NextResp
   if (pathname.startsWith('/api/')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  // claims.zajcon.cz → redirect to /claims landing (not / which would loop)
   const hostname = request.headers.get('host')?.split(':')[0] || ''
-  if (hostname === 'claims.zajcon.cz') {
-    return NextResponse.redirect(new URL('/claims', request.url))
-  }
-  // All unauthenticated users → landing page (/ has login CTA)
-  return NextResponse.redirect(new URL('/', request.url))
+  return NextResponse.redirect(new URL(getPublicLandingPath(hostname), request.url))
 }
 
 export const config = {

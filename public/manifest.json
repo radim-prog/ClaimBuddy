@@ -1,11 +1,11 @@
 {
-  "name": "Účetní OS",
-  "short_name": "ÚčetníOS",
-  "description": "Účetní portál pro podnikatele a účetní kanceláře",
+  "name": "ClaimBuddy",
+  "short_name": "ClaimBuddy",
+  "description": "Samostatná aplikace pro správu pojistných událostí",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#7c3aed",
+  "theme_color": "#2563eb",
   "orientation": "portrait-primary",
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },

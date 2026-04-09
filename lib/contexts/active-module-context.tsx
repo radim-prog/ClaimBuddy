@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 type ActiveModule = 'accounting' | 'claims'
 
@@ -29,11 +30,13 @@ function isClaimsHostname(): boolean {
 
 export function ActiveModuleProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  const [fallbackModule, setFallbackModule] = useState<ActiveModule>('accounting')
+  const [fallbackModule, setFallbackModule] = useState<ActiveModule>(
+    IS_CLAIMS_ONLY_PRODUCT ? 'claims' : 'accounting'
+  )
 
   useEffect(() => {
     // claims.zajcon.cz → always force claims module
-    if (isClaimsHostname()) {
+    if (IS_CLAIMS_ONLY_PRODUCT || isClaimsHostname()) {
       setFallbackModule('claims')
       return
     }
@@ -43,11 +46,14 @@ export function ActiveModuleProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const activeModule = isClaimsHostname() ? 'claims' : (deriveModuleFromPath(pathname) ?? fallbackModule)
+  const activeModule = (IS_CLAIMS_ONLY_PRODUCT || isClaimsHostname())
+    ? 'claims'
+    : (deriveModuleFromPath(pathname) ?? fallbackModule)
 
   const setActiveModule = (module: ActiveModule) => {
-    setFallbackModule(module)
-    localStorage.setItem(STORAGE_KEY, module)
+    const nextModule = IS_CLAIMS_ONLY_PRODUCT ? 'claims' : module
+    setFallbackModule(nextModule)
+    localStorage.setItem(STORAGE_KEY, nextModule)
   }
 
   return (

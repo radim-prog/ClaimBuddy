@@ -22,6 +22,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 type ModuleDef = {
   id: 'accounting' | 'claims'
@@ -76,6 +77,8 @@ export function ClientModuleSwitcher({
   userModules: string[]
   collapsed: boolean
 }) {
+  if (IS_CLAIMS_ONLY_PRODUCT) return null
+
   const router = useRouter()
   const { activeModule, setActiveModule } = useActiveModule()
   const [crossSellOpen, setCrossSellOpen] = useState<'accounting' | 'claims' | null>(null)

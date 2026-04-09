@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Eye, ShieldCheck } from 'lucide-react'
 import { useClientUser } from '@/lib/contexts/client-user-context'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 export function ImpersonationBanner() {
   const router = useRouter()
@@ -34,7 +35,7 @@ export function ImpersonationBanner() {
           <span>Prohlížíte klientský portál jako <strong>administrátor</strong></span>
         </div>
         <button
-          onClick={() => router.push('/accountant/dashboard')}
+          onClick={() => router.push(IS_CLAIMS_ONLY_PRODUCT ? '/accountant/claims/dashboard' : '/accountant/dashboard')}
           className="flex items-center gap-1 bg-white/20 hover:bg-white/30 rounded px-3 py-1 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -51,7 +52,7 @@ export function ImpersonationBanner() {
 
   const handleBack = async () => {
     await fetch('/api/auth/impersonate', { method: 'DELETE' })
-    router.push(`/accountant/clients/${companyId}`)
+    router.push(IS_CLAIMS_ONLY_PRODUCT ? `/claims/clients/${companyId}` : `/accountant/clients/${companyId}`)
   }
 
   return (

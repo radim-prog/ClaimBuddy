@@ -22,16 +22,23 @@ export async function POST(
   }
 
   // Parallel: company check + email collision check + inviter name
-  const [{ data: company }, { data: existingUser }, { data: inviter }] = await Promise.all([
+  const [{ data: company }, { data: existingUser }, { data: inviter }, { data: memberships }] = await Promise.all([
     supabaseAdmin.from('companies').select('id, name, ico, owner_id').eq('id', companyId).single(),
     supabaseAdmin.from('users').select('id, role').eq('email', email).single(),
     supabaseAdmin.from('users').select('name').eq('id', userId).single(),
+    supabaseAdmin.from('client_users').select('id').eq('company_id', companyId).limit(1),
   ])
 
   if (!company) {
     return NextResponse.json({ error: 'Firma nenalezena' }, { status: 404 })
   }
   if (company.owner_id) {
+    return NextResponse.json(
+      { error: 'Firma již má přiřazeného klienta. Nejdřív odeberte stávajícího.' },
+      { status: 409 }
+    )
+  }
+  if ((memberships?.length ?? 0) > 0) {
     return NextResponse.json(
       { error: 'Firma již má přiřazeného klienta. Nejdřív odeberte stávajícího.' },
       { status: 409 }

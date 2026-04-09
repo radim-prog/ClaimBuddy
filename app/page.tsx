@@ -1,17 +1,18 @@
 import type { Metadata } from 'next'
-import StripeLanding from '@/components/landing/stripe-landing'
+import { redirect } from 'next/navigation'
+import { PRODUCT_BRAND, PRODUCT_PROJECT_NAME } from '@/lib/product-config'
 
 export const metadata: Metadata = {
-  title: 'Účetní OS — Účetnictví pod kontrolou pro klienty i účetní',
+  title: `${PRODUCT_PROJECT_NAME} — ${PRODUCT_BRAND}`,
   description:
-    'Nahrávejte doklady, sledujte uzávěrky, komunikujte s účetním. Účetní spravují desítky firem s automatizací a přehledy. Začněte zdarma.',
+    'Samostatná claims aplikace pro hlášení, správu a zpracování pojistných událostí.',
   openGraph: {
-    title: 'Účetní OS — Účetnictví pod kontrolou',
-    description: 'Moderní platforma pro spolupráci účetních a jejich klientů. Začněte zdarma.',
+    title: `${PRODUCT_PROJECT_NAME} — ${PRODUCT_BRAND}`,
+    description: 'Samostatná claims aplikace pro hlášení a zpracování pojistných událostí.',
     type: 'website',
   },
 }
 
 export default function LandingPage() {
-  return <StripeLanding />
+  redirect('/claims')
 }

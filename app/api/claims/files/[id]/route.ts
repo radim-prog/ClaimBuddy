@@ -16,7 +16,28 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const { id } = await params
 
   try {
-    // Soft delete — set deleted_at
+    const { data: document, error: fetchError } = await supabaseAdmin
+      .from('documents')
+      .select('id, storage_path')
+      .eq('id', id)
+      .is('deleted_at', null)
+      .maybeSingle()
+
+    if (fetchError) throw fetchError
+    if (!document) {
+      return NextResponse.json({ error: 'Document not found' }, { status: 404 })
+    }
+
+    if (document.storage_path) {
+      const { error: storageError } = await supabaseAdmin.storage
+        .from('documents')
+        .remove([document.storage_path])
+
+      if (storageError) {
+        console.warn('[Claims files] storage delete warning:', storageError.message)
+      }
+    }
+
     const { error } = await supabaseAdmin
       .from('documents')
       .update({ deleted_at: new Date().toISOString() })

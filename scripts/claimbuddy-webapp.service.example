@@ -1,0 +1,16 @@
+[Unit]
+Description=ClaimBuddy web application
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/Projects/ClaimBuddy
+EnvironmentFile=/root/Projects/ClaimBuddy/.env.local
+Environment=NODE_ENV=production
+Environment=PORT=3020
+ExecStart=/usr/bin/npm run start -- -H 127.0.0.1 -p 3020
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

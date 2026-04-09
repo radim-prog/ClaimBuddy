@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 interface ClaimsFile {
   id: string
   filename: string
-  file_url: string
+  file_url: string | null
   file_size: number | null
   mime_type: string | null
   uploaded_at: string
@@ -245,17 +245,29 @@ export default function CompanyFilesPage() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      asChild
-                      title="Stáhnout"
-                      className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                    >
-                      <a href={file.file_url} download={file.filename} target="_blank" rel="noreferrer">
+                    {file.file_url ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        asChild
+                        title="Stáhnout"
+                        className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                      >
+                        <a href={file.file_url} download={file.filename} target="_blank" rel="noreferrer">
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Soubor není ve storage dostupný"
+                        disabled
+                        className="h-8 w-8 text-gray-300"
+                      >
                         <Download className="h-4 w-4" />
-                      </a>
-                    </Button>
+                      </Button>
+                    )}
 
                     <Button
                       variant="ghost"

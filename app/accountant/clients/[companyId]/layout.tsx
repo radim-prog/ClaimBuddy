@@ -43,6 +43,7 @@ import { useActiveModule } from '@/lib/contexts/active-module-context'
 import type { HubStats } from '@/lib/types/drive'
 import { czechPlural } from '@/lib/utils'
 import { MessagePopupDialog } from '@/components/komunikace/message-popup-dialog'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 // ============================================
 // TYPES (shared across sub-pages)
@@ -373,7 +374,7 @@ export default function ClientDetailLayout({ children }: { children: ReactNode }
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ companyId })
                       })
-                      router.push('/client/dashboard')
+                      router.push(IS_CLAIMS_ONLY_PRODUCT ? '/client/claims' : '/client/dashboard')
                     }}
                   >
                     <Users className="h-4 w-4 sm:mr-1" />

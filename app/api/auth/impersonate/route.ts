@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import crypto from 'crypto'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     success: true,
     company: { id: company.id, name: company.name },
-    redirect: '/client/dashboard',
+    redirect: IS_CLAIMS_ONLY_PRODUCT ? '/client/claims' : '/client/dashboard',
   })
 }
 

@@ -6,6 +6,7 @@ import { useAccountantUser } from '@/lib/contexts/accountant-user-context'
 import { useRouter, usePathname } from 'next/navigation'
 import { MessageCircle, FileX, Upload, Bell, ClipboardList, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { IS_CLAIMS_ONLY_PRODUCT } from '@/lib/product-config'
 
 export function WelcomeModal() {
   const [open, setOpen] = useState(false)
@@ -13,7 +14,8 @@ export function WelcomeModal() {
   const { userName } = useAccountantUser()
   const router = useRouter()
   const pathname = usePathname() ?? ''
-  const isOnDashboard = pathname === '/accountant/dashboard'
+  const dashboardPath = IS_CLAIMS_ONLY_PRODUCT ? '/accountant/claims/dashboard' : '/accountant/dashboard'
+  const isOnDashboard = pathname === dashboardPath
 
   useEffect(() => {
     if (loading) return
@@ -87,7 +89,7 @@ export function WelcomeModal() {
               <Button
                 onClick={() => {
                   setOpen(false)
-                  router.push('/accountant/dashboard')
+                  router.push(dashboardPath)
                 }}
                 className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
               >

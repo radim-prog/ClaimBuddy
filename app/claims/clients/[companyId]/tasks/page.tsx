@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { ListTodo, ArrowLeft, Loader2, Calendar, AlertCircle } from 'lucide-react'
+import { ListTodo, ArrowLeft, Loader2, Calendar, AlertCircle, Plus, X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -17,9 +19,11 @@ type TaskPriority = 'high' | 'medium' | 'low'
 type ClaimsTask = {
   id: string
   title: string
+  description?: string | null
   status: TaskStatus
   due_date: string | null
   assigned_to: string | null
+  assigned_to_name?: string | null
   priority: TaskPriority
   company_id: string
 }
@@ -74,36 +78,78 @@ export default function ClaimsClientTasksPage() {
   const [tasks, setTasks] = useState<ClaimsTask[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    priority: 'medium' as TaskPriority,
+    due_date: '',
+  })
 
-  useEffect(() => {
+  const fetchTasks = useCallback(async () => {
     if (!companyId) return
 
-    async function fetchTasks() {
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await fetch(`/api/claims/tasks?company_id=${encodeURIComponent(companyId)}`)
-        if (res.status === 404) {
-          // Endpoint not yet implemented — treat as empty list
-          setTasks([])
-          return
-        }
-        if (!res.ok) {
-          throw new Error(`Chyba ${res.status}: ${res.statusText}`)
-        }
-        const data = await res.json()
-        setTasks(Array.isArray(data) ? data : (data.tasks ?? []))
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Nepodařilo se načíst úkoly'
-        setError(message)
-        toast.error('Chyba při načítání úkolů', { description: message })
-      } finally {
-        setLoading(false)
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/claims/tasks?company_id=${encodeURIComponent(companyId)}`)
+      if (res.status === 404) {
+        setTasks([])
+        return
       }
+      if (!res.ok) {
+        throw new Error(`Chyba ${res.status}: ${res.statusText}`)
+      }
+      const data = await res.json()
+      setTasks(Array.isArray(data) ? data : (data.tasks ?? []))
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Nepodařilo se načíst úkoly'
+      setError(message)
+      toast.error('Chyba při načítání úkolů', { description: message })
+    } finally {
+      setLoading(false)
     }
-
-    fetchTasks()
   }, [companyId])
+
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
+
+  async function handleCreateTask() {
+    const title = newTask.title.trim()
+    if (!title || !companyId || creating) return
+
+    setCreating(true)
+    try {
+      const res = await fetch('/api/claims/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: companyId,
+          title,
+          description: newTask.description.trim() || null,
+          priority: newTask.priority,
+          due_date: newTask.due_date || null,
+        }),
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.error || `Chyba ${res.status}`)
+      }
+
+      setNewTask({ title: '', description: '', priority: 'medium', due_date: '' })
+      setShowCreateForm(false)
+      toast.success('Úkol byl vytvořen')
+      await fetchTasks()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Úkol se nepodařilo vytvořit'
+      toast.error('Chyba při vytváření úkolu', { description: message })
+    } finally {
+      setCreating(false)
+    }
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -117,21 +163,106 @@ export default function ClaimsClientTasksPage() {
             </Button>
           </Link>
         </div>
-        <div title="Připravujeme">
-          <Button
-            disabled
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white opacity-50 cursor-not-allowed"
-          >
-            + Nový úkol
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          onClick={() => setShowCreateForm(prev => !prev)}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          {showCreateForm ? (
+            <>
+              <X className="h-4 w-4 mr-1" />
+              Zavřít
+            </>
+          ) : (
+            <>
+              <Plus className="h-4 w-4 mr-1" />
+              Nový úkol
+            </>
+          )}
+        </Button>
       </div>
 
       <div className="flex items-center gap-2">
         <ListTodo className="h-6 w-6 text-blue-600" />
         <h1 className="text-xl font-semibold text-gray-900">Úkoly klienta</h1>
       </div>
+
+      {showCreateForm && (
+        <Card className="border-blue-200 bg-blue-50/40">
+          <CardContent className="space-y-4 py-5">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Název úkolu</label>
+              <Input
+                value={newTask.title}
+                onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Např. ověřit protokol od pojišťovny"
+                disabled={creating}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Popis</label>
+              <Textarea
+                value={newTask.description}
+                onChange={(e) => setNewTask(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Volitelně doplňte detaily úkolu"
+                rows={3}
+                disabled={creating}
+              />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Priorita</label>
+                <select
+                  value={newTask.priority}
+                  onChange={(e) => setNewTask(prev => ({ ...prev, priority: e.target.value as TaskPriority }))}
+                  disabled={creating}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="high">Vysoká</option>
+                  <option value="medium">Střední</option>
+                  <option value="low">Nízká</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Termín</label>
+                <Input
+                  type="date"
+                  value={newTask.due_date}
+                  onChange={(e) => setNewTask(prev => ({ ...prev, due_date: e.target.value }))}
+                  disabled={creating}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateForm(false)}
+                disabled={creating}
+              >
+                Zrušit
+              </Button>
+              <Button
+                onClick={handleCreateTask}
+                disabled={!newTask.title.trim() || creating}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {creating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Vytvářím…
+                  </>
+                ) : (
+                  'Vytvořit úkol'
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Loading */}
       {loading && (
@@ -186,9 +317,9 @@ export default function ClaimsClientTasksPage() {
                           </span>
                         )}
                         {/* Assigned to */}
-                        {task.assigned_to && (
+                        {(task.assigned_to_name || task.assigned_to) && (
                           <span className="text-gray-500">
-                            Přiřazeno: <span className="text-gray-700">{task.assigned_to}</span>
+                            Přiřazeno: <span className="text-gray-700">{task.assigned_to_name || task.assigned_to}</span>
                           </span>
                         )}
                         {/* Priority label */}
@@ -196,6 +327,10 @@ export default function ClaimsClientTasksPage() {
                           Priorita: <span className="text-gray-600">{PRIORITY_LABEL[task.priority]}</span>
                         </span>
                       </div>
+
+                      {task.description && (
+                        <p className="mt-2 text-sm text-gray-600 line-clamp-2">{task.description}</p>
+                      )}
                     </div>
                   </div>
 

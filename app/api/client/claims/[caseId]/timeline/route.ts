@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getCaseEvents } from '@/lib/insurance-store'
+import { canAccessCompany } from '@/lib/access-check'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,25 +15,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const { caseId } = await params
 
   try {
-    // Resolve company_id from client_users
-    const { data: clientUser } = await supabaseAdmin
-      .from('client_users')
-      .select('company_id')
-      .eq('user_id', userId)
-      .single()
+    const userRole = request.headers.get('x-user-role')
+    const impersonateCompany = request.headers.get('x-impersonate-company')
 
-    if (!clientUser?.company_id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    // Verify case belongs to client's company
     const { data: caseData } = await supabaseAdmin
       .from('insurance_cases')
       .select('id, company_id')
       .eq('id', caseId)
       .single()
 
-    if (!caseData || caseData.company_id !== clientUser.company_id) {
+    if (!caseData?.company_id) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
+
+    const hasAccess = await canAccessCompany(userId, userRole, caseData.company_id, impersonateCompany)
+    if (!hasAccess) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
