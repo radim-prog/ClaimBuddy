@@ -1,3 +1,5 @@
+import { IS_CLAIMS_ONLY_PRODUCT, PRODUCT_BRAND } from '@/lib/product-config'
+
 export function Logo({ size = 'md', showText = true, variant = 'purple' }: {
   size?: 'sm' | 'md' | 'lg'
   showText?: boolean
@@ -15,6 +17,11 @@ export function Logo({ size = 'md', showText = true, variant = 'purple' }: {
     ? { from: '#60a5fa', to: '#2563eb' }
     : { from: '#a78bfa', to: '#7c3aed' }
 
+  // Brand v claims-only buildu „Pojistná Pomoc", jinak „Účetní OS".
+  // Iniciály v logu odpovídají (PP vs UO).
+  const brand = IS_CLAIMS_ONLY_PRODUCT ? PRODUCT_BRAND : 'Účetní OS'
+  const initials = IS_CLAIMS_ONLY_PRODUCT ? 'PP' : 'UO'
+
   return (
     <div className="flex items-center gap-2 text-white">
       <svg viewBox="0 0 32 32" className={s.icon}>
@@ -25,11 +32,11 @@ export function Logo({ size = 'md', showText = true, variant = 'purple' }: {
           </linearGradient>
         </defs>
         <rect width="32" height="32" rx="8" fill={`url(#${gradientId})`} />
-        <text x="16" y="22" textAnchor="middle" fontFamily="system-ui,sans-serif" fontWeight="800" fontSize={s.fontSize} fill="white">UO</text>
+        <text x="16" y="22" textAnchor="middle" fontFamily="system-ui,sans-serif" fontWeight="800" fontSize={s.fontSize} fill="white">{initials}</text>
       </svg>
       {showText && (
         <span className={`font-extrabold tracking-tight ${s.text}`}>
-          Účetní OS
+          {brand}
         </span>
       )}
     </div>

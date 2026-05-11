@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { IS_CLAIMS_ONLY_PRODUCT, PRODUCT_BRAND, PRODUCT_PROJECT_NAME } from '@/lib/product-config'
 import { DeadlineAlertBar } from './deadline-alert-bar'
 import { ClientsAlertBar } from './clients-alert-bar'
 import { ClientDetailAlertBar } from './client-detail-alert-bar'
@@ -381,7 +382,9 @@ export function GlobalDeadlineAlert() {
   const [taskDeadlines, setTaskDeadlines] = useState<ReturnType<typeof generateTaskDeadlines>>([])
   const [onboardingDeadlines, setOnboardingDeadlines] = useState<ReturnType<typeof generateOnboardingDeadlines>>([])
   const [loading, setLoading] = useState(true)
-  const originalTitle = 'Účetní OS'
+  // Title se odvozuje z product-config aby v claims-only buildu neflashlo „Účetní OS".
+  // PRODUCT_PROJECT_NAME a IS_CLAIMS_ONLY_PRODUCT jsou re-exportovány v product-config.
+  const originalTitle = IS_CLAIMS_ONLY_PRODUCT ? `${PRODUCT_PROJECT_NAME} — ${PRODUCT_BRAND}` : 'Účetní OS'
 
   // Merge closure + task deadlines, sorted by severity then date
   const deadlines = useMemo(() => {

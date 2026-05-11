@@ -150,8 +150,15 @@ Při fatálním selhání:
 | 23:00 | Smoke admin + klient E2E na claims.zajcon.cz | ✅ |
 | 23:05 | Matrix endpoint: odstranění filtru "jen firmy s case" → klienti viditelní | ✅ |
 | 23:10 | PRD update + Jarvis milestone hlas | ✅ |
-| 05:30 | Final readiness check | ⏳ |
+| 22:43 | Push branch mvp-3-klienti do origin (safety) | ✅ |
+| 22:45 | Title hydration fix (Logo + global-deadline-alert podle IS_CLAIMS_ONLY_PRODUCT) | ✅ |
+| 22:50 | Screenshots → /tmp/claimbuddy-mvp-screens/ | ✅ |
+| 05:30 | Final readiness check (Tester E2E) | ⏳ |
 | 06:00 | DEADLINE | ⏳ |
+
+## Follow-ups (nezablokované, dořeším zítra)
+
+- React hydration error #418 — chunks/fd9d1056:24070. Bez source maps nelze přesně určit (pravděpodobně cookie consent banner nebo theme detection mismatch server vs client). Funkčnost nezasažená, React se automaticky zotaví. Stačí mít na radaru pro CI lint pass.
 
 ## 9. Co Jarvis ode mě dostane
 
