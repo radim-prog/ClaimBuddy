@@ -13,11 +13,13 @@ const PUBLIC_EXACT = ['/', '/ucetni', '/claims']  // Exact match only (startsWit
 const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-sent', '/api/auth/verify', '/api/auth/invite-info', '/api/auth/register-invite', '/pricing', '/marketplace', '/legal', '/pro-ucetni', '/pro-podnikatele', '/o-nas', '/funkce', '/claims/new', '/api/leads', '/api/marketplace', '/api/auth/login', '/api/auth/logout', '/api/health', '/api/stripe/webhook', '/api/setup/first-admin', '/api/cron/drive-sync', '/api/cron/trial-expiry', '/api/cron/credits-reset', '/api/cron/fetch-emails', '/api/cron/fetch-document-emails', '/api/cron/lead-emails', '/api/cron/purge-trash', '/api/cron/sync-ecomail-contacts', '/api/cron/raynet-sync', '/api/cron/health-scores', '/api/cron/generate-notifications', '/api/cron/notion-sync', '/api/cron/reminders', '/api/cron/invoice-reminders', '/api/cron/billing', '/api/cron/snapshots', '/api/cron/calculate-penalties', '/api/cron/auto-reports', '/api/cron/account-cleanup', '/api/client/account/cancel-deletion', '/auth/cancel-deletion', '/api/signing/webhook', '/api/bridge', '/api/claims/intake', '/api/claims/companies', '/api/version']
 const STATIC_PREFIXES = ['/_next', '/static', '/favicon.ico']
 const CLAIMS_ONLY_PAGE_EXACT = ['/', '/claims', '/auth/cancel-deletion', '/client/account']
-const CLAIMS_ONLY_PAGE_PREFIXES = ['/claims', '/auth', '/legal', '/client/claims', '/accountant/claims']
+// MVP 11.5.2026: povolit i seznam klientů (admin potřebuje) a komunikaci.
+const CLAIMS_ONLY_PAGE_PREFIXES = ['/claims', '/auth', '/legal', '/client/claims', '/accountant/claims', '/accountant/clients', '/accountant/komunikace']
 
 // Claims hostname URL rewrites: clean URL → internal path
 const CLAIMS_REWRITES: Record<string, string> = {
   '/dashboard': '/accountant/claims/dashboard',
+  '/admin': '/accountant/claims/dashboard', // alias pro dashboard — MVP 11.5.2026
   '/cases': '/accountant/claims/cases',
   '/insurers': '/accountant/claims/insurers',
   '/stats': '/accountant/claims/stats',

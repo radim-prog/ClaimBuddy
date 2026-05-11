@@ -5,7 +5,16 @@ import { getUserById } from '@/lib/user-store'
 
 export const dynamic = 'force-dynamic'
 
+// MVP 11.5.2026 (Radim/Jarvis): placení vypnuto pro úvodní spuštění claims.zajcon.cz.
+const STRIPE_DISABLED = process.env.STRIPE_DISABLED === 'true'
+
 export async function POST(request: NextRequest) {
+  if (STRIPE_DISABLED) {
+    return NextResponse.json(
+      { error: 'Placení je v této fázi vypnuto.' },
+      { status: 503 }
+    )
+  }
   const stripe = getStripe()
   if (!stripe) {
     return NextResponse.json(

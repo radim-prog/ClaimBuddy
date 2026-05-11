@@ -30,15 +30,11 @@ export async function GET(request: NextRequest) {
       ? closuresRaw.filter(c => firmCompanyIds.has(c.company_id))
       : closuresRaw
 
-    // Claims module filter: only companies that have insurance cases
-    let filteredCompanies = allCompanies
-    if (module === 'claims') {
-      const { data: claimsCompanyIds } = await supabaseAdmin
-        .from('insurance_cases')
-        .select('company_id')
-      const claimsSet = new Set((claimsCompanyIds || []).map((r: { company_id: string }) => r.company_id))
-      filteredCompanies = allCompanies.filter(c => claimsSet.has(c.id))
-    }
+    // Claims module: dříve filtr „jen firmy s insurance_cases", ale to skrývalo
+    // nově registrované klienty bez spisu. MVP 11.5.2026 — zobrazujeme všechny
+    // firmy v claims režimu; admin si u registrovaného klienta sám založí spis.
+    void module
+    const filteredCompanies = allCompanies
 
     const companies = filteredCompanies.map(c => ({
       id: c.id,

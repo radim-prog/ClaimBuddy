@@ -1,12 +1,18 @@
 'use server'
 
 import crypto from 'crypto'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { hashPassword } from '@/lib/auth'
+import { hashPassword, createToken, COOKIE_NAME, TOKEN_MAX_AGE, getRedirectPath } from '@/lib/auth'
 import { sendVerificationEmail } from '@/lib/email-service'
 import { triggerOnboardingSequence } from '@/lib/marketing-service'
 import { registerSchema, formatZodErrors } from '@/lib/validations'
+
+// MVP 11.5.2026 (Radim/Jarvis): registrace bez email verification.
+// Účet je rovnou active a uživatel je auto-přihlášen + redirect na dashboard.
+// Lze vypnout přes env MVP_AUTO_ACTIVATE=false (pak se vrátí původní flow).
+const MVP_AUTO_ACTIVATE = process.env.MVP_AUTO_ACTIVATE !== 'false'
 
 export async function register(formData: FormData) {
   const gdprConsent = formData.get('gdprConsent')
@@ -49,7 +55,8 @@ export async function register(formData: FormData) {
       Date.now() + 24 * 60 * 60 * 1000 // 24 hours
     ).toISOString()
 
-    // Insert user
+    // Insert user — status active přímo pokud MVP_AUTO_ACTIVATE, jinak pending_verification.
+    const status = MVP_AUTO_ACTIVATE ? 'active' : 'pending_verification'
     const { error: insertError } = await supabaseAdmin
       .from('users')
       .insert({
@@ -58,9 +65,10 @@ export async function register(formData: FormData) {
         login_name: email,
         password_hash: passwordHash,
         role: 'client',
-        status: 'pending_verification',
-        verification_token: verificationToken,
-        verification_token_expires: verificationTokenExpires,
+        modules: ['claims'],
+        status,
+        verification_token: MVP_AUTO_ACTIVATE ? null : verificationToken,
+        verification_token_expires: MVP_AUTO_ACTIVATE ? null : verificationTokenExpires,
         gdpr_consent_at: new Date().toISOString(),
         gdpr_consent_version: '1.0',
       })
@@ -73,33 +81,89 @@ export async function register(formData: FormData) {
       return { error: 'Nepodařilo se vytvořit účet. Zkuste to prosím znovu.' }
     }
 
-    // Link orphaned insurance cases with matching contact_email
+    // Načti nově založeného uživatele kvůli ID + redirect.
     const { data: newUser } = await supabaseAdmin
       .from('users')
-      .select('id')
+      .select('id, name, role, plan_tier, modules, firm_id, is_system_admin')
       .eq('email', email)
       .single()
 
     if (newUser) {
+      // Link orphaned insurance cases with matching contact_email
       await supabaseAdmin
         .from('insurance_cases')
         .update({ contact_user_id: newUser.id })
         .eq('contact_email', email)
         .is('contact_user_id', null)
+
+      // MVP 11.5.2026: vytvořit placeholder „firmu" pro nového klienta,
+      // aby ho admin Radim viděl v seznamu klientů a mohl mu zakládat spisy.
+      // Klient si firmu může později upravit v profilu (jméno/IČ/atd.).
+      if (MVP_AUTO_ACTIVATE) {
+        const { data: existingCompany } = await supabaseAdmin
+          .from('companies')
+          .select('id')
+          .eq('owner_id', newUser.id)
+          .maybeSingle()
+
+        if (!existingCompany) {
+          const { data: newCompany } = await supabaseAdmin
+            .from('companies')
+            .insert({
+              name: `${name} — klient`,
+              owner_id: newUser.id,
+              source_system: 'claimbuddy',
+              status: 'active',
+              email,
+            })
+            .select('id')
+            .single()
+
+          if (newCompany) {
+            await supabaseAdmin.from('client_users').insert({
+              user_id: newUser.id,
+              company_id: newCompany.id,
+              role: 'owner',
+            })
+          }
+        }
+      }
+
+      if (MVP_AUTO_ACTIVATE) {
+        // Auto-login: vystavíme token a nastavíme cookie, aby uživatel
+        // šel rovnou na dashboard bez druhého kroku.
+        const token = createToken({
+          id: newUser.id,
+          name: newUser.name,
+          role: newUser.role,
+          plan: newUser.plan_tier || 'free',
+          modules: newUser.modules || ['claims'],
+          firm_id: newUser.firm_id || null,
+          is_system_admin: newUser.is_system_admin || false,
+        })
+        const cookieStore = await cookies()
+        cookieStore.set(COOKIE_NAME, token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: TOKEN_MAX_AGE,
+          path: '/',
+        })
+      }
     }
 
-    // Send verification email
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.zajcon.cz'
-    const verifyUrl = `${appUrl}/api/auth/verify?token=${verificationToken}`
-
-    await sendVerificationEmail(email, name, verifyUrl)
-
-    // Trigger onboarding email sequence (non-blocking)
-    triggerOnboardingSequence(email).catch(() => {})
+    if (!MVP_AUTO_ACTIVATE) {
+      // Verification flow (vypnuté pro MVP). Pokud někdo flag zapne, posílá se email.
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://claims.zajcon.cz'
+      const verifyUrl = `${appUrl}/api/auth/verify?token=${verificationToken}`
+      await sendVerificationEmail(email, name, verifyUrl)
+      triggerOnboardingSequence(email).catch(() => {})
+    }
   } catch (err) {
     console.error('Registration error:', err)
     return { error: 'Nepodařilo se dokončit registraci. Zkuste to prosím znovu.' }
   }
 
-  redirect('/auth/verify-sent')
+  // V MVP rovnou na klientský dashboard, jinak na "ověřte email" stránku.
+  redirect(MVP_AUTO_ACTIVATE ? getRedirectPath('client') : '/auth/verify-sent')
 }
