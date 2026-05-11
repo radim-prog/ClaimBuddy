@@ -281,7 +281,33 @@ export default function ClaimsLandingPage() {
       </section>
 
       {/* ── Ceník ──────────────────────────────────────────────── */}
+      {/* MVP 11.5.2026: tier UI schované, placení vypnuté. Place-holder hláška
+          nahrazuje původní 4-sloupcový ceník — vrátíme po pilotním provozu. */}
       <section id="pricing" className="py-16 md:py-24 bg-muted/30">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold font-display tracking-tight text-foreground">
+            Ceník zatím nezveřejňujeme
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground">
+            V této fázi je Pojistná Pomoc <strong>zdarma</strong>. Soustředíme se na ověření,
+            že platforma reálně pomáhá s pojistnými událostmi. Cenovou nabídku zveřejníme
+            až po dokončení pilotního provozu.
+          </p>
+          <div className="mt-8">
+            <Link
+              href="/claims/new"
+              className="inline-flex items-center gap-2 rounded-md bg-blue-600 text-white px-5 py-2.5 text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Nahlásit pojistnou událost
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Původní 4-sloupcový tier ceník schovaný v MVP — vrátíme později. */}
+      {false && (
+      <section id="pricing-detailed" className="py-16 md:py-24 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold font-display tracking-tight text-foreground">
@@ -353,6 +379,7 @@ export default function ClaimsLandingPage() {
           </p>
         </div>
       </section>
+      )}
 
       {/* ── FAQ ─────────────────────────────────────────────────── */}
       <section id="faq" className="py-16 md:py-24">

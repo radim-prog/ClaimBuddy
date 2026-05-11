@@ -177,9 +177,11 @@ interface SimpleUser {
   name: string
 }
 
-export default function CaseDetailPage({ params }: { params: Promise<{ caseId: string }> }) {
+export default function CaseDetailPage({ params }: { params: { caseId: string } }) {
   const router = useRouter()
-  const [caseId, setCaseId] = useState<string | null>(null)
+  // Next 14: params je obyčejný objekt v client component. Předchozí Promise
+  // signature způsobovala `params.then is not a function` (BUG-1 tester 11.5.2026).
+  const [caseId, setCaseId] = useState<string | null>(params?.caseId ?? null)
   const [data, setData] = useState<CaseDetailData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -230,10 +232,9 @@ export default function CaseDetailPage({ params }: { params: Promise<{ caseId: s
   const [generatingContract, setGeneratingContract] = useState<string | null>(null)
 
   // --------------- Resolve params ---------------
-
-  useEffect(() => {
-    params.then(p => setCaseId(p.caseId))
-  }, [params])
+  // V Next 14 jsou client-component `params` plain object — žádný .then.
+  // Hodnotu už máme nastavenou v useState initializeru, useEffect tady byl
+  // jen pro await Promise (Next 15+ pattern), nyní nepotřebný.
 
   // --------------- Fetch data ---------------
 

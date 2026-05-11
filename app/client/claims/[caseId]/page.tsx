@@ -61,9 +61,10 @@ const FRIENDLY_STATUS: Record<string, string> = {
   cancelled: 'Zrušeno',
 }
 
-export default function ClientCaseDetailPage({ params }: { params: Promise<{ caseId: string }> }) {
+export default function ClientCaseDetailPage({ params }: { params: { caseId: string } }) {
   const router = useRouter()
-  const [caseId, setCaseId] = useState<string | null>(null)
+  // Next 14: params je plain object v client component, NE Promise (BUG-1).
+  const [caseId, setCaseId] = useState<string | null>(params?.caseId ?? null)
   const [caseData, setCaseData] = useState<InsuranceCase | null>(null)
   const [events, setEvents] = useState<InsuranceCaseEvent[]>([])
   const [loading, setLoading] = useState(true)
@@ -71,10 +72,6 @@ export default function ClientCaseDetailPage({ params }: { params: Promise<{ cas
   const [signingJob, setSigningJob] = useState<string | null>(null)
   const [consent, setConsent] = useState<Record<string, boolean>>({})
   const [expandedContract, setExpandedContract] = useState<string | null>(null)
-
-  useEffect(() => {
-    params.then(p => setCaseId(p.caseId))
-  }, [params])
 
   useEffect(() => {
     if (!caseId) return
