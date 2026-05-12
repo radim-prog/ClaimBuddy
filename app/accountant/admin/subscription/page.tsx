@@ -226,7 +226,7 @@ export default function SubscriptionPage() {
       <div>
         <h2 className="text-2xl font-bold font-display text-gray-900 dark:text-white">Předplatné</h2>
         <p className="text-gray-600 dark:text-gray-300 mt-1">
-          Správa vašeho tarifu Účetní OS
+          Správa vašeho tarifu Pojistná Pomoc
         </p>
       </div>
 
@@ -481,7 +481,7 @@ export default function SubscriptionPage() {
           <div className="flex items-center justify-center gap-4">
             <Button variant="outline" className="gap-2">
               <Mail className="h-4 w-4" />
-              info@ucetnios.cz
+              info@claims.zajcon.cz
             </Button>
             <Button variant="outline" className="gap-2" disabled>
               <Phone className="h-4 w-4" />

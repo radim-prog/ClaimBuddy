@@ -10,11 +10,11 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
-  title: 'Účetní OS pro účetní — Spravujte desítky firem bez stresu',
+  title: 'Pojistná Pomoc pro účetní — Spravujte desítky firem bez stresu',
   description:
     'Digitální platforma pro účetní kanceláře. Master dashboard, time tracking, DPH matice, automatické uzávěrky. Začněte zdarma.',
   openGraph: {
-    title: 'Účetní OS pro účetní',
+    title: 'Pojistná Pomoc pro účetní',
     description: 'Spravujte desítky firem bez stresu. AI automatizace, přehledy, komunikace s klienty.',
     type: 'website',
   },
@@ -120,7 +120,7 @@ export default function ProUcetniPage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold font-display tracking-tight text-foreground">
-              Proč účetní volí Účetní OS
+              Proč účetní volí Pojistná Pomoc
             </h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
               Nástroje navržené účetními, pro účetní. Žádné zbytečné funkce.

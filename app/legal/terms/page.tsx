@@ -23,6 +23,6 @@ export default async function TermsPage() {
 }
 
 export const metadata = {
-  title: 'Obchodní podmínky | Účetní OS',
-  description: 'Obchodní podmínky používání služby Účetní OS',
+  title: 'Obchodní podmínky | Pojistná Pomoc',
+  description: 'Obchodní podmínky používání služby Pojistná Pomoc',
 }

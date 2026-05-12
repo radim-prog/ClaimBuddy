@@ -23,6 +23,6 @@ export default async function PrivacyPage() {
 }
 
 export const metadata = {
-  title: 'Zásady ochrany osobních údajů | Účetní OS',
-  description: 'Zásady ochrany osobních údajů služby Účetní OS',
+  title: 'Zásady ochrany osobních údajů | Pojistná Pomoc',
+  description: 'Zásady ochrany osobních údajů služby Pojistná Pomoc',
 }

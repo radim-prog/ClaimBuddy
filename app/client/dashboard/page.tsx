@@ -454,7 +454,7 @@ export default function ClientDashboard() {
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Vaše účetní</p>
-                  <p className="font-semibold text-gray-900 dark:text-white">{selectedCompany?.accountant_name || 'Účetní OS tým'}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{selectedCompany?.accountant_name || 'Pojistná Pomoc tým'}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button asChild variant="outline" size="sm">

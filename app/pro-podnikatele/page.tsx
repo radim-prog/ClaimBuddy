@@ -10,11 +10,11 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
-  title: 'Účetní OS pro podnikatele — Účetnictví pod kontrolou',
+  title: 'Pojistná Pomoc pro podnikatele — Účetnictví pod kontrolou',
   description:
     'Nahrávejte doklady, sledujte uzávěrky, komunikujte s účetním. Vše na jednom místě. Začněte zdarma.',
   openGraph: {
-    title: 'Účetní OS pro podnikatele',
+    title: 'Pojistná Pomoc pro podnikatele',
     description: 'Přestaňte řešit účetnictví přes email. Moderní portál pro spolupráci s účetním.',
     type: 'website',
   },

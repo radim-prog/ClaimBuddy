@@ -259,7 +259,7 @@ export function AgreementPDF({ employee, company, agreementDate }: AgreementPDFP
 
         {/* Footer */}
         <Text style={styles.footer}>
-          Vygenerováno systémem Účetní OS &bull; {dateStr}
+          Vygenerováno systémem Pojistná Pomoc &bull; {dateStr}
         </Text>
       </Page>
     </Document>

@@ -382,9 +382,9 @@ export function GlobalDeadlineAlert() {
   const [taskDeadlines, setTaskDeadlines] = useState<ReturnType<typeof generateTaskDeadlines>>([])
   const [onboardingDeadlines, setOnboardingDeadlines] = useState<ReturnType<typeof generateOnboardingDeadlines>>([])
   const [loading, setLoading] = useState(true)
-  // Title se odvozuje z product-config aby v claims-only buildu neflashlo „Účetní OS".
+  // Title se odvozuje z product-config aby v claims-only buildu neflashlo „Pojistná Pomoc".
   // PRODUCT_PROJECT_NAME a IS_CLAIMS_ONLY_PRODUCT jsou re-exportovány v product-config.
-  const originalTitle = IS_CLAIMS_ONLY_PRODUCT ? `${PRODUCT_PROJECT_NAME} — ${PRODUCT_BRAND}` : 'Účetní OS'
+  const originalTitle = IS_CLAIMS_ONLY_PRODUCT ? `${PRODUCT_PROJECT_NAME} — ${PRODUCT_BRAND}` : 'Pojistná Pomoc'
 
   // Merge closure + task deadlines, sorted by severity then date
   const deadlines = useMemo(() => {

@@ -16,10 +16,10 @@ interface EmailAddresses {
 }
 
 const DEFAULT_EMAILS: EmailAddresses = {
-  noreply: 'noreply@ucetnios.cz',
-  invoicing: 'fakturace@ucetnios.cz',
-  info: 'info@ucetnios.cz',
-  support: 'podpora@ucetnios.cz',
+  noreply: 'noreply@claims.zajcon.cz',
+  invoicing: 'fakturace@claims.zajcon.cz',
+  info: 'info@claims.zajcon.cz',
+  support: 'podpora@claims.zajcon.cz',
 }
 
 const EMAIL_FIELDS: { key: keyof EmailAddresses; label: string; description: string }[] = [

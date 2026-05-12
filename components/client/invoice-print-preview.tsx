@@ -153,7 +153,7 @@ export function InvoicePrintPreview({
         <div className="flex justify-between items-start border-b-2 border-violet-600 pb-4 mb-5">
           <div>
             <h1 className="text-xl font-bold text-violet-600">{docTypeLabels[docType] || 'FAKTURA'}</h1>
-            <p className="text-xs text-gray-500 mt-0.5">Vystaveno v systému Účetní OS</p>
+            <p className="text-xs text-gray-500 mt-0.5">Vystaveno v systému Pojistná Pomoc</p>
           </div>
           <div className="text-right">
             <p className="text-lg font-bold text-gray-700">{invoice.invoice_number}</p>
@@ -325,7 +325,7 @@ export function InvoicePrintPreview({
         {/* Footer */}
         <div className="mt-8 pt-3 border-t border-gray-200 text-center">
           <p className="text-[9px] text-gray-400">
-            {supplier?.name || 'Zajcon Consulting s.r.o.'} | IČO: {supplier?.ico || '09426132'} | Vystaveno v systému Účetní OS
+            {supplier?.name || 'Zajcon Consulting s.r.o.'} | IČO: {supplier?.ico || '09426132'} | Vystaveno v systému Pojistná Pomoc
           </p>
         </div>
       </div>

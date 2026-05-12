@@ -103,7 +103,7 @@ export function Footer() {
         {/* Divider */}
         <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-gray-500 order-2 sm:order-1">
-            &copy; {new Date().getFullYear()} Účetní OS s.r.o. Všechna práva vyhrazena.
+            &copy; {new Date().getFullYear()} Pojistná Pomoc s.r.o. Všechna práva vyhrazena.
           </p>
           <div className="flex items-center gap-4 order-1 sm:order-2">
             <Link href="/legal/terms" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">

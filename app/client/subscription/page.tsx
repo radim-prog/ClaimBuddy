@@ -362,7 +362,7 @@ export default function ClientSubscriptionPage() {
       <Card className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-700">
         <CardContent className="py-8">
           <h3 className="text-lg font-bold text-gray-900 font-display dark:text-white mb-4 text-center">
-            Proč si vybrat Účetní OS?
+            Proč si vybrat Pojistná Pomoc?
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
             <div className="text-center">

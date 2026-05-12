@@ -145,7 +145,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
   // Claims branding: override favicon + title on claims.zajcon.cz
   useEffect(() => {
     if (!isClaims) return
-    document.title = document.title.replace('Účetní OS', 'Pojistná Pomoc')
+    document.title = document.title.replace('Pojistná Pomoc', 'Pojistná Pomoc')
     const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
     if (favicon) favicon.href = '/favicon-claims.svg'
   }, [isClaims, pathname])
@@ -220,7 +220,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
               {!collapsed && (
                 <div className="overflow-hidden">
                   <h1 className="text-base font-semibold text-white/95 font-display tracking-tight whitespace-nowrap">
-                    {isClaims ? 'Portál pojistných událostí' : 'Účetní OS'}
+                    {isClaims ? 'Portál pojistných událostí' : 'Pojistná Pomoc'}
                   </h1>
                   <p className="text-[10px] text-white/40 font-medium whitespace-nowrap">
                     {isClaims ? 'Pojistné události' : 'Klientský portál'}
@@ -404,7 +404,7 @@ function ClientLayoutInner({ children }: { children: React.ReactNode }) {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center">
                   <span className="text-xs font-bold text-white font-display">U</span>
                 </div>
-                <span className="text-sm font-semibold text-white/90 font-display">Účetní OS</span>
+                <span className="text-sm font-semibold text-white/90 font-display">Pojistná Pomoc</span>
               </>
             )}
           </Link>

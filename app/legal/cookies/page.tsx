@@ -23,6 +23,6 @@ export default async function CookiesPage() {
 }
 
 export const metadata = {
-  title: 'Zásady používání cookies | Účetní OS',
-  description: 'Zásady používání cookies na webu Účetní OS',
+  title: 'Zásady používání cookies | Pojistná Pomoc',
+  description: 'Zásady používání cookies na webu Pojistná Pomoc',
 }

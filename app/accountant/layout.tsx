@@ -583,7 +583,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
               {!collapsed && (
                 <div className="overflow-hidden">
                   <h1 className={`text-base font-semibold ${sidebarTheme.textActive} font-display tracking-tight whitespace-nowrap`}>
-                    Účetní OS
+                    Pojistná Pomoc
                   </h1>
                   <p className={`text-[10px] ${sidebarTheme.textMuted} font-medium whitespace-nowrap`}>
                     Portál pro účetní
@@ -799,7 +799,7 @@ function AccountantLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-violet-400 to-violet-500">
               <span className="text-xs font-bold text-white font-display">U</span>
             </div>
-            <span className="text-sm font-semibold text-white/[0.90] font-display">Účetní OS</span>
+            <span className="text-sm font-semibold text-white/[0.90] font-display">Pojistná Pomoc</span>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle variant="icon" className="text-white/[0.50] hover:text-white hover:bg-white/10 rounded-lg" />

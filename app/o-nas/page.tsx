@@ -9,12 +9,12 @@ import {
 } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'O nás — ZajCon Solutions | Účetní OS',
+  title: 'O nás — ZajCon Solutions | Pojistná Pomoc',
   description:
-    'ZajCon Solutions — český tým za platformou Účetní OS. Naše mise: digitalizovat spolupráci účetních a podnikatelů.',
+    'ZajCon Solutions — český tým za platformou Pojistná Pomoc. Naše mise: digitalizovat spolupráci účetních a podnikatelů.',
   openGraph: {
     title: 'O nás — ZajCon Solutions',
-    description: 'Český tým za platformou Účetní OS. Moderní účetnictví bez papírů.',
+    description: 'Český tým za platformou Pojistná Pomoc. Moderní účetnictví bez papírů.',
     type: 'website',
   },
 }
@@ -92,7 +92,7 @@ export default function AboutPage() {
             </div>
             <p className="text-center text-lg text-muted-foreground leading-relaxed max-w-3xl mx-auto">
               Účetní v Česku stráví desítky hodin měsíčně koordinací s klienty — emaily,
-              telefonáty, chybějící podklady. My to chceme změnit. Účetní OS je platforma,
+              telefonáty, chybějící podklady. My to chceme změnit. Pojistná Pomoc je platforma,
               kde klient nahraje doklad a účetní ho vidí okamžitě. Žádné papíry, žádný chaos.
             </p>
           </div>
@@ -157,7 +157,7 @@ export default function AboutPage() {
                 <Mail className="h-5 w-5 text-purple-500 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-foreground text-sm">Email</p>
-                  <p className="text-sm text-muted-foreground">info@ucetnios.cz</p>
+                  <p className="text-sm text-muted-foreground">info@claims.zajcon.cz</p>
                 </div>
               </div>
               <div className="flex items-start gap-4 p-5 rounded-xl border border-border/50 bg-card">
@@ -185,7 +185,7 @@ export default function AboutPage() {
               Připojte se k nám
             </h2>
             <p className="text-lg text-white/80 mb-8 max-w-xl mx-auto">
-              Začněte s Účetní OS zdarma a přesvědčte se sami.
+              Začněte s Pojistná Pomoc zdarma a přesvědčte se sami.
             </p>
             <Button size="lg" className="bg-white text-purple-700 hover:bg-gray-100 font-semibold" asChild>
               <Link href="/auth/register">Vyzkoušet zdarma</Link>

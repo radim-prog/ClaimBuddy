@@ -195,7 +195,7 @@ export function generatePohodaXml(invoices: Invoice[], supplierCompany?: Company
   ico="${escapeXml(ico)}"
   application="UcetniOS"
   version="2.0"
-  note="Export faktur z Účetní OS">
+  note="Export faktur z Pojistná Pomoc">
 ${dataPackItems}
 </dat:dataPack>`
 }
@@ -394,7 +394,7 @@ export function generatePohodaXmlFromDocuments(
   ico="${escapeXml(ico)}"
   application="UcetniOS"
   version="2.0"
-  note="Export přijatých faktur z Účetní OS">
+  note="Export přijatých faktur z Pojistná Pomoc">
 ${dataPackItems}
 </dat:dataPack>`
 }
@@ -554,7 +554,7 @@ export function generateBankDocumentXml(
   ico="${escapeXml(ico)}"
   application="UcetniOS"
   version="2.0"
-  note="Export bankovních dokladů z Účetní OS">
+  note="Export bankovních dokladů z Pojistná Pomoc">
 ${dataPackItems}
 </dat:dataPack>`
 }
@@ -580,7 +580,7 @@ export function generateBankLiquidationXml(
   ico="${escapeXml(ico)}"
   application="UcetniOS"
   version="2.0"
-  note="Export likvidace banky z Účetní OS">
+  note="Export likvidace banky z Pojistná Pomoc">
 ${dataPackItems}
 </dat:dataPack>`
 }
@@ -688,7 +688,7 @@ export function generateVoucherXml(
   ico="${escapeXml(ico)}"
   application="UcetniOS"
   version="2.0"
-  note="Export pokladních dokladů z Účetní OS">
+  note="Export pokladních dokladů z Pojistná Pomoc">
 ${dataPackItems}
 </dat:dataPack>`
 }

@@ -640,7 +640,7 @@ function NotificationsTab() {
                 className="h-11"
               />
               <p className="text-xs text-muted-foreground">
-                Napište /start botovi @UcetniWebAppBot a pošlete příkaz /id pro zjištění vašeho Chat ID
+                Pošlete email na podpora@claims.zajcon.cz s předmětem „Telegram Chat ID" a my vám pošleme instrukce, jak propojit notifikace.
               </p>
             </div>
           )}

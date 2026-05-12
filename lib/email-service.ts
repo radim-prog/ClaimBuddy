@@ -31,8 +31,15 @@ export interface EmailResult {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const DEFAULT_FROM = process.env.EMAIL_FROM_NOREPLY || 'noreply@ucetnios.cz'
-const DEFAULT_FROM_NAME = 'ÚčetníOS'
+// MVP 12.5.2026 (Jarvis B2 branding scrub): defaultní adresa odesílatele
+// reflektuje aktivní produkt. Claims-only build → noreply@claims.zajcon.cz,
+// pro UctoApp legacy zůstává noreply@claims.zajcon.cz. Lze přepsat přes
+// EMAIL_FROM_NOREPLY env (např. provozní MailJet doména).
+const IS_CLAIMS = process.env.NEXT_PUBLIC_CLAIMS_ONLY_PRODUCT === 'true'
+const DEFAULT_FROM = process.env.EMAIL_FROM_NOREPLY ||
+  (IS_CLAIMS ? 'noreply@claims.zajcon.cz' : 'noreply@claims.zajcon.cz')
+const DEFAULT_FROM_NAME = process.env.EMAIL_FROM_NAME ||
+  (IS_CLAIMS ? 'Pojistná Pomoc' : 'Pojistná Pomoc')
 
 function normalizeRecipients(to: string | string[]): string[] {
   return Array.isArray(to) ? to : [to]
@@ -243,7 +250,7 @@ function baseHtml(title: string, bodyContent: string): string {
           <tr>
             <td style="background:#1a56db;padding:24px 32px;">
               <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.3px;">
-                ÚčetníOS
+                Pojistná Pomoc
               </span>
             </td>
           </tr>
@@ -257,7 +264,7 @@ function baseHtml(title: string, bodyContent: string): string {
           <tr>
             <td style="background:#f9fafb;padding:20px 32px;border-top:1px solid #e5e7eb;">
               <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
-                ÚčetníOS · Automatická zpráva — neodpovídejte na tento email.
+                Pojistná Pomoc · Automatická zpráva — neodpovídejte na tento email.
               </p>
             </td>
           </tr>
@@ -295,7 +302,7 @@ export async function sendVerificationEmail(
       Dobrý den, <strong>${name}</strong>,
     </p>
     <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
-      Děkujeme za registraci v ÚčetníOS. Pro dokončení registrace prosím ověřte svůj
+      Děkujeme za registraci v Pojistná Pomoc. Pro dokončení registrace prosím ověřte svůj
       e-mailový účet kliknutím na tlačítko níže.
     </p>
     ${ctaButton(verifyUrl, 'Ověřit účet')}
@@ -305,9 +312,9 @@ export async function sendVerificationEmail(
 
   return sendEmail({
     to: email,
-    subject: 'Ověřte svůj účet — ÚčetníOS',
+    subject: 'Ověřte svůj účet — Pojistná Pomoc',
     html: baseHtml('Ověření účtu', bodyContent),
-    text: `Dobrý den, ${name},\n\nPro ověření účtu klikněte na tento odkaz:\n${verifyUrl}\n\nOdkaz platí 24 hodin.\n\n— ÚčetníOS`,
+    text: `Dobrý den, ${name},\n\nPro ověření účtu klikněte na tento odkaz:\n${verifyUrl}\n\nOdkaz platí 24 hodin.\n\n— Pojistná Pomoc`,
   })
 }
 
@@ -334,9 +341,9 @@ export async function sendPasswordResetEmail(
 
   return sendEmail({
     to: email,
-    subject: 'Obnovení hesla — ÚčetníOS',
+    subject: 'Obnovení hesla — Pojistná Pomoc',
     html: baseHtml('Obnovení hesla', bodyContent),
-    text: `Dobrý den, ${name},\n\nPro obnovení hesla klikněte na:\n${resetUrl}\n\nOdkaz platí 1 hodinu.\n\n— ÚčetníOS`,
+    text: `Dobrý den, ${name},\n\nPro obnovení hesla klikněte na:\n${resetUrl}\n\nOdkaz platí 1 hodinu.\n\n— Pojistná Pomoc`,
   })
 }
 
@@ -353,7 +360,7 @@ export async function sendInvitationEmail(
       Dobrý den,
     </p>
     <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
-      <strong>${inviterName}</strong> vás zve do klientského portálu ÚčetníOS
+      <strong>${inviterName}</strong> vás zve do klientského portálu Pojistná Pomoc
       pro správu firmy <strong>${companyName}</strong>.
     </p>
     <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
@@ -367,9 +374,9 @@ export async function sendInvitationEmail(
 
   return sendEmail({
     to: email,
-    subject: `Pozvánka do ÚčetníOS — ${companyName}`,
-    html: baseHtml('Pozvánka do ÚčetníOS', bodyContent),
-    text: `Dobrý den,\n\n${inviterName} vás zve do klientského portálu ÚčetníOS pro firmu ${companyName}.\n\nPřijměte pozvánku: ${inviteUrl}\n\nOdkaz platí 7 dní.\n\n— ÚčetníOS`,
+    subject: `Pozvánka do Pojistná Pomoc — ${companyName}`,
+    html: baseHtml('Pozvánka do Pojistná Pomoc', bodyContent),
+    text: `Dobrý den,\n\n${inviterName} vás zve do klientského portálu Pojistná Pomoc pro firmu ${companyName}.\n\nPřijměte pozvánku: ${inviteUrl}\n\nOdkaz platí 7 dní.\n\n— Pojistná Pomoc`,
   })
 }
 
@@ -379,12 +386,12 @@ export async function sendWelcomeEmail(
   name: string
 ): Promise<EmailResult> {
   const bodyContent = `
-    <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Vítejte v ÚčetníOS!</h2>
+    <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">Vítejte v Pojistná Pomoc!</h2>
     <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
       Dobrý den, <strong>${name}</strong>,
     </p>
     <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">
-      Váš účet byl úspěšně ověřen. Nyní máte přístup ke všem funkcím ÚčetníOS —
+      Váš účet byl úspěšně ověřen. Nyní máte přístup ke všem funkcím Pojistná Pomoc —
       správě klientů, vytěžování dokladů, přehledům DPH i dalším nástrojům moderního
       účetnictví.
     </p>
@@ -401,7 +408,7 @@ export async function sendWelcomeEmail(
         při výběru tarifu a získejte <strong>3 měsíce Premium zcela zdarma</strong>.
       </p>
     </div>
-    ${ctaButton('https://app.zajcon.cz', 'Přejít do aplikace')}
+    ${ctaButton('https://claims.zajcon.cz', 'Přejít do aplikace')}
     <p style="margin:20px 0 0;font-size:13px;color:#6b7280;line-height:1.5;">
       Máte otázky? Odpovídáme na <a href="mailto:podpora@zajcon.cz"
       style="color:#1a56db;">podpora@zajcon.cz</a>.
@@ -409,9 +416,9 @@ export async function sendWelcomeEmail(
 
   return sendEmail({
     to: email,
-    subject: 'Vítejte v ÚčetníOS! + kód na 3 měsíce zdarma',
-    html: baseHtml('Vítejte v ÚčetníOS', bodyContent),
-    text: `Dobrý den, ${name},\n\nVáš účet v ÚčetníOS je aktivní. Máte 30denní zkušební verzi Premium zdarma.\n\nDárek: použijte kód ZDARMA3 při výběru tarifu a získejte 3 měsíce Premium zcela zdarma!\n\nPřihlaste se na: https://app.zajcon.cz\n\n— ÚčetníOS`,
+    subject: 'Vítejte v Pojistná Pomoc! + kód na 3 měsíce zdarma',
+    html: baseHtml('Vítejte v Pojistná Pomoc', bodyContent),
+    text: `Dobrý den, ${name},\n\nVáš účet v Pojistná Pomoc je aktivní. Máte 30denní zkušební verzi Premium zdarma.\n\nDárek: použijte kód ZDARMA3 při výběru tarifu a získejte 3 měsíce Premium zcela zdarma!\n\nPřihlaste se na: https://claims.zajcon.cz\n\n— Pojistná Pomoc`,
   })
 }
 
@@ -429,7 +436,7 @@ export async function sendNotificationEmail(
   if (ecomailTemplateId) {
     return sendEmail({
       to: email,
-      subject: data.subject ?? 'Oznámení z ÚčetníOS',
+      subject: data.subject ?? 'Oznámení z Pojistná Pomoc',
       template: ecomailTemplateId,
       templateData: data,
     })
@@ -450,7 +457,7 @@ export async function sendNotificationEmail(
   const bodyContent = `
     <h2 style="margin:0 0 16px;font-size:22px;color:#111827;">${data.subject ?? 'Oznámení'}</h2>
     <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;">
-      Obdrželi jste automatické oznámení ze systému ÚčetníOS.
+      Obdrželi jste automatické oznámení ze systému Pojistná Pomoc.
     </p>
     ${
       rows
@@ -462,7 +469,7 @@ export async function sendNotificationEmail(
 
   return sendEmail({
     to: email,
-    subject: data.subject ?? 'Oznámení z ÚčetníOS',
+    subject: data.subject ?? 'Oznámení z Pojistná Pomoc',
     html: baseHtml(data.subject ?? 'Oznámení', bodyContent),
     text: Object.entries(data)
       .map(([k, v]) => `${k}: ${v}`)

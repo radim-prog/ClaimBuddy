@@ -326,7 +326,7 @@ export function InvoicePDF({ invoice, supplier, qrDataUrl, notices, documentType
             )}
             <View>
               <Text style={styles.title}>{getDocumentTitle(documentType)}</Text>
-              <Text style={styles.subtitle}>Vystaveno v systému Účetní OS</Text>
+              <Text style={styles.subtitle}>Vystaveno v systému Pojistná Pomoc</Text>
             </View>
           </View>
           <View style={{ alignItems: 'flex-end' }}>

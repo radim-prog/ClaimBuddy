@@ -3,11 +3,11 @@ import { Navbar } from '@/components/landing/navbar'
 import { Footer } from '@/components/landing/footer'
 
 export const metadata: Metadata = {
-  title: 'Marketplace účetních — Účetní OS',
+  title: 'Marketplace účetních — Pojistná Pomoc',
   description:
     'Najděte svou účetní firmu. Katalog ověřených účetních s transparentními cenami, specializacemi a dostupností.',
   openGraph: {
-    title: 'Marketplace účetních — Účetní OS',
+    title: 'Marketplace účetních — Pojistná Pomoc',
     description: 'Najděte svou účetní firmu. Katalog ověřených účetních.',
     type: 'website',
   },

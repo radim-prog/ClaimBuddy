@@ -17,9 +17,9 @@ export function Logo({ size = 'md', showText = true, variant = 'purple' }: {
     ? { from: '#60a5fa', to: '#2563eb' }
     : { from: '#a78bfa', to: '#7c3aed' }
 
-  // Brand v claims-only buildu „Pojistná Pomoc", jinak „Účetní OS".
+  // Brand v claims-only buildu „Pojistná Pomoc", jinak „Pojistná Pomoc".
   // Iniciály v logu odpovídají (PP vs UO).
-  const brand = IS_CLAIMS_ONLY_PRODUCT ? PRODUCT_BRAND : 'Účetní OS'
+  const brand = IS_CLAIMS_ONLY_PRODUCT ? PRODUCT_BRAND : 'Pojistná Pomoc'
   const initials = IS_CLAIMS_ONLY_PRODUCT ? 'PP' : 'UO'
 
   return (

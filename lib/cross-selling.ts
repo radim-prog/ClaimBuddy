@@ -43,19 +43,19 @@ const ECOMAIL_TAGS: Record<CrossSellType, string> = {
   claims_to_accounting: 'cross_sell_claims_to_accounting',
 }
 
-const APP_URL = 'https://app.zajcon.cz'
+const APP_URL = 'https://claims.zajcon.cz'
 
 // ---------------------------------------------------------------------------
 // Email content builders
 // ---------------------------------------------------------------------------
 
 function buildAccountingToClaimsEmail(name: string): { subject: string; html: string; text: string } {
-  const subject = 'Řešte krizové situace přímo v ÚčetníOS'
+  const subject = 'Řešte krizové situace přímo v Pojistná Pomoc'
 
   const content = `
     <p style="margin: 0 0 16px; font-size: 16px; color: #111827;">Dobrý den, <strong>${name}</strong>,</p>
     <p style="margin: 0 0 16px; font-size: 15px; color: #374151; line-height: 1.6;">
-      víte, že můžete řešit krizové situace přímo v ÚčetníOS? Aktivujte modul
+      víte, že můžete řešit krizové situace přímo v Pojistná Pomoc? Aktivujte modul
       <strong>Krizové řízení</strong> a získejte přístup k nástrojům pro správu případů,
       sledování termínů a komunikaci s odborníky — vše na jednom místě.
     </p>
@@ -76,7 +76,7 @@ function buildAccountingToClaimsEmail(name: string): { subject: string; html: st
 
   const text = `Dobrý den, ${name},
 
-víte, že můžete řešit krizové situace přímo v ÚčetníOS? Aktivujte modul Krizové řízení a získejte přístup k nástrojům pro správu případů, sledování termínů a komunikaci s odborníky.
+víte, že můžete řešit krizové situace přímo v Pojistná Pomoc? Aktivujte modul Krizové řízení a získejte přístup k nástrojům pro správu případů, sledování termínů a komunikaci s odborníky.
 
 Co získáte:
 - Přehled otevřených případů a jejich stav
@@ -88,13 +88,13 @@ Aktivovat: ${APP_URL}/krizove-rizeni
 
 Odhlásit se z emailů: ${APP_URL}/unsubscribe
 
-ÚčetníOS • ucetnios.cz`
+Pojistná Pomoc • claims.zajcon.cz`
 
   return { subject, html: wrapInLayout(subject, content, { showUnsubscribe: true }), text }
 }
 
 function buildClaimsToAccountingEmail(name: string): { subject: string; html: string; text: string } {
-  const subject = 'Potřebujete spolehlivého účetního? Najděte ho v ÚčetníOS'
+  const subject = 'Potřebujete spolehlivého účetního? Najděte ho v Pojistná Pomoc'
 
   const content = `
     <p style="margin: 0 0 16px; font-size: 16px; color: #111827;">Dobrý den, <strong>${name}</strong>,</p>
@@ -105,7 +105,7 @@ function buildClaimsToAccountingEmail(name: string): { subject: string; html: st
     </p>
     <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;
                 padding: 16px; margin-bottom: 20px;">
-      <p style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #166534;">Proč účetní z ÚčetníOS:</p>
+      <p style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #166534;">Proč účetní z Pojistná Pomoc:</p>
       <ul style="margin: 0; padding-left: 18px; color: #166534; font-size: 14px; line-height: 1.8;">
         <li>Ověření profesionálové s referencemi</li>
         <li>Přímá komunikace v aplikaci</li>
@@ -122,7 +122,7 @@ function buildClaimsToAccountingEmail(name: string): { subject: string; html: st
 
 potřebujete spolehlivého účetního? Na našem Marketplace najdete ověřené účetní profesionály.
 
-Proč účetní z ÚčetníOS:
+Proč účetní z Pojistná Pomoc:
 - Ověření profesionálové s referencemi
 - Přímá komunikace v aplikaci
 - Online přehled o stavu vašeho účetnictví
@@ -134,7 +134,7 @@ Najít účetního: ${APP_URL}/client/find-accountant
 
 Odhlásit se z emailů: ${APP_URL}/unsubscribe
 
-ÚčetníOS • ucetnios.cz`
+Pojistná Pomoc • claims.zajcon.cz`
 
   return { subject, html: wrapInLayout(subject, content, { showUnsubscribe: true }), text }
 }

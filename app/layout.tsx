@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   metadataBase,
   title: IS_CLAIMS_ONLY_PRODUCT
     ? `${PRODUCT_PROJECT_NAME} — ${PRODUCT_BRAND}`
-    : 'Účetní OS - Portál pro klienty a účetní',
+    : 'Pojistná Pomoc - Portál pro klienty a účetní',
   description: IS_CLAIMS_ONLY_PRODUCT
     ? PRODUCT_DESCRIPTION
     : 'Komplexní webová aplikace pro účetní firmu - samoobslužný portál pro klienty a master dashboard pro účetní',

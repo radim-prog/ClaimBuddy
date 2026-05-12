@@ -80,7 +80,7 @@ function ClaimsLayoutInner({ children }: { children: React.ReactNode }) {
 
   // Claims branding: favicon + title
   useEffect(() => {
-    document.title = document.title.replace('Účetní OS', 'Pojistná Pomoc')
+    document.title = document.title.replace('Pojistná Pomoc', 'Pojistná Pomoc')
     const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
     if (favicon) favicon.href = '/favicon-claims.svg'
   }, [pathname])
