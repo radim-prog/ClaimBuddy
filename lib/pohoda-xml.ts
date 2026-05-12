@@ -193,7 +193,7 @@ export function generatePohodaXml(invoices: Invoice[], supplierCompany?: Company
   xmlns:typ="${NS_TYP}"
   id="EXPORT_${new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)}"
   ico="${escapeXml(ico)}"
-  application="UcetniOS"
+  application="ClaimBuddy"
   version="2.0"
   note="Export faktur z Pojistná Pomoc">
 ${dataPackItems}
@@ -392,7 +392,7 @@ export function generatePohodaXmlFromDocuments(
   xmlns:typ="${NS_TYP}"
   id="EXPORT_${new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)}"
   ico="${escapeXml(ico)}"
-  application="UcetniOS"
+  application="ClaimBuddy"
   version="2.0"
   note="Export přijatých faktur z Pojistná Pomoc">
 ${dataPackItems}
@@ -552,7 +552,7 @@ export function generateBankDocumentXml(
   xmlns:typ="${NS_TYP}"
   id="EXPORT_BNK_${new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)}"
   ico="${escapeXml(ico)}"
-  application="UcetniOS"
+  application="ClaimBuddy"
   version="2.0"
   note="Export bankovních dokladů z Pojistná Pomoc">
 ${dataPackItems}
@@ -578,7 +578,7 @@ export function generateBankLiquidationXml(
   xmlns:typ="${NS_TYP}"
   id="EXPORT_LIQ_${new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)}"
   ico="${escapeXml(ico)}"
-  application="UcetniOS"
+  application="ClaimBuddy"
   version="2.0"
   note="Export likvidace banky z Pojistná Pomoc">
 ${dataPackItems}
@@ -686,7 +686,7 @@ export function generateVoucherXml(
   xmlns:typ="${NS_TYP}"
   id="EXPORT_PPD_${new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14)}"
   ico="${escapeXml(ico)}"
-  application="UcetniOS"
+  application="ClaimBuddy"
   version="2.0"
   note="Export pokladních dokladů z Pojistná Pomoc">
 ${dataPackItems}
